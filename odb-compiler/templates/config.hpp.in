@@ -1,0 +1,22 @@
+#pragma once
+
+#define ODBC_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
+#define ODBC_VERSION_MINOR ${PROJECT_VERSION_MINOR}
+#define ODBC_VERSION_PATCH ${PROJECT_VERSION_PATCH}
+#define ODBC_VERSION \
+    ((ODBC_VERSION_MAJOR << 16) | (ODBC_VERSION_MINOR << 8) | ODBC_VERSION_PATCH)
+#define ODBC_${ODBC_LIB_TYPE}
+#cmakedefine ODBC_DOT_EXPORT
+
+#if defined(ODBC_SHARED)
+#   if defined(ODBC_BUILDING)
+#       define ODBC_PUBLIC_API ${ODBC_API_EXPORT}
+#   else
+#       define ODBC_PUBLIC_API ${ODBC_API_IMPORT}
+#   endif
+#   define ODBC_PRIVATE_API ${ODBC_API_LOCAL}
+#else
+#   define ODBC_PUBLIC_API
+#   define ODBC_PRIVATE_API
+#endif
+
