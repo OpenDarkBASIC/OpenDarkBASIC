@@ -26,7 +26,7 @@ FLOAT3          -?[0-9]+\.[0-9]+?{FLOAT_EXP}?
 FLOAT4          -?\.[0-9]+{FLOAT_EXP}?
 FLOAT5          -?[0-9]+{FLOAT_EXP}
 FLOAT           {FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
-INTEGER_BASE2   0b[01]+
+INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0x[0-9a-fA-F]+
 INTEGER         -?[0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
@@ -51,6 +51,33 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 {INTEGER_BASE2}     { printf("integer: %s\n", yytext); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER; }
 {INTEGER_BASE16}    { printf("integer: %s\n", yytext); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER; }
 {INTEGER}           { printf("integer: %s\n", yytext); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER; }
+
+"+"                 { return TOK_ADD; }
+"-"                 { return TOK_SUB; }
+"*"                 { return TOK_MUL; }
+"/"                 { return TOK_DIV; }
+"%"                 { return TOK_MOD; }
+"^"                 { return TOK_POW; }
+"("                 { return yytext[0]; }
+")"                 { return yytext[0]; }
+
+"<<"                { return TOK_BSHL; }
+">>"                { return TOK_BSHR; }
+"||"                { return TOK_BOR; }
+"&&"                { return TOK_BAND; }
+"~~"                { return TOK_BXOR; }
+".."                { return TOK_BNOT; }
+
+"<>"                { return TOK_NE; }
+"<="                { return TOK_LE; }
+">="                { return TOK_GE; }
+"="                 { return TOK_EQ; }
+"<"                 { return TOK_LT; }
+">"                 { return TOK_GT; }
+(?i:or)             { return TOK_OR; }
+(?i:and)            { return TOK_AND; }
+(?i:not)            { return TOK_NOT; }
+
 {SYMBOL}            { printf("symbol: %s\n", yytext); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 
 [\n:]               { printf("end statement\n"); return TOK_END_STATEMENT; }

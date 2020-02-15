@@ -7,21 +7,80 @@ namespace odbc {
 class Driver;
 namespace ast {
 
-enum Type
+enum NodeType
 {
-    BLOCK,
-    OP_ASSIGNMENT,
-    SYMBOL,
-    BOOLEAN_CONSTANT,
-    INTEGER_CONSTANT,
-    FLOAT_CONSTANT,
-    STRING_CONSTANT
+    NT_BLOCK,
+    NT_ASSIGNMENT,
+    NT_SYMBOL,
+    NT_SYMBOL_REF,
+    NT_LITERAL
+};
+
+enum Operation
+{
+    OP_ADD,
+    OP_SUB,
+    OP_MUL,
+    OP_DIV,
+    OP_MOD,
+    OP_POW,
+
+    OP_BSHL,
+    OP_BSHR,
+    OP_BOR,
+    OP_BAND,
+    OP_BXOR,
+    OP_BNOT,
+
+    OP_LT,
+    OP_LE,
+    OP_GT,
+    OP_GE,
+    OP_EQ,
+    OP_NE,
+    OP_OR,
+    OP_AND,
+    OP_XOR,
+    OP_NOT
+};
+
+/*!
+ * A symbol carries type information. For example, here "var" is declared as
+ * a floating point type:
+ *
+ *   var#
+ *   var as float
+ *
+ * This does not necessarily mean it points to a literal that is also a
+ * floating point type. This can occur for example if the program tries to
+ * assign a string to a variable named var#. This case is handled later after
+ * parsing. During parsing we just store these facts for later. This is why we
+ * have enums for both SymbolType and LiteralType.
+ */
+enum SymbolType
+{
+    ST_UNKNOWN,
+    ST_BOOLEAN,
+    ST_INTEGER,
+    ST_FLOAT,
+    ST_STRING,
+    ST_FUNCTION,
+    ST_SUBROUTINE,
+    ST_COMMAND
+};
+
+enum LiteralType
+{
+    LT_BOOLEAN,
+    LT_INTEGER,
+    LT_FLOAT,
+    LT_STRING
 };
 
 union node_t {
     struct info_t
     {
-        Type type;
+        NodeType type;
 #ifdef ODBC_DOT_EXPORT
         int guid;
 #endif
@@ -41,59 +100,84 @@ union node_t {
         node_t* statement;
     } block;
 
-    struct op_assignment_t
+    // Assign statement to symbol
+    struct assignment_t
     {
         info_t info;
         node_t* symbol;
-        node_t* expression;
-    } op_assignment;
+        node_t* statement;
+    } assignment;
+
+    struct op_t
+    {
+        info_t info;
+        node_t* left;
+        node_t* right;
+        Operation operation;
+    } op;
 
     struct symbol_t
     {
         info_t info;
-        node_t* value;
-        node_t* function;
+        node_t* literal;
+        node_t* arglist;
         char* name;
+        SymbolType type;
     } symbol;
 
-    struct boolean_constant_t
-    {
-        info_t info;
-        bool value;
-    } boolean_constant;
+    // terminal nodes ---------------------------------------------------------
 
-    struct integer_constant_t
+    struct symbol_ref_t
     {
         info_t info;
-        int32_t value;
-    } integer_constant;
+        char* name;
+        SymbolType type;
+    } symbol_ref;
 
-    struct float_constant_t
+    struct literal_t
     {
         info_t info;
-        double value;
-    } float_constant;
-
-    struct string_constant_t
-    {
-        info_t info;
-        char* value;
-    } string_constant;
+        LiteralType type;
+        union {
+            bool b;
+            int32_t i;
+            double f;
+            char* s;
+        } value;
+    } literal;
 };
 
-static bool isTerminal(node_t* node)
-{
-    switch (node->info.type)
-    {
-        case BOOLEAN_CONSTANT:
-        case INTEGER_CONSTANT:
-        case FLOAT_CONSTANT:
-        case STRING_CONSTANT:
-            return true;
-        default:
-            return false;
-    }
-}
+#ifdef ODBC_DOT_EXPORT
+void dumpToDOT(std::ostream& os, node_t* root);
+#endif
+
+node_t* newUnknownSymbol(const char* symbolName);
+node_t* newBooleanSymbol(const char* symbolName);
+node_t* newIntegerSymbol(const char* symbolName);
+node_t* newFloatSymbol(const char* symbolName);
+node_t* newStringSymbol(const char* symbolName);
+
+node_t* newUnknownSymbolRef(const char* symbolName);
+node_t* newBooleanSymbolRef(const char* symbolName);
+node_t* newIntegerSymbolRef(const char* symbolName);
+node_t* newFloatSymbolRef(const char* symbolName);
+node_t* newStringSymbolRef(const char* symbolName);
+
+node_t* newBooleanConstant(bool value);
+node_t* newIntegerConstant(int32_t value);
+node_t* newFloatConstant(double value);
+node_t* newStringConstant(const char* value);
+
+node_t* newAssignment(node_t* symbol, node_t* statement);
+
+node_t* newStatementBlock(node_t* expr);
+node_t* appendStatementToBlock(node_t* block, node_t* expr);
+node_t* prependStatementToBlock(node_t* block, node_t* expr);
+
+void freeNode(node_t* node);
+void freeNodeRecursive(node_t* root=nullptr);
+
+bool isTerminal(node_t* node);
 
 }
 }

@@ -76,21 +76,38 @@
 /* Define the semantic types of our grammar. %token for TERMINALS and %type for non_terminals */
 %token END 0 "end of file"
 %token END_STATEMENT
+
 %token CONSTANT
-%token<symbol> SYMBOL;
+
 %token<boolean_value> BOOLEAN "boolean";
 %token<integer_value> INTEGER "integer";
 %token<float_value> FLOAT "float";
 %token<string_literal> STRING_LITERAL "string";
 
+%token<node> ADD SUB MUL DIV POW MOD;
+%token<node> BSHL BSHR BOR BAND BXOR BNOT;
+%token<node> LT GT LE GE NE EQ OR AND NOT;
+%token '(' ')'
+
+%token<symbol> SYMBOL;
+
 %type<node> statements;
 %type<node> statement;
-%type<node> constant_statement;
+%type<node> constant_declaration;
 %type<node> constant_literal;
+%type<node> variable_assignment;
+%type<node> expression;
+%type<node> symbol_declaration;
+%type<node> symbol_reference;
+
+/* precedence rules */
+%left EQ
+%left ADD SUB MUL DIV
+%left '(' ')'
 
 %destructor { free($$); } <string_literal>
 %destructor { free($$); } <symbol>
-%destructor { driver->freeASTNode($$); } <node>
+%destructor { ast::freeNode($$); } <node>
 
 %start program
 
@@ -100,30 +117,50 @@ program
   | END
   ;
 statements
-  : statements statement                         { $$ = driver->appendStatementToBlock($1, $2); }
-  | statement                                    { $$ = driver->newStatementBlock($1); }
+  : statements statement                         { $$ = ast::appendStatementToBlock($1, $2); }
+  | statement                                    { $$ = ast::newStatementBlock($1); }
   ;
 statement
-  : constant_statement                           { $$ = $1; }
+  : variable_assignment
+  | constant_declaration                         { $$ = $1; }
   ;
-constant_statement
-  : CONSTANT SYMBOL constant_literal END_STATEMENT {
-        $$ = driver->newSymbol($2, $3);
-        if ($$ == nullptr)
+variable_assignment
+  : symbol_reference EQ expression
+  ;
+expression
+  : expression ADD expression
+  | expression SUB expression
+  | expression MUL expression
+  | expression DIV expression
+  | expression POW expression
+  | expression MOD expression
+  | constant_literal
+  ;
+constant_declaration
+  : CONSTANT symbol_declaration constant_literal END_STATEMENT {
+        $$ = $2;
+        $2->symbol.literal = $3;
+        switch ($3->literal.type)
         {
-            error("Redefinition of symbol `%s`", $2);
-            free($2);
-            driver->freeASTNode($3);
-            YYERROR;
+            case ast::LT_BOOLEAN : $2->symbol.type = ast::ST_BOOLEAN; break;
+            case ast::LT_INTEGER : $2->symbol.type = ast::ST_INTEGER; break;
+            case ast::LT_FLOAT   : $2->symbol.type = ast::ST_FLOAT; break;
+            case ast::LT_STRING  : $2->symbol.type = ast::ST_STRING; break;
+            default: break;
         }
-        free($2);
     }
   ;
 constant_literal
-  : BOOLEAN                                      { $$ = driver->newBooleanConstant($1); }
-  | INTEGER                                      { $$ = driver->newIntegerConstant($1); }
-  | FLOAT                                        { $$ = driver->newFloatConstant($1); }
-  | STRING_LITERAL                               { $$ = driver->newStringConstant($1); free($1); }
+  : BOOLEAN                                      { $$ = ast::newBooleanConstant($1); }
+  | INTEGER                                      { $$ = ast::newIntegerConstant($1); }
+  | FLOAT                                        { $$ = ast::newFloatConstant($1); }
+  | STRING_LITERAL                               { $$ = ast::newStringConstant($1); free($1); }
+  ;
+symbol_declaration
+  : SYMBOL                                       { $$ = ast::newUnknownSymbol($1); }
+  ;
+symbol_reference
+  : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); }
   ;
 %%
 
