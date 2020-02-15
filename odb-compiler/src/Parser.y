@@ -84,10 +84,9 @@
 %token<float_value> FLOAT "float";
 %token<string_literal> STRING_LITERAL "string";
 
-%token<node> ADD SUB MUL DIV POW MOD;
-%token<node> BSHL BSHR BOR BAND BXOR BNOT;
-%token<node> LT GT LE GE NE EQ OR AND NOT;
-%token '(' ')'
+%token ADD SUB MUL DIV POW MOD LB RB;
+%token BSHL BSHR BOR BAND BXOR BNOT;
+%token LT GT LE GE NE EQ OR AND NOT;
 
 %token<symbol> SYMBOL;
 
@@ -102,8 +101,10 @@
 
 /* precedence rules */
 %left EQ
-%left ADD SUB MUL DIV
-%left '(' ')'
+%left ADD SUB
+%left MUL DIV
+%left POW MOD
+%left LB RB
 
 %destructor { free($$); } <string_literal>
 %destructor { free($$); } <symbol>
@@ -121,20 +122,22 @@ statements
   | statement                                    { $$ = ast::newStatementBlock($1); }
   ;
 statement
-  : variable_assignment
+  : variable_assignment                          { $$ = $1; }
   | constant_declaration                         { $$ = $1; }
   ;
 variable_assignment
-  : symbol_reference EQ expression
+  : symbol_reference EQ expression END_STATEMENT { $$ = ast::newAssignment($1, $3); }
   ;
 expression
-  : expression ADD expression
-  | expression SUB expression
-  | expression MUL expression
-  | expression DIV expression
-  | expression POW expression
-  | expression MOD expression
-  | constant_literal
+  : expression ADD expression                    { $$ = ast::newOpAdd($1, $3); }
+  | expression SUB expression                    { $$ = ast::newOpSub($1, $3); }
+  | expression MUL expression                    { $$ = ast::newOpMul($1, $3); }
+  | expression DIV expression                    { $$ = ast::newOpDiv($1, $3); }
+  | expression POW expression                    { $$ = ast::newOpPow($1, $3); }
+  | expression MOD expression                    { $$ = ast::newOpMod($1, $3); }
+  | LB expression RB                             { $$ = $2; }
+  | constant_literal                             { $$ = $1; }
+  | symbol_reference                             { $$ = $1; }
   ;
 constant_declaration
   : CONSTANT symbol_declaration constant_literal END_STATEMENT {

@@ -11,6 +11,7 @@ enum NodeType
 {
     NT_BLOCK,
     NT_ASSIGNMENT,
+    NT_OP,
     NT_SYMBOL,
     NT_SYMBOL_REF,
     NT_LITERAL
@@ -150,6 +151,13 @@ union node_t {
 #ifdef ODBC_DOT_EXPORT
 void dumpToDOT(std::ostream& os, node_t* root);
 #endif
+
+node_t* newOpAdd(node_t* left, node_t* right);
+node_t* newOpSub(node_t* left, node_t* right);
+node_t* newOpMul(node_t* left, node_t* right);
+node_t* newOpDiv(node_t* left, node_t* right);
+node_t* newOpPow(node_t* left, node_t* right);
+node_t* newOpMod(node_t* left, node_t* right);
 
 node_t* newUnknownSymbol(const char* symbolName);
 node_t* newBooleanSymbol(const char* symbolName);

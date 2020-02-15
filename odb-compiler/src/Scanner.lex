@@ -1,5 +1,7 @@
 %{
     #include "odbc/Parser.y.h"
+
+    #define dbg(text) printf(text ": \"%s\"\n", yytext)
 %}
 
 %option nodefault
@@ -33,53 +35,53 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %%
 
-{REMARK}            { printf("remark: %s", yytext); }
+{REMARK}            { printf("remark: \"%s\"", yytext); }
 
-{CONSTANT}          { return TOK_CONSTANT; }
+{CONSTANT}          { dbg("constant"); return TOK_CONSTANT; }
 
-{BOOL_TRUE}         { printf("bool: %s\n", yytext); yylval->boolean_value = true; return TOK_BOOLEAN; }
-{BOOL_FALSE}        { printf("bool: %s\n", yytext); yylval->boolean_value = false; return TOK_BOOLEAN; }
+{BOOL_TRUE}         { dbg("bool"); yylval->boolean_value = true; return TOK_BOOLEAN; }
+{BOOL_FALSE}        { dbg("bool"); yylval->boolean_value = false; return TOK_BOOLEAN; }
 {STRING_LITERAL}    {
-                        printf("string_literal: %s\n", yytext);
+                        dbg("string literal");
                         int len = strlen(yytext);
                         yylval->string_literal = (char*)malloc(len - 2 + 1);
                         memcpy(yylval->string_literal, &yytext[1], len - 2);
                         yylval->string_literal[len - 2] = '\0';
                         return TOK_STRING_LITERAL;
                     }
-{FLOAT}             { printf("float: %s\n", yytext); yylval->float_value = atof(yytext); return TOK_FLOAT; }
-{INTEGER_BASE2}     { printf("integer: %s\n", yytext); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER; }
-{INTEGER_BASE16}    { printf("integer: %s\n", yytext); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER; }
-{INTEGER}           { printf("integer: %s\n", yytext); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER; }
+{FLOAT}             { dbg("float"); yylval->float_value = atof(yytext); return TOK_FLOAT; }
+{INTEGER_BASE2}     { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER; }
+{INTEGER_BASE16}    { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER; }
+{INTEGER}           { dbg("integer"); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER; }
 
-"+"                 { return TOK_ADD; }
-"-"                 { return TOK_SUB; }
-"*"                 { return TOK_MUL; }
-"/"                 { return TOK_DIV; }
-"%"                 { return TOK_MOD; }
-"^"                 { return TOK_POW; }
-"("                 { return yytext[0]; }
-")"                 { return yytext[0]; }
+"+"                 { dbg("add"); return TOK_ADD; }
+"-"                 { dbg("sub"); return TOK_SUB; }
+"*"                 { dbg("mul"); return TOK_MUL; }
+"/"                 { dbg("div"); return TOK_DIV; }
+"%"                 { dbg("mod"); return TOK_MOD; }
+"^"                 { dbg("pow"); return TOK_POW; }
+"("                 { dbg("lb"); return TOK_LB; }
+")"                 { dbg("rb"); return TOK_RB; }
 
-"<<"                { return TOK_BSHL; }
-">>"                { return TOK_BSHR; }
-"||"                { return TOK_BOR; }
-"&&"                { return TOK_BAND; }
-"~~"                { return TOK_BXOR; }
-".."                { return TOK_BNOT; }
+"<<"                { dbg("bshl"); return TOK_BSHL; }
+">>"                { dbg("bshr"); return TOK_BSHR; }
+"||"                { dbg("bor"); return TOK_BOR; }
+"&&"                { dbg("band"); return TOK_BAND; }
+"~~"                { dbg("bxor"); return TOK_BXOR; }
+".."                { dbg("bnot"); return TOK_BNOT; }
 
-"<>"                { return TOK_NE; }
-"<="                { return TOK_LE; }
-">="                { return TOK_GE; }
-"="                 { return TOK_EQ; }
-"<"                 { return TOK_LT; }
-">"                 { return TOK_GT; }
-(?i:or)             { return TOK_OR; }
-(?i:and)            { return TOK_AND; }
-(?i:not)            { return TOK_NOT; }
+"<>"                { dbg("ne"); return TOK_NE; }
+"<="                { dbg("le"); return TOK_LE; }
+">="                { dbg("ge"); return TOK_GE; }
+"="                 { dbg("eq"); return TOK_EQ; }
+"<"                 { dbg("lt"); return TOK_LT; }
+">"                 { dbg("gt"); return TOK_GT; }
+(?i:or)             { dbg("or"); return TOK_OR; }
+(?i:and)            { dbg("and"); return TOK_AND; }
+(?i:not)            { dbg("not"); return TOK_NOT; }
 
-{SYMBOL}            { printf("symbol: %s\n", yytext); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
+{SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 
-[\n:]               { printf("end statement\n"); return TOK_END_STATEMENT; }
+[\n:]               { dbg("end statement"); return TOK_END_STATEMENT; }
 .                   {}
 %%

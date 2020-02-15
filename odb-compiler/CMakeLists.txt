@@ -65,11 +65,15 @@ target_include_directories (odbc
 target_compile_definitions (odbc
     PRIVATE
         ODBC_BUILDING)
+target_compile_options (odbc
+    PRIVATE
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
-        "tests/src/test_remarks.cpp"
-        "tests/src/test_constant.cpp")
+        "tests/src/test_constant.cpp"
+        "tests/src/test_op_binary.cpp"
+        "tests/src/test_remarks.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbc
