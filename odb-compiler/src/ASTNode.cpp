@@ -46,6 +46,8 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
                 case OP_MOD   : os << "%"; break;
                 case OP_COMMA : os << ","; break;
                 case OP_EQ    : os << "=="; break;
+                case OP_GT    : os << ">"; break;
+                case OP_LE    : os << "<="; break;
                 default: break;
             }
             os << "\"];\n";
@@ -72,6 +74,37 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->branch_paths.is_false->info.guid << " [label=\"false\"];\n";
                 dumpToDOTRecursive(os, node->branch_paths.is_false);
+            }
+        } break;
+
+        case NT_LOOP: {
+            os << "N" << node->info.guid << "[label = \"loop\"]\n";
+            if (node->loop.block)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->loop.block->info.guid << ";\n";
+                dumpToDOTRecursive(os, node->loop.block);
+            }
+        } break;
+
+        case NT_LOOP_WHILE: {
+            os << "N" << node->info.guid << "[label = \"while\"]\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->loop_while.condition->info.guid << ";\n";
+            dumpToDOTRecursive(os, node->loop_while.condition);
+            if (node->loop_while.block)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->loop_while.block->info.guid << ";\n";
+                dumpToDOTRecursive(os, node->loop_while.block);
+            }
+        } break;
+
+        case NT_LOOP_UNTIL: {
+            os << "N" << node->info.guid << "[label = \"repeat\"]\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->loop_until.condition->info.guid << ";\n";
+            dumpToDOTRecursive(os, node->loop_until.condition);
+            if (node->loop_until.block)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->loop_until.block->info.guid << ";\n";
+                dumpToDOTRecursive(os, node->loop_until.block);
             }
         } break;
 
@@ -183,6 +216,8 @@ node_t* newOpPow(node_t* left, node_t* right)   { return newOp(left, right, OP_P
 node_t* newOpMod(node_t* left, node_t* right)   { return newOp(left, right, OP_MOD); }
 node_t* newOpComma(node_t* left, node_t* right) { return newOp(left, right, OP_COMMA); }
 node_t* newOpEq(node_t* left, node_t* right) { return newOp(left, right, OP_EQ); }
+node_t* newOpGt(node_t* left, node_t* right) { return newOp(left, right, OP_GT); }
+node_t* newOpLe(node_t* left, node_t* right) { return newOp(left, right, OP_LE); }
 
 // ----------------------------------------------------------------------------
 static node_t* newSymbol(const char* name, node_t* literal, node_t* arglist, SymbolType type)
@@ -279,6 +314,71 @@ node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch)
     paths->branch_paths.is_true = true_branch;
     paths->branch_paths.is_false = false_branch;
     return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newLoop(node_t* block)
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_LOOP);
+    node->loop._padding = nullptr;
+    node->loop.block = block;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newLoopWhile(node_t* condition, node_t* block)
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_LOOP_WHILE);
+    node->loop_while.condition = condition;
+    node->loop_while.block = block;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newLoopUntil(node_t* condition, node_t* block)
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_LOOP_UNTIL);
+    node->loop_while.condition = condition;
+    node->loop_while.block = block;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* stepExpr, node_t* nextSymbol, node_t* block)
+{
+    assert(symbol->info.type == NT_SYMBOL_REF);
+
+    // We need a few copies of the symbol
+    node_t* symbolRef1 = newSymbolRef(symbol->symbol_ref.name, nullptr, symbol->symbol_ref.type);
+    node_t* symbolRef2 = newSymbolRef(symbol->symbol_ref.name, nullptr, symbol->symbol_ref.type);
+    node_t* symbolRef3 = newSymbolRef(symbol->symbol_ref.name, nullptr, symbol->symbol_ref.type);
+
+    node_t* loopInit = newAssignment(symbol, startExpr);
+
+    if (stepExpr == nullptr)
+        stepExpr = newIntegerConstant(1);
+
+    node_t* addStepExpr = newOpAdd(symbolRef2, stepExpr);
+    node_t* addStepStmnt = newAssignment(symbolRef3, addStepExpr);
+    node_t* loopBody = appendStatementToBlock(block, addStepStmnt);
+
+    node_t* exitCondition = newOpLe(symbolRef1, endExpr);
+    node_t* loopWithInc = newLoopWhile(exitCondition, loopBody);
+    node_t* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr));
+
+    return loop;
 }
 
 // ----------------------------------------------------------------------------

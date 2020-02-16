@@ -138,9 +138,6 @@ TEST_F(NAME, multi_line_if_elseif_else_nested)
         "    baz1()\n"
         "    baz2()\n"
         "endif\n"), IsTrue());
-
-    std::ofstream out("out.dot");
-    ast::dumpToDOT(out, driver->getAST());
 }
 
 TEST_F(NAME, empty_multi_line_if_elseif_else_nested)

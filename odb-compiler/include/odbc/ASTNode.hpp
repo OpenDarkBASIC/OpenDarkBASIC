@@ -14,6 +14,9 @@ enum NodeType
     NT_OP,
     NT_BRANCH,
     NT_BRANCH_PATHS,
+    NT_LOOP,
+    NT_LOOP_WHILE,
+    NT_LOOP_UNTIL,
     NT_SYMBOL,
     NT_SYMBOL_REF,
     NT_LITERAL
@@ -147,9 +150,23 @@ union node_t {
     struct loop_t
     {
         info_t info;
-        node_t* condition;
+        node_t* _padding;
         node_t* block;
     } loop;
+
+    struct loop_while_t
+    {
+        info_t info;
+        node_t* condition;
+        node_t* block;
+    } loop_while;
+
+    struct loop_until_t
+    {
+        info_t info;
+        node_t* condition;
+        node_t* block;
+    } loop_until;
 
     struct symbol_t
     {
@@ -191,6 +208,8 @@ node_t* newOpPow(node_t* left, node_t* right);
 node_t* newOpMod(node_t* left, node_t* right);
 node_t* newOpComma(node_t* left, node_t* right);
 node_t* newOpEq(node_t* left, node_t* right);
+node_t* newOpGt(node_t* left, node_t* right);
+node_t* newOpLe(node_t* left, node_t* right);
 
 node_t* newUnknownSymbol(const char* symbolName, node_t* literal);
 node_t* newBooleanSymbol(const char* symbolName, node_t* literal);
@@ -214,6 +233,11 @@ node_t* newStringConstant(const char* value);
 node_t* newAssignment(node_t* symbol, node_t* statement);
 
 node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
+
+node_t* newLoop(node_t* block);
+node_t* newLoopWhile(node_t* condition, node_t* block);
+node_t* newLoopUntil(node_t* condition, node_t* block);
+node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* stepExpr, node_t* nextSymbol, node_t* block);
 
 node_t* newBlock(node_t* expr, node_t* next);
 node_t* appendStatementToBlock(node_t* block, node_t* expr);

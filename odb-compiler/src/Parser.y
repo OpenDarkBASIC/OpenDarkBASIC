@@ -89,10 +89,10 @@
 %token LT GT LE GE NE EQ OR AND NOT;
 
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
-%token WHILE ENDWHILE
-%token FOR NEXT
+%token WHILE ENDWHILE REPEAT UNTIL DO LOOP
+%token FOR TO STEP NEXT
 %token FUNCTION ENDFUNCTION
-%token RETURN
+%token GOSUB RETURN
 
 %token<symbol> SYMBOL SYMBOL_FLOAT SYMBOL_STRING;
 
@@ -102,13 +102,19 @@
 %type<node> constant_literal;
 %type<node> expr;
 %type<node> variable_declaration;
-%type<node> variable_reference;
+%type<node> variable_ref;
 %type<node> variable_assignment;
 %type<node> function_call;
 %type<node> conditional;
 %type<node> conditional_singleline;
 %type<node> conditional_begin;
 %type<node> conditional_next;
+%type<node> loop;
+%type<node> loop_do;
+%type<node> loop_while;
+%type<node> loop_until;
+%type<node> loop_for;
+%type<node> loop_for_next;
 
 /* precedence rules */
 %nonassoc NO_ELSE
@@ -142,9 +148,10 @@ stmnt
   | constant_declaration                         { $$ = $1; }
   | function_call                                { $$ = $1; }
   | conditional                                  { $$ = $1; }
+  | loop                                         { $$ = $1; }
   ;
 variable_assignment
-  : variable_reference EQ expr                   { $$ = ast::newAssignment($1, $3); }
+  : variable_ref EQ expr                   { $$ = ast::newAssignment($1, $3); }
   ;
 expr
   : expr ADD expr                                { $$ = ast::newOpAdd($1, $3); }
@@ -157,7 +164,7 @@ expr
   | expr COMMA expr                              { $$ = ast::newOpComma($1, $3); }
   | expr EQ expr                                 { $$ = ast::newOpEq($1, $3); }
   | constant_literal                             { $$ = $1; }
-  | variable_reference                           { $$ = $1; }
+  | variable_ref                                 { $$ = $1; }
   | function_call                                { $$ = $1; }
   ;
 constant_declaration
@@ -185,7 +192,7 @@ variable_declaration
   | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbol($1, nullptr); free($1); }
   | SYMBOL_STRING                                { $$ = ast::newStringSymbol($1, nullptr); free($1); }
   ;
-variable_reference
+variable_ref
   : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); free($1); }
   | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbolRef($1); free($1); }
   | SYMBOL_STRING                                { $$ = ast::newStringSymbolRef($1); free($1); }
@@ -213,6 +220,34 @@ conditional_next
   | ELSE TERM ENDIF                              { $$ = nullptr; }
   | ELSEIF expr TERM conditional_next            { $$ = ast::newBranch($2, nullptr, $4); }
   | ELSEIF expr TERM stmnts TERM conditional_next { $$ = ast::newBranch($2, $4, $6); }
+  ;
+loop
+  : loop_do                                      { $$ = $1; }
+  | loop_while                                   { $$ = $1; }
+  | loop_until                                   { $$ = $1; }
+  | loop_for                                     { $$ = $1; }
+  ;
+loop_do
+  : DO TERM stmnts TERM LOOP                     { $$ = ast::newLoop($3); }
+  | DO TERM LOOP                                 { $$ = ast::newLoop(nullptr); }
+  ;
+loop_while
+  : WHILE expr TERM stmnts TERM ENDWHILE         { $$ = ast::newLoopWhile($2, $4); }
+  | WHILE expr TERM ENDWHILE                     { $$ = ast::newLoopWhile($2, nullptr); }
+  ;
+loop_until
+  : REPEAT TERM stmnts TERM UNTIL expr           { $$ = ast::newLoopUntil($6, $3); }
+  | REPEAT TERM UNTIL expr                       { $$ = ast::newLoopUntil($4, nullptr); }
+  ;
+loop_for
+  : FOR variable_ref EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
+  | FOR variable_ref EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
+  | FOR variable_ref EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
+  | FOR variable_ref EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
+  ;
+loop_for_next
+  : NEXT                                         { $$ = nullptr; }
+  | NEXT variable_ref                            { $$ = $2; }
   ;
 %%
 

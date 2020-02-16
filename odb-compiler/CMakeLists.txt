@@ -68,6 +68,10 @@ if (${ODBC_TESTS})
         "tests/src/test_ast_conditional.cpp"
         "tests/src/test_ast_constant.cpp"
         "tests/src/test_ast_function_call.cpp"
+        "tests/src/test_ast_loop_do.cpp"
+        "tests/src/test_ast_loop_for.cpp"
+        "tests/src/test_ast_loop_repeat.cpp"
+        "tests/src/test_ast_loop_while.cpp"
         "tests/src/test_ast_op_add.cpp"
         "tests/src/test_ast_remarks.cpp")
     target_link_libraries (odbc_tests
