@@ -75,7 +75,7 @@
 
 /* Define the semantic types of our grammar. %token for TERMINALS and %type for non_terminals */
 %token END 0 "end of file"
-%token END_STATEMENT
+%token TERM
 
 %token CONSTANT
 
@@ -84,63 +84,84 @@
 %token<float_value> FLOAT "float";
 %token<string_literal> STRING_LITERAL "string";
 
-%token ADD SUB MUL DIV POW MOD LB RB;
+%token ADD SUB MUL DIV POW MOD LB RB COMMA;
 %token BSHL BSHR BOR BAND BXOR BNOT;
 %token LT GT LE GE NE EQ OR AND NOT;
 
-%token<symbol> SYMBOL;
+%token IF THEN ELSE ELSEIF NO_ELSE ENDIF
+%token WHILE ENDWHILE
+%token FOR NEXT
+%token FUNCTION ENDFUNCTION
+%token RETURN
 
-%type<node> statements;
-%type<node> statement;
+%token<symbol> SYMBOL SYMBOL_FLOAT SYMBOL_STRING;
+
+%type<node> stmnts;
+%type<node> stmnt;
 %type<node> constant_declaration;
 %type<node> constant_literal;
+%type<node> expr;
+%type<node> variable_declaration;
+%type<node> variable_reference;
 %type<node> variable_assignment;
-%type<node> expression;
-%type<node> symbol_declaration;
-%type<node> symbol_reference;
+%type<node> function_call;
+%type<node> conditional;
+%type<node> conditional_singleline;
+%type<node> conditional_begin;
+%type<node> conditional_next;
 
 /* precedence rules */
+%nonassoc NO_ELSE
+%nonassoc ELSE ELSEIF
+%left COMMA
 %left EQ
 %left ADD SUB
 %left MUL DIV
 %left POW MOD
+%right NOT
 %left LB RB
 
 %destructor { free($$); } <string_literal>
 %destructor { free($$); } <symbol>
-%destructor { ast::freeNode($$); } <node>
+%destructor { ast::freeNodeRecursive($$); } <node>
 
 %start program
 
 %%
 program
-  : statements                                   { driver->appendBlock($1); }
+  : stmnts                                       { driver->appendBlock($1); }
+  | stmnts TERM                                  { driver->appendBlock($1); }
   | END
   ;
-statements
-  : statements statement                         { $$ = ast::appendStatementToBlock($1, $2); }
-  | statement                                    { $$ = ast::newStatementBlock($1); }
+stmnts
+  : stmnts TERM stmnt                            { $$ = ast::appendStatementToBlock($1, $3); }
+  | stmnt                                        { $$ = ast::newBlock($1, nullptr); }
   ;
-statement
+stmnt
   : variable_assignment                          { $$ = $1; }
   | constant_declaration                         { $$ = $1; }
+  | function_call                                { $$ = $1; }
+  | conditional                                  { $$ = $1; }
   ;
 variable_assignment
-  : symbol_reference EQ expression END_STATEMENT { $$ = ast::newAssignment($1, $3); }
+  : variable_reference EQ expr                   { $$ = ast::newAssignment($1, $3); }
   ;
-expression
-  : expression ADD expression                    { $$ = ast::newOpAdd($1, $3); }
-  | expression SUB expression                    { $$ = ast::newOpSub($1, $3); }
-  | expression MUL expression                    { $$ = ast::newOpMul($1, $3); }
-  | expression DIV expression                    { $$ = ast::newOpDiv($1, $3); }
-  | expression POW expression                    { $$ = ast::newOpPow($1, $3); }
-  | expression MOD expression                    { $$ = ast::newOpMod($1, $3); }
-  | LB expression RB                             { $$ = $2; }
+expr
+  : expr ADD expr                                { $$ = ast::newOpAdd($1, $3); }
+  | expr SUB expr                                { $$ = ast::newOpSub($1, $3); }
+  | expr MUL expr                                { $$ = ast::newOpMul($1, $3); }
+  | expr DIV expr                                { $$ = ast::newOpDiv($1, $3); }
+  | expr POW expr                                { $$ = ast::newOpPow($1, $3); }
+  | expr MOD expr                                { $$ = ast::newOpMod($1, $3); }
+  | LB expr RB                                   { $$ = $2; }
+  | expr COMMA expr                              { $$ = ast::newOpComma($1, $3); }
+  | expr EQ expr                                 { $$ = ast::newOpEq($1, $3); }
   | constant_literal                             { $$ = $1; }
-  | symbol_reference                             { $$ = $1; }
+  | variable_reference                           { $$ = $1; }
+  | function_call                                { $$ = $1; }
   ;
 constant_declaration
-  : CONSTANT symbol_declaration constant_literal END_STATEMENT {
+  : CONSTANT variable_declaration constant_literal {
         $$ = $2;
         $2->symbol.literal = $3;
         switch ($3->literal.type)
@@ -159,11 +180,39 @@ constant_literal
   | FLOAT                                        { $$ = ast::newFloatConstant($1); }
   | STRING_LITERAL                               { $$ = ast::newStringConstant($1); free($1); }
   ;
-symbol_declaration
-  : SYMBOL                                       { $$ = ast::newUnknownSymbol($1); }
+variable_declaration
+  : SYMBOL                                       { $$ = ast::newUnknownSymbol($1, nullptr); free($1); }
+  | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbol($1, nullptr); free($1); }
+  | SYMBOL_STRING                                { $$ = ast::newStringSymbol($1, nullptr); free($1); }
   ;
-symbol_reference
-  : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); }
+variable_reference
+  : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); free($1); }
+  | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbolRef($1); free($1); }
+  | SYMBOL_STRING                                { $$ = ast::newStringSymbolRef($1); free($1); }
+  ;
+function_call
+  : SYMBOL LB expr RB                            { $$ = ast::newFunctionSymbolRef($1, $3); free($1); }
+  | SYMBOL LB RB                                 { $$ = ast::newFunctionSymbolRef($1, nullptr); free($1); }
+  ;
+conditional
+  : conditional_singleline                       { $$ = $1; }
+  | conditional_begin                            { $$ = $1; }
+  ;
+conditional_singleline
+  : IF expr THEN stmnt %prec NO_ELSE             { $$ = ast::newBranch($2, $4, nullptr); }
+  | IF expr THEN stmnt ELSE stmnt                { $$ = ast::newBranch($2, $4, $6); }
+  | IF expr THEN ELSE stmnt                      { $$ = ast::newBranch($2, nullptr, $5); }
+  ;
+conditional_begin
+  : IF expr TERM conditional_next                { $$ = ast::newBranch($2, nullptr, $4); }
+  | IF expr TERM stmnts TERM conditional_next    { $$ = ast::newBranch($2, $4, $6); }
+  ;
+conditional_next
+  : ENDIF                                        { $$ = nullptr; }
+  | ELSE TERM stmnts TERM ENDIF                  { $$ = $3; }
+  | ELSE TERM ENDIF                              { $$ = nullptr; }
+  | ELSEIF expr TERM conditional_next            { $$ = ast::newBranch($2, nullptr, $4); }
+  | ELSEIF expr TERM stmnts TERM conditional_next { $$ = ast::newBranch($2, $4, $6); }
   ;
 %%
 

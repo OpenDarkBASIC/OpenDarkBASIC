@@ -36,11 +36,11 @@ bison_target (ODBCParser
     "${PROJECT_SOURCE_DIR}/src/Parser.y"
     "${PROJECT_BINARY_DIR}/src/Parser.y.cpp"
     DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/Parser.y.h")
-flex_target (ODBCLexer
+flex_target (ODBCScanner
     "${PROJECT_SOURCE_DIR}/src/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/Scanner.lex.cpp"
     DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/Scanner.lex.h")
-add_flex_bison_dependency (ODBCLexer ODBCParser)
+add_flex_bison_dependency (ODBCScanner ODBCParser)
 
 ###############################################################################
 # Library definition
@@ -48,20 +48,14 @@ add_flex_bison_dependency (ODBCLexer ODBCParser)
 
 add_library (odbc ${ODBC_LIB_TYPE}
     ${BISON_ODBCParser_OUTPUTS}
-    ${FLEX_ODBCLexer_OUTPUTS}
+    ${FLEX_ODBCScanner_OUTPUTS}
     "src/ASTNode.cpp"
     "src/Driver.cpp")
 target_include_directories (odbc
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    PRIVATE
-        # Seems to be a bug with bison. The generated Parser.yy.cpp file is
-        # trying to include "Parser.yy.hpp" instead of "odbc/Parser.yy.hpp"
-        # Don't know how to fix it properly so give it the search path it
-        # wants.
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include/odbc>)
+        $<INSTALL_INTERFACE:include>)
 target_compile_definitions (odbc
     PRIVATE
         ODBC_BUILDING)
@@ -71,9 +65,11 @@ target_compile_options (odbc
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
-        "tests/src/test_constant.cpp"
-        "tests/src/test_op_binary.cpp"
-        "tests/src/test_remarks.cpp")
+        "tests/src/test_ast_conditional.cpp"
+        "tests/src/test_ast_constant.cpp"
+        "tests/src/test_ast_function_call.cpp"
+        "tests/src/test_ast_op_add.cpp"
+        "tests/src/test_ast_remarks.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbc

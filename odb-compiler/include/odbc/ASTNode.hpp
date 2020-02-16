@@ -12,6 +12,8 @@ enum NodeType
     NT_BLOCK,
     NT_ASSIGNMENT,
     NT_OP,
+    NT_BRANCH,
+    NT_BRANCH_PATHS,
     NT_SYMBOL,
     NT_SYMBOL_REF,
     NT_LITERAL
@@ -42,7 +44,8 @@ enum Operation
     OP_OR,
     OP_AND,
     OP_XOR,
-    OP_NOT
+    OP_NOT,
+    OP_COMMA
 };
 
 /*!
@@ -65,8 +68,10 @@ enum SymbolType
     ST_INTEGER,
     ST_FLOAT,
     ST_STRING,
-    ST_FUNCTION,
-    ST_SUBROUTINE,
+    ST_FUNC_DECL,
+    ST_FUNC_CALL,
+    ST_LABEL_DECL,
+    ST_LABEL_REF,
     ST_COMMAND
 };
 
@@ -78,6 +83,14 @@ enum LiteralType
     LT_STRING
 };
 
+union literal_value_t
+{
+    bool b;
+    int32_t i;
+    double f;
+    char* s;
+};
+
 union node_t {
     struct info_t
     {
@@ -87,12 +100,12 @@ union node_t {
 #endif
     } info;
 
-    struct nonterminal_t
+    struct base_t
     {
         info_t info;
         node_t* left;
         node_t* right;
-    } nonterminal;
+    } base;
 
     struct block_t
     {
@@ -117,6 +130,27 @@ union node_t {
         Operation operation;
     } op;
 
+    struct branch_paths_t
+    {
+        info_t info;
+        node_t* is_true;
+        node_t* is_false;
+    } branch_paths;
+
+    struct branch_t
+    {
+        info_t info;
+        node_t* condition;
+        node_t* paths;
+    } branch;
+
+    struct loop_t
+    {
+        info_t info;
+        node_t* condition;
+        node_t* block;
+    } loop;
+
     struct symbol_t
     {
         info_t info;
@@ -126,11 +160,11 @@ union node_t {
         SymbolType type;
     } symbol;
 
-    // terminal nodes ---------------------------------------------------------
-
     struct symbol_ref_t
     {
         info_t info;
+        node_t* _padding;
+        node_t* arglist;
         char* name;
         SymbolType type;
     } symbol_ref;
@@ -138,13 +172,10 @@ union node_t {
     struct literal_t
     {
         info_t info;
+        node_t* _padding1;
+        node_t* _padding2;
         LiteralType type;
-        union {
-            bool b;
-            int32_t i;
-            double f;
-            char* s;
-        } value;
+        literal_value_t value;
     } literal;
 };
 
@@ -158,18 +189,22 @@ node_t* newOpMul(node_t* left, node_t* right);
 node_t* newOpDiv(node_t* left, node_t* right);
 node_t* newOpPow(node_t* left, node_t* right);
 node_t* newOpMod(node_t* left, node_t* right);
+node_t* newOpComma(node_t* left, node_t* right);
+node_t* newOpEq(node_t* left, node_t* right);
 
-node_t* newUnknownSymbol(const char* symbolName);
-node_t* newBooleanSymbol(const char* symbolName);
-node_t* newIntegerSymbol(const char* symbolName);
-node_t* newFloatSymbol(const char* symbolName);
-node_t* newStringSymbol(const char* symbolName);
+node_t* newUnknownSymbol(const char* symbolName, node_t* literal);
+node_t* newBooleanSymbol(const char* symbolName, node_t* literal);
+node_t* newIntegerSymbol(const char* symbolName, node_t* literal);
+node_t* newFloatSymbol(const char* symbolName, node_t* literal);
+node_t* newStringSymbol(const char* symbolName, node_t* literal);
+node_t* newFunctionSymbol(const char* symbolName, node_t* literal, node_t* arglist);
 
 node_t* newUnknownSymbolRef(const char* symbolName);
 node_t* newBooleanSymbolRef(const char* symbolName);
 node_t* newIntegerSymbolRef(const char* symbolName);
 node_t* newFloatSymbolRef(const char* symbolName);
 node_t* newStringSymbolRef(const char* symbolName);
+node_t* newFunctionSymbolRef(const char* symbolName, node_t* arglist);
 
 node_t* newBooleanConstant(bool value);
 node_t* newIntegerConstant(int32_t value);
@@ -178,14 +213,14 @@ node_t* newStringConstant(const char* value);
 
 node_t* newAssignment(node_t* symbol, node_t* statement);
 
-node_t* newStatementBlock(node_t* expr);
+node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
+
+node_t* newBlock(node_t* expr, node_t* next);
 node_t* appendStatementToBlock(node_t* block, node_t* expr);
 node_t* prependStatementToBlock(node_t* block, node_t* expr);
 
 void freeNode(node_t* node);
 void freeNodeRecursive(node_t* root=nullptr);
-
-bool isTerminal(node_t* node);
 
 }
 }

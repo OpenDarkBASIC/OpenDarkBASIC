@@ -1,8 +1,9 @@
 #include <gmock/gmock.h>
 #include "odbc/Driver.hpp"
 #include "odbc/ASTNode.hpp"
-#define NAME remark
 #include <fstream>
+
+#define NAME ast_remark
 
 using namespace testing;
 

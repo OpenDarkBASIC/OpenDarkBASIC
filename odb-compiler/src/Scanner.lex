@@ -2,6 +2,14 @@
     #include "odbc/Parser.y.h"
 
     #define dbg(text) printf(text ": \"%s\"\n", yytext)
+
+    static char* strdup_range(const char* src, int beg, int end)
+    {
+        char* result = (char*)malloc(end - beg + 1);
+        strncpy(result, src + beg, end - beg);
+        result[end - beg] = '\0';
+        return result;
+    }
 %}
 
 %option nodefault
@@ -32,6 +40,8 @@ INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0x[0-9a-fA-F]+
 INTEGER         -?[0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
+SYMBOL_FLOAT    {SYMBOL}#
+SYMBOL_STRING   {SYMBOL}\$
 
 %%
 
@@ -41,14 +51,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 {BOOL_TRUE}         { dbg("bool"); yylval->boolean_value = true; return TOK_BOOLEAN; }
 {BOOL_FALSE}        { dbg("bool"); yylval->boolean_value = false; return TOK_BOOLEAN; }
-{STRING_LITERAL}    {
-                        dbg("string literal");
-                        int len = strlen(yytext);
-                        yylval->string_literal = (char*)malloc(len - 2 + 1);
-                        memcpy(yylval->string_literal, &yytext[1], len - 2);
-                        yylval->string_literal[len - 2] = '\0';
-                        return TOK_STRING_LITERAL;
-                    }
+{STRING_LITERAL}    { dbg("string literal"); yylval->string_literal = strdup_range(yytext, 1, strlen(yytext) - 1); return TOK_STRING_LITERAL; }
 {FLOAT}             { dbg("float"); yylval->float_value = atof(yytext); return TOK_FLOAT; }
 {INTEGER_BASE2}     { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER; }
 {INTEGER_BASE16}    { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER; }
@@ -62,6 +65,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 "^"                 { dbg("pow"); return TOK_POW; }
 "("                 { dbg("lb"); return TOK_LB; }
 ")"                 { dbg("rb"); return TOK_RB; }
+","                 { dbg("comma"); return TOK_COMMA;}
 
 "<<"                { dbg("bshl"); return TOK_BSHL; }
 ">>"                { dbg("bshr"); return TOK_BSHR; }
@@ -80,8 +84,22 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?i:and)            { dbg("and"); return TOK_AND; }
 (?i:not)            { dbg("not"); return TOK_NOT; }
 
-{SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
+(?:then)            { dbg("then"); return TOK_THEN; }
+(?:endif)           { dbg("endif"); return TOK_ENDIF; }
+(?:elseif)          { dbg("elseif"); return TOK_ELSEIF; }
+(?:if)              { dbg("if"); return TOK_IF; }
+(?:else)            { dbg("else"); return TOK_ELSE; }
+(?:endwhile)        { dbg("endwhile"); return TOK_ENDWHILE; }
+(?:while)           { dbg("while"); return TOK_WHILE; }
+(?:for)             { dbg("for"); return TOK_FOR; }
+(?:next)            { dbg("next"); return TOK_NEXT; }
+(?:endfunction)     { dbg("endfunction"); return TOK_ENDFUNCTION; }
+(?:function)        { dbg("function"); return TOK_FUNCTION; }
 
-[\n:]               { dbg("end statement"); return TOK_END_STATEMENT; }
+{SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
+{SYMBOL_FLOAT}      { dbg("symbol (float)"); yylval->symbol = strdup_range(yytext, 0, strlen(yytext) - 1); return TOK_SYMBOL_FLOAT; }
+{SYMBOL_STRING}     { dbg("symbol (string)"); yylval->symbol = strdup_range(yytext, 0, strlen(yytext) - 1); return TOK_SYMBOL_STRING; }
+
+[\n:]               { dbg("term"); return TOK_TERM; }
 .                   {}
 %%
