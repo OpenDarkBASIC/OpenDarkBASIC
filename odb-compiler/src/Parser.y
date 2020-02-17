@@ -7,9 +7,8 @@
     #include <stdarg.h>
 
     void yyerror(YYLTYPE *locp, yyscan_t scanner, const char* msg, ...);
-    odbc::Driver* getDriver(yyscan_t scanner);
 
-    #define driver getDriver(scanner)
+    #define driver (static_cast<odbc::Driver*>(yyget_extra(scanner)))
     #define error(x, ...) yyerror(yypushed_loc, scanner, x, __VA_ARGS__)
 
     using namespace odbc;
@@ -67,6 +66,7 @@
     double float_value;
     char* string_literal;
     char* symbol;
+    char symbol_type;
 
     odbc::ast::node_t* node;
 }
@@ -91,17 +91,19 @@
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
 %token WHILE ENDWHILE REPEAT UNTIL DO LOOP
 %token FOR TO STEP NEXT
-%token FUNCTION ENDFUNCTION
+%token FUNCTION EXITFUNCTION ENDFUNCTION
 %token GOSUB RETURN
 
-%token<symbol> SYMBOL SYMBOL_FLOAT SYMBOL_STRING;
+%token<symbol> SYMBOL;
+%token<symbol_type> SYMBOL_TYPE;
+%token NO_SYMBOL_TYPE;
 
 %type<node> stmnts;
 %type<node> stmnt;
 %type<node> constant_declaration;
-%type<node> constant_literal;
+%type<node> literal;
 %type<node> expr;
-%type<node> variable_declaration;
+%type<node> variable_decl;
 %type<node> variable_ref;
 %type<node> variable_assignment;
 %type<node> function_call;
@@ -151,7 +153,7 @@ stmnt
   | loop                                         { $$ = $1; }
   ;
 variable_assignment
-  : variable_ref EQ expr                   { $$ = ast::newAssignment($1, $3); }
+  : variable_ref EQ expr                         { $$ = ast::newAssignment($1, $3); }
   ;
 expr
   : expr ADD expr                                { $$ = ast::newOpAdd($1, $3); }
@@ -163,12 +165,12 @@ expr
   | LB expr RB                                   { $$ = $2; }
   | expr COMMA expr                              { $$ = ast::newOpComma($1, $3); }
   | expr EQ expr                                 { $$ = ast::newOpEq($1, $3); }
-  | constant_literal                             { $$ = $1; }
+  | literal                                      { $$ = $1; }
   | variable_ref                                 { $$ = $1; }
   | function_call                                { $$ = $1; }
   ;
 constant_declaration
-  : CONSTANT variable_declaration constant_literal {
+  : CONSTANT variable_decl literal {
         $$ = $2;
         $2->symbol.literal = $3;
         switch ($3->literal.type)
@@ -181,16 +183,33 @@ constant_declaration
         }
     }
   ;
-constant_literal
+literal
   : BOOLEAN                                      { $$ = ast::newBooleanConstant($1); }
   | INTEGER                                      { $$ = ast::newIntegerConstant($1); }
   | FLOAT                                        { $$ = ast::newFloatConstant($1); }
   | STRING_LITERAL                               { $$ = ast::newStringConstant($1); free($1); }
   ;
-variable_declaration
-  : SYMBOL                                       { $$ = ast::newUnknownSymbol($1, nullptr); free($1); }
-  | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbol($1, nullptr); free($1); }
-  | SYMBOL_STRING                                { $$ = ast::newStringSymbol($1, nullptr); free($1); }
+variable_decl
+  :
+  ;
+symbol
+  : SYMBOL SYMBOL_TYPE LB expr RB {
+        if ($2 == '#')
+            $$ = ast::newFloatSymbol($1, $4);
+        else if ($2 == '$')
+            $$ = ast::newStringSymbol($1, $4);
+        free($1);
+    }
+  | SYMBOL SYMBOL_TYPE {
+        if ($2 == '#')
+            $$ = ast::newFloatSymbol($1, nullptr);
+        else if ($2 == '$')
+            $$ = ast::newStringSymbol($1, nullptr);
+        free($1);
+    }
+  | SYMBOL {
+        $$ = ast::newUnknownSymbol($1, nullptr); free($1);
+    }
   ;
 variable_ref
   : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); free($1); }
@@ -259,9 +278,4 @@ void yyerror(YYLTYPE *locp, yyscan_t scanner, const char* fmt, ...)
     vprintf(fmt, args);
     va_end(args);
     printf("\n");
-}
-
-odbc::Driver* getDriver(yyscan_t scanner)
-{
-    return static_cast<odbc::Driver*>(yyget_extra(scanner));
 }

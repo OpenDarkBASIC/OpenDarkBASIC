@@ -120,7 +120,7 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
                 dumpToDOTRecursive(os, node->symbol.arglist);
             }
 
-            os << "N" << node->info.guid << " [shape=record, label=\"{";
+            os << "N" << node->info.guid << " [shape=record, label=\"";
             switch (node->symbol.type)
             {
                 case ST_UNKNOWN    : os << "(unknown)";  break;
@@ -279,9 +279,9 @@ static node_t* newConstant(LiteralType type, literal_value_t value)
 }
 
 node_t* newBooleanConstant(bool b)       { literal_value_t value; value.b = b;         return newConstant(LT_BOOLEAN, value); }
-node_t* newIntegerConstant(int32_t i)    { literal_value_t value; value.i = i;         return newConstant(LT_INTEGER, value); }
-node_t* newFloatConstant(double f)       { literal_value_t value; value.f = f;         return newConstant(LT_FLOAT, value); }
-node_t* newStringConstant(const char* s) { literal_value_t value; value.s = strdup(s); return newConstant(LT_STRING, value); }
+node_t* newIntegerLiteral(int32_t i)    { literal_value_t value; value.i = i;         return newConstant(LT_INTEGER, value); }
+node_t* newFloatLiteral(double f)       { literal_value_t value; value.f = f;         return newConstant(LT_FLOAT, value); }
+node_t* newStringLiteral(const char* s) { literal_value_t value; value.s = strdup(s); return newConstant(LT_STRING, value); }
 
 // ----------------------------------------------------------------------------
 node_t* newAssignment(node_t* symbol, node_t* statement)
@@ -368,7 +368,7 @@ node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* s
     node_t* loopInit = newAssignment(symbol, startExpr);
 
     if (stepExpr == nullptr)
-        stepExpr = newIntegerConstant(1);
+        stepExpr = newIntegerLiteral(1);
 
     node_t* addStepExpr = newOpAdd(symbolRef2, stepExpr);
     node_t* addStepStmnt = newAssignment(symbolRef3, addStepExpr);

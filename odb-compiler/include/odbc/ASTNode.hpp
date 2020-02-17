@@ -64,13 +64,20 @@ enum Operation
  * parsing. During parsing we just store these facts for later. This is why we
  * have enums for both SymbolType and LiteralType.
  */
-enum SymbolType
+enum SymbolRetType
 {
     ST_UNKNOWN,
     ST_BOOLEAN,
     ST_INTEGER,
     ST_FLOAT,
     ST_STRING,
+};
+
+enum SymbolType
+{
+    ST_CONSTANT,
+    ST_VARIABLE,
+    ST_DIM,
     ST_FUNC_DECL,
     ST_FUNC_CALL,
     ST_LABEL_DECL,
@@ -226,9 +233,9 @@ node_t* newStringSymbolRef(const char* symbolName);
 node_t* newFunctionSymbolRef(const char* symbolName, node_t* arglist);
 
 node_t* newBooleanConstant(bool value);
-node_t* newIntegerConstant(int32_t value);
-node_t* newFloatConstant(double value);
-node_t* newStringConstant(const char* value);
+node_t* newIntegerLiteral(int32_t value);
+node_t* newFloatLiteral(double value);
+node_t* newStringLiteral(const char* value);
 
 node_t* newAssignment(node_t* symbol, node_t* statement);
 
@@ -248,3 +255,4 @@ void freeNodeRecursive(node_t* root=nullptr);
 
 }
 }
+

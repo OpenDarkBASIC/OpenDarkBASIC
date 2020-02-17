@@ -40,8 +40,7 @@ INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0x[0-9a-fA-F]+
 INTEGER         -?[0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
-SYMBOL_FLOAT    {SYMBOL}#
-SYMBOL_STRING   {SYMBOL}\$
+SYMBOL_TYPE     [$#]
 
 %%
 
@@ -103,8 +102,7 @@ SYMBOL_STRING   {SYMBOL}\$
 (?:function)        { dbg("function"); return TOK_FUNCTION; }
 
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
-{SYMBOL_FLOAT}      { dbg("symbol (float)"); yylval->symbol = strdup_range(yytext, 0, strlen(yytext) - 1); return TOK_SYMBOL_FLOAT; }
-{SYMBOL_STRING}     { dbg("symbol (string)"); yylval->symbol = strdup_range(yytext, 0, strlen(yytext) - 1); return TOK_SYMBOL_STRING; }
+{SYMBOL_TYPE}       { dbg("symbol type"); yylval->symbol_type = yytext[0]; return TOK_SYMBOL_TYPE; }
 
 [\n:]               { dbg("term"); return TOK_TERM; }
 .                   {}
