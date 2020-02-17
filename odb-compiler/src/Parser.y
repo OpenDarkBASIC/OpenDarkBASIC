@@ -93,6 +93,7 @@
 %token FOR TO STEP NEXT
 %token FUNCTION EXITFUNCTION ENDFUNCTION
 %token GOSUB RETURN
+%token DIM GLOBAL LOCAL AS
 
 %token<symbol> SYMBOL;
 %token DOLLAR HASH NO_SYMBOL_TYPE;
@@ -107,6 +108,8 @@
 %type<node> symbol_ref;
 %type<node> variable_assignment;
 %type<node> function_call;
+%type<node> dim_ref;
+%type<node> dim_decl;
 %type<node> conditional;
 %type<node> conditional_singleline;
 %type<node> conditional_begin;
@@ -148,12 +151,14 @@ stmnts
 stmnt
   : variable_assignment                          { $$ = $1; }
   | constant_declaration                         { $$ = $1; }
+  | dim_decl                                     { $$ = $1; }
   | function_call                                { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
 variable_assignment
   : symbol_ref EQ expr                           { $$ = newAssignment($1, $3); }
+  | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 expr
   : expr ADD expr                                { $$ = newOp($1, $3, OP_ADD); }
@@ -175,10 +180,10 @@ constant_declaration
         $2->symbol.literal = $3;
         switch ($3->literal.type)
         {
-            case LT_BOOLEAN : $2->symbol.flag.data_type = SDT_BOOLEAN; break;
-            case LT_INTEGER : $2->symbol.flag.data_type = SDT_INTEGER; break;
-            case LT_FLOAT   : $2->symbol.flag.data_type = SDT_FLOAT; break;
-            case LT_STRING  : $2->symbol.flag.data_type = SDT_STRING; break;
+            case LT_BOOLEAN : $2->symbol.flag.datatype = SDT_BOOLEAN; break;
+            case LT_INTEGER : $2->symbol.flag.datatype = SDT_INTEGER; break;
+            case LT_FLOAT   : $2->symbol.flag.datatype = SDT_FLOAT; break;
+            case LT_STRING  : $2->symbol.flag.datatype = SDT_STRING; break;
             default: break;
         }
     }
@@ -198,6 +203,21 @@ function_call
   | symbol LB RB {
         $$ = $1;
         $$->symbol.flag.type = ST_FUNC;
+    }
+  ;
+dim_decl
+  : DIM symbol LB expr RB {
+        $$ = $2;
+        $$->symbol.flag.type = ST_DIM;
+        $$->symbol.flag.declaration = SD_DECL;
+        $$->symbol.arglist = $4;
+    }
+  ;
+dim_ref
+  : symbol LB expr RB {
+        $$ = $1;
+        $$->symbol.flag.type = ST_DIM;
+        $$->symbol.arglist = $3;
     }
   ;
 symbol_decl

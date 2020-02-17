@@ -14,27 +14,27 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
     switch (node->info.type)
     {
         case NT_BLOCK: {
-            os << "N" << node->info.guid << " -> N" << node->block.statement->info.guid << ";\n";
+            os << "N" << node->info.guid << " -> N" << node->block.statement->info.guid << "[label=\"stmnt\"];\n";
             os << "N" << node->info.guid << "[label=\"block (" << node->info.guid << ")\"];\n";
             dumpToDOTRecursive(os, node->block.statement);
             if (node->block.next)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->block.next->info.guid << ";\n";
+                os << "N" << node->info.guid << " -> " << "N" << node->block.next->info.guid << "[label=\"next\"];\n";
                 dumpToDOTRecursive(os, node->block.next);
             }
         } break;
 
         case NT_ASSIGNMENT: {
-            os << "N" << node->info.guid << " -> " << "N" << node->assignment.symbol->info.guid << ";\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->assignment.statement->info.guid << ";\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->assignment.symbol->info.guid << "[label=\"symbol\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->assignment.statement->info.guid << "[label=\"expr\"];\n";
             os << "N" << node->info.guid << "[label=\"=\"];\n";
             dumpToDOTRecursive(os, node->assignment.symbol);
             dumpToDOTRecursive(os, node->assignment.statement);
         } break;
 
         case NT_OP: {
-            os << "N" << node->info.guid << " -> " << "N" << node->op.left->info.guid << ";\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->op.right->info.guid << ";\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->op.left->info.guid << "[label=\"left\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->op.right->info.guid << "[label=\"right\"];\n";
             os << "N" << node->info.guid << "[label=\"";
             switch (node->op.operation)
             {
@@ -58,11 +58,14 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
         } break;
 
         case NT_BRANCH: {
-            os << "N" << node->info.guid << " -> " << "N" << node->branch.condition->info.guid << ";\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->branch.paths->info.guid << ";\n";
             os << "N" << node->info.guid << "[label=\"if\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->branch.condition->info.guid << "[label=\"cond\"];\n";
             dumpToDOTRecursive(os, node->branch.condition);
-            dumpToDOTRecursive(os, node->branch.paths);
+            if (node->branch.paths)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->branch.paths->info.guid << "[label=\"paths\"];\n";
+                dumpToDOTRecursive(os, node->branch.paths);
+            }
         } break;
 
         case NT_BRANCH_PATHS: {
@@ -81,75 +84,90 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
 
         case NT_LOOP: {
             os << "N" << node->info.guid << "[label = \"loop\"]\n";
-            if (node->loop.block)
+            if (node->loop.body)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->loop.block->info.guid << ";\n";
-                dumpToDOTRecursive(os, node->loop.block);
+                os << "N" << node->info.guid << " -> " << "N" << node->loop.body->info.guid << "[label=\"body\"];\n";
+                dumpToDOTRecursive(os, node->loop.body);
             }
         } break;
 
         case NT_LOOP_WHILE: {
             os << "N" << node->info.guid << "[label = \"while\"]\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->loop_while.condition->info.guid << ";\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->loop_while.condition->info.guid << "[label=\"cond\"];\n";
             dumpToDOTRecursive(os, node->loop_while.condition);
-            if (node->loop_while.block)
+            if (node->loop_while.body)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->loop_while.block->info.guid << ";\n";
-                dumpToDOTRecursive(os, node->loop_while.block);
+                os << "N" << node->info.guid << " -> " << "N" << node->loop_while.body->info.guid << "[label=\"body\"];\n";
+                dumpToDOTRecursive(os, node->loop_while.body);
             }
         } break;
 
         case NT_LOOP_UNTIL: {
             os << "N" << node->info.guid << "[label = \"repeat\"]\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->loop_until.condition->info.guid << ";\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->loop_until.condition->info.guid << "[label=\"cond\"];\n";
             dumpToDOTRecursive(os, node->loop_until.condition);
-            if (node->loop_until.block)
+            if (node->loop_until.body)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->loop_until.block->info.guid << ";\n";
-                dumpToDOTRecursive(os, node->loop_until.block);
+                os << "N" << node->info.guid << " -> " << "N" << node->loop_until.body->info.guid << "[label=\"body\"];\n";
+                dumpToDOTRecursive(os, node->loop_until.body);
             }
         } break;
 
         case NT_SYMBOL: {
             if (node->symbol.literal)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->symbol.literal->info.guid << ";\n";
+                os << "N" << node->info.guid << " -> " << "N" << node->symbol.literal->info.guid << "[label=\"literal\"];\n";
                 dumpToDOTRecursive(os, node->symbol.literal);
             }
             if (node->symbol.arglist)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->symbol.arglist->info.guid << ";\n";
+                os << "N" << node->info.guid << " -> " << "N" << node->symbol.arglist->info.guid << " [label=\"arglist\"];\n";
                 dumpToDOTRecursive(os, node->symbol.arglist);
             }
 
-            os << "N" << node->info.guid << " [shape=record, label=\"";
+            os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->symbol.name << "\\\"|";
             switch (node->symbol.flag.type)
             {
-                case ST_UNKNOWN  : os << "(unknown)"; break;
-                case ST_CONSTANT : os << "constant";  break;
-                case ST_VARIABLE : os << "variable";  break;
-                case ST_DIM      : os << "dim";       break;
-                case ST_FUNC     : os << "func";      break;
-                case ST_LABEL    : os << "label";     break;
-                case ST_COMMAND  : os << "command";   break;
+#define X(name) case name : os << #name; break;
+                SYMBOL_TYPE_LIST
+#undef X
             }
-            os << " decl: \\\"" << node->symbol.name << "\\\"\"];\n";
+            switch (node->symbol.flag.datatype)
+            {
+#define X(name) case name : os << "|" #name; break;
+                SYMBOL_DATATYPE_LIST
+#undef X
+            }
+
+            switch (node->symbol.flag.scope)
+            {
+#define X(name) case name : os << "|" #name; break;
+                SYMBOL_SCOPE_LIST
+#undef X
+            }
+            switch (node->symbol.flag.declaration)
+            {
+#define X(name) case name : os << "|" #name; break;
+                SYMBOL_DECLARATION_LIST
+#undef X
+            }
+            os << "}\"];\n";
         } break;
 
         case NT_LITERAL: {
             switch (node->literal.type)
             {
                 case LT_BOOLEAN:
-                    os << "N" << node->info.guid << " [shape=record, label=\"" << (node->literal.value.b ? "true" : "false") << "\"];\n";
+                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << (node->literal.value.b ? "true" : "false") << "\\\" | LT_BOOLEAN}\"];\n";
                     break;
                 case LT_INTEGER:
-                    os << "N" << node->info.guid << " [shape=record, label=\"" << node->literal.value.i << "\"];\n";
+                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->literal.value.i << "\\\" | LT_INTEGER}\"];\n";
                     break;
                 case LT_FLOAT:
-                    os << "N" << node->info.guid << " [shape=record, label=\"" << node->literal.value.f << "\"];\n";
+                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->literal.value.f << "\\\" | LT_FLOAT}\"];\n";
                     break;
                 case LT_STRING:
-                    os << "N" << node->info.guid << " [shape=record, label=\"" << node->literal.value.s << "\"];\n";
+                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->literal.value.s << "\\\" | LT_STRING}\"];\n";
                     break;
             }
         } break;
@@ -197,7 +215,7 @@ node_t* newSymbol(const char* symbolName, node_t* literal, node_t* arglist,
     init_info(node, NT_SYMBOL);
     node->symbol.name = strdup(symbolName);
     node->symbol.flag.type = type;
-    node->symbol.flag.data_type = dataType;
+    node->symbol.flag.datatype = dataType;
     node->symbol.flag.scope = scope;
     node->symbol.flag.declaration = declaration;
     node->symbol.literal = literal;
@@ -297,22 +315,27 @@ node_t* newAssignment(node_t* symbol, node_t* statement)
 // ----------------------------------------------------------------------------
 node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
-    if (node == nullptr)
-        return nullptr;
-    node_t* paths = (node_t*)malloc(sizeof* paths);
-    if (paths == nullptr)
+    node_t* paths = nullptr;
+    if (true_branch || false_branch)
     {
-        free(node);
-        return nullptr;
+        paths = (node_t*)malloc(sizeof* paths);
+        if (paths == nullptr)
+            return nullptr;
+        init_info(paths, NT_BRANCH_PATHS);
+        paths->branch_paths.is_true = true_branch;
+        paths->branch_paths.is_false = false_branch;
     }
 
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+    {
+        freeNodeRecursive(paths);
+        return nullptr;
+    }
     init_info(node, NT_BRANCH);
-    init_info(paths, NT_BRANCH_PATHS);
+
     node->branch.condition = condition;
     node->branch.paths = paths;
-    paths->branch_paths.is_true = true_branch;
-    paths->branch_paths.is_false = false_branch;
     return node;
 }
 
@@ -325,7 +348,7 @@ node_t* newLoop(node_t* block)
 
     init_info(node, NT_LOOP);
     node->loop._padding = nullptr;
-    node->loop.block = block;
+    node->loop.body = block;
     return node;
 }
 
@@ -338,7 +361,7 @@ node_t* newLoopWhile(node_t* condition, node_t* block)
 
     init_info(node, NT_LOOP_WHILE);
     node->loop_while.condition = condition;
-    node->loop_while.block = block;
+    node->loop_while.body = block;
     return node;
 }
 
@@ -351,7 +374,7 @@ node_t* newLoopUntil(node_t* condition, node_t* block)
 
     init_info(node, NT_LOOP_UNTIL);
     node->loop_while.condition = condition;
-    node->loop_while.block = block;
+    node->loop_while.body = block;
     return node;
 }
 

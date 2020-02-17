@@ -25,7 +25,7 @@ TEST_F(NAME, bool_constant)
     ASSERT_THAT(block->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(block->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(block->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(block->block.statement->symbol.flag.data_type, Eq(ast::SDT_BOOLEAN));
+    ASSERT_THAT(block->block.statement->symbol.flag.datatype, Eq(ast::SDT_BOOLEAN));
     ASSERT_THAT(block->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(block->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(block->block.statement->symbol.name, StrEq("mybool1"));
@@ -37,7 +37,7 @@ TEST_F(NAME, bool_constant)
     ASSERT_THAT(block->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(block->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(block->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(block->block.statement->symbol.flag.data_type, Eq(ast::SDT_BOOLEAN));
+    ASSERT_THAT(block->block.statement->symbol.flag.datatype, Eq(ast::SDT_BOOLEAN));
     ASSERT_THAT(block->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(block->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(block->block.statement->symbol.name, StrEq("mybool2"));
@@ -53,7 +53,7 @@ TEST_F(NAME, integer_constant)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_INTEGER));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_INTEGER));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myint"));
@@ -69,7 +69,7 @@ TEST_F(NAME, float_constant)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -85,7 +85,7 @@ TEST_F(NAME, string_constant)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_STRING));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_STRING));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("mystring"));
@@ -112,7 +112,7 @@ TEST_F(NAME, float_1_notation)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -128,7 +128,7 @@ TEST_F(NAME, float_2_notation)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -144,7 +144,7 @@ TEST_F(NAME, float_3_notation)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -160,7 +160,7 @@ TEST_F(NAME, float_4_notation)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -176,7 +176,7 @@ TEST_F(NAME, float_exponential_notation_1)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -192,7 +192,7 @@ TEST_F(NAME, float_exponential_notation_2)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -208,7 +208,7 @@ TEST_F(NAME, float_exponential_notation_3)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
@@ -224,7 +224,7 @@ TEST_F(NAME, float_exponential_notation_4)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_CONSTANT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));

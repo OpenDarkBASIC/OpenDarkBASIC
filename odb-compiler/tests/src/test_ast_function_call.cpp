@@ -22,7 +22,7 @@ TEST_F(NAME, function_call_no_args)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_FUNC));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_UNKNOWN));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_UNKNOWN));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_REF));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("foo"));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.arglist, IsNull());
@@ -35,7 +35,7 @@ TEST_F(NAME, function_call_no_args_string_return_type)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_FUNC));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_STRING));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_STRING));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_REF));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("foo"));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.arglist, IsNull());
@@ -48,7 +48,7 @@ TEST_F(NAME, function_call_no_args_float_return_type)
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.type, Eq(ast::ST_FUNC));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.data_type, Eq(ast::SDT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.datatype, Eq(ast::SDT_FLOAT));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_REF));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("foo"));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.arglist, IsNull());

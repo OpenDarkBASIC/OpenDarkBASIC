@@ -52,15 +52,35 @@ enum Operation
     OP_COMMA
 };
 
+#define SYMBOL_TYPE_LIST \
+    X(ST_UNKNOWN) \
+    X(ST_CONSTANT) \
+    X(ST_VARIABLE) \
+    X(ST_DIM) \
+    X(ST_FUNC) \
+    X(ST_LABEL) \
+    X(ST_COMMAND)
+
+#define SYMBOL_DATATYPE_LIST \
+    X(SDT_UNKNOWN) \
+    X(SDT_BOOLEAN) \
+    X(SDT_INTEGER) \
+    X(SDT_FLOAT) \
+    X(SDT_STRING)
+
+#define SYMBOL_SCOPE_LIST \
+    X(SS_LOCAL) \
+    X(SS_GLOBAL)
+
+#define SYMBOL_DECLARATION_LIST \
+    X(SD_REF) \
+    X(SD_DECL)
+
 enum SymbolType
 {
-    ST_UNKNOWN,
-    ST_CONSTANT,
-    ST_VARIABLE,
-    ST_DIM,
-    ST_FUNC,
-    ST_LABEL,
-    ST_COMMAND
+#define X(name) name,
+    SYMBOL_TYPE_LIST
+#undef X
 };
 
 /*!
@@ -78,23 +98,23 @@ enum SymbolType
  */
 enum SymbolDataType
 {
-    SDT_UNKNOWN,
-    SDT_BOOLEAN,
-    SDT_INTEGER,
-    SDT_FLOAT,
-    SDT_STRING
+#define X(name) name,
+    SYMBOL_DATATYPE_LIST
+#undef X
 };
 
 enum SymbolScope
 {
-    SS_LOCAL,
-    SS_GLOBAL
+#define X(name) name,
+    SYMBOL_SCOPE_LIST
+#undef X
 };
 
 enum SymbolDeclaration
 {
-    SD_REF,
-    SD_DECL
+#define X(name) name,
+    SYMBOL_DECLARATION_LIST
+#undef X
 };
 
 enum LiteralType
@@ -170,34 +190,49 @@ union node_t {
     {
         info_t info;
         node_t* _padding;
-        node_t* block;
+        node_t* body;
     } loop;
 
     struct loop_while_t
     {
         info_t info;
         node_t* condition;
-        node_t* block;
+        node_t* body;
     } loop_while;
 
     struct loop_until_t
     {
         info_t info;
         node_t* condition;
-        node_t* block;
+        node_t* body;
     } loop_until;
+
+    struct type_t
+    {
+        info_t info;
+        node_t* symbol;
+        node_t* nested_type;
+    } type;
+
+    struct declaration_t
+    {
+        info_t info;
+        node_t* symbol;
+        node_t* type;
+    } decl;
 
     struct symbol_t
     {
         info_t info;
-        node_t* literal;
+        node_t* type;
         node_t* arglist;
+        node_t* value;
         char* name;
         union {
             uint8_t flags;
             struct {
                 SymbolType        type        : 3;
-                SymbolDataType    data_type   : 3;
+                SymbolDataType    datatype    : 3;
                 SymbolScope       scope       : 1;
                 SymbolDeclaration declaration : 1;
             } flag;

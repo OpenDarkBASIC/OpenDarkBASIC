@@ -102,6 +102,10 @@ SYMBOL_TYPE     [$#]
 (?:next)            { dbg("next"); return TOK_NEXT; }
 (?:endfunction)     { dbg("endfunction"); return TOK_ENDFUNCTION; }
 (?:function)        { dbg("function"); return TOK_FUNCTION; }
+(?:dim)             { dbg("dim"); return TOK_DIM; }
+(?:global)          { dbg("global"); return TOK_GLOBAL; }
+(?:local)           { dbg("local"); return TOK_LOCAL; }
+(?:as)              { dbg("as"); return TOK_AS; }
 
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 "#"                 { dbg("hash"); return TOK_HASH; }

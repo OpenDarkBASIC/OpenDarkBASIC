@@ -67,6 +67,7 @@ if (${ODBC_TESTS})
     add_executable (odbc_tests
         "tests/src/test_ast_conditional.cpp"
         "tests/src/test_ast_constant.cpp"
+        "tests/src/test_ast_dim.cpp"
         "tests/src/test_ast_function_call.cpp"
         "tests/src/test_ast_loop_do.cpp"
         "tests/src/test_ast_loop_for.cpp"
