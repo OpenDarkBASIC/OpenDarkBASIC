@@ -19,7 +19,7 @@ using namespace odbc;
 
 TEST_F(NAME, count_to_5)
 {
-    EXPECT_THAT(driver->parseString("for n=1 to 5 step 1\nfoo(n)\n next n\n"), IsTrue());
+    EXPECT_THAT(driver->parseString("for n=1 to 10 step 2\nfoo(n)\n next n\n"), IsTrue());
 
     std::ofstream out("out.dot");
     ast::dumpToDOT(out, driver->getAST());

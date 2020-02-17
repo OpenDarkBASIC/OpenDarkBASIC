@@ -18,14 +18,15 @@ enum NodeType
     NT_LOOP_WHILE,
     NT_LOOP_UNTIL,
     NT_SYMBOL,
-    NT_SYMBOL_REF,
     NT_LITERAL
 };
 
 enum Operation
 {
     OP_ADD,
+    OP_INC,
     OP_SUB,
+    OP_DEC,
     OP_MUL,
     OP_DIV,
     OP_MOD,
@@ -51,6 +52,17 @@ enum Operation
     OP_COMMA
 };
 
+enum SymbolType
+{
+    ST_UNKNOWN,
+    ST_CONSTANT,
+    ST_VARIABLE,
+    ST_DIM,
+    ST_FUNC,
+    ST_LABEL,
+    ST_COMMAND
+};
+
 /*!
  * A symbol carries type information. For example, here "var" is declared as
  * a floating point type:
@@ -64,25 +76,25 @@ enum Operation
  * parsing. During parsing we just store these facts for later. This is why we
  * have enums for both SymbolType and LiteralType.
  */
-enum SymbolRetType
+enum SymbolDataType
 {
-    ST_UNKNOWN,
-    ST_BOOLEAN,
-    ST_INTEGER,
-    ST_FLOAT,
-    ST_STRING,
+    SDT_UNKNOWN,
+    SDT_BOOLEAN,
+    SDT_INTEGER,
+    SDT_FLOAT,
+    SDT_STRING
 };
 
-enum SymbolType
+enum SymbolScope
 {
-    ST_CONSTANT,
-    ST_VARIABLE,
-    ST_DIM,
-    ST_FUNC_DECL,
-    ST_FUNC_CALL,
-    ST_LABEL_DECL,
-    ST_LABEL_REF,
-    ST_COMMAND
+    SS_LOCAL,
+    SS_GLOBAL
+};
+
+enum SymbolDeclaration
+{
+    SD_REF,
+    SD_DECL
 };
 
 enum LiteralType
@@ -181,17 +193,16 @@ union node_t {
         node_t* literal;
         node_t* arglist;
         char* name;
-        SymbolType type;
+        union {
+            uint8_t flags;
+            struct {
+                SymbolType        type        : 3;
+                SymbolDataType    data_type   : 3;
+                SymbolScope       scope       : 1;
+                SymbolDeclaration declaration : 1;
+            } flag;
+        };
     } symbol;
-
-    struct symbol_ref_t
-    {
-        info_t info;
-        node_t* _padding;
-        node_t* arglist;
-        char* name;
-        SymbolType type;
-    } symbol_ref;
 
     struct literal_t
     {
@@ -207,32 +218,12 @@ union node_t {
 void dumpToDOT(std::ostream& os, node_t* root);
 #endif
 
-node_t* newOpAdd(node_t* left, node_t* right);
-node_t* newOpSub(node_t* left, node_t* right);
-node_t* newOpMul(node_t* left, node_t* right);
-node_t* newOpDiv(node_t* left, node_t* right);
-node_t* newOpPow(node_t* left, node_t* right);
-node_t* newOpMod(node_t* left, node_t* right);
-node_t* newOpComma(node_t* left, node_t* right);
-node_t* newOpEq(node_t* left, node_t* right);
-node_t* newOpGt(node_t* left, node_t* right);
-node_t* newOpLe(node_t* left, node_t* right);
+node_t* newOp(node_t* left, node_t* right, Operation op);
 
-node_t* newUnknownSymbol(const char* symbolName, node_t* literal);
-node_t* newBooleanSymbol(const char* symbolName, node_t* literal);
-node_t* newIntegerSymbol(const char* symbolName, node_t* literal);
-node_t* newFloatSymbol(const char* symbolName, node_t* literal);
-node_t* newStringSymbol(const char* symbolName, node_t* literal);
-node_t* newFunctionSymbol(const char* symbolName, node_t* literal, node_t* arglist);
+node_t* newSymbol(const char* symbolName, node_t* literal, node_t* arglist,
+                  SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration);
 
-node_t* newUnknownSymbolRef(const char* symbolName);
-node_t* newBooleanSymbolRef(const char* symbolName);
-node_t* newIntegerSymbolRef(const char* symbolName);
-node_t* newFloatSymbolRef(const char* symbolName);
-node_t* newStringSymbolRef(const char* symbolName);
-node_t* newFunctionSymbolRef(const char* symbolName, node_t* arglist);
-
-node_t* newBooleanConstant(bool value);
+node_t* newBooleanLiteral(bool value);
 node_t* newIntegerLiteral(int32_t value);
 node_t* newFloatLiteral(double value);
 node_t* newStringLiteral(const char* value);

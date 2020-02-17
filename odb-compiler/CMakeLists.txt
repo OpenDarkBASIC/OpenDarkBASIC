@@ -79,6 +79,9 @@ if (${ODBC_TESTS})
             odbc
             gmock
             gmock_main)
+    target_include_directories (odbc_tests
+        PRIVATE
+            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
 endif ()
 
 ###############################################################################

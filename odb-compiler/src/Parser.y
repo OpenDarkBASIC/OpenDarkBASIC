@@ -12,6 +12,7 @@
     #define error(x, ...) yyerror(yypushed_loc, scanner, x, __VA_ARGS__)
 
     using namespace odbc;
+    using namespace ast;
 }
 
 %code requires
@@ -66,7 +67,6 @@
     double float_value;
     char* string_literal;
     char* symbol;
-    char symbol_type;
 
     odbc::ast::node_t* node;
 }
@@ -84,7 +84,7 @@
 %token<float_value> FLOAT "float";
 %token<string_literal> STRING_LITERAL "string";
 
-%token ADD SUB MUL DIV POW MOD LB RB COMMA;
+%token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
 %token BSHL BSHR BOR BAND BXOR BNOT;
 %token LT GT LE GE NE EQ OR AND NOT;
 
@@ -95,16 +95,16 @@
 %token GOSUB RETURN
 
 %token<symbol> SYMBOL;
-%token<symbol_type> SYMBOL_TYPE;
-%token NO_SYMBOL_TYPE;
+%token DOLLAR HASH NO_SYMBOL_TYPE;
 
 %type<node> stmnts;
 %type<node> stmnt;
 %type<node> constant_declaration;
 %type<node> literal;
 %type<node> expr;
-%type<node> variable_decl;
-%type<node> variable_ref;
+%type<node> symbol;
+%type<node> symbol_decl;
+%type<node> symbol_ref;
 %type<node> variable_assignment;
 %type<node> function_call;
 %type<node> conditional;
@@ -131,7 +131,7 @@
 
 %destructor { free($$); } <string_literal>
 %destructor { free($$); } <symbol>
-%destructor { ast::freeNodeRecursive($$); } <node>
+%destructor { freeNodeRecursive($$); } <node>
 
 %start program
 
@@ -142,8 +142,8 @@ program
   | END
   ;
 stmnts
-  : stmnts TERM stmnt                            { $$ = ast::appendStatementToBlock($1, $3); }
-  | stmnt                                        { $$ = ast::newBlock($1, nullptr); }
+  : stmnts TERM stmnt                            { $$ = appendStatementToBlock($1, $3); }
+  | stmnt                                        { $$ = newBlock($1, nullptr); }
   ;
 stmnt
   : variable_assignment                          { $$ = $1; }
@@ -153,92 +153,88 @@ stmnt
   | loop                                         { $$ = $1; }
   ;
 variable_assignment
-  : variable_ref EQ expr                         { $$ = ast::newAssignment($1, $3); }
+  : symbol_ref EQ expr                           { $$ = newAssignment($1, $3); }
   ;
 expr
-  : expr ADD expr                                { $$ = ast::newOpAdd($1, $3); }
-  | expr SUB expr                                { $$ = ast::newOpSub($1, $3); }
-  | expr MUL expr                                { $$ = ast::newOpMul($1, $3); }
-  | expr DIV expr                                { $$ = ast::newOpDiv($1, $3); }
-  | expr POW expr                                { $$ = ast::newOpPow($1, $3); }
-  | expr MOD expr                                { $$ = ast::newOpMod($1, $3); }
+  : expr ADD expr                                { $$ = newOp($1, $3, OP_ADD); }
+  | expr SUB expr                                { $$ = newOp($1, $3, OP_SUB); }
+  | expr MUL expr                                { $$ = newOp($1, $3, OP_MUL); }
+  | expr DIV expr                                { $$ = newOp($1, $3, OP_DIV); }
+  | expr POW expr                                { $$ = newOp($1, $3, OP_POW); }
+  | expr MOD expr                                { $$ = newOp($1, $3, OP_MOD); }
   | LB expr RB                                   { $$ = $2; }
-  | expr COMMA expr                              { $$ = ast::newOpComma($1, $3); }
-  | expr EQ expr                                 { $$ = ast::newOpEq($1, $3); }
+  | expr COMMA expr                              { $$ = newOp($1, $3, OP_COMMA); }
+  | expr EQ expr                                 { $$ = newOp($1, $3, OP_EQ); }
   | literal                                      { $$ = $1; }
-  | variable_ref                                 { $$ = $1; }
+  | symbol_ref                                   { $$ = $1; }
   | function_call                                { $$ = $1; }
   ;
 constant_declaration
-  : CONSTANT variable_decl literal {
+  : CONSTANT symbol_decl literal {
         $$ = $2;
         $2->symbol.literal = $3;
         switch ($3->literal.type)
         {
-            case ast::LT_BOOLEAN : $2->symbol.type = ast::ST_BOOLEAN; break;
-            case ast::LT_INTEGER : $2->symbol.type = ast::ST_INTEGER; break;
-            case ast::LT_FLOAT   : $2->symbol.type = ast::ST_FLOAT; break;
-            case ast::LT_STRING  : $2->symbol.type = ast::ST_STRING; break;
+            case LT_BOOLEAN : $2->symbol.flag.data_type = SDT_BOOLEAN; break;
+            case LT_INTEGER : $2->symbol.flag.data_type = SDT_INTEGER; break;
+            case LT_FLOAT   : $2->symbol.flag.data_type = SDT_FLOAT; break;
+            case LT_STRING  : $2->symbol.flag.data_type = SDT_STRING; break;
             default: break;
         }
     }
   ;
 literal
-  : BOOLEAN                                      { $$ = ast::newBooleanConstant($1); }
-  | INTEGER                                      { $$ = ast::newIntegerConstant($1); }
-  | FLOAT                                        { $$ = ast::newFloatConstant($1); }
-  | STRING_LITERAL                               { $$ = ast::newStringConstant($1); free($1); }
-  ;
-variable_decl
-  :
-  ;
-symbol
-  : SYMBOL SYMBOL_TYPE LB expr RB {
-        if ($2 == '#')
-            $$ = ast::newFloatSymbol($1, $4);
-        else if ($2 == '$')
-            $$ = ast::newStringSymbol($1, $4);
-        free($1);
-    }
-  | SYMBOL SYMBOL_TYPE {
-        if ($2 == '#')
-            $$ = ast::newFloatSymbol($1, nullptr);
-        else if ($2 == '$')
-            $$ = ast::newStringSymbol($1, nullptr);
-        free($1);
-    }
-  | SYMBOL {
-        $$ = ast::newUnknownSymbol($1, nullptr); free($1);
-    }
-  ;
-variable_ref
-  : SYMBOL                                       { $$ = ast::newUnknownSymbolRef($1); free($1); }
-  | SYMBOL_FLOAT                                 { $$ = ast::newFloatSymbolRef($1); free($1); }
-  | SYMBOL_STRING                                { $$ = ast::newStringSymbolRef($1); free($1); }
+  : BOOLEAN                                      { $$ = newBooleanLiteral($1); }
+  | INTEGER                                      { $$ = newIntegerLiteral($1); }
+  | FLOAT                                        { $$ = newFloatLiteral($1); }
+  | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
   ;
 function_call
-  : SYMBOL LB expr RB                            { $$ = ast::newFunctionSymbolRef($1, $3); free($1); }
-  | SYMBOL LB RB                                 { $$ = ast::newFunctionSymbolRef($1, nullptr); free($1); }
+  : symbol LB expr RB {
+        $$ = $1;
+        $$->symbol.flag.type = ST_FUNC;
+        $$->symbol.arglist = $3;
+    }
+  | symbol LB RB {
+        $$ = $1;
+        $$->symbol.flag.type = ST_FUNC;
+    }
+  ;
+symbol_decl
+  : symbol {
+        $$ = $1;
+        $$->symbol.flag.declaration = SD_DECL;
+    }
+  ;
+symbol_ref
+  : symbol {
+        $$ = $1;
+    }
+  ;
+symbol
+  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
+  | SYMBOL HASH                                  { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_FLOAT, SS_LOCAL, SD_REF); free($1); }
+  | SYMBOL DOLLAR                                { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_STRING, SS_LOCAL, SD_REF); free($1); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }
   | conditional_begin                            { $$ = $1; }
   ;
 conditional_singleline
-  : IF expr THEN stmnt %prec NO_ELSE             { $$ = ast::newBranch($2, $4, nullptr); }
-  | IF expr THEN stmnt ELSE stmnt                { $$ = ast::newBranch($2, $4, $6); }
-  | IF expr THEN ELSE stmnt                      { $$ = ast::newBranch($2, nullptr, $5); }
+  : IF expr THEN stmnt %prec NO_ELSE             { $$ = newBranch($2, $4, nullptr); }
+  | IF expr THEN stmnt ELSE stmnt                { $$ = newBranch($2, $4, $6); }
+  | IF expr THEN ELSE stmnt                      { $$ = newBranch($2, nullptr, $5); }
   ;
 conditional_begin
-  : IF expr TERM conditional_next                { $$ = ast::newBranch($2, nullptr, $4); }
-  | IF expr TERM stmnts TERM conditional_next    { $$ = ast::newBranch($2, $4, $6); }
+  : IF expr TERM conditional_next                { $$ = newBranch($2, nullptr, $4); }
+  | IF expr TERM stmnts TERM conditional_next    { $$ = newBranch($2, $4, $6); }
   ;
 conditional_next
   : ENDIF                                        { $$ = nullptr; }
   | ELSE TERM stmnts TERM ENDIF                  { $$ = $3; }
   | ELSE TERM ENDIF                              { $$ = nullptr; }
-  | ELSEIF expr TERM conditional_next            { $$ = ast::newBranch($2, nullptr, $4); }
-  | ELSEIF expr TERM stmnts TERM conditional_next { $$ = ast::newBranch($2, $4, $6); }
+  | ELSEIF expr TERM conditional_next            { $$ = newBranch($2, nullptr, $4); }
+  | ELSEIF expr TERM stmnts TERM conditional_next { $$ = newBranch($2, $4, $6); }
   ;
 loop
   : loop_do                                      { $$ = $1; }
@@ -247,26 +243,26 @@ loop
   | loop_for                                     { $$ = $1; }
   ;
 loop_do
-  : DO TERM stmnts TERM LOOP                     { $$ = ast::newLoop($3); }
-  | DO TERM LOOP                                 { $$ = ast::newLoop(nullptr); }
+  : DO TERM stmnts TERM LOOP                     { $$ = newLoop($3); }
+  | DO TERM LOOP                                 { $$ = newLoop(nullptr); }
   ;
 loop_while
-  : WHILE expr TERM stmnts TERM ENDWHILE         { $$ = ast::newLoopWhile($2, $4); }
-  | WHILE expr TERM ENDWHILE                     { $$ = ast::newLoopWhile($2, nullptr); }
+  : WHILE expr TERM stmnts TERM ENDWHILE         { $$ = newLoopWhile($2, $4); }
+  | WHILE expr TERM ENDWHILE                     { $$ = newLoopWhile($2, nullptr); }
   ;
 loop_until
-  : REPEAT TERM stmnts TERM UNTIL expr           { $$ = ast::newLoopUntil($6, $3); }
-  | REPEAT TERM UNTIL expr                       { $$ = ast::newLoopUntil($4, nullptr); }
+  : REPEAT TERM stmnts TERM UNTIL expr           { $$ = newLoopUntil($6, $3); }
+  | REPEAT TERM UNTIL expr                       { $$ = newLoopUntil($4, nullptr); }
   ;
 loop_for
-  : FOR variable_ref EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
-  | FOR variable_ref EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
-  | FOR variable_ref EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
-  | FOR variable_ref EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
+  : FOR symbol_ref EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
+  | FOR symbol_ref EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
+  | FOR symbol_ref EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
+  | FOR symbol_ref EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
   ;
 loop_for_next
   : NEXT                                         { $$ = nullptr; }
-  | NEXT variable_ref                            { $$ = $2; }
+  | NEXT symbol_ref                              { $$ = $2; }
   ;
 %%
 

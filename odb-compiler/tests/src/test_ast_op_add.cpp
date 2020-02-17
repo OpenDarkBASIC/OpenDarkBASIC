@@ -1,18 +1,16 @@
 #include <gmock/gmock.h>
 #include "odbc/Driver.hpp"
 #include "odbc/ASTNode.hpp"
+#include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
 #define NAME ast_op_add
 
 using namespace testing;
 
-class NAME : public Test
+class NAME : public ParserTestHarness
 {
 public:
-    void SetUp() override { driver = new odbc::Driver; }
-    void TearDown() override { delete driver; }
-    odbc::Driver* driver;
 };
 
 using namespace odbc;
@@ -23,8 +21,8 @@ TEST_F(NAME, add_two_literals)
 
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_ASSIGNMENT));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL_REF));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol_ref.name, StrEq("result"));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol.name, StrEq("result"));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->info.type, Eq(ast::NT_OP));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.operation, Eq(ast::OP_ADD));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.left->info.type, Eq(ast::NT_LITERAL));
@@ -41,8 +39,8 @@ TEST_F(NAME, add_three_literals)
 
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_ASSIGNMENT));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL_REF));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol_ref.name, StrEq("result"));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol.name, StrEq("result"));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->info.type, Eq(ast::NT_OP));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.operation, Eq(ast::OP_ADD));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.left->info.type, Eq(ast::NT_OP));
@@ -64,8 +62,8 @@ TEST_F(NAME, add_three_literals_brackets)
 
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_ASSIGNMENT));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL_REF));
-    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol_ref.name, StrEq("result"));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->info.type, Eq(ast::NT_SYMBOL));
+    ASSERT_THAT(driver->getAST()->block.statement->assignment.symbol->symbol.name, StrEq("result"));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->info.type, Eq(ast::NT_OP));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.operation, Eq(ast::OP_ADD));
     ASSERT_THAT(driver->getAST()->block.statement->assignment.statement->op.left->info.type, Eq(ast::NT_LITERAL));

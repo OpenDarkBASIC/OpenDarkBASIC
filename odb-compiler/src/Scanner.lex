@@ -65,6 +65,8 @@ SYMBOL_TYPE     [$#]
 "("                 { dbg("lb"); return TOK_LB; }
 ")"                 { dbg("rb"); return TOK_RB; }
 ","                 { dbg("comma"); return TOK_COMMA;}
+(?i:inc)            { dbg("inc"); return TOK_INC; }
+(?i:dec)            { dbg("dec"); return TOK_DEC; }
 
 "<<"                { dbg("bshl"); return TOK_BSHL; }
 ">>"                { dbg("bshr"); return TOK_BSHR; }
@@ -102,7 +104,8 @@ SYMBOL_TYPE     [$#]
 (?:function)        { dbg("function"); return TOK_FUNCTION; }
 
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
-{SYMBOL_TYPE}       { dbg("symbol type"); yylval->symbol_type = yytext[0]; return TOK_SYMBOL_TYPE; }
+"#"                 { dbg("hash"); return TOK_HASH; }
+"$"                 { dbg("hash"); return TOK_DOLLAR; }
 
 [\n:]               { dbg("term"); return TOK_TERM; }
 .                   {}
