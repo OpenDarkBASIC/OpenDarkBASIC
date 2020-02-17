@@ -1,18 +1,16 @@
 #include <gmock/gmock.h>
 #include "odbc/Driver.hpp"
 #include "odbc/ASTNode.hpp"
+#include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
 #define NAME ast_repeat
 
 using namespace testing;
 
-class NAME : public Test
+class NAME : public ParserTestHarness
 {
 public:
-    void SetUp() override { driver = new odbc::Driver; }
-    void TearDown() override { delete driver; }
-    odbc::Driver* driver;
 };
 
 using namespace odbc;

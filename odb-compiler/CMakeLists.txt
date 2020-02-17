@@ -78,10 +78,12 @@ if (${ODBC_TESTS})
         PRIVATE
             odbc
             gmock
-            gmock_main)
+            gmock_main
+            stdc++fs)
     target_include_directories (odbc_tests
         PRIVATE
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
+    set_target_properties (odbc_tests PROPERTIES CXX_STANDARD 17)
 endif ()
 
 ###############################################################################
