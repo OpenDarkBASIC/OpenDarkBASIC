@@ -104,8 +104,11 @@
 %type<node> literal;
 %type<node> expr;
 %type<node> symbol;
-%type<node> variable_assignment;
-%type<node> function_call;
+%type<node> var_assignment;
+%type<node> func_call;
+%type<node> func_decl;
+%type<node> func_name_decl;
+%type<node> func_end;
 %type<node> dim_ref;
 %type<node> dim_decl;
 %type<node> var_decl;
@@ -153,14 +156,15 @@ stmnts
   | stmnt                                        { $$ = newBlock($1, nullptr); }
   ;
 stmnt
-  : variable_assignment                          { $$ = $1; }
+  : var_assignment                               { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | udt_decl                                     { $$ = $1; }
-  | function_call                                { $$ = $1; }
+  | func_call                                    { $$ = $1; }
+  | func_decl                                    { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
-variable_assignment
+var_assignment
   : symbol EQ expr                               { $$ = newAssignment($1, $3); }
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
@@ -176,7 +180,7 @@ expr
   | expr EQ expr                                 { $$ = newOp($1, $3, OP_EQ); }
   | literal                                      { $$ = $1; }
   | symbol                                       { $$ = $1; }
-  | function_call                                { $$ = $1; }
+  | func_call                                    { $$ = $1; }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
@@ -184,7 +188,23 @@ literal
   | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
   ;
-function_call
+func_decl
+  : func_name_decl TERM stmnts TERM func_end {
+        $$ = $1;
+        $$->symbol.flag.type = ST_FUNC;
+        $$->symbol.flag.declaration = SD_DECL;
+        $$->symbol.data = appendStatementToBlock($3, $5);
+    }
+  ;
+func_end
+  : ENDFUNCTION expr                             { $$ = newFuncReturn($2); }
+  | ENDFUNCTION                                  { $$ = newFuncReturn(nullptr); }
+  ;
+func_name_decl
+  : FUNCTION symbol LB expr RB                   { $$ = $2; $$->symbol.arglist = $4; }
+  | FUNCTION symbol LB RB                        { $$ = $2; }
+  ;
+func_call
   : symbol LB expr RB {
         $$ = $1;
         $$->symbol.flag.type = ST_FUNC;

@@ -14,6 +14,7 @@ enum NodeType
     NT_OP,
     NT_BRANCH,
     NT_BRANCH_PATHS,
+    NT_FUNC_RETURN,
     NT_LOOP,
     NT_LOOP_WHILE,
     NT_LOOP_UNTIL,
@@ -188,6 +189,13 @@ union node_t {
         node_t* paths;
     } branch;
 
+    struct func_return_t
+    {
+        info_t info;
+        node_t* retval;
+        node_t* _padding;
+    } func_return;
+
     struct loop_t
     {
         info_t info;
@@ -209,10 +217,6 @@ union node_t {
         node_t* body;
     } loop_until;
 
-    /*
-     * "global dim arr(1, 2) as mytype"
-     * "function foo(a as integer)"
-     */
     struct symbol_t
     {
         info_t info;
@@ -257,6 +261,8 @@ node_t* newStringLiteral(const char* value);
 node_t* newAssignment(node_t* symbol, node_t* statement);
 
 node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
+
+node_t* newFuncReturn(node_t* returnValue);
 
 node_t* newLoop(node_t* block);
 node_t* newLoopWhile(node_t* condition, node_t* block);

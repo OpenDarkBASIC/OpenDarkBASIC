@@ -69,6 +69,7 @@ if (${ODBC_TESTS})
         "tests/src/test_ast_constant.cpp"
         "tests/src/test_ast_dim.cpp"
         "tests/src/test_ast_function_call.cpp"
+        "tests/src/test_ast_function_decl.cpp"
         "tests/src/test_ast_loop_do.cpp"
         "tests/src/test_ast_loop_for.cpp"
         "tests/src/test_ast_loop_repeat.cpp"
