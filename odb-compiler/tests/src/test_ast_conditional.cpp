@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_if
+#define NAME ast_conditional
 
 using namespace testing;
 

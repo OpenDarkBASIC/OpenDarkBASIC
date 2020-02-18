@@ -114,10 +114,10 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
         } break;
 
         case NT_SYMBOL: {
-            if (node->symbol.literal)
+            if (node->symbol.data)
             {
-                os << "N" << node->info.guid << " -> " << "N" << node->symbol.literal->info.guid << "[label=\"literal\"];\n";
-                dumpToDOTRecursive(os, node->symbol.literal);
+                os << "N" << node->info.guid << " -> " << "N" << node->symbol.data->info.guid << "[label=\"data\"];\n";
+                dumpToDOTRecursive(os, node->symbol.data);
             }
             if (node->symbol.arglist)
             {
@@ -205,7 +205,7 @@ node_t* newOp(node_t* left, node_t* right, Operation op)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newSymbol(const char* symbolName, node_t* literal, node_t* arglist,
+node_t* newSymbol(const char* symbolName, node_t* data, node_t* arglist,
                   SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration)
 {
     node_t* node = (node_t*)malloc(sizeof *node);
@@ -218,7 +218,7 @@ node_t* newSymbol(const char* symbolName, node_t* literal, node_t* arglist,
     node->symbol.flag.datatype = dataType;
     node->symbol.flag.scope = scope;
     node->symbol.flag.declaration = declaration;
-    node->symbol.literal = literal;
+    node->symbol.data = data;
     node->symbol.arglist = arglist;
     return node;
 }

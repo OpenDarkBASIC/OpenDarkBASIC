@@ -29,9 +29,9 @@ TEST_F(NAME, bool_constant)
     ASSERT_THAT(block->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(block->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(block->block.statement->symbol.name, StrEq("mybool1"));
-    ASSERT_THAT(block->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(block->block.statement->symbol.literal->literal.type, Eq(ast::LT_BOOLEAN));
-    ASSERT_THAT(block->block.statement->symbol.literal->literal.value.b, IsTrue());
+    ASSERT_THAT(block->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(block->block.statement->symbol.data->literal.type, Eq(ast::LT_BOOLEAN));
+    ASSERT_THAT(block->block.statement->symbol.data->literal.value.b, IsTrue());
 
     block = block->block.next;
     ASSERT_THAT(block->info.type, Eq(ast::NT_BLOCK));
@@ -41,14 +41,14 @@ TEST_F(NAME, bool_constant)
     ASSERT_THAT(block->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(block->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(block->block.statement->symbol.name, StrEq("mybool2"));
-    ASSERT_THAT(block->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(block->block.statement->symbol.literal->literal.type, Eq(ast::LT_BOOLEAN));
-    ASSERT_THAT(block->block.statement->symbol.literal->literal.value.b, IsFalse());
+    ASSERT_THAT(block->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(block->block.statement->symbol.data->literal.type, Eq(ast::LT_BOOLEAN));
+    ASSERT_THAT(block->block.statement->symbol.data->literal.value.b, IsFalse());
 }
 
 TEST_F(NAME, integer_constant)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "#constant myint 20\n"), IsTrue());
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
@@ -57,14 +57,14 @@ TEST_F(NAME, integer_constant)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myint"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_INTEGER));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.i, Eq(20));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_INTEGER));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.i, Eq(20));
 }
 
 TEST_F(NAME, float_constant)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "#constant myfloat 5.2\n"), IsTrue());
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
@@ -73,14 +73,14 @@ TEST_F(NAME, float_constant)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(5.2));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(5.2));
 }
 
 TEST_F(NAME, string_constant)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "#constant mystring \"hello world!\"\n"), IsTrue());
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_SYMBOL));
@@ -89,19 +89,17 @@ TEST_F(NAME, string_constant)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("mystring"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_STRING));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.s, StrEq("hello world!"));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_STRING));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.s, StrEq("hello world!"));
 }
 
 TEST_F(NAME, more_than_one_value_fails)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "#constant fail1 true false\n"), IsFalse());
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "#constant fail2 23 3.4\n"), IsFalse());
-    std::ofstream out("out.dot");
-    ast::dumpToDOT(out, driver->getAST());
     ASSERT_THAT(driver->getAST(), IsNull());
 }
 
@@ -116,9 +114,9 @@ TEST_F(NAME, float_1_notation)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(53.0));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(53.0));
 }
 
 TEST_F(NAME, float_2_notation)
@@ -132,9 +130,9 @@ TEST_F(NAME, float_2_notation)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(0.53));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(0.53));
 }
 
 TEST_F(NAME, float_3_notation)
@@ -148,9 +146,9 @@ TEST_F(NAME, float_3_notation)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(53.0));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(53.0));
 }
 
 TEST_F(NAME, float_4_notation)
@@ -164,9 +162,9 @@ TEST_F(NAME, float_4_notation)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(0.53));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(0.53));
 }
 
 TEST_F(NAME, float_exponential_notation_1)
@@ -180,9 +178,9 @@ TEST_F(NAME, float_exponential_notation_1)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(1200));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(1200));
 }
 
 TEST_F(NAME, float_exponential_notation_2)
@@ -196,9 +194,9 @@ TEST_F(NAME, float_exponential_notation_2)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(1240));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(1240));
 }
 
 TEST_F(NAME, float_exponential_notation_3)
@@ -212,9 +210,9 @@ TEST_F(NAME, float_exponential_notation_3)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(40));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(40));
 }
 
 TEST_F(NAME, float_exponential_notation_4)
@@ -228,7 +226,7 @@ TEST_F(NAME, float_exponential_notation_4)
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.scope, Eq(ast::SS_GLOBAL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.flag.declaration, Eq(ast::SD_DECL));
     ASSERT_THAT(driver->getAST()->block.statement->symbol.name, StrEq("myfloat"));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->info.type, Eq(ast::NT_LITERAL));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.type, Eq(ast::LT_FLOAT));
-    ASSERT_THAT(driver->getAST()->block.statement->symbol.literal->literal.value.f, DoubleEq(4300));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->info.type, Eq(ast::NT_LITERAL));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.type, Eq(ast::LT_FLOAT));
+    ASSERT_THAT(driver->getAST()->block.statement->symbol.data->literal.value.f, DoubleEq(4300));
 }

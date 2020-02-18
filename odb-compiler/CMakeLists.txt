@@ -74,7 +74,8 @@ if (${ODBC_TESTS})
         "tests/src/test_ast_loop_repeat.cpp"
         "tests/src/test_ast_loop_while.cpp"
         "tests/src/test_ast_op_add.cpp"
-        "tests/src/test_ast_remarks.cpp")
+        "tests/src/test_ast_remarks.cpp"
+        "tests/src/test_ast_udt.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbc

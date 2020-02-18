@@ -48,13 +48,13 @@ SYMBOL_TYPE     [$#]
 
 {CONSTANT}          { dbg("constant"); return TOK_CONSTANT; }
 
-{BOOL_TRUE}         { dbg("bool"); yylval->boolean_value = true; return TOK_BOOLEAN; }
-{BOOL_FALSE}        { dbg("bool"); yylval->boolean_value = false; return TOK_BOOLEAN; }
+{BOOL_TRUE}         { dbg("bool"); yylval->boolean_value = true; return TOK_BOOLEAN_LITERAL; }
+{BOOL_FALSE}        { dbg("bool"); yylval->boolean_value = false; return TOK_BOOLEAN_LITERAL; }
 {STRING_LITERAL}    { dbg("string literal"); yylval->string_literal = strdup_range(yytext, 1, strlen(yytext) - 1); return TOK_STRING_LITERAL; }
-{FLOAT}             { dbg("float"); yylval->float_value = atof(yytext); return TOK_FLOAT; }
-{INTEGER_BASE2}     { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER; }
-{INTEGER_BASE16}    { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER; }
-{INTEGER}           { dbg("integer"); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER; }
+{FLOAT}             { dbg("float"); yylval->float_value = atof(yytext); return TOK_FLOAT_LITERAL; }
+{INTEGER_BASE2}     { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER_LITERAL; }
+{INTEGER_BASE16}    { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER_LITERAL; }
+{INTEGER}           { dbg("integer"); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER_LITERAL; }
 
 "+"                 { dbg("add"); return TOK_ADD; }
 "-"                 { dbg("sub"); return TOK_SUB; }
@@ -106,6 +106,12 @@ SYMBOL_TYPE     [$#]
 (?:global)          { dbg("global"); return TOK_GLOBAL; }
 (?:local)           { dbg("local"); return TOK_LOCAL; }
 (?:as)              { dbg("as"); return TOK_AS; }
+(?:endtype)         { dbg("endtype"); return TOK_ENDTYPE; }
+(?:type)            { dbg("type"); return TOK_TYPE; }
+(?:boolean)         { dbg("boolean"); return TOK_BOOLEAN; }
+(?:integer)         { dbg("integer"); return TOK_INTEGER; }
+(?:float)           { dbg("float"); return TOK_FLOAT; }
+(?:string)          { dbg("string"); return TOK_STRING; }
 
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 "#"                 { dbg("hash"); return TOK_HASH; }

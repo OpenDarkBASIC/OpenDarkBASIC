@@ -79,9 +79,9 @@
 
 %token CONSTANT
 
-%token<boolean_value> BOOLEAN "boolean";
-%token<integer_value> INTEGER "integer";
-%token<float_value> FLOAT "float";
+%token<boolean_value> BOOLEAN_LITERAL "boolean";
+%token<integer_value> INTEGER_LITERAL "integer";
+%token<float_value> FLOAT_LITERAL "float";
 %token<string_literal> STRING_LITERAL "string";
 
 %token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
@@ -93,23 +93,27 @@
 %token FOR TO STEP NEXT
 %token FUNCTION EXITFUNCTION ENDFUNCTION
 %token GOSUB RETURN
-%token DIM GLOBAL LOCAL AS
+
+%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
 
 %token<symbol> SYMBOL;
 %token DOLLAR HASH NO_SYMBOL_TYPE;
 
 %type<node> stmnts;
 %type<node> stmnt;
-%type<node> constant_declaration;
 %type<node> literal;
 %type<node> expr;
 %type<node> symbol;
-%type<node> symbol_decl;
-%type<node> symbol_ref;
 %type<node> variable_assignment;
 %type<node> function_call;
 %type<node> dim_ref;
 %type<node> dim_decl;
+%type<node> var_decl;
+%type<node> var_decls;
+%type<node> var_decl_type;
+%type<node> udt_decl;
+%type<node> udt_ref;
+%type<node> symbol_and_dim_decl;
 %type<node> conditional;
 %type<node> conditional_singleline;
 %type<node> conditional_begin;
@@ -150,14 +154,14 @@ stmnts
   ;
 stmnt
   : variable_assignment                          { $$ = $1; }
-  | constant_declaration                         { $$ = $1; }
-  | dim_decl                                     { $$ = $1; }
+  | var_decl                                     { $$ = $1; }
+  | udt_decl                                     { $$ = $1; }
   | function_call                                { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
 variable_assignment
-  : symbol_ref EQ expr                           { $$ = newAssignment($1, $3); }
+  : symbol EQ expr                               { $$ = newAssignment($1, $3); }
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 expr
@@ -171,27 +175,13 @@ expr
   | expr COMMA expr                              { $$ = newOp($1, $3, OP_COMMA); }
   | expr EQ expr                                 { $$ = newOp($1, $3, OP_EQ); }
   | literal                                      { $$ = $1; }
-  | symbol_ref                                   { $$ = $1; }
+  | symbol                                       { $$ = $1; }
   | function_call                                { $$ = $1; }
   ;
-constant_declaration
-  : CONSTANT symbol_decl literal {
-        $$ = $2;
-        $2->symbol.literal = $3;
-        switch ($3->literal.type)
-        {
-            case LT_BOOLEAN : $2->symbol.flag.datatype = SDT_BOOLEAN; break;
-            case LT_INTEGER : $2->symbol.flag.datatype = SDT_INTEGER; break;
-            case LT_FLOAT   : $2->symbol.flag.datatype = SDT_FLOAT; break;
-            case LT_STRING  : $2->symbol.flag.datatype = SDT_STRING; break;
-            default: break;
-        }
-    }
-  ;
 literal
-  : BOOLEAN                                      { $$ = newBooleanLiteral($1); }
-  | INTEGER                                      { $$ = newIntegerLiteral($1); }
-  | FLOAT                                        { $$ = newFloatLiteral($1); }
+  : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
+  | INTEGER_LITERAL                              { $$ = newIntegerLiteral($1); }
+  | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
   ;
 function_call
@@ -205,12 +195,44 @@ function_call
         $$->symbol.flag.type = ST_FUNC;
     }
   ;
+udt_decl
+  : TYPE SYMBOL TERM var_decls TERM ENDTYPE      { $$ = newSymbol($2, $4, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_DECL); free($2); }
+  ;
+udt_ref
+  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_REF); free($1); }
+  ;
+var_decls
+  : var_decls TERM var_decl                      { $$ = appendStatementToBlock($1, $3); }
+  | var_decl                                     { $$ = newBlock($1, nullptr); }
+  ;
+var_decl
+  : LOCAL var_decl_type                          { $$ = $2; $$->symbol.flag.scope = SS_LOCAL; }
+  | GLOBAL var_decl_type                         { $$ = $2; $$->symbol.flag.scope = SS_GLOBAL; }
+  | var_decl_type                                { $$ = $1; }
+  ;
+var_decl_type
+  : symbol_and_dim_decl AS BOOLEAN               { $$ = $1; $$->symbol.flag.datatype = SDT_BOOLEAN; }
+  | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->symbol.flag.datatype = SDT_INTEGER; }
+  | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->symbol.flag.datatype = SDT_FLOAT; }
+  | symbol_and_dim_decl AS STRING                { $$ = $1; $$->symbol.flag.datatype = SDT_STRING; }
+  | symbol_and_dim_decl AS udt_ref               { $$ = $1; $$->symbol.flag.datatype = SDT_UDT; $$->symbol.data = $3; }
+  | symbol_and_dim_decl                          { $$ = $1; }
+  ;
+symbol_and_dim_decl
+  : dim_decl                                     { $$ = $1; }
+  | symbol                                       { $$ = $1; }
+  ;
 dim_decl
   : DIM symbol LB expr RB {
         $$ = $2;
         $$->symbol.flag.type = ST_DIM;
         $$->symbol.flag.declaration = SD_DECL;
         $$->symbol.arglist = $4;
+    }
+  | DIM symbol LB RB {
+        $$ = $2;
+        $$->symbol.flag.type = ST_DIM;
+        $$->symbol.flag.declaration = SD_DECL;
     }
   ;
 dim_ref
@@ -219,16 +241,9 @@ dim_ref
         $$->symbol.flag.type = ST_DIM;
         $$->symbol.arglist = $3;
     }
-  ;
-symbol_decl
-  : symbol {
+  | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.declaration = SD_DECL;
-    }
-  ;
-symbol_ref
-  : symbol {
-        $$ = $1;
+        $$->symbol.flag.type = ST_DIM;
     }
   ;
 symbol
@@ -275,14 +290,14 @@ loop_until
   | REPEAT TERM UNTIL expr                       { $$ = newLoopUntil($4, nullptr); }
   ;
 loop_for
-  : FOR symbol_ref EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
-  | FOR symbol_ref EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
-  | FOR symbol_ref EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
-  | FOR symbol_ref EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
+  : FOR symbol EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
+  | FOR symbol EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
+  | FOR symbol EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
+  | FOR symbol EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
   ;
 loop_for_next
   : NEXT                                         { $$ = nullptr; }
-  | NEXT symbol_ref                              { $$ = $2; }
+  | NEXT symbol                                  { $$ = $2; }
   ;
 %%
 

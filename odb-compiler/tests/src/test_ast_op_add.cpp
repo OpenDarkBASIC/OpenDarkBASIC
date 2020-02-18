@@ -35,7 +35,7 @@ TEST_F(NAME, add_two_literals)
 
 TEST_F(NAME, add_three_literals)
 {
-    ASSERT_THAT(driver->parseString("result = 3 + 5 * 8\n"), IsTrue());
+    ASSERT_THAT(driver->parseString("result = 3 + 5 + 8\n"), IsTrue());
 
     ASSERT_THAT(driver->getAST()->info.type, Eq(ast::NT_BLOCK));
     ASSERT_THAT(driver->getAST()->block.statement->info.type, Eq(ast::NT_ASSIGNMENT));

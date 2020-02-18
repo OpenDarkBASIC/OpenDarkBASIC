@@ -55,6 +55,7 @@ enum Operation
 #define SYMBOL_TYPE_LIST \
     X(ST_UNKNOWN) \
     X(ST_CONSTANT) \
+    X(ST_UDT) \
     X(ST_VARIABLE) \
     X(ST_DIM) \
     X(ST_FUNC) \
@@ -66,7 +67,8 @@ enum Operation
     X(SDT_BOOLEAN) \
     X(SDT_INTEGER) \
     X(SDT_FLOAT) \
-    X(SDT_STRING)
+    X(SDT_STRING) \
+    X(SDT_UDT)
 
 #define SYMBOL_SCOPE_LIST \
     X(SS_LOCAL) \
@@ -207,26 +209,15 @@ union node_t {
         node_t* body;
     } loop_until;
 
-    struct type_t
-    {
-        info_t info;
-        node_t* symbol;
-        node_t* nested_type;
-    } type;
-
-    struct declaration_t
-    {
-        info_t info;
-        node_t* symbol;
-        node_t* type;
-    } decl;
-
+    /*
+     * "global dim arr(1, 2) as mytype"
+     * "function foo(a as integer)"
+     */
     struct symbol_t
     {
         info_t info;
-        node_t* type;
+        node_t* data;
         node_t* arglist;
-        node_t* value;
         char* name;
         union {
             uint8_t flags;
@@ -255,7 +246,7 @@ void dumpToDOT(std::ostream& os, node_t* root);
 
 node_t* newOp(node_t* left, node_t* right, Operation op);
 
-node_t* newSymbol(const char* symbolName, node_t* literal, node_t* arglist,
+node_t* newSymbol(const char* symbolName, node_t* data, node_t* arglist,
                   SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration);
 
 node_t* newBooleanLiteral(bool value);
