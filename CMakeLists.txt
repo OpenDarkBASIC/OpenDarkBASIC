@@ -9,4 +9,5 @@ project ("OpenDarkBASIC")
 list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 add_subdirectory ("thirdparty/googletest")
+add_subdirectory ("odb-compiler-lib")
 add_subdirectory ("odb-compiler")

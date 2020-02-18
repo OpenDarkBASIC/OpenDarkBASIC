@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_repeat
+#define NAME ast_while
 
 using namespace testing;
 
@@ -17,8 +17,5 @@ using namespace odbc;
 
 TEST_F(NAME, infinite_loop)
 {
-    EXPECT_THAT(driver->parseString("repeat\nfoo()\nuntil cond\n"), IsTrue());
-
-    std::ofstream out("out.dot");
-    ast::dumpToDOT(out, driver->getAST());
+    ASSERT_THAT(driver->parseString("while cond\nfoo()\nendwhile\n"), IsTrue());
 }

@@ -4,6 +4,8 @@
 #include "odbc/Scanner.lex.h"
 #include <cassert>
 
+extern int yydebug;
+
 namespace odbc {
 
 // ----------------------------------------------------------------------------
@@ -14,6 +16,7 @@ Driver::Driver() :
     yylex_init(&scanner_);
     parser_ = yypstate_new();
     yylex_init_extra(this, &scanner_);
+    yydebug = 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -45,9 +48,21 @@ bool Driver::parseString(const std::string& str)
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::parseStream(std::istream& is)
+bool Driver::parseStream(FILE* fp)
 {
-    return true;
+    YYSTYPE pushedValue;
+    int pushedChar;
+    int parse_result;
+
+    yyset_in(fp, scanner_);
+
+    do
+    {
+        pushedChar = yylex(&pushedValue, scanner_);
+        parse_result = yypush_parse(parser_, pushedChar, &pushedValue, &location_, scanner_);
+    } while (parse_result == YYPUSH_MORE);
+
+    return parse_result == 0;
 }
 
 

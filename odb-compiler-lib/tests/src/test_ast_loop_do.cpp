@@ -17,8 +17,5 @@ using namespace odbc;
 
 TEST_F(NAME, infinite_loop)
 {
-    EXPECT_THAT(driver->parseString("do\nfoo()\nloop\n"), IsTrue());
-
-    std::ofstream out("out.dot");
-    ast::dumpToDOT(out, driver->getAST());
+    ASSERT_THAT(driver->parseString("do\nfoo()\nloop\n"), IsTrue());
 }

@@ -19,7 +19,7 @@ public:
     ~Driver();
 
     bool parseString(const std::string& str);
-    bool parseStream(std::istream& is);
+    bool parseStream(FILE* fp);
 
     ast::node_t* appendBlock(ast::node_t* block);
 

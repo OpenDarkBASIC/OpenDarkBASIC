@@ -513,7 +513,11 @@ node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* s
         stepExpr = newIntegerLiteral(1);
 
     node_t* addStepStmnt = newOp(symbolRef2, stepExpr, OP_INC);
-    node_t* loopBody = appendStatementToBlock(block, addStepStmnt);
+    node_t* loopBody;
+    if (block)
+        loopBody = appendStatementToBlock(block, addStepStmnt);
+    else
+        loopBody = addStepStmnt;
 
     node_t* exitCondition = newOp(symbolRef1, endExpr, OP_LE);
     node_t* loopWithInc = newLoopWhile(exitCondition, loopBody);
