@@ -16,12 +16,30 @@ using namespace odbc;
 
 TEST_F(NAME, print_command)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "print \"hello world\"\n"), IsTrue());
 }
 
 TEST_F(NAME, command_with_spaces)
 {
-    EXPECT_THAT(driver->parseString(
+    ASSERT_THAT(driver->parseString(
         "make object sphere 1, 10\n"), IsTrue());
+}
+
+TEST_F(NAME, randomize_timer)
+{
+    ASSERT_THAT(driver->parseString(
+        "randomize timer()\n"), IsTrue());
+}
+
+TEST_F(NAME, load_3d_sound)
+{
+    ASSERT_THAT(driver->parseString(
+        "load 3dsound \"howl.wav\",s\n"), IsTrue());
+}
+
+TEST_F(NAME, command_with_variable_args)
+{
+    ASSERT_THAT(driver->parseString(
+        "clone sound s,2\n"), IsTrue());
 }

@@ -39,8 +39,8 @@ FLOAT           {FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
 INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0x[0-9a-fA-F]+
 INTEGER         -?[0-9]+
+COMMAND_SYMBOL  [0-9][a-zA-Z0-9_]+?
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
-SYMBOL_TYPE     [$#]
 
 %%
 
@@ -116,6 +116,7 @@ SYMBOL_TYPE     [$#]
 (?:float)           { dbg("float"); return TOK_FLOAT; }
 (?:string)          { dbg("string"); return TOK_STRING; }
 
+{COMMAND_SYMBOL}    { dbg("command symbol"); yylval->symbol = strdup(yytext); return TOK_COMMAND_SYMBOL; }
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 "#"                 { dbg("hash"); return TOK_HASH; }
 "$"                 { dbg("hash"); return TOK_DOLLAR; }

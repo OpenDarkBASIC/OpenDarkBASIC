@@ -74,7 +74,7 @@
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON
+%token NEWLINE COLON SPACE
 
 %token CONSTANT
 
@@ -96,6 +96,7 @@
 %token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
 
 %token<symbol> SYMBOL;
+%token<symbol> COMMAND_SYMBOL;
 %token DOLLAR HASH NO_SYMBOL_TYPE;
 
 %type<node> stmnts;
@@ -103,6 +104,7 @@
 %type<node> literal;
 %type<node> expr;
 %type<node> symbol;
+%type<node> symbol_without_type;
 %type<node> var_assignment;
 %type<node> func_call;
 %type<node> func_decl;
@@ -113,9 +115,6 @@
 %type<node> gosub;
 %type<node> sub_decl;
 %type<node> sub_return;
-%type<node> command_stmnt;
-%type<node> command_symbol;
-%type<node> command_symbols;
 %type<node> dim_ref;
 %type<node> dim_decl;
 %type<node> var_decl;
@@ -154,13 +153,20 @@
 
 %%
 program
-  : stmnts                                       { driver->appendBlock($1); }
-  | stmnts seps                                  { driver->appendBlock($1); }
-  | seps stmnts                                  { driver->appendBlock($2); }
+  : seps_maybe stmnts seps_maybe                 { driver->appendBlock($2); }
+  | seps_maybe
   | END
   ;
-sep: NEWLINE | COLON;
-seps: seps sep | sep;
+sep
+  : NEWLINE
+  | COLON;
+seps
+  : seps sep
+  | sep;
+seps_maybe
+  : seps
+  |
+  ;
 stmnts
   : stmnts seps stmnt                            { $$ = appendStatementToBlock($1, $3); }
   | stmnt                                        { $$ = newBlock($1, nullptr); }
@@ -174,7 +180,6 @@ stmnt
   | func_exit_stmnt                              { $$ = $1; }
   | gosub                                        { $$ = $1; }
   | sub_decl                                     { $$ = $1; }
-  | command_stmnt                                { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
@@ -201,17 +206,6 @@ literal
   | INTEGER_LITERAL                              { $$ = newIntegerLiteral($1); }
   | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
-  ;
-command_stmnt
-  : command_symbols expr                         { $$ = newCommand($1, $2); freeNodeRecursive($1); }
-  | command_symbols                              { $$ = newCommand($1, nullptr); freeNodeRecursive($1); }
-  ;
-command_symbol
-  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
-  ;
-command_symbols
-  : command_symbol command_symbols               { $$ = newCommandSymbol($1, $2); }
-  | command_symbol                               { $$ = newCommandSymbol($1, nullptr); }
   ;
 gosub
   : GOSUB SYMBOL                                 { $$ = newSymbol($2, nullptr, nullptr, ST_SUBROUTINE, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($2); }
@@ -261,10 +255,19 @@ func_call
     }
   ;
 udt_decl
-  : TYPE SYMBOL seps var_decls seps ENDTYPE      { $$ = newSymbol($2, $4, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_DECL); free($2); }
+  : TYPE udt_ref seps var_decls seps ENDTYPE
+    {
+        $$ = $2;
+        $$->symbol.data = $4;
+        $$->symbol.flag.declaration = SD_DECL;
+    }
   ;
 udt_ref
-  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_REF); free($1); }
+  : symbol_without_type {
+        $$ = $1;
+        $$->symbol.flag.type = ST_UDT;
+        $$->symbol.flag.datatype = SDT_UDT;
+    }
   ;
 var_decls
   : var_decls seps var_decl                      { $$ = appendStatementToBlock($1, $3); }
@@ -312,9 +315,12 @@ dim_ref
     }
   ;
 symbol
-  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
+  : symbol_without_type                          { $$ = $1; }
   | SYMBOL HASH                                  { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_FLOAT, SS_LOCAL, SD_REF); free($1); }
   | SYMBOL DOLLAR                                { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_STRING, SS_LOCAL, SD_REF); free($1); }
+  ;
+symbol_without_type
+  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }

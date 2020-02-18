@@ -22,6 +22,8 @@ public:
     bool parseStream(FILE* fp);
 
     ast::node_t* appendBlock(ast::node_t* block);
+    void enterCommandMode();
+    void exitCommandMode();
 
     ast::node_t* getAST() { return ast_; }
     void freeAST();
