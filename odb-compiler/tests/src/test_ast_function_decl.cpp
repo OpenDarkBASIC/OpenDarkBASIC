@@ -38,3 +38,13 @@ TEST_F(NAME, function_retval)
         "    foo()\n"
         "endfunction a+b\n"), IsTrue());
 }
+
+TEST_F(NAME, function_exitfunction)
+{
+    EXPECT_THAT(driver->parseString(
+        "function myfunc()\n"
+        "    if a = 3\n"
+        "        exitfunction a+b\n"
+        "    endif\n"
+        "endfunction a+b\n"), IsTrue());
+}

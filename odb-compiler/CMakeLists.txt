@@ -65,6 +65,7 @@ target_compile_options (odbc
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
+        "tests/src/test_ast_command.cpp"
         "tests/src/test_ast_conditional.cpp"
         "tests/src/test_ast_constant.cpp"
         "tests/src/test_ast_dim.cpp"

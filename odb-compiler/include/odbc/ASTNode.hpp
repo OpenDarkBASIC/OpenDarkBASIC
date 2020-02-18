@@ -19,6 +19,8 @@ enum NodeType
     NT_LOOP,
     NT_LOOP_WHILE,
     NT_LOOP_UNTIL,
+    NT_COMMAND,
+    NT_COMMAND_SYMBOL,
     NT_SYMBOL,
     NT_LITERAL
 };
@@ -226,6 +228,21 @@ union node_t {
         node_t* body;
     } loop_until;
 
+    struct command_symbol_t
+    {
+        info_t info;
+        node_t* symbol;
+        node_t* next;
+    } command_symbol;
+
+    struct command_t
+    {
+        info_t info;
+        node_t* args;
+        node_t* _padding;
+        char* name;
+    } command;
+
     struct symbol_t
     {
         info_t info;
@@ -273,6 +290,9 @@ node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
 
 node_t* newFuncReturn(node_t* returnValue);
 node_t* newSubReturn();
+
+node_t* newCommandSymbol(node_t* symbol, node_t* nextSymbol);
+node_t* newCommand(node_t* symbolsList, node_t* arglist);
 
 node_t* newLoop(node_t* block);
 node_t* newLoopWhile(node_t* condition, node_t* block);

@@ -109,10 +109,14 @@
 %type<node> func_decl;
 %type<node> func_name_decl;
 %type<node> func_end;
+%type<node> func_exit_stmnt;
 %type<node> label_decl;
 %type<node> gosub;
 %type<node> sub_decl;
 %type<node> sub_return;
+%type<node> command_stmnt;
+%type<node> command_symbol;
+%type<node> command_symbols;
 %type<node> dim_ref;
 %type<node> dim_decl;
 %type<node> var_decl;
@@ -169,8 +173,10 @@ stmnt
   | udt_decl                                     { $$ = $1; }
   | func_call                                    { $$ = $1; }
   | func_decl                                    { $$ = $1; }
+  | func_exit_stmnt                              { $$ = $1; }
   | gosub                                        { $$ = $1; }
   | sub_decl                                     { $$ = $1; }
+  | command_stmnt                                { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
@@ -197,6 +203,16 @@ literal
   | INTEGER_LITERAL                              { $$ = newIntegerLiteral($1); }
   | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
+  ;
+command_stmnt
+  : command_symbols expr                         { $$ = newCommand($1, $2); freeNodeRecursive($1); }
+  ;
+command_symbol
+  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
+  ;
+command_symbols
+  : command_symbol command_symbols               { $$ = newCommandSymbol($1, $2); }
+  | command_symbol                               { $$ = newCommandSymbol($1, nullptr); }
   ;
 gosub
   : GOSUB SYMBOL                                 { $$ = newSymbol($2, nullptr, nullptr, ST_SUBROUTINE, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($2); }
@@ -225,6 +241,10 @@ func_decl
 func_end
   : ENDFUNCTION expr                             { $$ = newFuncReturn($2); }
   | ENDFUNCTION                                  { $$ = newFuncReturn(nullptr); }
+  ;
+func_exit_stmnt
+  : EXITFUNCTION expr                            { $$ = newFuncReturn($2); }
+  | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr); }
   ;
 func_name_decl
   : FUNCTION symbol LB expr RB                   { $$ = $2; $$->symbol.arglist = $4; }

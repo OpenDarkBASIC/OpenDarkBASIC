@@ -95,6 +95,19 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
             os << "N" << node->info.guid << "[label=\"return\"];\n";
         } break;
 
+        case NT_COMMAND: {
+            os << "N" << node->info.guid << "[label=\"command: \\\"" << node->command.name << "\\\"\"];\n";
+            if (node->command.args)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->command.args->info.guid << " [label=\"args\"];\n";
+                dumpToDOTRecursive(os, node->command.args);
+            }
+        } break;
+
+        case NT_COMMAND_SYMBOL: {
+            assert(false);
+        } return;
+
         case NT_LOOP: {
             os << "N" << node->info.guid << "[label = \"loop\"]\n";
             if (node->loop.body)
@@ -274,6 +287,11 @@ static node_t* dupNode(node_t* other)
             node->literal.value = other->literal.value;
         } break;
 
+        case NT_COMMAND: {
+            node->command.name = strdup(other->command.name);
+        } break;
+
+        case NT_COMMAND_SYMBOL:
         case NT_BLOCK:
         case NT_ASSIGNMENT:
         case NT_BRANCH:
@@ -377,6 +395,67 @@ node_t* newSubReturn()
     init_info(node, NT_SUB_RETURN);
     node->sub_return._padding1 = nullptr;
     node->sub_return._padding2 = nullptr;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newCommandSymbol(node_t* symbol, node_t* nextSymbol)
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_COMMAND_SYMBOL);
+    node->command_symbol.symbol = symbol;
+    node->command_symbol.next = nextSymbol;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+static char* symbolListToString(node_t* symbolList)
+{
+    if (symbolList->info.type == NT_SYMBOL)
+        return strdup(symbolList->symbol.name);
+
+    int commandStrLen = 0;
+    int symbolCount = 0;
+    for (node_t* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
+    {
+        assert(commandSymbol->info.type == NT_COMMAND_SYMBOL);
+        node_t* symbol = commandSymbol->command_symbol.symbol;
+        assert(symbol->info.type == NT_SYMBOL);
+        commandStrLen += strlen(symbol->symbol.name);
+        symbolCount++;
+    }
+    commandStrLen += symbolCount - 1;   // account for spaces in between each symbol
+
+    char* commandName = (char*)malloc(commandStrLen + 1);
+    *commandName = '\0';
+    for (node_t* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
+    {
+        node_t* symbol = commandSymbol->command_symbol.symbol;
+        strcat(commandName, symbol->symbol.name);
+        if (commandSymbol->command_symbol.next)
+            strcat(commandName, " ");
+    }
+
+    return commandName;
+}
+node_t* newCommand(node_t* symbolList, node_t* arglist)
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_COMMAND);
+    node->command.args = arglist;
+    node->command._padding = nullptr;
+    if ((node->command.name = symbolListToString(symbolList)) == nullptr)
+    {
+        free(node);
+        return nullptr;
+    }
+
     return node;
 }
 
