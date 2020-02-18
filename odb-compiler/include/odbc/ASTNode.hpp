@@ -15,6 +15,7 @@ enum NodeType
     NT_BRANCH,
     NT_BRANCH_PATHS,
     NT_FUNC_RETURN,
+    NT_SUB_RETURN,
     NT_LOOP,
     NT_LOOP_WHILE,
     NT_LOOP_UNTIL,
@@ -61,6 +62,7 @@ enum Operation
     X(ST_DIM) \
     X(ST_FUNC) \
     X(ST_LABEL) \
+    X(ST_SUBROUTINE) \
     X(ST_COMMAND)
 
 #define SYMBOL_DATATYPE_LIST \
@@ -196,6 +198,13 @@ union node_t {
         node_t* _padding;
     } func_return;
 
+    struct sub_return_t
+    {
+        info_t info;
+        node_t* _padding1;
+        node_t* _padding2;
+    } sub_return;
+
     struct loop_t
     {
         info_t info;
@@ -224,9 +233,9 @@ union node_t {
         node_t* arglist;
         char* name;
         union {
-            uint8_t flags;
+            uint16_t flags;
             struct {
-                SymbolType        type        : 3;
+                SymbolType        type        : 4;
                 SymbolDataType    datatype    : 3;
                 SymbolScope       scope       : 1;
                 SymbolDeclaration declaration : 1;
@@ -263,6 +272,7 @@ node_t* newAssignment(node_t* symbol, node_t* statement);
 node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
 
 node_t* newFuncReturn(node_t* returnValue);
+node_t* newSubReturn();
 
 node_t* newLoop(node_t* block);
 node_t* newLoopWhile(node_t* condition, node_t* block);

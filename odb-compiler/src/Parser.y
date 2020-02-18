@@ -73,9 +73,9 @@
 
 %define api.token.prefix {TOK_}
 
-/* Define the semantic types of our grammar. %token for TERMINALS and %type for non_terminals */
+/* Define the semantic types of our grammar. %token for termINALS and %type for non_terminals */
 %token END 0 "end of file"
-%token TERM
+%token NEWLINE COLON
 
 %token CONSTANT
 
@@ -109,6 +109,10 @@
 %type<node> func_decl;
 %type<node> func_name_decl;
 %type<node> func_end;
+%type<node> label_decl;
+%type<node> gosub;
+%type<node> sub_decl;
+%type<node> sub_return;
 %type<node> dim_ref;
 %type<node> dim_decl;
 %type<node> var_decl;
@@ -148,11 +152,15 @@
 %%
 program
   : stmnts                                       { driver->appendBlock($1); }
-  | stmnts TERM                                  { driver->appendBlock($1); }
+  | stmnts term                                  { driver->appendBlock($1); }
   | END
   ;
+term
+  : NEWLINE
+  | COLON
+  ;
 stmnts
-  : stmnts TERM stmnt                            { $$ = appendStatementToBlock($1, $3); }
+  : stmnts term stmnt                            { $$ = appendStatementToBlock($1, $3); }
   | stmnt                                        { $$ = newBlock($1, nullptr); }
   ;
 stmnt
@@ -161,6 +169,8 @@ stmnt
   | udt_decl                                     { $$ = $1; }
   | func_call                                    { $$ = $1; }
   | func_decl                                    { $$ = $1; }
+  | gosub                                        { $$ = $1; }
+  | sub_decl                                     { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
@@ -188,8 +198,24 @@ literal
   | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
   ;
+gosub
+  : GOSUB SYMBOL                                 { $$ = newSymbol($2, nullptr, nullptr, ST_SUBROUTINE, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($2); }
+  ;
+sub_decl
+  : label_decl term stmnts term sub_return {
+        $$ = $1;
+        $$->symbol.flag.type = ST_SUBROUTINE;
+        $$->symbol.data = appendStatementToBlock($3, $5);
+    }
+  ;
+label_decl
+  : SYMBOL COLON                                 { $$ = newSymbol($1, nullptr, nullptr, ST_LABEL, SDT_UNKNOWN, SS_LOCAL, SD_DECL); free($1); }
+  ;
+sub_return
+  : RETURN                                       { $$ = newSubReturn(); }
+  ;
 func_decl
-  : func_name_decl TERM stmnts TERM func_end {
+  : func_name_decl term stmnts term func_end {
         $$ = $1;
         $$->symbol.flag.type = ST_FUNC;
         $$->symbol.flag.declaration = SD_DECL;
@@ -216,13 +242,13 @@ func_call
     }
   ;
 udt_decl
-  : TYPE SYMBOL TERM var_decls TERM ENDTYPE      { $$ = newSymbol($2, $4, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_DECL); free($2); }
+  : TYPE SYMBOL term var_decls term ENDTYPE      { $$ = newSymbol($2, $4, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_DECL); free($2); }
   ;
 udt_ref
   : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UDT, SDT_UDT, SS_LOCAL, SD_REF); free($1); }
   ;
 var_decls
-  : var_decls TERM var_decl                      { $$ = appendStatementToBlock($1, $3); }
+  : var_decls term var_decl                      { $$ = appendStatementToBlock($1, $3); }
   | var_decl                                     { $$ = newBlock($1, nullptr); }
   ;
 var_decl
@@ -281,15 +307,15 @@ conditional_singleline
   | IF expr THEN ELSE stmnt                      { $$ = newBranch($2, nullptr, $5); }
   ;
 conditional_begin
-  : IF expr TERM conditional_next                { $$ = newBranch($2, nullptr, $4); }
-  | IF expr TERM stmnts TERM conditional_next    { $$ = newBranch($2, $4, $6); }
+  : IF expr term conditional_next                { $$ = newBranch($2, nullptr, $4); }
+  | IF expr term stmnts term conditional_next    { $$ = newBranch($2, $4, $6); }
   ;
 conditional_next
   : ENDIF                                        { $$ = nullptr; }
-  | ELSE TERM stmnts TERM ENDIF                  { $$ = $3; }
-  | ELSE TERM ENDIF                              { $$ = nullptr; }
-  | ELSEIF expr TERM conditional_next            { $$ = newBranch($2, nullptr, $4); }
-  | ELSEIF expr TERM stmnts TERM conditional_next { $$ = newBranch($2, $4, $6); }
+  | ELSE term stmnts term ENDIF                  { $$ = $3; }
+  | ELSE term ENDIF                              { $$ = nullptr; }
+  | ELSEIF expr term conditional_next            { $$ = newBranch($2, nullptr, $4); }
+  | ELSEIF expr term stmnts term conditional_next { $$ = newBranch($2, $4, $6); }
   ;
 loop
   : loop_do                                      { $$ = $1; }
@@ -298,22 +324,22 @@ loop
   | loop_for                                     { $$ = $1; }
   ;
 loop_do
-  : DO TERM stmnts TERM LOOP                     { $$ = newLoop($3); }
-  | DO TERM LOOP                                 { $$ = newLoop(nullptr); }
+  : DO term stmnts term LOOP                     { $$ = newLoop($3); }
+  | DO term LOOP                                 { $$ = newLoop(nullptr); }
   ;
 loop_while
-  : WHILE expr TERM stmnts TERM ENDWHILE         { $$ = newLoopWhile($2, $4); }
-  | WHILE expr TERM ENDWHILE                     { $$ = newLoopWhile($2, nullptr); }
+  : WHILE expr term stmnts term ENDWHILE         { $$ = newLoopWhile($2, $4); }
+  | WHILE expr term ENDWHILE                     { $$ = newLoopWhile($2, nullptr); }
   ;
 loop_until
-  : REPEAT TERM stmnts TERM UNTIL expr           { $$ = newLoopUntil($6, $3); }
-  | REPEAT TERM UNTIL expr                       { $$ = newLoopUntil($4, nullptr); }
+  : REPEAT term stmnts term UNTIL expr           { $$ = newLoopUntil($6, $3); }
+  | REPEAT term UNTIL expr                       { $$ = newLoopUntil($4, nullptr); }
   ;
 loop_for
-  : FOR symbol EQ expr TO expr STEP expr TERM stmnts TERM loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
-  | FOR symbol EQ expr TO expr STEP expr TERM loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
-  | FOR symbol EQ expr TO expr TERM stmnts TERM loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
-  | FOR symbol EQ expr TO expr TERM loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
+  : FOR symbol EQ expr TO expr STEP expr term stmnts term loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10); }
+  | FOR symbol EQ expr TO expr STEP expr term loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr); }
+  | FOR symbol EQ expr TO expr term stmnts term loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8); }
+  | FOR symbol EQ expr TO expr term loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr); }
   ;
 loop_for_next
   : NEXT                                         { $$ = nullptr; }

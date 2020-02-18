@@ -83,12 +83,16 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
         } break;
 
         case NT_FUNC_RETURN: {
-            os << "N" << node->info.guid << "[label=\"return\"];\n";
+            os << "N" << node->info.guid << "[label=\"endfunction\"];\n";
             if (node->func_return.retval)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->func_return.retval->info.guid << " [label=\"retval\"];\n";
                 dumpToDOTRecursive(os, node->func_return.retval);
             }
+        } break;
+
+        case NT_SUB_RETURN: {
+            os << "N" << node->info.guid << "[label=\"return\"];\n";
         } break;
 
         case NT_LOOP: {
@@ -275,6 +279,7 @@ static node_t* dupNode(node_t* other)
         case NT_BRANCH:
         case NT_BRANCH_PATHS:
         case NT_FUNC_RETURN:
+        case NT_SUB_RETURN:
         case NT_LOOP:
         case NT_LOOP_WHILE:
         case NT_LOOP_UNTIL:
@@ -359,6 +364,19 @@ node_t* newFuncReturn(node_t* returnValue)
     init_info(node, NT_FUNC_RETURN);
     node->func_return.retval = returnValue;
     node->func_return._padding = nullptr;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+node_t* newSubReturn()
+{
+    node_t* node = (node_t*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_SUB_RETURN);
+    node->sub_return._padding1 = nullptr;
+    node->sub_return._padding2 = nullptr;
     return node;
 }
 

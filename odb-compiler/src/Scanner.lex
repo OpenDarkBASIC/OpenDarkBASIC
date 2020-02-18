@@ -101,7 +101,10 @@ SYMBOL_TYPE     [$#]
 (?:step)            { dbg("step"); return TOK_STEP; }
 (?:next)            { dbg("next"); return TOK_NEXT; }
 (?:endfunction)     { dbg("endfunction"); return TOK_ENDFUNCTION; }
+(?:exitfunction)    { dbg("endfunction"); return TOK_EXITFUNCTION; }
 (?:function)        { dbg("function"); return TOK_FUNCTION; }
+(?:gosub)           { dbg("gosub"); return TOK_GOSUB; }
+(?:return)          { dbg("return"); return TOK_RETURN; }
 (?:dim)             { dbg("dim"); return TOK_DIM; }
 (?:global)          { dbg("global"); return TOK_GLOBAL; }
 (?:local)           { dbg("local"); return TOK_LOCAL; }
@@ -117,6 +120,7 @@ SYMBOL_TYPE     [$#]
 "#"                 { dbg("hash"); return TOK_HASH; }
 "$"                 { dbg("hash"); return TOK_DOLLAR; }
 
-[\n:]               { dbg("term"); return TOK_TERM; }
+\n                  { dbg("newline"); return TOK_NEWLINE; }
+:                   { dbg("colon"); return TOK_COLON; }
 .                   {}
 %%
