@@ -265,4 +265,3 @@ TEST_F(NAME, parse_multiple_lines)
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->overloads[0][0], Eq("c"));
 }
-

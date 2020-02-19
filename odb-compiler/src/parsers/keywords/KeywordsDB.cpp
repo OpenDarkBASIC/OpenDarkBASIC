@@ -1,11 +1,30 @@
 #include "odbc/parsers/keywords/KeywordsDB.hpp"
+#include "odbc/parsers/keywords/Driver.hpp"
+#include <cstdio>
 #include <iostream>
 
 namespace odbc {
 
 // ----------------------------------------------------------------------------
-void KeywordDB::appendFromFile(const std::string& fileName)
+bool KeywordDB::loadFromDirectory(const std::string& dir)
 {
+    return false;
+}
+
+// ----------------------------------------------------------------------------
+bool KeywordDB::appendFromFile(const std::string& fileName)
+{
+    bool result;
+
+    FILE* fp = fopen(fileName.c_str(), "rb");
+    if (fp == nullptr)
+        return false;
+
+    odbc::kw::Driver driver(this);
+    result = driver.parseStream(fp);
+
+    fclose(fp);
+    return result;
 }
 
 // ----------------------------------------------------------------------------

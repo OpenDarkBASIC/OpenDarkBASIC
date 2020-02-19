@@ -9,7 +9,8 @@ namespace odbc {
 class KeywordDB
 {
 public:
-    void appendFromFile(const std::string& fileName);
+    bool loadFromDirectory(const std::string& dir);
+    bool appendFromFile(const std::string& fileName);
     bool exists(const std::string& keyword);
 
     bool addKeyword(Keyword keyword);
@@ -20,4 +21,3 @@ private:
 };
 
 }
-

@@ -107,7 +107,7 @@ void Driver::finishKeyword()
         keyword.overloads.push_back(overloadArgs);
     }
 
-    db_->addKeyword(keyword);
+    db_->addKeyword(std::move(keyword));
 
     free(keywordName_);  keywordName_ = nullptr;
     free(helpFile_);     helpFile_ = nullptr;
