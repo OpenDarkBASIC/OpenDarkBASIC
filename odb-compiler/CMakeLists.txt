@@ -63,7 +63,8 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/Node.cpp"
     "src/parsers/db/Driver.cpp"
-    "src/parsers/keywords/Driver.cpp")
+    "src/parsers/keywords/Driver.cpp"
+    "src/parsers/keywords/KeywordsDB.cpp")
 target_include_directories (odbclib
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -79,20 +80,21 @@ target_compile_options (odbclib
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
-        "tests/src/test_ast_command.cpp"
-        "tests/src/test_ast_conditional.cpp"
-        "tests/src/test_ast_constant.cpp"
-        "tests/src/test_ast_dim.cpp"
-        "tests/src/test_ast_function_call.cpp"
-        "tests/src/test_ast_function_decl.cpp"
-        "tests/src/test_ast_loop_do.cpp"
-        "tests/src/test_ast_loop_for.cpp"
-        "tests/src/test_ast_loop_repeat.cpp"
-        "tests/src/test_ast_loop_while.cpp"
-        "tests/src/test_ast_op_add.cpp"
-        "tests/src/test_ast_remarks.cpp"
-        "tests/src/test_ast_sub.cpp"
-        "tests/src/test_ast_udt.cpp")
+        "tests/src/test_db_command.cpp"
+        "tests/src/test_db_conditional.cpp"
+        "tests/src/test_db_constant.cpp"
+        "tests/src/test_db_dim.cpp"
+        "tests/src/test_db_function_call.cpp"
+        "tests/src/test_db_function_decl.cpp"
+        "tests/src/test_db_loop_do.cpp"
+        "tests/src/test_db_loop_for.cpp"
+        "tests/src/test_db_loop_repeat.cpp"
+        "tests/src/test_db_loop_while.cpp"
+        "tests/src/test_db_op_add.cpp"
+        "tests/src/test_db_remarks.cpp"
+        "tests/src/test_db_sub.cpp"
+        "tests/src/test_db_udt.cpp"
+        "tests/src/test_keywords.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbclib

@@ -65,16 +65,83 @@
 %define api.token.prefix {TOK_}
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
-%token END 0 "end of file"
-%token<string> KEYWORD;
+%token END 0 "end of file";
+%token NO_PARAMS;
+%token LB RB LS RS COMMA EQ PIPE NEWLINE;
+%token<string> HELPFILE;
+%token<string> WORDS;
+
+%type<kw_help> kw_help;
 
 %destructor { free($$); } <string>
 
-%start keywords
+%start start
 
 %%
+start
+  : maybe_newlines keywords maybe_newlines
+  ;
 keywords
-  : END
+  : keywords newlines keyword
+  | keyword
+  | END
+  ;
+newlines
+  : newlines NEWLINE
+  | NEWLINE
+  ;
+maybe_newlines
+  : newlines
+  |
+  ;
+keyword
+  : kw_help EQ start_normarg_overloads     { driver->finishKeyword(); }
+  | kw_help EQ start_retarg_overloads      { driver->finishKeyword(); }
+  | kw_help EQ start_normargs              { driver->finishKeyword(); }
+  | kw_help EQ start_retargs               { driver->finishKeyword(); }
+  ;
+kw_help
+  : WORDS EQ HELPFILE                      { driver->setKeywordName($1); driver->setHelpFile($3); }
+  ;
+start_normarg_overloads
+  : normarg_overloads                      {  }
+  ;
+normarg_overloads
+  : LS start_normargs RS normarg_overloads {  }
+  | LS start_normargs RS                   {  }
+  ;
+start_normargs
+  : normargs                               { driver->finishOverload(); }
+  ;
+normargs
+  : args                                   { driver->finishArgs(); }
+  | NO_PARAMS                              { driver->finishArgs(); }
+  ;
+start_retarg_overloads
+  : retarg_overloads                       {  }
+  ;
+retarg_overloads
+  : LS start_retargs RS retarg_overloads   {  }
+  | LS start_retargs RS                    {  }
+  ;
+start_retargs
+  : retargs                                { driver->finishOverload(); }
+  ;
+retargs
+  : LB args RB                             { driver->finishRetArgs(); }
+  | LB NO_PARAMS RB                        { driver->finishRetArgs(); }
+  ;
+args
+  : arg COMMA args                         {  }
+  | arg                                    {  }
+  ;
+arg
+  : WORDS                                  { driver->addArg($1); }
+  | WORDS LB options RB                    { driver->addArg($1); }
+  ;
+options
+  : WORDS COMMA options                    { free($1); }
+  | WORDS                                  { free($1); }
   ;
 %%
 
