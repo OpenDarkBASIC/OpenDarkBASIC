@@ -121,7 +121,8 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 "#"                 { dbg("hash"); return TOK_HASH; }
 "$"                 { dbg("hash"); return TOK_DOLLAR; }
 
-\n                  { dbg("newline"); return TOK_NEWLINE; }
-:                   { dbg("colon"); return TOK_COLON; }
+"\n"                { dbg("newline"); return TOK_NEWLINE; }
+":"                 { dbg("colon"); return TOK_COLON; }
+" "                 { dbg("space"); return TOK_SPACE; }
 .                   {}
 %%

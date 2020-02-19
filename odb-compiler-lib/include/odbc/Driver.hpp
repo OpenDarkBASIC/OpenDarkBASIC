@@ -22,13 +22,15 @@ public:
     bool parseStream(FILE* fp);
 
     ast::node_t* appendBlock(ast::node_t* block);
-    void enterCommandMode();
-    void exitCommandMode();
+    void enterCommandMode() { commandMode_++; }
+    void exitCommandMode() { commandMode_--; };
+    bool isCommandMode() { return commandMode_ > 0; }
 
     ast::node_t* getAST() { return ast_; }
     void freeAST();
 
 private:
+    int commandMode_ = 0;
     ast::node_t* ast_;
     yyscan_t scanner_;
     yypstate* parser_;
