@@ -15,9 +15,7 @@ public:
     {
 
         ast = nullptr;
-        odbc::KeywordDB db;
-        db.loadFromFile("../../odb-compiler/keywords/keywords107.ini");
-        matcher.loadFromDB(&db);
+        matcher.updateFromDB(&db);
         driver = new odbc::db::Driver(&ast, &matcher);
     }
 
@@ -36,7 +34,8 @@ public:
 
         delete driver;
     }
-    odbc::db::Driver* driver;
+    odbc::KeywordDB db;
     odbc::KeywordMatcher matcher;
+    odbc::db::Driver* driver;
     odbc::ast::Node* ast;
 };

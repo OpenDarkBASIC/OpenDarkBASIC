@@ -3,7 +3,7 @@
 #include "odbc/ast/Node.hpp"
 #include "odbc/tests/ParserTestHarness.hpp"
 
-#define NAME ast_command
+#define NAME db_command
 
 using namespace testing;
 
@@ -16,6 +16,8 @@ using namespace odbc;
 
 TEST_F(NAME, print_command)
 {
+    db.addKeyword({"print", "", {}});
+    matcher.updateFromDB(&db);
     ASSERT_THAT(driver->parseString(
         "print \"hello world\"\n"), IsTrue());
 }

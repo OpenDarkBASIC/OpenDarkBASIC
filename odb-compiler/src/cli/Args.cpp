@@ -149,17 +149,18 @@ bool Args::loadKeywordFile(int argc, char** argv)
 {
     if (argc == 0)
     {
-        fprintf(stderr, "Error: Expected filename\n");
+        fprintf(stderr, "[kw parser] Error: Expected filename\n");
         return false;
     }
 
     FILE* fp = fopen(argv[0], "r");
     if (fp == nullptr)
     {
-        fprintf(stderr, "Error: Failed to open file `%s`\n", argv[0]);
+        fprintf(stderr, "[kw parser] Error: Failed to open file `%s`\n", argv[0]);
         return false;
     }
 
+    fprintf(stderr, "[kw parser] Loading keyword file `%s`\n", argv[0]);
     odbc::kw::Driver driver(&keywordDB_);
     bool result = driver.parseStream(fp);
     keywordMatcherDirty_ = true;
@@ -182,23 +183,25 @@ bool Args::parseDBA(int argc, char** argv)
 {
     if (argc == 0)
     {
-        fprintf(stderr, "Error: Expected filename\n");
+        fprintf(stderr, "[db parser] Error: Expected filename\n");
         return false;
     }
 
     FILE* fp = fopen(argv[0], "r");
     if (fp == nullptr)
     {
-        fprintf(stderr, "Error: Failed to open file `%s`\n", argv[0]);
+        fprintf(stderr, "[db parser] Error: Failed to open file `%s`\n", argv[0]);
         return false;
     }
 
     if (keywordMatcherDirty_)
     {
-        keywordMatcher_.loadFromDB(&keywordDB_);
+        fprintf(stderr, "[db parser] Updating keyword registry\n");
+        keywordMatcher_.updateFromDB(&keywordDB_);
         keywordMatcherDirty_ = false;
     }
 
+        fprintf(stderr, "[db parser] Parsing file `%s`\n", argv[0]);
     odbc::db::Driver driver(&ast_, &keywordMatcher_);
     bool result = driver.parseStream(fp);
     fclose(fp);
@@ -213,23 +216,24 @@ bool Args::dumpASTDOT(int argc, char** argv)
 {
     if (argc == 0)
     {
-        fprintf(stderr, "Error: Expected filename\n");
+        fprintf(stderr, "[ast] Error: Expected filename\n");
         return false;
     }
 
     if (ast_ == nullptr)
     {
-        fprintf(stderr, "Error: AST is empty, nothing to dump\n");
+        fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
         return false;
     }
 
     std::ofstream outfile(argv[0]);
     if (outfile.is_open() == false)
     {
-        fprintf(stderr, "Error: Failed to open file `%s`\n", argv[0]);
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", argv[0]);
         return false;
     }
 
+    fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format: `%s`\n", argv[0]);
     odbc::ast::dumpToDOT(outfile, ast_);
 
     return expectOptionOrNothing(argc-1, argv+1);

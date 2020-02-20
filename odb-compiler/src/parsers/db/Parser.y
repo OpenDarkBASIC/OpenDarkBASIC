@@ -141,6 +141,11 @@
 /* precedence rules */
 %nonassoc NO_ELSE
 %nonassoc ELSE ELSEIF
+/* Fixes sr conflict of
+ *   symbol: label_without_type
+ *   label : label_without_type COLON */
+%nonassoc NO_HASH_OR_DOLLAR
+%nonassoc COLON
 %left COMMA
 %left EQ
 %left ADD SUB
@@ -159,7 +164,6 @@
 program
   : seps_maybe stmnts seps_maybe                 { driver->setAST($2); }
   | seps_maybe
-  | END
   ;
 sep
   : NEWLINE
@@ -212,7 +216,7 @@ literal
   | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
   ;
 gosub
-  : GOSUB SYMBOL                                 { $$ = newSymbol($2, nullptr, nullptr, ST_SUBROUTINE, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($2); }
+  : GOSUB symbol_without_type                    { $$ = $2; $$->symbol.flag.type = ST_SUBROUTINE; }
   ;
 sub_decl
   : label_decl seps stmnts seps sub_return {
@@ -222,7 +226,7 @@ sub_decl
     }
   ;
 label_decl
-  : SYMBOL COLON                                 { $$ = newSymbol($1, nullptr, nullptr, ST_LABEL, SDT_UNKNOWN, SS_LOCAL, SD_DECL); free($1); }
+  : symbol_without_type COLON                    { $$ = $1; $$->symbol.flag.type = ST_LABEL; $$->symbol.flag.declaration = SD_DECL; }
   ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(); }
@@ -319,7 +323,7 @@ dim_ref
     }
   ;
 symbol
-  : symbol_without_type                          { $$ = $1; }
+  : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
   | SYMBOL HASH                                  { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_FLOAT, SS_LOCAL, SD_REF); free($1); }
   | SYMBOL DOLLAR                                { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_STRING, SS_LOCAL, SD_REF); free($1); }
   ;

@@ -11,7 +11,7 @@ class KeywordDB;
 class KeywordMatcher
 {
 public:
-    void loadFromDB(const KeywordDB* db);
+    void updateFromDB(const KeywordDB* db);
     int findLongestKeywordMatching(const char* str) const;
 
 private:

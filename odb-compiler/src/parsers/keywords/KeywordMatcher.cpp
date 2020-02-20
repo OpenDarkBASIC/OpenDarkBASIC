@@ -6,7 +6,7 @@
 namespace odbc {
 
 // ----------------------------------------------------------------------------
-void KeywordMatcher::loadFromDB(const KeywordDB* db)
+void KeywordMatcher::updateFromDB(const KeywordDB* db)
 {
     keywords_ = db->keywordsAsList();
     for (auto& s : keywords_)

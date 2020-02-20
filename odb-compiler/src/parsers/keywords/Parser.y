@@ -80,10 +80,10 @@
 
 %%
 start
-  : maybe_newlines maybe_ini_section maybe_newlines keywords maybe_newlines
+  : maybe_ini_section keywords maybe_newlines
   ;
 maybe_ini_section
-  : ini_section
+  : maybe_newlines ini_section maybe_newlines
   |
   ;
 ini_section

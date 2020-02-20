@@ -4,7 +4,8 @@
     #include "odbc/parsers/db/Scanner.hpp"
     #include "odbc/parsers/db/Driver.hpp"
 
-    #define dbg(text) printf(text ": \"%s\"\n", yytext)
+    #define dbg(text)
+    //printf(text ": \"%s\"\n", yytext)
     #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
 
     static char* strdup_range(const char* src, int beg, int end)
@@ -122,12 +123,10 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 {SYMBOL} {
     bool keywordFound = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p);
+    (void)keywordFound;
     yylval->symbol = strdup(yytext);
     dbg("symbol");
-    if (keywordFound)
-        return TOK_KEYWORD;
-    else
-        return TOK_SYMBOL;
+    return TOK_SYMBOL;
 }
 
 "#"                 { dbg("hash"); return TOK_HASH; }
