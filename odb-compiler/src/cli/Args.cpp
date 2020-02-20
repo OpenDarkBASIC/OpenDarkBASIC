@@ -162,6 +162,7 @@ bool Args::loadKeywordFile(int argc, char** argv)
 
     odbc::kw::Driver driver(&keywordDB_);
     bool result = driver.parseStream(fp);
+    keywordMatcherDirty_ = true;
     fclose(fp);
 
     if (result)
@@ -192,7 +193,13 @@ bool Args::parseDBA(int argc, char** argv)
         return false;
     }
 
-    odbc::db::Driver driver(&ast_);
+    if (keywordMatcherDirty_)
+    {
+        keywordMatcher_.loadFromDB(&keywordDB_);
+        keywordMatcherDirty_ = false;
+    }
+
+    odbc::db::Driver driver(&ast_, &keywordMatcher_);
     bool result = driver.parseStream(fp);
     fclose(fp);
 

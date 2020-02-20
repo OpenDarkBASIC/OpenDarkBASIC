@@ -1,6 +1,7 @@
 #include "odbc/parsers/db/Driver.hpp"
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"
+#include "odbc/parsers/keywords/KeywordMatcher.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 
@@ -10,8 +11,9 @@ namespace odbc {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(ast::Node** root) :
-    astRoot_(root)
+Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
+    astRoot_(root),
+    keywordMatcher_(keywordMatcher)
 {
 }
 
@@ -82,6 +84,28 @@ void Driver::setAST(ast::Node* block)
         *astRoot_ = block;
     else
         *astRoot_ = ast::appendStatementToBlock(*astRoot_, block);
+}
+
+// ----------------------------------------------------------------------------
+char* Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** last_accepting_cpos)
+{
+    **cp = *hold_char;
+
+    int foundLen = keywordMatcher_->findLongestKeywordMatching(str);
+    if (foundLen > *leng)
+    {
+        (*cp) = str + foundLen;
+        *last_accepting_cpos = str + foundLen;
+        *leng = foundLen;
+        *hold_char = str[foundLen];
+        str[foundLen] = '\0';
+    }
+    else
+    {
+        **cp = '\0';
+    }
+
+    return str;
 }
 
 }

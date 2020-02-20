@@ -64,7 +64,8 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     "src/ast/Node.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
-    "src/parsers/keywords/KeywordsDB.cpp")
+    "src/parsers/keywords/KeywordDB.cpp"
+    "src/parsers/keywords/KeywordMatcher.cpp")
 target_include_directories (odbclib
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

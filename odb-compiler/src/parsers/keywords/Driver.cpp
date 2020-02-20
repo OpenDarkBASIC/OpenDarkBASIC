@@ -2,7 +2,7 @@
 #include "odbc/parsers/keywords/Parser.y.h"
 #include "odbc/parsers/keywords/Scanner.hpp"
 #include "odbc/parsers/keywords/Keyword.hpp"
-#include "odbc/parsers/keywords/KeywordsDB.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
 #include <cassert>
 #include <algorithm>
 

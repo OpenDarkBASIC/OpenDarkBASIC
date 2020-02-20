@@ -4,7 +4,8 @@
 
     #define YYSTYPE KWSTYPE
 
-    #define dbg(text) printf(text ": \"%s\"\n", yytext)
+    #define dbg(text)
+    //printf(text ": \"%s\"\n", yytext)
 %}
 
 %option nodefault

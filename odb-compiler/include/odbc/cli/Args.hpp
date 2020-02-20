@@ -1,7 +1,8 @@
 #pragma once
 
 #include "odbc/config.hpp"
-#include "odbc/parsers/keywords/KeywordsDB.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
+#include "odbc/parsers/keywords/KeywordMatcher.hpp"
 #include "odbc/ast/Node.hpp"
 #include <vector>
 #include <string>
@@ -26,5 +27,7 @@ public:
 
 private:
     odbc::KeywordDB keywordDB_;
+    odbc::KeywordMatcher keywordMatcher_;
     odbc::ast::Node* ast_ = nullptr;
+    bool keywordMatcherDirty_ = true;
 };

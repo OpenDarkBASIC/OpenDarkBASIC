@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include "odbc/parsers/keywords/Driver.hpp"
-#include "odbc/parsers/keywords/KeywordsDB.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
 
 #define NAME parse_keywords
 

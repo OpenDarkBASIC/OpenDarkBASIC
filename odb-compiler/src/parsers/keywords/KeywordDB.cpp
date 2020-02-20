@@ -1,4 +1,4 @@
-#include "odbc/parsers/keywords/KeywordsDB.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
 #include "odbc/parsers/keywords/Driver.hpp"
 #include <cstdio>
 #include <iostream>
@@ -12,7 +12,7 @@ bool KeywordDB::loadFromDirectory(const std::string& dir)
 }
 
 // ----------------------------------------------------------------------------
-bool KeywordDB::appendFromFile(const std::string& fileName)
+bool KeywordDB::loadFromFile(const std::string& fileName)
 {
     bool result;
 
@@ -67,6 +67,16 @@ void KeywordDB::printAll()
         }
         std::cout << std::endl;
     }
+}
+
+// ----------------------------------------------------------------------------
+std::vector<std::string> KeywordDB::keywordsAsList() const
+{
+    std::vector<std::string> list;
+    list.reserve(map_.size());
+    for (const auto& kv : map_)
+        list.push_back(kv.first);
+    return list;
 }
 
 }

@@ -25,7 +25,7 @@
             class Driver;
         }
         namespace ast {
-            union node_t;
+            union Node;
         }
     }
 }
@@ -71,14 +71,14 @@
     char* string_literal;
     char* symbol;
 
-    odbc::ast::node_t* node;
+    odbc::ast::Node* node;
 }
 
 %define api.token.prefix {TOK_}
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON SPACE
+%token NEWLINE COLON
 
 %token CONSTANT
 
@@ -100,7 +100,7 @@
 %token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
 
 %token<symbol> SYMBOL;
-%token<symbol> COMMAND_SYMBOL;
+%token<symbol> KEYWORD;
 %token DOLLAR HASH NO_SYMBOL_TYPE;
 
 %type<node> stmnts;
