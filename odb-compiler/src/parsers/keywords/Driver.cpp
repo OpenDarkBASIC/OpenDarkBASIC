@@ -17,40 +17,42 @@ namespace kw {
 
 // ----------------------------------------------------------------------------
 Driver::Driver(KeywordDB* targetDB) :
-    location_({}),
     db_(targetDB),
     keywordName_(nullptr),
-    helpFile_(nullptr),
-    hasReturnType_(false)
+    helpFile_(nullptr)
 {
-    kwlex_init(&scanner_);
-    parser_ = kwpstate_new();
-    kwlex_init_extra(this, &scanner_);
 }
 
 // ----------------------------------------------------------------------------
 Driver::~Driver()
 {
-    kwpstate_delete(parser_);
-    kwlex_destroy(scanner_);
 }
 
 // ----------------------------------------------------------------------------
 bool Driver::parseString(const std::string& str)
 {
+    kwscan_t scanner;
+    kwlex_init(&scanner);
+    kwlex_init_extra(this, &scanner);
+
+    kwpstate* parser = kwpstate_new();
+    KWLTYPE loc = {0, 0, 0, 0};
+
     KWSTYPE pushedValue;
     int pushedChar;
     int parse_result;
 
-    YY_BUFFER_STATE buf = kw_scan_bytes(str.data(), str.length(), scanner_);
+    YY_BUFFER_STATE buf = kw_scan_bytes(str.data(), str.length(), scanner);
 
     do
     {
-        pushedChar = kwlex(&pushedValue, scanner_);
-        parse_result = kwpush_parse(parser_, pushedChar, &pushedValue, &location_, scanner_);
+        pushedChar = kwlex(&pushedValue, scanner);
+        parse_result = kwpush_parse(parser, pushedChar, &pushedValue, &loc, scanner);
     } while (parse_result == YYPUSH_MORE);
 
-    kw_delete_buffer(buf, scanner_);
+    kw_delete_buffer(buf, scanner);
+    kwpstate_delete(parser);
+    kwlex_destroy(scanner);
 
     return parse_result == 0;
 }
@@ -58,17 +60,26 @@ bool Driver::parseString(const std::string& str)
 // ----------------------------------------------------------------------------
 bool Driver::parseStream(FILE* fp)
 {
+    kwscan_t scanner;
+    kwlex_init(&scanner);
+    kwlex_init_extra(this, &scanner);
+    kwset_in(fp, scanner);
+
+    kwpstate* parser = kwpstate_new();
+    KWLTYPE loc = {0, 0, 0, 0};
+
     KWSTYPE pushedValue;
     int pushedChar;
     int parse_result;
 
-    kwset_in(fp, scanner_);
-
     do
     {
-        pushedChar = kwlex(&pushedValue, scanner_);
-        parse_result = kwpush_parse(parser_, pushedChar, &pushedValue, &location_, scanner_);
+        pushedChar = kwlex(&pushedValue, scanner);
+        parse_result = kwpush_parse(parser, pushedChar, &pushedValue, &loc, scanner);
     } while (parse_result == YYPUSH_MORE);
+
+    kwpstate_delete(parser);
+    kwlex_destroy(scanner);
 
     return parse_result == 0;
 }
@@ -94,8 +105,7 @@ void Driver::finishKeyword()
 {
     Keyword keyword;
     keyword.name = keywordName_;
-    keyword.helpFile = helpFile_;
-    keyword.hasReturnType = hasReturnType_;
+    keyword.helpFile = helpFile_ ? helpFile_ : "";
     for (auto& overload : currentOverloadList_)
     {
         std::vector<std::string> overloadArgs;
@@ -111,7 +121,6 @@ void Driver::finishKeyword()
 
     free(keywordName_);  keywordName_ = nullptr;
     free(helpFile_);     helpFile_ = nullptr;
-    hasReturnType_ = false;
 
     for (auto& overload : currentOverloadList_)
         for (auto& arg : overload)
@@ -139,21 +148,6 @@ void Driver::finishArgs()
 {
     currentOverloadList_.push_back(currentArgList_);
     currentArgList_.clear();
-}
-
-// ----------------------------------------------------------------------------
-void Driver::addRetArg(char* arg)
-{
-    currentArgList_.push_back(arg);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::finishRetArgs()
-{
-    currentOverloadList_.push_back(currentArgList_);
-    currentArgList_.clear();
-
-    hasReturnType_ = true;
 }
 
 }

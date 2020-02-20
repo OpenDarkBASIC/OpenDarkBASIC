@@ -1,5 +1,7 @@
 %code top
 {
+    #include "odbc/parsers/db/Parser.y.h"
+    #include "odbc/parsers/db/Scanner.hpp"
     #include "odbc/parsers/db/Driver.hpp"
     #include "odbc/ast/Node.hpp"
     #include <stdarg.h>
@@ -155,7 +157,7 @@
 
 %%
 program
-  : seps_maybe stmnts seps_maybe                 { driver->appendBlock($2); }
+  : seps_maybe stmnts seps_maybe                 { driver->setAST($2); }
   | seps_maybe
   | END
   ;

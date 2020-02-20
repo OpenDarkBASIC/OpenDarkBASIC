@@ -25,7 +25,7 @@ TEST_F(NAME, some_remarks)
         "   rem\t\n"
         "\trem\t\n"
         "rem rem rem\n"), Eq(true));
-    EXPECT_THAT(driver->getAST(), IsNull());
+    EXPECT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, remarks_with_empty_lines)
@@ -43,7 +43,7 @@ TEST_F(NAME, remarks_with_empty_lines)
         "\trem\t\n"
         "rem rem rem\n"
         "\n\n\n"), Eq(true));
-    EXPECT_THAT(driver->getAST(), IsNull());
+    EXPECT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, remarks_empty_line_command)
@@ -52,5 +52,5 @@ TEST_F(NAME, remarks_empty_line_command)
         "rem some remark\n"
         "\n"
         "sync on\n"), Eq(true));
-    ASSERT_THAT(driver->getAST(), NotNull());
+    ASSERT_THAT(ast, NotNull());
 }

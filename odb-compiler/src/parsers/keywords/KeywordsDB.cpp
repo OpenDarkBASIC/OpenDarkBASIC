@@ -36,23 +36,6 @@ bool KeywordDB::exists(const std::string& keyword)
 // ----------------------------------------------------------------------------
 bool KeywordDB::addKeyword(Keyword keyword)
 {
-    std::cout << keyword.name << "=" << keyword.helpFile << ": ";
-    if (keyword.hasReturnType)
-        std::cout << "(";
-    for (const auto& overload : keyword.overloads)
-    {
-        std::cout << "[";
-        auto it = overload.begin();
-        if (it != overload.end())
-            std::cout << *it++;
-        while (it != overload.end())
-            std::cout << ", " << *it++;
-        std::cout << "]";
-    }
-    if (keyword.hasReturnType)
-        std::cout << ")";
-    std::cout << std::endl;
-
     auto result = map_.insert({keyword.name, keyword});
     return result.second;
 }
@@ -64,6 +47,26 @@ const Keyword* KeywordDB::lookup(const std::string& keyword) const
     if (result == map_.end())
         return nullptr;
     return &result->second;
+}
+
+// ----------------------------------------------------------------------------
+void KeywordDB::printAll()
+{
+    for (const auto& kv : map_)
+    {
+        std::cout << kv.second.name << "=" << kv.second.helpFile << ": ";
+        for (const auto& overload : kv.second.overloads)
+        {
+            std::cout << "[";
+            auto it = overload.begin();
+            if (it != overload.end())
+                std::cout << *it++;
+            while (it != overload.end())
+                std::cout << ", " << *it++;
+            std::cout << "]";
+        }
+        std::cout << std::endl;
+    }
 }
 
 }

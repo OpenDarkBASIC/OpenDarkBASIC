@@ -140,7 +140,7 @@ union literal_value_t
     char* s;
 };
 
-union node_t {
+union Node {
     struct info_t
     {
         NodeType type;
@@ -152,102 +152,102 @@ union node_t {
     struct base_t
     {
         info_t info;
-        node_t* left;
-        node_t* right;
+        Node* left;
+        Node* right;
     } base;
 
     struct block_t
     {
         info_t info;
-        node_t* next;
-        node_t* statement;
+        Node* next;
+        Node* statement;
     } block;
 
     // Assign statement to symbol
     struct assignment_t
     {
         info_t info;
-        node_t* symbol;
-        node_t* statement;
+        Node* symbol;
+        Node* statement;
     } assignment;
 
     struct op_t
     {
         info_t info;
-        node_t* left;
-        node_t* right;
+        Node* left;
+        Node* right;
         Operation operation;
     } op;
 
     struct branch_paths_t
     {
         info_t info;
-        node_t* is_true;
-        node_t* is_false;
+        Node* is_true;
+        Node* is_false;
     } branch_paths;
 
     struct branch_t
     {
         info_t info;
-        node_t* condition;
-        node_t* paths;
+        Node* condition;
+        Node* paths;
     } branch;
 
     struct func_return_t
     {
         info_t info;
-        node_t* retval;
-        node_t* _padding;
+        Node* retval;
+        Node* _padding;
     } func_return;
 
     struct sub_return_t
     {
         info_t info;
-        node_t* _padding1;
-        node_t* _padding2;
+        Node* _padding1;
+        Node* _padding2;
     } sub_return;
 
     struct loop_t
     {
         info_t info;
-        node_t* _padding;
-        node_t* body;
+        Node* _padding;
+        Node* body;
     } loop;
 
     struct loop_while_t
     {
         info_t info;
-        node_t* condition;
-        node_t* body;
+        Node* condition;
+        Node* body;
     } loop_while;
 
     struct loop_until_t
     {
         info_t info;
-        node_t* condition;
-        node_t* body;
+        Node* condition;
+        Node* body;
     } loop_until;
 
     struct command_symbol_t
     {
         info_t info;
-        node_t* symbol;
-        node_t* next;
+        Node* symbol;
+        Node* next;
     } command_symbol;
 
     struct command_t
     {
         info_t info;
-        node_t* args;
-        node_t* _padding;
+        Node* args;
+        Node* _padding;
         char* name;
     } command;
 
     struct symbol_t
     {
         info_t info;
-        node_t* data;
-        node_t* arglist;
+        Node* data;
+        Node* arglist;
         char* name;
         union {
             uint16_t flags;
@@ -263,48 +263,48 @@ union node_t {
     struct literal_t
     {
         info_t info;
-        node_t* _padding1;
-        node_t* _padding2;
+        Node* _padding1;
+        Node* _padding2;
         LiteralType type;
         literal_value_t value;
     } literal;
 };
 
 #ifdef ODBC_DOT_EXPORT
-void dumpToDOT(std::ostream& os, node_t* root);
+void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
-node_t* newOp(node_t* left, node_t* right, Operation op);
+Node* newOp(Node* left, Node* right, Operation op);
 
-node_t* newSymbol(const char* symbolName, node_t* data, node_t* arglist,
+Node* newSymbol(const char* symbolName, Node* data, Node* arglist,
                   SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration);
 
-node_t* newBooleanLiteral(bool value);
-node_t* newIntegerLiteral(int32_t value);
-node_t* newFloatLiteral(double value);
-node_t* newStringLiteral(const char* value);
+Node* newBooleanLiteral(bool value);
+Node* newIntegerLiteral(int32_t value);
+Node* newFloatLiteral(double value);
+Node* newStringLiteral(const char* value);
 
-node_t* newAssignment(node_t* symbol, node_t* statement);
+Node* newAssignment(Node* symbol, Node* statement);
 
-node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch);
+Node* newBranch(Node* condition, Node* true_branch, Node* false_branch);
 
-node_t* newFuncReturn(node_t* returnValue);
-node_t* newSubReturn();
+Node* newFuncReturn(Node* returnValue);
+Node* newSubReturn();
 
-node_t* newCommandSymbol(node_t* symbol, node_t* nextSymbol);
-node_t* newCommand(node_t* symbolsList, node_t* arglist);
+Node* newCommandSymbol(Node* symbol, Node* nextSymbol);
+Node* newCommand(Node* symbolsList, Node* arglist);
 
-node_t* newLoop(node_t* block);
-node_t* newLoopWhile(node_t* condition, node_t* block);
-node_t* newLoopUntil(node_t* condition, node_t* block);
-node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* stepExpr, node_t* nextSymbol, node_t* block);
+Node* newLoop(Node* block);
+Node* newLoopWhile(Node* condition, Node* block);
+Node* newLoopUntil(Node* condition, Node* block);
+Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
 
-node_t* newBlock(node_t* expr, node_t* next);
-node_t* appendStatementToBlock(node_t* block, node_t* expr);
-node_t* prependStatementToBlock(node_t* block, node_t* expr);
+Node* newBlock(Node* expr, Node* next);
+Node* appendStatementToBlock(Node* block, Node* expr);
+Node* prependStatementToBlock(Node* block, Node* expr);
 
-void freeNode(node_t* node);
-void freeNodeRecursive(node_t* root=nullptr);
+void freeNode(Node* node);
+void freeNodeRecursive(Node* root=nullptr);
 
 }
 }

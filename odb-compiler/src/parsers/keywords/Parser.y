@@ -1,6 +1,7 @@
 %code top
 {
     #include "odbc/parsers/keywords/Parser.y.h"
+    #include "odbc/parsers/keywords/Scanner.hpp"
     #include "odbc/parsers/keywords/Driver.hpp"
     #include <stdarg.h>
 
@@ -71,7 +72,7 @@
 %token<string> HELPFILE;
 %token<string> WORDS;
 
-%type<kw_help> kw_help;
+%type<string> maybe_helpfile;
 
 %destructor { free($$); } <string>
 
@@ -79,7 +80,14 @@
 
 %%
 start
-  : maybe_newlines keywords maybe_newlines
+  : maybe_newlines maybe_ini_section maybe_newlines keywords maybe_newlines
+  ;
+maybe_ini_section
+  : ini_section
+  |
+  ;
+ini_section
+  : LS WORDS RS                            { free($2); }
   ;
 keywords
   : keywords newlines keyword
@@ -95,45 +103,29 @@ maybe_newlines
   |
   ;
 keyword
-  : kw_help EQ start_normarg_overloads     { driver->finishKeyword(); }
-  | kw_help EQ start_retarg_overloads      { driver->finishKeyword(); }
-  | kw_help EQ start_normargs              { driver->finishKeyword(); }
-  | kw_help EQ start_retargs               { driver->finishKeyword(); }
+  : kw_help EQ overloads                   { driver->finishKeyword(); }
+  | kw_help EQ start_args                  { driver->finishKeyword(); }
   ;
 kw_help
-  : WORDS EQ HELPFILE                      { driver->setKeywordName($1); driver->setHelpFile($3); }
+  : WORDS EQ maybe_helpfile                { driver->setKeywordName($1); driver->setHelpFile($3); }
   ;
-start_normarg_overloads
-  : normarg_overloads                      {  }
+maybe_helpfile
+  : HELPFILE                               { $$ = $1; }
+  |                                        { $$ = nullptr; }
   ;
-normarg_overloads
-  : LS start_normargs RS normarg_overloads {  }
-  | LS start_normargs RS                   {  }
+overloads
+  : LS start_args RS overloads             {  }
+  | LS start_args RS                       {  }
   ;
-start_normargs
-  : normargs                               { driver->finishOverload(); }
-  ;
-normargs
-  : args                                   { driver->finishArgs(); }
-  | NO_PARAMS                              { driver->finishArgs(); }
-  ;
-start_retarg_overloads
-  : retarg_overloads                       {  }
-  ;
-retarg_overloads
-  : LS start_retargs RS retarg_overloads   {  }
-  | LS start_retargs RS                    {  }
-  ;
-start_retargs
-  : retargs                                { driver->finishOverload(); }
-  ;
-retargs
-  : LB args RB                             { driver->finishRetArgs(); }
-  | LB NO_PARAMS RB                        { driver->finishRetArgs(); }
+start_args
+  : LB args RB                             { driver->finishOverload(); }
+  | args                                   { driver->finishOverload(); }
   ;
 args
   : arg COMMA args                         {  }
-  | arg                                    {  }
+  | arg                                    { driver->finishArgs(); }
+  | NO_PARAMS                              { driver->finishArgs(); }
+  |                                        { driver->finishArgs(); }
   ;
 arg
   : WORDS                                  { driver->addArg($1); }

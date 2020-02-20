@@ -1,8 +1,6 @@
 #pragma once
 
 #include "odbc/config.hpp"
-#include "odbc/parsers/keywords/Scanner.hpp"
-#include "odbc/parsers/keywords/Parser.y.h"
 #include <string>
 #include <vector>
 
@@ -28,18 +26,11 @@ public:
     void addArg(char* arg);
     void finishArgs();
 
-    void addRetArg(char* arg);
-    void finishRetArgs();
-
 private:
-    kwscan_t scanner_;
-    kwpstate* parser_;
-    KWLTYPE location_;
     KeywordDB* db_;
 
     char* keywordName_;
     char* helpFile_;
-    bool hasReturnType_;
     std::vector<char*> currentArgList_;
     std::vector<std::vector<char*>> currentOverloadList_;
 };

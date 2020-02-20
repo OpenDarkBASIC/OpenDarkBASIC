@@ -15,6 +15,7 @@ public:
 
     bool addKeyword(Keyword keyword);
     const Keyword* lookup(const std::string& keyword) const;
+    void printAll();
 
 private:
     std::unordered_map<std::string, Keyword> map_;

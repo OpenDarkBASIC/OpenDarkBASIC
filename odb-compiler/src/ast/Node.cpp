@@ -9,7 +9,7 @@ namespace ast {
 // ----------------------------------------------------------------------------
 #ifdef ODBC_DOT_EXPORT
 static int nodeGUIDCounter;
-static void dumpToDOTRecursive(std::ostream& os, node_t* node)
+static void dumpToDOTRecursive(std::ostream& os, Node* node)
 {
     switch (node->info.type)
     {
@@ -199,7 +199,7 @@ static void dumpToDOTRecursive(std::ostream& os, node_t* node)
         } break;
     }
 }
-void dumpToDOT(std::ostream& os, node_t* root)
+void dumpToDOT(std::ostream& os, Node* root)
 {
     os << std::string("digraph name {\n");
     dumpToDOTRecursive(os, root);
@@ -208,7 +208,7 @@ void dumpToDOT(std::ostream& os, node_t* root)
 #endif
 
 // ----------------------------------------------------------------------------
-static void init_info(node_t* node, NodeType type)
+static void init_info(Node* node, NodeType type)
 {
     node->info.type = type;
 #ifdef ODBC_DOT_EXPORT
@@ -217,9 +217,9 @@ static void init_info(node_t* node, NodeType type)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newOp(node_t* left, node_t* right, Operation op)
+Node* newOp(Node* left, Node* right, Operation op)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -231,10 +231,10 @@ node_t* newOp(node_t* left, node_t* right, Operation op)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newSymbol(const char* symbolName, node_t* data, node_t* arglist,
+Node* newSymbol(const char* symbolName, Node* data, Node* arglist,
                   SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -250,12 +250,12 @@ node_t* newSymbol(const char* symbolName, node_t* data, node_t* arglist,
 }
 
 // ----------------------------------------------------------------------------
-static node_t* dupNode(node_t* other)
+static Node* dupNode(Node* other)
 {
-    node_t* left = nullptr;
-    node_t* right = nullptr;
+    Node* left = nullptr;
+    Node* right = nullptr;
 
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         goto allocNodeFailed;
 
@@ -315,9 +315,9 @@ static node_t* dupNode(node_t* other)
 }
 
 // ----------------------------------------------------------------------------
-static node_t* newConstant(LiteralType type, literal_value_t value)
+static Node* newConstant(LiteralType type, literal_value_t value)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -329,16 +329,16 @@ static node_t* newConstant(LiteralType type, literal_value_t value)
     return node;
 }
 
-node_t* newBooleanLiteral(bool b)       { literal_value_t value; value.b = b;         return newConstant(LT_BOOLEAN, value); }
-node_t* newIntegerLiteral(int32_t i)    { literal_value_t value; value.i = i;         return newConstant(LT_INTEGER, value); }
-node_t* newFloatLiteral(double f)       { literal_value_t value; value.f = f;         return newConstant(LT_FLOAT, value); }
-node_t* newStringLiteral(const char* s) { literal_value_t value; value.s = strdup(s); return newConstant(LT_STRING, value); }
+Node* newBooleanLiteral(bool b)       { literal_value_t value; value.b = b;         return newConstant(LT_BOOLEAN, value); }
+Node* newIntegerLiteral(int32_t i)    { literal_value_t value; value.i = i;         return newConstant(LT_INTEGER, value); }
+Node* newFloatLiteral(double f)       { literal_value_t value; value.f = f;         return newConstant(LT_FLOAT, value); }
+Node* newStringLiteral(const char* s) { literal_value_t value; value.s = strdup(s); return newConstant(LT_STRING, value); }
 
 // ----------------------------------------------------------------------------
-node_t* newAssignment(node_t* symbol, node_t* statement)
+Node* newAssignment(Node* symbol, Node* statement)
 {
     assert(symbol->info.type == NT_SYMBOL);
-    node_t* ass = (node_t*)malloc(sizeof *ass);
+    Node* ass = (Node*)malloc(sizeof *ass);
     init_info(ass, NT_ASSIGNMENT);
     ass->assignment.symbol = symbol;
     ass->assignment.statement = statement;
@@ -346,12 +346,12 @@ node_t* newAssignment(node_t* symbol, node_t* statement)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch)
+Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
 {
-    node_t* paths = nullptr;
+    Node* paths = nullptr;
     if (true_branch || false_branch)
     {
-        paths = (node_t*)malloc(sizeof* paths);
+        paths = (Node*)malloc(sizeof* paths);
         if (paths == nullptr)
             return nullptr;
         init_info(paths, NT_BRANCH_PATHS);
@@ -359,7 +359,7 @@ node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch)
         paths->branch_paths.is_false = false_branch;
     }
 
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
     {
         freeNodeRecursive(paths);
@@ -373,9 +373,9 @@ node_t* newBranch(node_t* condition, node_t* true_branch, node_t* false_branch)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newFuncReturn(node_t* returnValue)
+Node* newFuncReturn(Node* returnValue)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -386,9 +386,9 @@ node_t* newFuncReturn(node_t* returnValue)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newSubReturn()
+Node* newSubReturn()
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -399,9 +399,9 @@ node_t* newSubReturn()
 }
 
 // ----------------------------------------------------------------------------
-node_t* newCommandSymbol(node_t* symbol, node_t* nextSymbol)
+Node* newCommandSymbol(Node* symbol, Node* nextSymbol)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -412,17 +412,17 @@ node_t* newCommandSymbol(node_t* symbol, node_t* nextSymbol)
 }
 
 // ----------------------------------------------------------------------------
-static char* symbolListToString(node_t* symbolList)
+static char* symbolListToString(Node* symbolList)
 {
     if (symbolList->info.type == NT_SYMBOL)
         return strdup(symbolList->symbol.name);
 
     int commandStrLen = 0;
     int symbolCount = 0;
-    for (node_t* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
+    for (Node* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
     {
         assert(commandSymbol->info.type == NT_COMMAND_SYMBOL);
-        node_t* symbol = commandSymbol->command_symbol.symbol;
+        Node* symbol = commandSymbol->command_symbol.symbol;
         assert(symbol->info.type == NT_SYMBOL);
         commandStrLen += strlen(symbol->symbol.name);
         symbolCount++;
@@ -431,9 +431,9 @@ static char* symbolListToString(node_t* symbolList)
 
     char* commandName = (char*)malloc(commandStrLen + 1);
     *commandName = '\0';
-    for (node_t* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
+    for (Node* commandSymbol = symbolList; commandSymbol; commandSymbol = commandSymbol->command_symbol.next)
     {
-        node_t* symbol = commandSymbol->command_symbol.symbol;
+        Node* symbol = commandSymbol->command_symbol.symbol;
         strcat(commandName, symbol->symbol.name);
         if (commandSymbol->command_symbol.next)
             strcat(commandName, " ");
@@ -441,9 +441,9 @@ static char* symbolListToString(node_t* symbolList)
 
     return commandName;
 }
-node_t* newCommand(node_t* symbolList, node_t* arglist)
+Node* newCommand(Node* symbolList, Node* arglist)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -460,9 +460,9 @@ node_t* newCommand(node_t* symbolList, node_t* arglist)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newLoop(node_t* block)
+Node* newLoop(Node* block)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -473,9 +473,9 @@ node_t* newLoop(node_t* block)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newLoopWhile(node_t* condition, node_t* block)
+Node* newLoopWhile(Node* condition, Node* block)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -486,9 +486,9 @@ node_t* newLoopWhile(node_t* condition, node_t* block)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newLoopUntil(node_t* condition, node_t* block)
+Node* newLoopUntil(Node* condition, Node* block)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
@@ -499,29 +499,29 @@ node_t* newLoopUntil(node_t* condition, node_t* block)
 }
 
 // ----------------------------------------------------------------------------
-node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* stepExpr, node_t* nextSymbol, node_t* block)
+Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block)
 {
     assert(symbol->info.type == NT_SYMBOL);
 
     // We need a few copies of the symbol
-    node_t* symbolRef1 = dupNode(symbol);
-    node_t* symbolRef2 = dupNode(symbol);
+    Node* symbolRef1 = dupNode(symbol);
+    Node* symbolRef2 = dupNode(symbol);
 
-    node_t* loopInit = newAssignment(symbol, startExpr);
+    Node* loopInit = newAssignment(symbol, startExpr);
 
     if (stepExpr == nullptr)
         stepExpr = newIntegerLiteral(1);
 
-    node_t* addStepStmnt = newOp(symbolRef2, stepExpr, OP_INC);
-    node_t* loopBody;
+    Node* addStepStmnt = newOp(symbolRef2, stepExpr, OP_INC);
+    Node* loopBody;
     if (block)
         loopBody = appendStatementToBlock(block, addStepStmnt);
     else
         loopBody = addStepStmnt;
 
-    node_t* exitCondition = newOp(symbolRef1, endExpr, OP_LE);
-    node_t* loopWithInc = newLoopWhile(exitCondition, loopBody);
-    node_t* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr));
+    Node* exitCondition = newOp(symbolRef1, endExpr, OP_LE);
+    Node* loopWithInc = newLoopWhile(exitCondition, loopBody);
+    Node* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr));
 
     freeNodeRecursive(nextSymbol);
 
@@ -529,9 +529,9 @@ node_t* newLoopFor(node_t* symbol, node_t* startExpr, node_t* endExpr, node_t* s
 }
 
 // ----------------------------------------------------------------------------
-node_t* newBlock(node_t* expr, node_t* next)
+Node* newBlock(Node* expr, Node* next)
 {
-    node_t* node = (node_t*)malloc(sizeof *node);
+    Node* node = (Node*)malloc(sizeof *node);
     init_info(node, NT_BLOCK);
     node->block.next = next;
     node->block.statement = expr;
@@ -539,10 +539,10 @@ node_t* newBlock(node_t* expr, node_t* next)
 }
 
 // ----------------------------------------------------------------------------
-node_t* appendStatementToBlock(node_t* block, node_t* expr)
+Node* appendStatementToBlock(Node* block, Node* expr)
 {
     assert(block->info.type == NT_BLOCK);
-    node_t* last = block;
+    Node* last = block;
     while (last->block.next)
         last = last->block.next;
 
@@ -551,14 +551,14 @@ node_t* appendStatementToBlock(node_t* block, node_t* expr)
 }
 
 // ----------------------------------------------------------------------------
-node_t* prependStatementToBlock(node_t* block, node_t* expr)
+Node* prependStatementToBlock(Node* block, Node* expr)
 {
-    node_t* prev = newBlock(expr, block);
+    Node* prev = newBlock(expr, block);
     return prev;
 }
 
 // ----------------------------------------------------------------------------
-void freeNode(node_t* node)
+void freeNode(Node* node)
 {
     switch (node->info.type)
     {
@@ -575,7 +575,7 @@ void freeNode(node_t* node)
 }
 
 // ----------------------------------------------------------------------------
-void freeNodeRecursive(node_t* node)
+void freeNodeRecursive(Node* node)
 {
     if (node == nullptr)
         return;

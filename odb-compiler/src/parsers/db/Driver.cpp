@@ -1,5 +1,6 @@
 #include "odbc/parsers/db/Driver.hpp"
 #include "odbc/parsers/db/Parser.y.h"
+#include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 
@@ -9,40 +10,41 @@ namespace odbc {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver() :
-    ast_(nullptr),
-    location_({})
+Driver::Driver(ast::Node** root) :
+    astRoot_(root)
 {
-    dblex_init(&scanner_);
-    parser_ = dbpstate_new();
-    dblex_init_extra(this, &scanner_);
-    dbdebug = 0;
 }
 
 // ----------------------------------------------------------------------------
 Driver::~Driver()
 {
-    freeAST();
-    dbpstate_delete(parser_);
-    dblex_destroy(scanner_);
 }
 
 // ----------------------------------------------------------------------------
 bool Driver::parseString(const std::string& str)
 {
+    dbscan_t scanner;
+    dblex_init(&scanner);
+    dblex_init_extra(this, &scanner);
+    dbpstate* parser = dbpstate_new();
+    DBLTYPE loc = {0, 0, 0, 0};
+
     DBSTYPE pushedValue;
     int pushedChar;
     int parse_result;
 
-    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
+    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner);
 
+    dbdebug = 0;
     do
     {
-        pushedChar = dblex(&pushedValue, scanner_);
-        parse_result = dbpush_parse(parser_, pushedChar, &pushedValue, &location_, scanner_);
+        pushedChar = dblex(&pushedValue, scanner);
+        parse_result = dbpush_parse(parser, pushedChar, &pushedValue, &loc, scanner);
     } while (parse_result == YYPUSH_MORE);
 
-    db_delete_buffer(buf, scanner_);
+    db_delete_buffer(buf, scanner);
+    dbpstate_delete(parser);
+    dblex_destroy(scanner);
 
     return parse_result == 0;
 }
@@ -50,39 +52,36 @@ bool Driver::parseString(const std::string& str)
 // ----------------------------------------------------------------------------
 bool Driver::parseStream(FILE* fp)
 {
+    dbscan_t scanner;
+    dblex_init(&scanner);
+    dblex_init_extra(this, &scanner);
+    dbpstate* parser = dbpstate_new();
+    DBLTYPE loc = {0, 0, 0, 0};
+
     DBSTYPE pushedValue;
     int pushedChar;
     int parse_result;
 
-    dbset_in(fp, scanner_);
+    dbset_in(fp, scanner);
 
     do
     {
-        pushedChar = dblex(&pushedValue, scanner_);
-        parse_result = dbpush_parse(parser_, pushedChar, &pushedValue, &location_, scanner_);
+        pushedChar = dblex(&pushedValue, scanner);
+        parse_result = dbpush_parse(parser, pushedChar, &pushedValue, &loc, scanner);
     } while (parse_result == YYPUSH_MORE);
 
     return parse_result == 0;
 }
 
-
 // ----------------------------------------------------------------------------
-ast::node_t* Driver::appendBlock(ast::node_t* block)
+void Driver::setAST(ast::Node* block)
 {
     assert(block->info.type == ast::NT_BLOCK);
 
-    if (ast_ == nullptr)
-        ast_ = block;
+    if (*astRoot_ == nullptr)
+        *astRoot_ = block;
     else
-        ast_ = ast::appendStatementToBlock(ast_, block);
-    return ast_;
-}
-
-// ----------------------------------------------------------------------------
-void Driver::freeAST()
-{
-    ast::freeNodeRecursive(ast_);
-    ast_ = nullptr;
+        *astRoot_ = ast::appendStatementToBlock(*astRoot_, block);
 }
 
 }
