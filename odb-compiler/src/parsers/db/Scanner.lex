@@ -122,7 +122,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 {COMMAND_SYMBOL}    { dbg("command symbol"); yylval->symbol = strdup(yytext); return TOK_COMMAND_SYMBOL; }
 {SYMBOL}            { dbg("symbol"); yylval->symbol = strdup(yytext); return TOK_SYMBOL; }
 "#"                 { dbg("hash"); return TOK_HASH; }
-"$"                 { dbg("hash"); return TOK_DOLLAR; }
+"$"                 { dbg("dollar"); return TOK_DOLLAR; }
 
 "\n"                { dbg("newline"); return TOK_NEWLINE; }
 ":"                 { dbg("colon"); return TOK_COLON; }
