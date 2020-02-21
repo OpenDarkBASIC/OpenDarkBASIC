@@ -13,12 +13,13 @@ static struct {
     HandlerFunc handler;
     const char* doc;
 } table[] = {
-    { "help",         'h',   nullptr, &Args::printHelp, "Print this help text"},
-    { "kw-file",      '\0', "<file>", &Args::loadKeywordFile, "Load this keywords file"},
-    { "kw-dir",       '\0', "<path>", &Args::loadKeywordDir, "Load all keyword files in this directory"},
-    { "dba",          '\0', "<path>", &Args::parseDBA, "Parse this DBA source file"},
-    { "dump-ast-dot", '\0', "<path>", &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. If no file is specified then it is written to stdout"},
-    { "dump-kw",      '\0', nullptr,  &Args::dumpkWStdOut, "Prints all loaded keywords to stdout"}
+    { "help",        'h',    nullptr,  &Args::printHelp, "Print this help text"},
+    { "no-banner",    0,     "",       &Args::disableBanner, "Don't print the cool ASCII art banner"},
+    { "kw-file",      0,     "<file>", &Args::loadKeywordFile, "Load this keywords file"},
+    { "kw-dir",       0,     "<path>", &Args::loadKeywordDir, "Load all keyword files in this directory"},
+    { "dba",          0,     "<path>", &Args::parseDBA, "Parse this DBA source file"},
+    { "dump-ast-dot", 0,     "[path]", &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. If no file is specified then it is written to stdout"},
+    { "dump-kw",      0,     nullptr,  &Args::dumpkWStdOut, "Prints all loaded keywords to stdout"}
 };
 
 static constexpr int switchTableSize() { return sizeof(table) / sizeof(*table); }
@@ -145,6 +146,13 @@ bool Args::parseShortOptiones(int argc, char** argv)
 }
 
 // ----------------------------------------------------------------------------
+bool Args::disableBanner(int argc, char** argv)
+{
+    printBanner_ = false;
+    return false;
+}
+
+// ----------------------------------------------------------------------------
 bool Args::loadKeywordFile(int argc, char** argv)
 {
     if (argc == 0)
@@ -153,18 +161,10 @@ bool Args::loadKeywordFile(int argc, char** argv)
         return false;
     }
 
-    FILE* fp = fopen(argv[0], "r");
-    if (fp == nullptr)
-    {
-        fprintf(stderr, "[kw parser] Error: Failed to open file `%s`\n", argv[0]);
-        return false;
-    }
-
     fprintf(stderr, "[kw parser] Loading keyword file `%s`\n", argv[0]);
     odbc::kw::Driver driver(&keywordDB_);
-    bool result = driver.parseStream(fp);
+    bool result = driver.parseFile(argv[0]);
     keywordMatcherDirty_ = true;
-    fclose(fp);
 
     if (result)
         return expectOptionOrNothing(argc-1, argv+1);
@@ -201,7 +201,7 @@ bool Args::parseDBA(int argc, char** argv)
         keywordMatcherDirty_ = false;
     }
 
-        fprintf(stderr, "[db parser] Parsing file `%s`\n", argv[0]);
+    fprintf(stderr, "[db parser] Parsing file `%s`\n", argv[0]);
     odbc::db::Driver driver(&ast_, &keywordMatcher_);
     bool result = driver.parseStream(fp);
     fclose(fp);

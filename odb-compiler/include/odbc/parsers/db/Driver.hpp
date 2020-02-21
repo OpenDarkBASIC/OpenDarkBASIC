@@ -1,7 +1,9 @@
 #pragma once
 
 #include "odbc/config.hpp"
+#include "odbc/parsers/db/Scanner.hpp"
 #include <string>
+#include <cstdarg>
 
 namespace odbc {
 
@@ -19,8 +21,12 @@ public:
     Driver(ast::Node** root, const KeywordMatcher* keywordMatcher);
     ~Driver();
 
-    bool parseString(const std::string& str);
+    bool parseFile(const std::string& fileName);
     bool parseStream(FILE* fp);
+    bool parseString(const std::string& str);
+
+    void reportError(DBLTYPE* loc, const char* fmt, ...);
+    void vreportError(DBLTYPE* loc, const char* fmt, va_list args);
 
     /*!
      * @brief Gets called by the lexer (see Scanner.lex) when it encounters
@@ -42,6 +48,14 @@ public:
     void appendAST(ast::Node* block);
 
 private:
+    // For error reporting
+    const std::string* activeFileName_ = nullptr;
+    const std::string* activeString_ = nullptr;
+    FILE* activeFilePtr_ = nullptr;
+
+    dbscan_t scanner_ = nullptr;
+    dbpstate* parser_ = nullptr;
+
     ast::Node** astRoot_;
     const KeywordMatcher* keywordMatcher_;
 };

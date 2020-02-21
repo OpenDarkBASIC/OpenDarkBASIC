@@ -383,9 +383,7 @@ loop_for_next
 void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
-    printf("Error: ");
     va_start(args, fmt);
-    vprintf(fmt, args);
+    driver->vreportError(locp, fmt, args);
     va_end(args);
-    printf("\n");
 }

@@ -11,6 +11,7 @@ public:
     std::string name;
     std::string helpFile;
     std::vector<std::vector<std::string>> overloads;
+    bool hasReturnType = false;
 };
 
 }

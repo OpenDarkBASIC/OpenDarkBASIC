@@ -19,6 +19,7 @@ public:
     bool parseFullOption(int argc, char** argv);
     bool parseShortOptiones(int argc, char** argv);
 
+    bool disableBanner(int argc, char** argv);
     bool loadKeywordFile(int argc, char** argv);
     bool loadKeywordDir(int argc, char** argv);
     bool parseDBA(int argc, char** argv);
@@ -30,4 +31,5 @@ private:
     odbc::KeywordMatcher keywordMatcher_;
     odbc::ast::Node* ast_ = nullptr;
     bool keywordMatcherDirty_ = true;
+    bool printBanner_ = true;
 };
