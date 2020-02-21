@@ -1,11 +1,24 @@
 %{
     #define YYSTYPE DBSTYPE
+    #define YYLTYPE DBLTYPE
+    #define YY_USER_ACTION \
+        yylloc->first_line = yylloc->last_line; \
+        yylloc->first_column = yylloc->last_column; \
+        for(int i = 0; yytext[i] != '\0'; i++) { \
+            if(yytext[i] == '\n') { \
+                yylloc->last_line++; \
+                yylloc->last_column = 0; \
+            } \
+            else { \
+                yylloc->last_column++; \
+            } \
+        }
+
     #include "odbc/parsers/db/Parser.y.h"
     #include "odbc/parsers/db/Scanner.hpp"
     #include "odbc/parsers/db/Driver.hpp"
 
-    #define dbg(text)
-    //printf(text ": \"%s\"\n", yytext)
+    #define dbg(text) printf(text ": \"%s\"\n", yytext)
     #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
 
     static char* strdup_range(const char* src, int beg, int end)
@@ -19,8 +32,9 @@
 
 %option nodefault
 %option noyywrap
-%option bison-bridge
 %option reentrant
+%option bison-bridge
+%option bison-locations
 %option extra-type="odbc::db::Driver*"
 %option prefix="db"
 
@@ -122,8 +136,19 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:string)          { dbg("string"); return TOK_STRING; }
 
 {SYMBOL} {
-    bool keywordFound = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p);
-    (void)keywordFound;
+    /*
+     * This is a hack, but because keywords have spaces in them, it is
+     * not possible to know where keywords start and where they stop. This
+     * function looks up the matched symbol in a list of DarkBASIC keywords
+     * (previously loaded and passed to the parser) and tries to expand the
+     * symbol into the full command.
+     */
+    bool boundaryOverflow = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p);
+    if (boundaryOverflow)
+    {
+        yy_act = YY_END_OF_BUFFER;
+        goto do_action;
+    }
     yylval->symbol = strdup(yytext);
     dbg("symbol");
     return TOK_SYMBOL;

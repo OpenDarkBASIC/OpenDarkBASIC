@@ -12,7 +12,7 @@ static const char* header =
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    puts(header);
+    //puts(header);
 
     Args args;
     if (!args.parse(argc, argv))

@@ -69,10 +69,11 @@
 %token END 0 "end of file";
 %token NO_PARAMS;
 %token LB RB LS RS COMMA EQ PIPE NEWLINE;
+%token NOHELPFILE;
 %token<string> HELPFILE;
 %token<string> WORDS;
 
-%type<string> maybe_helpfile;
+%type<kw_help> kw_help;
 
 %destructor { free($$); } <string>
 
@@ -80,19 +81,14 @@
 
 %%
 start
-  : maybe_ini_section keywords maybe_newlines
+  : maybe_newlines maybe_ini_section keywords maybe_newlines
   ;
 maybe_ini_section
-  : maybe_newlines ini_section maybe_newlines
+  : ini_section maybe_newlines
   |
   ;
 ini_section
   : LS WORDS RS                            { free($2); }
-  ;
-keywords
-  : keywords newlines keyword
-  | keyword
-  | END
   ;
 newlines
   : newlines NEWLINE
@@ -102,30 +98,53 @@ maybe_newlines
   : newlines
   |
   ;
+keywords
+  : keywords newlines keyword
+  | keyword
+  | END
+  ;
 keyword
-  : kw_help EQ overloads                   { driver->finishKeyword(); }
-  | kw_help EQ start_args                  { driver->finishKeyword(); }
+  : kw_help EQ start_normarg_overloads     { driver->finishKeyword(); }
+  | kw_help EQ start_retarg_overloads      { driver->finishKeyword(); }
+  | kw_help EQ start_normargs              { driver->finishKeyword(); }
+  | kw_help EQ start_retargs               { driver->finishKeyword(); }
   ;
 kw_help
-  : WORDS EQ maybe_helpfile                { driver->setKeywordName($1); driver->setHelpFile($3); }
+  : WORDS EQ HELPFILE                      { driver->setKeywordName($1); driver->setHelpFile($3); }
+  | WORDS EQ                               { driver->setKeywordName($1); driver->setHelpFile(nullptr); }
   ;
-maybe_helpfile
-  : HELPFILE                               { $$ = $1; }
-  |                                        { $$ = nullptr; }
+start_normarg_overloads
+  : normarg_overloads                      {  }
   ;
-overloads
-  : LS start_args RS overloads             {  }
-  | LS start_args RS                       {  }
+normarg_overloads
+  : LS start_normargs RS normarg_overloads {  }
+  | LS start_normargs RS                   {  }
   ;
-start_args
-  : LB args RB                             { driver->finishOverload(); }
-  | args                                   { driver->finishOverload(); }
+start_normargs
+  : normargs                               { driver->finishOverload(); }
+  ;
+normargs
+  : args                                   { driver->finishArgs(); }
+  | NO_PARAMS                              { driver->finishArgs(); }
+  ;
+start_retarg_overloads
+  : retarg_overloads                       {  }
+  ;
+retarg_overloads
+  : LS start_retargs RS retarg_overloads   {  }
+  | LS start_retargs RS                    {  }
+  ;
+start_retargs
+  : retargs                                { driver->finishOverload(); }
+  ;
+retargs
+  : LB args RB                             { driver->finishRetArgs(); }
+  | LB NO_PARAMS RB                        { driver->finishRetArgs(); }
+  | LB RB                                  { driver->finishRetArgs(); }
   ;
 args
   : arg COMMA args                         {  }
-  | arg                                    { driver->finishArgs(); }
-  | NO_PARAMS                              { driver->finishArgs(); }
-  |                                        { driver->finishArgs(); }
+  | arg                                    {  }
   ;
 arg
   : WORDS                                  { driver->addArg($1); }
@@ -140,9 +159,7 @@ options
 void kwerror(KWLTYPE *locp, kwscan_t scanner, const char* fmt, ...)
 {
     va_list args;
-    printf("Error: ");
     va_start(args, fmt);
-    vprintf(fmt, args);
+    driver->vreportError(locp, fmt, args);
     va_end(args);
-    printf("\n");
 }

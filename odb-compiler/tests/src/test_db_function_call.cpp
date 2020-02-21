@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_function_call
+#define NAME db_function_call
 
 using namespace testing;
 

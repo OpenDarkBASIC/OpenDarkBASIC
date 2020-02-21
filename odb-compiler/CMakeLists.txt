@@ -37,8 +37,7 @@ file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords")
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h"
-    VERBOSE)
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h")
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
@@ -47,8 +46,7 @@ add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
 bison_target (KeywordsParser
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords/Parser.y.h"
-    VERBOSE)
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords/Parser.y.h")
 flex_target (KeywordsScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Scanner.lex.cpp")
@@ -97,6 +95,7 @@ if (${ODBC_TESTS})
         "tests/src/test_db_remarks.cpp"
         "tests/src/test_db_sub.cpp"
         "tests/src/test_db_udt.cpp"
+        "tests/src/test_db_symbol_to_keyword_hack.cpp"
         "tests/src/test_keywords.cpp")
     target_link_libraries (odbc_tests
         PRIVATE

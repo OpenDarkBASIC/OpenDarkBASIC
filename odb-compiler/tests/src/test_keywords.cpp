@@ -34,6 +34,7 @@ TEST_F(NAME, no_parameters)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(0));
 }
@@ -45,6 +46,7 @@ TEST_F(NAME, no_parameters_ret)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsTrue());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(0));
 }
@@ -56,6 +58,7 @@ TEST_F(NAME, single_param)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -68,6 +71,7 @@ TEST_F(NAME, single_param_ret)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsTrue());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -80,6 +84,7 @@ TEST_F(NAME, two_params)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -93,6 +98,7 @@ TEST_F(NAME, two_params_ret)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsTrue());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -106,6 +112,7 @@ TEST_F(NAME, zero_or_one_param)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(0));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[1].size(), Eq(1));
@@ -119,6 +126,7 @@ TEST_F(NAME, zero_or_one_param_ret)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsTrue());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(0));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[1].size(), Eq(1));
@@ -132,6 +140,7 @@ TEST_F(NAME, one_or_two_params)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -147,6 +156,7 @@ TEST_F(NAME, one_or_two_params_ret)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsTrue());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(2));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -172,6 +182,7 @@ TEST_F(NAME, arg_options)
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE"), NotNull());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->name, StrEq("TOOLBAR SET BUTTON STATE"));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->helpFile, StrEq("main.htm"));
+    ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0].size(), Eq(3));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0][0], Eq("Toolbar"));
@@ -186,6 +197,7 @@ TEST_F(NAME, arg_options_overload)
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE"), NotNull());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->name, StrEq("TOOLBAR SET BUTTON STATE"));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->helpFile, StrEq("main.htm"));
+    ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads.size(), Eq(2));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0].size(), Eq(3));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0][0], Eq("a"));
@@ -203,6 +215,7 @@ TEST_F(NAME, args_with_spaces)
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE"), NotNull());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->name, StrEq("TOOLBAR SET BUTTON STATE"));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->helpFile, StrEq("main.htm"));
+    ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0].size(), Eq(2));
     ASSERT_THAT(keywords->lookup("TOOLBAR SET BUTTON STATE")->overloads[0][0], Eq("arg as integer"));
@@ -231,6 +244,7 @@ TEST_F(NAME, parse_multiple_lines)
     ASSERT_THAT(keywords->lookup("SOME COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq("help.htm"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], Eq("a"));
@@ -238,6 +252,7 @@ TEST_F(NAME, parse_multiple_lines)
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->name, StrEq("SOME OTHER COMMAND"));
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->helpFile, StrEq("main.htm"));
+    ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME OTHER COMMAND")->overloads[0][0], Eq("b"));
@@ -245,7 +260,24 @@ TEST_F(NAME, parse_multiple_lines)
     ASSERT_THAT(keywords->lookup("SOME WOWEE"), NotNull());
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->name, StrEq("SOME WOWEE"));
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->helpFile, StrEq("other.html"));
+    ASSERT_THAT(keywords->lookup("SOME WOWEE")->hasReturnType, IsFalse());
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->overloads.size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->overloads[0].size(), Eq(1));
     ASSERT_THAT(keywords->lookup("SOME WOWEE")->overloads[0][0], Eq("c"));
+}
+
+TEST_F(NAME, no_help_file)
+{
+    ASSERT_THAT(driver->parseString("SOME COMMAND==a\n"), IsTrue());
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->name, StrEq("SOME COMMAND"));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->helpFile, StrEq(""));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->hasReturnType, IsFalse());
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads.size(), Eq(1));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0].size(), Eq(1));
+    ASSERT_THAT(keywords->lookup("SOME COMMAND")->overloads[0][0], StrEq("a"));
+}
+
+TEST_F(NAME, no_help_or_args)
+{
+    ASSERT_THAT(driver->parseString("SOME COMMAND==\n"), IsFalse());
 }

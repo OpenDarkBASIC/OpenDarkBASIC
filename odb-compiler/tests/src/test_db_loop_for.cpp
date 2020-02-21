@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_loop_for
+#define NAME db_loop_for
 
 using namespace testing;
 
