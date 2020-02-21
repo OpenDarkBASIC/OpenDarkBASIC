@@ -105,7 +105,7 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
     vprintf(fmt, args);
     printf("\n");
 
-    if (activeFileName_)
+    if (activeFilePtr_)
     {
         // Seek to offending line
         char c;
