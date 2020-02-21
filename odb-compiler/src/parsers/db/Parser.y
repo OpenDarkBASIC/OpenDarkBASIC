@@ -162,7 +162,7 @@
 
 %%
 program
-  : seps_maybe stmnts seps_maybe                 { driver->setAST($2); }
+  : seps_maybe stmnts seps_maybe                 { driver->appendAST($2); }
   | seps_maybe
   ;
 sep

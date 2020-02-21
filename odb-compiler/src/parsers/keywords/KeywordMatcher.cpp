@@ -10,9 +10,21 @@ namespace odbc {
 void KeywordMatcher::updateFromDB(const KeywordDB* db)
 {
     keywords_ = db->keywordsAsList();
+
+    // Keywords are case insensitive, so transform all to lower case
     for (auto& s : keywords_)
         std::transform(s.begin(), s.end(), s.begin(), [](char c){ return std::tolower(c); });
+
+    // Lexicographic sort so we can binary search later
     std::sort(keywords_.begin(), keywords_.end(), [](const std::string& a,const  std::string& b) { return a < b; });
+
+    // Find the longest keyword so the lexicographic comparison is faster during
+    // binary search
+    auto longestKeyword = std::max_element(keywords_.begin(), keywords_.end(), [](const std::string& a, const std::string& b) { return a.size() < b.size(); });
+    if (longestKeyword != keywords_.end())
+        longestKeywordLength_ = longestKeyword->size();
+    else
+        longestKeywordLength_ = 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -27,9 +39,6 @@ bool KeywordMatcher::findLongestKeywordMatching(const char* str, int* matchedLen
 
     // binary search for nearest keyword
     auto lower = std::lower_bound(keywords_.begin(), keywords_.end(), s);
-
-    if (strncmp(str, "make", 4) == 0)
-        puts(str);
 
     // See how much the input string matches the keyword we found
     int len1 = 0;
@@ -65,6 +74,12 @@ bool KeywordMatcher::findLongestKeywordMatching(const char* str, int* matchedLen
     *matchedLen = len1 > len2 ? len1 : len2;
 
     return keywordFound;
+}
+
+// ----------------------------------------------------------------------------
+int KeywordMatcher::longestKeywordLength() const
+{
+    return longestKeywordLength_;
 }
 
 }

@@ -13,9 +13,11 @@ class KeywordMatcher
 public:
     void updateFromDB(const KeywordDB* db);
     bool findLongestKeywordMatching(const char* str, int* matchedLen) const;
+    int longestKeywordLength() const;
 
 private:
     std::vector<std::string> keywords_;
+    int longestKeywordLength_ = 0;
 };
 
 }

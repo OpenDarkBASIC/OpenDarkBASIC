@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_constant
+#define NAME db_constant
 
 using namespace testing;
 

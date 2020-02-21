@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME ast_udt
+#define NAME db_udt
 
 using namespace testing;
 
