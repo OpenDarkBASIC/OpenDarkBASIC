@@ -22,7 +22,7 @@ public:
     bool parseString(const std::string& str);
     bool parseStream(FILE* fp);
 
-    char* tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** last_accepting_cpos);
+    bool tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p);
     void setAST(ast::Node* block);
 
 private:

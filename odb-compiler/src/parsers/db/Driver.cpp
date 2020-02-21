@@ -87,25 +87,37 @@ void Driver::setAST(ast::Node* block)
 }
 
 // ----------------------------------------------------------------------------
-char* Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** last_accepting_cpos)
+bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p)
 {
     **cp = *hold_char;
 
-    int foundLen = keywordMatcher_->findLongestKeywordMatching(str);
-    if (foundLen > *leng)
+    int matchedLen;
+    if (keywordMatcher_->findLongestKeywordMatching(str, &matchedLen))
     {
-        (*cp) = str + foundLen;
-        *last_accepting_cpos = str + foundLen;
-        *leng = foundLen;
-        *hold_char = str[foundLen];
-        str[foundLen] = '\0';
+        (*cp) = str + matchedLen;
+        *c_buf_p = str + matchedLen;
+        *leng = matchedLen;
+        *hold_char = str[matchedLen];
+        str[matchedLen] = '\0';
     }
     else
     {
+        // It's possible the match failed because the keyword crosses a buffer
+        // boundary
+        if (str[matchedLen] == '\0')
+        {
+            (*cp) = str + matchedLen;
+            *c_buf_p = str + matchedLen + 1;
+            *leng = matchedLen;
+            *hold_char = str[matchedLen];
+            return true;
+        }
+
+        // restore null byte
         **cp = '\0';
     }
 
-    return str;
+    return false;
 }
 
 }
