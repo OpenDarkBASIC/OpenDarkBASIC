@@ -43,3 +43,13 @@ TEST_F(NAME, write_three_dimensions)
 {
     EXPECT_THAT(driver->parseString("arr(2, 3, 4) = value\n"), IsTrue());
 }
+
+TEST_F(NAME, assign_arr_to_arr)
+{
+    EXPECT_THAT(driver->parseString("arr1(2, 3, 4) = arr2(1, 2, 1)\n"), IsTrue());
+}
+
+TEST_F(NAME, add_arr_to_arr)
+{
+    EXPECT_THAT(driver->parseString("result = arr1(2, 3, 4) + arr2(1, 2, 1)\n"), IsTrue());
+}

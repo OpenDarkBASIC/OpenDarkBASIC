@@ -24,9 +24,18 @@ static struct {
 
 static constexpr int switchTableSize() { return sizeof(table) / sizeof(*table); }
 
+static const char* banner =
+"________                         ________                __   __________    _____    _________.____________  \n"
+"\\_____  \\ ______   ____   ____   \\______ \\ _____ _______|  | _\\______   \\  /  _  \\  /   _____/|   \\_   ___ \\ \n"
+" /   |   \\\\____ \\_/ __ \\ /    \\   |    |  \\\\__  \\\\_  __ \\  |/ /|    |  _/ /  /_\\  \\ \\_____  \\ |   /    \\  \\/ \n"
+"/    |    \\  |_> >  ___/|   |  \\  |    `   \\/ __ \\|  | \\/    < |    |   \\/    |    \\/        \\|   \\     \\____\n"
+"\\_______  /   __/ \\___  >___|  / /_______  (____  /__|  |__|_ \\|______  /\\____|__  /_______  /|___|\\______  /\n"
+"        \\/|__|        \\/     \\/          \\/     \\/           \\/       \\/         \\/        \\/             \\/ \n";
+
 // ----------------------------------------------------------------------------
 bool Args::parse(int argc, char** argv)
 {
+    fprintf(stderr, "%s\n", banner);
     return expectOption(argc-1, argv+1);
 }
 
@@ -187,13 +196,6 @@ bool Args::parseDBA(int argc, char** argv)
         return false;
     }
 
-    FILE* fp = fopen(argv[0], "r");
-    if (fp == nullptr)
-    {
-        fprintf(stderr, "[db parser] Error: Failed to open file `%s`\n", argv[0]);
-        return false;
-    }
-
     if (keywordMatcherDirty_)
     {
         fprintf(stderr, "[db parser] Updating keyword registry\n");
@@ -203,8 +205,7 @@ bool Args::parseDBA(int argc, char** argv)
 
     fprintf(stderr, "[db parser] Parsing file `%s`\n", argv[0]);
     odbc::db::Driver driver(&ast_, &keywordMatcher_);
-    bool result = driver.parseStream(fp);
-    fclose(fp);
+    bool result = driver.parseFile(argv[0]);
 
     if (result)
         return expectOptionOrNothing(argc-1, argv+1);

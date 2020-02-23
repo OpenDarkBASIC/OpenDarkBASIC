@@ -2,7 +2,7 @@
 #include "odbc/parsers/keywords/Driver.hpp"
 #include "odbc/parsers/keywords/KeywordDB.hpp"
 
-#define NAME parse_keywords
+#define NAME kw_index
 
 using namespace testing;
 

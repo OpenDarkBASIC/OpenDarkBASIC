@@ -48,6 +48,8 @@ TEST_F(NAME, remarks_with_empty_lines)
 
 TEST_F(NAME, remarks_empty_line_command)
 {
+    db.addKeyword({"sync on", "", {}, false});
+    matcher.updateFromDB(&db);
     EXPECT_THAT(driver->parseString(
         "rem some remark\n"
         "\n"

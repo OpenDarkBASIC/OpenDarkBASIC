@@ -7,6 +7,20 @@
 namespace odbc {
 
 // ----------------------------------------------------------------------------
+static bool charIsSymbolToken(char c)
+{
+    if (c >= '0' && c <= '9')
+        return true;
+    if (c >= 'A' && c <= 'Z')
+        return true;
+    if (c >= 'a' && c <= 'z')
+        return true;
+    if (c == '_')
+        return true;
+    return false;
+}
+
+// ----------------------------------------------------------------------------
 void KeywordMatcher::updateFromDB(const KeywordDB* db)
 {
     keywords_ = db->keywordsAsList();
@@ -30,50 +44,38 @@ void KeywordMatcher::updateFromDB(const KeywordDB* db)
 // ----------------------------------------------------------------------------
 bool KeywordMatcher::findLongestKeywordMatching(const char* str, int* matchedLen) const
 {
+    auto first = keywords_.begin();
+    auto last = keywords_.end();
+    std::vector<std::vector<std::string>::const_iterator> keywordStack;
+    keywordStack.reserve(6);
     *matchedLen = 0;
-    bool keywordFound = false;
-
-    // keywords are stored in lower case
-    std::string s(str);
-    std::transform(s.begin(), s.end(), s.begin(), [](char c){ return std::tolower(c); });
-
-    // binary search for nearest keyword
-    auto lower = std::lower_bound(keywords_.begin(), keywords_.end(), s);
-
-    // See how much the input string matches the keyword we found
-    int len1 = 0;
-    if (lower != keywords_.end())
+    while (str[*matchedLen])
     {
-        const char* found = lower->c_str();
-        int keywordLen1 = strlen(found);
-        while (found[len1] == str[len1] && found[len1] != '\0')
-            len1++;
+        auto compare = [&](const std::string& a, const std::string& b) {
+            return std::tolower(a[*matchedLen]) < std::tolower(b[*matchedLen]);
+        };
+        first = std::lower_bound(first, last, str, compare);
+        last = std::upper_bound(first, last, str, compare);
+        if (first == last)
+            break;
 
-        // It must match exactly
-        if (len1 == keywordLen1)
-            keywordFound = true;
+        ++*matchedLen;
+        if (!charIsSymbolToken(str[*matchedLen]))
+            keywordStack.push_back(first);
     }
 
-    // If str is longer than the actual keyword then lower_bound finds the
-    // entry after, so check the previous keyword for a match
-    int len2 = 0;
-    if (lower != keywords_.begin())
+    while (keywordStack.size())
     {
-        lower--;
-        const char* found = lower->c_str();
-        int keywordLen2 = strlen(found);
-        while (found[len2] == str[len2] && found[len2] != '\0')
-            len2++;
-
-        // it must match exactly
-        if (len2 == keywordLen2)
-            keywordFound = true;
+        auto keyword = keywordStack.back();
+        if (keyword != keywords_.end() && strncmp(str, keyword->c_str(), keyword->length()) == 0)
+        {
+            *matchedLen = keyword->length();
+            return true;
+        }
+        keywordStack.pop_back();
     }
 
-    // choose longest
-    *matchedLen = len1 > len2 ? len1 : len2;
-
-    return keywordFound;
+    return false;
 }
 
 // ----------------------------------------------------------------------------

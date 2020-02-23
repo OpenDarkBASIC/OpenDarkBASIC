@@ -17,7 +17,8 @@
     #include "odbc/parsers/keywords/Parser.y.h"
     #include "odbc/parsers/keywords/Scanner.hpp"
 
-    #define dbg(text) printf(text ": \"%s\"\n", yytext)
+    #define dbg(text) \
+        //printf(text ": \"%s\"\n", yytext)
 %}
 
 %option nodefault

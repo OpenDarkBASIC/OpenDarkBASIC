@@ -81,7 +81,7 @@ target_compile_options (odbclib
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
-        "tests/src/test_db_command.cpp"
+        "tests/src/test_db_keyword.cpp"
         "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
         "tests/src/test_db_dim.cpp"
@@ -96,7 +96,8 @@ if (${ODBC_TESTS})
         "tests/src/test_db_sub.cpp"
         "tests/src/test_db_udt.cpp"
         "tests/src/test_db_symbol_to_keyword_hack.cpp"
-        "tests/src/test_keywords.cpp")
+        "tests/src/test_kw_index.cpp"
+        "tests/src/test_kw_matcher.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbclib

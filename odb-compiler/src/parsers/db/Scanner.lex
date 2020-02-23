@@ -1,33 +1,79 @@
 %{
-    #define YYSTYPE DBSTYPE
-    #define YYLTYPE DBLTYPE
-    #define YY_USER_ACTION \
-        yylloc->first_line = yylloc->last_line; \
-        yylloc->first_column = yylloc->last_column; \
-        for(int i = 0; yytext[i] != '\0'; i++) { \
-            if(yytext[i] == '\n') { \
-                yylloc->last_line++; \
-                yylloc->last_column = 0; \
-            } \
-            else { \
-                yylloc->last_column++; \
-            } \
-        }
-
-    #include "odbc/parsers/db/Parser.y.h"
-    #include "odbc/parsers/db/Scanner.hpp"
-    #include "odbc/parsers/db/Driver.hpp"
-
-    #define dbg(text) printf(text ": \"%s\"\n", yytext)
-    #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
-
-    static char* strdup_range(const char* src, int beg, int end)
-    {
-        char* result = (char*)malloc(end - beg + 1);
-        strncpy(result, src + beg, end - beg);
-        result[end - beg] = '\0';
-        return result;
+#define YYSTYPE DBSTYPE
+#define YYLTYPE DBLTYPE
+#define YY_USER_ACTION \
+    yylloc->first_line = yylloc->last_line; \
+    yylloc->first_column = yylloc->last_column; \
+    for(int i = 0; yytext[i] != '\0'; i++) { \
+        if(yytext[i] == '\n') { \
+            yylloc->last_line++; \
+            yylloc->last_column = 0; \
+        } \
+        else { \
+            yylloc->last_column++; \
+        } \
     }
+
+#include "odbc/parsers/db/Parser.y.h"
+#include "odbc/parsers/db/Scanner.hpp"
+#include "odbc/parsers/db/Driver.hpp"
+
+#define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
+#define dbg(text) \
+    //printf(text ": \"%s\"\n", yytext)
+
+#define RETURN_TOKEN(token) do {                                              \
+        dbg(#token);                                                          \
+        return TOK_##token; }                                                 \
+    while(0)
+
+#define MAYBE_RETURN_KEYWORD() do {                                           \
+        /*                                                                    \
+         * This is a hack, but because keywords have spaces in them, it is    \
+         * not possible to know where keywords start and where they stop. This  \
+         * function looks up the matched symbol in a list of DarkBASIC keywords \
+         * (previously loaded and passed to the parser) and tries to expand the \
+         * symbol into the full command.                                      \
+         */                                                                   \
+        bool boundaryOverflow;                                                \
+        bool keywordMatched = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p, &boundaryOverflow); \
+        if (boundaryOverflow)                                                 \
+        {                                                                     \
+            yy_act = YY_END_OF_BUFFER;                                        \
+            goto do_action;                                                   \
+        }                                                                     \
+        if (keywordMatched)                                                   \
+        {                                                                     \
+            yylval->string = strdup(yytext);                                  \
+            dbg("keyword");                                                   \
+            return TOK_KEYWORD;                                               \
+        }                                                                     \
+    } while(0)
+
+#define MAYBE_RETURN_KEYWORD_IF_LONGER() do {                                 \
+        int oldTokenLen = strlen(yytext);                                     \
+        bool boundaryOverflow;                                                \
+        bool keywordMatched = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p, &boundaryOverflow); \
+        if (boundaryOverflow)                                                 \
+        {                                                                     \
+            yy_act = YY_END_OF_BUFFER;                                        \
+            goto do_action;                                                   \
+        }                                                                     \
+        if (keywordMatched && oldTokenLen < (int)strlen(yytext))              \
+        {                                                                     \
+            yylval->string = strdup(yytext);                                  \
+            dbg("keyword");                                                   \
+            return TOK_KEYWORD;                                               \
+        }                                                                     \
+    } while(0)
+
+static char* strdup_range(const char* src, int beg, int end)
+{
+    char* result = (char*)malloc(end - beg + 1);
+    strncpy(result, src + beg, end - beg);
+    result[end - beg] = '\0';
+    return result;
+}
 %}
 
 %option nodefault
@@ -50,114 +96,97 @@ BOOL_TRUE       (?i:true)
 BOOL_FALSE      (?i:false)
 STRING_LITERAL  \".*\"
 FLOAT_EXP       [eE]-?[0-9]+
-FLOAT1          -?[0-9]+\.[0-9]+?
-FLOAT2          -?\.[0-9]+
-FLOAT3          -?[0-9]+\.[0-9]+?{FLOAT_EXP}?
-FLOAT4          -?\.[0-9]+{FLOAT_EXP}?
-FLOAT5          -?[0-9]+{FLOAT_EXP}
+FLOAT1          [0-9]+\.[0-9]+?
+FLOAT2          \.[0-9]+
+FLOAT3          [0-9]+\.[0-9]+?{FLOAT_EXP}?
+FLOAT4          \.[0-9]+{FLOAT_EXP}?
+FLOAT5          [0-9]+{FLOAT_EXP}
 FLOAT           {FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
 INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0x[0-9a-fA-F]+
-INTEGER         -?[0-9]+
+INTEGER         [0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %%
 
-{REMARK}            { printf("remark: \"%s\"", yytext); }
+{REMARK}            { char* remark = yytext; dbg(remark); (void)remark; }
 
-{CONSTANT}          { dbg("constant"); return TOK_CONSTANT; }
+{CONSTANT}          { RETURN_TOKEN(CONSTANT); }
 
-{BOOL_TRUE}         { dbg("bool"); yylval->boolean_value = true; return TOK_BOOLEAN_LITERAL; }
-{BOOL_FALSE}        { dbg("bool"); yylval->boolean_value = false; return TOK_BOOLEAN_LITERAL; }
-{STRING_LITERAL}    { dbg("string literal"); yylval->string_literal = strdup_range(yytext, 1, strlen(yytext) - 1); return TOK_STRING_LITERAL; }
-{FLOAT}             { dbg("float"); yylval->float_value = atof(yytext); return TOK_FLOAT_LITERAL; }
-{INTEGER_BASE2}     { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER_LITERAL; }
-{INTEGER_BASE16}    { dbg("integer"); yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER_LITERAL; }
-{INTEGER}           { dbg("integer"); yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER_LITERAL; }
+{BOOL_TRUE}         { yylval->boolean_value = true; return TOK_BOOLEAN_LITERAL; }
+{BOOL_FALSE}        { yylval->boolean_value = false; return TOK_BOOLEAN_LITERAL; }
+{STRING_LITERAL}    { yylval->string = strdup_range(yytext, 1, strlen(yytext) - 1); return TOK_STRING_LITERAL; }
+{FLOAT}             { yylval->float_value = atof(yytext); return TOK_FLOAT_LITERAL; }
+{INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER_LITERAL; }
+{INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER_LITERAL; }
+{INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER_LITERAL; }
 
-"+"                 { dbg("add"); return TOK_ADD; }
-"-"                 { dbg("sub"); return TOK_SUB; }
-"*"                 { dbg("mul"); return TOK_MUL; }
-"/"                 { dbg("div"); return TOK_DIV; }
-"%"                 { dbg("mod"); return TOK_MOD; }
-"^"                 { dbg("pow"); return TOK_POW; }
-"("                 { dbg("lb"); return TOK_LB; }
-")"                 { dbg("rb"); return TOK_RB; }
-","                 { dbg("comma"); return TOK_COMMA;}
-(?i:inc)            { dbg("inc"); return TOK_INC; }
-(?i:dec)            { dbg("dec"); return TOK_DEC; }
+"+"                 { RETURN_TOKEN(ADD); }
+"-"                 { RETURN_TOKEN(SUB); }
+"*"                 { RETURN_TOKEN(MUL); }
+"/"                 { RETURN_TOKEN(DIV); }
+"%"                 { RETURN_TOKEN(MOD); }
+"^"                 { RETURN_TOKEN(POW); }
+"("                 { RETURN_TOKEN(LB); }
+")"                 { RETURN_TOKEN(RB); }
+","                 { RETURN_TOKEN(COMMA);}
+(?i:inc)            { RETURN_TOKEN(INC); }
+(?i:dec)            { RETURN_TOKEN(DEC); }
 
-"<<"                { dbg("bshl"); return TOK_BSHL; }
-">>"                { dbg("bshr"); return TOK_BSHR; }
-"||"                { dbg("bor"); return TOK_BOR; }
-"&&"                { dbg("band"); return TOK_BAND; }
-"~~"                { dbg("bxor"); return TOK_BXOR; }
-".."                { dbg("bnot"); return TOK_BNOT; }
+"<<"                { RETURN_TOKEN(BSHL); }
+">>"                { RETURN_TOKEN(BSHR); }
+"||"                { RETURN_TOKEN(BOR); }
+"&&"                { RETURN_TOKEN(BAND); }
+"~~"                { RETURN_TOKEN(BXOR); }
+".."                { RETURN_TOKEN(BNOT); }
 
-"<>"                { dbg("ne"); return TOK_NE; }
-"<="                { dbg("le"); return TOK_LE; }
-">="                { dbg("ge"); return TOK_GE; }
-"="                 { dbg("eq"); return TOK_EQ; }
-"<"                 { dbg("lt"); return TOK_LT; }
-">"                 { dbg("gt"); return TOK_GT; }
-(?i:or)             { dbg("or"); return TOK_OR; }
-(?i:and)            { dbg("and"); return TOK_AND; }
-(?i:not)            { dbg("not"); return TOK_NOT; }
+"<>"                { RETURN_TOKEN(NE); }
+"<="                { RETURN_TOKEN(LE); }
+">="                { RETURN_TOKEN(GE); }
+"="                 { RETURN_TOKEN(EQ); }
+"<"                 { RETURN_TOKEN(LT); }
+">"                 { RETURN_TOKEN(GT); }
+(?i:or)             { RETURN_TOKEN(OR); }
+(?i:and)            { RETURN_TOKEN(AND); }
+(?i:not)            { RETURN_TOKEN(NOT); }
 
-(?:then)            { dbg("then"); return TOK_THEN; }
-(?:endif)           { dbg("endif"); return TOK_ENDIF; }
-(?:elseif)          { dbg("elseif"); return TOK_ELSEIF; }
-(?:if)              { dbg("if"); return TOK_IF; }
-(?:else)            { dbg("else"); return TOK_ELSE; }
-(?:endwhile)        { dbg("endwhile"); return TOK_ENDWHILE; }
-(?:while)           { dbg("while"); return TOK_WHILE; }
-(?:repeat)          { dbg("repeat"); return TOK_REPEAT; }
-(?:until)           { dbg("until"); return TOK_UNTIL; }
-(?:do)              { dbg("do"); return TOK_DO; }
-(?:loop)            { dbg("loop"); return TOK_LOOP; }
-(?:for)             { dbg("for"); return TOK_FOR; }
-(?:to)              { dbg("to"); return TOK_TO; }
-(?:step)            { dbg("step"); return TOK_STEP; }
-(?:next)            { dbg("next"); return TOK_NEXT; }
-(?:endfunction)     { dbg("endfunction"); return TOK_ENDFUNCTION; }
-(?:exitfunction)    { dbg("endfunction"); return TOK_EXITFUNCTION; }
-(?:function)        { dbg("function"); return TOK_FUNCTION; }
-(?:gosub)           { dbg("gosub"); return TOK_GOSUB; }
-(?:return)          { dbg("return"); return TOK_RETURN; }
-(?:dim)             { dbg("dim"); return TOK_DIM; }
-(?:global)          { dbg("global"); return TOK_GLOBAL; }
-(?:local)           { dbg("local"); return TOK_LOCAL; }
-(?:as)              { dbg("as"); return TOK_AS; }
-(?:endtype)         { dbg("endtype"); return TOK_ENDTYPE; }
-(?:type)            { dbg("type"); return TOK_TYPE; }
-(?:boolean)         { dbg("boolean"); return TOK_BOOLEAN; }
-(?:integer)         { dbg("integer"); return TOK_INTEGER; }
-(?:float)           { dbg("float"); return TOK_FLOAT; }
-(?:string)          { dbg("string"); return TOK_STRING; }
+(?:then)            { RETURN_TOKEN(THEN); }
+(?:endif)           { RETURN_TOKEN(ENDIF); }
+(?:elseif)          { RETURN_TOKEN(ELSEIF); }
+(?:if)              { RETURN_TOKEN(IF); }
+(?:else)            { RETURN_TOKEN(ELSE); }
+(?:endwhile)        { RETURN_TOKEN(ENDWHILE); }
+(?:while)           { RETURN_TOKEN(WHILE); }
+(?:repeat)          { RETURN_TOKEN(REPEAT); }
+(?:until)           { RETURN_TOKEN(UNTIL); }
+(?:do)              { RETURN_TOKEN(DO); }
+(?:loop)            { MAYBE_RETURN_KEYWORD_IF_LONGER(); RETURN_TOKEN(LOOP); }
+(?:for)             { RETURN_TOKEN(FOR); }
+(?:to)              { RETURN_TOKEN(TO); }
+(?:step)            { RETURN_TOKEN(STEP); }
+(?:next)            { RETURN_TOKEN(NEXT); }
+(?:endfunction)     { RETURN_TOKEN(ENDFUNCTION); }
+(?:exitfunction)    { RETURN_TOKEN(EXITFUNCTION); }
+(?:function)        { RETURN_TOKEN(FUNCTION); }
+(?:gosub)           { RETURN_TOKEN(GOSUB); }
+(?:return)          { RETURN_TOKEN(RETURN); }
+(?:dim)             { RETURN_TOKEN(DIM); }
+(?:global)          { RETURN_TOKEN(GLOBAL); }
+(?:local)           { RETURN_TOKEN(LOCAL); }
+(?:as)              { RETURN_TOKEN(AS); }
+(?:endtype)         { RETURN_TOKEN(ENDTYPE); }
+(?:type)            { RETURN_TOKEN(TYPE); }
+(?:boolean)         { RETURN_TOKEN(BOOLEAN); }
+(?:integer)         { RETURN_TOKEN(INTEGER); }
+(?:float)           { RETURN_TOKEN(FLOAT); }
+(?:string)          { RETURN_TOKEN(STRING); }
 
-{SYMBOL} {
-    /*
-     * This is a hack, but because keywords have spaces in them, it is
-     * not possible to know where keywords start and where they stop. This
-     * function looks up the matched symbol in a list of DarkBASIC keywords
-     * (previously loaded and passed to the parser) and tries to expand the
-     * symbol into the full command.
-     */
-    bool boundaryOverflow = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p);
-    if (boundaryOverflow)
-    {
-        yy_act = YY_END_OF_BUFFER;
-        goto do_action;
-    }
-    yylval->symbol = strdup(yytext);
-    dbg("symbol");
-    return TOK_SYMBOL;
-}
+{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = strdup(yytext); RETURN_TOKEN(SYMBOL); }
 
-"#"                 { dbg("hash"); return TOK_HASH; }
-"$"                 { dbg("dollar"); return TOK_DOLLAR; }
+"#"                 { RETURN_TOKEN(HASH); }
+"$"                 { RETURN_TOKEN(DOLLAR); }
 
-"\n"                { dbg("newline"); return TOK_NEWLINE; }
-":"                 { dbg("colon"); return TOK_COLON; }
+"\n"                { RETURN_TOKEN(NEWLINE); }
+":"                 { RETURN_TOKEN(COLON); }
 .                   {}
 %%

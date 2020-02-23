@@ -19,8 +19,7 @@ enum NodeType
     NT_LOOP,
     NT_LOOP_WHILE,
     NT_LOOP_UNTIL,
-    NT_COMMAND,
-    NT_COMMAND_SYMBOL,
+    NT_KEYWORD,
     NT_SYMBOL,
     NT_LITERAL
 };
@@ -65,7 +64,7 @@ enum Operation
     X(ST_FUNC) \
     X(ST_LABEL) \
     X(ST_SUBROUTINE) \
-    X(ST_COMMAND)
+    X(ST_KEYWORD)
 
 #define SYMBOL_DATATYPE_LIST \
     X(SDT_UNKNOWN) \
@@ -290,9 +289,6 @@ Node* newBranch(Node* condition, Node* true_branch, Node* false_branch);
 
 Node* newFuncReturn(Node* returnValue);
 Node* newSubReturn();
-
-Node* newCommandSymbol(Node* symbol, Node* nextSymbol);
-Node* newCommand(Node* symbolsList, Node* arglist);
 
 Node* newLoop(Node* block);
 Node* newLoopWhile(Node* condition, Node* block);

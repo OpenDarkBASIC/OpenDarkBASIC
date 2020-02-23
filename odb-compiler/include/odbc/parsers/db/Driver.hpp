@@ -39,7 +39,7 @@ public:
      * @param[out] c_buf_p Flex's buffer pointer yy_c_buf_p
      * @return Returns true if the keyword went over the buffer boundary.
      */
-    bool tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p);
+    bool tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p, bool* overBoundary);
 
     /*!
      * @brief Called by Bison to pass in the parsed AST. Appends the block to

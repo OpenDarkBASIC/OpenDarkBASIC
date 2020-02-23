@@ -168,7 +168,7 @@ void Driver::appendAST(ast::Node* block)
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p)
+bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p, bool* overBoundary)
 {
     // str points to the current token, which is actually located in a much
     // larger buffer. Flex inserts a null byte at the end of the token so we
@@ -192,6 +192,7 @@ bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, c
     // Restore null byte
     str[longestKeywordLength+1] = newHoldChar;
 
+    *overBoundary = false;
     if (matchSuccessful)
     {
         // Update Flex to think it scanned the whole keyword
@@ -211,14 +212,16 @@ bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, c
             *c_buf_p = str + matchedLen + 1; // Buffer pointer points to the end of the buffer -- this causes Flex to load the next buffer
             *leng = matchedLen;              // Update length of matched string
             *hold_char = str[matchedLen];    // Update the hold char since it's now at a different position
-            return true;
+            *overBoundary = true;
         }
-
-        // restore null byte
-        **cp = '\0';
+        else
+        {
+            // restore null byte
+            **cp = '\0';
+        }
     }
 
-    return false;
+    return matchSuccessful;
 }
 
 }
