@@ -148,7 +148,7 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
 
     // Print visual indicator of which token is affected
     fprintf(stderr, "  ");
-    for (int i = 1; i != loc->first_column; ++i)
+    for (int i = 0; i != loc->first_column; ++i)
         putc(' ', stderr);
     putc('^', stderr);
     for (int i = loc->first_column + 1; i < loc->last_column; ++i)

@@ -185,6 +185,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 "#"                 { RETURN_TOKEN(HASH); }
 "$"                 { RETURN_TOKEN(DOLLAR); }
+"."                 { RETURN_TOKEN(PERIOD); }
 
 "\n"                { RETURN_TOKEN(NEWLINE); }
 ":"                 { RETURN_TOKEN(COLON); }

@@ -107,7 +107,7 @@ void Driver::vreportError(KWLTYPE* loc, const char* fmt, va_list args)
     vprintf(fmt, args);
     printf("\n");
 
-    if (activeFileName_)
+    if (activeFilePtr_)
     {
         // Seek to offending line
         char c;
@@ -137,7 +137,15 @@ void Driver::vreportError(KWLTYPE* loc, const char* fmt, va_list args)
     else
     {
         assert(activeString_ != nullptr);
-        fprintf(stderr, "%s", activeString_->c_str());
+        fprintf(stderr, "  ");
+        for (size_t i = 0; i != activeString_->size(); ++i)
+        {
+            char c = (*activeString_)[i];
+            if (c == '\n')
+                break;
+            putc(c, stderr);
+        }
+        puts("");
     }
 
     // Print visual indicator of which token is affected

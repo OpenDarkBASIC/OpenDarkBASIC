@@ -77,7 +77,7 @@
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON
+%token NEWLINE COLON PERIOD
 
 %token CONSTANT
 
@@ -109,10 +109,11 @@
 %type<node> var_decl;
 %type<node> var_decl_type;
 %type<node> symbol_and_dim_decl;
+%type<node> symbol_or_udt_ref;
 %type<node> dim_decl;
 %type<node> dim_ref;
 %type<node> udt_decl;
-%type<node> udt_ref;
+%type<node> udt_name;
 %type<node> var_decls;
 %type<node> func_decl;
 %type<node> func_end;
@@ -183,6 +184,7 @@ stmnts
   ;
 stmnt
   : var_assignment                               { $$ = $1; }
+  | constant_decl
   | dec_or_inc                                   { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | udt_decl                                     { $$ = $1; }
@@ -196,6 +198,9 @@ stmnt
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
+constant_decl
+  : CONSTANT symbol literal
+  ;
 dec_or_inc
   : DEC symbol COMMA expr                        { $$ = newOp($2, $4, OP_DEC); }
   | INC symbol COMMA expr                        { $$ = newOp($2, $4, OP_INC); }
@@ -203,7 +208,7 @@ dec_or_inc
   | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), OP_INC); }
   ;
 var_assignment
-  : symbol EQ expr                               { $$ = newAssignment($1, $3); }
+  : symbol_or_udt_ref EQ expr                    { $$ = newAssignment($1, $3); }
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 var_decl
@@ -216,7 +221,7 @@ var_decl_type
   | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->symbol.flag.datatype = SDT_INTEGER; }
   | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->symbol.flag.datatype = SDT_FLOAT; }
   | symbol_and_dim_decl AS STRING                { $$ = $1; $$->symbol.flag.datatype = SDT_STRING; }
-  | symbol_and_dim_decl AS udt_ref               { $$ = $1; $$->symbol.flag.datatype = SDT_UDT; $$->symbol.data = $3; }
+  | symbol_and_dim_decl AS udt_name              { $$ = $1; $$->symbol.flag.datatype = SDT_UDT; $$->symbol.data = $3; }
   | symbol_and_dim_decl                          { $$ = $1; }
   ;
 symbol_and_dim_decl
@@ -248,19 +253,23 @@ dim_ref
     }
   ;
 udt_decl
-  : TYPE udt_ref seps var_decls seps ENDTYPE
+  : TYPE udt_name seps var_decls seps ENDTYPE
     {
         $$ = $2;
         $$->symbol.data = $4;
         $$->symbol.flag.declaration = SD_DECL;
     }
   ;
-udt_ref
+udt_name
   : symbol_without_type {
         $$ = $1;
         $$->symbol.flag.type = ST_UDT;
         $$->symbol.flag.datatype = SDT_UDT;
     }
+  ;
+symbol_or_udt_ref
+  : udt_name PERIOD symbol_or_udt_ref
+  | symbol
   ;
 var_decls
   : var_decls seps var_decl                      { $$ = appendStatementToBlock($1, $3); }
@@ -359,7 +368,7 @@ expr
   | expr BXOR expr                               { $$ = newOp($1, $3, OP_BXOR); }
   | expr BNOT expr                               { $$ = newOp($1, $3, OP_BNOT); }
   | literal                                      { $$ = $1; }
-  | symbol                                       { $$ = $1; }
+  | symbol_or_udt_ref                            { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
   ;
