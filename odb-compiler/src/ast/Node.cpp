@@ -7,12 +7,29 @@ namespace odbc {
 namespace ast {
 
 // ----------------------------------------------------------------------------
+static const char* nodeName[] = {
+#define X(type, name, str) str,
+    NODE_TYPE_LIST
+#undef X
+};
+
+// ----------------------------------------------------------------------------
 #ifdef ODBC_DOT_EXPORT
 static int nodeGUIDCounter;
 static void dumpToDOTRecursive(std::ostream& os, Node* node)
 {
     switch (node->info.type)
     {
+#define X(type, name, str) case type:
+        NODE_TYPE_OP_LIST {
+            os << "N" << node->info.guid << "[label=\"" << nodeName[node->info.type] << "\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->op.base.left->info.guid << "[label=\"left\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->op.base.right->info.guid << "[label=\"right\"];\n";
+            dumpToDOTRecursive(os, node->op.base.left);
+            dumpToDOTRecursive(os, node->op.base.right);
+        } break;
+#undef X
+
         case NT_BLOCK: {
             os << "N" << node->info.guid << " -> N" << node->block.statement->info.guid << "[label=\"stmnt\"];\n";
             os << "N" << node->info.guid << "[label=\"block (" << node->info.guid << ")\"];\n";
@@ -30,31 +47,6 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             os << "N" << node->info.guid << "[label=\"=\"];\n";
             dumpToDOTRecursive(os, node->assignment.symbol);
             dumpToDOTRecursive(os, node->assignment.statement);
-        } break;
-
-        case NT_OP: {
-            os << "N" << node->info.guid << " -> " << "N" << node->op.left->info.guid << "[label=\"left\"];\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->op.right->info.guid << "[label=\"right\"];\n";
-            os << "N" << node->info.guid << "[label=\"";
-            switch (node->op.operation)
-            {
-                case OP_ADD   : os << "+"; break;
-                case OP_INC   : os << "inc"; break;
-                case OP_SUB   : os << "-"; break;
-                case OP_DEC   : os << "dec"; break;
-                case OP_MUL   : os << "*"; break;
-                case OP_DIV   : os << "/"; break;
-                case OP_POW   : os << "^"; break;
-                case OP_MOD   : os << "%"; break;
-                case OP_COMMA : os << ","; break;
-                case OP_EQ    : os << "=="; break;
-                case OP_GT    : os << ">"; break;
-                case OP_LE    : os << "<="; break;
-                default: break;
-            }
-            os << "\"];\n";
-            dumpToDOTRecursive(os, node->op.left);
-            dumpToDOTRecursive(os, node->op.right);
         } break;
 
         case NT_BRANCH: {
@@ -213,16 +205,17 @@ static void init_info(Node* node, NodeType type)
 }
 
 // ----------------------------------------------------------------------------
-Node* newOp(Node* left, Node* right, Operation op)
+Node* newOp(Node* left, Node* right, NodeType op)
 {
+    assert(op >= NT_OP_ADD && op <= NT_OP_COMMA);
+
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_OP);
-    node->op.left = left;
-    node->op.right = right;
-    node->op.operation = op;
+    init_info(node, op);
+    node->op.base.left = left;
+    node->op.base.right = right;
     return node;
 }
 
@@ -265,10 +258,6 @@ static Node* dupNode(Node* other)
     init_info(node, other->info.type);
     switch (node->info.type)
     {
-        case NT_OP     : {
-            node->op.operation = other->op.operation;
-        } break;
-
         case NT_SYMBOL : {
             node->symbol.flags = other->symbol.flags;
             node->symbol.flag.declaration = SD_REF;
@@ -296,6 +285,9 @@ static Node* dupNode(Node* other)
         case NT_LOOP:
         case NT_LOOP_WHILE:
         case NT_LOOP_UNTIL:
+#define X(type, name, str) case type:
+        NODE_TYPE_OP_LIST
+#undef X
             break;
     }
 
@@ -446,14 +438,14 @@ Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, N
     if (stepExpr == nullptr)
         stepExpr = newIntegerLiteral(1);
 
-    Node* addStepStmnt = newOp(symbolRef2, stepExpr, OP_INC);
+    Node* addStepStmnt = newOp(symbolRef2, stepExpr, NT_OP_INC);
     Node* loopBody;
     if (block)
         loopBody = appendStatementToBlock(block, addStepStmnt);
     else
         loopBody = addStepStmnt;
 
-    Node* exitCondition = newOp(symbolRef1, endExpr, OP_LE);
+    Node* exitCondition = newOp(symbolRef1, endExpr, NT_OP_LE);
     Node* loopWithInc = newLoopWhile(exitCondition, loopBody);
     Node* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr));
 

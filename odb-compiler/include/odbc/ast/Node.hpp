@@ -3,56 +3,62 @@
 #include "odbc/config.hpp"
 #include <ostream>
 
+#define NODE_TYPE_BASE_LIST                        \
+    X(NT_BLOCK,        block,       "block")       \
+    X(NT_ASSIGNMENT,   assignment,  "=")           \
+    X(NT_BRANCH,       branch,      "if")          \
+    X(NT_BRANCH_PATHS, paths,       "paths")       \
+    X(NT_FUNC_RETURN,  func_return, "endfunction") \
+    X(NT_SUB_RETURN,   sub_return,  "return")      \
+    X(NT_LOOP,         loop,        "loop")        \
+    X(NT_LOOP_WHILE,   loop_while,  "while")       \
+    X(NT_LOOP_UNTIL,   loop_repeat, "repeat")      \
+    X(NT_KEYWORD,      keyword,     "keyword")     \
+    X(NT_SYMBOL,       symbol,      "symbol")      \
+    X(NT_LITERAL,      literal,     "literal")
+
+#define NODE_TYPE_OP_LIST                          \
+    X(NT_OP_ADD,  add,    "+")                     \
+    X(NT_OP_INC,  inc,    "inc")                   \
+    X(NT_OP_SUB,  sub,    "-")                     \
+    X(NT_OP_DEC,  dec,    "dec")                   \
+    X(NT_OP_MUL,  mul,    "*")                     \
+    X(NT_OP_DIV,  div,    "/")                     \
+    X(NT_OP_MOD,  mod,    "%")                     \
+    X(NT_OP_POW,  pow,    "^")                     \
+                                                   \
+    X(NT_OP_BSHL, bshl,   "<<")                    \
+    X(NT_OP_BSHR, bshr,   ">>")                    \
+    X(NT_OP_BOR,  bor,    "||")                    \
+    X(NT_OP_BAND, band,   "&&")                    \
+    X(NT_OP_BXOR, bxor,   "~~")                    \
+    X(NT_OP_BNOT, bnot,   "..")                    \
+                                                   \
+    X(NT_OP_LT,    lt,    "<")                     \
+    X(NT_OP_LE,    le,    "<=")                    \
+    X(NT_OP_GT,    gt,    ">")                     \
+    X(NT_OP_GE,    ge,    ">=")                    \
+    X(NT_OP_EQ,    eq,    "==")                    \
+    X(NT_OP_NE,    ne,    "<>")                    \
+    X(NT_OP_OR,    lor,   "or")                    \
+    X(NT_OP_AND,   land,  "and")                   \
+    X(NT_OP_XOR,   lxor,  "xor")                   \
+    X(NT_OP_NOT,   lnot,  "not")                   \
+    X(NT_OP_COMMA, comma, ",")
+
+#define NODE_TYPE_LIST                             \
+    NODE_TYPE_BASE_LIST                            \
+    NODE_TYPE_OP_LIST
+
 namespace odbc {
 class Driver;
 namespace ast {
 
 enum NodeType
 {
-    NT_BLOCK,
-    NT_ASSIGNMENT,
-    NT_OP,
-    NT_BRANCH,
-    NT_BRANCH_PATHS,
-    NT_FUNC_RETURN,
-    NT_SUB_RETURN,
-    NT_LOOP,
-    NT_LOOP_WHILE,
-    NT_LOOP_UNTIL,
-    NT_KEYWORD,
-    NT_SYMBOL,
-    NT_LITERAL
-};
-
-enum Operation
-{
-    OP_ADD,
-    OP_INC,
-    OP_SUB,
-    OP_DEC,
-    OP_MUL,
-    OP_DIV,
-    OP_MOD,
-    OP_POW,
-
-    OP_BSHL,
-    OP_BSHR,
-    OP_BOR,
-    OP_BAND,
-    OP_BXOR,
-    OP_BNOT,
-
-    OP_LT,
-    OP_LE,
-    OP_GT,
-    OP_GE,
-    OP_EQ,
-    OP_NE,
-    OP_OR,
-    OP_AND,
-    OP_XOR,
-    OP_NOT,
-    OP_COMMA
+#define X(type, name, str) type,
+    NODE_TYPE_LIST
+#undef X
 };
 
 #define SYMBOL_TYPE_LIST \
@@ -140,7 +146,7 @@ union literal_value_t
 };
 
 union Node {
-    struct info_t
+    struct Info
     {
         NodeType type;
 #ifdef ODBC_DOT_EXPORT
@@ -148,16 +154,16 @@ union Node {
 #endif
     } info;
 
-    struct base_t
+    struct
     {
-        info_t info;
+        Info info;
         Node* left;
         Node* right;
     } base;
 
     struct block_t
     {
-        info_t info;
+        Info info;
         Node* next;
         Node* statement;
     } block;
@@ -165,78 +171,90 @@ union Node {
     // Assign statement to symbol
     struct assignment_t
     {
-        info_t info;
+        Info info;
         Node* symbol;
         Node* statement;
     } assignment;
 
-    struct op_t
+    union
     {
-        info_t info;
-        Node* left;
-        Node* right;
-        Operation operation;
+        struct
+        {
+            Info info;
+            Node* left;
+            Node* right;
+        } base;
+
+#define X(type, name, str)  \
+        struct              \
+        {                   \
+            Info info;      \
+            Node* left;     \
+            Node* right;    \
+        } name;
+        NODE_TYPE_OP_LIST
+#undef X
     } op;
 
     struct branch_paths_t
     {
-        info_t info;
+        Info info;
         Node* is_true;
         Node* is_false;
     } branch_paths;
 
     struct branch_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* paths;
     } branch;
 
     struct func_return_t
     {
-        info_t info;
+        Info info;
         Node* retval;
         Node* _padding;
     } func_return;
 
     struct sub_return_t
     {
-        info_t info;
+        Info info;
         Node* _padding1;
         Node* _padding2;
     } sub_return;
 
     struct loop_t
     {
-        info_t info;
+        Info info;
         Node* _padding;
         Node* body;
     } loop;
 
     struct loop_while_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* body;
     } loop_while;
 
     struct loop_until_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* body;
     } loop_until;
 
     struct command_symbol_t
     {
-        info_t info;
+        Info info;
         Node* symbol;
         Node* next;
     } command_symbol;
 
     struct command_t
     {
-        info_t info;
+        Info info;
         Node* args;
         Node* _padding;
         char* name;
@@ -244,7 +262,7 @@ union Node {
 
     struct symbol_t
     {
-        info_t info;
+        Info info;
         Node* data;
         Node* arglist;
         char* name;
@@ -261,7 +279,7 @@ union Node {
 
     struct literal_t
     {
-        info_t info;
+        Info info;
         Node* _padding1;
         Node* _padding2;
         LiteralType type;
@@ -273,7 +291,7 @@ union Node {
 void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
-Node* newOp(Node* left, Node* right, Operation op);
+Node* newOp(Node* left, Node* right, NodeType op);
 
 Node* newSymbol(const char* symbolName, Node* data, Node* arglist,
                   SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration);

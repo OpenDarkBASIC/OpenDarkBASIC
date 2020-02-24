@@ -78,6 +78,7 @@ target_compile_definitions (odbclib
 target_compile_options (odbclib
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)
+set_target_properties (odbclib PROPERTIES CXX_STANDARD 17)
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests

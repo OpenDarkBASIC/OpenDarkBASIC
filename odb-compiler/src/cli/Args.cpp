@@ -198,7 +198,7 @@ bool Args::parseDBA(int argc, char** argv)
 
     if (keywordMatcherDirty_)
     {
-        fprintf(stderr, "[db parser] Updating keyword registry\n");
+        fprintf(stderr, "[db parser] Updating keyword index\n");
         keywordMatcher_.updateFromDB(&keywordDB_);
         keywordMatcherDirty_ = false;
     }

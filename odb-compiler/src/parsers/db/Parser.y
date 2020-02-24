@@ -202,10 +202,10 @@ constant_decl
   : CONSTANT symbol literal
   ;
 dec_or_inc
-  : DEC symbol COMMA expr                        { $$ = newOp($2, $4, OP_DEC); }
-  | INC symbol COMMA expr                        { $$ = newOp($2, $4, OP_INC); }
-  | DEC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), OP_DEC); }
-  | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), OP_INC); }
+  : DEC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC); }
+  | INC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC); }
+  | DEC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_DEC); }
+  | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_INC); }
   ;
 var_assignment
   : symbol_or_udt_ref EQ expr                    { $$ = newAssignment($1, $3); }
@@ -344,29 +344,29 @@ keyword_returning_value
   | KEYWORD LB expr RB                           { $$ = newSymbol($1, nullptr, $3, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
   ;
 expr
-  : expr ADD expr                                { $$ = newOp($1, $3, OP_ADD); }
-  | expr SUB expr                                { $$ = newOp($1, $3, OP_SUB); }
-  | expr MUL expr                                { $$ = newOp($1, $3, OP_MUL); }
-  | expr DIV expr                                { $$ = newOp($1, $3, OP_DIV); }
-  | expr POW expr                                { $$ = newOp($1, $3, OP_POW); }
-  | expr MOD expr                                { $$ = newOp($1, $3, OP_MOD); }
+  : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD); }
+  | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB); }
+  | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL); }
+  | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV); }
+  | expr POW expr                                { $$ = newOp($1, $3, NT_OP_POW); }
+  | expr MOD expr                                { $$ = newOp($1, $3, NT_OP_MOD); }
   | LB expr RB                                   { $$ = $2; }
-  | expr COMMA expr                              { $$ = newOp($1, $3, OP_COMMA); }
-  | expr NE expr                                 { $$ = newOp($1, $3, OP_NE); }
-  | expr LE expr                                 { $$ = newOp($1, $3, OP_LE); }
-  | expr GE expr                                 { $$ = newOp($1, $3, OP_GE); }
-  | expr EQ expr                                 { $$ = newOp($1, $3, OP_EQ); }
-  | expr LT expr                                 { $$ = newOp($1, $3, OP_LT); }
-  | expr GT expr                                 { $$ = newOp($1, $3, OP_GT); }
-  | expr OR expr                                 { $$ = newOp($1, $3, OP_OR); }
-  | expr AND expr                                { $$ = newOp($1, $3, OP_AND); }
-  | expr NOT expr                                { $$ = newOp($1, $3, OP_NOT); }
-  | expr BSHL expr                               { $$ = newOp($1, $3, OP_BSHL); }
-  | expr BSHR expr                               { $$ = newOp($1, $3, OP_BSHR); }
-  | expr BOR expr                                { $$ = newOp($1, $3, OP_BOR); }
-  | expr BAND expr                               { $$ = newOp($1, $3, OP_BAND); }
-  | expr BXOR expr                               { $$ = newOp($1, $3, OP_BXOR); }
-  | expr BNOT expr                               { $$ = newOp($1, $3, OP_BNOT); }
+  | expr COMMA expr                              { $$ = newOp($1, $3, NT_OP_COMMA); }
+  | expr NE expr                                 { $$ = newOp($1, $3, NT_OP_NE); }
+  | expr LE expr                                 { $$ = newOp($1, $3, NT_OP_LE); }
+  | expr GE expr                                 { $$ = newOp($1, $3, NT_OP_GE); }
+  | expr EQ expr                                 { $$ = newOp($1, $3, NT_OP_EQ); }
+  | expr LT expr                                 { $$ = newOp($1, $3, NT_OP_LT); }
+  | expr GT expr                                 { $$ = newOp($1, $3, NT_OP_GT); }
+  | expr OR expr                                 { $$ = newOp($1, $3, NT_OP_OR); }
+  | expr AND expr                                { $$ = newOp($1, $3, NT_OP_AND); }
+  | expr NOT expr                                { $$ = newOp($1, $3, NT_OP_NOT); }
+  | expr BSHL expr                               { $$ = newOp($1, $3, NT_OP_BSHL); }
+  | expr BSHR expr                               { $$ = newOp($1, $3, NT_OP_BSHR); }
+  | expr BOR expr                                { $$ = newOp($1, $3, NT_OP_BOR); }
+  | expr BAND expr                               { $$ = newOp($1, $3, NT_OP_BAND); }
+  | expr BXOR expr                               { $$ = newOp($1, $3, NT_OP_BXOR); }
+  | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT); }
   | literal                                      { $$ = $1; }
   | symbol_or_udt_ref                            { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
