@@ -146,6 +146,7 @@ union literal_value_t
 };
 
 union Node {
+    /*! Every node in the AST has this data at the beginning */
     struct Info
     {
         NodeType type;
@@ -154,6 +155,8 @@ union Node {
 #endif
     } info;
 
+    /*! Every node in the AST can be aliased to this basic type. Left and Right
+     * pointers may be NULL depending on what the actual type is. */
     struct
     {
         Info info;
@@ -161,6 +164,9 @@ union Node {
         Node* right;
     } base;
 
+    /*!
+     *
+     */
     struct block_t
     {
         Info info;
