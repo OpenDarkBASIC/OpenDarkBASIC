@@ -50,27 +50,17 @@ const Keyword* KeywordDB::lookup(const std::string& keyword) const
 }
 
 // ----------------------------------------------------------------------------
-void KeywordDB::printAll()
+std::vector<Keyword> KeywordDB::keywordsAsList() const
 {
+    std::vector<Keyword> list;
+    list.reserve(map_.size());
     for (const auto& kv : map_)
-    {
-        std::cout << kv.second.name << "=" << kv.second.helpFile << ": ";
-        for (const auto& overload : kv.second.overloads)
-        {
-            std::cout << "[";
-            auto it = overload.begin();
-            if (it != overload.end())
-                std::cout << *it++;
-            while (it != overload.end())
-                std::cout << ", " << *it++;
-            std::cout << "]";
-        }
-        std::cout << std::endl;
-    }
+        list.push_back(kv.second);
+    return list;
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> KeywordDB::keywordsAsList() const
+std::vector<std::string> KeywordDB::keywordNamesAsList() const
 {
     std::vector<std::string> list;
     list.reserve(map_.size());

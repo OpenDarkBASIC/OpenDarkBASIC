@@ -9,27 +9,31 @@
 
 class Args
 {
-    typedef bool (Args::*HandlerFunc)(int, char**);
 public:
+    typedef bool (Args::*HandlerFunc)(const std::vector<std::string>& args);
+
     bool parse(int argc, char** argv);
-    bool printHelp(int argc, char** argv);
 
-    bool expectOption(int argc, char** argv);
-    bool expectOptionOrNothing(int argc, char** argv);
-    bool parseFullOption(int argc, char** argv);
-    bool parseShortOptiones(int argc, char** argv);
+    int parseFullOption(int argc, char** argv);
+    int parseShortOptiones(int argc, char** argv);
 
-    bool disableBanner(int argc, char** argv);
-    bool loadKeywordFile(int argc, char** argv);
-    bool loadKeywordDir(int argc, char** argv);
-    bool parseDBA(int argc, char** argv);
-    bool dumpASTDOT(int argc, char** argv);
-    bool dumpkWStdOut(int argc, char** argv);
+    bool disableBanner(const std::vector<std::string>& args);
+
+    bool printHelp(const std::vector<std::string>& args);
+    bool loadKeywordsINI(const std::vector<std::string>& args);
+    bool loadKeywordsJSON(const std::vector<std::string>& args);
+    bool parseDBA(const std::vector<std::string>& args);
+    bool dumpASTDOT(const std::vector<std::string>& args);
+    bool dumpASTJSON(const std::vector<std::string>& args);
+    bool dumpkWJSON(const std::vector<std::string>& args);
+    bool dumpkWINI(const std::vector<std::string>& args);
+    bool dumpkWNames(const std::vector<std::string>& args);
 
 private:
     odbc::KeywordDB keywordDB_;
     odbc::KeywordMatcher keywordMatcher_;
     odbc::ast::Node* ast_ = nullptr;
+    std::string programName_;
     bool keywordMatcherDirty_ = true;
     bool printBanner_ = true;
 };

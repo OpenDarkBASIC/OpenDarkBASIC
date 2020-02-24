@@ -37,7 +37,7 @@ file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords")
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h" VERBOSE)
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h")
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
@@ -62,6 +62,7 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/Node.cpp"
+    "src/logging/Log.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"

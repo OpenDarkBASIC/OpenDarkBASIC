@@ -15,9 +15,9 @@ public:
 
     bool addKeyword(Keyword keyword);
     const Keyword* lookup(const std::string& keyword) const;
-    void printAll();
 
-    std::vector<std::string> keywordsAsList() const;
+    std::vector<Keyword> keywordsAsList() const;
+    std::vector<std::string> keywordNamesAsList() const;
 
 private:
     std::unordered_map<std::string, Keyword> map_;
