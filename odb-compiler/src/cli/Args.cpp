@@ -44,6 +44,14 @@ static Command sequentialCommands[] = {
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
 #define N_EXECUTABLE_COMMANDS (sizeof(sequentialCommands) / sizeof(*sequentialCommands))
 
+static const char* banner_backup =
+"________                         ________                __   __________    _____    _________.____________  \n"
+"\\_____  \\ ______   ____   ____   \\______ \\ _____ _______|  | _\\______   \\  /  _  \\  /   _____/|   \\_   ___ \\ \n"
+" /   |   \\\\____ \\_/ __ \\ /    \\   |    |  \\\\__  \\\\_  __ \\  |/ /|    |  _/ /  /_\\  \\ \\_____  \\ |   /    \\  \\/ \n"
+"/    |    \\  |_> >  ___/|   |  \\  |    `   \\/ __ \\|  | \\/    < |    |   \\/    |    \\/        \\|   \\     \\____\n"
+"\\_______  /   __/ \\___  >___|  / /_______  (____  /__|  |__|_ \\|______  /\\____|__  /_______  /|___|\\______  /\n"
+"        \\/|__|        \\/     \\/          \\/     \\/           \\/       \\/         \\/        \\/             \\/ \n";
+
 static const char* banner =
 "________                         ________                __   __________    _____    _________.____________  \n"
 "\\_____  \\ ______   ____   ____   \\______ \\ _____ _______|  | _\\______   \\  /  _  \\  /   _____/|   \\_   ___ \\ \n"
@@ -191,7 +199,14 @@ bool Args::parse(int argc, char** argv)
 
     // Now we can print the banner (unless --no-banner was specified)
     if (printBanner_)
-        fprintf(stderr, "%s\n", banner);
+    {
+#define UP "\u001b[%dA"
+#define RIGHT "\u001b[%dC"
+        fprintf(stderr, "%s", banner);
+        fprintf(stderr, UP, 1);
+        fprintf(stderr, RIGHT, 34);
+        fprintf(stderr, "Version " ODBC_VERSION_STR "\n\n");
+    }
 
     // Process all sequential commands
     for (auto& command : sequentialCommandQueue)
