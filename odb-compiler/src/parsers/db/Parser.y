@@ -88,7 +88,7 @@
 
 %token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
 %token BSHL BSHR BOR BAND BXOR BNOT;
-%token LT GT LE GE NE EQ OR AND NOT;
+%token LT GT LE GE NE EQ LOR LAND LNOT;
 
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
 %token WHILE ENDWHILE REPEAT UNTIL DO LOOP
@@ -100,7 +100,7 @@
 
 %token<string> SYMBOL;
 %token<string> KEYWORD;
-%token DOLLAR HASH NO_SYMBOL_TYPE;
+%token DOLLAR HASH;
 
 %type<node> stmnts;
 %type<node> stmnt;
@@ -122,13 +122,14 @@
 %type<node> func_name_decl;
 %type<node> func_call;
 %type<node> sub_call;
-%type<node> sub_decl;
 %type<node> sub_return;
 %type<node> label_decl;
 %type<node> func_call_or_dim_ref;
 %type<node> keyword;
 %type<node> keyword_returning_value;
 %type<node> expr;
+%type<node> arglist;
+%type<node> decl_arglist;
 %type<node> literal;
 %type<node> symbol;
 %type<node> symbol_without_type;
@@ -152,11 +153,20 @@
 %nonassoc NO_HASH_OR_DOLLAR
 %nonassoc COLON
 %left COMMA
-%left EQ
+%left LOR
+%left LAND
+%left LXOR
+%left BOR
+%left BXOR
+%left BAND
+%right BNOT
+%left EQ NE
+%left GT LT GE LE
+%left BSHL BSHR
 %left ADD SUB
 %left MUL DIV
 %left POW MOD
-%right NOT
+%right LNOT
 %left LB RB
 
 %destructor { free($$); } <string>
@@ -192,8 +202,8 @@ stmnt
   | func_decl                                    { $$ = $1; }
   | func_call                                    { $$ = $1; }
   | func_exit                                    { $$ = $1; }
-  | sub_decl                                     { $$ = $1; }
   | sub_call                                     { $$ = $1; }
+  | sub_return                                   { $$ = $1; }
   | label_decl                                   { $$ = $1; }
   | keyword                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
@@ -238,7 +248,7 @@ symbol_or_dim_decl
   | symbol                                       { $$ = $1; }
   ;
 dim_decl
-  : DIM symbol LB expr RB {
+  : DIM symbol LB arglist RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
         $$->sym.array_decl.arglist = $4;
@@ -249,7 +259,7 @@ dim_decl
     }
   ;
 dim_ref
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.array_ref.arglist = $3;
@@ -292,11 +302,11 @@ func_exit
   | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr); }
   ;
 func_name_decl
-  : FUNCTION symbol LB expr RB                   { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
+  : FUNCTION symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
   | FUNCTION symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
   ;
 func_call
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_FUNC_CALL;
         $$->sym.func_call.arglist = $3;
@@ -309,13 +319,6 @@ func_call
 sub_call
   : GOSUB symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
-sub_decl
-  : label_decl seps stmnts seps sub_return {
-        $$ = $1;
-        $$->info.type = NT_SYM_SUB_DECL;
-        $$->sym.sub_decl.body = appendStatementToBlock($3, $5);
-    }
-  ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(); }
   ;
@@ -323,7 +326,7 @@ label_decl
   : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
   ;
 func_call_or_dim_ref
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
         $$->sym.func_call.arglist = $3;
     }
@@ -333,22 +336,25 @@ func_call_or_dim_ref
   ;
 keyword
   : KEYWORD                                      { $$ = newKeyword($1, nullptr); }
-  | KEYWORD expr                                 { $$ = newKeyword($1, $2); }
+  | KEYWORD arglist                              { $$ = newKeyword($1, $2); }
   | KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
-  | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3); }
+  | KEYWORD LB arglist RB                        { $$ = newKeyword($1, $3); }
   ;
 keyword_returning_value
   : KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
   | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3); }
   ;
 expr
+  : LB arglist RB                                { $$ = $2; }
+  | arglist
+  ;
+arglist
   : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD); }
   | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB); }
   | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL); }
   | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV); }
   | expr POW expr                                { $$ = newOp($1, $3, NT_OP_POW); }
   | expr MOD expr                                { $$ = newOp($1, $3, NT_OP_MOD); }
-  | LB expr RB                                   { $$ = $2; }
   | expr COMMA expr                              { $$ = newOp($1, $3, NT_OP_COMMA); }
   | expr NE expr                                 { $$ = newOp($1, $3, NT_OP_NE); }
   | expr LE expr                                 { $$ = newOp($1, $3, NT_OP_LE); }
@@ -356,9 +362,10 @@ expr
   | expr EQ expr                                 { $$ = newOp($1, $3, NT_OP_EQ); }
   | expr LT expr                                 { $$ = newOp($1, $3, NT_OP_LT); }
   | expr GT expr                                 { $$ = newOp($1, $3, NT_OP_GT); }
-  | expr OR expr                                 { $$ = newOp($1, $3, NT_OP_OR); }
-  | expr AND expr                                { $$ = newOp($1, $3, NT_OP_AND); }
-  | expr NOT expr                                { $$ = newOp($1, $3, NT_OP_NOT); }
+  | expr LOR expr                                { $$ = newOp($1, $3, NT_OP_LOR); }
+  | expr LAND expr                               { $$ = newOp($1, $3, NT_OP_LAND); }
+  | expr LXOR expr                               { $$ = newOp($1, $3, NT_OP_LXOR); }
+  | expr LNOT expr                               { $$ = newOp($1, $3, NT_OP_LNOT); }
   | expr BSHL expr                               { $$ = newOp($1, $3, NT_OP_BSHL); }
   | expr BSHR expr                               { $$ = newOp($1, $3, NT_OP_BSHR); }
   | expr BOR expr                                { $$ = newOp($1, $3, NT_OP_BOR); }
@@ -369,6 +376,12 @@ expr
   | symbol_or_udt_ref                            { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
+  ;
+decl_arglist
+  : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA); }
+  | literal                                      { $$ = $1; }
+  | func_call_or_dim_ref                         { $$ = $1; }
+  | var_decl_type                                { $$ = $1; }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }

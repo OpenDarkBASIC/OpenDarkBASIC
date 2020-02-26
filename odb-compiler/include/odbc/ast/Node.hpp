@@ -39,10 +39,10 @@
     X(NT_OP_GE,    ge,    ">=")                                               \
     X(NT_OP_EQ,    eq,    "==")                                               \
     X(NT_OP_NE,    ne,    "<>")                                               \
-    X(NT_OP_OR,    lor,   "or")                                               \
-    X(NT_OP_AND,   land,  "and")                                              \
-    X(NT_OP_XOR,   lxor,  "xor")                                              \
-    X(NT_OP_NOT,   lnot,  "not")                                              \
+    X(NT_OP_LOR,   lor,   "lor")                                              \
+    X(NT_OP_LAND,  land,  "land")                                             \
+    X(NT_OP_LXOR,  lxor,  "lxor")                                             \
+    X(NT_OP_LNOT,  lnot,  "lnot")                                             \
     X(NT_OP_COMMA, comma, ",")
 
 #define NODE_TYPE_SYMBOL_LIST                                                 \
@@ -58,7 +58,6 @@
     X(NT_SYM_FUNC_CALL, func_call, "function call")                           \
     X(NT_SYM_FUNC_DECL, func_decl, "function decl")                           \
     X(NT_SYM_SUB_CALL, sub_call, "subroutine call")                           \
-    X(NT_SYM_SUB_DECL, sub_decl, "subroutine decl")                           \
     X(NT_SYM_LABEL, label, "label")                                           \
     X(NT_SYM_KEYWORD, keyword, "keyword")
 
@@ -313,7 +312,6 @@ union Node {
         DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
         DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
         DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);
-        DEFINE_SYMBOL_STRUCT(sub_decl, body, _padding2);
         DEFINE_SYMBOL_STRUCT(label, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(keyword, _padding, arglist);
 

@@ -158,9 +158,6 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             goto symbol_common;
         case NT_SYM_SUB_CALL:
             goto symbol_common;
-        case NT_SYM_SUB_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.sub_decl.body->info.guid << "[label=\"body\"];\n";
-            goto symbol_common;
         case NT_SYM_LABEL:
             goto symbol_common;
         case NT_SYM_KEYWORD:
