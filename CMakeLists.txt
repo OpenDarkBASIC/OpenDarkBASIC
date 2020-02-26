@@ -9,6 +9,7 @@ project ("OpenDarkBASIC")
 list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 include (ConfigureMSVCRuntime)
+set (MSVC_RUNTIME "shared")
 configure_msvc_runtime()
 
 add_subdirectory ("thirdparty/googletest")
