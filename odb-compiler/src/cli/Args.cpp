@@ -26,31 +26,23 @@ struct CommandHandler
 typedef std::vector<CommandHandler> CommandQueue;
 
 static Command globalSwitches[] = {
-    { "no-banner",    'n',     "",           {0, 0}, &Args::disableBanner, "Don't print the cool ASCII art banner"}
+    { "no-banner",    'n',"",                  {0, 0}, &Args::disableBanner, "Don't print the cool ASCII art banner"}
 };
 
 static Command sequentialCommands[] = {
-    { "help",         'h',nullptr,       {0, 0}, &Args::printHelp, "Print this help text"},
-    { "parse-kw-ini", 'k',"<path/file>", {1, 1}, &Args::loadKeywordsINI, "Load a specific keyword file, or load an entire directory of keyword files."},
-    { "parse-kw-json", 0, "<path/file>", {1, 1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
-    { "parse-dba",     0, "<path>",      {1, 1}, &Args::parseDBA, "Parse this DBA source file"},
-    { "dump-ast-dot",  0, "[path]",      {0, 1}, &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
-    { "dump-ast-json", 0, "[path]",      {0, 1}, &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
-    { "dump-kw-json",  0, "[path]",      {0, 1}, &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
-    { "dump-kw-ini",   0, "[path]",      {0, 1}, &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
-    { "dump-kw-names", 0, "[path]",      {0, 1}, &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
+    { "help",         'h',nullptr,                       {0, 0},  &Args::printHelp, "Print this help text"},
+    { "parse-kw-ini", 'k',"<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsINI, "Load a specific keyword file, or load an entire directory of keyword files."},
+    { "parse-kw-json", 0, "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
+    { "parse-dba",     0, "<file> [files...]",           {1, -1}, &Args::parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
+    { "dump-ast-dot",  0, "[file]",                      {0, 1},  &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
+    { "dump-ast-json", 0, "[file]",                      {0, 1},  &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
+    { "dump-kw-json",  0, "[file]",                      {0, 1},  &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
+    { "dump-kw-ini",   0, "[file]",                      {0, 1},  &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
+    { "dump-kw-names", 0, "[file]",                      {0, 1},  &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
 };
 
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
 #define N_EXECUTABLE_COMMANDS (sizeof(sequentialCommands) / sizeof(*sequentialCommands))
-
-static const char* banner_backup =
-"________                         ________                __   __________    _____    _________.____________  \n"
-"\\_____  \\ ______   ____   ____   \\______ \\ _____ _______|  | _\\______   \\  /  _  \\  /   _____/|   \\_   ___ \\ \n"
-" /   |   \\\\____ \\_/ __ \\ /    \\   |    |  \\\\__  \\\\_  __ \\  |/ /|    |  _/ /  /_\\  \\ \\_____  \\ |   /    \\  \\/ \n"
-"/    |    \\  |_> >  ___/|   |  \\  |    `   \\/ __ \\|  | \\/    < |    |   \\/    |    \\/        \\|   \\     \\____\n"
-"\\_______  /   __/ \\___  >___|  / /_______  (____  /__|  |__|_ \\|______  /\\____|__  /_______  /|___|\\______  /\n"
-"        \\/|__|        \\/     \\/          \\/     \\/           \\/       \\/         \\/        \\/             \\/ \n";
 
 static const char* banner =
 "________                         ________                __   __________    _____    _________.____________  \n"
@@ -77,7 +69,7 @@ static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, Com
 
                 queue->push_back({});
                 queue->back().func = table[i].handler;
-                for (int arg = 0; arg != table[i].argRange.h && arg != argc - 1; ++arg)
+                for (int arg = 0; arg != table[i].argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
                     queue->back().args.push_back(argv[arg + 1]);
                 return queue->back().args.size() + 1;
             }
@@ -129,7 +121,7 @@ static int parseShortOptions(int argc, char** argv, CommandQueue* globalQueue, C
                 queue->back().func = table[i].handler;
                 if (str[1] == '\0')
                 {
-                    for (int arg = 0; arg != table[i].argRange.h && arg != argc - 1; ++arg)
+                    for (int arg = 0; arg != table[i].argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
                         queue->back().args.push_back(argv[arg + 1]);
                 }
                 return queue->back().args.size() + 1;
@@ -205,6 +197,8 @@ bool Args::parse(int argc, char** argv)
         fprintf(stderr, "%s", banner);
         fprintf(stderr, UP, 1);
         fprintf(stderr, RIGHT, 34);
+        fprintf(stderr, "github.com/TheComet/OpenDarkBASIC");
+        fprintf(stderr, RIGHT, 7);
         fprintf(stderr, "Version " ODBC_VERSION_STR "\n\n");
     }
 
@@ -261,10 +255,16 @@ bool Args::disableBanner(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::loadKeywordsINI(const std::vector<std::string>& args)
 {
-    fprintf(stderr, "[kw parser] Loading keyword file `%s`\n", args[0].c_str());
-    odbc::kw::Driver driver(&keywordDB_);
-    keywordMatcherDirty_ = true;
-    return driver.parseFile(args[0].c_str());
+    for (const auto& arg : args)
+    {
+        fprintf(stderr, "[kw parser] Loading keyword file `%s`\n", arg.c_str());
+        odbc::kw::Driver driver(&keywordDB_);
+        keywordMatcherDirty_ = true;
+        if (driver.parseFile(arg.c_str()) == false)
+            return false;
+    }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -284,9 +284,15 @@ bool Args::parseDBA(const std::vector<std::string>& args)
         keywordMatcherDirty_ = false;
     }
 
-    fprintf(stderr, "[db parser] Parsing file `%s`\n", args[0].c_str());
-    odbc::db::Driver driver(&ast_, &keywordMatcher_);
-    return driver.parseFile(args[0].c_str());
+    for (const auto& arg : args)
+    {
+        fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
+        odbc::db::Driver driver(&ast_, &keywordMatcher_);
+        if (driver.parseFile(arg.c_str()) == false)
+            return false;
+    }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
