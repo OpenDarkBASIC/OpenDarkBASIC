@@ -127,45 +127,64 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             }
         } break;
 
-        case NT_SYMBOL: {
-            if (node->symbol.data)
-            {
-                os << "N" << node->info.guid << " -> " << "N" << node->symbol.data->info.guid << "[label=\"data\"];\n";
-                dumpToDOTRecursive(os, node->symbol.data);
-            }
-            if (node->symbol.arglist)
-            {
-                os << "N" << node->info.guid << " -> " << "N" << node->symbol.arglist->info.guid << " [label=\"arglist\"];\n";
-                dumpToDOTRecursive(os, node->symbol.arglist);
-            }
-
-            os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->symbol.name << "\\\"|";
-            switch (node->symbol.flag.type)
-            {
-#define X(name) case name : os << #name; break;
-                SYMBOL_TYPE_LIST
-#undef X
-            }
-            switch (node->symbol.flag.datatype)
+        case NT_SYM_CONST_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.const_decl.literal->info.guid << "[label=\"data\"];\n";
+            goto symbol_common;
+        case NT_SYM_CONST_REF:
+            goto symbol_common;
+        case NT_SYM_VAR_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.var_decl.udt->info.guid << "[label=\"udt\"];\n";
+            goto symbol_common;
+        case NT_SYM_VAR_REF:
+            goto symbol_common;
+        case NT_SYM_ARRAY_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.udt->info.guid << "[label=\"udt\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.arglist->info.guid << "[label=\"arglist\"];\n";
+            goto symbol_common;
+        case NT_SYM_ARRAY_REF:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
+            goto symbol_common;
+        case NT_SYM_UDT_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.var_or_arr_decl->info.guid << "[label=\"var or array\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.next_subtype->info.guid << "[label=\"next\"];\n";
+            goto symbol_common;
+        case NT_SYM_UDT_REF:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next_subtype->info.guid << "[label=\"next\"];\n";
+            goto symbol_common;
+        case NT_SYM_FUNC_CALL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.func_call.arglist->info.guid << "[label=\"arglist\"];\n";
+            goto symbol_common;
+        case NT_SYM_FUNC_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.arglist->info.guid << "[label=\"arglist\"];\n";
+            goto symbol_common;
+        case NT_SYM_SUB_CALL:
+            goto symbol_common;
+        case NT_SYM_LABEL:
+            goto symbol_common;
+        case NT_SYM_KEYWORD:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.keyword.arglist->info.guid << "[label=\"arglist\"];\n";
+            goto symbol_common;
+        case NT_SYM: {
+            symbol_common:
+            os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->sym.base.name << "\\\"|";
+            switch (node->sym.base.flag.datatype)
             {
 #define X(name) case name : os << "|" #name; break;
                 SYMBOL_DATATYPE_LIST
 #undef X
             }
-
-            switch (node->symbol.flag.scope)
+            switch (node->sym.base.flag.scope)
             {
 #define X(name) case name : os << "|" #name; break;
                 SYMBOL_SCOPE_LIST
 #undef X
             }
-            switch (node->symbol.flag.declaration)
-            {
-#define X(name) case name : os << "|" #name; break;
-                SYMBOL_DECLARATION_LIST
-#undef X
-            }
             os << "}\"];\n";
+
+            if (node->sym.base.left)
+                dumpToDOTRecursive(os, node->sym.base.left);
+            if (node->sym.base.right)
+                dumpToDOTRecursive(os, node->sym.base.right);
         } break;
 
         case NT_LITERAL: {
@@ -207,7 +226,7 @@ static void init_info(Node* node, NodeType type)
 // ----------------------------------------------------------------------------
 Node* newOp(Node* left, Node* right, NodeType op)
 {
-    assert(op >= NT_OP_ADD && op <= NT_OP_COMMA);
+    ASSERT_OP_RANGE(op);
 
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
@@ -220,21 +239,18 @@ Node* newOp(Node* left, Node* right, NodeType op)
 }
 
 // ----------------------------------------------------------------------------
-Node* newSymbol(const char* symbolName, Node* data, Node* arglist,
-                  SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration)
+Node* newSymbol(const char* symbolName, SymbolDataType dataType, SymbolScope scope)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_SYMBOL);
-    node->symbol.name = strdup(symbolName);
-    node->symbol.flag.type = type;
-    node->symbol.flag.datatype = dataType;
-    node->symbol.flag.scope = scope;
-    node->symbol.flag.declaration = declaration;
-    node->symbol.data = data;
-    node->symbol.arglist = arglist;
+    init_info(node, NT_SYM);
+    node->sym.base.left = nullptr;
+    node->sym.base.right = nullptr;
+    node->sym.base.name = strdup(symbolName);
+    node->sym.base.flag.datatype = dataType;
+    node->sym.base.flag.scope = scope;
     return node;
 }
 
@@ -258,14 +274,15 @@ static Node* dupNode(Node* other)
     init_info(node, other->info.type);
     switch (node->info.type)
     {
-        case NT_SYMBOL : {
-            node->symbol.flags = other->symbol.flags;
-            node->symbol.flag.declaration = SD_REF;
-            node->symbol.flag.scope = SS_LOCAL;
-            node->symbol.name = strdup(other->symbol.name);
-            if (node->symbol.name == nullptr)
+#define X(type, name, str) case type:
+        NODE_TYPE_SYMBOL_LIST {
+            node->sym.base.flags = other->sym.base.flags;
+            node->sym.base.flag.scope = SS_LOCAL;
+            node->sym.base.name = strdup(other->sym.base.name);
+            if (node->sym.base.name == nullptr)
                 goto allocSymbolNameFailed;
         } break;
+#undef X
 
         case NT_LITERAL: {
             node->literal.type = other->literal.type;
@@ -324,7 +341,7 @@ Node* newStringLiteral(const char* s) { literal_value_t value; value.s = strdup(
 // ----------------------------------------------------------------------------
 Node* newAssignment(Node* symbol, Node* statement)
 {
-    assert(symbol->info.type == NT_SYMBOL);
+    ASSERT_SYMBOL_RANGE(symbol);
     Node* ass = (Node*)malloc(sizeof *ass);
     init_info(ass, NT_ASSIGNMENT);
     ass->assignment.symbol = symbol;
@@ -427,7 +444,7 @@ Node* newLoopUntil(Node* condition, Node* block)
 // ----------------------------------------------------------------------------
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block)
 {
-    assert(symbol->info.type == NT_SYMBOL);
+    ASSERT_SYMBOL_RANGE(symbol);
 
     // We need a few copies of the symbol
     Node* symbolRef1 = dupNode(symbol);
@@ -488,11 +505,15 @@ void freeNode(Node* node)
 {
     switch (node->info.type)
     {
-        case NT_SYMBOL          : free(node->symbol.name);     break;
-        case NT_LITERAL         :
+#define X(type, name, str) case type:
+        NODE_TYPE_SYMBOL_LIST {
+            free(node->sym.base.name);
+        } break;
+#undef X
+        case NT_LITERAL : {
             if (node->literal.type == LT_STRING)
                 free(node->literal.value.s);
-            break;
+        } break;
 
         default: break;
     }

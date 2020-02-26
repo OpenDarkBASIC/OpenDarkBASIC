@@ -212,16 +212,16 @@ var_assignment
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 var_decl
-  : LOCAL var_decl_type                          { $$ = $2; $$->symbol.flag.scope = SS_LOCAL; }
-  | GLOBAL var_decl_type                         { $$ = $2; $$->symbol.flag.scope = SS_GLOBAL; }
+  : LOCAL var_decl_type                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL var_decl_type                         { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
   | var_decl_type                                { $$ = $1; }
   ;
 var_decl_type
-  : symbol_and_dim_decl AS BOOLEAN               { $$ = $1; $$->symbol.flag.datatype = SDT_BOOLEAN; }
-  | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->symbol.flag.datatype = SDT_INTEGER; }
-  | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->symbol.flag.datatype = SDT_FLOAT; }
-  | symbol_and_dim_decl AS STRING                { $$ = $1; $$->symbol.flag.datatype = SDT_STRING; }
-  | symbol_and_dim_decl AS udt_name              { $$ = $1; $$->symbol.flag.datatype = SDT_UDT; $$->symbol.data = $3; }
+  : symbol_and_dim_decl AS BOOLEAN               { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
+  | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
+  | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | symbol_and_dim_decl AS STRING                { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  | symbol_and_dim_decl AS udt_name              { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; $$->sym.var_decl.udt = $3; }
   | symbol_and_dim_decl                          { $$ = $1; }
   ;
 symbol_and_dim_decl
@@ -231,40 +231,37 @@ symbol_and_dim_decl
 dim_decl
   : DIM symbol LB expr RB {
         $$ = $2;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.flag.declaration = SD_DECL;
-        $$->symbol.arglist = $4;
+        $$->info.type = NT_SYM_ARRAY_DECL;
+        $$->sym.array_decl.arglist = $4;
     }
   | DIM symbol LB RB {
         $$ = $2;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.flag.declaration = SD_DECL;
+        $$->info.type = NT_SYM_ARRAY_DECL;
     }
   ;
 dim_ref
   : symbol LB expr RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.arglist = $3;
+        $$->info.type = NT_SYM_ARRAY_REF;
+        $$->sym.array_ref.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_DIM;
+        $$->info.type = NT_SYM_ARRAY_REF;
     }
   ;
 udt_decl
   : TYPE udt_name seps var_decls seps ENDTYPE
     {
         $$ = $2;
-        $$->symbol.data = $4;
-        $$->symbol.flag.declaration = SD_DECL;
+        $$->info.type = NT_SYM_UDT_DECL;
+        appendUDTSubtype($$, $4);
     }
   ;
 udt_name
   : symbol_without_type {
         $$ = $1;
-        $$->symbol.flag.type = ST_UDT;
-        $$->symbol.flag.datatype = SDT_UDT;
+        $$->info.type = NT_SYM_UDT_DECL;
     }
   ;
 symbol_or_udt_ref
@@ -273,12 +270,12 @@ symbol_or_udt_ref
   ;
 var_decls
   : var_decls seps var_decl                      { $$ = appendStatementToBlock($1, $3); }
-  | var_decl                                     { $$ = newBlock($1, nullptr); }
+  | var_decl                                     { $$ = newUDTDecl($1); }
   ;
 func_decl
   : func_name_decl seps stmnts seps func_end {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
+        $$->info.type = NT_SYM_FUNC_DECL;
         $$->symbol.flag.declaration = SD_DECL;
         $$->symbol.data = appendStatementToBlock($3, $5);
     }
@@ -292,45 +289,39 @@ func_exit
   | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr); }
   ;
 func_name_decl
-  : FUNCTION symbol LB expr RB                   { $$ = $2; $$->symbol.arglist = $4; }
-  | FUNCTION symbol LB RB                        { $$ = $2; }
+  : FUNCTION symbol LB expr RB                   { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
+  | FUNCTION symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
   ;
 func_call
   : symbol LB expr RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
-        $$->symbol.arglist = $3;
+        $$->info.type = NT_SYM_FUNC_CALL;
+        $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
+        $$->info.type = NT_SYM_FUNC_CALL;
     }
   ;
 sub_call
-  : GOSUB symbol_without_type                    { $$ = $2; $$->symbol.flag.type = ST_SUBROUTINE; }
+  : GOSUB symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
 sub_decl
-  : label_decl seps stmnts seps sub_return {
-        $$ = $1;
-        $$->symbol.flag.type = ST_SUBROUTINE;
-        $$->symbol.data = appendStatementToBlock($3, $5);
-    }
+  : label_decl seps stmnts seps sub_return       { $$ = newSubroutine($3, $5); }
   ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(); }
   ;
 label_decl
-  : symbol_without_type COLON                    { $$ = $1; $$->symbol.flag.type = ST_LABEL; $$->symbol.flag.declaration = SD_DECL; }
+  : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
   ;
 func_call_or_dim_ref
   : symbol LB expr RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_UNKNOWN;
-        $$->symbol.arglist = $3;
+        $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_UNKNOWN;
     }
   ;
 keyword
@@ -382,11 +373,11 @@ literal
   ;
 symbol
   : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
-  | SYMBOL HASH                                  { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_FLOAT, SS_LOCAL, SD_REF); free($1); }
-  | SYMBOL DOLLAR                                { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_STRING, SS_LOCAL, SD_REF); free($1); }
+  | SYMBOL HASH                                  { $$ = newSymbol($1, SDT_FLOAT, SS_LOCAL); free($1); }
+  | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL); free($1); }
   ;
 symbol_without_type
-  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
+  : SYMBOL                                       { $$ = newSymbol($1, SDT_UNKNOWN, SS_LOCAL); free($1); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }
