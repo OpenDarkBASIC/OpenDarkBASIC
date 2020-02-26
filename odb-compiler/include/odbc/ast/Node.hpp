@@ -4,17 +4,17 @@
 #include <ostream>
 
 #define NODE_TYPE_BASE_LIST                                                   \
-    X(NT_BLOCK,        block,       "block")                                  \
-    X(NT_ASSIGNMENT,   assignment,  "=")                                      \
-    X(NT_BRANCH,       branch,      "if")                                     \
-    X(NT_BRANCH_PATHS, paths,       "paths")                                  \
-    X(NT_FUNC_RETURN,  func_return, "endfunction")                            \
-    X(NT_SUB_RETURN,   sub_return,  "return")                                 \
-    X(NT_LOOP,         loop,        "loop")                                   \
-    X(NT_LOOP_WHILE,   loop_while,  "while")                                  \
-    X(NT_LOOP_UNTIL,   loop_repeat, "repeat")                                 \
-    X(NT_KEYWORD,      keyword,     "keyword")                                \
-    X(NT_LITERAL,      literal,     "literal")
+    X(NT_BLOCK,            block,            "block")                         \
+    X(NT_ASSIGNMENT,       assignment,       "=")                             \
+    X(NT_BRANCH,           branch,           "if")                            \
+    X(NT_BRANCH_PATHS,     paths,            "paths")                         \
+    X(NT_FUNC_RETURN,      func_return,      "endfunction")                   \
+    X(NT_SUB_RETURN,       sub_return,       "return")                        \
+    X(NT_LOOP,             loop,             "loop")                          \
+    X(NT_LOOP_WHILE,       loop_while,       "while")                         \
+    X(NT_LOOP_UNTIL,       loop_repeat,      "repeat")                        \
+    X(NT_UDT_SUBTYPE_LIST, udt_subtype_list, "UDT Subtypes")                  \
+    X(NT_LITERAL,          literal,          "literal")
 
 #define NODE_TYPE_OP_LIST                                                     \
     X(NT_OP_ADD,  add,    "+")                                                \
@@ -58,6 +58,7 @@
     X(NT_SYM_FUNC_CALL, func_call, "function call")                           \
     X(NT_SYM_FUNC_DECL, func_decl, "function decl")                           \
     X(NT_SYM_SUB_CALL, sub_call, "subroutine call")                           \
+    X(NT_SYM_SUB_DECL, sub_decl, "subroutine decl")                           \
     X(NT_SYM_LABEL, label, "label")                                           \
     X(NT_SYM_KEYWORD, keyword, "keyword")
 
@@ -265,20 +266,12 @@ union Node {
         Node* body;
     } loop_until;
 
-    struct command_symbol_t
+    struct
     {
         Info info;
-        Node* symbol;
+        Node* var_or_arr_decl;
         Node* next;
-    } command_symbol;
-
-    struct command_t
-    {
-        Info info;
-        Node* args;
-        Node* _padding;
-        char* name;
-    } command;
+    } udt_subtype_list;
 
     /*!
      * Represents a symbol. This is any entity in the program that references
@@ -315,11 +308,12 @@ union Node {
         DEFINE_SYMBOL_STRUCT(var_ref, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(array_decl, udt, arglist);
         DEFINE_SYMBOL_STRUCT(array_ref, _padding, arglist);
-        DEFINE_SYMBOL_STRUCT(udt_decl, var_or_arr_decl, next_subtype);
+        DEFINE_SYMBOL_STRUCT(udt_decl, subtypes_list, _padding);
         DEFINE_SYMBOL_STRUCT(udt_ref, _padding, next_subtype);
         DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
-        DEFINE_SYMBOL_STRUCT(func_decl, _padding, arglist);
+        DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
         DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);
+        DEFINE_SYMBOL_STRUCT(sub_decl, body, _padding2);
         DEFINE_SYMBOL_STRUCT(label, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(keyword, _padding, arglist);
 
@@ -365,6 +359,9 @@ Node* newLoop(Node* block);
 Node* newLoopWhile(Node* condition, Node* block);
 Node* newLoopUntil(Node* condition, Node* block);
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
+
+Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype);
+Node* newKeyword(const char* name, Node* arglist);
 
 Node* newBlock(Node* expr, Node* next);
 Node* appendStatementToBlock(Node* block, Node* expr);

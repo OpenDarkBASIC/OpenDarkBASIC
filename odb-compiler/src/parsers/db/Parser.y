@@ -104,17 +104,18 @@
 
 %type<node> stmnts;
 %type<node> stmnt;
+%type<node> constant_decl;
 %type<node> dec_or_inc;
 %type<node> var_assignment;
 %type<node> var_decl;
 %type<node> var_decl_type;
-%type<node> symbol_and_dim_decl;
+%type<node> udt_var_decls;
+%type<node> symbol_or_dim_decl;
 %type<node> symbol_or_udt_ref;
 %type<node> dim_decl;
 %type<node> dim_ref;
 %type<node> udt_decl;
 %type<node> udt_name;
-%type<node> var_decls;
 %type<node> func_decl;
 %type<node> func_end;
 %type<node> func_exit;
@@ -184,7 +185,7 @@ stmnts
   ;
 stmnt
   : var_assignment                               { $$ = $1; }
-  | constant_decl
+  | constant_decl                                { $$ = $1; }
   | dec_or_inc                                   { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | udt_decl                                     { $$ = $1; }
@@ -199,7 +200,11 @@ stmnt
   | loop                                         { $$ = $1; }
   ;
 constant_decl
-  : CONSTANT symbol literal
+  : CONSTANT symbol literal {
+        $$ = $2;
+        $$->info.type = NT_SYM_CONST_DECL;
+        $$->sym.const_decl.literal = $3;
+    }
   ;
 dec_or_inc
   : DEC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC); }
@@ -217,14 +222,18 @@ var_decl
   | var_decl_type                                { $$ = $1; }
   ;
 var_decl_type
-  : symbol_and_dim_decl AS BOOLEAN               { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
-  | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
-  | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
-  | symbol_and_dim_decl AS STRING                { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
-  | symbol_and_dim_decl AS udt_name              { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; $$->sym.var_decl.udt = $3; }
-  | symbol_and_dim_decl                          { $$ = $1; }
+  : symbol_or_dim_decl AS BOOLEAN                { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
+  | symbol_or_dim_decl AS INTEGER                { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
+  | symbol_or_dim_decl AS FLOAT                  { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | symbol_or_dim_decl AS STRING                 { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  | symbol_or_dim_decl AS udt_name               { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; $$->sym.var_decl.udt = $3; }
+  | symbol_or_dim_decl                           { $$ = $1; }
   ;
-symbol_and_dim_decl
+udt_var_decls
+  : var_decl_type seps udt_var_decls             { $$ = newUDTSubtype($1, $3); }
+  | var_decl_type                                { $$ = newUDTSubtype($1, nullptr); }
+  ;
+symbol_or_dim_decl
   : dim_decl                                     { $$ = $1; }
   | symbol                                       { $$ = $1; }
   ;
@@ -251,11 +260,11 @@ dim_ref
     }
   ;
 udt_decl
-  : TYPE udt_name seps var_decls seps ENDTYPE
+  : TYPE udt_name seps udt_var_decls seps ENDTYPE
     {
         $$ = $2;
         $$->info.type = NT_SYM_UDT_DECL;
-        appendUDTSubtype($$, $4);
+        $$->sym.udt_decl.subtypes_list = $4;
     }
   ;
 udt_name
@@ -268,16 +277,10 @@ symbol_or_udt_ref
   : udt_name PERIOD symbol_or_udt_ref
   | symbol
   ;
-var_decls
-  : var_decls seps var_decl                      { $$ = appendStatementToBlock($1, $3); }
-  | var_decl                                     { $$ = newUDTDecl($1); }
-  ;
 func_decl
   : func_name_decl seps stmnts seps func_end {
         $$ = $1;
-        $$->info.type = NT_SYM_FUNC_DECL;
-        $$->symbol.flag.declaration = SD_DECL;
-        $$->symbol.data = appendStatementToBlock($3, $5);
+        $$->sym.func_decl.body = appendStatementToBlock($3, $5);
     }
   ;
 func_end
@@ -307,7 +310,11 @@ sub_call
   : GOSUB symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
 sub_decl
-  : label_decl seps stmnts seps sub_return       { $$ = newSubroutine($3, $5); }
+  : label_decl seps stmnts seps sub_return {
+        $$ = $1;
+        $$->info.type = NT_SYM_SUB_DECL;
+        $$->sym.sub_decl.body = appendStatementToBlock($3, $5);
+    }
   ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(); }
@@ -325,14 +332,14 @@ func_call_or_dim_ref
     }
   ;
 keyword
-  : KEYWORD                                      { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD expr                                 { $$ = newSymbol($1, nullptr, $2, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB RB                                { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB expr RB                           { $$ = newSymbol($1, nullptr, $3, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
+  : KEYWORD                                      { $$ = newKeyword($1, nullptr); }
+  | KEYWORD expr                                 { $$ = newKeyword($1, $2); }
+  | KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
+  | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3); }
   ;
 keyword_returning_value
-  : KEYWORD LB RB                                { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB expr RB                           { $$ = newSymbol($1, nullptr, $3, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
+  : KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
+  | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3); }
   ;
 expr
   : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD); }

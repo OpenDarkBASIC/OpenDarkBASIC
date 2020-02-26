@@ -87,17 +87,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             os << "N" << node->info.guid << "[label=\"return\"];\n";
         } break;
 
-        case NT_KEYWORD: {
-            os << "N" << node->info.guid << "[label=\"command: \\\"" << node->command.name << "\\\"\"];\n";
-            if (node->command.args)
-            {
-                os << "N" << node->info.guid << " -> " << "N" << node->command.args->info.guid << " [label=\"args\"];\n";
-                dumpToDOTRecursive(os, node->command.args);
-            }
-        } break;
-
         case NT_LOOP: {
-            os << "N" << node->info.guid << "[label = \"loop\"]\n";
+            os << "N" << node->info.guid << "[label = \"loop\"];\n";
             if (node->loop.body)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->loop.body->info.guid << "[label=\"body\"];\n";
@@ -106,7 +97,7 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         } break;
 
         case NT_LOOP_WHILE: {
-            os << "N" << node->info.guid << "[label = \"while\"]\n";
+            os << "N" << node->info.guid << "[label = \"while\"];\n";
             os << "N" << node->info.guid << " -> " << "N" << node->loop_while.condition->info.guid << "[label=\"cond\"];\n";
             dumpToDOTRecursive(os, node->loop_while.condition);
             if (node->loop_while.body)
@@ -117,13 +108,22 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         } break;
 
         case NT_LOOP_UNTIL: {
-            os << "N" << node->info.guid << "[label = \"repeat\"]\n";
+            os << "N" << node->info.guid << "[label = \"repeat\"];\n";
             os << "N" << node->info.guid << " -> " << "N" << node->loop_until.condition->info.guid << "[label=\"cond\"];\n";
             dumpToDOTRecursive(os, node->loop_until.condition);
             if (node->loop_until.body)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->loop_until.body->info.guid << "[label=\"body\"];\n";
                 dumpToDOTRecursive(os, node->loop_until.body);
+            }
+        } break;
+
+        case NT_UDT_SUBTYPE_LIST: {
+            os << "N" << node->info.guid << "[label = \"UDT Subtype\"];\n";
+            if (node->udt_subtype_list.next)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->udt_subtype_list.next->info.guid << "[label=\"next\"];\n";
+                dumpToDOTRecursive(os, node->udt_subtype_list.next);
             }
         } break;
 
@@ -145,8 +145,7 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.var_or_arr_decl->info.guid << "[label=\"var or array\"];\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.next_subtype->info.guid << "[label=\"next\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"var or array\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_REF:
             os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next_subtype->info.guid << "[label=\"next\"];\n";
@@ -158,6 +157,9 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_SUB_CALL:
+            goto symbol_common;
+        case NT_SYM_SUB_DECL:
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.sub_decl.body->info.guid << "[label=\"body\"];\n";
             goto symbol_common;
         case NT_SYM_LABEL:
             goto symbol_common;
@@ -289,10 +291,7 @@ static Node* dupNode(Node* other)
             node->literal.value = other->literal.value;
         } break;
 
-        case NT_KEYWORD: {
-            node->command.name = strdup(other->command.name);
-        } break;
-
+        case NT_UDT_SUBTYPE_LIST:
         case NT_BLOCK:
         case NT_ASSIGNMENT:
         case NT_BRANCH:
@@ -469,6 +468,37 @@ Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, N
     freeNodeRecursive(nextSymbol);
 
     return loop;
+}
+
+// ----------------------------------------------------------------------------
+Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype)
+{
+    Node* node = (Node*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_UDT_SUBTYPE_LIST);
+    node->udt_subtype_list.var_or_arr_decl = varOrArrDecl;
+    node->udt_subtype_list.next = nextSubtype;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* newKeyword(const char* name, Node* arglist)
+{
+    SymbolDataType dataType = SDT_UNKNOWN;
+    if (name[0] == '$')
+        dataType = SDT_STRING;
+    else if (name[0] == '#')
+        dataType = SDT_FLOAT;
+
+    Node* node = newSymbol(name, dataType, SS_GLOBAL);
+    if (node == nullptr)
+        return nullptr;
+
+    node->info.type = NT_SYM_KEYWORD;
+    node->sym.keyword.arglist = arglist;
+    return node;
 }
 
 // ----------------------------------------------------------------------------
