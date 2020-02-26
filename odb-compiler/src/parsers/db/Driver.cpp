@@ -5,6 +5,7 @@
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 #include <cstring>
+#include <algorithm>
 
 extern int dbdebug;
 

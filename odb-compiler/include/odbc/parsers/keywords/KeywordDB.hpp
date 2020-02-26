@@ -6,7 +6,7 @@
 
 namespace odbc {
 
-class KeywordDB
+class ODBC_PUBLIC_API KeywordDB
 {
 public:
     bool loadFromDirectory(const std::string& dir);

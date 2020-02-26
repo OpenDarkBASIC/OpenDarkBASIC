@@ -8,5 +8,8 @@ project ("OpenDarkBASIC")
 
 list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
+include (ConfigureMSVCRuntime)
+configure_msvc_runtime()
+
 add_subdirectory ("thirdparty/googletest")
 add_subdirectory ("odb-compiler")

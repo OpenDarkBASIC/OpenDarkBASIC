@@ -4,7 +4,7 @@ project ("odbc"
 
 include (GNUInstallDirs)
 include (TestVisibilityMacros)
-include (ConfigureMSVCRuntime)
+include (CheckIncludeFile)
 
 ###############################################################################
 # Configuration
@@ -18,6 +18,8 @@ test_visibility_macros (
     ODBC_API_IMPORT
     ODBC_API_EXPORT
     ODBC_API_LOCAL)
+
+check_include_file ("unistd.h" HAVE_UNISTD_H)
 
 configure_file ("templates/config.hpp.in" "include/odbc/config.hpp")
 
@@ -70,7 +72,9 @@ target_include_directories (odbclib
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
 target_compile_definitions (odbclib
     PRIVATE
         ODBC_BUILDING
@@ -78,6 +82,8 @@ target_compile_definitions (odbclib
 target_compile_options (odbclib
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)
+set_target_properties (odbclib
+    PROPERTIES CXX_STANDARD 17)
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
@@ -103,7 +109,7 @@ if (${ODBC_TESTS})
             odbclib
             gmock
             gmock_main
-            stdc++fs)
+            $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)
     target_include_directories (odbc_tests
         PRIVATE
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

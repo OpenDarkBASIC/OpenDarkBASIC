@@ -270,7 +270,7 @@ union Node {
 };
 
 #ifdef ODBC_DOT_EXPORT
-void dumpToDOT(std::ostream& os, Node* root);
+ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
 Node* newOp(Node* left, Node* right, Operation op);
@@ -299,8 +299,8 @@ Node* newBlock(Node* expr, Node* next);
 Node* appendStatementToBlock(Node* block, Node* expr);
 Node* prependStatementToBlock(Node* block, Node* expr);
 
-void freeNode(Node* node);
-void freeNodeRecursive(Node* root=nullptr);
+ODBC_PUBLIC_API void freeNode(Node* node);
+ODBC_PUBLIC_API void freeNodeRecursive(Node* root=nullptr);
 
 }
 }

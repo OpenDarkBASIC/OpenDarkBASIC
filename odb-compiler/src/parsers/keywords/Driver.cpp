@@ -5,11 +5,12 @@
 #include "odbc/parsers/keywords/KeywordDB.hpp"
 #include <cassert>
 #include <algorithm>
+#include <functional>
 
 static void strip(std::string& str)
 {
-    str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::bind1st(std::not_equal_to<char>(), ' ')));
-    str.erase(std::find_if(str.rbegin(), str.rend(), std::bind1st(std::not_equal_to<char>(), ' ')).base(), str.end());
+    str.erase(str.begin(), std::find_if(str.begin(), str.end(), std::bind(std::not_equal_to<char>(), ' ', std::placeholders::_1)));
+    str.erase(std::find_if(str.rbegin(), str.rend(), std::bind(std::not_equal_to<char>(), ' ', std::placeholders::_1)).base(), str.end());
 }
 
 namespace odbc {

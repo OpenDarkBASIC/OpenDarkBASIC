@@ -8,7 +8,7 @@ namespace odbc {
 
 class KeywordDB;
 
-class KeywordMatcher
+class ODBC_PUBLIC_API KeywordMatcher
 {
 public:
     void updateFromDB(const KeywordDB* db);
