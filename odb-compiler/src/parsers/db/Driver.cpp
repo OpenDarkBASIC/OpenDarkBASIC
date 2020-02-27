@@ -104,10 +104,10 @@ void Driver::reportError(DBLTYPE* loc, const char* fmt, ...)
 void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
 {
     if (activeFileName_)
-        dbParser(log::INFO, "%s:%d:%d: ", activeFileName_->c_str(), loc->first_line, loc->first_column);
+        log::info("%s:%d:%d: ", activeFileName_->c_str(), loc->first_line, loc->first_column);
 
-    vdbParser(log::INFO, fmt, args);
-    dbParser(log::INFO, "\n");
+    log::info(fmt, args);
+    log::info("\n");
 
     if (activeFilePtr_)
     {
@@ -124,40 +124,40 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
         }
 
         // Print offending line
-        dbParser(log::INFO, "  ");
+        log::info("  ");
         while (1)
         {
             if (fread(&c, 1, 1, activeFilePtr_) != 1)
                 goto printOffendingLineFailed;
             if (c == '\n')
                 break;
-            dbParser(log::INFO, "%c", c);
+            log::info("%c", c);
         }
-        dbParser(log::INFO, "\n");
+        log::info("\n");
         printOffendingLineFailed:;
     }
     else
     {
         assert(activeString_ != nullptr);
-        dbParser(log::INFO, "  ");
+        log::info("  ");
         for (size_t i = 0; i != activeString_->size(); ++i)
         {
             char c = (*activeString_)[i];
             if (c == '\n')
                 break;
-            dbParser(log::INFO, "%c", c);
+            log::info("%c", c);
         }
-    dbParser(log::INFO, "\n");
+    log::info("\n");
     }
 
     // Print visual indicator of which token is affected
-    dbParser(log::INFO, "  ");
-    for (int i = 0; i != loc->first_column; ++i)
-        dbParser(log::INFO, " ");
-    dbParser(log::INFO, "^");
+    log::info("  ");
+    for (int i = 1; i < loc->first_column; ++i)
+        log::info(" ");
+    log::info("^");
     for (int i = loc->first_column + 1; i < loc->last_column; ++i)
-        dbParser(log::INFO, "~");
-    dbParser(log::INFO, "\n");
+        log::info("~");
+    log::info("\n");
 }
 
 // ----------------------------------------------------------------------------

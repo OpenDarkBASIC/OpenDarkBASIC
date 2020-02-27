@@ -111,7 +111,8 @@
 %type<node> var_decl_type;
 %type<node> udt_var_decls;
 %type<node> symbol_or_dim_decl;
-%type<node> symbol_or_udt_ref;
+%type<node> udt_ref;
+%type<node> var_ref;
 %type<node> dim_decl;
 %type<node> dim_ref;
 %type<node> udt_decl;
@@ -223,7 +224,8 @@ dec_or_inc
   | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_INC); }
   ;
 var_assignment
-  : symbol_or_udt_ref EQ expr                    { $$ = newAssignment($1, $3); }
+  : udt_ref EQ expr                              { $$ = newAssignment($1, $3); }
+  | var_ref EQ expr                              { $$ = newAssignment($1, $3); }
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 var_decl
@@ -283,9 +285,18 @@ udt_name
         $$->info.type = NT_SYM_UDT_DECL;
     }
   ;
-symbol_or_udt_ref
-  : udt_name PERIOD symbol_or_udt_ref
+udt_ref
+  : udt_name PERIOD udt_refs
+  ;
+udt_refs
+  : udt_name PERIOD udt_refs
   | symbol
+  ;
+var_ref
+  : symbol {
+        $$ = $1;
+        $$->info.type = NT_SYM_VAR_REF;
+    }
   ;
 func_decl
   : func_name_decl seps stmnts seps func_end {
@@ -373,7 +384,8 @@ arglist
   | expr BXOR expr                               { $$ = newOp($1, $3, NT_OP_BXOR); }
   | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT); }
   | literal                                      { $$ = $1; }
-  | symbol_or_udt_ref                            { $$ = $1; }
+  | udt_ref                                      { $$ = $1; }
+  | symbol                                       { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
   ;

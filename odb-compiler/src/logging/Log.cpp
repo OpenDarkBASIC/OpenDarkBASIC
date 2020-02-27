@@ -27,6 +27,17 @@ void setInfoLog(FILE* fp)
 }
 
 // ----------------------------------------------------------------------------
+void info(const char* fmt, ...)
+{
+    assert(infofp);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(infofp, fmt, ap);
+    va_end(ap);
+}
+
+// ----------------------------------------------------------------------------
 void data(const char* fmt, ...)
 {
     assert(datafp);

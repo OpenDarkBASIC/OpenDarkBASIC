@@ -18,6 +18,7 @@ void init();
 void setInfoLog(FILE* fp);
 void setDataLog(FILE* fp);
 
+void info(const char* fmt, ...);
 void data(const char* fmt, ...);
 
 void dbParser(Severity severity, const char* fmt, ...);

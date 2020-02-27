@@ -138,30 +138,36 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM_VAR_REF:
             goto symbol_common;
         case NT_SYM_ARRAY_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.udt->info.guid << "[label=\"udt\"];\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.array_decl.udt)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.udt->info.guid << "[label=\"udt\"];\n";
+            if (node->sym.array_decl.arglist)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.array_decl.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_ARRAY_REF:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.array_ref.arglist)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_DECL:
             os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"var or array\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_REF:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next_subtype->info.guid << "[label=\"next\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next->info.guid << "[label=\"next\"];\n";
             goto symbol_common;
         case NT_SYM_FUNC_CALL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.func_call.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.func_call.arglist)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.func_call.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_FUNC_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.func_decl.arglist)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_SUB_CALL:
             goto symbol_common;
         case NT_SYM_LABEL:
             goto symbol_common;
         case NT_SYM_KEYWORD:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.keyword.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.keyword.arglist)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.keyword.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM: {
             symbol_common:

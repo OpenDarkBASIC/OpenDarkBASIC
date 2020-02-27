@@ -308,19 +308,12 @@ union Node {
         DEFINE_SYMBOL_STRUCT(array_decl, udt, arglist);
         DEFINE_SYMBOL_STRUCT(array_ref, _padding, arglist);
         DEFINE_SYMBOL_STRUCT(udt_decl, subtypes_list, _padding);
-        DEFINE_SYMBOL_STRUCT(udt_ref, _padding, next_subtype);
+        DEFINE_SYMBOL_STRUCT(udt_ref, _padding, next);
         DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
         DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
         DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(label, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(keyword, _padding, arglist);
-
-        struct
-        {
-            Info info;
-            Node* next_subtype;
-            Node* var_or_arr;
-        } udt;
     } sym;
 
     struct literal_t
