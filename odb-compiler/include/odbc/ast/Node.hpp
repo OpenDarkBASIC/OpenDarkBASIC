@@ -3,68 +3,85 @@
 #include "odbc/config.hpp"
 #include <ostream>
 
+#define NODE_TYPE_BASE_LIST                                                   \
+    X(NT_BLOCK,            block,            "block")                         \
+    X(NT_ASSIGNMENT,       assignment,       "=")                             \
+    X(NT_BRANCH,           branch,           "if")                            \
+    X(NT_BRANCH_PATHS,     paths,            "paths")                         \
+    X(NT_FUNC_RETURN,      func_return,      "endfunction")                   \
+    X(NT_SUB_RETURN,       sub_return,       "return")                        \
+    X(NT_LOOP,             loop,             "loop")                          \
+    X(NT_LOOP_WHILE,       loop_while,       "while")                         \
+    X(NT_LOOP_UNTIL,       loop_repeat,      "repeat")                        \
+    X(NT_UDT_SUBTYPE_LIST, udt_subtype_list, "UDT Subtypes")                  \
+    X(NT_LITERAL,          literal,          "literal")
+
+#define NODE_TYPE_OP_LIST                                                     \
+    X(NT_OP_ADD,  add,    "+")                                                \
+    X(NT_OP_INC,  inc,    "inc")                                              \
+    X(NT_OP_SUB,  sub,    "-")                                                \
+    X(NT_OP_DEC,  dec,    "dec")                                              \
+    X(NT_OP_MUL,  mul,    "*")                                                \
+    X(NT_OP_DIV,  div,    "/")                                                \
+    X(NT_OP_MOD,  mod,    "%")                                                \
+    X(NT_OP_POW,  pow,    "^")                                                \
+                                                                              \
+    X(NT_OP_BSHL, bshl,   "<<")                                               \
+    X(NT_OP_BSHR, bshr,   ">>")                                               \
+    X(NT_OP_BOR,  bor,    "||")                                               \
+    X(NT_OP_BAND, band,   "&&")                                               \
+    X(NT_OP_BXOR, bxor,   "~~")                                               \
+    X(NT_OP_BNOT, bnot,   "..")                                               \
+                                                                              \
+    X(NT_OP_LT,    lt,    "<")                                                \
+    X(NT_OP_LE,    le,    "<=")                                               \
+    X(NT_OP_GT,    gt,    ">")                                                \
+    X(NT_OP_GE,    ge,    ">=")                                               \
+    X(NT_OP_EQ,    eq,    "==")                                               \
+    X(NT_OP_NE,    ne,    "<>")                                               \
+    X(NT_OP_LOR,   lor,   "lor")                                              \
+    X(NT_OP_LAND,  land,  "land")                                             \
+    X(NT_OP_LXOR,  lxor,  "lxor")                                             \
+    X(NT_OP_LNOT,  lnot,  "lnot")                                             \
+    X(NT_OP_COMMA, comma, ",")
+
+#define NODE_TYPE_SYMBOL_LIST                                                 \
+    X(NT_SYM, sym, "symbol")                                                  \
+    X(NT_SYM_CONST_DECL, const_decl, "constant decl")                         \
+    X(NT_SYM_CONST_REF, const_ref, "constant ref")                            \
+    X(NT_SYM_VAR_DECL, var_decl, "variable decl")                             \
+    X(NT_SYM_VAR_REF, var_ref, "variable ref")                                \
+    X(NT_SYM_ARRAY_DECL, array_decl, "array decl")                            \
+    X(NT_SYM_ARRAY_REF, array_ref, "array ref")                               \
+    X(NT_SYM_UDT_DECL, udt_decl, "user defined type")                         \
+    X(NT_SYM_UDT_REF, udt_ref, "user defined type")                           \
+    X(NT_SYM_FUNC_CALL, func_call, "function call")                           \
+    X(NT_SYM_FUNC_DECL, func_decl, "function decl")                           \
+    X(NT_SYM_SUB_CALL, sub_call, "subroutine call")                           \
+    X(NT_SYM_LABEL, label, "label")                                           \
+    X(NT_SYM_KEYWORD, keyword, "keyword")
+
+#define NODE_TYPE_LIST                                                        \
+    NODE_TYPE_BASE_LIST                                                       \
+    NODE_TYPE_OP_LIST                                                         \
+    NODE_TYPE_SYMBOL_LIST
+
+#define ASSERT_OP_RANGE(node) \
+    assert((node) >= NT_OP_ADD && (node) <= NT_OP_COMMA)
+
+#define ASSERT_SYMBOL_RANGE(node) \
+    assert((node)->info.type >= NT_SYM && (node)->info.type <= NT_SYM_KEYWORD)
+
 namespace odbc {
 class Driver;
 namespace ast {
 
 enum NodeType
 {
-    NT_BLOCK,
-    NT_ASSIGNMENT,
-    NT_OP,
-    NT_BRANCH,
-    NT_BRANCH_PATHS,
-    NT_FUNC_RETURN,
-    NT_SUB_RETURN,
-    NT_LOOP,
-    NT_LOOP_WHILE,
-    NT_LOOP_UNTIL,
-    NT_KEYWORD,
-    NT_SYMBOL,
-    NT_LITERAL
+#define X(type, name, str) type,
+    NODE_TYPE_LIST
+#undef X
 };
-
-enum Operation
-{
-    OP_ADD,
-    OP_INC,
-    OP_SUB,
-    OP_DEC,
-    OP_MUL,
-    OP_DIV,
-    OP_MOD,
-    OP_POW,
-
-    OP_BSHL,
-    OP_BSHR,
-    OP_BOR,
-    OP_BAND,
-    OP_BXOR,
-    OP_BNOT,
-
-    OP_LT,
-    OP_LE,
-    OP_GT,
-    OP_GE,
-    OP_EQ,
-    OP_NE,
-    OP_OR,
-    OP_AND,
-    OP_XOR,
-    OP_NOT,
-    OP_COMMA
-};
-
-#define SYMBOL_TYPE_LIST \
-    X(ST_UNKNOWN) \
-    X(ST_CONSTANT) \
-    X(ST_UDT) \
-    X(ST_VARIABLE) \
-    X(ST_DIM) \
-    X(ST_FUNC) \
-    X(ST_LABEL) \
-    X(ST_SUBROUTINE) \
-    X(ST_KEYWORD)
 
 #define SYMBOL_DATATYPE_LIST \
     X(SDT_UNKNOWN) \
@@ -77,10 +94,6 @@ enum Operation
 #define SYMBOL_SCOPE_LIST \
     X(SS_LOCAL) \
     X(SS_GLOBAL)
-
-#define SYMBOL_DECLARATION_LIST \
-    X(SD_REF) \
-    X(SD_DECL)
 
 enum SymbolType
 {
@@ -116,13 +129,6 @@ enum SymbolScope
 #undef X
 };
 
-enum SymbolDeclaration
-{
-#define X(name) name,
-    SYMBOL_DECLARATION_LIST
-#undef X
-};
-
 enum LiteralType
 {
     LT_BOOLEAN,
@@ -140,128 +146,179 @@ union literal_value_t
 };
 
 union Node {
-    struct info_t
+    /*! Every node in the AST has this data at the beginning */
+    struct Info
     {
         NodeType type;
+        struct
+        {
+            int line_first;
+            int line_last;
+            int column_first;
+            int column_last;
+        } loc;
 #ifdef ODBC_DOT_EXPORT
         int guid;
 #endif
     } info;
 
-    struct base_t
+    /*! Every node in the AST can be aliased to this basic type. Left and Right
+     * pointers may be NULL depending on what the actual type is. */
+    struct
     {
-        info_t info;
+        Info info;
         Node* left;
         Node* right;
     } base;
 
+    /*!
+     * Represents a collection of sequential statements that are executed
+     * one after the other. This is implemented as a linked list.
+     * block->next points to the next block (or is null if there is no next
+     * block) and block->statement points to the node that represents the
+     * statement.
+     */
     struct block_t
     {
-        info_t info;
+        Info info;
         Node* next;
         Node* statement;
     } block;
 
-    // Assign statement to symbol
+    /*!
+     * Represents an assignment operation, such as "x = 50" or
+     * "arr(10, 20) = func()".
+     */
     struct assignment_t
     {
-        info_t info;
+        Info info;
         Node* symbol;
         Node* statement;
     } assignment;
 
-    struct op_t
+    union
     {
-        info_t info;
-        Node* left;
-        Node* right;
-        Operation operation;
+        struct
+        {
+            Info info;
+            Node* left;
+            Node* right;
+        } base;
+
+#define X(type, name, str)  \
+        struct              \
+        {                   \
+            Info info;      \
+            Node* left;     \
+            Node* right;    \
+        } name;
+        NODE_TYPE_OP_LIST
+#undef X
     } op;
 
     struct branch_paths_t
     {
-        info_t info;
+        Info info;
         Node* is_true;
         Node* is_false;
     } branch_paths;
 
     struct branch_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* paths;
     } branch;
 
     struct func_return_t
     {
-        info_t info;
+        Info info;
         Node* retval;
         Node* _padding;
     } func_return;
 
     struct sub_return_t
     {
-        info_t info;
+        Info info;
         Node* _padding1;
         Node* _padding2;
     } sub_return;
 
     struct loop_t
     {
-        info_t info;
+        Info info;
         Node* _padding;
         Node* body;
     } loop;
 
     struct loop_while_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* body;
     } loop_while;
 
     struct loop_until_t
     {
-        info_t info;
+        Info info;
         Node* condition;
         Node* body;
     } loop_until;
 
-    struct command_symbol_t
+    struct
     {
-        info_t info;
-        Node* symbol;
+        Info info;
+        Node* var_or_arr_decl;
         Node* next;
-    } command_symbol;
+    } udt_subtype_list;
 
-    struct command_t
+    /*!
+     * Represents a symbol. This is any entity in the program that references
+     * something else by name. This can be a constant, a variable name, a UDT,
+     * a keyword, function call, array, etc.
+     */
+    union
     {
-        info_t info;
-        Node* args;
-        Node* _padding;
-        char* name;
-    } command;
+#define DEFINE_SYMBOL_STRUCT(sym_name, left, right)             \
+        struct                                                  \
+        {                                                       \
+            Info info;                                          \
+            Node* left;                                         \
+            Node* right;                                        \
+            char* name;                                         \
+            union {                                             \
+                uint16_t flags;                                 \
+                struct {                                        \
+                    SymbolDataType    datatype    : 3;          \
+                    SymbolScope       scope       : 1;          \
+                } flag;                                         \
+            };                                                  \
+        } sym_name
 
-    struct symbol_t
-    {
-        info_t info;
-        Node* data;
-        Node* arglist;
-        char* name;
-        union {
-            uint16_t flags;
-            struct {
-                SymbolType        type        : 4;
-                SymbolDataType    datatype    : 3;
-                SymbolScope       scope       : 1;
-                SymbolDeclaration declaration : 1;
-            } flag;
-        };
-    } symbol;
+        /*!
+         * Every symbol has at least an identifier (name) and some associated
+         * flags describing the symbol's visibility and associated datatype.
+         */
+        DEFINE_SYMBOL_STRUCT(base, left, right);
+
+        DEFINE_SYMBOL_STRUCT(const_decl, literal, _padding);
+        DEFINE_SYMBOL_STRUCT(const_ref, _padding1, _padding2);
+        DEFINE_SYMBOL_STRUCT(var_decl, udt, _padding2);
+        DEFINE_SYMBOL_STRUCT(var_ref, _padding1, _padding2);
+        DEFINE_SYMBOL_STRUCT(array_decl, udt, arglist);
+        DEFINE_SYMBOL_STRUCT(array_ref, _padding, arglist);
+        DEFINE_SYMBOL_STRUCT(udt_decl, subtypes_list, _padding);
+        DEFINE_SYMBOL_STRUCT(udt_ref, _padding, next);
+        DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
+        DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
+        DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);
+        DEFINE_SYMBOL_STRUCT(label, _padding1, _padding2);
+        DEFINE_SYMBOL_STRUCT(keyword, _padding, arglist);
+    } sym;
 
     struct literal_t
     {
-        info_t info;
+        Info info;
         Node* _padding1;
         Node* _padding2;
         LiteralType type;
@@ -273,10 +330,9 @@ union Node {
 ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
-Node* newOp(Node* left, Node* right, Operation op);
+Node* newOp(Node* left, Node* right, NodeType op);
 
-Node* newSymbol(const char* symbolName, Node* data, Node* arglist,
-                  SymbolType type, SymbolDataType dataType, SymbolScope scope, SymbolDeclaration declaration);
+Node* newSymbol(const char* symbolName, SymbolDataType dataType, SymbolScope scope);
 
 Node* newBooleanLiteral(bool value);
 Node* newIntegerLiteral(int32_t value);
@@ -294,6 +350,9 @@ Node* newLoop(Node* block);
 Node* newLoopWhile(Node* condition, Node* block);
 Node* newLoopUntil(Node* condition, Node* block);
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
+
+Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype);
+Node* newKeyword(const char* name, Node* arglist);
 
 Node* newBlock(Node* expr, Node* next);
 Node* appendStatementToBlock(Node* block, Node* expr);

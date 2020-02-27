@@ -2,6 +2,7 @@
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/parsers/keywords/KeywordMatcher.hpp"
+#include "odbc/logging/Log.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 #include <cstring>
@@ -34,7 +35,10 @@ bool Driver::parseFile(const std::string& fileName)
 {
     FILE* fp = fopen(fileName.c_str(), "r");
     if (fp == nullptr)
+    {
+        log::dbParser(log::ERROR, "Failed to open file `%s`\n", fileName.c_str());
         return false;
+    }
 
     activeFileName_ = &fileName;
     bool result = parseStream(fp);
@@ -101,10 +105,10 @@ void Driver::reportError(DBLTYPE* loc, const char* fmt, ...)
 void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
 {
     if (activeFileName_)
-        printf("%s:%d:%d: ", activeFileName_->c_str(), loc->first_line, loc->first_column);
+        log::info("%s:%d:%d: ", activeFileName_->c_str(), loc->first_line, loc->first_column);
 
-    vprintf(fmt, args);
-    printf("\n");
+    log::info(fmt, args);
+    log::info("\n");
 
     if (activeFilePtr_)
     {
@@ -121,40 +125,40 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
         }
 
         // Print offending line
-        fprintf(stderr, "  ");
+        log::info("  ");
         while (1)
         {
             if (fread(&c, 1, 1, activeFilePtr_) != 1)
                 goto printOffendingLineFailed;
             if (c == '\n')
                 break;
-            putc(c, stderr);
+            log::info("%c", c);
         }
-        puts("");
+        log::info("\n");
         printOffendingLineFailed:;
     }
     else
     {
         assert(activeString_ != nullptr);
-        fprintf(stderr, "  ");
+        log::info("  ");
         for (size_t i = 0; i != activeString_->size(); ++i)
         {
             char c = (*activeString_)[i];
             if (c == '\n')
                 break;
-            putc(c, stderr);
+            log::info("%c", c);
         }
-        puts("");
+    log::info("\n");
     }
 
     // Print visual indicator of which token is affected
-    fprintf(stderr, "  ");
-    for (int i = 1; i != loc->first_column; ++i)
-        putc(' ', stderr);
-    putc('^', stderr);
+    log::info("  ");
+    for (int i = 1; i < loc->first_column; ++i)
+        log::info(" ");
+    log::info("^");
     for (int i = loc->first_column + 1; i < loc->last_column; ++i)
-        putc('~', stderr);
-    puts("");
+        log::info("~");
+    log::info("\n");
 }
 
 // ----------------------------------------------------------------------------

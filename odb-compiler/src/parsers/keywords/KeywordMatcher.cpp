@@ -23,7 +23,7 @@ static bool charIsSymbolToken(char c)
 // ----------------------------------------------------------------------------
 void KeywordMatcher::updateFromDB(const KeywordDB* db)
 {
-    keywords_ = db->keywordsAsList();
+    keywords_ = db->keywordNamesAsList();
 
     // Keywords are case insensitive, so transform all to lower case
     for (auto& s : keywords_)

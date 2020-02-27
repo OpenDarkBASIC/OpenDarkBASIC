@@ -64,6 +64,7 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/Node.cpp"
+    "src/logging/Log.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
@@ -103,12 +104,12 @@ if (${ODBC_TESTS})
         "tests/src/test_db_udt.cpp"
         "tests/src/test_db_symbol_to_keyword_hack.cpp"
         "tests/src/test_kw_index.cpp"
-        "tests/src/test_kw_matcher.cpp")
+        "tests/src/test_kw_matcher.cpp"
+        "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             odbclib
             gmock
-            gmock_main
             $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)
     target_include_directories (odbc_tests
         PRIVATE

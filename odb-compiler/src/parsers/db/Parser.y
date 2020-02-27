@@ -77,7 +77,7 @@
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON
+%token NEWLINE COLON PERIOD
 
 %token CONSTANT
 
@@ -88,7 +88,7 @@
 
 %token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
 %token BSHL BSHR BOR BAND BXOR BNOT;
-%token LT GT LE GE NE EQ OR AND NOT;
+%token LT GT LE GE NE EQ LOR LAND LNOT;
 
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
 %token WHILE ENDWHILE REPEAT UNTIL DO LOOP
@@ -100,33 +100,37 @@
 
 %token<string> SYMBOL;
 %token<string> KEYWORD;
-%token DOLLAR HASH NO_SYMBOL_TYPE;
+%token DOLLAR HASH;
 
 %type<node> stmnts;
 %type<node> stmnt;
+%type<node> constant_decl;
 %type<node> dec_or_inc;
 %type<node> var_assignment;
 %type<node> var_decl;
 %type<node> var_decl_type;
-%type<node> symbol_and_dim_decl;
+%type<node> udt_var_decls;
+%type<node> symbol_or_dim_decl;
+%type<node> udt_ref;
+%type<node> var_ref;
 %type<node> dim_decl;
 %type<node> dim_ref;
 %type<node> udt_decl;
-%type<node> udt_ref;
-%type<node> var_decls;
+%type<node> udt_name;
 %type<node> func_decl;
 %type<node> func_end;
 %type<node> func_exit;
 %type<node> func_name_decl;
 %type<node> func_call;
 %type<node> sub_call;
-%type<node> sub_decl;
 %type<node> sub_return;
 %type<node> label_decl;
 %type<node> func_call_or_dim_ref;
 %type<node> keyword;
 %type<node> keyword_returning_value;
 %type<node> expr;
+%type<node> arglist;
+%type<node> decl_arglist;
 %type<node> literal;
 %type<node> symbol;
 %type<node> symbol_without_type;
@@ -150,11 +154,20 @@
 %nonassoc NO_HASH_OR_DOLLAR
 %nonassoc COLON
 %left COMMA
-%left EQ
+%left LOR
+%left LAND
+%left LXOR
+%left BOR
+%left BXOR
+%left BAND
+%right BNOT
+%left EQ NE
+%left GT LT GE LE
+%left BSHL BSHR
 %left ADD SUB
 %left MUL DIV
 %left POW MOD
-%right NOT
+%right LNOT
 %left LB RB
 
 %destructor { free($$); } <string>
@@ -183,95 +196,112 @@ stmnts
   ;
 stmnt
   : var_assignment                               { $$ = $1; }
+  | constant_decl                                { $$ = $1; }
   | dec_or_inc                                   { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | udt_decl                                     { $$ = $1; }
   | func_decl                                    { $$ = $1; }
   | func_call                                    { $$ = $1; }
   | func_exit                                    { $$ = $1; }
-  | sub_decl                                     { $$ = $1; }
   | sub_call                                     { $$ = $1; }
+  | sub_return                                   { $$ = $1; }
   | label_decl                                   { $$ = $1; }
   | keyword                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
+constant_decl
+  : CONSTANT symbol literal {
+        $$ = $2;
+        $$->info.type = NT_SYM_CONST_DECL;
+        $$->sym.const_decl.literal = $3;
+    }
+  ;
 dec_or_inc
-  : DEC symbol COMMA expr                        { $$ = newOp($2, $4, OP_DEC); }
-  | INC symbol COMMA expr                        { $$ = newOp($2, $4, OP_INC); }
-  | DEC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), OP_DEC); }
-  | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), OP_INC); }
+  : DEC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC); }
+  | INC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC); }
+  | DEC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_DEC); }
+  | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_INC); }
   ;
 var_assignment
-  : symbol EQ expr                               { $$ = newAssignment($1, $3); }
+  : udt_ref EQ expr                              { $$ = newAssignment($1, $3); }
+  | var_ref EQ expr                              { $$ = newAssignment($1, $3); }
   | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
   ;
 var_decl
-  : LOCAL var_decl_type                          { $$ = $2; $$->symbol.flag.scope = SS_LOCAL; }
-  | GLOBAL var_decl_type                         { $$ = $2; $$->symbol.flag.scope = SS_GLOBAL; }
+  : LOCAL var_decl_type                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL var_decl_type                         { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
   | var_decl_type                                { $$ = $1; }
   ;
 var_decl_type
-  : symbol_and_dim_decl AS BOOLEAN               { $$ = $1; $$->symbol.flag.datatype = SDT_BOOLEAN; }
-  | symbol_and_dim_decl AS INTEGER               { $$ = $1; $$->symbol.flag.datatype = SDT_INTEGER; }
-  | symbol_and_dim_decl AS FLOAT                 { $$ = $1; $$->symbol.flag.datatype = SDT_FLOAT; }
-  | symbol_and_dim_decl AS STRING                { $$ = $1; $$->symbol.flag.datatype = SDT_STRING; }
-  | symbol_and_dim_decl AS udt_ref               { $$ = $1; $$->symbol.flag.datatype = SDT_UDT; $$->symbol.data = $3; }
-  | symbol_and_dim_decl                          { $$ = $1; }
+  : symbol_or_dim_decl AS BOOLEAN                { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
+  | symbol_or_dim_decl AS INTEGER                { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
+  | symbol_or_dim_decl AS FLOAT                  { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | symbol_or_dim_decl AS STRING                 { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  | symbol_or_dim_decl AS udt_name               { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; $$->sym.var_decl.udt = $3; }
+  | symbol_or_dim_decl                           { $$ = $1; }
   ;
-symbol_and_dim_decl
+udt_var_decls
+  : var_decl_type seps udt_var_decls             { $$ = newUDTSubtype($1, $3); }
+  | var_decl_type                                { $$ = newUDTSubtype($1, nullptr); }
+  ;
+symbol_or_dim_decl
   : dim_decl                                     { $$ = $1; }
   | symbol                                       { $$ = $1; }
   ;
 dim_decl
-  : DIM symbol LB expr RB {
+  : DIM symbol LB arglist RB {
         $$ = $2;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.flag.declaration = SD_DECL;
-        $$->symbol.arglist = $4;
+        $$->info.type = NT_SYM_ARRAY_DECL;
+        $$->sym.array_decl.arglist = $4;
     }
   | DIM symbol LB RB {
         $$ = $2;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.flag.declaration = SD_DECL;
+        $$->info.type = NT_SYM_ARRAY_DECL;
     }
   ;
 dim_ref
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_DIM;
-        $$->symbol.arglist = $3;
+        $$->info.type = NT_SYM_ARRAY_REF;
+        $$->sym.array_ref.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_DIM;
+        $$->info.type = NT_SYM_ARRAY_REF;
     }
   ;
 udt_decl
-  : TYPE udt_ref seps var_decls seps ENDTYPE
+  : TYPE udt_name seps udt_var_decls seps ENDTYPE
     {
         $$ = $2;
-        $$->symbol.data = $4;
-        $$->symbol.flag.declaration = SD_DECL;
+        $$->info.type = NT_SYM_UDT_DECL;
+        $$->sym.udt_decl.subtypes_list = $4;
+    }
+  ;
+udt_name
+  : symbol_without_type {
+        $$ = $1;
+        $$->info.type = NT_SYM_UDT_DECL;
     }
   ;
 udt_ref
-  : symbol_without_type {
-        $$ = $1;
-        $$->symbol.flag.type = ST_UDT;
-        $$->symbol.flag.datatype = SDT_UDT;
-    }
+  : udt_name PERIOD udt_refs
   ;
-var_decls
-  : var_decls seps var_decl                      { $$ = appendStatementToBlock($1, $3); }
-  | var_decl                                     { $$ = newBlock($1, nullptr); }
+udt_refs
+  : udt_name PERIOD udt_refs
+  | symbol
+  ;
+var_ref
+  : symbol {
+        $$ = $1;
+        $$->info.type = NT_SYM_VAR_REF;
+    }
   ;
 func_decl
   : func_name_decl seps stmnts seps func_end {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
-        $$->symbol.flag.declaration = SD_DECL;
-        $$->symbol.data = appendStatementToBlock($3, $5);
+        $$->sym.func_decl.body = appendStatementToBlock($3, $5);
     }
   ;
 func_end
@@ -283,85 +313,87 @@ func_exit
   | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr); }
   ;
 func_name_decl
-  : FUNCTION symbol LB expr RB                   { $$ = $2; $$->symbol.arglist = $4; }
-  | FUNCTION symbol LB RB                        { $$ = $2; }
+  : FUNCTION symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
+  | FUNCTION symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
   ;
 func_call
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
-        $$->symbol.arglist = $3;
+        $$->info.type = NT_SYM_FUNC_CALL;
+        $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_FUNC;
+        $$->info.type = NT_SYM_FUNC_CALL;
     }
   ;
 sub_call
-  : GOSUB symbol_without_type                    { $$ = $2; $$->symbol.flag.type = ST_SUBROUTINE; }
-  ;
-sub_decl
-  : label_decl seps stmnts seps sub_return {
-        $$ = $1;
-        $$->symbol.flag.type = ST_SUBROUTINE;
-        $$->symbol.data = appendStatementToBlock($3, $5);
-    }
+  : GOSUB symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(); }
   ;
 label_decl
-  : symbol_without_type COLON                    { $$ = $1; $$->symbol.flag.type = ST_LABEL; $$->symbol.flag.declaration = SD_DECL; }
+  : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
   ;
 func_call_or_dim_ref
-  : symbol LB expr RB {
+  : symbol LB arglist RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_UNKNOWN;
-        $$->symbol.arglist = $3;
+        $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
         $$ = $1;
-        $$->symbol.flag.type = ST_UNKNOWN;
     }
   ;
 keyword
-  : KEYWORD                                      { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD expr                                 { $$ = newSymbol($1, nullptr, $2, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB RB                                { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB expr RB                           { $$ = newSymbol($1, nullptr, $3, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
+  : KEYWORD                                      { $$ = newKeyword($1, nullptr); }
+  | KEYWORD arglist                              { $$ = newKeyword($1, $2); }
+  | KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
+  | KEYWORD LB arglist RB                        { $$ = newKeyword($1, $3); }
   ;
 keyword_returning_value
-  : KEYWORD LB RB                                { $$ = newSymbol($1, nullptr, nullptr, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
-  | KEYWORD LB expr RB                           { $$ = newSymbol($1, nullptr, $3, ST_KEYWORD, SDT_UNKNOWN, SS_LOCAL, SD_REF); }
+  : KEYWORD LB RB                                { $$ = newKeyword($1, nullptr); }
+  | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3); }
   ;
 expr
-  : expr ADD expr                                { $$ = newOp($1, $3, OP_ADD); }
-  | expr SUB expr                                { $$ = newOp($1, $3, OP_SUB); }
-  | expr MUL expr                                { $$ = newOp($1, $3, OP_MUL); }
-  | expr DIV expr                                { $$ = newOp($1, $3, OP_DIV); }
-  | expr POW expr                                { $$ = newOp($1, $3, OP_POW); }
-  | expr MOD expr                                { $$ = newOp($1, $3, OP_MOD); }
-  | LB expr RB                                   { $$ = $2; }
-  | expr COMMA expr                              { $$ = newOp($1, $3, OP_COMMA); }
-  | expr NE expr                                 { $$ = newOp($1, $3, OP_NE); }
-  | expr LE expr                                 { $$ = newOp($1, $3, OP_LE); }
-  | expr GE expr                                 { $$ = newOp($1, $3, OP_GE); }
-  | expr EQ expr                                 { $$ = newOp($1, $3, OP_EQ); }
-  | expr LT expr                                 { $$ = newOp($1, $3, OP_LT); }
-  | expr GT expr                                 { $$ = newOp($1, $3, OP_GT); }
-  | expr OR expr                                 { $$ = newOp($1, $3, OP_OR); }
-  | expr AND expr                                { $$ = newOp($1, $3, OP_AND); }
-  | expr NOT expr                                { $$ = newOp($1, $3, OP_NOT); }
-  | expr BSHL expr                               { $$ = newOp($1, $3, OP_BSHL); }
-  | expr BSHR expr                               { $$ = newOp($1, $3, OP_BSHR); }
-  | expr BOR expr                                { $$ = newOp($1, $3, OP_BOR); }
-  | expr BAND expr                               { $$ = newOp($1, $3, OP_BAND); }
-  | expr BXOR expr                               { $$ = newOp($1, $3, OP_BXOR); }
-  | expr BNOT expr                               { $$ = newOp($1, $3, OP_BNOT); }
+  : LB arglist RB                                { $$ = $2; }
+  | arglist
+  ;
+arglist
+  : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD); }
+  | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB); }
+  | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL); }
+  | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV); }
+  | expr POW expr                                { $$ = newOp($1, $3, NT_OP_POW); }
+  | expr MOD expr                                { $$ = newOp($1, $3, NT_OP_MOD); }
+  | expr COMMA expr                              { $$ = newOp($1, $3, NT_OP_COMMA); }
+  | expr NE expr                                 { $$ = newOp($1, $3, NT_OP_NE); }
+  | expr LE expr                                 { $$ = newOp($1, $3, NT_OP_LE); }
+  | expr GE expr                                 { $$ = newOp($1, $3, NT_OP_GE); }
+  | expr EQ expr                                 { $$ = newOp($1, $3, NT_OP_EQ); }
+  | expr LT expr                                 { $$ = newOp($1, $3, NT_OP_LT); }
+  | expr GT expr                                 { $$ = newOp($1, $3, NT_OP_GT); }
+  | expr LOR expr                                { $$ = newOp($1, $3, NT_OP_LOR); }
+  | expr LAND expr                               { $$ = newOp($1, $3, NT_OP_LAND); }
+  | expr LXOR expr                               { $$ = newOp($1, $3, NT_OP_LXOR); }
+  | expr LNOT expr                               { $$ = newOp($1, $3, NT_OP_LNOT); }
+  | expr BSHL expr                               { $$ = newOp($1, $3, NT_OP_BSHL); }
+  | expr BSHR expr                               { $$ = newOp($1, $3, NT_OP_BSHR); }
+  | expr BOR expr                                { $$ = newOp($1, $3, NT_OP_BOR); }
+  | expr BAND expr                               { $$ = newOp($1, $3, NT_OP_BAND); }
+  | expr BXOR expr                               { $$ = newOp($1, $3, NT_OP_BXOR); }
+  | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT); }
   | literal                                      { $$ = $1; }
+  | udt_ref                                      { $$ = $1; }
   | symbol                                       { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
+  ;
+decl_arglist
+  : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA); }
+  | literal                                      { $$ = $1; }
+  | func_call_or_dim_ref                         { $$ = $1; }
+  | var_decl_type                                { $$ = $1; }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
@@ -373,11 +405,11 @@ literal
   ;
 symbol
   : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
-  | SYMBOL HASH                                  { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_FLOAT, SS_LOCAL, SD_REF); free($1); }
-  | SYMBOL DOLLAR                                { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_STRING, SS_LOCAL, SD_REF); free($1); }
+  | SYMBOL HASH                                  { $$ = newSymbol($1, SDT_FLOAT, SS_LOCAL); free($1); }
+  | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL); free($1); }
   ;
 symbol_without_type
-  : SYMBOL                                       { $$ = newSymbol($1, nullptr, nullptr, ST_UNKNOWN, SDT_UNKNOWN, SS_LOCAL, SD_REF); free($1); }
+  : SYMBOL                                       { $$ = newSymbol($1, SDT_UNKNOWN, SS_LOCAL); free($1); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }

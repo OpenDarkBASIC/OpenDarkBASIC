@@ -146,9 +146,9 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 "="                 { RETURN_TOKEN(EQ); }
 "<"                 { RETURN_TOKEN(LT); }
 ">"                 { RETURN_TOKEN(GT); }
-(?i:or)             { RETURN_TOKEN(OR); }
-(?i:and)            { RETURN_TOKEN(AND); }
-(?i:not)            { RETURN_TOKEN(NOT); }
+(?i:or)             { RETURN_TOKEN(LOR); }
+(?i:and)            { RETURN_TOKEN(LAND); }
+(?i:not)            { RETURN_TOKEN(LNOT); }
 
 (?:then)            { RETURN_TOKEN(THEN); }
 (?:endif)           { RETURN_TOKEN(ENDIF); }
@@ -185,6 +185,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 "#"                 { RETURN_TOKEN(HASH); }
 "$"                 { RETURN_TOKEN(DOLLAR); }
+"."                 { RETURN_TOKEN(PERIOD); }
 
 "\n"                { RETURN_TOKEN(NEWLINE); }
 ":"                 { RETURN_TOKEN(COLON); }
