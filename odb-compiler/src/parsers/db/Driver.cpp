@@ -18,7 +18,6 @@ Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
     astRoot_(root),
     keywordMatcher_(keywordMatcher)
 {
-    dblex_init(&scanner_);
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
 }

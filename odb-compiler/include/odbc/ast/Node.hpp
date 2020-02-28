@@ -330,14 +330,18 @@ union Node {
 ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
+char* newCStr(const char* str);
+char* newCStrRange(const char* src, int beg, int end);
+void deleteCStr(char* str);
+
 Node* newOp(Node* left, Node* right, NodeType op);
 
-Node* newSymbol(const char* symbolName, SymbolDataType dataType, SymbolScope scope);
+Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope);
 
 Node* newBooleanLiteral(bool value);
 Node* newIntegerLiteral(int32_t value);
 Node* newFloatLiteral(double value);
-Node* newStringLiteral(const char* value);
+Node* newStringLiteral(char* value);
 
 Node* newAssignment(Node* symbol, Node* statement);
 
@@ -352,7 +356,7 @@ Node* newLoopUntil(Node* condition, Node* block);
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
 
 Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype);
-Node* newKeyword(const char* name, Node* arglist);
+Node* newKeyword(char* name, Node* arglist);
 
 Node* newBlock(Node* expr, Node* next);
 Node* appendStatementToBlock(Node* block, Node* expr);

@@ -170,7 +170,7 @@
 %right LNOT
 %left LB RB
 
-%destructor { free($$); } <string>
+%destructor { deleteCStr($$); } <string>
 %destructor { freeNodeRecursive($$); } <node>
 
 %start program
@@ -399,17 +399,17 @@ literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
   | INTEGER_LITERAL                              { $$ = newIntegerLiteral($1); }
   | FLOAT_LITERAL                                { $$ = newFloatLiteral($1); }
-  | STRING_LITERAL                               { $$ = newStringLiteral($1); free($1); }
+  | STRING_LITERAL                               { $$ = newStringLiteral($1); }
   | SUB INTEGER_LITERAL                          { $$ = newIntegerLiteral(-$2); }
   | SUB FLOAT_LITERAL                            { $$ = newFloatLiteral(-$2); }
   ;
 symbol
   : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
-  | SYMBOL HASH                                  { $$ = newSymbol($1, SDT_FLOAT, SS_LOCAL); free($1); }
-  | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL); free($1); }
+  | SYMBOL HASH                                  { $$ = newSymbol($1, SDT_FLOAT, SS_LOCAL); }
+  | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL); }
   ;
 symbol_without_type
-  : SYMBOL                                       { $$ = newSymbol($1, SDT_UNKNOWN, SS_LOCAL); free($1); }
+  : SYMBOL                                       { $$ = newSymbol($1, SDT_UNKNOWN, SS_LOCAL); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }

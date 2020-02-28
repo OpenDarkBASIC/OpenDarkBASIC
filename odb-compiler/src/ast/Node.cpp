@@ -220,6 +220,31 @@ void dumpToDOT(std::ostream& os, Node* root)
 #endif
 
 // ----------------------------------------------------------------------------
+char* newCStr(const char* str)
+{
+    int len = strlen(str);
+    char* newStr = (char*)malloc(len + 1);
+    memcpy(newStr, str, len);
+    newStr[len] = '\0';
+    return newStr;
+}
+
+// ----------------------------------------------------------------------------
+char* newCStrRange(const char* src, int beg, int end)
+{
+    char* result = (char*)malloc(end - beg + 1);
+    strncpy(result, src + beg, end - beg);
+    result[end - beg] = '\0';
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+void deleteCStr(char* str)
+{
+    free(str);
+}
+
+// ----------------------------------------------------------------------------
 static void init_info(Node* node, NodeType type)
 {
     node->info.type = type;
@@ -244,7 +269,7 @@ Node* newOp(Node* left, Node* right, NodeType op)
 }
 
 // ----------------------------------------------------------------------------
-Node* newSymbol(const char* symbolName, SymbolDataType dataType, SymbolScope scope)
+Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
@@ -253,7 +278,7 @@ Node* newSymbol(const char* symbolName, SymbolDataType dataType, SymbolScope sco
     init_info(node, NT_SYM);
     node->sym.base.left = nullptr;
     node->sym.base.right = nullptr;
-    node->sym.base.name = strdup(symbolName);
+    node->sym.base.name = symbolName;
     node->sym.base.flag.datatype = dataType;
     node->sym.base.flag.scope = scope;
     return node;
@@ -283,7 +308,7 @@ static Node* dupNode(Node* other)
         NODE_TYPE_SYMBOL_LIST {
             node->sym.base.flags = other->sym.base.flags;
             node->sym.base.flag.scope = SS_LOCAL;
-            node->sym.base.name = strdup(other->sym.base.name);
+            node->sym.base.name = newCStr(other->sym.base.name);
             if (node->sym.base.name == nullptr)
                 goto allocSymbolNameFailed;
         } break;
@@ -335,10 +360,10 @@ static Node* newConstant(LiteralType type, literal_value_t value)
     return node;
 }
 
-Node* newBooleanLiteral(bool b)       { literal_value_t value; value.b = b;         return newConstant(LT_BOOLEAN, value); }
-Node* newIntegerLiteral(int32_t i)    { literal_value_t value; value.i = i;         return newConstant(LT_INTEGER, value); }
-Node* newFloatLiteral(double f)       { literal_value_t value; value.f = f;         return newConstant(LT_FLOAT, value); }
-Node* newStringLiteral(const char* s) { literal_value_t value; value.s = strdup(s); return newConstant(LT_STRING, value); }
+Node* newBooleanLiteral(bool b)    { literal_value_t value; value.b = b; return newConstant(LT_BOOLEAN, value); }
+Node* newIntegerLiteral(int32_t i) { literal_value_t value; value.i = i; return newConstant(LT_INTEGER, value); }
+Node* newFloatLiteral(double f)    { literal_value_t value; value.f = f; return newConstant(LT_FLOAT, value); }
+Node* newStringLiteral(char* s)    { literal_value_t value; value.s = s; return newConstant(LT_STRING, value); }
 
 // ----------------------------------------------------------------------------
 Node* newAssignment(Node* symbol, Node* statement)
@@ -487,7 +512,7 @@ Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype)
 }
 
 // ----------------------------------------------------------------------------
-Node* newKeyword(const char* name, Node* arglist)
+Node* newKeyword(char* name, Node* arglist)
 {
     SymbolDataType dataType = SDT_UNKNOWN;
     if (name[0] == '$')

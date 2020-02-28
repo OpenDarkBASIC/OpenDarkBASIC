@@ -21,7 +21,6 @@ namespace kw {
 Driver::Driver(KeywordDB* targetDB) :
     db_(targetDB)
 {
-    kwlex_init(&scanner_);
     kwlex_init_extra(this, &scanner_);
     parser_ = kwpstate_new();
 }
@@ -29,6 +28,7 @@ Driver::Driver(KeywordDB* targetDB) :
 // ----------------------------------------------------------------------------
 Driver::~Driver()
 {
+    resetParserState();
     kwpstate_delete(parser_);
     kwlex_destroy(scanner_);
 }
@@ -164,6 +164,29 @@ void Driver::vreportError(KWLTYPE* loc, const char* fmt, va_list args)
 }
 
 // ----------------------------------------------------------------------------
+void Driver::resetParserState()
+{
+    if (keywordName_)
+        free(keywordName_);
+    keywordName_ = nullptr;
+
+    if (helpFile_)
+        free(helpFile_);
+    helpFile_ = nullptr;
+
+    for (auto& overload : currentOverloadList_)
+        for (auto& arg : overload)
+            free(arg);
+    currentOverloadList_.clear();
+
+    for (auto& arg : currentArgList_)
+        free(arg);
+    currentArgList_.clear();
+
+    hasReturnType_ = false;
+}
+
+// ----------------------------------------------------------------------------
 void Driver::setKeywordName(char* name)
 {
     if (keywordName_)
@@ -200,18 +223,7 @@ void Driver::finishKeyword()
 
     db_->addKeyword(std::move(keyword));
 
-    free(keywordName_);               keywordName_ = nullptr;
-    if (helpFile_) free(helpFile_);   helpFile_ = nullptr;
-    hasReturnType_ = false;
-
-    for (auto& overload : currentOverloadList_)
-        for (auto& arg : overload)
-            free(arg);
-    currentOverloadList_.clear();
-
-    for (auto& arg : currentArgList_)
-        free(arg);
-    currentArgList_.clear();
+    resetParserState();
 }
 
 // ----------------------------------------------------------------------------

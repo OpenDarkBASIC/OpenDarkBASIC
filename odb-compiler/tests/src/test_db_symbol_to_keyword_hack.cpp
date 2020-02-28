@@ -31,6 +31,5 @@ TEST_F(NAME, keyword_overstepping_buffer_boundary)
     db.addKeyword({"make object sphere", "", {}});
     matcher.updateFromDB(&db);
 
-    fp = fopen("db_symbol_to_keyword_hack.dba", "r");
-    ASSERT_THAT(driver->parseStream(fp), IsTrue());
+    ASSERT_THAT(driver->parseFile("db_symbol_to_keyword_hack.dba"), IsTrue());
 }

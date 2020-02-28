@@ -5,6 +5,7 @@ echo "Started valgrind..."
 valgrind --num-callers=50 \
 	--leak-resolution=high \
 	--leak-check=full \
+    --show-leak-kinds=all \
 	--track-origins=yes \
 	--time-stamp=yes \
 	./odbc_tests -- --test 2>&1 | tee ../../odbc_tests_grind.out

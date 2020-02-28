@@ -23,6 +23,8 @@ public:
     void reportError(KWLTYPE* loc, const char* fmt, ...);
     void vreportError(KWLTYPE* loc, const char* fmt, va_list args);
 
+    void resetParserState();
+
     void setKeywordName(char* name);
     void setHelpFile(char* path);
     void finishKeyword();

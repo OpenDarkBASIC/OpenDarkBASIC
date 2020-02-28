@@ -16,6 +16,7 @@
 
     #include "odbc/parsers/keywords/Parser.y.h"
     #include "odbc/parsers/keywords/Scanner.hpp"
+    #include "odbc/ast/Node.hpp"
 
     #define dbg(text) \
         //printf(text ": \"%s\"\n", yytext)
@@ -40,7 +41,7 @@
 [\t ]+                                { dbg("whitespace"); }
 "\n"                                  { dbg("newline"); return TOK_NEWLINE; }
 (?i:"no parameters")                  { dbg("no params"); return TOK_NO_PARAMS; }
-[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = strdup(yytext); return TOK_HELPFILE; }
-[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = strdup(yytext); return TOK_WORDS; }
+[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = odbc::ast::newCStr(yytext); return TOK_HELPFILE; }
+[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = odbc::ast::newCStr(yytext); return TOK_WORDS; }
 .                                     {}
 %%

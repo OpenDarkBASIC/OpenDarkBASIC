@@ -17,6 +17,7 @@
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/parsers/db/Driver.hpp"
+#include "odbc/ast/Node.hpp"
 
 #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
 #define dbg(text) \
@@ -44,7 +45,7 @@
         }                                                                     \
         if (keywordMatched)                                                   \
         {                                                                     \
-            yylval->string = strdup(yytext);                                  \
+            yylval->string = odbc::ast::newCStr(yytext);                      \
             dbg("keyword");                                                   \
             return TOK_KEYWORD;                                               \
         }                                                                     \
@@ -61,19 +62,11 @@
         }                                                                     \
         if (keywordMatched && oldTokenLen < (int)strlen(yytext))              \
         {                                                                     \
-            yylval->string = strdup(yytext);                                  \
+            yylval->string = odbc::ast::newCStr(yytext);                      \
             dbg("keyword");                                                   \
             return TOK_KEYWORD;                                               \
         }                                                                     \
     } while(0)
-
-static char* strdup_range(const char* src, int beg, int end)
-{
-    char* result = (char*)malloc(end - beg + 1);
-    strncpy(result, src + beg, end - beg);
-    result[end - beg] = '\0';
-    return result;
-}
 %}
 
 %option nodefault
@@ -113,13 +106,13 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 {CONSTANT}          { RETURN_TOKEN(CONSTANT); }
 
-{BOOL_TRUE}         { yylval->boolean_value = true; return TOK_BOOLEAN_LITERAL; }
-{BOOL_FALSE}        { yylval->boolean_value = false; return TOK_BOOLEAN_LITERAL; }
-{STRING_LITERAL}    { yylval->string = strdup_range(yytext, 1, strlen(yytext) - 1); return TOK_STRING_LITERAL; }
-{FLOAT}             { yylval->float_value = atof(yytext); return TOK_FLOAT_LITERAL; }
-{INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); return TOK_INTEGER_LITERAL; }
-{INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); return TOK_INTEGER_LITERAL; }
-{INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); return TOK_INTEGER_LITERAL; }
+{BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
+{BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(BOOLEAN_LITERAL); }
+{STRING_LITERAL}    { yylval->string = odbc::ast::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
+{FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(FLOAT_LITERAL); }
+{INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(INTEGER_LITERAL); }
+{INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(INTEGER_LITERAL); }
+{INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(INTEGER_LITERAL); }
 
 "+"                 { RETURN_TOKEN(ADD); }
 "-"                 { RETURN_TOKEN(SUB); }
@@ -181,7 +174,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:float)           { RETURN_TOKEN(FLOAT); }
 (?:string)          { RETURN_TOKEN(STRING); }
 
-{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = strdup(yytext); RETURN_TOKEN(SYMBOL); }
+{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = odbc::ast::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 
 "#"                 { RETURN_TOKEN(HASH); }
 "$"                 { RETURN_TOKEN(DOLLAR); }
