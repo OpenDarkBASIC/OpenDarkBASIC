@@ -185,5 +185,6 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 "\n"                { RETURN_TOKEN(NEWLINE); }
 ":"                 { RETURN_TOKEN(COLON); }
+";"                 { RETURN_TOKEN(SEMICOLON); }
 .                   {}
 %%

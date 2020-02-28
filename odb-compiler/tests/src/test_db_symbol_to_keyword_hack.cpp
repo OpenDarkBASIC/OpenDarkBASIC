@@ -33,3 +33,13 @@ TEST_F(NAME, keyword_overstepping_buffer_boundary)
 
     ASSERT_THAT(driver->parseFile("db_symbol_to_keyword_hack.dba"), IsTrue());
 }
+
+TEST_F(NAME, incomplete_keyword_at_end_of_file)
+{
+    db.addKeyword({"color object", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "function foo()\n"
+        "    a = 2\n"
+        "endfunction color"), IsTrue());
+}

@@ -165,6 +165,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM_FUNC_DECL:
             if (node->sym.func_decl.arglist)
                 os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.func_decl.body)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.func_decl.body->info.guid << "[label=\"body\"];\n";
             goto symbol_common;
         case NT_SYM_SUB_CALL:
             goto symbol_common;
@@ -209,9 +211,16 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
                 case LT_FLOAT:
                     os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->literal.value.f << "\\\" | LT_FLOAT}\"];\n";
                     break;
-                case LT_STRING:
-                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->literal.value.s << "\\\" | LT_STRING}\"];\n";
-                    break;
+                case LT_STRING: {
+                    os << "N" << node->info.guid << " [shape=record, label=\"{\\\"";
+                    for (const char* p = node->literal.value.s; *p; p++)
+                    {
+                        if (*p == '"')
+                            os << "\\";
+                        os << *p;
+                    }
+                    os << "\\\" | LT_STRING}\"];\n";
+                } break;
             }
         } break;
     }

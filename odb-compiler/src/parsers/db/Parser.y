@@ -77,7 +77,7 @@
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON PERIOD
+%token NEWLINE COLON SEMICOLON PERIOD
 
 %token CONSTANT
 
@@ -107,6 +107,7 @@
 %type<node> constant_decl;
 %type<node> dec_or_inc;
 %type<node> var_assignment;
+%type<node> lvalue;
 %type<node> var_decl;
 %type<node> var_decl_type;
 %type<node> udt_var_decls;
@@ -183,7 +184,9 @@ program
   ;
 sep
   : NEWLINE
-  | COLON;
+  | COLON
+  | SEMICOLON
+  ;
 seps
   : seps sep
   | sep;
@@ -219,15 +222,18 @@ constant_decl
     }
   ;
 dec_or_inc
-  : DEC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC); }
-  | INC symbol COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC); }
-  | DEC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_DEC); }
-  | INC symbol                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_INC); }
+  : DEC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC); }
+  | INC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC); }
+  | DEC lvalue                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_DEC); }
+  | INC lvalue                                   { $$ = newOp($2, newIntegerLiteral(1), NT_OP_INC); }
   ;
 var_assignment
-  : udt_ref EQ expr                              { $$ = newAssignment($1, $3); }
-  | var_ref EQ expr                              { $$ = newAssignment($1, $3); }
-  | dim_ref EQ expr                              { $$ = newAssignment($1, $3); }
+  : lvalue EQ expr                               { $$ = newAssignment($1, $3); }
+  ;
+lvalue
+  : udt_ref                                      { $$ = $1; }
+  | var_ref                                      { $$ = $1; }
+  | dim_ref                                      { $$ = $1; }
   ;
 var_decl
   : LOCAL var_decl_type                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
@@ -345,6 +351,7 @@ label_decl
 func_call_or_dim_ref
   : symbol LB arglist RB {
         $$ = $1;
+        $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
         $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
@@ -397,8 +404,6 @@ arglist
   ;
 decl_arglist
   : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA); }
-  | literal                                      { $$ = $1; }
-  | func_call_or_dim_ref                         { $$ = $1; }
   | var_decl_type                                { $$ = $1; }
   ;
 literal

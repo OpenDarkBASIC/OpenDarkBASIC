@@ -1,6 +1,8 @@
 #include "odbc/util/Str.hpp"
-#include <string.h>
-#include <stdlib.h>
+#include <algorithm>
+#include <string>
+#include <cstring>
+#include <cstdlib>
 
 namespace odbc {
 
@@ -27,6 +29,21 @@ char* newCStrRange(const char* src, int beg, int end)
 void deleteCStr(char* str)
 {
     free(str);
+}
+
+// ----------------------------------------------------------------------------
+int strncicmp(const char* a, const char* b, int n)
+{
+    while (n--)
+    {
+        int d = std::tolower((unsigned char)*a) - std::tolower((unsigned char)*b);
+        if (d || !*a)
+            return d;
+        a++;
+        b++;
+    }
+
+    return 0;
 }
 
 }

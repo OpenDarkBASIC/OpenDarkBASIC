@@ -1,5 +1,6 @@
 #include "odbc/parsers/keywords/KeywordMatcher.hpp"
 #include "odbc/parsers/keywords/KeywordDB.hpp"
+#include "odbc/util/Str.hpp"
 #include <algorithm>
 #include <iostream>
 #include <cstring>
@@ -67,7 +68,7 @@ bool KeywordMatcher::findLongestKeywordMatching(const char* str, int* matchedLen
     while (keywordStack.size())
     {
         auto keyword = keywordStack.back();
-        if (keyword != keywords_.end() && strncmp(str, keyword->c_str(), keyword->length()) == 0)
+        if (keyword != keywords_.end() && strncicmp(str, keyword->c_str(), keyword->length()) == 0)
         {
             *matchedLen = keyword->length();
             return true;

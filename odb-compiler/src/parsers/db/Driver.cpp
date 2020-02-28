@@ -114,6 +114,7 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
     log::info(fmt, args);
     log::info("\n");
 
+    int tabCount = 0;
     if (activeFilePtr_)
     {
         // Seek to offending line
@@ -136,9 +137,11 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
                 return;
             if (c == '\n')
                 break;
+            if (c == '\t')
+                tabCount++;
             log::info("%c", c);
         }
-        log::info("\n");
+        log::info("\n  ");
     }
     else
     {
@@ -162,15 +165,21 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
             char c = (*activeString_)[i];
             if (c == '\n')
                 break;
+            if ((*activeString_)[idx] == '\t')
+                tabCount++;
             log::info("%c", c);
         }
-        log::info("\n");
+        log::info("\n  ");
     }
 
     // Print visual indicator of which token is affected
-    log::info("  ");
     for (int i = 1; i < loc->first_column; ++i)
-        log::info(" ");
+    {
+        if (tabCount-- > 0)
+            log::info("\t");
+        else
+            log::info(" ");
+    }
     log::info("^");
     for (int i = loc->first_column + 1; i < loc->last_column; ++i)
         log::info("~");
