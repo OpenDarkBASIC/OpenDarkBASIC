@@ -1,5 +1,5 @@
 #include "odbc/cli/Args.hpp"
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 #include <cstdio>
 
 // ----------------------------------------------------------------------------

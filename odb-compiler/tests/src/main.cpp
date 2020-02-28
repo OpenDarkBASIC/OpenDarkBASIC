@@ -1,5 +1,5 @@
 #include "gmock/gmock.h"
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 
 int main(int argc, char** argv)
 {

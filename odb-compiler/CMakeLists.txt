@@ -13,6 +13,8 @@ include (CheckIncludeFile)
 set (ODBC_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
 option (ODBC_TESTS "Build unit tests" ON)
 option (ODBC_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
+option (ODBC_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
+option (ODBC_VERBOSE_FLEX "Have the scanner output each token" OFF)
 
 test_visibility_macros (
     ODBC_API_IMPORT
@@ -36,10 +38,15 @@ file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/keywords")
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odbc/parsers/db")
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords")
 
+set (BISON_VERBOSE_OPTION "")
+if (${ODBC_VERBOSE_BISON})
+    set (BISON_VERBOSE_OPTION "VERBOSE")
+endif ()
+
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h")
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/db/Parser.y.h" ${BISON_VERBOSE_OPTION})
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
@@ -48,11 +55,20 @@ add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
 bison_target (KeywordsParser
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords/Parser.y.h")
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odbc/parsers/keywords/Parser.y.h" ${BISON_VERBOSE_OPTION})
 flex_target (KeywordsScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Scanner.lex.cpp")
 add_flex_bison_dependency (KeywordsScanner KeywordsParser)
+
+if (ODBC_VERBOSE_BISON)
+    set_property (
+        SOURCE
+            ${BISON_DarkBASICParser_OUTPUTS}
+            ${BISON_KeywordsParser_OUTPUTS}
+        PROPERTY COMPILE_DEFINITIONS
+            YYDEBUG)
+endif ()
 
 ###############################################################################
 # Library definition
@@ -64,11 +80,12 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/Node.cpp"
-    "src/logging/Log.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
-    "src/parsers/keywords/KeywordMatcher.cpp")
+    "src/parsers/keywords/KeywordMatcher.cpp"
+    "src/util/Log.cpp"
+    "src/util/Str.cpp")
 target_include_directories (odbclib
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -78,8 +95,7 @@ target_include_directories (odbclib
         $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
 target_compile_definitions (odbclib
     PRIVATE
-        ODBC_BUILDING
-        YYDEBUG)
+        ODBC_BUILDING)
 target_compile_options (odbclib
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)

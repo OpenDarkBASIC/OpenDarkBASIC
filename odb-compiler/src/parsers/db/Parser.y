@@ -4,7 +4,7 @@
     #include "odbc/parsers/db/Scanner.hpp"
     #include "odbc/parsers/db/Driver.hpp"
     #include "odbc/ast/Node.hpp"
-    #include <stdarg.h>
+    #include "odbc/util/Str.hpp"
 
     void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
 
@@ -238,16 +238,16 @@ var_decl_type
   | symbol_or_dim_decl AS INTEGER                { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
   | symbol_or_dim_decl AS FLOAT                  { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
   | symbol_or_dim_decl AS STRING                 { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
-  | symbol_or_dim_decl AS udt_name               { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; $$->sym.var_decl.udt = $3; }
+  | symbol_or_dim_decl AS udt_name               { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
   | symbol_or_dim_decl                           { $$ = $1; }
   ;
 udt_var_decls
-  : var_decl_type seps udt_var_decls             { $$ = newUDTSubtype($1, $3); }
-  | var_decl_type                                { $$ = newUDTSubtype($1, nullptr); }
+  : udt_var_decls seps var_decl_type             { $$ = appendUDTSubtypeList($1, $3); }
+  | var_decl_type                                { $$ = newUDTSubtypeList($1); }
   ;
 symbol_or_dim_decl
-  : dim_decl                                     { $$ = $1; }
-  | symbol                                       { $$ = $1; }
+  : dim_decl                                     { $$ = $1; $$->info.type = NT_SYM_ARRAY_DECL; }
+  | symbol                                       { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; }
   ;
 dim_decl
   : DIM symbol LB arglist RB {
@@ -276,13 +276,14 @@ udt_decl
     {
         $$ = $2;
         $$->info.type = NT_SYM_UDT_DECL;
+        $$->sym.udt_decl.flag.datatype = SDT_UDT;
         $$->sym.udt_decl.subtypes_list = $4;
     }
   ;
 udt_name
   : symbol_without_type {
         $$ = $1;
-        $$->info.type = NT_SYM_UDT_DECL;
+        $$->info.type = NT_SYM_UDT_REF;
     }
   ;
 udt_ref

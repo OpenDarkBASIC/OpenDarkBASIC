@@ -1,4 +1,5 @@
 #include "odbc/ast/Node.hpp"
+#include "odbc/util/Str.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
@@ -120,6 +121,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
 
         case NT_UDT_SUBTYPE_LIST: {
             os << "N" << node->info.guid << "[label = \"UDT Subtype\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->udt_subtype_list.sym_decl->info.guid << "[label=\"sym decl\"];\n";
+            dumpToDOTRecursive(os, node->udt_subtype_list.sym_decl);
             if (node->udt_subtype_list.next)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->udt_subtype_list.next->info.guid << "[label=\"next\"];\n";
@@ -133,7 +136,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM_CONST_REF:
             goto symbol_common;
         case NT_SYM_VAR_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.var_decl.udt->info.guid << "[label=\"udt\"];\n";
+            if (node->sym.var_decl.flag.datatype == SDT_UDT)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.var_decl.udt->info.guid << "[label=\"udt\"];\n";
             goto symbol_common;
         case NT_SYM_VAR_REF:
             goto symbol_common;
@@ -148,10 +152,11 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
                 os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_DECL:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"var or array\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"subtype list\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_REF:
-            os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next->info.guid << "[label=\"next\"];\n";
+            if (node->sym.udt_ref.next)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next->info.guid << "[label=\"next\"];\n";
             goto symbol_common;
         case NT_SYM_FUNC_CALL:
             if (node->sym.func_call.arglist)
@@ -171,7 +176,7 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             goto symbol_common;
         case NT_SYM: {
             symbol_common:
-            os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->sym.base.name << "\\\"|";
+            os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->sym.base.name << "\\\"";
             switch (node->sym.base.flag.datatype)
             {
 #define X(name) case name : os << "|" #name; break;
@@ -218,31 +223,6 @@ void dumpToDOT(std::ostream& os, Node* root)
     os << std::string("}\n");
 }
 #endif
-
-// ----------------------------------------------------------------------------
-char* newCStr(const char* str)
-{
-    int len = strlen(str);
-    char* newStr = (char*)malloc(len + 1);
-    memcpy(newStr, str, len);
-    newStr[len] = '\0';
-    return newStr;
-}
-
-// ----------------------------------------------------------------------------
-char* newCStrRange(const char* src, int beg, int end)
-{
-    char* result = (char*)malloc(end - beg + 1);
-    strncpy(result, src + beg, end - beg);
-    result[end - beg] = '\0';
-    return result;
-}
-
-// ----------------------------------------------------------------------------
-void deleteCStr(char* str)
-{
-    free(str);
-}
 
 // ----------------------------------------------------------------------------
 static void init_info(Node* node, NodeType type)
@@ -499,16 +479,32 @@ Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, N
 }
 
 // ----------------------------------------------------------------------------
-Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype)
+Node* newUDTSubtypeList(Node* varOrArrDecl)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
     init_info(node, NT_UDT_SUBTYPE_LIST);
-    node->udt_subtype_list.var_or_arr_decl = varOrArrDecl;
-    node->udt_subtype_list.next = nextSubtype;
+    node->udt_subtype_list.sym_decl = varOrArrDecl;
+    node->udt_subtype_list.next = nullptr;
     return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl)
+{
+    assert(subtypeList->info.type == NT_UDT_SUBTYPE_LIST);
+
+    Node* lastSubtype = subtypeList;
+    while (lastSubtype->udt_subtype_list.next)
+        lastSubtype = lastSubtype->udt_subtype_list.next;
+
+    lastSubtype->udt_subtype_list.next = newUDTSubtypeList(varOrArrDecl);
+    if (lastSubtype->udt_subtype_list.next == nullptr)
+        return nullptr;
+
+    return subtypeList;
 }
 
 // ----------------------------------------------------------------------------
@@ -543,11 +539,15 @@ Node* newBlock(Node* expr, Node* next)
 Node* appendStatementToBlock(Node* block, Node* expr)
 {
     assert(block->info.type == NT_BLOCK);
+
     Node* last = block;
     while (last->block.next)
         last = last->block.next;
 
     last->block.next = newBlock(expr, nullptr);
+    if (last->block.next == nullptr)
+        return nullptr;
+
     return block;
 }
 

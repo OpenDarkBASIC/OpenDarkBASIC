@@ -1,7 +1,7 @@
 #include "odbc/cli/Args.hpp"
 #include "odbc/parsers/keywords/Driver.hpp"
 #include "odbc/parsers/db/Driver.hpp"
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 #include <cstring>
 #include <fstream>
 #include <algorithm>

@@ -17,11 +17,14 @@
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/parsers/db/Driver.hpp"
-#include "odbc/ast/Node.hpp"
+#include "odbc/util/Str.hpp"
 
 #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
-#define dbg(text) \
-    //printf(text ": \"%s\"\n", yytext)
+#if defined(ODBC_VERBOSE_FLEX)
+#   define dbg(text) printf(text ": \"%s\"\n", yytext)
+#else
+#   define dbg(text)
+#endif
 
 #define RETURN_TOKEN(token) do {                                              \
         dbg(#token);                                                          \
@@ -45,7 +48,7 @@
         }                                                                     \
         if (keywordMatched)                                                   \
         {                                                                     \
-            yylval->string = odbc::ast::newCStr(yytext);                      \
+            yylval->string = odbc::newCStr(yytext);                           \
             dbg("keyword");                                                   \
             return TOK_KEYWORD;                                               \
         }                                                                     \
@@ -62,7 +65,7 @@
         }                                                                     \
         if (keywordMatched && oldTokenLen < (int)strlen(yytext))              \
         {                                                                     \
-            yylval->string = odbc::ast::newCStr(yytext);                      \
+            yylval->string = odbc::newCStr(yytext);                           \
             dbg("keyword");                                                   \
             return TOK_KEYWORD;                                               \
         }                                                                     \
@@ -102,13 +105,13 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %%
 
-{REMARK}            { char* remark = yytext; dbg(remark); (void)remark; }
+{REMARK}            { dbg("remark"); }
 
 {CONSTANT}          { RETURN_TOKEN(CONSTANT); }
 
 {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
 {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(BOOLEAN_LITERAL); }
-{STRING_LITERAL}    { yylval->string = odbc::ast::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
+{STRING_LITERAL}    { yylval->string = odbc::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
 {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(FLOAT_LITERAL); }
 {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(INTEGER_LITERAL); }
 {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(INTEGER_LITERAL); }
@@ -174,7 +177,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:float)           { RETURN_TOKEN(FLOAT); }
 (?:string)          { RETURN_TOKEN(STRING); }
 
-{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = odbc::ast::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
+{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = odbc::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 
 "#"                 { RETURN_TOKEN(HASH); }
 "$"                 { RETURN_TOKEN(DOLLAR); }

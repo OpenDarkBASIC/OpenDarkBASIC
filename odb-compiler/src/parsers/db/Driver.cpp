@@ -2,13 +2,15 @@
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/parsers/keywords/KeywordMatcher.hpp"
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>
 
+#if defined(ODBC_VERBOSE_BISON)
 extern int dbdebug;
+#endif
 
 namespace odbc {
 namespace db {
@@ -20,6 +22,10 @@ Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
 {
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
+
+#if defined(ODBC_VERBOSE_BISON)
+    dbdebug = 1;
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -78,7 +84,6 @@ bool Driver::parseString(const std::string& str)
     YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
     activeString_ = &str;
 
-    dbdebug = 0;
     do
     {
         pushedChar = dblex(&pushedValue, &loc, scanner_);

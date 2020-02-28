@@ -268,7 +268,7 @@ union Node {
     struct
     {
         Info info;
-        Node* var_or_arr_decl;
+        Node* sym_decl;
         Node* next;
     } udt_subtype_list;
 
@@ -330,10 +330,6 @@ union Node {
 ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
-char* newCStr(const char* str);
-char* newCStrRange(const char* src, int beg, int end);
-void deleteCStr(char* str);
-
 Node* newOp(Node* left, Node* right, NodeType op);
 
 Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope);
@@ -355,7 +351,8 @@ Node* newLoopWhile(Node* condition, Node* block);
 Node* newLoopUntil(Node* condition, Node* block);
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
 
-Node* newUDTSubtype(Node* varOrArrDecl, Node* nextSubtype);
+Node* newUDTSubtypeList(Node* varOrArrDecl);
+Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl);
 Node* newKeyword(char* name, Node* arglist);
 
 Node* newBlock(Node* expr, Node* next);

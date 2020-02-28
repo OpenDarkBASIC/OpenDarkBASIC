@@ -1,4 +1,4 @@
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 #include <cstdarg>
 #include <cassert>
 

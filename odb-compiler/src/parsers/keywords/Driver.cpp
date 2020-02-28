@@ -3,10 +3,14 @@
 #include "odbc/parsers/keywords/Scanner.hpp"
 #include "odbc/parsers/keywords/Keyword.hpp"
 #include "odbc/parsers/keywords/KeywordDB.hpp"
-#include "odbc/logging/Log.hpp"
+#include "odbc/util/Log.hpp"
 #include <cassert>
 #include <algorithm>
 #include <functional>
+
+#if defined(ODBC_VERBOSE_BISON)
+extern int kwdebug;
+#endif
 
 static void strip(std::string& str)
 {
@@ -23,6 +27,10 @@ Driver::Driver(KeywordDB* targetDB) :
 {
     kwlex_init_extra(this, &scanner_);
     parser_ = kwpstate_new();
+
+#if defined(ODBC_VERBOSE_BISON)
+    kwdebug = 1;
+#endif
 }
 
 // ----------------------------------------------------------------------------
