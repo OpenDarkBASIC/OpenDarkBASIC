@@ -308,6 +308,9 @@ var_ref
   : symbol {
         $$ = $1;
         $$->info.type = NT_SYM_VAR_REF;
+        // default type of a variable is integer
+        if ($$->sym.var_ref.flag.datatype == SDT_UNKNOWN)
+            $$->sym.var_ref.flag.datatype = SDT_INTEGER;
     }
   ;
 func_decl
@@ -355,6 +358,7 @@ func_call_or_dim_ref
         $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {
+        $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
         $$ = $1;
     }
   ;
@@ -398,7 +402,7 @@ arglist
   | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT); }
   | literal                                      { $$ = $1; }
   | udt_ref                                      { $$ = $1; }
-  | symbol                                       { $$ = $1; }
+  | var_ref                                      { $$ = $1; }
   | func_call_or_dim_ref                         { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
   ;

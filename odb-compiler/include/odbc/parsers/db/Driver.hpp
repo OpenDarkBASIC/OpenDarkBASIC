@@ -48,6 +48,8 @@ public:
     void appendAST(ast::Node* block);
 
 private:
+    bool doParse();
+
     // For error reporting
     const std::string* activeFileName_ = nullptr;
     const std::string* activeString_ = nullptr;

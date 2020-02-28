@@ -8,7 +8,7 @@ namespace odbc {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-static const char* nodeName[] = {
+static const char* nodeTypeName[] = {
 #define X(type, name, str) str,
     NODE_TYPE_LIST
 #undef X
@@ -23,7 +23,7 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
     {
 #define X(type, name, str) case type:
         NODE_TYPE_OP_LIST {
-            os << "N" << node->info.guid << "[label=\"" << nodeName[node->info.type] << "\"];\n";
+            os << "N" << node->info.guid << "[label=\"" << nodeTypeName[node->info.type] << "\"];\n";
             os << "N" << node->info.guid << " -> " << "N" << node->op.base.left->info.guid << "[label=\"left\"];\n";
             os << "N" << node->info.guid << " -> " << "N" << node->op.base.right->info.guid << "[label=\"right\"];\n";
             dumpToDOTRecursive(os, node->op.base.left);
@@ -179,6 +179,7 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM: {
             symbol_common:
             os << "N" << node->info.guid << " [shape=record, label=\"{\\\"" << node->sym.base.name << "\\\"";
+            os << "|" << nodeTypeName[node->info.type];
             switch (node->sym.base.flag.datatype)
             {
 #define X(name) case name : os << "|" #name; break;

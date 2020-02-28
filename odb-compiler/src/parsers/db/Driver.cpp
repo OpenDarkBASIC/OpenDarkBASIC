@@ -55,44 +55,38 @@ bool Driver::parseFile(const std::string& fileName)
 // ----------------------------------------------------------------------------
 bool Driver::parseStream(FILE* fp)
 {
-    DBSTYPE pushedValue;
-    int pushedChar;
-    int parse_result;
-    DBLTYPE loc = {1, 1, 1, 1};
-
     dbset_in(fp, scanner_);
     activeFilePtr_ = fp;
-
-    do
-    {
-        pushedChar = dblex(&pushedValue, &loc, scanner_);
-        parse_result = dbpush_parse(parser_, pushedChar, &pushedValue, &loc, scanner_);
-    } while (parse_result == YYPUSH_MORE);
-
+    bool result = doParse();
     activeFilePtr_ = nullptr;
-    return parse_result == 0;
+    return result;
 }
 
 // ----------------------------------------------------------------------------
 bool Driver::parseString(const std::string& str)
+{
+    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
+    activeString_ = &str;
+    bool result = doParse();
+    activeString_ = nullptr;
+    db_delete_buffer(buf, scanner_);
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+bool Driver::doParse()
 {
     DBSTYPE pushedValue;
     int pushedChar;
     int parse_result;
     DBLTYPE loc = {1, 1, 1, 1};
 
-    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
-    activeString_ = &str;
-
     do
     {
         pushedChar = dblex(&pushedValue, &loc, scanner_);
         parse_result = dbpush_parse(parser_, pushedChar, &pushedValue, &loc, scanner_);
     } while (parse_result == YYPUSH_MORE);
 
-    db_delete_buffer(buf, scanner_);
-
-    activeString_ = nullptr;
     return parse_result == 0;
 }
 
