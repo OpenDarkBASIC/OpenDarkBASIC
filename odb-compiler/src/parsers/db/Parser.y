@@ -117,6 +117,7 @@
 %type<node> dim_ref;
 %type<node> udt_decl;
 %type<node> udt_name;
+%type<node> udt_refs;
 %type<node> func_decl;
 %type<node> func_end;
 %type<node> func_exit;
@@ -283,15 +284,19 @@ udt_decl
 udt_name
   : symbol_without_type {
         $$ = $1;
-        $$->info.type = NT_SYM_UDT_REF;
+        $$->info.type = NT_SYM_VAR_REF;
+        $$->sym.var_ref.flag.datatype = SDT_UDT;
     }
   ;
 udt_ref
-  : udt_name PERIOD udt_refs
+  : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
+  | dim_ref PERIOD udt_refs                      { $$ = $1; $$->sym.array_ref.udt = $3; }
   ;
 udt_refs
-  : udt_name PERIOD udt_refs
-  | symbol
+  : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
+  | dim_ref PERIOD udt_refs                      { $$ = $1; $$->sym.array_ref.udt = $3; }
+  | dim_ref                                      { $$ = $1; }
+  | symbol                                       { $$ = $1; }
   ;
 var_ref
   : symbol {

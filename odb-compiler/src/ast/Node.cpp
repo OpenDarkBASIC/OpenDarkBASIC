@@ -140,6 +140,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
                 os << "N" << node->info.guid << " -> " << "N" << node->sym.var_decl.udt->info.guid << "[label=\"udt\"];\n";
             goto symbol_common;
         case NT_SYM_VAR_REF:
+            if (node->sym.var_ref.udt)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.var_ref.udt->info.guid << "[label=\"udt\"];\n";
             goto symbol_common;
         case NT_SYM_ARRAY_DECL:
             if (node->sym.array_decl.udt)
@@ -150,13 +152,11 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM_ARRAY_REF:
             if (node->sym.array_ref.arglist)
                 os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.arglist->info.guid << "[label=\"arglist\"];\n";
+            if (node->sym.array_ref.udt)
+                os << "N" << node->info.guid << " -> " << "N" << node->sym.array_ref.udt->info.guid << "[label=\"udt\"];\n";
             goto symbol_common;
         case NT_SYM_UDT_DECL:
             os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"subtype list\"];\n";
-            goto symbol_common;
-        case NT_SYM_UDT_REF:
-            if (node->sym.udt_ref.next)
-                os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_ref.next->info.guid << "[label=\"next\"];\n";
             goto symbol_common;
         case NT_SYM_FUNC_CALL:
             if (node->sym.func_call.arglist)

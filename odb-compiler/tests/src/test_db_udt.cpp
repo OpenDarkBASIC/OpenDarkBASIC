@@ -78,21 +78,12 @@ TEST_F(NAME, declare_nested_udt_with_dims)
 TEST_F(NAME, declare_array_as_udt)
 {
     ASSERT_THAT(driver->parseString(
-        "type vec2\n"
-        "    x# as float\n"
-        "    y# as float\n"
-        "endtype\n"
         "dim vecs(5) as vec2\n"), IsTrue());
 }
 
 TEST_F(NAME, ref_udt)
 {
     ASSERT_THAT(driver->parseString(
-        "type vec2\n"
-        "    x# as float\n"
-        "    y# as float\n"
-        "endtype\n"
-        "v as vec2\n"
         "v.x# = 2.3\n"
         "v.y# = 5.4\n"), IsTrue());
 }
@@ -100,15 +91,6 @@ TEST_F(NAME, ref_udt)
 TEST_F(NAME, ref_udt_in_udt)
 {
     ASSERT_THAT(driver->parseString(
-        "type vec2\n"
-        "    x# as float\n"
-        "    y# as float\n"
-        "endtype\n"
-        "type player\n"
-        "    pos as vec2\n"
-        "    health as integer\n"
-        "endtype\n"
-        "p as player\n"
         "p.pos.x# = 2.3\n"
         "p.pos.y# = 5.4\n"), IsTrue());
 }
@@ -116,11 +98,6 @@ TEST_F(NAME, ref_udt_in_udt)
 TEST_F(NAME, ref_udt_array)
 {
     ASSERT_THAT(driver->parseString(
-        "type vec2\n"
-        "    x# as float\n"
-        "    y# as float\n"
-        "endtype\n"
-        "dim vecs(5) as vec2\n"
         "vecs(2).x# = 2.3\n"
         "vecs(2).y# = 5.4\n"), IsTrue());
 }
@@ -128,15 +105,6 @@ TEST_F(NAME, ref_udt_array)
 TEST_F(NAME, ref_udt_array_with_arrays)
 {
     ASSERT_THAT(driver->parseString(
-        "type vec2\n"
-        "    x# as float\n"
-        "    y# as float\n"
-        "endtype\n"
-        "type player\n"
-        "    pos(5) as vec2\n"
-        "    health as integer\n"
-        "endtype\n"
-        "dim p(5) as player\n"
         "p(1).pos(4).x# = 2.3\n"
         "p(1).pos(4).y# = 5.4\n"), IsTrue());
 }

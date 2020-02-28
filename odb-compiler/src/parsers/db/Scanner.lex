@@ -7,7 +7,7 @@
     for(int i = 0; yytext[i] != '\0'; i++) { \
         if(yytext[i] == '\n') { \
             yylloc->last_line++; \
-            yylloc->last_column = 0; \
+            yylloc->last_column = 1; \
         } \
         else { \
             yylloc->last_column++; \

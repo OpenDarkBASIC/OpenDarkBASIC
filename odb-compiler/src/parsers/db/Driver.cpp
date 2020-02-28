@@ -123,7 +123,7 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
         while (currentLine != loc->first_line)
         {
             if (fread(&c, 1, 1, activeFilePtr_) != 1)
-                goto printOffendingLineFailed;
+                return;
             if (c == '\n')
                 currentLine++;
         }
@@ -133,26 +133,38 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
         while (1)
         {
             if (fread(&c, 1, 1, activeFilePtr_) != 1)
-                goto printOffendingLineFailed;
+                return;
             if (c == '\n')
                 break;
             log::info("%c", c);
         }
         log::info("\n");
-        printOffendingLineFailed:;
     }
     else
     {
         assert(activeString_ != nullptr);
+
+        // Seek to offending line
+        int currentLine = 1;
+        int idx = 0;
+        for (; currentLine != loc->first_line; idx++)
+        {
+            if ((*activeString_)[idx] == '\n')
+                currentLine++;
+            if ((*activeString_)[idx] == '\0')
+                return;
+        }
+
+        // Print offending line
         log::info("  ");
-        for (size_t i = 0; i != activeString_->size(); ++i)
+        for (size_t i = idx; i < activeString_->size(); ++i)
         {
             char c = (*activeString_)[i];
             if (c == '\n')
                 break;
             log::info("%c", c);
         }
-    log::info("\n");
+        log::info("\n");
     }
 
     // Print visual indicator of which token is affected
