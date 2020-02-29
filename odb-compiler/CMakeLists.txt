@@ -118,6 +118,7 @@ if (${ODBC_TESTS})
         "tests/src/test_db_remarks.cpp"
         "tests/src/test_db_sub.cpp"
         "tests/src/test_db_udt.cpp"
+        "tests/src/test_db_variables.cpp"
         "tests/src/test_kw_index.cpp"
         "tests/src/test_kw_matcher.cpp"
         "tests/src/main.cpp")

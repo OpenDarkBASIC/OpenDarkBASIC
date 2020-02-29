@@ -19,3 +19,13 @@ TEST_F(NAME, infinite_loop)
 {
     ASSERT_THAT(driver->parseString("while cond\nfoo()\nendwhile\n"), IsTrue());
 }
+
+TEST_F(NAME, empty_loop)
+{
+    ASSERT_THAT(driver->parseString("while cond\nendwhile\n"), IsTrue());
+}
+
+TEST_F(NAME, break_from_loop)
+{
+    ASSERT_THAT(driver->parseString("while cond\nbreak\nendwhile\n"), IsTrue());
+}

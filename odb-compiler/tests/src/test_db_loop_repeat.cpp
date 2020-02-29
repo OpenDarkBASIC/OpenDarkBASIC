@@ -19,3 +19,13 @@ TEST_F(NAME, infinite_loop)
 {
     ASSERT_THAT(driver->parseString("repeat\nfoo()\nuntil cond\n"), IsTrue());
 }
+
+TEST_F(NAME, empty_loop)
+{
+    ASSERT_THAT(driver->parseString("repeat\nuntil cond\n"), IsTrue());
+}
+
+TEST_F(NAME, break_from_loop)
+{
+    ASSERT_THAT(driver->parseString("repeat\nbreak\nuntil cond\n"), IsTrue());
+}

@@ -19,3 +19,13 @@ TEST_F(NAME, infinite_loop)
 {
     ASSERT_THAT(driver->parseString("do\nfoo()\nloop\n"), IsTrue());
 }
+
+TEST_F(NAME, empty_infinite_loop)
+{
+    ASSERT_THAT(driver->parseString("do\nloop\n"), IsTrue());
+}
+
+TEST_F(NAME, break_from_loop)
+{
+    ASSERT_THAT(driver->parseString("do\nbreak\nloop\n"), IsTrue());
+}
