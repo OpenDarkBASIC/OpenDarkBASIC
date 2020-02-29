@@ -4,7 +4,7 @@
 #include "odbc/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME db_sub
+#define NAME db_subroutine
 
 using namespace testing;
 

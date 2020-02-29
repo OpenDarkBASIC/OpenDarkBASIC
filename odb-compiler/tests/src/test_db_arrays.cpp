@@ -3,7 +3,7 @@
 #include "odbc/ast/Node.hpp"
 #include "odbc/tests/ParserTestHarness.hpp"
 
-#define NAME db_dim
+#define NAME db_arrays
 
 using namespace testing;
 
