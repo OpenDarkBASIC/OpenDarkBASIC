@@ -14,8 +14,8 @@ class ODBC_PUBLIC_API KeywordMatcher
 public:
     struct MatchResult
     {
-        int matchedLength;
-        bool found;
+        int matchedLength = 0;
+        bool found = false;
     };
 
     void updateFromDB(const KeywordDB* db);

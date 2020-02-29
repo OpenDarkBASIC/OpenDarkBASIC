@@ -108,3 +108,12 @@ TEST_F(NAME, keywords_with_type)
     ASSERT_THAT(driver->parseString(
         "OriginalDirectory$ = get dir$()"), IsTrue());
 }
+
+TEST_F(NAME, keyword_containing_builtin_in_middle)
+{
+    db.addKeyword({"set effect constant boolean", "", {}});
+    db.addKeyword({"set effect constant float", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
+}

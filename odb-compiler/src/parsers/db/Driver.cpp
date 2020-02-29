@@ -108,7 +108,7 @@ bool Driver::doParse()
     {
         // look ahead until all tokens concatenated are longer than the longest
         // matching keyword, or until we reach EOF.
-        KeywordMatcher::MatchResult result;
+        KeywordMatcher::MatchResult result, foundResult = {};
         possibleKeyword = dbget_text(scanner);
         int initialTokenLength = possibleKeyword.length();
         int lookAheadBegin = tokens.size() - 1;
@@ -130,6 +130,8 @@ bool Driver::doParse()
             lookAheadEnd++;
 
             result = kwMatcher->findLongestKeywordMatching(possibleKeyword);
+            if (result.found)
+                foundResult = result;
         } while (result.matchedLength >= (int)possibleKeyword.length() && tokens.back().pushedChar != 0);
 
         // For special cases such as "loop object", where "loop" is a keyword
@@ -137,7 +139,7 @@ bool Driver::doParse()
         // leave it as TOK_LOOP to retain its semantic meaning. If "mustBeLonger"
         // is true then don't morph the token into TOK_KEYWORD if the matched
         // length is not longer than the original token.
-        if (result.found && (!mustBeLonger || initialTokenLength != result.matchedLength))
+        if (foundResult.found && (!mustBeLonger || initialTokenLength != foundResult.matchedLength))
         {
             // All tokens we scanned leading up to the last one can
             // be discarded, because they can all be merged into
@@ -154,7 +156,7 @@ bool Driver::doParse()
             tokens.erase(tokens.begin() + lookAheadBegin + 1, tokens.begin() + lookAheadEnd);
 
             // Ownership of the string is passed to BISON
-            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, result.matchedLength);
+            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, foundResult.matchedLength);
             tokens[0].pushedChar = TOK_KEYWORD;
 
 #if defined(ODBC_VERBOSE_FLEX)
