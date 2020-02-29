@@ -108,16 +108,18 @@
 %type<node> dec_or_inc;
 %type<node> var_assignment;
 %type<node> lvalue;
+%type<node> udt_body_decl;
 %type<node> var_decl;
-%type<node> var_decl_as_type;
-%type<node> udt_var_decls;
 %type<node> var_decl_name;
-%type<node> udt_ref;
+%type<node> var_decl_as_type;
 %type<node> var_ref;
-%type<node> dim_decl;
-%type<node> dim_ref;
+%type<node> array_decl;
+%type<node> array_decl_name;
+%type<node> array_decl_as_type;
+%type<node> array_ref;
 %type<node> udt_decl;
 %type<node> udt_name;
+%type<node> udt_ref;
 %type<node> udt_refs;
 %type<node> func_decl;
 %type<node> func_end;
@@ -127,7 +129,7 @@
 %type<node> sub_call;
 %type<node> sub_return;
 %type<node> label_decl;
-%type<node> func_call_or_dim_ref;
+%type<node> func_call_or_array_ref;
 %type<node> keyword;
 %type<node> keyword_returning_value;
 %type<node> expr;
@@ -203,6 +205,7 @@ stmnt
   | constant_decl                                { $$ = $1; }
   | dec_or_inc                                   { $$ = $1; }
   | var_decl                                     { $$ = $1; }
+  | array_decl                                   { $$ = $1; }
   | udt_decl                                     { $$ = $1; }
   | func_decl                                    { $$ = $1; }
   | func_call                                    { $$ = $1; }
@@ -234,7 +237,7 @@ var_assignment
 lvalue
   : udt_ref                                      { $$ = $1; }
   | var_ref                                      { $$ = $1; }
-  | dim_ref                                      { $$ = $1; }
+  | array_ref                                    { $$ = $1; }
   ;
 var_decl
   : LOCAL var_decl_as_type                       { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
@@ -255,44 +258,82 @@ var_decl_name
         $$ = $1;
         $$->info.type = NT_SYM_VAR_DECL;
         // default type of a variable is integer
-        if ($$->sym.var_ref.flag.datatype == SDT_UNKNOWN)
-            $$->sym.var_ref.flag.datatype = SDT_INTEGER;
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
-udt_var_decls
-  : udt_var_decls seps var_decl_as_type          { $$ = appendUDTSubtypeList($1, $3); }
-  | var_decl_as_type                             { $$ = newUDTSubtypeList($1); }
+var_ref
+  : symbol {
+        $$ = $1;
+        $$->info.type = NT_SYM_VAR_REF;
+        // default type of a variable is integer
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
+    }
   ;
-dim_decl
+array_decl
+  : LOCAL array_decl_as_type                     { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL array_decl_as_type                    { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
+  | LOCAL array_decl_name                        { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL array_decl_name                       { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
+  | array_decl_as_type                           { $$ = $1; }
+  | array_decl_name                              { $$ = $1; }
+  ;
+array_decl_as_type
+  : array_decl_name AS BOOLEAN                   { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
+  | array_decl_name AS INTEGER                   { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
+  | array_decl_name AS FLOAT                     { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | array_decl_name AS STRING                    { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  | array_decl_name AS udt_name                  { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.array_decl.udt = $3; }
+  ;
+array_decl_name
   : DIM symbol LB arglist RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
         $$->sym.array_decl.arglist = $4;
+        // default type of a variable is integer
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   | DIM symbol LB RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
+        // default type of a variable is integer
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
-dim_ref
+array_ref
   : symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.array_ref.arglist = $3;
+        // default type of a variable is integer
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   | symbol LB RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
+        // default type of a variable is integer
+        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+            $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
 udt_decl
-  : TYPE udt_name seps udt_var_decls seps ENDTYPE
+  : TYPE udt_name seps udt_body_decl seps ENDTYPE
     {
         $$ = $2;
         $$->info.type = NT_SYM_UDT_DECL;
         $$->sym.udt_decl.flag.datatype = SDT_UDT;
         $$->sym.udt_decl.subtypes_list = $4;
     }
+  ;
+udt_body_decl
+  : udt_body_decl seps var_decl_as_type          { $$ = appendUDTSubtypeList($1, $3); }
+  | udt_body_decl seps array_decl                { $$ = appendUDTSubtypeList($1, $3); }
+  | var_decl_as_type                             { $$ = newUDTSubtypeList($1); }
+  | array_decl                                   { $$ = newUDTSubtypeList($1); }
   ;
 udt_name
   : symbol_without_type {
@@ -303,22 +344,13 @@ udt_name
   ;
 udt_ref
   : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
-  | dim_ref PERIOD udt_refs                      { $$ = $1; $$->sym.array_ref.udt = $3; }
+  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
   ;
 udt_refs
   : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
-  | dim_ref PERIOD udt_refs                      { $$ = $1; $$->sym.array_ref.udt = $3; }
-  | dim_ref                                      { $$ = $1; }
+  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
+  | array_ref                                    { $$ = $1; }
   | symbol                                       { $$ = $1; }
-  ;
-var_ref
-  : symbol {
-        $$ = $1;
-        $$->info.type = NT_SYM_VAR_REF;
-        // default type of a variable is integer
-        if ($$->sym.var_ref.flag.datatype == SDT_UNKNOWN)
-            $$->sym.var_ref.flag.datatype = SDT_INTEGER;
-    }
   ;
 func_decl
   : func_name_decl seps stmnts seps func_end {
@@ -358,7 +390,7 @@ sub_return
 label_decl
   : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
   ;
-func_call_or_dim_ref
+func_call_or_array_ref
   : symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
@@ -410,14 +442,14 @@ arglist
   | literal                                      { $$ = $1; }
   | udt_ref                                      { $$ = $1; }
   | var_ref                                      { $$ = $1; }
-  | func_call_or_dim_ref                         { $$ = $1; }
+  | func_call_or_array_ref                       { $$ = $1; }
   | keyword_returning_value                      { $$ = $1; }
   ;
 decl_arglist
   : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA); }
   | var_decl_as_type                             { $$ = $1; }
   | var_decl_name                                { $$ = $1; }
-  | dim_decl                                     { $$ = $1; }
+  | array_decl                                   { $$ = $1; }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
