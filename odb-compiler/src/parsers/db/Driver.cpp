@@ -115,13 +115,16 @@ bool Driver::doParse()
         int lookAheadEnd = tokens.size() - 1;
         bool lastTokenWasSymbol = true;
         do {
+            scanNextToken(scanner);
+
             // Keywords unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
-            // in between integers and following symbols.
-            if (lastTokenWasSymbol)
+            // in between integers and following symbols. Additionally, keywords
+            // can end in $ or #, in which case we also do not want to append
+            // a space.
+            if (lastTokenWasSymbol && tokens.back().pushedChar != TOK_HASH && tokens.back().pushedChar != TOK_DOLLAR)
                 possibleKeyword += " ";
 
-            scanNextToken(scanner);
             possibleKeyword += dbget_text(scanner);
             lastTokenWasSymbol = (tokens.back().pushedChar == TOK_SYMBOL);
             lookAheadEnd++;
@@ -170,7 +173,6 @@ bool Driver::doParse()
             case TOK_SYMBOL:
                 scanAheadForPossibleKeyword(scanner_, keywordMatcher_, false);
                 break;
-
 
             case TOK_LOOP: // DarkBASIC has commands that start with "loop"
                 scanAheadForPossibleKeyword(scanner_, keywordMatcher_, true);

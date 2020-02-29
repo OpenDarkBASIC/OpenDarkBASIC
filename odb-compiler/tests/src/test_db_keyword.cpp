@@ -100,3 +100,11 @@ TEST_F(NAME, incomplete_keyword_at_end_of_file)
         "    a = 2\n"
         "endfunction color"), IsTrue());
 }
+
+TEST_F(NAME, keywords_with_type)
+{
+    db.addKeyword({"get dir$", "", {}, true});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "OriginalDirectory$ = get dir$()"), IsTrue());
+}
