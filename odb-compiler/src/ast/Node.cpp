@@ -44,10 +44,10 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
 
         case NT_ASSIGNMENT: {
             os << "N" << node->info.guid << " -> " << "N" << node->assignment.symbol->info.guid << "[label=\"symbol\"];\n";
-            os << "N" << node->info.guid << " -> " << "N" << node->assignment.statement->info.guid << "[label=\"expr\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->assignment.expr->info.guid << "[label=\"expr\"];\n";
             os << "N" << node->info.guid << "[label=\"=\"];\n";
             dumpToDOTRecursive(os, node->assignment.symbol);
-            dumpToDOTRecursive(os, node->assignment.statement);
+            dumpToDOTRecursive(os, node->assignment.expr);
         } break;
 
         case NT_BRANCH: {
@@ -362,7 +362,7 @@ Node* newAssignment(Node* symbol, Node* statement)
     Node* ass = (Node*)malloc(sizeof *ass);
     init_info(ass, NT_ASSIGNMENT);
     ass->assignment.symbol = symbol;
-    ass->assignment.statement = statement;
+    ass->assignment.expr = statement;
     return ass;
 }
 

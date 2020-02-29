@@ -192,7 +192,7 @@ union Node {
     {
         Info info;
         Node* symbol;
-        Node* statement;
+        Node* expr;
     } assignment;
 
     union
@@ -278,6 +278,11 @@ union Node {
      */
     union
     {
+        struct SymbolFlag {
+            SymbolDataType    datatype    : 3;
+            SymbolScope       scope       : 1;
+        };
+
 #define DEFINE_SYMBOL_STRUCT(sym_name, left, right)             \
         struct                                                  \
         {                                                       \
@@ -287,10 +292,7 @@ union Node {
             char* name;                                         \
             union {                                             \
                 uint16_t flags;                                 \
-                struct {                                        \
-                    SymbolDataType    datatype    : 3;          \
-                    SymbolScope       scope       : 1;          \
-                } flag;                                         \
+                SymbolFlag flag;                                \
             };                                                  \
         } sym_name
 

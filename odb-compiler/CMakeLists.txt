@@ -104,19 +104,19 @@ set_target_properties (odbclib
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests
-        "tests/src/test_db_keyword.cpp"
+        "tests/src/test_db_arrays.cpp"
         "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
-        "tests/src/test_db_dim.cpp"
         "tests/src/test_db_function_call.cpp"
         "tests/src/test_db_function_decl.cpp"
+        "tests/src/test_db_keyword.cpp"
         "tests/src/test_db_loop_do.cpp"
         "tests/src/test_db_loop_for.cpp"
         "tests/src/test_db_loop_repeat.cpp"
         "tests/src/test_db_loop_while.cpp"
         "tests/src/test_db_op_add.cpp"
         "tests/src/test_db_remarks.cpp"
-        "tests/src/test_db_sub.cpp"
+        "tests/src/test_db_subroutine.cpp"
         "tests/src/test_db_udt.cpp"
         "tests/src/test_db_variables.cpp"
         "tests/src/test_kw_index.cpp"

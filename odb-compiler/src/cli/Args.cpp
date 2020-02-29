@@ -298,6 +298,7 @@ bool Args::parseDBA(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpASTDOT(const std::vector<std::string>& args)
 {
+#if defined(ODBC_DOT_EXPORT)
     if (ast_ == nullptr)
     {
         fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
@@ -315,6 +316,10 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
     odbc::ast::dumpToDOT(outfile, ast_);
 
     return true;
+#else
+    fprintf(stderr, "Error: odbclib was built without DOT export support. Recompile with -DODBC_DOT_EXPORT=ON.\n");
+    return false;
+#endif
 }
 
 // ----------------------------------------------------------------------------

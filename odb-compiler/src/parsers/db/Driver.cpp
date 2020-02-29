@@ -146,7 +146,7 @@ bool Driver::doParse()
                 // XXX: TOK_SYMBOL is the only other token that calls newCStr()
                 //      and also matches the characters a keyword can contain,
                 //      so this works. If in the future a new token is added
-                //      that calls newCStr() and could potentially be morphed
+                //      that calls newCStr() and that could potentially be morphed
                 //      into a keyword, then this check will have to be updated
                 //      accordingly.
                 if (tokens[i].pushedChar == TOK_SYMBOL)

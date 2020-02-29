@@ -109,9 +109,9 @@
 %type<node> var_assignment;
 %type<node> lvalue;
 %type<node> var_decl;
-%type<node> var_decl_type;
+%type<node> var_decl_as_type;
 %type<node> udt_var_decls;
-%type<node> symbol_or_dim_decl;
+%type<node> var_decl_name;
 %type<node> udt_ref;
 %type<node> var_ref;
 %type<node> dim_decl;
@@ -229,6 +229,7 @@ dec_or_inc
   ;
 var_assignment
   : lvalue EQ expr                               { $$ = newAssignment($1, $3); }
+  | var_decl EQ expr                             { $$ = newAssignment($1, $3); }
   ;
 lvalue
   : udt_ref                                      { $$ = $1; }
@@ -236,25 +237,31 @@ lvalue
   | dim_ref                                      { $$ = $1; }
   ;
 var_decl
-  : LOCAL var_decl_type                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
-  | GLOBAL var_decl_type                         { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
-  | var_decl_type                                { $$ = $1; }
+  : LOCAL var_decl_as_type                       { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL var_decl_as_type                      { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
+  | LOCAL var_decl_name                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
+  | GLOBAL var_decl_name                         { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
+  | var_decl_as_type                             { $$ = $1; }
   ;
-var_decl_type
-  : symbol_or_dim_decl AS BOOLEAN                { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
-  | symbol_or_dim_decl AS INTEGER                { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
-  | symbol_or_dim_decl AS FLOAT                  { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
-  | symbol_or_dim_decl AS STRING                 { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
-  | symbol_or_dim_decl AS udt_name               { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
-  | symbol_or_dim_decl                           { $$ = $1; }
+var_decl_as_type
+  : var_decl_name AS BOOLEAN                     { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
+  | var_decl_name AS INTEGER                     { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
+  | var_decl_name AS FLOAT                       { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | var_decl_name AS STRING                      { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  | var_decl_name AS udt_name                    { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
+  ;
+var_decl_name
+  : symbol {
+        $$ = $1;
+        $$->info.type = NT_SYM_VAR_DECL;
+        // default type of a variable is integer
+        if ($$->sym.var_ref.flag.datatype == SDT_UNKNOWN)
+            $$->sym.var_ref.flag.datatype = SDT_INTEGER;
+    }
   ;
 udt_var_decls
-  : udt_var_decls seps var_decl_type             { $$ = appendUDTSubtypeList($1, $3); }
-  | var_decl_type                                { $$ = newUDTSubtypeList($1); }
-  ;
-symbol_or_dim_decl
-  : dim_decl                                     { $$ = $1; $$->info.type = NT_SYM_ARRAY_DECL; }
-  | symbol                                       { $$ = $1; $$->info.type = NT_SYM_VAR_DECL; }
+  : udt_var_decls seps var_decl_as_type          { $$ = appendUDTSubtypeList($1, $3); }
+  | var_decl_as_type                             { $$ = newUDTSubtypeList($1); }
   ;
 dim_decl
   : DIM symbol LB arglist RB {
@@ -408,7 +415,9 @@ arglist
   ;
 decl_arglist
   : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA); }
-  | var_decl_type                                { $$ = $1; }
+  | var_decl_as_type                             { $$ = $1; }
+  | var_decl_name                                { $$ = $1; }
+  | dim_decl                                     { $$ = $1; }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1); }
