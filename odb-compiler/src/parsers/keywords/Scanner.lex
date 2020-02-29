@@ -19,7 +19,7 @@
     #include "odbc/util/Str.hpp"
 
     #if defined(ODBC_VERBOSE_FLEX)
-    #   define dbg(text) printf(text ": \"%s\"\n", yytext)
+    #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
     #else
     #   define dbg(text)
     #endif

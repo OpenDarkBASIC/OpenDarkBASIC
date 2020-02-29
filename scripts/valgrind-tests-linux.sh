@@ -8,5 +8,5 @@ valgrind --num-callers=50 \
     --show-leak-kinds=all \
 	--track-origins=yes \
 	--time-stamp=yes \
-	./odbc_tests -- --test 2>&1 | tee ../../odbc_tests_grind.out
+	./odbc_tests -- --test 2>&1 | tee ../../odbc_tests.grind
 cd .. && cd ..

@@ -24,6 +24,8 @@ static bool charIsSymbolToken(char c)
 // ----------------------------------------------------------------------------
 void KeywordMatcher::updateFromDB(const KeywordDB* db)
 {
+    longestKeywordLength_ = 0;
+    longestKeywordWordCount_ = 0;
     keywords_ = db->keywordNamesAsList();
 
     // Keywords are case insensitive, so transform all to lower case
@@ -35,54 +37,69 @@ void KeywordMatcher::updateFromDB(const KeywordDB* db)
 
     // Find the longest keyword so the lexicographic comparison is faster during
     // binary search
-    auto longestKeyword = std::max_element(keywords_.begin(), keywords_.end(), [](const std::string& a, const std::string& b) { return a.size() < b.size(); });
+    auto longestKeyword = std::max_element(keywords_.begin(), keywords_.end(),
+            [](const std::string& a, const std::string& b) { return a.size() < b.size(); });
     if (longestKeyword != keywords_.end())
         longestKeywordLength_ = longestKeyword->size();
-    else
-        longestKeywordLength_ = 0;
+
+    // Find the maximum number of words that appear in a keyword. This is not
+    // necessarily the longest keyword. Counting the number of spaces should
+    // work in all cases.
+    auto wordCount = [](const std::string& str) {
+        return std::count(str.begin(), str.end(), ' ') + 1;
+    };
+    auto longestKeywordWordCount = std::max_element(keywords_.begin(), keywords_.end(),
+            [&wordCount](const std::string& a, const std::string& b) {
+                return wordCount(a) < wordCount(b);
+            });
+    if (longestKeywordWordCount != keywords_.end())
+        longestKeywordWordCount_ = wordCount(*longestKeywordWordCount);
 }
 
 // ----------------------------------------------------------------------------
-bool KeywordMatcher::findLongestKeywordMatching(const char* str, int* matchedLen) const
+KeywordMatcher::MatchResult KeywordMatcher::findLongestKeywordMatching(const std::string& str) const
 {
     auto first = keywords_.begin();
     auto last = keywords_.end();
     std::vector<std::vector<std::string>::const_iterator> keywordStack;
-    keywordStack.reserve(6);
-    *matchedLen = 0;
-    while (str[*matchedLen])
+    keywordStack.reserve(longestKeywordWordCount());
+    int matchedLen = 0;
+    while (str[matchedLen])
     {
         auto compare = [&](const std::string& a, const std::string& b) {
-            return std::tolower(a[*matchedLen]) < std::tolower(b[*matchedLen]);
+            return std::tolower(a[matchedLen]) < std::tolower(b[matchedLen]);
         };
         first = std::lower_bound(first, last, str, compare);
         last = std::upper_bound(first, last, str, compare);
         if (first == last)
             break;
 
-        ++*matchedLen;
-        if (!charIsSymbolToken(str[*matchedLen]))
+        ++matchedLen;
+        if (!charIsSymbolToken(str[matchedLen]))
             keywordStack.push_back(first);
     }
 
     while (keywordStack.size())
     {
         auto keyword = keywordStack.back();
-        if (keyword != keywords_.end() && strncicmp(str, keyword->c_str(), keyword->length()) == 0)
-        {
-            *matchedLen = keyword->length();
-            return true;
-        }
+        if (keyword != keywords_.end() && strncicmp(str.c_str(), keyword->c_str(), keyword->length()) == 0)
+            return { (int)keyword->length(), true };
         keywordStack.pop_back();
     }
 
-    return false;
+    return { matchedLen, false };
 }
 
 // ----------------------------------------------------------------------------
 int KeywordMatcher::longestKeywordLength() const
 {
     return longestKeywordLength_;
+}
+
+// ----------------------------------------------------------------------------
+int KeywordMatcher::longestKeywordWordCount() const
+{
+    return longestKeywordWordCount_;
 }
 
 }

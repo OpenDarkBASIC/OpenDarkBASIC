@@ -3,6 +3,7 @@
 #include "odbc/parsers/db/Scanner.hpp"
 #include "odbc/parsers/keywords/KeywordMatcher.hpp"
 #include "odbc/util/Log.hpp"
+#include "odbc/util/Str.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 #include <cstring>
@@ -76,15 +77,110 @@ bool Driver::parseString(const std::string& str)
 // ----------------------------------------------------------------------------
 bool Driver::doParse()
 {
-    DBSTYPE pushedValue;
-    int pushedChar;
     int parse_result;
     DBLTYPE loc = {1, 1, 1, 1};
 
-    do
+    struct Token
     {
-        pushedChar = dblex(&pushedValue, &loc, scanner_);
-        parse_result = dbpush_parse(parser_, pushedChar, &pushedValue, &loc, scanner_);
+        int pushedChar;
+        DBSTYPE pushedValue;
+    };
+
+    // This is used as a buffer to assemble a keyword out of multiple tokens
+    // and check it against the keyword matcher.
+    std::string possibleKeyword;
+    possibleKeyword.reserve(keywordMatcher_->longestKeywordLength());
+
+    // This is used to store all tokens that haven't been push parsed yet, which
+    // will be more than 1 when doing a keyword match.
+    std::vector<Token> tokens;
+    tokens.reserve(keywordMatcher_->longestKeywordWordCount());
+
+    // Scans the next token and stores it in "tokens"
+    auto scanNextToken = [&tokens, &loc](dbscan_t scanner){
+        DBSTYPE pushedValue;
+        int pushedChar = dblex(&pushedValue, &loc, scanner);
+        tokens.push_back({pushedChar, pushedValue});
+    };
+
+    // Scans ahead to get as many TOK_SYMBOL type tokens
+    auto scanAheadForPossibleKeyword = [&tokens, &possibleKeyword, &scanNextToken](dbscan_t scanner, const KeywordMatcher* kwMatcher, bool mustBeLonger)
+    {
+        // look ahead until all tokens concatenated are longer than the longest
+        // matching keyword, or until we reach EOF.
+        KeywordMatcher::MatchResult result;
+        possibleKeyword = dbget_text(scanner);
+        int initialTokenLength = possibleKeyword.length();
+        int lookAheadBegin = tokens.size() - 1;
+        int lookAheadEnd = tokens.size() - 1;
+        bool lastTokenWasSymbol = true;
+        do {
+            // Keywords unfortunately can start with integers, or have words
+            // that start with integers in them. We do not want to put spaces
+            // in between integers and following symbols.
+            if (lastTokenWasSymbol)
+                possibleKeyword += " ";
+
+            scanNextToken(scanner);
+            possibleKeyword += dbget_text(scanner);
+            lastTokenWasSymbol = (tokens.back().pushedChar == TOK_SYMBOL);
+            lookAheadEnd++;
+
+            result = kwMatcher->findLongestKeywordMatching(possibleKeyword);
+        } while (result.matchedLength >= (int)possibleKeyword.length() && tokens.back().pushedChar != 0);
+
+        // For special cases such as "loop object", where "loop" is a keyword
+        // as well as a builtin, if we end up only matching "loop" then we must
+        // leave it as TOK_LOOP to retain its semantic meaning. If "mustBeLonger"
+        // is true then don't morph the token into TOK_KEYWORD if the matched
+        // length is not longer than the original token.
+        if (result.found && (!mustBeLonger || initialTokenLength != result.matchedLength))
+        {
+            // All tokens we scanned leading up to the last one can
+            // be discarded, because they can all be merged into
+            // a single keyword now.
+            for (int i = lookAheadBegin; i != lookAheadEnd; ++i)
+                // XXX: TOK_SYMBOL is the only other token that calls newCStr()
+                //      and also matches the characters a keyword can contain,
+                //      so this works. If in the future a new token is added
+                //      that calls newCStr() and could potentially be morphed
+                //      into a keyword, then this check will have to be updated
+                //      accordingly.
+                if (tokens[i].pushedChar == TOK_SYMBOL)
+                    deleteCStr(tokens[i].pushedValue.string);
+            tokens.erase(tokens.begin() + lookAheadBegin + 1, tokens.begin() + lookAheadEnd);
+
+            // Ownership of the string is passed to BISON
+            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, result.matchedLength);
+            tokens[0].pushedChar = TOK_KEYWORD;
+
+#if defined(ODBC_VERBOSE_FLEX)
+            fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
+#endif
+        }
+    };
+
+    do {
+        if (tokens.size() == 0)
+            scanNextToken(scanner_);
+
+        switch (tokens[0].pushedChar)
+        {
+            case TOK_INTEGER_LITERAL:
+            case TOK_SYMBOL:
+                scanAheadForPossibleKeyword(scanner_, keywordMatcher_, false);
+                break;
+
+
+            case TOK_LOOP: // DarkBASIC has commands that start with "loop"
+                scanAheadForPossibleKeyword(scanner_, keywordMatcher_, true);
+                break;
+
+            default: break;
+        }
+
+        parse_result = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
+        tokens.erase(tokens.begin());
     } while (parse_result == YYPUSH_MORE);
 
     return parse_result == 0;
@@ -189,63 +285,6 @@ void Driver::appendAST(ast::Node* block)
         *astRoot_ = block;
     else
         *astRoot_ = ast::appendStatementToBlock(*astRoot_, block);
-}
-
-// ----------------------------------------------------------------------------
-bool Driver::tryMatchKeyword(char* str, char** cp, int* leng, char* hold_char, char** c_buf_p, bool* overBoundary)
-{
-    // str points to the current token, which is actually located in a much
-    // larger buffer. Flex inserts a null byte at the end of the token so we
-    // don't see the rest of the buffer. Undo this so we can try and match the
-    // rest of the text to a keyword.
-    **cp = *hold_char;
-
-    // With the null byte removed, str is now potentially up to 8192 bytes long.
-    // Insert a null byte of our own at the maximum possible keyword length to
-    // improve lexicographic comparison during binary search. Be careful
-    // to not write beyond Flex's buffer, though, so check how long the string
-    // really is.
-    int longestKeywordLength = std::min((int)strlen(str), keywordMatcher_->longestKeywordLength());
-    char newHoldChar = str[longestKeywordLength+1];
-    str[longestKeywordLength+1] = '\0';
-
-    // Do match
-    int matchedLen;
-    bool matchSuccessful = keywordMatcher_->findLongestKeywordMatching(str, &matchedLen);
-
-    // Restore null byte
-    str[longestKeywordLength+1] = newHoldChar;
-
-    *overBoundary = false;
-    if (matchSuccessful)
-    {
-        // Update Flex to think it scanned the whole keyword
-        (*cp) = str + matchedLen;     // Character pointer now points to the end of the keyword instead of the end of the token
-        *c_buf_p = str + matchedLen;  // This is the location where Flex will scan for the next token
-        *leng = matchedLen;           // Update length of matched string
-        *hold_char = str[matchedLen]; // Update the hold char since it's now at a different position
-        str[matchedLen] = '\0';       // Insert null byte at end of keyword
-    }
-    else
-    {
-        // It's possible the match failed because the keyword crosses a buffer
-        // boundary
-        if (str[matchedLen] == '\0')
-        {
-            (*cp) = str + matchedLen;        // Flex to prepends everything up to this pointer to the next buffer
-            *c_buf_p = str + matchedLen + 1; // Buffer pointer points to the end of the buffer -- this causes Flex to load the next buffer
-            *leng = matchedLen;              // Update length of matched string
-            *hold_char = str[matchedLen];    // Update the hold char since it's now at a different position
-            *overBoundary = true;
-        }
-        else
-        {
-            // restore null byte
-            **cp = '\0';
-        }
-    }
-
-    return matchSuccessful;
 }
 
 }

@@ -21,7 +21,7 @@
 
 #define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
 #if defined(ODBC_VERBOSE_FLEX)
-#   define dbg(text) printf(text ": \"%s\"\n", yytext)
+#   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
 #else
 #   define dbg(text)
 #endif
@@ -156,7 +156,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:repeat)          { RETURN_TOKEN(REPEAT); }
 (?:until)           { RETURN_TOKEN(UNTIL); }
 (?:do)              { RETURN_TOKEN(DO); }
-(?:loop)            { MAYBE_RETURN_KEYWORD_IF_LONGER(); RETURN_TOKEN(LOOP); }
+(?:loop)            { RETURN_TOKEN(LOOP); }
 (?:for)             { RETURN_TOKEN(FOR); }
 (?:to)              { RETURN_TOKEN(TO); }
 (?:step)            { RETURN_TOKEN(STEP); }
@@ -177,7 +177,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:float)           { RETURN_TOKEN(FLOAT); }
 (?:string)          { RETURN_TOKEN(STRING); }
 
-{SYMBOL}            { MAYBE_RETURN_KEYWORD(); yylval->string = odbc::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
+{SYMBOL}            { yylval->string = odbc::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 
 "#"                 { RETURN_TOKEN(HASH); }
 "$"                 { RETURN_TOKEN(DOLLAR); }

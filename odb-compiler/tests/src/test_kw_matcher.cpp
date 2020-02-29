@@ -26,11 +26,10 @@ using namespace odbc;
 
 TEST_F(NAME, empty_db)
 {
-    int matchedLen = 5;
-    bool matchFound = matcher->findLongestKeywordMatching("randomize", &matchedLen);
+    auto result = matcher->findLongestKeywordMatching("randomize");
 
-    EXPECT_THAT(matchFound, IsFalse());
-    EXPECT_THAT(matchedLen, Eq(0));
+    EXPECT_THAT(result.found, IsFalse());
+    EXPECT_THAT(result.matchedLength, Eq(0));
 }
 
 TEST_F(NAME, exact_string)
@@ -43,11 +42,42 @@ TEST_F(NAME, exact_string)
     db.addKeyword({"read", "", {}, false});
     matcher->updateFromDB(&db);
 
-    int matchedLen = 5;
-    bool matchFound = matcher->findLongestKeywordMatching("randomize", &matchedLen);
+    auto result = matcher->findLongestKeywordMatching("randomize");
 
-    EXPECT_THAT(matchFound, IsTrue());
-    EXPECT_THAT(matchedLen, Eq(9));
+    EXPECT_THAT(result.found, IsTrue());
+    EXPECT_THAT(result.matchedLength, Eq(9));
+}
+
+TEST_F(NAME, trailing_space)
+{
+    KeywordDB db;
+    db.addKeyword({"projection matrix4", "", {}, false});
+    db.addKeyword({"randomize", "", {}, false});
+    db.addKeyword({"randomize matrix", "", {}, false});
+    db.addKeyword({"randomize mesh", "", {}, false});
+    db.addKeyword({"read", "", {}, false});
+    matcher->updateFromDB(&db);
+
+    auto result = matcher->findLongestKeywordMatching("randomize ");
+
+    EXPECT_THAT(result.found, IsTrue());
+    EXPECT_THAT(result.matchedLength, Eq(9));
+}
+
+TEST_F(NAME, longer_symbol)
+{
+    KeywordDB db;
+    db.addKeyword({"projection matrix4", "", {}, false});
+    db.addKeyword({"randomize", "", {}, false});
+    db.addKeyword({"randomize matrix", "", {}, false});
+    db.addKeyword({"randomize mesh", "", {}, false});
+    db.addKeyword({"read", "", {}, false});
+    matcher->updateFromDB(&db);
+
+    auto result = matcher->findLongestKeywordMatching("randomized");
+
+    EXPECT_THAT(result.found, IsFalse());
+    EXPECT_THAT(result.matchedLength, Eq(9));
 }
 
 TEST_F(NAME, match_longer_string_to_shorter_command)
@@ -60,11 +90,10 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
     db.addKeyword({"read", "", {}, false});
     matcher->updateFromDB(&db);
 
-    int matchedLen;
-    bool matchFound = matcher->findLongestKeywordMatching("randomize timer", &matchedLen);
+    auto result = matcher->findLongestKeywordMatching("randomize timer");
 
-    EXPECT_THAT(matchFound, IsTrue());
-    EXPECT_THAT(matchedLen, Eq(9)); // strlen("randomize")
+    EXPECT_THAT(result.found, IsTrue());
+    EXPECT_THAT(result.matchedLength, Eq(9)); // strlen("randomize")
 }
 
 TEST_F(NAME, dont_match_shorter_string_to_longer_command)
@@ -73,11 +102,10 @@ TEST_F(NAME, dont_match_shorter_string_to_longer_command)
     db.addKeyword({"dec", "", {}, false});
     matcher->updateFromDB(&db);
 
-    int matchedLen;
-    bool matchFound = matcher->findLongestKeywordMatching("decalmax", &matchedLen);
+    auto result = matcher->findLongestKeywordMatching("decalmax");
 
-    EXPECT_THAT(matchFound, IsFalse());
-    EXPECT_THAT(matchedLen, Eq(3)); // strlen("dec")
+    EXPECT_THAT(result.found, IsFalse());
+    EXPECT_THAT(result.matchedLength, Eq(3)); // strlen("dec")
 }
 
 TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
@@ -88,9 +116,8 @@ TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
     db.addKeyword({"DELETE OBJECTS", "", {}, false});
     matcher->updateFromDB(&db);
 
-    int matchedLen;
-    bool matchFound = matcher->findLongestKeywordMatching("delete object 100", &matchedLen);
+    auto result = matcher->findLongestKeywordMatching("delete object 100");
 
-    EXPECT_THAT(matchFound, IsTrue());
-    EXPECT_THAT(matchedLen, Eq(strlen("delete object")));
+    EXPECT_THAT(result.found, IsTrue());
+    EXPECT_THAT(result.matchedLength, Eq(strlen("delete object")));
 }

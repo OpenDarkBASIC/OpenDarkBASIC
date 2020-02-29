@@ -67,14 +67,36 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
 TEST_F(NAME, keyword_starting_with_builtin)
 {
     // "loop" is a builtin keyword
+    db.addKeyword({"loop", "", {}, false});
     db.addKeyword({"loop sound", "", {}, false});
     matcher.updateFromDB(&db);
-    ASSERT_THAT(driver->parseString("loop sound\n"), IsTrue());
+    ASSERT_THAT(driver->parseString("loop sound 1\n"), IsTrue());
 }
 
-TEST_F(NAME, wat)
+TEST_F(NAME, builtin_shadowing_keyword)
 {
-    db.addKeyword({"delete object", "", {}, false});
+    // "loop" is a builtin keyword
+    db.addKeyword({"loop", "", {}, false});
+    db.addKeyword({"loop sound", "", {}, false});
     matcher.updateFromDB(&db);
-    ASSERT_THAT(driver->parseString("for e=1 to enemymax : delete object 100+(e*2)+1 : next e\n"), IsTrue());
+    ASSERT_THAT(driver->parseString("do : foo() : loop"), IsTrue());
+}
+
+TEST_F(NAME, multiple_similar_keywords_with_spaces)
+{
+    // "loop" is a builtin keyword
+    db.addKeyword({"set object", "", {}, false});
+    db.addKeyword({"set object speed", "", {}, false});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString("set object speed 1, 10\n"), IsTrue());
+}
+
+TEST_F(NAME, incomplete_keyword_at_end_of_file)
+{
+    db.addKeyword({"color object", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "function foo()\n"
+        "    a = 2\n"
+        "endfunction color"), IsTrue());
 }

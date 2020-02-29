@@ -1,5 +1,6 @@
 /build
 /lightship-source
+/*.grind
 *.kdev4
 *.swp
 *.kate-swp

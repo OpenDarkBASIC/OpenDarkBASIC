@@ -34,13 +34,11 @@ void deleteCStr(char* str)
 // ----------------------------------------------------------------------------
 int strncicmp(const char* a, const char* b, int n)
 {
-    while (n--)
+    for (;n; n--, a++, b++)
     {
         int d = std::tolower((unsigned char)*a) - std::tolower((unsigned char)*b);
         if (d || !*a)
             return d;
-        a++;
-        b++;
     }
 
     return 0;
