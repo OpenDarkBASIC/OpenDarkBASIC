@@ -126,6 +126,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:function)        { RETURN_TOKEN(FUNCTION); }
 (?:gosub)           { RETURN_TOKEN(GOSUB); }
 (?:return)          { RETURN_TOKEN(RETURN); }
+(?:goto)            { RETURN_TOKEN(GOTO); }
 (?:dim)             { RETURN_TOKEN(DIM); }
 (?:global)          { RETURN_TOKEN(GLOBAL); }
 (?:local)           { RETURN_TOKEN(LOCAL); }

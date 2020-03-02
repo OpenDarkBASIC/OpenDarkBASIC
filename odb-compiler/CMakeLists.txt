@@ -110,6 +110,7 @@ if (${ODBC_TESTS})
         "tests/src/test_db_constant.cpp"
         "tests/src/test_db_function_call.cpp"
         "tests/src/test_db_function_decl.cpp"
+        "tests/src/test_db_goto.cpp"
         "tests/src/test_db_keyword.cpp"
         "tests/src/test_db_loop_do.cpp"
         "tests/src/test_db_loop_for.cpp"

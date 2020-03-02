@@ -10,9 +10,10 @@
     X(NT_BRANCH_PATHS,     paths,            "paths")                         \
     X(NT_SELECT,           select,           "select")                        \
     X(NT_CASE_LIST,        case_list,        "case_list")                     \
-    X(NT_CASE,             case,             "case")                          \
+    X(NT_CASE,             case_,            "case")                          \
     X(NT_FUNC_RETURN,      func_return,      "endfunction")                   \
     X(NT_SUB_RETURN,       sub_return,       "return")                        \
+    X(NT_GOTO,             goto_,            "goto")                          \
     X(NT_LOOP,             loop,             "loop")                          \
     X(NT_LOOP_WHILE,       loop_while,       "while")                         \
     X(NT_LOOP_UNTIL,       loop_repeat,      "repeat")                        \
@@ -289,6 +290,13 @@ union Node {
     struct
     {
         Info info;
+        Node* label;
+        Node* _padding;
+    } goto_;
+
+    struct
+    {
+        Info info;
         Node* _padding;
         Node* body;
     } loop;
@@ -393,6 +401,7 @@ Node* newCase(Node* expression, Node* body);
 
 Node* newFuncReturn(Node* returnValue);
 Node* newSubReturn();
+Node* newGoto(Node* label);
 
 Node* newLoop(Node* block);
 Node* newLoopWhile(Node* condition, Node* block);

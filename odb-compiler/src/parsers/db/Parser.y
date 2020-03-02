@@ -94,7 +94,7 @@
 %token WHILE ENDWHILE REPEAT UNTIL DO LOOP
 %token FOR TO STEP NEXT
 %token FUNCTION EXITFUNCTION ENDFUNCTION
-%token GOSUB RETURN
+%token GOSUB RETURN GOTO
 %token SELECT ENDSELECT CASE ENDCASE DEFAULT
 
 %token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
@@ -130,6 +130,7 @@
 %type<node> sub_call;
 %type<node> sub_return;
 %type<node> label_decl;
+%type<node> goto_label;
 %type<node> func_call_or_array_ref;
 %type<node> keyword;
 %type<node> keyword_returning_value;
@@ -216,6 +217,7 @@ stmnt
   | func_exit                                    { $$ = $1; }
   | sub_call                                     { $$ = $1; }
   | sub_return                                   { $$ = $1; }
+  | goto_label                                   { $$ = $1; }
   | label_decl                                   { $$ = $1; }
   | keyword                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
@@ -394,6 +396,9 @@ sub_return
   ;
 label_decl
   : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
+  ;
+goto_label
+  : GOTO symbol_without_type                     { $$ = newGoto($2); }
   ;
 func_call_or_array_ref
   : symbol LB arglist RB {

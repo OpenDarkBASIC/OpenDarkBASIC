@@ -131,6 +131,12 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             os << "N" << node->info.guid << "[label=\"return\"];\n";
         } break;
 
+        case NT_GOTO: {
+            os << "N" << node->info.guid << "[label=\"goto\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->goto_.label->info.guid << "[label=\"label\"];\n";
+            dumpToDOTRecursive(os, node->goto_.label);
+        } break;
+
         case NT_LOOP: {
             os << "N" << node->info.guid << "[label = \"loop\"];\n";
             if (node->loop.body)
@@ -362,6 +368,7 @@ static Node* dupNode(Node* other)
         case NT_CASE:
         case NT_FUNC_RETURN:
         case NT_SUB_RETURN:
+        case NT_GOTO:
         case NT_LOOP:
         case NT_LOOP_WHILE:
         case NT_LOOP_UNTIL:
@@ -516,6 +523,19 @@ Node* newSubReturn()
     init_info(node, NT_SUB_RETURN);
     node->sub_return._padding1 = nullptr;
     node->sub_return._padding2 = nullptr;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* newGoto(Node* label)
+{
+    Node* node = (Node*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_GOTO);
+    node->goto_.label = label;
+    node->goto_._padding = nullptr;
     return node;
 }
 
