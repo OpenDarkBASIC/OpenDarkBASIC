@@ -8,6 +8,9 @@
     X(NT_ASSIGNMENT,       assignment,       "=")                             \
     X(NT_BRANCH,           branch,           "if")                            \
     X(NT_BRANCH_PATHS,     paths,            "paths")                         \
+    X(NT_SELECT,           select,           "select")                        \
+    X(NT_CASE_LIST,        case_list,        "case_list")                     \
+    X(NT_CASE,             case,             "case")                          \
     X(NT_FUNC_RETURN,      func_return,      "endfunction")                   \
     X(NT_SUB_RETURN,       sub_return,       "return")                        \
     X(NT_LOOP,             loop,             "loop")                          \
@@ -177,7 +180,7 @@ union Node {
      * block) and block->statement points to the node that represents the
      * statement.
      */
-    struct block_t
+    struct
     {
         Info info;
         Node* next;
@@ -188,7 +191,7 @@ union Node {
      * Represents an assignment operation, such as "x = 50" or
      * "arr(10, 20) = func()".
      */
-    struct assignment_t
+    struct
     {
         Info info;
         Node* symbol;
@@ -215,49 +218,89 @@ union Node {
 #undef X
     } op;
 
-    struct branch_paths_t
+    struct
     {
         Info info;
         Node* is_true;
         Node* is_false;
     } branch_paths;
 
-    struct branch_t
+    struct
     {
         Info info;
         Node* condition;
         Node* paths;
     } branch;
 
-    struct func_return_t
+    /*!
+     * A select ... endselect statement.
+     * @param expr The expression to "select" and match cases against.
+     * @param cases Points to the beginning of a linked list of cases.
+     * @note Can be NULL if there are no cases.
+     */
+    struct
+    {
+        Info info;
+        Node* expr;
+        Node* cases;
+    } select;
+
+    /*!
+     * Each case is stored in a linked list of cases.
+     * @param case_ Points to the current case.
+     * @param next_case Get the next case in the linked list. NULL means end
+     * of the list.
+     */
+    struct
+    {
+        Info info;
+        Node* case_;
+        Node* next;
+    } case_list;
+
+    /*!
+     * A case inside a select ... endselect statement.
+     * @param condition Points to an expression to match against the select's
+     * condition. @note The default case is NULL.
+     * @param body Points to a block of statements that make up the body of the
+     * case. @note Can be NULL if the body is empty.
+     */
+    struct
+    {
+        Info info;
+        Node* condition;
+        Node* body;
+    } case_;
+
+    struct
     {
         Info info;
         Node* retval;
         Node* _padding;
     } func_return;
 
-    struct sub_return_t
+    struct
     {
         Info info;
         Node* _padding1;
         Node* _padding2;
     } sub_return;
 
-    struct loop_t
+    struct
     {
         Info info;
         Node* _padding;
         Node* body;
     } loop;
 
-    struct loop_while_t
+    struct
     {
         Info info;
         Node* condition;
         Node* body;
     } loop_while;
 
-    struct loop_until_t
+    struct
     {
         Info info;
         Node* condition;
@@ -342,6 +385,11 @@ Node* newStringLiteral(char* value);
 Node* newAssignment(Node* symbol, Node* statement);
 
 Node* newBranch(Node* condition, Node* true_branch, Node* false_branch);
+
+Node* newSelectStatement(Node* expression, Node* case_list);
+Node* newCaseList(Node* case_);
+Node* appendCaseToList(Node* case_list, Node* case_);
+Node* newCase(Node* expression, Node* body);
 
 Node* newFuncReturn(Node* returnValue);
 Node* newSubReturn();

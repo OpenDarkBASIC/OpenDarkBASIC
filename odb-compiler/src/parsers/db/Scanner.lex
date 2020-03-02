@@ -30,46 +30,6 @@
         dbg(#token);                                                          \
         return TOK_##token; }                                                 \
     while(0)
-
-#define MAYBE_RETURN_KEYWORD() do {                                           \
-        /*                                                                    \
-         * This is a hack, but because keywords have spaces in them, it is    \
-         * not possible to know where keywords start and where they stop. This  \
-         * function looks up the matched symbol in a list of DarkBASIC keywords \
-         * (previously loaded and passed to the parser) and tries to expand the \
-         * symbol into the full command.                                      \
-         */                                                                   \
-        bool boundaryOverflow;                                                \
-        bool keywordMatched = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p, &boundaryOverflow); \
-        if (boundaryOverflow)                                                 \
-        {                                                                     \
-            yy_act = YY_END_OF_BUFFER;                                        \
-            goto do_action;                                                   \
-        }                                                                     \
-        if (keywordMatched)                                                   \
-        {                                                                     \
-            yylval->string = odbc::newCStr(yytext);                           \
-            dbg("keyword");                                                   \
-            return TOK_KEYWORD;                                               \
-        }                                                                     \
-    } while(0)
-
-#define MAYBE_RETURN_KEYWORD_IF_LONGER() do {                                 \
-        int oldTokenLen = strlen(yytext);                                     \
-        bool boundaryOverflow;                                                \
-        bool keywordMatched = driver->tryMatchKeyword(yytext, &yy_cp, &yyleng, &yyg->yy_hold_char, &yyg->yy_c_buf_p, &boundaryOverflow); \
-        if (boundaryOverflow)                                                 \
-        {                                                                     \
-            yy_act = YY_END_OF_BUFFER;                                        \
-            goto do_action;                                                   \
-        }                                                                     \
-        if (keywordMatched && oldTokenLen < (int)strlen(yytext))              \
-        {                                                                     \
-            yylval->string = odbc::newCStr(yytext);                           \
-            dbg("keyword");                                                   \
-            return TOK_KEYWORD;                                               \
-        }                                                                     \
-    } while(0)
 %}
 
 %option nodefault
@@ -176,6 +136,11 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 (?:integer)         { RETURN_TOKEN(INTEGER); }
 (?:float)           { RETURN_TOKEN(FLOAT); }
 (?:string)          { RETURN_TOKEN(STRING); }
+(?:endselect)       { RETURN_TOKEN(ENDSELECT); }
+(?:select)          { RETURN_TOKEN(SELECT); }
+(?:endcase)         { RETURN_TOKEN(ENDCASE); }
+(?:case)            { RETURN_TOKEN(CASE); }
+(?:default)         { RETURN_TOKEN(DEFAULT); }
 
 {SYMBOL}            { yylval->string = odbc::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 

@@ -95,6 +95,7 @@
 %token FOR TO STEP NEXT
 %token FUNCTION EXITFUNCTION ENDFUNCTION
 %token GOSUB RETURN
+%token SELECT ENDSELECT CASE ENDCASE DEFAULT
 
 %token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
 
@@ -142,6 +143,9 @@
 %type<node> conditional_singleline;
 %type<node> conditional_begin;
 %type<node> conditional_next;
+%type<node> select;
+%type<node> case_list;
+%type<node> case;
 %type<node> loop;
 %type<node> loop_do;
 %type<node> loop_while;
@@ -215,6 +219,7 @@ stmnt
   | label_decl                                   { $$ = $1; }
   | keyword                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
+  | select                                       { $$ = $1; }
   | loop                                         { $$ = $1; }
   ;
 constant_decl
@@ -486,6 +491,20 @@ conditional_next
   | ELSE seps ENDIF                              { $$ = nullptr; }
   | ELSEIF expr seps conditional_next            { $$ = newBranch($2, nullptr, $4); }
   | ELSEIF expr seps stmnts seps conditional_next { $$ = newBranch($2, $4, $6); }
+  ;
+select
+  : SELECT expr seps case_list seps ENDSELECT    { $$ = newSelectStatement($2, $4); }
+  | SELECT expr seps ENDSELECT                   { $$ = newSelectStatement($2, nullptr); }
+  ;
+case_list
+  : case_list seps case                          { $$ = appendCaseToList($1, $3); }
+  | case                                         { $$ = newCaseList($1); }
+  ;
+case
+  : CASE expr seps stmnts seps ENDCASE           { $$ = newCase($2, $4); }
+  | CASE expr seps ENDCASE                       { $$ = newCase($2, nullptr); }
+  | CASE DEFAULT seps stmnts seps ENDCASE        { $$ = newCase(nullptr, $4); }
+  | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
   ;
 loop
   : loop_do                                      { $$ = $1; }

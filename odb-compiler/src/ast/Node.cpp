@@ -75,6 +75,49 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
             }
         } break;
 
+        case NT_SELECT: {
+            os << "N" << node->info.guid << "[label=\"select\"];\n";
+            os << "N" << node->info.guid << " -> " << "N" << node->select.expr->info.guid << " [label=\"expr\"];\n";
+            dumpToDOTRecursive(os, node->select.expr);
+            if (node->select.cases)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->select.cases->info.guid << " [label=\"cases\"];\n";
+                dumpToDOTRecursive(os, node->select.cases);
+            }
+        } break;
+
+        case NT_CASE_LIST: {
+            os << "N" << node->info.guid << "[label=\"case_list\"];\n";
+            if (node->case_list.case_)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->case_list.case_->info.guid << " [label=\"case\"];\n";
+                dumpToDOTRecursive(os, node->case_list.case_);
+            }
+            if (node->case_list.next)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->case_list.next->info.guid << " [label=\"next\"];\n";
+                dumpToDOTRecursive(os, node->case_list.next);
+            }
+        } break;
+
+        case NT_CASE: {
+            if (node->case_.condition)
+            {
+                os << "N" << node->info.guid << "[label=\"case\"];\n";
+                os << "N" << node->info.guid << " -> " << "N" << node->case_.condition->info.guid << " [label=\"condition\"];\n";
+                dumpToDOTRecursive(os, node->case_.condition);
+            }
+            else
+            {
+                os << "N" << node->info.guid << "[label=\"default\"];\n";
+            }
+            if (node->case_.body)
+            {
+                os << "N" << node->info.guid << " -> " << "N" << node->case_.body->info.guid << " [label=\"body\"];\n";
+                dumpToDOTRecursive(os, node->case_.body);
+            }
+        } break;
+
         case NT_FUNC_RETURN: {
             os << "N" << node->info.guid << "[label=\"endfunction\"];\n";
             if (node->func_return.retval)
@@ -314,6 +357,9 @@ static Node* dupNode(Node* other)
         case NT_ASSIGNMENT:
         case NT_BRANCH:
         case NT_BRANCH_PATHS:
+        case NT_SELECT:
+        case NT_CASE_LIST:
+        case NT_CASE:
         case NT_FUNC_RETURN:
         case NT_SUB_RETURN:
         case NT_LOOP:
@@ -390,6 +436,60 @@ Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
 
     node->branch.condition = condition;
     node->branch.paths = paths;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* newSelectStatement(Node* expression, Node* case_list)
+{
+    Node* node = (Node*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_SELECT);
+    node->select.expr = expression;
+    node->select.cases = case_list;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* newCaseList(Node* case_)
+{
+    Node* node = (Node*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_CASE_LIST);
+    node->case_list.case_ = case_;
+    node->case_list.next = nullptr;
+    return node;
+}
+
+// ----------------------------------------------------------------------------
+Node* appendCaseToList(Node* case_list, Node* case_)
+{
+    Node* entry = newCaseList(case_);
+    if (entry == nullptr)
+        return nullptr;
+
+    Node* last = case_list;
+    while (last->case_list.next)
+        last = last->case_list.next;
+
+    last->case_list.next = entry;
+    return case_list;
+}
+
+// ----------------------------------------------------------------------------
+Node* newCase(Node* expression, Node* body)
+{
+    Node* node = (Node*)malloc(sizeof *node);
+    if (node == nullptr)
+        return nullptr;
+
+    init_info(node, NT_CASE);
+    node->case_.condition = expression;
+    node->case_.body = body;
     return node;
 }
 
