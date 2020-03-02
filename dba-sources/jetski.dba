@@ -1,0 +1,623 @@
+Rem * Title  : JETSKI
+Rem * Author : DBS-LB
+Rem * Date   : 1st May 2000
+rem ********************************************
+rem *                  JETSKI                  *
+rem ********************************************
+rem * AUTHOR: Lee Bamber    DATE: 1st May 2000 *
+rem ********************************************
+
+rem Setup environment
+autocam off
+hide mouse
+sync on
+
+rem Decal limit (full version users can set this to 100)
+decallimit=50
+dim decal#(decallimit,20)
+
+rem Create elements
+gosub _create_world
+gosub _create_player
+
+rem Place logo
+placelogo()
+
+rem Main Loop
+lowmode=0
+do
+
+rem Low Mode Key
+if lower$(inkey$())="l" and lowmode=0
+   lowmode=1
+   decallimit=25
+   hide object 1
+   hide object 10
+   for t=76 to 76+5 : hide object t : next t
+   delete object 70
+   create_flags(2,maxsize)
+   color backdrop rgb(255,255,255)
+   fill matrix 1,0.0,1
+endif
+if lower$(inkey$())="h" then hide object 65000
+
+rem Control elements
+if lowmode=0 then gosub _control_sea
+gosub _control_player
+gosub _control_camera
+
+rem Control needles
+speedo#=(speed#*-4.0)+60.0
+zrotate object 76+2,wrapvalue(fuel#)
+zrotate object 76+3+2,wrapvalue(speedo#)
+
+rem Control decals
+controldecals()
+
+rem Update screen
+sync
+
+rem End of Loop
+loop
+
+
+rem ** Subroutines **
+
+_control_player:
+
+rem Record old boat position
+oldboatx#=boatx#
+oldboatz#=boatz#
+
+rem Handle Boat Controls
+if upkey()=1
+   speeddest#=speeddest#+1
+   fuel#=fuel#+0.01
+   if fuel#>55.0 then fuel#=55.0
+endif
+if spacekey()=1 then speeddest#=speeddest#+1.0
+if leftkey()=1 then wheel#=wheel#-0.5 : speeddest#=speeddest#+0.01
+if rightkey()=1 then wheel#=wheel#+0.5 : speeddest#=speeddest#+0.01
+if wheel#<-30.0 then wheel#=-50.0
+if wheel#>30.0 then wheel#=50.0
+wheel#=wheel#/(1.1+(speed#/5.0))
+boatadest#=wrapvalue(boata#+(wheel#*(speed#/2.0)))
+
+rem Only when in contact with sea
+speeddest#=speeddest#/1.07
+if boaty#<sealevel#+5.0
+
+   rem Apply direction when contact with water
+   boata#=boatadest#
+
+   rem Apply speed when contact
+   speed#=speeddest#
+
+endif
+
+rem Move boat position using degrading inertia
+ix#=ix#+(sin(boata#)*speed#)
+iz#=iz#+(cos(boata#)*speed#)
+ix#=ix#/(1.5+(speed#/10.0))
+iz#=iz#/(1.5+(speed#/10.0))
+inc boatx#,ix#
+inc boatz#,iz#
+
+rem Restrict boat movements
+if boatx#<500.0 then boatx#=500.0
+if boatx#>(maxsize*2)-500.0 then boatx#=(maxsize*2)-500.0
+if boatz#<500.0 then boatz#=500.0
+if boatz#>(maxsize*2)-500.0 then boatz#=(maxsize*2)-500.0
+
+rem Calculate a point 10 units ahead of boats' position
+ox#=newxvalue(0,boata#,15)
+oz#=newzvalue(0,boata#,15)
+
+rem Get the heights at the front and back end of the boat
+hf#=get ground height(1,boatx#+ox#,boatz#+oz#)
+hb#=get ground height(1,boatx#-ox#,boatz#-oz#)
+
+rem Calculate a gradual tilt to align with the sea level
+tiltdest#=(hb#-hf#)*3
+tilt#=curvevalue(tiltdest#,tilt#,6)
+
+rem Determine whether on sea or ramp
+colobj=object collision(3,20)
+if colobj=1
+   sealevel#=topofobject(boatx#,20.0,boatz#,20)
+   if sealevel#<0.0
+      gravity#=gravity#-(7.5+(speed#/5.0)) : colobj=0
+   endif
+   tilt#=-20.0
+endif
+if colobj=0
+   sealevel#=get ground height(1,boatx#,boatz#)-5
+endif
+
+rem Make sound when hit water
+if boaty#<sealevel#
+   for s=1 to 5
+      if inwater=0
+         if sound playing(11+s)=0 then play sound 11+s : inwater=1
+      endif
+   next s
+else
+   if boaty#>sealevel#+5
+      inwater=0
+   endif
+endif
+
+rem Gravity math
+if colobj=1
+   boaty#=sealevel#
+else
+   gravity#=gravity#/1.1
+   gravity#=gravity#+0.15
+   if boaty#<sealevel#
+      force#=(sealevel#-boaty#)/1.5
+      gravity#=gravity#-force#
+   endif
+   lastboaty#=boaty#
+   boaty#=boaty#-gravity#
+endif
+
+rem Handle lean factor when turn wheel
+sway#=wrapvalue(wheel#*0.5)
+
+rem Position and Rotate boat object
+realboaty#=boaty#+1.0+(speed#/4)
+position object 3,boatx#,realboaty#,boatz#
+rotate object 2,wrapvalue(tilt#-(speed#/0.5)),0,sway#
+rotate object 3,0,wrapvalue(boata#),0
+
+rem Update position of Boat Sound
+position sound 11,boatx#,0,boatz#
+position listener boatx#,0,boatz#
+ss=12000+(speeddest#*2000)
+if ss<2000 then ss=2000
+if ss>99000 then ss=99000
+set sound speed 11,ss
+
+rem Place rider on jetski
+riderx#=newxvalue(boatx#,boata#,5.5)
+riderz#=newzvalue(boatz#,boata#,5.5)
+riderx#=newxvalue(riderx#,wrapvalue(boata#+90),0.5)
+riderz#=newzvalue(riderz#,wrapvalue(boata#+90),0.5)
+position object 4,riderx#,realboaty#+4,riderz#
+rotate object 4,wrapvalue((tilt#-(speed#/0.5))+8),boata#,0
+
+rem Handle behaviour of rider
+benddest#=0-(gravity#*10)
+if benddest#>45.0 then benddest#=45.0
+if benddest#<-45.0 then benddest#=-45.0
+bend#=curveangle(wrapvalue(benddest#),bend#,4.0)
+rotate limb 4,1,bend#,180,wrapvalue(sway#*8)
+rotate limb 4,2,wrapvalue(bend#*-1),0,wrapvalue(sway#*12)
+rotate limb 4,4,wrapvalue(40-(bend#*-1)),0,0
+rotate limb 4,7,wrapvalue(40-(bend#*-1)),0,0
+
+rem Create surface spray from water
+if speed#>2.5 and boaty#<sealevel#+5
+
+   rem Cause spray
+   sx#=newxvalue(boatx#,boata#,-9)
+   sz#=newzvalue(boatz#,boata#,-9)
+   makespray(sx#,boaty#+7,sz#,5.0,100,decallimit)
+
+   rem Create boat spray
+   for x=-3 to 3
+      sx#=newxvalue(boatx#,boata#+(x*15),-9)
+      sz#=newzvalue(boatz#,boata#+(x*15),-9)
+      makespray(sx#,boaty#+7,sz#,1.0*(speed#/10.0),20,decallimit)
+   next x
+
+endif
+
+rem Handle Listener (uses camera direction)
+rotate listener 0,lookatboat#,0
+
+rem Increment fog as leave senter of area
+dx#=boatx#-maxsize
+dz#=boatz#-maxsize
+dist#=sqrt(abs(dx#*dx#)+abs(dz#*dz#))
+if dist#<1300
+   if dist#<595
+      boatx#=oldboatx#
+      boatz#=oldboatz#
+      boata#=boata#+1.0
+      speeddest#=0
+      speed#=0
+   else
+      fogdepth#=3500.0
+   endif
+else
+   fogdepth#=3500-(dist#-1300.0)*5
+   if fogdepth#<200.0 then fogdepth#=200.0
+endif
+fog distance fogdepth#
+
+return
+
+_control_camera:
+
+rem Handle Camera
+dx#=object position x(3)-maxsize
+dz#=object position z(3)-maxsize
+lookatboat#=wrapvalue(atanfull(dx#,dz#))
+
+rem Cock-Pit View
+boatca#=curveangle(boata#,boatca#,30.0)
+seatx#=newxvalue(0,boatca#,50)
+seatz#=newzvalue(0,boatca#,50)
+camy#=curvevalue(boaty#+25,camy#,10.0)
+position camera boatx#-seatx#,camy#,boatz#-seatz#
+rotate camera 0,wrapvalue(boatca#-1),0
+position object 1,boatx#-seatx#,boaty#+25,boatz#-seatz#
+point camera boatx#,boaty#+25,boatz#
+
+return
+
+_control_sea:
+
+rem Update Sea Matrix with Ripple Data
+for x=1 to 24
+   for y=1 to 24
+
+      rem Get current height of matrix point
+      h#=get matrix height(1,x,y)
+
+      rem Find index to the right ripple height in array
+      tt=x+(y*25)
+
+      rem Choppyness
+      if x<5 or x>20 or y<5 or y>25
+         choppy#=2.5
+      else
+         choppy#=1.0
+      endif
+
+      rem Change height of matrix point using ripple height
+      set matrix height 1,x,y,h#+(cos(ripple(tt))*choppy#)
+
+      rem Change the ripple height for next time
+      ripple(tt)=wrapvalue(ripple(tt)+5)
+
+   next y
+next x
+update matrix 1
+
+return
+
+_create_player:
+
+rem Position Boat
+boatx#=maxsize
+boatz#=maxsize/1.5
+boaty#=10
+boata#=55
+
+rem Make Boat
+load object "jetski.x",2
+yrotate object 2,180
+fix object pivot 2
+scale object 2,500,500,500
+set object collision off 2
+
+rem Attach invisible pivot object to boat
+make object plain 3,0,20
+glue object to limb 2,3,0
+position object 3,boatx#,boaty#,boatz#
+set object collision on 3
+set object collision to polygons 3
+position object 2,-2.4,5,5
+
+rem Load rider for jetski
+load object "rider.x",4
+
+hide limb 4,10 : hide limb 4,11 : hide limb 4,12
+set object collision off 4
+set object rotation zyx 4
+scale object 4,50,50,-50
+rotate limb 4,1,0,180,0
+scale limb 4,1,100,100,-100
+
+rem Create 3D-Sound for Boat
+load 3dsound "jet.wav",11 : loop sound 11
+set sound speed 11,15000 : set sound volume 11,95
+position listener maxsize,10,maxsize
+
+rem Splash
+for s=1 to 5
+   load sound "splash.wav",11+s
+next s
+
+rem Statistics
+fuel#=-55.0
+
+return
+
+_create_world:
+
+rem Define scene size
+maxsize=2900
+
+rem Start Sea-Sound (while loading)
+load sound "sea.wav",1 : loop sound 1
+
+rem Set Scene
+if fog available()=1
+   fog on : fog distance 3500 : fog color rgb(255,255,255)
+endif
+
+rem Make Sky
+load image "sky.bmp",1
+load image "water.bmp",2
+make object sphere 1,maxsize
+set object 1,1,1,0
+texture object 1,1
+scale object 1,200,60,200
+position object 1,maxsize,0,maxsize
+fade object 1,0
+scroll object texture 1,0.5,0
+set object collision off 1
+
+rem Make carrier in distance
+load object "carrier4.x",10
+scale object 10,400,400,300
+position object 10,maxsize,-5,maxsize
+set object collision off 10
+
+rem Create perimiter flags
+create_flags(1,maxsize)
+
+rem Make Sea Matrix
+make matrix 1,maxsize*2,maxsize*2,25,25
+prepare matrix texture 1,2,1,1
+set matrix wireframe off 1
+randomize matrix 1,15
+
+rem Lower edges of Sea Matrix
+for t=0 to 25
+   set matrix height 1,0,t,-100
+   set matrix height 1,25,t,-100
+   set matrix height 1,t,0,-100
+   set matrix height 1,t,25,-100
+next t
+
+rem Create Array to store Wave Height Ripples
+dim ripple(25*26)
+for t=0 to 25*25 : ripple(t)=rnd(350) : next t
+
+rem Create ramp for jump
+make object plain 20,100,200
+position object 20,maxsize,10,maxsize+750
+rotate object 20,65,270,0
+set object rotation zyx 20
+set object 20,1,1,0
+set object collision to polygons 20
+set object collision on 20
+hide object 20
+
+rem Load visual ramp
+load object "ramp.x",21
+position object 21,maxsize,0,maxsize+750
+scale object 21,1500,1500,1500
+set object collision off 21
+set object rotation zyx 21
+rotate object 21,10,90,0
+
+rem Start second Sea Sound (for phase-shifted overlapping sfx)
+load sound "sea.wav",2 : loop sound 2 : set sound speed 2,12000
+
+rem Load images
+load image "spray.bmp",1001
+load image "stats1.bmp",1002
+load image "stats2.bmp",1003
+load image "stats3.bmp",1004
+load image "stats4.bmp",1005
+
+rem Make needle mesh
+make object triangle 90,0,0,0,0,35,0,5,0,0
+make mesh from object 90,90
+delete object 90
+make object triangle 90,-5,0,0,0,35,0,0,0,0
+make mesh from object 91,90
+delete object 90
+make object 90,90,0
+add limb 90,1,91
+make mesh from object 92,90
+delete object 90
+
+rem Create status panel
+for s=0 to 1
+
+   if s=0 then sx#=-12.5 else sx#=12.5
+
+   rem Left Side panel
+   ss=76+(s*3)+0
+   make object plain ss,256,96
+   position object ss,sx#,19.3,40
+   texture object ss,1002+s
+   scale object ss,10,10,50
+   set object ss,1,0,0
+   fade object ss,200
+   lock object on ss
+   set object collision off ss
+
+   rem Right Side panel
+   ss=76+(s*3)+1
+   make object plain ss,256,96
+   position object ss,sx#,19.3,40
+   texture object ss,1004+s
+   scale object ss,10,10,50
+   set object ss,1,0,0
+   fade object ss,200
+   lock object on ss
+   ghost object on ss
+   set object collision off ss
+
+   rem Create status needle
+   ss=76+(s*3)+2
+   make object ss,92,0
+   if s=0 then sb#=(18.9-12.5)
+   if s=1 then sb#=(18.9-12.5)*-1
+   position object ss,(sx#-sb#)-0.1,19.35,40+5
+   scale object ss,10,10,50
+   color object ss,rgb(255,255,255)
+   set object ss,1,0,0
+   fade object ss,200
+   lock object on ss
+   ghost object on ss
+   set object collision off ss
+
+next s
+
+rem Set scene
+set camera range 10,10000
+set ambient light 80
+
+return
+
+
+rem ** Functions **
+
+function makespray(x#,y#,z#,size#,life,decallimit)
+
+   rem Find spare decal
+   fd=0 : for d=1 to decallimit : if decal#(d,1)=0 : fd=d : endif : next d
+
+   rem Create spray
+   if fd>0
+      decal#(fd,1)=1
+      decal#(fd,2)=x#
+      decal#(fd,3)=y#-((rnd(20)-10)/10.0)
+      decal#(fd,4)=z#
+      decal#(fd,5)=(1.5+(rnd(10)/10.0))
+      decal#(fd,7)=(size#*10.0)
+      decal#(fd,8)=life
+      decal#(fd,9)=size#*10
+
+      rem Object
+      objid=10000+fd : dodecal(objid)
+      texture object objid,1001
+      fade object objid,0
+   endif
+
+endfunction
+
+function dodecal(objid)
+   if object exist(objid)=0
+      make object plain objid,10,10
+      set object collision off objid
+   endif
+   set object objid,1,0,0
+   ghost object on objid
+endfunction
+
+function controldecals()
+
+   rem All decals
+   for d=1 to 100
+
+      rem Object id
+      objid=10000+d
+      if object exist(objid)=1
+
+         rem Control smoke decals
+         if decal#(d,1)=1
+            position object objid,decal#(d,2),decal#(d,3),decal#(d,4)
+            point object objid,camera position x(),camera position y(),camera position z()
+            xrotate object objid,0 : zrotate object objid,0
+            scale object objid,(decal#(d,7)+decal#(d,9))*2,decal#(d,9),decal#(d,7)
+            decal#(d,3)=decal#(d,3)+decal#(d,5)
+            decal#(d,5)=decal#(d,5)-0.5
+            decal#(d,9)=decal#(d,9)+5
+            decal#(d,8)=decal#(d,8)-2.0
+            if decal#(d,8)<=0
+               decal#(d,1)=0
+            endif
+            show object objid
+         endif
+
+         rem Hide unused decals
+         if decal#(d,1)=0 then hide object objid
+
+      endif
+
+   rem End of decal loop
+   next d
+
+endfunction
+
+function topofobject(x#,y#,z#,objid)
+
+rem Find topmost Y point of object
+if object exist(30)=0
+   make object plain 30,5,50
+   hide object 30
+endif
+count=1000
+position object 30,x#,y#,z#
+while object collision(objid,30)=1
+   position object 30,x#,y#,z#
+   y#=y#+0.5
+   dec count
+endwhile
+y#=y#-25.0
+
+endfunction y#
+
+function create_flags(i,maxsize)
+
+rem Make bouys to mark course
+load object "bouy.x",70 : make mesh from object 70,70 : delete object 70
+make object 70,70,0
+set object collision off 70
+set object 70,1,1,0
+
+rem Create perimiter flags
+lm=0
+for b=0 to 35 step i
+
+   rem Inner ring
+   bi=1+(lm*2)+0
+   bx#=newxvalue(maxsize,b*10.0,maxsize/5)
+   bz#=newzvalue(maxsize,b*10.0,maxsize/5)
+   add limb 70,bi,70
+   rotate limb 70,bi,0,rnd(350),0
+   offset limb 70,bi,bx#,-5,bz#
+   scale limb 70,bi,800,1500,800
+
+   rem Outer ring
+   bi=1+(lm*2)+1
+   bx#=newxvalue(maxsize,b*10.0,maxsize/2)
+   bz#=newzvalue(maxsize,b*10.0,maxsize/2)
+   add limb 70,bi,70
+   rotate limb 70,bi,0,rnd(350),0
+   offset limb 70,bi,bx#,-5,bz#
+   scale limb 70,bi,800,1500,800
+
+   rem Next limb
+   lm=lm+1
+
+next b
+make mesh from object 70,70 : delete object 70 : make object 70,70,0
+load image "bouy.bmp",70
+texture object 70,70
+
+endfunction
+
+function placelogo()
+
+rem Create decal for logo
+load image "logow.bmp",65000
+make object plain 65000,128,144
+position object 65000,25,-16.4,40
+texture object 65000,65000
+scale object 65000,10,10,50
+set object 65000,1,0,0
+fade object 65000,200
+lock object on 65000
+ghost object on 65000
+
+endfunction

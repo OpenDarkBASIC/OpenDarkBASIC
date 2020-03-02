@@ -1,0 +1,1387 @@
+Rem * Title  : ICED
+Rem * Author : DBS-LB
+Rem * Date   : 1st May 2000
+rem ********************************************
+rem *                   ICED                   *
+rem ********************************************
+rem * AUTHOR: Lee Bamber    DATE: 1st May 2000 *
+rem ********************************************
+
+rem Setup environment
+randomize timer()
+sync rate 30
+autocam off
+hide mouse
+sync on
+
+rem Decal limit (full version users can set this to 100)
+dim decalmax(1)
+decalmax(1)=10
+
+rem Game arrays
+dim decal#(decalmax(1),20)
+dim goblin#(50,20)
+dim bullet#(10,10)
+dim gunrecoil#(2)
+dim fallstart(4)
+dim fallend(4)
+dim real(5)
+dim gpx#(2)
+dim gpy#(2)
+dim gpz#(2)
+enemymax=20
+
+rem Load initial screen and sound effect
+load sound "rain.wav",1 : loop sound 1
+load bitmap "loading.bmp" : sync
+
+rem Load sounds
+load sound "phaser.wav",2 : for s=3 to 12 : clone sound s,2 : next s
+for s=1 to enemymax
+   ss=100+(s*2)
+   load 3dsound "howl.wav",ss : set sound speed ss,5000+rnd(3000)
+   load 3dsound "die.wav",ss+1 : set sound speed ss+1,30000+rnd(5000)
+next s
+for s=1 to 5
+   ss=1000+(s*2)
+   load 3dsound "attack.wav",ss : set sound speed ss,15000+rnd(5000)
+   load 3dsound "thump.wav",ss+1 : set sound speed ss+1,3000
+next s
+
+rem Load images
+load image "smoke.bmp",1001
+
+rem Create Elements
+gosub _generate_goblins
+gosub _create_world
+gosub _create_enemies
+gosub _create_player
+
+rem Place logo
+placelogo()
+
+rem Main gameloop
+lowmode=0
+do
+
+rem Activate low mode
+if lower$(inkey$())="l" and lowmode=0
+   lowmode=1
+   hide object 52
+   hide object 53
+   hide object 80
+   hide object 81
+   hide object 82
+   hide object 83
+   for e=1 to enemymax : delete object 100+(e*2)+1 : next e
+   for e=1 to 5 : delete object 1000+(e*2)+1 : next e
+   color backdrop rgb(255,255,255)
+endif
+if lower$(inkey$())="h" then hide object 65000
+
+rem Control game elements
+gosub _control_player
+gosub _control_camera
+gosub _control_guns
+gosub _control_enemies
+gosub _control_weather
+
+rem Controller functions
+controldecals(mx#,mz#)
+
+rem Update screen
+sync
+
+rem End of gameloop
+loop
+
+
+rem ** Subroutines **
+
+_control_player:
+
+rem Control Player
+olx#=x# : olz#=z#
+stage=0 : gunlag#=5.0
+if upkey()=1
+   x#=newxvalue(x#,cya#,8.0) : z#=newzvalue(z#,cya#,8.0)
+   gunlag#=1.1
+   stage=1
+endif
+if downkey()=1
+   x#=newxvalue(x#,cya#,-8.0) : z#=newzvalue(z#,cya#,-8.0)
+   gunlag#=1.1
+   stage=1
+endif
+if leftkey()=1
+   x#=newxvalue(x#,wrapvalue(cya#-90.0),6.0)
+   z#=newzvalue(z#,wrapvalue(cya#-90.0),6.0)
+   gunlag#=1.1
+endif
+if rightkey()=1
+   x#=newxvalue(x#,wrapvalue(cya#+90.0),6.0)
+   z#=newzvalue(z#,wrapvalue(cya#+90.0),6.0)
+   gunlag#=1.1
+endif
+
+rem Walk woddle height
+if stage=1
+   walkha#=wrapvalue(walkha#+16.0)
+else
+   walkha#=curveangle(0.0,walkha#,5.0)
+endif
+walkh#=(cos(walkha#)*4.5)
+
+rem Ensure player stays on floor
+fx#=0 : fz#=0
+for r=0 to 35
+   ex#=newxvalue(x#,r*10,15)
+   ez#=newzvalue(z#,r*10,15)
+   eh#=get ground height(1,ex#+mx#,ez#+mz#)
+   if eh#<-50.0 then eh#=-50.0
+   force#=(eh#+50.0)/10.0
+   fx#=fx#+((ex#-x#)*force#)
+   fz#=fz#+((ez#-z#)*force#)
+next r
+x#=x#-(fx#/35.0)
+z#=z#-(fz#/35.0)
+
+rem Aquire ground height of new position
+y#=get ground height(1,x#+mx#,z#+mz#)
+if y#<-50.0 then y#=-50.0
+
+rem Place listener
+position listener x#,y#,z#
+rotate listener 0,wrapvalue(cya#),0
+
+rem Control hurt fog
+if returnkey()=1 and hurt#=0.0 then hurt#=100.0
+if hurt#>0
+   dec hurt#,1.0+(100.0-hurt#)
+   fog on
+   fog color rgb((255.0/100.0)*hurt#,0,0)
+   fog distance 50000-((50000.0/100.0)*hurt#)
+   if hurt#<=0.0
+      hurt#=0.0
+      fog off
+   endif
+endif
+
+rem Control compass needle
+if closestgoblin>0
+   g=closestgoblin
+   dx#=goblin#(g,2)-x#
+   dz#=goblin#(g,3)-z#
+   aa#=wrapvalue(cya#-atanfull(dx#,dz#))
+   compass#=aa#
+   if compassscale#<25.0 then inc compassscale#
+else
+   compass#=0
+   if compassscale#>0.0 then dec compassscale#
+endif
+zrotate object 80,compass#
+scale object 80,compassscale#,75,500
+
+return
+
+_control_camera:
+
+rem Control Camera
+cya#=wrapvalue(cya#+(mousemovex()/3.0))
+cxa#=cxa#+(mousemovey()/3.0)
+if cxa#<-45.0 then cxa#=-45.0
+if cxa#>45.0 then cxa#=45.0
+cx#=newxvalue(x#,cya#,sin(cxa#)*10)
+cz#=newzvalue(z#,cya#,sin(cxa#)*10)
+position camera cx#,y#+30+walkh#,cz#
+rotate camera wrapvalue(cxa#),cya#,0
+
+return
+
+_control_guns:
+
+rem Control gun recoil
+for g=0 to 1
+   if gunrecoil#(g)>0
+      gunrecoil#(g)=gunrecoil#(g)-1
+   endif
+next g
+
+rem Control Guns
+for g=0 to 1
+   gga#=wrapvalue((cya#-20)+(g*40))
+   ggx#=newxvalue(x#,gga#,gunrecoil#(g)*-1)
+   ggz#=newzvalue(z#,gga#,gunrecoil#(g)*-1)
+   gpdx#=newxvalue(ggx#,wrapvalue((cya#-20)+(g*40)),10)
+   gpdy#=y#-(sin(cxa#)*10)
+   gpdz#=newzvalue(ggz#,gga#,10)
+   gpx#(g)=curvevalue(gpdx#,gpx#(g),gunlag#)
+   gpy#(g)=curvevalue(gpdy#,gpy#(g),gunlag#)
+   gpz#(g)=curvevalue(gpdz#,gpz#(g),gunlag#)
+   position object 2+g,gpx#(g),gpy#(g)+22+walkh#,gpz#(g)
+   xrotate object 2+g,wrapvalue(0-cxa#)
+   yrotate object 2+g,wrapvalue(cya#+180)
+next g
+
+rem Control Firing
+if mouseclick()=1
+
+   rem If gun ready
+   if gunpressed=0
+
+      rem Start with prefered gun
+      gunprefered=1-gunprefered
+      gunobj=2+gunprefered
+      gunrecoil#(gunobj-2)=10.0
+      gunpressed=1
+
+      rem Find free bullet
+      bf=-1
+      for b=0 to 10
+         if bullet#(b,1)=0 then bf=b
+      next b
+
+      rem Trigger bullet
+      if bf>0
+         objid=4+(bf*2)+0
+         bullet#(bf,1)=1
+         bullet#(bf,2)=0
+         play sound 2+bf
+         tx#=object position x(gunobj)
+         ty#=object position y(gunobj)
+         tz#=object position z(gunobj)
+         txa#=object angle x(gunobj)
+         tya#=object angle y(gunobj)
+         position object objid,tx#,ty#,tz#
+         rotate object objid,txa#,wrapvalue(tya#+90),0
+         if gunobj=2
+            move object objid,2.0
+         else
+            move object objid,-2.0
+         endif
+         rotate object objid,txa#,tya#,0
+         move object objid,5
+         show object objid+0
+         if object exist(objid+1)=1 then show object objid+1
+      endif
+      for adv=1 to 10
+         objid=3+(adv*2)+0
+         if adv<>rp and bullet#(adv,1)=1 then move object objid,-25.0
+      next adv
+
+   endif
+
+else
+   gunpressed=0
+endif
+
+rem Control bullet movement
+for b=0 to 10
+
+   rem Bullet alive
+   if bullet#(b,1)=1
+
+      rem Move bullet
+      objid=4+(b*2)+0
+      move object objid,-25.0
+      ex#=object position x(objid)
+      eh#=object position y(objid)
+      ez#=object position z(objid)
+      position object objid+1,ex#,-50-(eh#+50),ez#
+      rotate object objid+1,wrapvalue(0-object angle x(objid)),object angle y(objid),0
+
+      rem If bullets meet at ice-level, switch
+      if eh#<-50.0
+         sx#=object position x(objid)
+         sy#=object position y(objid)
+         sz#=object position z(objid)
+         sxa#=object angle x(objid)
+         sya#=object angle y(objid)
+         position object objid,object position x(objid+1),object position y(objid+1),object position z(objid+1)
+         rotate object objid,object angle x(objid+1),object angle y(objid+1),0
+         position object objid+1,sx#,sy#,sz#
+         rotate object objid+1,sxa#,sya#,0
+      endif
+
+      rem Out of Steam
+      killbullet=0
+      bullet#(b,2)=bullet#(b,2)+1
+      if bullet#(b,2)>40 then killbullet=1
+
+      rem Collision with ground
+      if eh#<get ground height(1,ex#+mx#,ez#+mz#)
+         killbullet=1
+      endif
+
+      rem Collision with goblin
+      triggerrevenge=-1
+      for g=1 to enemymax
+         if killbullet=0
+            if goblin#(g,1)=1
+               gobjid=100+(g*2)+0
+               gx#=goblin#(g,2)-ex#
+               gy#=get ground height(1,goblin#(g,2)+mx#,goblin#(g,3)+mz#)
+               if gy#<-50.0 then gy#=-50.0
+               gy#=gy#+15.0
+               gz#=goblin#(g,3)-ez#
+               if sqrt(abs(gx#*gx#)+abs(gz#*gz#))<20.0
+                  if abs(eh#-gy#)<15.0
+                     ss=goblin#(g,12)
+                     if goblin#(g,12)<>2
+                        goblin#(g,12)=2
+                        activate_enemy(g,mx#,mz#)
+                        rg=goblin#(g,11)
+                        if rg>0
+                           rgobj=1000+(rg*2)+0
+                           position sound 100+(g*2)+0,object position x(rgobj),object position y(rgobj),object position z(rgobj)
+                           play sound 100+(g*2)+1
+                           stop sound 100+(g*2)+0
+                           fn=goblin#(g,13)
+                           play object rgobj,fallstart(fn),fallend(fn)
+                           if object exist(rgobj+1)=1 then play object rgobj+1,fallstart(fn),fallend(fn)
+                           killbullet=1
+                           triggerrevenge=g
+                        else
+                           goblin#(g,12)=ss
+                        endif
+                     endif
+                  endif
+               endif
+            endif
+         endif
+      next g
+
+      rem If goblin struck, trigger neighbours to attack
+      if triggerrevenge>0
+         for g=1 to enemymax
+            ex#=goblin#(g,2)-goblin#(triggerrevenge,2)
+            ez#=goblin#(g,3)-goblin#(triggerrevenge,3)
+            d#=sqrt(abs(ex#*ex#)+abs(ez#*ez#))
+            if d#<200.0
+               if goblin#(g,12)<=1 and goblin#(g,14)=0
+                  goblin#(g,12)=1
+                  goblin#(g,14)=2 : rem and trigger anger!
+                  activate_enemy(g,x#,z#)
+               endif
+            endif
+         next g
+      endif
+
+      rem Kill bullet
+      if killbullet=1
+         move object objid,25.0
+         ex#=object position x(objid)
+         ez#=object position z(objid)
+         makesmoke(ex#,eh#,ez#,3.0)
+         hide object objid+0
+         hide object objid+1
+         bullet#(b,1)=0
+      endif
+
+   endif
+next b
+
+return
+
+_control_enemies:
+
+rem AI Control: Always Attack Anywhere
+for g=1 to enemymax
+   initialfind=0
+   if goblin#(g,12)=0
+      rem If player within view frustrum, activate
+      ex#=goblin#(g,2)-x#
+      ez#=goblin#(g,3)-z#
+      d#=sqrt(abs(ex#*ex#)+abs(ez#*ez#))
+      if d#<400.0
+         rem Goblin finds you
+         goblin#(g,12)=1
+         initialfind=1
+      endif
+   endif
+   if goblin#(g,12)>0
+      activate_enemy(g,x#,z#)
+      if initialfind=1
+         rg=goblin#(g,11)
+         if rg>0
+            gobjid=1000+(rg*2)+0
+            position sound 1000+(rg*2)+0,object position x(gobjid),object position y(gobjid),object position z(gobjid)
+            play sound 1000+(rg*2)+0
+            loop object gobjid+0,walkstart+5,walkend
+            if object exist(gobjid+1)=1 then loop object gobjid+1,walkstart+5,walkend
+            set object frame gobjid+0,walkstart
+            if object exist(gobjid+1)=1 then set object frame gobjid+1,walkstart
+         endif
+      endif
+   endif
+   if goblin#(g,1)=0
+
+      rem Hide RG
+      rg=goblin#(g,11)
+      if rg>0
+         gobjid=1000+(rg*2)+0
+         loop object gobjid+0,walkstart+5,walkend
+         if object exist(gobjid+1)=1 then loop object gobjid+1,walkstart+5,walkend
+         set object frame gobjid+0,walkstart
+         if object exist(gobjid+1)=1 then set object frame gobjid+1,walkstart
+         realtodecal(g,rg)
+      endif
+
+      rem If goblin dead, wait for chance to emerge from doorway
+      if rnd(1)=0
+         ex#=850 : eh#=-50 : ez#=300
+      else
+         ex#=-650 : eh#=-50 : ez#=850
+      endif
+      goblin#(g,1)=1
+      goblin#(g,2)=ex#
+      goblin#(g,3)=ez#
+      goblin#(g,4)=100+rnd(7)
+      goblin#(g,6)=45+(rnd(3)*90)
+      goblin#(g,7)=1
+      goblin#(g,8)=rnd(1000)-500
+      goblin#(g,9)=rnd(1000)-500
+      goblin#(g,12)=1
+      goblin#(g,13)=1+rnd(3)
+      goblin#(g,14)=0
+      goblin#(g,15)=0
+      objid=100+(g*2)
+      position object objid+0,ex#,eh#,ez#
+      if object exist(objid+1)=1 then position object objid+1,ex#,eh#,ez#
+      show object objid+0
+      if object exist(objid+1)=1 then show object objid+1
+
+   endif
+next g
+
+rem Reset detection of nearest goblin
+closestgoblin=-1
+closestgoblin#=9999.0
+
+rem Control enemies
+for g=1 to enemymax
+
+   rem Goblin Id
+   objid=100+(g*2)
+   if goblin#(g,1)=1
+
+      if goblin#(g,7)=1
+
+         rem Goblin follows Destination Coordinate
+         tx#=goblin#(g,8) : tz#=goblin#(g,9)
+         point object objid,tx#,-50,tz#
+         xrotate object objid,0 : zrotate object objid,0
+
+         rem End of Destination Move
+         cx=goblin#(g,2)/10.0 : cz=goblin#(g,3)/10.0
+         tx=goblin#(g,8)/10.0 : tz=goblin#(g,9)/10.0
+         if cx=tx and cz=tz
+            goblin#(g,7)=0 : goblin#(g,12)=0
+            rg=goblin#(g,11)
+            if rg>0
+               loop object 1000+(rg*2)+0,idlestart,idleend
+               if object exist(1000+(rg*2)+1)=1 then loop object 1000+(rg*2)+1,idlestart,idleend
+               set object frame 1000+(rg*2)+0,idlestart
+               if object exist(1000+(rg*2)+1)=1 then set object frame 1000+(rg*2)+1,idlestart
+            endif
+         endif
+
+      else
+
+         rem Goblin follows Player
+         point object objid,x#,y#,z#
+         xrotate object objid,0 : zrotate object objid,0
+
+         rem Ensure Goblin has free square
+         boverlap=0
+         bx=object position x(objid)/50.0
+         bz=object position z(objid)/50.0
+         for bg=1 to enemymax
+            bgobjid=100+(bg*2)+0
+            if goblin#(bg,1)=1
+               tx=object position x(bgobjid)/50.0
+               tz=object position z(bgobjid)/50.0
+               if bg>g
+                  if bx=tx and bz=tz then boverlap=bg
+               endif
+            endif
+         next bg
+         if boverlap>0
+            bgobjid=100+(boverlap*2)+0
+            bb=(boverlap/2)
+            bb=boverlap-(bb*2)
+            yrotate object objid,wrapvalue((object angle y(objid)-70)+(140*bb))
+         endif
+
+      endif
+
+      rem Goblin moves forward
+      if goblin#(g,12)=1
+
+         rem Detect for charge opportunity
+         dx#=goblin#(g,2)-x#
+         dz#=goblin#(g,3)-z#
+         d#=sqrt(abs(dx#*dx#)+abs(dz#*dz#))
+         if d#<200.0 or goblin#(g,14)=2
+
+            rem If not charging, CHARGE!
+            if goblin#(g,14)<>1
+               goblin#(g,14)=1
+               goblin#(g,7)=0
+               rg=goblin#(g,11)
+               if rg>0
+                  gobjid=1000+(rg*2)
+                  loop object gobjid+0,chargestart+5,chargeend
+                  if object exist(gobjid+1)=1 then loop object gobjid+1,chargestart+5,chargeend
+                  set object frame gobjid+0,chargestart
+                  if object exist(gobjid+1)=1 then set object frame gobjid+1,chargestart
+                  set object speed gobjid+0,75
+                  if object exist(gobjid+1)=1 then set object speed gobjid+1,75
+                  position sound 1000+(rg*2)+0,object position x(gobjid),object position y(gobjid),object position z(gobjid)
+                  play sound 1000+(rg*2)+0
+               endif
+            endif
+
+         endif
+
+         rem Record cloest goblin for later
+         if d#<closestgoblin#
+            if goblin#(g,7)=0
+               closestgoblin#=d# : closestgoblin=g
+            endif
+         endif
+
+         rem Special charge mode
+         if goblin#(g,14)=1
+            rem Goblin makes a move
+            move object objid,7.5
+         else
+            rem Goblin makes a move
+            move object objid,2.5
+
+            rem Make sound when tracking
+            dx#=goblin#(g,2)-x#
+            dz#=goblin#(g,3)-z#
+            d#=sqrt(abs(dx#*dx#)+abs(dz#*dz#))
+            if rnd(100)=0 or (rnd(20)=0 and d#<250.0)
+               if sound playing(100+(g*2)+0)=0
+                  position sound 100+(g*2)+0,object position x(objid),object position y(objid),object position z(objid)
+                  play sound 100+(g*2)+0
+               endif
+            endif
+         endif
+
+      endif
+
+      rem Update goblin position
+      goblin#(g,2)=object position x(objid)
+      goblin#(g,3)=object position z(objid)
+
+      rem Goblin falls on floor
+      if goblin#(g,12)=2
+
+         rem Goblin waits for end of fall animation
+         rg=goblin#(g,11)
+         if rg>0
+            gobjid=1000+(rg*2)
+            fn=goblin#(g,13)
+            if fn=1 then vanishvalue=45 : cutoff=0
+            if fn=2 then vanishvalue=45 : cutoff=0
+            if fn=3 then vanishvalue=45 : cutoff=0
+            if fn=4 then vanishvalue=45 : cutoff=0
+            if object frame(gobjid)>=fallstart(fn)+vanishvalue
+               sc#=100-((object frame(gobjid)-(fallstart(fn)+vanishvalue))*4)
+               scale object gobjid+0,sc#,sc#,100
+               if object exist(gobjid+1)=1 then scale object gobjid+1,sc#,sc#*-1,100
+               if sound playing(1000+(rg*2)+1)=0
+                  position sound 1000+(rg*2)+1,object position x(gobjid),object position y(gobjid),object position z(gobjid)
+                  play sound 1000+(rg*2)+1
+               endif
+            endif
+            if object frame(gobjid)>=fallend(fn)-cutoff
+               loop object gobjid+0,walkstart+5,walkend
+               if object exist(gobjid+1)=1 then loop object gobjid+1,walkstart+5,walkend
+               set object speed gobjid+0,50
+               if object exist(gobjid+1)=1 then set object speed gobjid+1,50
+               scale object gobjid,100,100,100
+               if object exist(gobjid+1)=1 then scale object gobjid+1,100,-100,100
+               realtodecal(g,rg)
+               goblin#(g,1)=0
+               goblin#(g,11)=0
+               goblin#(g,12)=0
+               hide object 100+(g*2)+0
+               if object exist(100+(g*2)+1)=1 then hide object 100+(g*2)+1
+            endif
+         endif
+
+      endif
+
+      rem Goblin is attacking
+      if goblin#(g,12)=3
+
+         rem Goblin waits for end of fall animation
+         rg=goblin#(g,11)
+         if rg>0
+            gobjid=1000+(rg*2)
+            if object frame(gobjid)>=attackend-2
+               goblin#(g,12)=1
+               loop object gobjid+0,walkstart+5,walkend
+               if object exist(gobjid+1)=1 then loop object gobjid+1,walkstart+5,walkend
+            endif
+            if object frame(gobjid)>=attackstart+10 and object frame(gobjid)<=attackstart+20
+               rem Damage player when anim struck
+               hurt#=100.0
+            endif
+         endif
+
+      endif
+
+      rem Extra handling for RG goblins
+      rg=goblin#(g,11)
+      if rg>0
+
+         rem Handle visual RG
+         gobjid=1000+(rg*2)
+         ey#=object position y(objid)
+         position object gobjid,goblin#(g,2),ey#,goblin#(g,3)
+         rotate object gobjid,object angle x(objid),object angle y(objid),object angle z(objid)
+         yrotate object gobjid+0,wrapvalue(object angle y(gobjid)+180)
+         if object exist(gobjid+1)=1 then yrotate object gobjid+1,object angle y(gobjid)
+
+         rem Goblin attacks if close to player
+         dx#=goblin#(g,2)-x#
+         dz#=goblin#(g,3)-z#
+         d#=sqrt((dx#*dx#)+(dz#*dz#))
+         if d#<50.0 and goblin#(g,12)<=1
+            goblin#(g,12)=3
+            position sound 1000+(rg*2)+0,object position x(gobjid),object position y(gobjid),object position z(gobjid)
+            play sound 1000+(rg*2)+0
+            play object gobjid+0,attackstart,attackend
+            if object exist(gobjid+1)=1 then play object gobjid+1,attackstart,attackend
+         endif
+
+      endif
+
+   endif
+
+next g
+
+rem Control enemies
+for g=1 to enemymax
+
+   rem Affect goblin by gravity
+   fx#=0 : fz#=0
+   for r=0 to 35
+      ex#=newxvalue(goblin#(g,2),r*10,10)
+      ez#=newzvalue(goblin#(g,3),r*10,10)
+      eh#=get ground height(1,ex#+mx#,ez#+mz#)
+      if eh#<-50.0 then eh#=-50.0
+      force#=(eh#+50.0)/50.0
+      fx#=fx#+((ex#-goblin#(g,2))*force#)
+      fz#=fz#+((ez#-goblin#(g,3))*force#)
+   next r
+   ex#=goblin#(g,2)-(fx#/36.0)
+   ez#=goblin#(g,3)-(fz#/36.0)
+   goblin#(g,2)=ex# : goblin#(g,3)=ez#
+   objid=100+(g*2)+0
+
+   rem Transfer position to real goblin
+   rg=goblin#(g,11)
+   if rg>0
+
+      rem Determine whether goblin climbing up or down hill
+      gobjid=1000+(rg*2)
+      fa#=object angle y(gobjid)
+      fx#=newxvalue(goblin#(g,2),fa#,5.0)
+      fz#=newzvalue(goblin#(g,3),fa#,5.0)
+      fb#=get ground height(1,goblin#(g,2)+mx#,goblin#(g,2)+mz#)
+      fa#=get ground height(1,fx#+mx#,fz#+mz#)
+
+      rem Position RG goblin
+      position object gobjid+0,ex#,eh#,ez#
+      if object exist(gobjid+1)=1 then position object gobjid+1,ex#,-50-(eh#+50),ez#
+
+      rem Control RG walk or slide anim
+      if goblin#(g,12)=1
+         if force#>1.0 and fb#>fa#
+            if goblin#(g,15)=0
+               goblin#(g,15)=1
+               loop object gobjid+0,slidestart+10,slideend-10
+               if object exist(gobjid+1)=1 then loop object gobjid+1,slidestart+10,slideend-10
+               set object frame gobjid+0,slidestart
+               if object exist(gobjid+1)=1 then set object frame gobjid+1,slidestart
+            endif
+            makesmoke(ex#,eh#,ez#,5.0)
+         else
+            if goblin#(g,15)=1
+               goblin#(g,15)=0
+               loop object gobjid+0,walkstart+5,walkend
+               if object exist(gobjid+1)=1 then loop object gobjid+1,walkstart+5,walkend
+               set object frame gobjid+0,walkstart+5
+               if object exist(gobjid+1)=1 then set object frame gobjid+1,walkstart+5
+            endif
+         endif
+      endif
+
+   else
+      position object objid+0,ex#,eh#+18,ez#
+      if object exist(objid+1)=1 then position object objid+1,ex#,-68-(eh#+50),ez#
+   endif
+
+   rem Maintain decal goblins
+   for b=0 to 1
+      objid=100+(g*2)+b
+      if object exist(objid)=1
+         point object objid,x#,y#,z#
+         xrotate object objid,0 : zrotate object objid,0
+         goblin#(g,5)=goblin#(g,5)+1
+         if goblin#(g,5)>3
+            goblin#(g,5)=0
+            goblin#(g,4)=goblin#(g,4)+1
+            if goblin#(g,4)>109 then goblin#(g,4)=100
+         endif
+         sighty#=atanfull(x#-goblin#(g,2),z#-goblin#(g,3))
+         if goblin#(g,12)=1
+            dirface=4
+            goblin#(g,5)=goblin#(g,5)+1
+         else
+            dirface=wrapvalue(goblin#(g,6)+sighty#)/90.0
+         endif
+         image=goblin#(g,4)+(dirface*10)
+         texture object objid,image
+      endif
+   next b
+
+   rem Scale decal based on mode
+   objid=100+(g*2)
+   if goblin#(g,12)=1
+      scale object objid,130,100,500
+      if object exist(objid+1)=1 then scale object objid+1,130,-100,500
+   else
+      scale object objid,100,100,500
+      if object exist(objid+1)=1 then scale object objid+1,100,-100,500
+   endif
+
+next g
+
+return
+
+_control_weather:
+
+rem Control skycover
+scroll object texture 52,0.001,0.0001
+scroll object texture 53,0.002,-0.002
+
+if lowmode=0
+   rem Control rain
+   for t=1 to 20
+      makeraindrop(x#,y#,z#)
+   next t
+endif
+
+return
+
+
+_create_world:
+
+rem Generate random crator
+mx#=1000 : mz#=1000
+make matrix 1,2000,2000,25,25
+position matrix 1,mx#*-1,0,mz#*-1
+
+rem Height map
+dim map(25,25)
+dim mh(25,25)
+
+rem Load or generate
+if 1=0
+   rem load perimetor
+   load array "map.dat",map(0)
+else
+   rem Design perimetor
+   for t=0 to 25
+      r=50+rnd(50)
+      map(0,t)=r : map(t,0)=r
+      map(1,t)=r : map(t,1)=r
+      map(25,t)=r : map(t,25)=r
+   next t
+   for t=1 to 100 : map(rnd(25),rnd(25))=1+rnd(2) : next t
+   for t=1 to 75 : map(2+rnd(21),2+rnd(21))=100+rnd(50) : next t
+   for z=2 to 23 step 2
+      for x=2 to 23 step 2
+         map(x,z)=0
+      next x
+   next z
+   save array "tempmap.dat",map(0)
+endif
+
+rem Texture matrix
+load image "floor.bmp",1
+prepare matrix texture 1,1,4,4
+
+rem Add hills
+for c=1 to 20
+for x=0 to 25
+for z=0 to 25
+   if map(x,z)>0
+      map(x,z)=map(x,z)-1
+      for tx=-1 to 1
+      for tz=-1 to 1
+         gx=x+tx : gz=z+tz
+         if gx>=0 and gx<=25 and gz>=0 and gz<=25
+            mh(gx,gz)=mh(gx,gz)+(5-((abs(tx)+abs(tz))/2))
+            set matrix height 1,gx,gz,mh(gx,gz)
+         endif
+      next tz
+      next tx
+   else
+      set matrix height 1,x,z,-100
+   endif
+   if x>=0 and x<=24 and z>=0 and z<=24
+      if x<=2 or x=23 or x=24 or z<=2 or z=23 or z=24
+         set matrix tile 1,x,z,9+rnd(7)
+      else
+         set matrix tile 1,x,z,1+rnd(7)
+      endif
+   endif
+next z
+next x
+next c
+update matrix 1
+
+rem Create sky
+color backdrop 0
+
+rem Create ice-floor
+load object "sky.x",51
+load image "clouds.bmp",3
+scale object 51,500000,500000,500000
+position object 51,0,-50,0
+texture object 51,3
+ghost object on 51
+
+rem Create cloud-cover1
+load object "sky.x",52
+scale object 52,5000000,5000000,5000000
+position object 52,0,550,0
+texture object 52,3
+ghost object on 52
+
+rem Create cloud-cover2
+load object "sky.x",53
+scale object 53,5000000,5000000,5000000
+position object 53,0,545,0
+texture object 53,3
+ghost object on 53
+scroll object texture 53,0.5,0.2
+
+rem Find lowest point of map
+lowest=9999
+for x=2 to 24
+for z=2 to 24
+if mh(x,z)<lowest then lowest=mh(x,z) : lowestx=x : lowestz=z
+next z
+next x
+x#=lowestx*((mx#*2)/25.0)-mx#
+z#=lowestz*((mz#*2)/25.0)-mz#
+
+rem Erode path from starting position to center
+for x=lowestx to 12
+   for z=lowestz to 12
+      set matrix height 1,x,z,-100
+   next z
+next x
+update matrix 1
+
+rem Create goblin doorway1
+load object "cave.x",91
+position object 91,850,-50,300
+yrotate object 91,270
+fade object 91,200
+
+rem Create goblin doorway2
+load object "cave.x",92
+position object 92,-650,-50,850
+yrotate object 92,180
+fade object 92,200
+
+rem Free temp arrays
+undim map(0)
+undim mh(0)
+
+rem Setup Scene
+set camera range 3,10000
+set ambient light 50
+
+return
+
+_create_enemies:
+
+rem Create Enemies
+for g=1 to enemymax
+
+   rem Goblin data
+   ex#=rnd(1000)-500
+   ez#=rnd(1000)-500
+   goblin#(g,1)=1
+   goblin#(g,2)=ex#
+   goblin#(g,3)=ez#
+   goblin#(g,4)=100+rnd(7)
+   goblin#(g,5)=0
+   goblin#(g,6)=45+(rnd(3)*90)
+   goblin#(g,11)=0
+   goblin#(g,12)=0
+   goblin#(g,13)=1+rnd(3)
+
+   rem Goblin
+   objid=100+(g*2)+0
+   make object plain objid,30,40
+   texture object objid,100
+   set object objid,1,0,0
+   eh#=get ground height(1,ex#+mx#,ez#+mz#)
+   if eh#<-50.0 then eh#=-50.0
+   position object objid,ex#,eh#+18,ez#
+
+   rem Goblin Reflection
+   objid=100+(g*2)+1
+   make object plain objid,30,40
+   texture object objid,100
+   set object objid,1,0,0
+   eh#=get ground height(1,ex#+mx#,ez#+mz#)
+   if eh#<-50.0 then eh#=-50.0
+   position object objid,ex#,-68-(eh#+50),ez#
+   scale object objid,100,-100,100
+
+next g
+
+rem Create Real Aliens
+for g=1 to 5
+
+   rem Borrow goblin positions
+   ex#=goblin#(g,2)
+   ez#=goblin#(g,3)
+   ea#=goblin#(g,6)
+   ew#=5+rnd(15)
+
+   rem Real Goblin
+   objid=1000+(g*2)+0 : idlestart=0
+   load object "idle.x",objid : idleend=total object frames(objid)
+   walkstart=total object frames(objid)+1
+   append object "walk.x",objid,walkstart : walkend=total object frames(objid)
+   fallstart(1)=total object frames(objid)+1
+   append object "die4.x",objid,fallstart(1) : fallend(1)=total object frames(objid)
+   fallstart(2)=total object frames(objid)+1
+   append object "die1.x",objid,fallstart(2) : fallend(2)=total object frames(objid)
+   fallstart(3)=total object frames(objid)+1
+   append object "die2.x",objid,fallstart(3) : fallend(3)=total object frames(objid)
+   fallstart(4)=total object frames(objid)+1
+   append object "die3.x",objid,fallstart(4) : fallend(4)=total object frames(objid)
+   attackstart=total object frames(objid)+1
+   append object "punch.x",objid,attackstart : attackend=total object frames(objid)
+   chargestart=total object frames(objid)+1
+   append object "charge.x",objid,chargestart : chargeend=total object frames(objid)
+   slidestart=total object frames(objid)+1
+   append object "slide.x",objid,slidestart : slideend=total object frames(objid)
+   `
+   eh#=get ground height(1,ex#+mx#,ez#+mz#)
+   if eh#<-50.0 then eh#=-50.0
+   position object objid,ex#,eh#,ez#
+   yrotate object objid,ea#
+   scale object objid,90,90,90
+   set object speed objid,10
+   set object rotation zyx objid
+   set object frame objid,ew#
+   fn=1 : loop object objid,walkstart+5,walkend
+   hide object objid
+
+   rem Real Goblin Reflection
+   objid=1000+(g*2)+1
+   load object "idle.x",objid
+   append object "walk.x",objid,walkstart
+   append object "die4.x",objid,fallstart(1)
+   append object "die1.x",objid,fallstart(2)
+   append object "die2.x",objid,fallstart(3)
+   append object "die3.x",objid,fallstart(4)
+   append object "punch.x",objid,attackstart
+   append object "charge.x",objid,chargestart
+   append object "slide.x",objid,slidestart
+   eh#=get ground height(1,ex#+mx#,ez#+mz#)
+   if eh#<-50.0 then eh#=-50.0
+   position object objid,ex#,-50-(eh#+50),ez#
+   yrotate object objid,ea#
+   scale object objid,90,-90,90
+   set object speed objid,10
+   set object rotation zyx objid
+   set object frame objid,ew#
+   fn=1 : loop object objid,walkstart+5,walkend
+   hide object objid
+
+next rg
+
+rem First five are active
+for g=1 to 5
+   goblin#(g,12)=1
+   rg=g : decaltoreal(g,rg)
+next g
+
+return
+
+_create_player:
+
+rem Create Player
+make object cube 1,10
+hide object 1
+
+rem Create Guns
+for g=2 to 3
+   if g=2
+      load object "gunR.x",g
+   else
+      load object "gunL.x",g
+   endif
+   scale object g,200,200,200
+   set object rotation zyx g
+   gpx#(g-2)=x# : gpy#(g-2)=y#-100 : gpz#(g-2)=z#
+next g
+
+rem Create Laser Bolts
+for l=0 to 10
+   for b=0 to 1
+      ll=4+(l*2)+b
+      load object "pulse001.x",ll
+      scale object ll,500,200,5000
+      set object rotation zyx ll
+      hide object ll
+   next b
+next l
+
+rem Create needle for compass
+make object plain 80,128,128
+load image "needle.bmp",80
+texture object 80,80
+lock object on 80
+set object 80,1,0,0
+position object 80,240,165,400
+scale object 80,25,75,500
+fade object 80,200
+
+rem Create compass
+make object plain 81,128,128
+load image "compass.bmp",81
+texture object 81,81
+lock object on 81
+set object 81,1,0,0
+position object 81,240,165,400
+scale object 81,100,100,500
+fade object 81,200
+
+rem Create shade compass
+make object plain 82,128,128
+load image "shade.bmp",82
+texture object 82,82
+lock object on 82
+set object 82,1,0,0
+position object 82,240,165,400
+scale object 82,100,100,500
+fade object 82,200
+ghost object on 82
+
+rem Create status panels
+make object plain 83,128,128
+load image "stats.bmp",83
+texture object 83,83
+lock object on 83
+set object 83,1,0,0
+position object 83,-240,165,400
+scale object 83,100,100,500
+fade object 83,200
+
+rem Set initial player angle
+cya#=90.0
+
+return
+
+_generate_goblins:
+
+rem Create decal images for alien
+if 1=1
+   load bitmap "goblin.bmp",5
+   gobmax=0
+   for d=0 to 4
+      x=0
+      for f=0 to 19 step 2
+         rem Modified half-sized final bitmap
+         get image 100+x+(d*10),(x*81),(d*128),(x*81)+81,(d*128)+128
+         inc gobmax
+         inc x
+      next f
+   next d
+   delete bitmap 5
+else
+   autocam on
+   sync off
+   backdrop on
+   set ambient light 50
+   color backdrop 0
+   load object "idle.x",100
+   walkstart=total object frames(100)+1
+   append object "walk.x",100,walkstart
+   walkend=total object frames(100)
+   fade object 100,200
+   create bitmap 5,(192*10),256*5
+   gobmax=0
+   for d=0 to 4
+      if d<4
+         yrotate object 100,wrapvalue(45+(d*90))
+         fstart=0
+         fmax=20-1
+      else
+         yrotate object 100,0
+         fstart=walkstart+5
+         fmax=(walkend-walkstart)-6
+         scale object 100,70,100,100
+      endif
+      x=0
+      for f=0 to fmax step 2
+         set object frame 100,fstart+f
+         set current bitmap 0
+         get image 100+x+(d*10),234,0,234+192,256
+         set current bitmap 5
+         paste image 100+x+(d*10),x*192,d*256
+         inc gobmax
+         inc x
+      next f
+   next d
+   save bitmap "goblin.bmp",5
+   delete object 100
+   delete bitmap 5
+   gobanim=100
+   autocam off
+   sync on
+endif
+
+return
+
+
+rem ** Functions **
+
+function makeraindrop(x#,y#,z#)
+
+   rem Find spare decal
+   fd=1 : for d=1 to decalmax(1) : if decal#(d,1)=0 : fd=d : endif : next d
+
+   rem Create fire
+   decal#(fd,1)=1
+   decal#(fd,2)=(x#+100)-rnd(200)
+   decal#(fd,3)=y#+150+rnd(50)
+   decal#(fd,4)=(z#+100)-rnd(200)
+
+   rem Object
+   objid=10000+fd : dodecal(objid)
+
+endfunction
+
+function makesmoke(x#,y#,z#,size#)
+
+   rem Find spare decal
+   fd=1 : for d=1 to decalmax(1) : if decal#(d,1)=0 : fd=d : endif : next d
+
+   rem Create fire
+   decal#(fd,1)=2
+   decal#(fd,2)=(x#+1)-rnd(2)
+   decal#(fd,3)=(y#+1)-rnd(2)
+   decal#(fd,4)=(z#+1)-rnd(2)
+   decal#(fd,5)=rnd(350)
+   decal#(fd,6)=(2+rnd(2))/10.0
+   decal#(fd,7)=rnd(10)/10.0
+   decal#(fd,8)=100-rnd(10)
+   decal#(fd,9)=size#
+
+   rem Object
+   objid=10000+fd : dodecal(objid)
+   texture object objid,1001
+
+endfunction
+
+function dodecal(objid)
+   if object exist(objid)=0 then make object plain objid,10,10
+   set object objid,1,0,0
+   ghost object on objid
+endfunction
+
+function controldecals(mx#,mz#)
+
+   rem All decals
+   for d=1 to decalmax(1)
+
+      rem Object id
+      objid=10000+d
+      if object exist(objid)=1
+
+         rem Control rain decals
+         if decal#(d,1)=1
+            position object objid,decal#(d,2),decal#(d,3),decal#(d,4)
+            point object objid,camera position x(),camera position y(),camera position z()
+            xrotate object objid,0 : zrotate object objid,0
+            scale object objid,3,100,100
+            decal#(d,3)=decal#(d,3)-15.0
+            if decal#(d,3)<-50.0
+               decal#(d,1)=0
+            endif
+            show object objid
+         endif
+
+         rem Control smoke decals
+         if decal#(d,1)=2
+            position object objid,decal#(d,2),decal#(d,3),decal#(d,4)
+            point object objid,camera position x(),camera position y(),camera position z()
+            xrotate object objid,0 : zrotate object objid,0
+            decal#(d,5)=wrapvalue(decal#(d,5)+2)
+            decal#(d,2)=decal#(d,2)+(cos(decal#(d,5))*decal#(d,7))
+            decal#(d,3)=decal#(d,3)+decal#(d,6)
+            scx#=(150-(decal#(d,8)*1.3))*decal#(d,9)
+            scz#=(250-decal#(d,8))*decal#(d,9)
+            scale object objid,scx#,decal#(d,8),scz#
+            decal#(d,8)=decal#(d,8)-2.0
+            if decal#(d,8)<=0
+               decal#(d,1)=0
+            endif
+            show object objid
+         endif
+
+         rem Hide unused decals
+         if decal#(d,1)=0 then hide object objid
+
+      endif
+
+   rem End of decal loop
+   next d
+
+endfunction
+
+function activate_enemy(g,x#,z#)
+
+rem If alive
+if goblin#(g,1)>0
+
+   rem Only if not RG-active
+   if goblin#(g,11)=0
+
+      rem Find spare real goblin
+      rgfound=-1
+      for rg=1 to 5
+         if real(rg)=0 then rgfound=rg
+      next rg
+
+      rem If this enemy is closer than current RG goblins, switch
+      if rgfound=-1
+
+         rem Determine if closer
+         nx#=goblin#(g,2)-x#
+         nz#=goblin#(g,3)-z#
+         nd#=sqrt(abs(nx#*nx#)+abs(nz#*nz#))
+         for rg=1 to 5
+            tg=real(rg)
+            tx#=goblin#(tg,2)-x#
+            tz#=goblin#(tg,3)-z#
+            td#=sqrt(abs(tx#*tx#)+abs(tz#*tz#))
+            if nd#<td# and goblin#(tg,12)=1 then rgfound=rg
+         next rg
+
+         rem If closer, revert current RG holder
+         if rgfound>0
+            tg=real(rgfound)
+            if tg>0 then realtodecal(tg,rgfound)
+         endif
+
+      endif
+
+      rem If decal dying, must use real..
+      if rgfound=-1
+
+         if goblin#(g,12)=2 and goblin#(g,11)=0
+            for rg=1 to 5
+               tg=real(rg)
+               if goblin#(tg,12)<>2 then rgfound=rg
+            next rg
+            if rgfound>0
+               tg=real(rgfound)
+               if tg>0 then realtodecal(tg,rgfound)
+               decaltoreal(g,rgfound)
+               rgfound=-1
+            endif
+         endif
+
+      endif
+
+      rem If RG available..
+      if rgfound>0
+         decaltoreal(g,rgfound)
+      endif
+
+   endif
+
+endif
+
+endfunction
+
+function decaltoreal(g,rg)
+
+   rem Prepare real goblin data
+   ex#=goblin#(g,2)
+   eh#=0.0
+   ez#=goblin#(g,3)
+   goblin#(g,11)=rg
+   real(rg)=g
+
+   rem Hide decal goblin
+   hide object 100+(g*2)+0
+   if object exist(100+(g*2)+1)=1 then hide object 100+(g*2)+1
+
+   rem Show real goblin
+   show object 1000+(rg*2)+0
+   if object exist(1000+(rg*2)+1)=1 then show object 1000+(rg*2)+1
+
+   rem Set speed
+   set object speed 1000+(rg*2)+0,50
+   if object exist(1000+(rg*2)+1)=1 then set object speed 1000+(rg*2)+1,50
+
+   rem Position goblins
+   position object 1000+(rg*2)+0,ex#,eh#,ez#
+   if object exist(1000+(rg*2)+1)=1 then position object 1000+(rg*2)+1,ex#,-50-(eh#+50),ez#
+
+endfunction
+
+function realtodecal(g,rg)
+
+   rem Prepare real goblin data
+   goblin#(g,11)=0
+   real(rg)=0
+
+   rem Show decal goblin
+   show object 100+(g*2)+0
+   if object exist(100+(g*2)+1)=1 then show object 100+(g*2)+1
+
+   rem Hide real goblin
+   hide object 1000+(rg*2)+0
+   if object exist(1000+(rg*2)+1)=1 then hide object 1000+(rg*2)+1
+
+   rem Set speed
+   set object speed 1000+(rg*2)+0,10
+   if object exist(1000+(rg*2)+1)=1 then set object speed 1000+(rg*2)+1,10
+
+endfunction
+
+function placelogo()
+
+rem Create decal for logo
+load image "logow.bmp",65000
+make object plain 65000,128,144
+position object 65000,25,-16.4,40
+texture object 65000,65000
+scale object 65000,10,10,50
+set object 65000,1,0,0
+fade object 65000,200
+lock object on 65000
+
+endfunction

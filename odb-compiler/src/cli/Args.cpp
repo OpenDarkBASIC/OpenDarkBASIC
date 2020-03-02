@@ -207,6 +207,10 @@ bool Args::parse(int argc, char** argv)
         if ((this->*command.func)(command.args) == false)
             return false;
 
+    // Be nice and show help if no args were specified
+    if (argc == 1)
+        printHelp({});
+
     return true;
 }
 

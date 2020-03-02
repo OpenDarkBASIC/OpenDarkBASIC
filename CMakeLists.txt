@@ -14,3 +14,5 @@ configure_msvc_runtime()
 
 add_subdirectory ("thirdparty/googletest")
 add_subdirectory ("odb-compiler")
+add_subdirectory ("odb-sdk")
+add_subdirectory ("odb-interpreter")

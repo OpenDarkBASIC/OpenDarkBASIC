@@ -74,7 +74,7 @@ endif ()
 # Library definition
 ###############################################################################
 
-add_library (odbclib ${ODBC_LIB_TYPE}
+add_library (odbc ${ODBC_LIB_TYPE}
     ${BISON_DarkBASICParser_OUTPUTS}
     ${FLEX_DarkBASICScanner_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
@@ -85,21 +85,22 @@ add_library (odbclib ${ODBC_LIB_TYPE}
     "src/parsers/keywords/KeywordDB.cpp"
     "src/parsers/keywords/KeywordMatcher.cpp"
     "src/util/Log.cpp"
-    "src/util/Str.cpp")
-target_include_directories (odbclib
+    "src/util/Str.cpp"
+    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>)
+target_include_directories (odbc
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<INSTALL_INTERFACE:include>
     PRIVATE
         $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
-target_compile_definitions (odbclib
+target_compile_definitions (odbc
     PRIVATE
         ODBC_BUILDING)
-target_compile_options (odbclib
+target_compile_options (odbc
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)
-set_target_properties (odbclib
+set_target_properties (odbc
     PROPERTIES CXX_STANDARD 17)
 
 if (${ODBC_TESTS})
@@ -124,7 +125,7 @@ if (${ODBC_TESTS})
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
-            odbclib
+            odbc
             gmock
             $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)
     target_include_directories (odbc_tests
@@ -133,20 +134,28 @@ if (${ODBC_TESTS})
     set_target_properties (odbc_tests PROPERTIES CXX_STANDARD 17)
 endif ()
 
+if (UNIX)
+    find_package (DL REQUIRED)
+    target_link_libraries (odbc PRIVATE DL::DL)
+endif ()
+
 ###############################################################################
 # CLI Executable
 ###############################################################################
 
-add_executable (odbc
+add_executable (odbc_cli
     "src/cli/Args.cpp"
     "src/cli/main.cpp")
-target_include_directories (odbc
+target_include_directories (odbc_cli
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
-target_link_libraries (odbc
+target_link_libraries (odbc_cli
     PRIVATE
-        odbclib)
+        odbc)
+set_target_properties (odbc_cli
+    PROPERTIES
+        OUTPUT_NAME "odbc")
 
 ###############################################################################
 # Installation
@@ -154,14 +163,14 @@ target_link_libraries (odbc
 
 if (${ODBC_LIB_TYPE} MATCHES "SHARED")
     install (
-        TARGETS odbclib
+        TARGETS odbc
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif ()
 
 if (${INSTALL_DEV})
     install (
-        TARGETS odbclib
+        TARGETS odbc
         EXPORT ODBCConfig
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -178,7 +187,7 @@ if (${INSTALL_DEV})
 endif ()
 
 export (
-    TARGETS odbclib
+    TARGETS odbc
     NAMESPACE ODBC
     FILE ODBCConfig.cmake)
 export (

@@ -1,0 +1,808 @@
+Rem * Title  : The Room Demo
+Rem * Author : DBS-LB
+Rem * Date   : 1st September 99
+rem ********************************************
+rem *                   ROOM                   *
+rem ********************************************
+rem * AUTHOR: Lee Bamber    DATE: 1st Sep 1999 *
+rem ********************************************
+
+rem Setup environment
+hide mouse
+autocam off
+sync on
+
+rem Set up Scene
+setup_room()
+
+rem Activate forcefeedback
+forceactive=setup_forcefeedback()
+
+rem Set up Data
+gosub _setupglobals
+
+rem Init player position
+a#=90.0
+x#=150.0
+
+rem Begin main loop
+backdrop off
+do
+
+ rem Handle Control Keys
+ mainaction=0 : subaction=0
+ if upkey()=1 then mainaction=1
+ if downkey()=1 then mainaction=2
+ if leftkey()=1 then subaction=3 : a#=wrapvalue(a#-6.0)
+ if rightkey()=1 then subaction=4 : a#=wrapvalue(a#+6.0)
+
+ rem Handle Control Stick
+ if control device y()<-500 then mainaction=1
+ if control device y()>500 then mainaction=2
+ if control device x()<-300 then subaction=3 : a#=wrapvalue(a#-6.0)
+ if control device x()>300 then subaction=4 : a#=wrapvalue(a#+6.0)
+
+ rem Handle Player Position
+ s#=handle_player_speed(s#,mainaction)
+ if mainaction>=1 and mainaction<=4
+
+   rem Update Player position
+   oldx#=x#
+   oldz#=z#
+   if mainaction=1
+      x#=newxvalue(x#,a#,s#)
+      z#=newzvalue(z#,a#,s#)
+   endif
+   if mainaction=2
+      x#=newxvalue(x#,a#,s#*-1.0)
+      z#=newzvalue(z#,a#,s#*-1.0)
+   endif
+
+   rem Make sure player not colliding with room (obj1)
+   position object 102,x#,-150,z#
+   if object collision(102,5)=1
+      position object 102,x#,-150,oldz#
+      if object collision(102,5)=0
+         z#=oldz#
+      else
+         position object 102,oldx#,-150,z#
+         if object collision(102,5)=0
+            x#=oldx#
+         else
+            x#=oldx#
+            z#=oldz#
+         endif
+      endif
+   endif
+
+ endif
+
+ rem Generate ripples when move
+ if mainaction>0 or subaction>0 then gosub _make_ripple
+
+ rem Handle Player
+ handle_player(x#,z#,a#,mainaction,subaction)
+ handle_camera(x#,z#,a#)
+
+ rem Handle Misc Effects
+ handle_player_shadow(x#,z#,a#)
+ handle_effects()
+ gosub _handle_bouncer
+ gosub _handle_rainforce
+ gosub _handle_face_fading
+ gosub _handle_drips
+ gosub _handle_facedecals
+ gosub _handle_ambience
+ gosub _handle_ripple_control
+
+ rem Update screen
+ sync
+
+loop
+
+rem Subroutines
+_setupglobals:
+
+   dim ripple#(10)
+   for r=1 to 10 : ripple#(r)=0.0 : next r
+
+   dim drip(3)
+   for d=1 to 3 : drip(d)=0 : next d
+
+return
+
+_handle_bouncer:
+
+   rem scroll variable value
+   wh#=wrapvalue(wh#+8.0)
+
+   rem trigger bounce
+   position object 102,x#,-300,z#
+   col=object collision(21,0)
+   if col=102
+      by#=3.0+(s#/5.0)
+      ix#=(object position x(21)-x#)/((35.0-s#)/1.5)
+      iz#=(object position z(21)-z#)/((35.0-s#)/1.5)
+      benergy=5
+      play sound 3
+      set sound volume 3,95-(benergy*2)
+   endif
+   if col=5
+      ba#=wrapvalue(atanfull(bx#,bz#)+180.0)
+      is#=sqrt((ix#*ix#)+(iz#*iz#))/1.5
+      ix#=sin(ba#)*is#
+      iz#=cos(ba#)*is#
+      by#=by#+2.0
+      benergy=benergy+1
+      play sound 3
+      vol=95-(benergy*2)
+      if vol<1 then vol=0
+      if vol>100 then vol=100
+      set sound volume 3,vol
+   endif
+
+   rem manage bounce
+   bx#=object position x(21)
+   bz#=object position z(21)
+   if benergy>0
+      bx#=bx#+ix#
+      bz#=bz#+iz#
+      ix#=ix#*0.95
+      iz#=iz#*0.95
+      position object 21,bx#,object position y(21)+by#,bz#
+      position object 22,bx#,-280.0,bz#
+      position sound 3,bx#,0,bz#
+      by#=by#-1.0
+      if by#<((benergy*2.0)*-1.0) then by#=((benergy*2.0)*-1.0)
+      if object position y(21)<-250.0
+         by#=(by#*0.75)*-1.0
+         benergy=benergy-1
+         play sound 3
+         svol=95-(benergy*2)
+         if svol<0 then svol=0
+         if svol>100 then svol=100
+         set sound volume 3,svol
+         if benergy=0
+            bfloat#=object position y(21)
+         endif
+      endif
+   else
+      diff#=((-250+(cos(wh#)*9.0))-bfloat#)/12.0
+      bfloat#=bfloat#+diff#
+      position object 21,bx#,bfloat#,bz#
+      position object 22,bx#,-280.0,bz#
+      by#=0.0
+   endif
+
+   rem ripple from ball (9)
+   r=9
+   if ripple#(r)=0.0 and object position y(21)<-210.0
+      position object 10+r,bx#,-225,bz#
+      texture object 10+r,17
+      show object 10+r
+      ripple#(r)=1.0
+   endif
+
+   rem scale ball based on vertical inertia
+   diff#=(by#-boing#)/6.0
+   boing#=boing#+diff#
+   scale object 21,100,90+(boing#*4.0),100
+   scale object 22,90-(boing#*2.0)+(cos(wh#)*9.0),90-(boing#*2.0)+(cos(wh#)*9.0),100
+   `
+return
+
+_handle_rainforce:
+
+   rem rain force
+   dist#=sqrt((x#*x#)+(z#*z#))
+   if forceactive=1 and dist#<400
+      force angle 10-((9.0/400.0)*dist#),rnd(359),5
+   endif
+
+return
+
+_handle_face_fading:
+
+   rem handle wrapping rotation
+   sl#=wrapvalue(sl#+16.0)
+   rotate object 203,90,0,sl#
+
+   rem handle in-out fading
+   if lf=0
+      fd=fd+1
+      fade object 203,80
+      if fd=10 then lf=1
+   else
+      fd=fd-1
+      fade object 203,125
+      if fd=0 then lf=0
+   endif
+
+   rem twirl force
+   dx#=x#-800.0
+   dist#=sqrt((dx#*dx#)+(z#*z#))
+   if forceactive=1 and dist#<200.0
+      str#=((99.0/200.0)*dist#)
+      force angle 100-str#,wrapvalue(270.0-sl#),50
+      a#=wrapvalue(a#-5.0*(str#/99.0))
+   endif
+
+   rem Proximity to face opens door, else closes it
+   if dist#<400.0
+      position object 36,-1290,object position y(36)+5.0,0
+      if object position y(36)>500.0
+         position object 36,-1290,500.0,0
+         stop sound 4 : chl=0
+      else
+         if chl=0 then loop sound 4 : set sound speed 4,12000 : chl=1
+      endif
+   else
+      position object 36,-1290,object position y(36)-10.0,0
+      if object position y(36)<160.0
+         position object 36,-1290,160.0,0
+         stop sound 4 : chl=0
+      else
+         if chl=0 then loop sound 4 : set sound speed 4,15000 : chl=1
+      endif
+   endif
+
+return
+
+_handle_drips:
+
+   rem loop through all drip elements
+   for d=1 to 3
+      if drip(d)=0 and rnd(20)=0
+
+         rem start drip
+         drip(d)=1
+         position object 7+d,-700+rnd(1400),1000,-700+rnd(1400)
+         show object 7+d
+
+      else
+         if drip(d)=1
+            position object 7+d,object position x(7+d),object position y(7+d)-100,object position z(7+d)
+            if object position y(7+d)<-300
+
+               rem end drip
+               drip(d)=0
+               hide object 7+d
+
+               rem ripple from drips (6-8)
+               r=5+d
+               position object 10+r,object position x(7+d),-225,object position z(7+d)
+               texture object 10+r,17
+               show object 10+r
+               ripple#(r)=1.0
+
+            endif
+         endif
+      endif
+   next d
+
+return
+
+_handle_facedecals:
+
+   rem Point faces towards camera position
+   dx#=camera position x()
+   dz#=camera position z()
+   fa#=wrapvalue(atanfull(dx#,dz#)+180.0)
+   yrotate object 7,wrapvalue(fa#)
+
+return
+
+_handle_ambience:
+
+   rem controls strength of shadow
+   dist#=sqrt(abs(x#*x#)+abs(z#*z#))
+   set ambient light 20+(dist#/40.0)
+
+return
+
+_make_ripple:
+
+   rem spare ripple object?
+   r=1 : while ripple#(r)>0 and r<5 : r=r+1 : endwhile
+   if r<=5
+      oz#=-48.0
+      ox#=-70.0
+      oz#=oz#+(rnd(2)*50.0)
+      ox#=ox#+(rnd(1)*140.0)
+      tx#=(cos(a#)*ox#)+(sin(a#)*oz#)
+      tz#=(cos(a#)*oz#)-(sin(a#)*ox#)
+      rx#=x#+tx#
+      rz#=z#+tz#
+      position object 10+r,rx#,-225,rz#
+      yrotate object 10+r,a#
+      texture object 10+r,17
+      show object 10+r
+      ripple#(r)=1.0
+   endif
+
+return
+
+_handle_ripple_control:
+
+   rem loops through all ripple elements
+   for r=1 to 10
+      if object visible(10+r)=1
+         texture object 10+r,16+ripple#(r)
+         ripple#(r)=ripple#(r)+0.5
+         if ripple#(r)>=4.4
+            ripple#(r)=0.0
+            hide object 10+r
+         endif
+      endif
+
+      position object 10+r,object position x(10+r),-250+(cos(wh#)*9.0),object position z(10+r)
+
+   next r
+
+return
+
+rem Functions
+function handle_player_speed(speed#,actionmode)
+
+ rem Handle Speed control
+ if actionmode=1 or actionmode=2
+   speed#=speed#+5.0
+   if actionmode=1 and speed#>30.0 then speed#=30.0
+   if actionmode=2 and speed#>30.0 then speed#=30.0
+ else
+   speed#=speed#-5.0
+   if speed#<0.0 then speed#=0.0
+ endif
+
+endfunction speed#
+
+function handle_player(px#,pz#,pa#,actionmode,subaction)
+
+   rem Handle player animation
+   handle_player_anim(actionmode,subaction)
+
+   rem Set Player Position and angle
+   position object 101,px#,0,pz#
+   yrotate object 101,pa#
+
+   rem Position listener at player
+   position listener px#/100.0,0,pz#/100.0
+   rotate listener 0,wrapvalue(360.0-pa#),0
+
+   rem Set players collision sphere
+   position object 102,px#,-150,pz#
+
+endfunction
+
+function handle_player_anim(actionmode,subactionmode)
+
+   if smoothing=0
+      if actionmode>0 or subactionmode>0
+
+         rem Switch to Walk
+         if object frame(101)<100 or object frame(101)>115
+            start=100
+            newanim=2
+            smoothing=4
+            loop sound 2
+            set sound speed 2,8500+rnd(1500)
+         endif
+         if rnd(4)=0 then set sound speed 2,8500+rnd(1500)
+
+      else
+
+         rem Switch to Idle
+         if object frame(101)>25
+            start=0
+            newanim=1
+            smoothing=4
+         endif
+
+      endif
+
+      rem Activate smoothing
+      if smoothing>0
+
+         rem Begin smoothing transition
+         stop object 101
+         set object interpolation 101,25
+         set object frame 101,start
+
+         rem Duplicate for shadow
+         stop object 4
+         set object interpolation 4,25
+         set object frame 4,start
+
+      endif
+   endif
+
+   rem Switch to new animation
+   if newanim>0
+      if smoothing=0
+
+         rem Trigger New Anim
+         if newanim=1 then length=20 : speed=10
+         if newanim=2 then length=15 : speed=50
+
+         rem Set Animation
+         set object interpolation 101,100
+         set object frame 101,start
+         loop object 101,start,start+length
+         set object speed 101,speed
+
+         rem Duplicate for shadow
+         set object interpolation 4,100
+         set object frame 4,start
+         loop object 4,start,start+length
+         set object speed 4,speed
+
+         rem Choose sound
+         if newanim=2
+            loop sound 2
+         else
+            play sound 2
+            set sound speed 2,8400
+         endif
+
+         rem Reset flag
+         newanim=0
+
+      else
+         smoothing=smoothing-1
+      endif
+   endif
+
+endfunction
+
+function handle_camera(px#,pz#,pa#)
+
+   rem Calc camera position and angle
+   ca#=wrapvalue(pa#+180.0)
+   cx#=newxvalue(px#,ca#,scdis#)
+   cz#=newzvalue(pz#,ca#,scdis#)
+
+   rem Record camera coords
+   oldx#=scx#
+   oldz#=scz#
+
+   rem Calc smoothed camera position and angle
+   diff#=(scx#-cx#)/6.0
+   scx#=scx#-diff#
+   diff#=(scz#-cz#)/6.0
+   scz#=scz#-diff#
+   sca#=curveangle(pa#,sca#,6.0)
+
+   rem Restrict camera if collide with walls
+   position object 103,scx#,-50,scz#
+   if object collision(103,5)=1
+      if object hit(103,5)=1 then cdis#=100.0
+      position object 103,scx#,-50,oldz#
+      if object collision(103,5)=0
+         scx#=oldx#
+      else
+         position object 103,oldx#,-50,scz#
+         if object collision(103,5)=0
+            scz#=oldz#
+         else
+            scx#=oldx#
+            scz#=oldz#
+         endif
+      endif
+   else
+      if cdis#<500.0
+         cdis#=cdis#+50.0
+         if cdis#>500.0 then cdis#=500.0
+      endif
+   endif
+
+   rem Smooth camera distance for next cycle
+   diff#=(scdis#-cdis#)/6.0
+   scdis#=scdis#-diff#
+
+   rem Set camera
+   position camera scx#,-50,scz#
+   point camera object position x(101),object position y(101)-100,object position z(101)
+
+endfunction
+
+function handle_effects()
+
+   rem Scroll rain texture
+   scroll object texture 2,0,-0.02
+
+   rem Simple rotate of water
+   wr#=wrapvalue(wr#+1.0)
+   yrotate object 3,wr#
+   wh#=wrapvalue(wh#+8.0)
+   position object 3,0,-250+(cos(wh#)*9.0),0
+
+endfunction
+
+function handle_player_shadow(px#,pz#,pa#)
+
+   rem Shadow follows player
+   position object 4,px#,-280.0,pz#
+   yrotate object 4,pa#
+
+endfunction
+
+function setup_forcefeedback()
+
+   rem Check for FF device
+   perform checklist for control devices
+   if checklist quantity()>0
+      for f=1 to checklist quantity()
+         if checklist value a(f)=1
+            set control device checklist string$(f)
+            force water effect 100,0
+            forceactive=1
+         endif
+      next f
+   else
+      forceactive=0
+   endif
+
+endfunction forceactive
+
+function setup_room()
+
+   rem Blacken Scene
+   if fog available()=1 then fog on : fog color 0 : fog distance 0
+   point camera 0,1000,0
+   set ambient light 0
+
+   rem Create bitmaps for room
+   load_image("bmp\floor.bmp",1)
+   load_image("bmp\roof.bmp",2)
+   load_image("bmp\wall1.bmp",3)
+   load_image("bmp\wall2.bmp",4)
+   load_image("bmp\wall3.bmp",5)
+   load_image("bmp\door.bmp",6)
+   load_image("bmp\portal.bmp",7)
+
+   rem Create special effects bitmaps
+   load_image("bmp\force.bmp",11)
+   load_image("bmp\water.bmp",12)
+   load_image("bmp\black.bmp",13)
+`   load_image("bmp\spray.bmp",14)
+`   load_image("bmp\spray.bmp",15)
+   load_image("bmp\ripple.bmp",16)
+   load_image("bmp\face.bmp",21)
+`   load_image("bmp\stattext.bmp",31)
+   load_image("bmp\shadow.bmp",32)
+   load_image("bmp\logo.bmp",33)
+
+   rem Create room (but hide the gate)
+   load object "obj\dome.x",1
+   set object collision off 1
+   texture limb 1,0,2
+   texture limb 1,1,2
+   texture limb 1,2,4
+   texture limb 1,3,3
+   texture limb 1,4,5
+   texture limb 1,5,5
+   texture limb 1,6,6
+   texture limb 1,7,4
+   hide limb 1,6
+   hide limb 1,8
+
+   rem Reload room (showing only the gate)
+   load object "obj\dome.x",200
+   set object collision off 200
+   set object 200,1,0,0
+   hide limb 200,1
+   hide limb 200,2
+   hide limb 200,3
+   hide limb 200,4
+   hide limb 200,5
+   hide limb 200,7
+   texture limb 200,6,6
+   hide limb 200,8
+
+   rem Create floor
+   make matrix 1,3200.0,2400.0,4,3
+   position matrix 1,-2000.0,-290.0,-1200.0
+   prepare matrix texture 1,1,2,2
+   set matrix tile 1,1,1,3
+   set matrix tile 1,3,1,2
+   set matrix tile 1,2,1,4
+   update matrix 1
+
+   rem Create Shaft of light
+   make object cone 2,300
+   scale object 2,200,800,200
+   position object 2,0,600,0
+   texture object 2,11
+   set object 2,1,0,0
+   ghost object on 2
+   set object collision off 2
+   if alphablending available()=0 then hide object 2
+
+   rem Create water on floor
+   make object plain 3,2900,2900
+   xrotate object 3,90
+   fix object pivot 3
+   texture object 3,12
+   ghost object on 3
+   set object collision off 3
+
+   rem Create Shadow for player
+   load object "obj\scorpidle.x",4
+   append object "obj\scorpwalk.x",4,100
+   yrotate object 4,180
+   fix object pivot 4
+   scale object 4,100,1,100
+   hide limb 4,1 : hide limb 4,2 : hide limb 4,3
+   hide limb 4,5 : hide limb 4,6 : hide limb 4,7
+   hide limb 4,12 : hide limb 4,13 : hide limb 4,14
+   hide limb 4,15 : hide limb 4,16 : hide limb 4,17
+   hide limb 4,18 : hide limb 4,19 : hide limb 4,20
+   texture object 4,13
+   set object collision off 4
+
+   rem Create collision walls
+   make object plain 5,1200,800
+   make mesh from object 1,5
+   position object 5,0,0,1200
+   for w=1 to 7 : add limb 5,w,1 : next w
+   w=1 : offset limb 5,w,-800,0,-350 : rotate limb 5,w,0,135,0
+   w=2 : offset limb 5,w,800,0,-350 : rotate limb 5,w,0,45,0
+   w=3 : offset limb 5,w,-1200,0,-1200 : rotate limb 5,w,0,270,0
+   w=4 : offset limb 5,w,1200,0,-1200 : rotate limb 5,w,0,90,0
+   w=5 : offset limb 5,w,-800,0,-2050 : rotate limb 5,w,0,45,0
+   w=6 : offset limb 5,w,800,0,-2050 : rotate limb 5,w,0,135,0
+   w=7 : offset limb 5,w,0,0,-2400 : rotate limb 5,w,0,180,0
+   hide object 5
+
+   rem Create Center Spray
+   make object cone 6,540
+   scale object 6,100,1,100
+   position object 6,0,-290,0
+   xrotate object 6,180
+   color object 6,rgb(235,235,255)
+   ghost object on 6
+   fade object 6,0
+   set object collision off 6
+
+   rem Create Logo
+   make object plain 7,400,300
+   texture object 7,33
+   position object 7,0,230,0
+   ghost object on 7
+   set object 7,1,0,1
+   set object collision off 7
+
+   rem Create drips
+   make object cylinder 8,2
+   scale object 8,100,1000,100
+   ghost object on 8
+   hide object 8
+   set object collision off 8
+   make object cylinder 9,2
+   scale object 9,100,1000,100
+   ghost object on 9
+   hide object 9
+   set object collision off 9
+   make object cylinder 10,2
+   scale object 10,100,1000,100
+   ghost object on 10
+   hide object 10
+   set object collision off 10
+
+   rem Create ripple objects
+   for r=1 to 10
+      make object plain 10+r,100,100
+      xrotate object 10+r,90
+      fix object pivot 10+r
+      ghost object on 10+r
+      set object 10+r,1,0,1
+      hide object 10+r
+      set object collision off 10+r
+   next r
+
+   rem Slightly rescale ball ripple
+   scale object 10+9,150,150,100
+
+   rem Create bouncing ball
+   make object sphere 21,100
+   position object 21,0,0,0
+   texture object 21,2
+
+   rem Create ball shadow
+   make object plain 22,100,100
+   xrotate object 22,90
+   fix object pivot 22
+   texture object 22,32
+   set object 22,1,0,0
+   set object collision off 22
+
+   rem Create Effective Door
+   make object plain 31,1000,1000
+   position object 31,-1400,100,0
+   yrotate object 31,90
+   texture object 31,3
+   fade object 31,0
+   set object collision off 31
+   make object plain 32,1000,1000
+   position object 32,-1320,100,900
+   yrotate object 32,100
+   texture object 32,3
+   set object collision off 32
+   make object plain 33,1000,1000
+   position object 33,-1320,100,-900
+   yrotate object 33,80
+   texture object 33,3
+   set object collision off 33
+
+   rem Create Door Portal
+   make object plain 36,1050,900
+   texture object 36,7
+   position object 36,-1290,100,0
+   set object 36,1,0,0
+   yrotate object 36,90
+   set object collision off 36
+
+   rem Create Character
+   load object "obj\scorpidle.x",101
+   append object "obj\scorpwalk.x",101,100
+   yrotate object 101,180
+   fix object pivot 101
+   loop object 101,0,20
+   hide limb 101,1
+   set object collision off 101
+
+   rem Collision Sphere for Character
+   make object sphere 102,300
+   scale object 102,100,60,100
+   hide object 102
+
+   rem Collision Sphere for Camera
+   make object sphere 103,150
+   hide object 103
+
+   rem Create spinning face
+   make object plain 203,400,400
+   position object 203,800,-280,0
+   texture object 203,21
+   ghost object on 203
+   xrotate object 203,90
+   set object collision off 203
+
+   rem Create ripple textures
+   create bitmap 2,256,64
+   paste image 16,0,0
+   get image 17,0,0,64,64
+   get image 18,64,0,64+64,64
+   get image 19,128,0,128+64,64
+   get image 20,192,0,192+64,64
+   delete bitmap 2
+
+   rem Create bitmap for effects (force)
+   create bitmap 2,256,256
+   set current bitmap 0
+
+   rem Create Sounds
+   load 3dsound "snd\rain.wav",1
+   position sound 1,0,10,0
+   set sound speed 1,3500
+   loop sound 1
+   load sound "snd\splash.wav",2 : set sound speed 2,7000 : set sound volume 2,85
+   load 3dsound "snd\bang.wav",3 : set sound volume 3,95
+   load 3dsound "snd\chain.wav",4 : set sound volume 4,90
+   position sound 4,-1200,0,0
+
+   rem Create Fog (show scene)
+   if fog available()=1 then fog on : fog color 0 : fog distance 3000
+   set ambient light 30
+
+endfunction
+
+function load_image(file$,imagenumber)
+
+   load bitmap file$,1
+   width=bitmap width(1)
+   height=bitmap height(1)
+   get image imagenumber,0,0,width,height
+   delete bitmap 1
+
+endfunction
