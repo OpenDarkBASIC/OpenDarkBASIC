@@ -50,7 +50,7 @@ CONSTANT #constant
 
 BOOL_TRUE       (?i:true)
 BOOL_FALSE      (?i:false)
-STRING_LITERAL  \".*\"
+STRING_LITERAL  \"[^\"\\]*(?:\\.[^\"\\]*)*\"
 FLOAT_EXP       [eE]-?[0-9]+
 FLOAT1          [0-9]+\.[0-9]+?
 FLOAT2          \.[0-9]+
@@ -81,7 +81,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 "-"                 { RETURN_TOKEN(SUB); }
 "*"                 { RETURN_TOKEN(MUL); }
 "/"                 { RETURN_TOKEN(DIV); }
-"%"                 { RETURN_TOKEN(MOD); }
+(?:mod)             { RETURN_TOKEN(MOD); }
 "^"                 { RETURN_TOKEN(POW); }
 "("                 { RETURN_TOKEN(LB); }
 ")"                 { RETURN_TOKEN(RB); }
@@ -102,6 +102,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 "="                 { RETURN_TOKEN(EQ); }
 "<"                 { RETURN_TOKEN(LT); }
 ">"                 { RETURN_TOKEN(GT); }
+(?i:xor)            { RETURN_TOKEN(LXOR); }
 (?i:or)             { RETURN_TOKEN(LOR); }
 (?i:and)            { RETURN_TOKEN(LAND); }
 (?i:not)            { RETURN_TOKEN(LNOT); }

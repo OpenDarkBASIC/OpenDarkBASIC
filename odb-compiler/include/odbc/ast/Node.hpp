@@ -27,7 +27,7 @@
     X(NT_OP_DEC,  dec,    "dec")                                              \
     X(NT_OP_MUL,  mul,    "*")                                                \
     X(NT_OP_DIV,  div,    "/")                                                \
-    X(NT_OP_MOD,  mod,    "%")                                                \
+    X(NT_OP_MOD,  mod,    "mod")                                              \
     X(NT_OP_POW,  pow,    "^")                                                \
                                                                               \
     X(NT_OP_BSHL, bshl,   "<<")                                               \
@@ -43,10 +43,10 @@
     X(NT_OP_GE,    ge,    ">=")                                               \
     X(NT_OP_EQ,    eq,    "==")                                               \
     X(NT_OP_NE,    ne,    "<>")                                               \
-    X(NT_OP_LOR,   lor,   "lor")                                              \
-    X(NT_OP_LAND,  land,  "land")                                             \
-    X(NT_OP_LXOR,  lxor,  "lxor")                                             \
-    X(NT_OP_LNOT,  lnot,  "lnot")                                             \
+    X(NT_OP_LOR,   lor,   "or")                                               \
+    X(NT_OP_LAND,  land,  "and")                                              \
+    X(NT_OP_LXOR,  lxor,  "xor")                                              \
+    X(NT_OP_LNOT,  lnot,  "not")                                              \
     X(NT_OP_COMMA, comma, ",")
 
 #define NODE_TYPE_SYMBOL_LIST                                                 \

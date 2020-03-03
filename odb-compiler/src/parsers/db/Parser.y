@@ -163,20 +163,28 @@
 %nonassoc NO_HASH_OR_DOLLAR
 %nonassoc COLON
 %left COMMA
+%right BNOT
+%left BXOR
+%left BOR
+%left BAND
+%left EQ
+%left LT
+%left GT
+%left LE
+%left GE
+%left NE
+%left BSHL
+%left BSHR
+%left LXOR
 %left LOR
 %left LAND
-%left LXOR
-%left BOR
-%left BXOR
-%left BAND
-%right BNOT
-%left EQ NE
-%left GT LT GE LE
-%left BSHL BSHR
-%left ADD SUB
-%left MUL DIV
-%left POW MOD
 %right LNOT
+%left ADD
+%left SUB
+%left MUL
+%left MOD
+%left DIV
+%left POW
 %left LB RB
 
 %destructor { deleteCStr($$); } <string>

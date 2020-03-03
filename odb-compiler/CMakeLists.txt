@@ -117,6 +117,7 @@ if (${ODBC_TESTS})
         "tests/src/test_db_loop_repeat.cpp"
         "tests/src/test_db_loop_while.cpp"
         "tests/src/test_db_op_add.cpp"
+        "tests/src/test_db_op_precedence.cpp"
         "tests/src/test_db_remarks.cpp"
         "tests/src/test_db_select.cpp"
         "tests/src/test_db_subroutine.cpp"
