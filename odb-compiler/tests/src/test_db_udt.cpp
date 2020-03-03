@@ -60,6 +60,65 @@ TEST_F(NAME, declare_nested_udt)
         "    pos as vec2\n"
         "    health as integer\n"
         "endtype\n"), IsTrue());
+
+    Node* block = ast;
+    ASSERT_THAT(block, NotNull());
+    ASSERT_THAT(block->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(block->block.statement, NotNull());
+    ASSERT_THAT(block->block.statement->info.type, Eq(NT_SYM_UDT_DECL));
+    ASSERT_THAT(block->block.statement->sym.udt_decl.name, StrEq("vec2"));
+
+    Node* subtype = block->block.statement->sym.udt_decl.subtypes_list;
+    ASSERT_THAT(subtype, NotNull());
+    ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->info.type, Eq(NT_SYM_VAR_DECL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.datatype, Eq(SDT_FLOAT));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.name, StrEq("x"));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt, IsNull());
+
+    subtype = subtype->udt_subtype_list.next;
+    ASSERT_THAT(subtype, NotNull());
+    ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->info.type, Eq(NT_SYM_VAR_DECL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.datatype, Eq(SDT_FLOAT));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.name, StrEq("y"));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt, IsNull());
+    ASSERT_THAT(subtype->udt_subtype_list.next, IsNull());
+
+    block = block->block.next;
+    ASSERT_THAT(block, NotNull());
+    ASSERT_THAT(block->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(block->block.statement, NotNull());
+    ASSERT_THAT(block->block.statement->info.type, Eq(NT_SYM_UDT_DECL));
+    ASSERT_THAT(block->block.statement->sym.udt_decl.name, StrEq("player"));
+
+    subtype = block->block.statement->sym.udt_decl.subtypes_list;
+    ASSERT_THAT(subtype, NotNull());
+    ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->info.type, Eq(NT_SYM_VAR_DECL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.datatype, Eq(SDT_UDT));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.name, StrEq("pos"));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt, NotNull());
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt->info.type, Eq(NT_SYM_UDT_TYPE_REF));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt->sym.udt_type_ref.name, StrEq("vec2"));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt->sym.udt_type_ref.flag.datatype, Eq(SDT_UDT));
+
+    subtype = subtype->udt_subtype_list.next;
+    ASSERT_THAT(subtype, NotNull());
+    ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->info.type, Eq(NT_SYM_VAR_DECL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.datatype, Eq(SDT_INTEGER));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.name, StrEq("health"));
+    ASSERT_THAT(subtype->udt_subtype_list.sym_decl->sym.var_decl.udt, IsNull());
+    ASSERT_THAT(subtype->udt_subtype_list.next, IsNull());
 }
 
 TEST_F(NAME, declare_nested_udt_with_dims)

@@ -1,4 +1,4 @@
-/build
+/build*
 /lightship-source
 /*.grind
 *.kdev4

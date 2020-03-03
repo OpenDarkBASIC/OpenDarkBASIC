@@ -57,7 +57,8 @@
     X(NT_SYM_VAR_REF, var_ref, "variable ref")                                \
     X(NT_SYM_ARRAY_DECL, array_decl, "array decl")                            \
     X(NT_SYM_ARRAY_REF, array_ref, "array ref")                               \
-    X(NT_SYM_UDT_DECL, udt_decl, "user defined type")                         \
+    X(NT_SYM_UDT_DECL, udt_decl, "udt decl")                                  \
+    X(NT_SYM_UDT_TYPE_REF, udt_type_ref, "udt type ref")                      \
     X(NT_SYM_FUNC_CALL, func_call, "function call")                           \
     X(NT_SYM_FUNC_DECL, func_decl, "function decl")                           \
     X(NT_SYM_SUB_CALL, sub_call, "subroutine call")                           \
@@ -360,6 +361,7 @@ union Node {
         DEFINE_SYMBOL_STRUCT(array_decl, udt, arglist);
         DEFINE_SYMBOL_STRUCT(array_ref, udt, arglist);
         DEFINE_SYMBOL_STRUCT(udt_decl, subtypes_list, _padding);
+        DEFINE_SYMBOL_STRUCT(udt_type_ref, _padding1, _padding2);
         DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
         DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
         DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);

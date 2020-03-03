@@ -353,19 +353,19 @@ udt_body_decl
 udt_name
   : symbol_without_type {
         $$ = $1;
-        $$->info.type = NT_SYM_VAR_REF;
+        $$->info.type = NT_SYM_UDT_TYPE_REF;
         $$->sym.var_ref.flag.datatype = SDT_UDT;
     }
   ;
 udt_ref
-  : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
+  : udt_name PERIOD udt_refs                     { $$ = $1; $$->info.type = NT_SYM_VAR_REF; $$->sym.var_ref.udt = $3; }
   | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
   ;
 udt_refs
-  : udt_name PERIOD udt_refs                     { $$ = $1; $$->sym.var_ref.udt = $3; }
+  : var_ref PERIOD udt_refs                      { $$ = $1; $$->sym.var_ref.udt = $3; }
   | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
   | array_ref                                    { $$ = $1; }
-  | symbol                                       { $$ = $1; }
+  | var_ref                                      { $$ = $1; }
   ;
 func_decl
   : func_name_decl seps stmnts seps func_end {

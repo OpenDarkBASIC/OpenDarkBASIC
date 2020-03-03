@@ -50,7 +50,7 @@ CONSTANT #constant
 
 BOOL_TRUE       (?i:true)
 BOOL_FALSE      (?i:false)
-STRING_LITERAL  \"[^\"\\]*(?:\\.[^\"\\]*)*\"
+STRING_LITERAL  \"[^"]*\"
 FLOAT_EXP       [eE]-?[0-9]+
 FLOAT1          [0-9]+\.[0-9]+?
 FLOAT2          \.[0-9]+

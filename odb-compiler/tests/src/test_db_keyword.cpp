@@ -117,3 +117,11 @@ TEST_F(NAME, keyword_containing_builtin_in_middle)
     ASSERT_THAT(driver->parseString(
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
 }
+
+TEST_F(NAME, wat)
+{
+    db.addKeyword({"perform checklist for files", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "perform checklist for files\n"), IsTrue());
+}

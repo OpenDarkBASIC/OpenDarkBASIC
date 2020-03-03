@@ -207,6 +207,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
         case NT_SYM_UDT_DECL:
             os << "N" << node->info.guid << " -> " << "N" << node->sym.udt_decl.subtypes_list->info.guid << "[label=\"subtype list\"];\n";
             goto symbol_common;
+        case NT_SYM_UDT_TYPE_REF:
+            goto symbol_common;
         case NT_SYM_FUNC_CALL:
             if (node->sym.func_call.arglist)
                 os << "N" << node->info.guid << " -> " << "N" << node->sym.func_call.arglist->info.guid << "[label=\"arglist\"];\n";
@@ -266,6 +268,8 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
                     for (const char* p = node->literal.value.s; *p; p++)
                     {
                         if (*p == '"')
+                            os << "\\";
+                        if (*p == '\\')
                             os << "\\";
                         os << *p;
                     }

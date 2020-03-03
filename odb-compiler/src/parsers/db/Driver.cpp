@@ -126,7 +126,7 @@ bool Driver::doParse()
                 possibleKeyword += " ";
 
             possibleKeyword += dbget_text(scanner);
-            lastTokenWasSymbol = (tokens.back().pushedChar == TOK_SYMBOL);
+            lastTokenWasSymbol = (tokens.back().pushedChar != TOK_INTEGER);
             lookAheadEnd++;
 
             result = kwMatcher->findLongestKeywordMatching(possibleKeyword);
