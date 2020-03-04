@@ -16,7 +16,8 @@
     X(NT_GOTO,             goto_,            "goto")                          \
     X(NT_LOOP,             loop,             "loop")                          \
     X(NT_LOOP_WHILE,       loop_while,       "while")                         \
-    X(NT_LOOP_UNTIL,       loop_repeat,      "repeat")                        \
+    X(NT_LOOP_UNTIL,       loop_until,       "until")                         \
+    X(NT_BREAK,            break_,           "break")                         \
     X(NT_UDT_SUBTYPE_LIST, udt_subtype_list, "UDT Subtypes")                  \
     X(NT_LITERAL,          literal,          "literal")
 
@@ -171,8 +172,8 @@ struct LocationInfo
         };
     } source;
 
-    union { int first_line; int begin; };
-    union { int last_line;  int end; };
+    int first_line;
+    int last_line;
     int first_column;
     int last_column;
 };
@@ -341,6 +342,13 @@ union Node {
     struct
     {
         Info info;
+        Node* _padding1;
+        Node* _padding2;
+    } break_;
+
+    struct
+    {
+        Info info;
         Node* sym_decl;
         Node* next;
     } udt_subtype_list;
@@ -405,6 +413,9 @@ union Node {
 ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
+ODBC_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
+ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
+
 Node* newOp(Node* left, Node* right, NodeType op, const DBLTYPE* loc);
 
 Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope, const DBLTYPE* loc);
@@ -431,6 +442,7 @@ Node* newLoop(Node* block, const DBLTYPE* loc);
 Node* newLoopWhile(Node* condition, Node* block, const DBLTYPE* loc);
 Node* newLoopUntil(Node* condition, Node* block, const DBLTYPE* loc);
 Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block, const DBLTYPE* loc);
+Node* newBreak(const DBLTYPE* loc);
 
 Node* newUDTSubtypeList(Node* varOrArrDecl, const DBLTYPE* loc);
 Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl, const DBLTYPE* loc);
@@ -439,9 +451,6 @@ Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc);
 Node* newBlock(Node* expr, Node* next, const DBLTYPE* loc);
 Node* appendStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
 Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
-
-ODBC_PUBLIC_API void freeNode(Node* node);
-ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
 
 }
 }

@@ -80,6 +80,8 @@ add_library (odbc ${ODBC_LIB_TYPE}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/Node.cpp"
+    "src/ast/Node_dumpToDOT.cpp"
+    "src/ast/Node_dumpToJSON.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"

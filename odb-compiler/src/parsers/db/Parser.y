@@ -91,7 +91,7 @@
 %token LT GT LE GE NE EQ LOR LAND LNOT;
 
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
-%token WHILE ENDWHILE REPEAT UNTIL DO LOOP
+%token WHILE ENDWHILE REPEAT UNTIL DO LOOP BREAK
 %token FOR TO STEP NEXT
 %token FUNCTION EXITFUNCTION ENDFUNCTION
 %token GOSUB RETURN GOTO
@@ -153,6 +153,7 @@
 %type<node> loop_until;
 %type<node> loop_for;
 %type<node> loop_for_next;
+%type<node> break;
 
 /* precedence rules */
 %nonassoc NO_ELSE
@@ -194,7 +195,7 @@
 
 %%
 program
-  : seps_maybe stmnts seps_maybe                 { driver->appendAST($2, &yylloc); }
+  : seps_maybe stmnts seps_maybe                 { driver->appendBlock($2, &yylloc); }
   | seps_maybe
   ;
 sep
@@ -231,6 +232,7 @@ stmnt
   | conditional                                  { $$ = $1; }
   | select                                       { $$ = $1; }
   | loop                                         { $$ = $1; }
+  | break                                        { $$ = $1; }
   ;
 constant_decl
   : CONSTANT symbol literal {
@@ -371,6 +373,10 @@ func_decl
   : func_name_decl seps stmnts seps func_end {
         $$ = $1;
         $$->sym.func_decl.body = appendStatementToBlock($3, $5, &yylloc);
+    }
+  | func_name_decl seps func_end {
+        $$ = $1;
+        $$->sym.func_decl.body = newBlock($3, nullptr, &yylloc);
     }
   ;
 func_end
@@ -546,6 +552,9 @@ loop_for
 loop_for_next
   : NEXT                                         { $$ = nullptr; }
   | NEXT symbol                                  { $$ = $2; }
+  ;
+break
+  : BREAK                                        { $$ = newBreak(&yylloc); }
   ;
 %%
 

@@ -15,6 +15,20 @@ public:
 
 using namespace odbc;
 
+TEST_F(NAME, empty_function)
+{
+    EXPECT_THAT(driver->parseString(
+        "function myfunc()\n"
+        "endfunction\n"), IsTrue());
+}
+
+TEST_F(NAME, empty_function_with_return_argument)
+{
+    EXPECT_THAT(driver->parseString(
+        "function myfunc()\n"
+        "endfunction a+b\n"), IsTrue());
+}
+
 TEST_F(NAME, function)
 {
     EXPECT_THAT(driver->parseString(

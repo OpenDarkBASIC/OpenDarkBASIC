@@ -329,7 +329,31 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpASTJSON(const std::vector<std::string>& args)
 {
-    fprintf(stderr, "[kw parser] Error: Not implemented");
+    if (ast_ == nullptr)
+    {
+        fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
+        return false;
+    }
+
+    FILE* outFile = stdout;
+    if (args.size())
+    {
+        outFile = fopen(args[0].c_str(), "w");
+        if (!outFile)
+        {
+            fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+            return false;
+        }
+        fprintf(stderr, "[ast] Dumping AST to JSON: `%s`\n", args[0].c_str());
+    }
+    else
+        fprintf(stderr, "[ast] Dumping AST to JSON\n");
+
+    odbc::ast::dumpToJSON(outFile, ast_);
+
+    if (args.size())
+        fclose(outFile);
+
     return false;
 }
 

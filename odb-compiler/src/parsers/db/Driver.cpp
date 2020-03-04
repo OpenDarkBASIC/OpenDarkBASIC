@@ -151,7 +151,7 @@ bool Driver::doParse()
                 possibleKeyword += " ";
 
             possibleKeyword += dbget_text(scanner);
-            lastTokenWasSymbol = (tokens.back().pushedChar != TOK_INTEGER);
+            lastTokenWasSymbol = (tokens.back().pushedChar != TOK_INTEGER_LITERAL);
             lookAheadEnd++;
 
             result = kwMatcher->findLongestKeywordMatching(possibleKeyword);
@@ -255,12 +255,6 @@ static void updateLocationSourceInChildren(ast::Node* node)
 }
 
 // ----------------------------------------------------------------------------
-static void mergeLocationRanges(ast::Node* node)
-{
-
-}
-
-// ----------------------------------------------------------------------------
 bool Driver::patchLocationInfo(ast::Node* root)
 {
     if (activeFilePtr_)
@@ -288,7 +282,6 @@ bool Driver::patchLocationInfo(ast::Node* root)
 
     // Every node in the tree shares the same location info
     updateLocationSourceInChildren(root);
-    mergeLocationRanges(root);
 
     return true;
 }
