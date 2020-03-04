@@ -281,14 +281,14 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
 }
 
 // ----------------------------------------------------------------------------
-void Driver::appendAST(ast::Node* block)
+void Driver::appendAST(ast::Node* block, const DBLTYPE* loc)
 {
     assert(block->info.type == ast::NT_BLOCK);
 
     if (*astRoot_ == nullptr)
         *astRoot_ = block;
     else
-        *astRoot_ = ast::appendStatementToBlock(*astRoot_, block);
+        *astRoot_ = ast::appendStatementToBlock(*astRoot_, block, loc);
 }
 
 }

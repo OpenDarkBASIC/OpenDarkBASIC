@@ -32,7 +32,7 @@ public:
      * @brief Called by Bison to pass in the parsed AST. Appends the block to
      * the root node.
      */
-    void appendAST(ast::Node* block);
+    void appendAST(ast::Node* block, const DBLTYPE* loc);
 
 private:
     bool doParse();

@@ -76,6 +76,8 @@
 #define ASSERT_SYMBOL_RANGE(node) \
     assert((node)->info.type >= NT_SYM && (node)->info.type <= NT_SYM_KEYWORD)
 
+typedef struct DBLTYPE DBLTYPE;
+
 namespace odbc {
 class Driver;
 namespace ast {
@@ -149,18 +151,20 @@ union literal_value_t
     char* s;
 };
 
+struct LocationInfo
+{
+    int first_line;
+    int last_line;
+    int first_column;
+    int last_column;
+};
+
 union Node {
     /*! Every node in the AST has this data at the beginning */
     struct Info
     {
         NodeType type;
-        struct
-        {
-            int line_first;
-            int line_last;
-            int column_first;
-            int column_last;
-        } loc;
+        LocationInfo loc;
 #ifdef ODBC_DOT_EXPORT
         int guid;
 #endif
@@ -383,44 +387,43 @@ union Node {
 ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
 #endif
 
-Node* newOp(Node* left, Node* right, NodeType op);
+Node* newOp(Node* left, Node* right, NodeType op, const DBLTYPE* loc);
 
-Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope);
+Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope, const DBLTYPE* loc);
 
-Node* newBooleanLiteral(bool value);
-Node* newIntegerLiteral(int32_t value);
-Node* newFloatLiteral(double value);
-Node* newStringLiteral(char* value);
+Node* newBooleanLiteral(bool value, const DBLTYPE* loc);
+Node* newIntegerLiteral(int32_t value, const DBLTYPE* loc);
+Node* newFloatLiteral(double value, const DBLTYPE* loc);
+Node* newStringLiteral(char* value, const DBLTYPE* loc);
 
-Node* newAssignment(Node* symbol, Node* statement);
+Node* newAssignment(Node* symbol, Node* statement, const DBLTYPE* loc);
 
-Node* newBranch(Node* condition, Node* true_branch, Node* false_branch);
+Node* newBranch(Node* condition, Node* true_branch, Node* false_branch, const DBLTYPE* loc);
 
-Node* newSelectStatement(Node* expression, Node* case_list);
-Node* newCaseList(Node* case_);
-Node* appendCaseToList(Node* case_list, Node* case_);
-Node* newCase(Node* expression, Node* body);
+Node* newSelectStatement(Node* expression, Node* case_list, const DBLTYPE* loc);
+Node* newCaseList(Node* case_, const DBLTYPE* loc);
+Node* appendCaseToList(Node* case_list, Node* case_, const DBLTYPE* loc);
+Node* newCase(Node* expression, Node* body, const DBLTYPE* loc);
 
-Node* newFuncReturn(Node* returnValue);
-Node* newSubReturn();
-Node* newGoto(Node* label);
+Node* newFuncReturn(Node* returnValue, const DBLTYPE* loc);
+Node* newSubReturn(const DBLTYPE* loc);
+Node* newGoto(Node* label, const DBLTYPE* loc);
 
-Node* newLoop(Node* block);
-Node* newLoopWhile(Node* condition, Node* block);
-Node* newLoopUntil(Node* condition, Node* block);
-Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block);
+Node* newLoop(Node* block, const DBLTYPE* loc);
+Node* newLoopWhile(Node* condition, Node* block, const DBLTYPE* loc);
+Node* newLoopUntil(Node* condition, Node* block, const DBLTYPE* loc);
+Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block, const DBLTYPE* loc);
 
-Node* newUDTSubtypeList(Node* varOrArrDecl);
-Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl);
-Node* newKeyword(char* name, Node* arglist);
+Node* newUDTSubtypeList(Node* varOrArrDecl, const DBLTYPE* loc);
+Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl, const DBLTYPE* loc);
+Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc);
 
-Node* newBlock(Node* expr, Node* next);
-Node* appendStatementToBlock(Node* block, Node* expr);
-Node* prependStatementToBlock(Node* block, Node* expr);
+Node* newBlock(Node* expr, Node* next, const DBLTYPE* loc);
+Node* appendStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
+Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
 
 ODBC_PUBLIC_API void freeNode(Node* node);
 ODBC_PUBLIC_API void freeNodeRecursive(Node* root=nullptr);
 
 }
 }
-

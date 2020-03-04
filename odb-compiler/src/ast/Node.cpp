@@ -1,4 +1,5 @@
 #include "odbc/ast/Node.hpp"
+#include "odbc/parsers/db/Parser.y.h"
 #include "odbc/util/Str.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -288,16 +289,28 @@ void dumpToDOT(std::ostream& os, Node* root)
 #endif
 
 // ----------------------------------------------------------------------------
-static void init_info(Node* node, NodeType type)
+static void init_info(Node* node, NodeType type, int first_line, int last_line, int first_column, int last_column)
 {
     node->info.type = type;
+    node->info.loc.first_line = first_line;
+    node->info.loc.last_line = last_line;
+    node->info.loc.first_column = first_column;
+    node->info.loc.last_column = last_column;
 #ifdef ODBC_DOT_EXPORT
     node->info.guid = nodeGUIDCounter++;
 #endif
 }
+static void init_info(Node* node, NodeType type, const DBLTYPE* loc)
+{
+    init_info(node, type, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+}
+static void init_info(Node* node, NodeType type, const LocationInfo* loc)
+{
+    init_info(node, type, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+}
 
 // ----------------------------------------------------------------------------
-Node* newOp(Node* left, Node* right, NodeType op)
+Node* newOp(Node* left, Node* right, NodeType op, const DBLTYPE* loc)
 {
     ASSERT_OP_RANGE(op);
 
@@ -305,20 +318,20 @@ Node* newOp(Node* left, Node* right, NodeType op)
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, op);
+    init_info(node, op, loc);
     node->op.base.left = left;
     node->op.base.right = right;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope)
+Node* newSymbol(char* symbolName, SymbolDataType dataType, SymbolScope scope, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_SYM);
+    init_info(node, NT_SYM, loc);
     node->sym.base.left = nullptr;
     node->sym.base.right = nullptr;
     node->sym.base.name = symbolName;
@@ -344,7 +357,7 @@ static Node* dupNode(Node* other)
         if ((right = node->base.right = dupNode(other->base.right)) == nullptr)
             goto dupRightFailed;
 
-    init_info(node, other->info.type);
+    init_info(node, other->info.type, &other->info.loc);
     switch (node->info.type)
     {
 #define X(type, name, str) case type:
@@ -393,13 +406,13 @@ static Node* dupNode(Node* other)
 }
 
 // ----------------------------------------------------------------------------
-static Node* newConstant(LiteralType type, literal_value_t value)
+static Node* newConstant(LiteralType type, literal_value_t value, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_LITERAL);
+    init_info(node, NT_LITERAL, loc);
     node->literal._padding1 = nullptr;
     node->literal._padding2 = nullptr;
     node->literal.type = type;
@@ -407,24 +420,24 @@ static Node* newConstant(LiteralType type, literal_value_t value)
     return node;
 }
 
-Node* newBooleanLiteral(bool b)    { literal_value_t value; value.b = b; return newConstant(LT_BOOLEAN, value); }
-Node* newIntegerLiteral(int32_t i) { literal_value_t value; value.i = i; return newConstant(LT_INTEGER, value); }
-Node* newFloatLiteral(double f)    { literal_value_t value; value.f = f; return newConstant(LT_FLOAT, value); }
-Node* newStringLiteral(char* s)    { literal_value_t value; value.s = s; return newConstant(LT_STRING, value); }
+Node* newBooleanLiteral(bool b, const DBLTYPE* loc)    { literal_value_t value; value.b = b; return newConstant(LT_BOOLEAN, value, loc); }
+Node* newIntegerLiteral(int32_t i, const DBLTYPE* loc) { literal_value_t value; value.i = i; return newConstant(LT_INTEGER, value, loc); }
+Node* newFloatLiteral(double f, const DBLTYPE* loc)    { literal_value_t value; value.f = f; return newConstant(LT_FLOAT, value, loc); }
+Node* newStringLiteral(char* s, const DBLTYPE* loc)    { literal_value_t value; value.s = s; return newConstant(LT_STRING, value, loc); }
 
 // ----------------------------------------------------------------------------
-Node* newAssignment(Node* symbol, Node* statement)
+Node* newAssignment(Node* symbol, Node* statement, const DBLTYPE* loc)
 {
     ASSERT_SYMBOL_RANGE(symbol);
     Node* ass = (Node*)malloc(sizeof *ass);
-    init_info(ass, NT_ASSIGNMENT);
+    init_info(ass, NT_ASSIGNMENT, loc);
     ass->assignment.symbol = symbol;
     ass->assignment.expr = statement;
     return ass;
 }
 
 // ----------------------------------------------------------------------------
-Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
+Node* newBranch(Node* condition, Node* true_branch, Node* false_branch, const DBLTYPE* loc)
 {
     Node* paths = nullptr;
     if (true_branch || false_branch)
@@ -432,7 +445,7 @@ Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
         paths = (Node*)malloc(sizeof* paths);
         if (paths == nullptr)
             return nullptr;
-        init_info(paths, NT_BRANCH_PATHS);
+        init_info(paths, NT_BRANCH_PATHS, loc);
         paths->branch_paths.is_true = true_branch;
         paths->branch_paths.is_false = false_branch;
     }
@@ -443,7 +456,7 @@ Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
         freeNodeRecursive(paths);
         return nullptr;
     }
-    init_info(node, NT_BRANCH);
+    init_info(node, NT_BRANCH, loc);
 
     node->branch.condition = condition;
     node->branch.paths = paths;
@@ -451,35 +464,35 @@ Node* newBranch(Node* condition, Node* true_branch, Node* false_branch)
 }
 
 // ----------------------------------------------------------------------------
-Node* newSelectStatement(Node* expression, Node* case_list)
+Node* newSelectStatement(Node* expression, Node* case_list, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_SELECT);
+    init_info(node, NT_SELECT, loc);
     node->select.expr = expression;
     node->select.cases = case_list;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newCaseList(Node* case_)
+Node* newCaseList(Node* case_, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_CASE_LIST);
+    init_info(node, NT_CASE_LIST, loc);
     node->case_list.case_ = case_;
     node->case_list.next = nullptr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* appendCaseToList(Node* case_list, Node* case_)
+Node* appendCaseToList(Node* case_list, Node* case_, const DBLTYPE* loc)
 {
-    Node* entry = newCaseList(case_);
+    Node* entry = newCaseList(case_, loc);
     if (entry == nullptr)
         return nullptr;
 
@@ -492,98 +505,98 @@ Node* appendCaseToList(Node* case_list, Node* case_)
 }
 
 // ----------------------------------------------------------------------------
-Node* newCase(Node* expression, Node* body)
+Node* newCase(Node* expression, Node* body, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_CASE);
+    init_info(node, NT_CASE, loc);
     node->case_.condition = expression;
     node->case_.body = body;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newFuncReturn(Node* returnValue)
+Node* newFuncReturn(Node* returnValue, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_FUNC_RETURN);
+    init_info(node, NT_FUNC_RETURN, loc);
     node->func_return.retval = returnValue;
     node->func_return._padding = nullptr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newSubReturn()
+Node* newSubReturn(const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_SUB_RETURN);
+    init_info(node, NT_SUB_RETURN, loc);
     node->sub_return._padding1 = nullptr;
     node->sub_return._padding2 = nullptr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newGoto(Node* label)
+Node* newGoto(Node* label, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_GOTO);
+    init_info(node, NT_GOTO, loc);
     node->goto_.label = label;
     node->goto_._padding = nullptr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newLoop(Node* block)
+Node* newLoop(Node* block, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_LOOP);
+    init_info(node, NT_LOOP, loc);
     node->loop._padding = nullptr;
     node->loop.body = block;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newLoopWhile(Node* condition, Node* block)
+Node* newLoopWhile(Node* condition, Node* block, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_LOOP_WHILE);
+    init_info(node, NT_LOOP_WHILE, loc);
     node->loop_while.condition = condition;
     node->loop_while.body = block;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newLoopUntil(Node* condition, Node* block)
+Node* newLoopUntil(Node* condition, Node* block, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_LOOP_UNTIL);
+    init_info(node, NT_LOOP_UNTIL, loc);
     node->loop_while.condition = condition;
     node->loop_while.body = block;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block)
+Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, Node* nextSymbol, Node* block, const DBLTYPE* loc)
 {
     ASSERT_SYMBOL_RANGE(symbol);
 
@@ -591,21 +604,21 @@ Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, N
     Node* symbolRef1 = dupNode(symbol);
     Node* symbolRef2 = dupNode(symbol);
 
-    Node* loopInit = newAssignment(symbol, startExpr);
+    Node* loopInit = newAssignment(symbol, startExpr, loc);
 
     if (stepExpr == nullptr)
-        stepExpr = newIntegerLiteral(1);
+        stepExpr = newIntegerLiteral(1, loc);
 
-    Node* addStepStmnt = newOp(symbolRef2, stepExpr, NT_OP_INC);
+    Node* addStepStmnt = newOp(symbolRef2, stepExpr, NT_OP_INC, loc);
     Node* loopBody;
     if (block)
-        loopBody = appendStatementToBlock(block, addStepStmnt);
+        loopBody = appendStatementToBlock(block, addStepStmnt, loc);
     else
         loopBody = addStepStmnt;
 
-    Node* exitCondition = newOp(symbolRef1, endExpr, NT_OP_LE);
-    Node* loopWithInc = newLoopWhile(exitCondition, loopBody);
-    Node* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr));
+    Node* exitCondition = newOp(symbolRef1, endExpr, NT_OP_LE, loc);
+    Node* loopWithInc = newLoopWhile(exitCondition, loopBody, loc);
+    Node* loop = newBlock(loopInit, newBlock(loopWithInc, nullptr, loc), loc);
 
     freeNodeRecursive(nextSymbol);
 
@@ -613,20 +626,20 @@ Node* newLoopFor(Node* symbol, Node* startExpr, Node* endExpr, Node* stepExpr, N
 }
 
 // ----------------------------------------------------------------------------
-Node* newUDTSubtypeList(Node* varOrArrDecl)
+Node* newUDTSubtypeList(Node* varOrArrDecl, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
     if (node == nullptr)
         return nullptr;
 
-    init_info(node, NT_UDT_SUBTYPE_LIST);
+    init_info(node, NT_UDT_SUBTYPE_LIST, loc);
     node->udt_subtype_list.sym_decl = varOrArrDecl;
     node->udt_subtype_list.next = nullptr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl)
+Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl, const DBLTYPE* loc)
 {
     assert(subtypeList->info.type == NT_UDT_SUBTYPE_LIST);
 
@@ -634,7 +647,7 @@ Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl)
     while (lastSubtype->udt_subtype_list.next)
         lastSubtype = lastSubtype->udt_subtype_list.next;
 
-    lastSubtype->udt_subtype_list.next = newUDTSubtypeList(varOrArrDecl);
+    lastSubtype->udt_subtype_list.next = newUDTSubtypeList(varOrArrDecl, loc);
     if (lastSubtype->udt_subtype_list.next == nullptr)
         return nullptr;
 
@@ -642,7 +655,7 @@ Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl)
 }
 
 // ----------------------------------------------------------------------------
-Node* newKeyword(char* name, Node* arglist)
+Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc)
 {
     SymbolDataType dataType = SDT_UNKNOWN;
     if (name[0] == '$')
@@ -650,7 +663,7 @@ Node* newKeyword(char* name, Node* arglist)
     else if (name[0] == '#')
         dataType = SDT_FLOAT;
 
-    Node* node = newSymbol(name, dataType, SS_GLOBAL);
+    Node* node = newSymbol(name, dataType, SS_GLOBAL, loc);
     if (node == nullptr)
         return nullptr;
 
@@ -660,17 +673,17 @@ Node* newKeyword(char* name, Node* arglist)
 }
 
 // ----------------------------------------------------------------------------
-Node* newBlock(Node* expr, Node* next)
+Node* newBlock(Node* expr, Node* next, const DBLTYPE* loc)
 {
     Node* node = (Node*)malloc(sizeof *node);
-    init_info(node, NT_BLOCK);
+    init_info(node, NT_BLOCK, loc);
     node->block.next = next;
     node->block.statement = expr;
     return node;
 }
 
 // ----------------------------------------------------------------------------
-Node* appendStatementToBlock(Node* block, Node* expr)
+Node* appendStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc)
 {
     assert(block->info.type == NT_BLOCK);
 
@@ -678,7 +691,7 @@ Node* appendStatementToBlock(Node* block, Node* expr)
     while (last->block.next)
         last = last->block.next;
 
-    last->block.next = newBlock(expr, nullptr);
+    last->block.next = newBlock(expr, nullptr, loc);
     if (last->block.next == nullptr)
         return nullptr;
 
@@ -686,9 +699,9 @@ Node* appendStatementToBlock(Node* block, Node* expr)
 }
 
 // ----------------------------------------------------------------------------
-Node* prependStatementToBlock(Node* block, Node* expr)
+Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc)
 {
-    Node* prev = newBlock(expr, block);
+    Node* prev = newBlock(expr, block, loc);
     return prev;
 }
 
