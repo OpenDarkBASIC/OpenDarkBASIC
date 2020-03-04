@@ -1,6 +1,8 @@
 %{
 #define YYSTYPE DBSTYPE
 #define YYLTYPE DBLTYPE
+
+/* Old version that uses lines/columns
 #define YY_USER_ACTION \
     yylloc->first_line = yylloc->last_line; \
     yylloc->first_column = yylloc->last_column; \
@@ -12,7 +14,13 @@
         else { \
             yylloc->last_column++; \
         } \
-    }
+    }*/
+
+// first_line and last_line contain the absolute offset (from the beginning of
+// the input file or string)
+#define YY_USER_ACTION \
+    yylloc->first_line = yylloc->last_line; \
+    yylloc->last_line += strlen(yytext);
 
 #include "odbc/parsers/db/Parser.y.h"
 #include "odbc/parsers/db/Scanner.hpp"

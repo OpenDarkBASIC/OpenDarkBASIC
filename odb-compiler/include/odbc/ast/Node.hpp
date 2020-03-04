@@ -151,10 +151,28 @@ union literal_value_t
     char* s;
 };
 
+enum LocationInfoSourceType
+{
+    LOC_NONE,
+    LOC_FILE,
+    LOC_STRING
+};
+
 struct LocationInfo
 {
-    int first_line;
-    int last_line;
+    struct
+    {
+        LocationInfoSourceType type : 2;
+        unsigned owning : 1;
+        union
+        {
+            FILE* file;
+            char* string;
+        };
+    } source;
+
+    union { int first_line; int begin; };
+    union { int last_line;  int end; };
     int first_column;
     int last_column;
 };
@@ -423,7 +441,7 @@ Node* appendStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
 Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
 
 ODBC_PUBLIC_API void freeNode(Node* node);
-ODBC_PUBLIC_API void freeNodeRecursive(Node* root=nullptr);
+ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
 
 }
 }

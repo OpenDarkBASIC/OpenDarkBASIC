@@ -292,6 +292,11 @@ void dumpToDOT(std::ostream& os, Node* root)
 static void init_info(Node* node, NodeType type, int first_line, int last_line, int first_column, int last_column)
 {
     node->info.type = type;
+
+    node->info.loc.source.type = LOC_NONE;
+    node->info.loc.source.owning = 0;
+    node->info.loc.source.string = nullptr;
+
     node->info.loc.first_line = first_line;
     node->info.loc.last_line = last_line;
     node->info.loc.first_column = first_column;
@@ -708,6 +713,16 @@ Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc)
 // ----------------------------------------------------------------------------
 void freeNode(Node* node)
 {
+    if (node->info.loc.source.owning)
+    {
+        switch (node->info.loc.source.type)
+        {
+            case LOC_FILE   : fclose(node->info.loc.source.file); break;
+            case LOC_STRING : free(node->info.loc.source.string); break;
+            case LOC_NONE   : break;
+        }
+    }
+
     switch (node->info.type)
     {
 #define X(type, name, str) case type:

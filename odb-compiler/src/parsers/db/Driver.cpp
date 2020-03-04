@@ -4,6 +4,7 @@
 #include "odbc/parsers/keywords/KeywordMatcher.hpp"
 #include "odbc/util/Log.hpp"
 #include "odbc/util/Str.hpp"
+#include "odbc/util/FileSystem.hpp"
 #include "odbc/ast/Node.hpp"
 #include <cassert>
 #include <cstring>
@@ -18,8 +19,8 @@ namespace db {
 
 // ----------------------------------------------------------------------------
 Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
-    astRoot_(root),
-    keywordMatcher_(keywordMatcher)
+    keywordMatcher_(keywordMatcher),
+    astRoot_(root)
 {
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
@@ -75,6 +76,21 @@ bool Driver::parseString(const std::string& str)
 }
 
 // ----------------------------------------------------------------------------
+static bool tokenHasFreeableString(int pushedChar)
+{
+    switch (pushedChar)
+    {
+        case TOK_STRING_LITERAL:
+        case TOK_SYMBOL:
+        case TOK_KEYWORD:
+            return true;
+
+        default:
+            return false;
+    }
+}
+
+// ----------------------------------------------------------------------------
 bool Driver::doParse()
 {
     int parse_result;
@@ -85,6 +101,15 @@ bool Driver::doParse()
         int pushedChar;
         DBSTYPE pushedValue;
     };
+
+    // appendBlock() is called multiple times throughout this process.
+    // In case parsing is unsuccessful, this would leave us with a partially
+    // built AST. The caller probably doesn't want a partial result, so swap
+    // the destination AST with a temporary pointer and only when parsing
+    // completes successfully do we append it to the final destination.
+    ast::Node** storeDestinationAST = astRoot_;
+    ast::Node* intermediateResult = nullptr;
+    astRoot_ = &intermediateResult;
 
     // This is used as a buffer to assemble a keyword out of multiple tokens
     // and check it against the keyword matcher.
@@ -145,13 +170,7 @@ bool Driver::doParse()
             // be discarded, because they can all be merged into
             // a single keyword now.
             for (int i = lookAheadBegin; i != lookAheadEnd; ++i)
-                // XXX: TOK_SYMBOL is the only other token that calls newCStr()
-                //      and also matches the characters a keyword can contain,
-                //      so this works. If in the future a new token is added
-                //      that calls newCStr() and that could potentially be morphed
-                //      into a keyword, then this check will have to be updated
-                //      accordingly.
-                if (tokens[i].pushedChar == TOK_SYMBOL)
+                if (tokenHasFreeableString(tokens[i].pushedChar))
                     deleteCStr(tokens[i].pushedValue.string);
             tokens.erase(tokens.begin() + lookAheadBegin + 1, tokens.begin() + lookAheadEnd);
 
@@ -165,6 +184,7 @@ bool Driver::doParse()
         }
     };
 
+    // main parse loop
     do {
         if (tokens.size() == 0)
             scanNextToken(scanner_);
@@ -187,7 +207,90 @@ bool Driver::doParse()
         tokens.erase(tokens.begin());
     } while (parse_result == YYPUSH_MORE);
 
-    return parse_result == 0;
+    // May need to clean up
+    for (auto& token : tokens)
+        if (tokenHasFreeableString(token.pushedChar))
+            deleteCStr(token.pushedValue.string);
+
+    // Location information doesn't yet include a file pointer or input string,
+    // and location merging needs to be performed as well. Do this if parsing
+    // was successful
+    bool success = (parse_result == 0);
+    if (success && intermediateResult)
+        success &= patchLocationInfo(intermediateResult);
+
+    // Success, append intermediate result with final destination
+    if (success)
+    {
+        astRoot_ = storeDestinationAST;
+        if (intermediateResult)
+            appendBlock(intermediateResult, &loc);
+    }
+    else
+    {
+        ast::freeNodeRecursive(intermediateResult);
+    }
+
+    return success;
+}
+
+// ----------------------------------------------------------------------------
+static void updateLocationSourceInChildren(ast::Node* node)
+{
+    ast::Node* left = node->base.left;
+    ast::Node* right = node->base.right;
+
+    if (left)
+    {
+        left->info.loc.source = node->info.loc.source;
+        left->info.loc.source.owning = 0;
+        updateLocationSourceInChildren(left);
+    }
+    if (right)
+    {
+        right->info.loc.source = node->info.loc.source;
+        right->info.loc.source.owning = 0;
+        updateLocationSourceInChildren(right);
+    }
+}
+
+// ----------------------------------------------------------------------------
+static void mergeLocationRanges(ast::Node* node)
+{
+
+}
+
+// ----------------------------------------------------------------------------
+bool Driver::patchLocationInfo(ast::Node* root)
+{
+    if (activeFilePtr_)
+    {
+        FILE* newFp = dupFilePointer(activeFilePtr_);
+        if (newFp == nullptr)
+            return false;
+
+        root->info.loc.source.type = ast::LOC_FILE;
+        root->info.loc.source.owning = 1;
+        root->info.loc.source.file = newFp;
+    }
+    else
+    {
+        assert(activeString_);
+
+        root->info.loc.source.type = ast::LOC_STRING;
+        root->info.loc.source.owning = 1;
+        root->info.loc.source.string = (char*)malloc(activeString_->size() + 1);
+        if (root->info.loc.source.string == nullptr)
+            return false;
+        memcpy(root->info.loc.source.string, activeString_->data(), activeString_->size());
+        root->info.loc.source.string[activeString_->size()] = '\0';
+    }
+
+    // Every node in the tree shares the same location info
+    updateLocationSourceInChildren(root);
+    mergeLocationRanges(root);
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -281,7 +384,7 @@ void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
 }
 
 // ----------------------------------------------------------------------------
-void Driver::appendAST(ast::Node* block, const DBLTYPE* loc)
+void Driver::appendBlock(ast::Node* block, const DBLTYPE* loc)
 {
     assert(block->info.type == ast::NT_BLOCK);
 

@@ -86,7 +86,8 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/parsers/keywords/KeywordMatcher.cpp"
     "src/util/Log.cpp"
     "src/util/Str.cpp"
-    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>)
+    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
+    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>)
 target_include_directories (odbc
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
