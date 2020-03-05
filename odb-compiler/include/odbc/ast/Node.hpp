@@ -102,7 +102,7 @@ enum NodeType
     X(SS_LOCAL) \
     X(SS_GLOBAL)
 
-enum SymbolType
+enum SymbolType : uint8_t
 {
 #define X(name) name,
     SYMBOL_TYPE_LIST
@@ -122,21 +122,21 @@ enum SymbolType
  * parsing. During parsing we just store these facts for later. This is why we
  * have enums for both SymbolType and LiteralType.
  */
-enum SymbolDataType
+enum SymbolDataType : uint8_t
 {
 #define X(name) name,
     SYMBOL_DATATYPE_LIST
 #undef X
 };
 
-enum SymbolScope
+enum SymbolScope : uint8_t
 {
 #define X(name) name,
     SYMBOL_SCOPE_LIST
 #undef X
 };
 
-enum LiteralType
+enum LiteralType : uint8_t
 {
     LT_BOOLEAN,
     LT_INTEGER,
@@ -152,7 +152,7 @@ union literal_value_t
     char* s;
 };
 
-enum LocationInfoSourceType
+enum LocationInfoSourceType : uint8_t
 {
     LOC_NONE,
     LOC_FILE,
