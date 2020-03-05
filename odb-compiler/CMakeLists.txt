@@ -17,8 +17,8 @@ option (ODBC_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output
 option (ODBC_VERBOSE_FLEX "Have the scanner output each token" OFF)
 
 test_visibility_macros (
-    ODBC_API_IMPORT
     ODBC_API_EXPORT
+    ODBC_API_IMPORT
     ODBC_API_LOCAL)
 
 check_include_file ("unistd.h" HAVE_UNISTD_H)
@@ -89,7 +89,8 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/util/Log.cpp"
     "src/util/Str.cpp"
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
-    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>)
+    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>
+    $<$<PLATFORM_ID:Windows>:src/util/platform/win32/FileSystem_win32.cpp>)
 target_include_directories (odbc
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

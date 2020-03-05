@@ -15,15 +15,15 @@ namespace ast {
 
 namespace db {
 
-class ODBC_PUBLIC_API Driver
+class Driver
 {
 public:
-    Driver(ast::Node** root, const KeywordMatcher* keywordMatcher);
-    ~Driver();
+    ODBC_PUBLIC_API Driver(ast::Node** root, const KeywordMatcher* keywordMatcher);
+    ODBC_PUBLIC_API ~Driver();
 
-    bool parseFile(const std::string& fileName);
-    bool parseStream(FILE* fp);
-    bool parseString(const std::string& str);
+    ODBC_PUBLIC_API bool parseFile(const std::string& fileName);
+    ODBC_PUBLIC_API bool parseStream(FILE* fp);
+    ODBC_PUBLIC_API bool parseString(const std::string& str);
 
     void reportError(DBLTYPE* loc, const char* fmt, ...);
     void vreportError(DBLTYPE* loc, const char* fmt, va_list args);

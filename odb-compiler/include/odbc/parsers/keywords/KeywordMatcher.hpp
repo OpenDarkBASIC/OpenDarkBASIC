@@ -9,7 +9,7 @@ namespace odbc {
 
 class KeywordDB;
 
-class ODBC_PUBLIC_API KeywordMatcher
+class KeywordMatcher
 {
 public:
     struct MatchResult
@@ -18,10 +18,10 @@ public:
         bool found = false;
     };
 
-    void updateFromDB(const KeywordDB* db);
-    MatchResult findLongestKeywordMatching(const std::string& str) const;
-    int longestKeywordLength() const;
-    int longestKeywordWordCount() const;
+    ODBC_PUBLIC_API void updateFromDB(const KeywordDB* db);
+    ODBC_PUBLIC_API MatchResult findLongestKeywordMatching(const std::string& str) const;
+    ODBC_PUBLIC_API int longestKeywordLength() const;
+    ODBC_PUBLIC_API int longestKeywordWordCount() const;
 
 private:
     std::vector<std::string> keywords_;

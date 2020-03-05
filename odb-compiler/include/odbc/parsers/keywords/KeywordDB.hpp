@@ -6,18 +6,18 @@
 
 namespace odbc {
 
-class ODBC_PUBLIC_API KeywordDB
+class KeywordDB
 {
 public:
-    bool loadFromDirectory(const std::string& dir);
-    bool loadFromFile(const std::string& fileName);
-    bool exists(const std::string& keyword);
+    ODBC_PUBLIC_API bool loadFromDirectory(const std::string& dir);
+    ODBC_PUBLIC_API bool loadFromFile(const std::string& fileName);
+    ODBC_PUBLIC_API bool exists(const std::string& keyword);
 
-    bool addKeyword(Keyword keyword);
-    const Keyword* lookup(const std::string& keyword) const;
+    ODBC_PUBLIC_API bool addKeyword(Keyword keyword);
+    ODBC_PUBLIC_API const Keyword* lookup(const std::string& keyword) const;
 
-    std::vector<Keyword> keywordsAsList() const;
-    std::vector<std::string> keywordNamesAsList() const;
+    ODBC_PUBLIC_API std::vector<Keyword> keywordsAsList() const;
+    ODBC_PUBLIC_API std::vector<std::string> keywordNamesAsList() const;
 
 private:
     std::unordered_map<std::string, Keyword> map_;

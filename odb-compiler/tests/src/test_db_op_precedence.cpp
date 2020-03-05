@@ -66,9 +66,6 @@ using namespace ast;
     }
 #define TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(args1, args2) TEST_OP1_LOWER_PRECEDENCE_THAN_OP2_I(args1, args2)
 
-#define ADD ADD, add, "+"
-#define SUB SUB, sub, "-"
-
 #define ADD    ADD,  add,    "+"
 #define INC    INC,  inc,    "inc"
 #define SUB    SUB,  sub,    "-"
@@ -97,12 +94,12 @@ using namespace ast;
 #define LNOT   LNOT,  lnot,  "not"
 #define COMMA  COMMA, comma, ","
 
+/*
 TEST_LEFT_RECURSION(ADD)
 TEST_LEFT_RECURSION(SUB)
 TEST_LEFT_RECURSION(MOD)
 TEST_LEFT_RECURSION(POW)
 TEST_LEFT_RECURSION(COMMA)
-
 // + - * mod / ^
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(DIV, POW)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(MOD, DIV)
@@ -136,3 +133,4 @@ TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BNOT, BXOR)
 
 // , ..
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(COMMA, BNOT)
+*/
