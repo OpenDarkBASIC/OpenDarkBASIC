@@ -21,14 +21,14 @@ TEST_F(NAME, empty_select_endselect)
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.statement, NotNull());
-    ASSERT_THAT(ast->block.statement->info.type, Eq(NT_SELECT));
-    ASSERT_THAT(ast->block.statement->select.expr, NotNull());
-    ASSERT_THAT(ast->block.statement->select.expr->info.type, Eq(NT_SYM_VAR_REF));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.name, StrEq("var"));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.flag.datatype, Eq(SDT_INTEGER));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.flag.scope, Eq(SS_LOCAL));
-    ASSERT_THAT(ast->block.statement->select.cases, IsNull());
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SELECT));
+    ASSERT_THAT(ast->block.stmnt->select.expr, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.expr->info.type, Eq(NT_SYM_VAR_REF));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.name, StrEq("var"));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.flag.datatype, Eq(SDT_INTEGER));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(ast->block.stmnt->select.cases, IsNull());
 }
 
 TEST_F(NAME, select_with_one_empty_case)
@@ -37,22 +37,22 @@ TEST_F(NAME, select_with_one_empty_case)
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.statement, NotNull());
-    ASSERT_THAT(ast->block.statement->info.type, Eq(NT_SELECT));
-    ASSERT_THAT(ast->block.statement->select.expr, NotNull());
-    ASSERT_THAT(ast->block.statement->select.expr->info.type, Eq(NT_SYM_VAR_REF));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.name, StrEq("var1"));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.flag.datatype, Eq(SDT_INTEGER));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.flag.scope, Eq(SS_LOCAL));
-    ASSERT_THAT(ast->block.statement->select.cases, NotNull());
-    ASSERT_THAT(ast->block.statement->select.cases->info.type, Eq(NT_CASE_LIST));
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_, NotNull());
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_->info.type, Eq(NT_CASE));
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_->case_.body, IsNull());
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_->case_.condition, NotNull());
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_->case_.condition->info.type, Eq(NT_SYM_VAR_REF));
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.case_->case_.condition->sym.var_ref.name, StrEq("var2"));
-    ASSERT_THAT(ast->block.statement->select.cases->case_list.next, IsNull());
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SELECT));
+    ASSERT_THAT(ast->block.stmnt->select.expr, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.expr->info.type, Eq(NT_SYM_VAR_REF));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.name, StrEq("var1"));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.flag.datatype, Eq(SDT_INTEGER));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.flag.scope, Eq(SS_LOCAL));
+    ASSERT_THAT(ast->block.stmnt->select.cases, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.cases->info.type, Eq(NT_CASE_LIST));
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_->info.type, Eq(NT_CASE));
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_->case_.body, IsNull());
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_->case_.condition, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_->case_.condition->info.type, Eq(NT_SYM_VAR_REF));
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.case_->case_.condition->sym.var_ref.name, StrEq("var2"));
+    ASSERT_THAT(ast->block.stmnt->select.cases->case_list.next, IsNull());
 }
 
 TEST_F(NAME, select_with_two_empty_cases)
@@ -67,13 +67,13 @@ TEST_F(NAME, select_with_two_empty_cases)
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.statement, NotNull());
-    ASSERT_THAT(ast->block.statement->info.type, Eq(NT_SELECT));
-    ASSERT_THAT(ast->block.statement->select.expr, NotNull());
-    ASSERT_THAT(ast->block.statement->select.expr->info.type, Eq(NT_SYM_VAR_REF));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.name, StrEq("var1"));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SELECT));
+    ASSERT_THAT(ast->block.stmnt->select.expr, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.expr->info.type, Eq(NT_SYM_VAR_REF));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.name, StrEq("var1"));
 
-    Node* c = ast->block.statement->select.cases;
+    Node* c = ast->block.stmnt->select.cases;
     ASSERT_THAT(c, NotNull());
     ASSERT_THAT(c->info.type, Eq(NT_CASE_LIST));
     ASSERT_THAT(c->case_list.case_, NotNull());
@@ -109,13 +109,13 @@ TEST_F(NAME, select_with_empty_case_and_default_case)
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.statement, NotNull());
-    ASSERT_THAT(ast->block.statement->info.type, Eq(NT_SELECT));
-    ASSERT_THAT(ast->block.statement->select.expr, NotNull());
-    ASSERT_THAT(ast->block.statement->select.expr->info.type, Eq(NT_SYM_VAR_REF));
-    ASSERT_THAT(ast->block.statement->select.expr->sym.var_ref.name, StrEq("var1"));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SELECT));
+    ASSERT_THAT(ast->block.stmnt->select.expr, NotNull());
+    ASSERT_THAT(ast->block.stmnt->select.expr->info.type, Eq(NT_SYM_VAR_REF));
+    ASSERT_THAT(ast->block.stmnt->select.expr->sym.var_ref.name, StrEq("var1"));
 
-    Node* c = ast->block.statement->select.cases;
+    Node* c = ast->block.stmnt->select.cases;
     ASSERT_THAT(c, NotNull());
     ASSERT_THAT(c->info.type, Eq(NT_CASE_LIST));
     ASSERT_THAT(c->case_list.case_, NotNull());

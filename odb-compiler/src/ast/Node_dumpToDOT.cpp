@@ -28,9 +28,9 @@ static void dumpToDOTRecursive(std::ostream& os, Node* node)
 #undef X
 
         case NT_BLOCK: {
-            os << "N" << node->info.guid << " -> N" << node->block.statement->info.guid << "[label=\"stmnt\"];\n";
+            os << "N" << node->info.guid << " -> N" << node->block.stmnt->info.guid << "[label=\"stmnt\"];\n";
             os << "N" << node->info.guid << "[label=\"block (" << node->info.guid << ")\"];\n";
-            dumpToDOTRecursive(os, node->block.statement);
+            dumpToDOTRecursive(os, node->block.stmnt);
             if (node->block.next)
             {
                 os << "N" << node->info.guid << " -> " << "N" << node->block.next->info.guid << "[label=\"next\"];\n";

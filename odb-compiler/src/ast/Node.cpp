@@ -421,7 +421,7 @@ Node* newBlock(Node* expr, Node* next, const DBLTYPE* loc)
     Node* node = (Node*)malloc(sizeof *node);
     init_info(node, NT_BLOCK, loc);
     node->block.next = next;
-    node->block.statement = expr;
+    node->block.stmnt = expr;
     return node;
 }
 

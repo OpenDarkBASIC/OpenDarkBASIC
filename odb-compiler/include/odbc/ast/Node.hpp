@@ -209,7 +209,7 @@ union Node {
     {
         Info info;
         Node* next;
-        Node* statement;
+        Node* stmnt;
     } block;
 
     /*!

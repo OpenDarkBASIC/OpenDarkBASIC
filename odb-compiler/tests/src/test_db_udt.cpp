@@ -24,11 +24,11 @@ TEST_F(NAME, declare_udt)
         "    y# as float\n"
         "endtype\n"), IsTrue());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.statement->info.type, Eq(NT_SYM_UDT_DECL));
-    ASSERT_THAT(ast->block.statement->sym.udt_decl.name, StrEq("mytype"));
-    ASSERT_THAT(ast->block.statement->sym.udt_decl.subtypes_list, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_UDT_DECL));
+    ASSERT_THAT(ast->block.stmnt->sym.udt_decl.name, StrEq("mytype"));
+    ASSERT_THAT(ast->block.stmnt->sym.udt_decl.subtypes_list, NotNull());
 
-    Node* subtype = ast->block.statement->sym.udt_decl.subtypes_list;
+    Node* subtype = ast->block.stmnt->sym.udt_decl.subtypes_list;
     ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
     ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
     ASSERT_THAT(subtype->udt_subtype_list.sym_decl->info.type, Eq(NT_SYM_VAR_DECL));
@@ -64,11 +64,11 @@ TEST_F(NAME, declare_nested_udt)
     Node* block = ast;
     ASSERT_THAT(block, NotNull());
     ASSERT_THAT(block->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(block->block.statement, NotNull());
-    ASSERT_THAT(block->block.statement->info.type, Eq(NT_SYM_UDT_DECL));
-    ASSERT_THAT(block->block.statement->sym.udt_decl.name, StrEq("vec2"));
+    ASSERT_THAT(block->block.stmnt, NotNull());
+    ASSERT_THAT(block->block.stmnt->info.type, Eq(NT_SYM_UDT_DECL));
+    ASSERT_THAT(block->block.stmnt->sym.udt_decl.name, StrEq("vec2"));
 
-    Node* subtype = block->block.statement->sym.udt_decl.subtypes_list;
+    Node* subtype = block->block.stmnt->sym.udt_decl.subtypes_list;
     ASSERT_THAT(subtype, NotNull());
     ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
     ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
@@ -92,11 +92,11 @@ TEST_F(NAME, declare_nested_udt)
     block = block->block.next;
     ASSERT_THAT(block, NotNull());
     ASSERT_THAT(block->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(block->block.statement, NotNull());
-    ASSERT_THAT(block->block.statement->info.type, Eq(NT_SYM_UDT_DECL));
-    ASSERT_THAT(block->block.statement->sym.udt_decl.name, StrEq("player"));
+    ASSERT_THAT(block->block.stmnt, NotNull());
+    ASSERT_THAT(block->block.stmnt->info.type, Eq(NT_SYM_UDT_DECL));
+    ASSERT_THAT(block->block.stmnt->sym.udt_decl.name, StrEq("player"));
 
-    subtype = block->block.statement->sym.udt_decl.subtypes_list;
+    subtype = block->block.stmnt->sym.udt_decl.subtypes_list;
     ASSERT_THAT(subtype, NotNull());
     ASSERT_THAT(subtype->info.type, Eq(NT_UDT_SUBTYPE_LIST));
     ASSERT_THAT(subtype->udt_subtype_list.sym_decl, NotNull());
