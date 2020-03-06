@@ -91,7 +91,7 @@ enum NodeType
 };
 
 #define SYMBOL_DATATYPE_LIST \
-    X(SDT_UNKNOWN) \
+    X(SDT_NONE) \
     X(SDT_BOOLEAN) \
     X(SDT_INTEGER) \
     X(SDT_FLOAT) \
@@ -122,21 +122,21 @@ enum SymbolType : uint8_t
  * parsing. During parsing we just store these facts for later. This is why we
  * have enums for both SymbolType and LiteralType.
  */
-enum SymbolDataType : uint8_t
+enum SymbolDataType
 {
 #define X(name) name,
     SYMBOL_DATATYPE_LIST
 #undef X
 };
 
-enum SymbolScope : uint8_t
+enum SymbolScope
 {
 #define X(name) name,
     SYMBOL_SCOPE_LIST
 #undef X
 };
 
-enum LiteralType : uint8_t
+enum LiteralType
 {
     LT_BOOLEAN,
     LT_INTEGER,
@@ -152,7 +152,7 @@ union literal_value_t
     char* s;
 };
 
-enum LocationInfoSourceType : uint8_t
+enum LocationInfoSourceType
 {
     LOC_NONE,
     LOC_FILE,
@@ -163,7 +163,7 @@ struct LocationInfo
 {
     struct
     {
-        LocationInfoSourceType type : 2;
+        LocationInfoSourceType type : 3;
         unsigned owning : 1;
         union
         {
@@ -361,8 +361,8 @@ union Node {
     union
     {
         struct SymbolFlag {
-            SymbolDataType    datatype    : 3;
-            SymbolScope       scope       : 1;
+            SymbolDataType    datatype    : 4;
+            SymbolScope       scope       : 2;
         };
 
 #define DEFINE_SYMBOL_STRUCT(sym_name, left, right)             \

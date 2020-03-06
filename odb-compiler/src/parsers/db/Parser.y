@@ -1,3 +1,4 @@
+%require "3.2"
 %code top
 {
     #include "odbc/parsers/db/Parser.y.h"
@@ -275,7 +276,7 @@ var_decl_name
         $$ = $1;
         $$->info.type = NT_SYM_VAR_DECL;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
@@ -284,7 +285,7 @@ var_ref
         $$ = $1;
         $$->info.type = NT_SYM_VAR_REF;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
@@ -309,14 +310,14 @@ array_decl_name
         $$->info.type = NT_SYM_ARRAY_DECL;
         $$->sym.array_decl.arglist = $4;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   | DIM symbol LB RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
@@ -326,14 +327,14 @@ array_ref
         $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.array_ref.arglist = $3;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   | symbol LB RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_UNKNOWN)
+        if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
   ;
@@ -489,7 +490,7 @@ symbol
   | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL, &yylloc); }
   ;
 symbol_without_type
-  : SYMBOL                                       { $$ = newSymbol($1, SDT_UNKNOWN, SS_LOCAL, &yylloc); }
+  : SYMBOL                                       { $$ = newSymbol($1, SDT_NONE, SS_LOCAL, &yylloc); }
   ;
 conditional
   : conditional_singleline                       { $$ = $1; }

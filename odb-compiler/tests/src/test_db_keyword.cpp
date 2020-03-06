@@ -91,6 +91,18 @@ TEST_F(NAME, multiple_similar_keywords_with_spaces)
     ASSERT_THAT(driver->parseString("set object speed 1, 10\n"), IsTrue());
 }
 
+TEST_F(NAME, multiple_similar_keywords_with_spaces_2)
+{
+    db.addKeyword({"SET OBJECT AMBIENT", "", {}});
+    db.addKeyword({"SET OBJECT COLLISION ON", "", {}});
+    db.addKeyword({"SET OBJECT COLLISION OFF", "", {}});
+    db.addKeyword({"SET OBJECT COLLISION TO BOXES", "", {}});
+    db.addKeyword({"SET OBJECT", "", {}});
+    db.addKeyword({"set object collision off", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString("set object collision off 1\n"), IsTrue());
+}
+
 TEST_F(NAME, incomplete_keyword_at_end_of_file)
 {
     db.addKeyword({"color object", "", {}});
@@ -116,12 +128,4 @@ TEST_F(NAME, keyword_containing_builtin_in_middle)
     matcher.updateFromDB(&db);
     ASSERT_THAT(driver->parseString(
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
-}
-
-TEST_F(NAME, wat)
-{
-    db.addKeyword({"perform checklist for files", "", {}});
-    matcher.updateFromDB(&db);
-    ASSERT_THAT(driver->parseString(
-        "perform checklist for files\n"), IsTrue());
 }

@@ -30,7 +30,7 @@ configure_file ("templates/config.hpp.in" "include/odbc/config.hpp")
 ###############################################################################
 
 find_package (FLEX REQUIRED)
-find_package (BISON REQUIRED)
+find_package (BISON REQUIRED 3.2)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")

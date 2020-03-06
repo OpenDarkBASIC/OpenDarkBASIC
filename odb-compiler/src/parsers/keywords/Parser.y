@@ -1,3 +1,4 @@
+%require "3.2"
 %code top
 {
     #include "odbc/parsers/keywords/Parser.y.h"
