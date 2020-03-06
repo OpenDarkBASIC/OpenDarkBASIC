@@ -400,7 +400,7 @@ Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl, const DBLTYPE*
 // ----------------------------------------------------------------------------
 Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc)
 {
-    SymbolDataType dataType = SDT_UNKNOWN;
+    SymbolDataType dataType = SDT_NONE;
     if (name[0] == '$')
         dataType = SDT_STRING;
     else if (name[0] == '#')
