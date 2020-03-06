@@ -103,7 +103,7 @@ target_compile_definitions (odbc
         ODBC_BUILDING)
 target_compile_options (odbc
     PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -Werror -pedantic -Wno-unused-function -Wno-unused-parameter>)
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>)
 set_target_properties (odbc
     PROPERTIES CXX_STANDARD 17)
 
