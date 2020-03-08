@@ -165,6 +165,10 @@
 %nonassoc NO_HASH_OR_DOLLAR
 %nonassoc COLON
 %left COMMA
+%left LXOR
+%left LOR
+%left LAND
+%right LNOT
 %right BNOT
 %left BXOR
 %left BOR
@@ -177,10 +181,6 @@
 %left NE
 %left BSHL
 %left BSHR
-%left LXOR
-%left LOR
-%left LAND
-%right LNOT
 %left ADD
 %left SUB
 %left MUL

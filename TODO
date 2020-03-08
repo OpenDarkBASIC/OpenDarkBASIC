@@ -1,0 +1,13 @@
+if expr then a() : b()
+
+should be equal to 
+
+if expr
+    a()
+    b()
+endif
+
+--------------------------------------------
+
+print "bla";  <-- no newline
+

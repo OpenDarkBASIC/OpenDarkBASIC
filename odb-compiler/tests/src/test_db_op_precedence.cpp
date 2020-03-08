@@ -22,18 +22,18 @@ using namespace ast;
                                                                               \
         ASSERT_THAT(ast, NotNull());                                          \
         ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.statement, NotNull());                         \
-        ASSERT_THAT(ast->block.statement->info.type, Eq(NT_ASSIGNMENT));      \
-        ASSERT_THAT(ast->block.statement->assignment.expr, NotNull());        \
-        ASSERT_THAT(ast->block.statement->assignment.expr->info.type, Eq(NT_OP_##opupper)); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left->info.type, Eq(NT_OP_##opupper)); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left->op.oplower.left, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left->op.oplower.left->info.type, Eq(NT_SYM_VAR_REF)); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left->op.oplower.right, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.left->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF));\
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.right, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF)); \
+        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
+        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper)); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->info.type, Eq(NT_OP_##opupper)); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.left, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.left->info.type, Eq(NT_SYM_VAR_REF)); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.right, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF));\
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.right, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF)); \
     }
 #define TEST_LEFT_RECURSION(args) TEST_LEFT_RECURSION_I(args)
 
@@ -44,12 +44,12 @@ using namespace ast;
                                                                               \
         ASSERT_THAT(ast, NotNull());                                          \
         ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.statement, NotNull());                         \
-        ASSERT_THAT(ast->block.statement->info.type, Eq(NT_ASSIGNMENT));      \
-        ASSERT_THAT(ast->block.statement->assignment.expr, NotNull());        \
-        ASSERT_THAT(ast->block.statement->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower1.right, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower1.right->info.type, Eq(NT_OP_##opupper2)); \
+        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
+        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.right, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.right->info.type, Eq(NT_OP_##opupper2)); \
     }                                                                         \
     TEST_F(NAME, oplower1##_lower_than_##oplower2##_2)                        \
     {                                                                         \
@@ -57,12 +57,12 @@ using namespace ast;
                                                                               \
         ASSERT_THAT(ast, NotNull());                                          \
         ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.statement, NotNull());                         \
-        ASSERT_THAT(ast->block.statement->info.type, Eq(NT_ASSIGNMENT));      \
-        ASSERT_THAT(ast->block.statement->assignment.expr, NotNull());        \
-        ASSERT_THAT(ast->block.statement->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower1.left, NotNull()); \
-        ASSERT_THAT(ast->block.statement->assignment.expr->op.oplower1.left->info.type, Eq(NT_OP_##opupper2)); \
+        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
+        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.left, NotNull()); \
+        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.left->info.type, Eq(NT_OP_##opupper2)); \
     }
 #define TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(args1, args2) TEST_OP1_LOWER_PRECEDENCE_THAN_OP2_I(args1, args2)
 
@@ -94,12 +94,12 @@ using namespace ast;
 #define LNOT   LNOT,  lnot,  "not"
 #define COMMA  COMMA, comma, ","
 
-/*
 TEST_LEFT_RECURSION(ADD)
 TEST_LEFT_RECURSION(SUB)
 TEST_LEFT_RECURSION(MOD)
 TEST_LEFT_RECURSION(POW)
 TEST_LEFT_RECURSION(COMMA)
+
 // + - * mod / ^
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(DIV, POW)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(MOD, DIV)
@@ -107,16 +107,8 @@ TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(MUL, MOD)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(SUB, MUL)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(ADD, SUB)
 
-// not +
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LNOT, ADD)
-
-// xor or and not
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LAND, LNOT)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LOR, LAND)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LXOR, LOR)
-
-// >> xor
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BSHR, LXOR)
+// >> +
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BSHR, ADD)
 
 // .. ~~ || && = < > <= >= <> << >>
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BSHL, BSHR)
@@ -131,6 +123,13 @@ TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BOR, BAND)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BXOR, BOR)
 TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BNOT, BXOR)
 
-// , ..
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(COMMA, BNOT)
-*/
+// not ..
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LNOT, BNOT)
+
+// xor or and not
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LAND, LNOT)
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LOR, LAND)
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LXOR, LOR)
+
+// , xor
+TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(COMMA, LXOR)

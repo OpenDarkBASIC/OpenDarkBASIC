@@ -157,8 +157,8 @@ bool Driver::doParse()
         if (tokens.back().str.empty())
             tokens.back().str = dbget_text(scanner);
 
-        const int initialTokenLength = possibleKeyword.length();
         possibleKeyword = tokens[0].str;
+        const int initialTokenLength = possibleKeyword.length();
         bool lastSymbolWasInteger = false;
         for (int i = 1; (int)possibleKeyword.length() <= kwMatcher->longestKeywordLength(); ++i)
         {
