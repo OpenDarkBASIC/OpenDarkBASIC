@@ -90,6 +90,8 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/util/Str.cpp"
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>
+    $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/Plugin_darwin.cpp>
+    $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/FileSystem_darwin.cpp>
     $<$<PLATFORM_ID:Windows>:src/util/platform/win32/FileSystem_win32.cpp>)
 target_include_directories (odbc
     PUBLIC
