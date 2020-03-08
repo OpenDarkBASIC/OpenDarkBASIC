@@ -100,6 +100,13 @@ bool Driver::doParse()
     {
         int pushedChar;
         DBSTYPE pushedValue;
+        std::string str;
+    };
+
+    struct MergedTokenOffset
+    {
+        int lookAheadEnd;
+        int kwlen;
     };
 
     // appendBlock() is called multiple times throughout this process.
@@ -115,8 +122,8 @@ bool Driver::doParse()
     // and check it against the keyword matcher.
     std::string possibleKeyword;
     possibleKeyword.reserve(keywordMatcher_->longestKeywordLength());
-    std::vector<std::string> possibleKwTokens;
-    possibleKwTokens.reserve(keywordMatcher_->longestKeywordWordCount());
+    std::vector<MergedTokenOffset> mergedTokenOffsets;
+    mergedTokenOffsets.reserve(keywordMatcher_->longestKeywordWordCount());
 
     // This is used to store all tokens that haven't been push parsed yet, which
     // will be more than 1 when doing a keyword match.
@@ -127,7 +134,7 @@ bool Driver::doParse()
     auto scanNextToken = [&tokens, &loc](dbscan_t scanner){
         DBSTYPE pushedValue;
         int pushedChar = dblex(&pushedValue, &loc, scanner);
-        tokens.push_back({pushedChar, pushedValue});
+        tokens.push_back({pushedChar, pushedValue, ""});
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
@@ -136,55 +143,70 @@ bool Driver::doParse()
 #if defined(ODBC_VERBOSE_FLEX)
         fprintf(stderr, "Scanning ahead for possible keyword match\n");
 #endif
+        struct
+        {
+            KeywordMatcher::MatchResult match;
+            int tokenIdx;
+        } result = {};
 
-        // look ahead until all tokens concatenated are longer than the longest
-        // matching keyword, or until we reach EOF.
-        KeywordMatcher::MatchResult match;
-        possibleKwTokens.clear();
-        possibleKwTokens.push_back(dbget_text(scanner));
-        possibleKeyword = dbget_text(scanner);
-        int initialTokenLength = possibleKwTokens[0].length();
-        int lookAheadBegin = tokens.size() - 1;
-        int lookAheadEnd = tokens.size() - 1;
-        bool lastTokenWasSymbol = true;
-        do {
-            scanNextToken(scanner);
-            lookAheadEnd++;
+        // The main parser loop deliberately doesn't set the string to save on
+        // memory allocations because it never stores more than one token, which
+        // means the string is always accessible through dbget_text(). Now that
+        // we have to store more than one token, it's necessary to store the
+        // string too.
+        if (tokens.back().str.empty())
+            tokens.back().str = dbget_text(scanner);
+
+        const int initialTokenLength = possibleKeyword.length();
+        possibleKeyword = tokens[0].str;
+        bool lastSymbolWasInteger = false;
+        for (int i = 1; (int)possibleKeyword.length() <= kwMatcher->longestKeywordLength(); ++i)
+        {
+            auto match = kwMatcher->findLongestKeywordMatching(possibleKeyword);
+            if (match.found && match.matchedLength == (int)possibleKeyword.size())
+                result = {match, i};
+
+            // Maybe need to scan for the next token, or maybe there's enough
+            // in the queue.
+            if (i == (int)tokens.size())
+            {
+                scanNextToken(scanner);
+                tokens.back().str = dbget_text(scanner);
+            }
+
+            // EOF
+            if (tokens[i].pushedChar == 0)
+                break;
 
             // Keywords unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
             // in between integers and following symbols. Additionally, keywords
             // can end in $ or #, in which case we also do not want to append
             // a space.
-            if (lastTokenWasSymbol && tokens.back().pushedChar != TOK_HASH && tokens.back().pushedChar != TOK_DOLLAR)
+            if (!lastSymbolWasInteger && tokens[i].pushedChar != TOK_DOLLAR && tokens[i].pushedChar != TOK_HASH)
                 possibleKeyword += " ";
-            lastTokenWasSymbol = (tokens.back().pushedChar != TOK_INTEGER_LITERAL);
-
-            possibleKwTokens.push_back(dbget_text(scanner));
-            auto result = kwMatcher->findLongestKeywordMatching(possibleKeyword);
-            if (result.found)
-                match = result;
-        } while ((int)possibleKeyword.length() <= kwMatcher->longestKeywordLength() && tokens.back().pushedChar != 0);
+            possibleKeyword += tokens[i].str;
+            lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
+        }
 
         // For special cases such as "loop object", where "loop" is a keyword
         // as well as a builtin, if we end up only matching "loop" then we must
         // leave it as TOK_LOOP to retain its semantic meaning. If "mustBeLonger"
         // is true then don't morph the token into TOK_KEYWORD if the matched
         // length is not longer than the original token.
-        if (match.found && (!mustBeLonger || initialTokenLength != match.matchedLength))
+        if (result.match.found && (!mustBeLonger || initialTokenLength != result.match.matchedLength))
         {
             // All tokens we scanned leading up to the last one can
             // be discarded, because they can all be merged into
             // a single keyword now.
-            for (int i = lookAheadBegin; i != lookAheadEnd; ++i)
+            for (int i = 0; i != result.tokenIdx; ++i)
                 if (tokenHasFreeableString(tokens[i].pushedChar))
                     deleteCStr(tokens[i].pushedValue.string);
-            tokens.erase(tokens.begin() + lookAheadBegin + 1, tokens.begin() + lookAheadEnd);
+            tokens.erase(tokens.begin() + 1, tokens.begin() + result.tokenIdx);
 
             // Ownership of the string is passed to BISON
-            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, match.matchedLength);
+            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
             tokens[0].pushedChar = TOK_KEYWORD;
-
 #if defined(ODBC_VERBOSE_FLEX)
             fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
             fprintf(stderr, "Tokens in queue:");

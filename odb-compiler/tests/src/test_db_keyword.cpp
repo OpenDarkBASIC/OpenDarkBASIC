@@ -129,3 +129,22 @@ TEST_F(NAME, keyword_containing_builtin_in_middle)
     ASSERT_THAT(driver->parseString(
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
 }
+
+TEST_F(NAME, wat)
+{
+    db.addKeyword({"randomize", "", {}});
+    db.addKeyword({"timer", "", {}});
+    db.addKeyword({"sync on", "", {}});
+    db.addKeyword({"hide mouse", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "rem ********************************************\n"
+        "\n"
+        "rem setup environment\n"
+        "randomize timer()\n"
+        "sync on\n"
+        "hide mouse\n"
+        "\n"
+        "rem Decal limit (full version users can set this to 100)\n"
+        "dim decalmax(1)\n"), IsTrue());
+}
