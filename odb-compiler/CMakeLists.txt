@@ -90,7 +90,6 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/util/Str.cpp"
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>
-    $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/Plugin_darwin.cpp>
     $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/FileSystem_darwin.cpp>
     $<$<PLATFORM_ID:Windows>:src/util/platform/win32/FileSystem_win32.cpp>)
 target_include_directories (odbc
@@ -105,7 +104,9 @@ target_compile_definitions (odbc
         ODBC_BUILDING)
 target_compile_options (odbc
     PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>)
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
 set_target_properties (odbc
     PROPERTIES CXX_STANDARD 17)
 

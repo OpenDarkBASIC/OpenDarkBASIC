@@ -129,3 +129,18 @@ TEST_F(NAME, keyword_containing_builtin_in_middle)
     ASSERT_THAT(driver->parseString(
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
 }
+
+TEST_F(NAME, keyword_variable_name)
+{
+    db.addKeyword({"text", "", {}});
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "text$ as string"), IsTrue());
+}
+
+TEST_F(NAME, builtin_keyword_variable_name)
+{
+    matcher.updateFromDB(&db);
+    ASSERT_THAT(driver->parseString(
+        "string$ as string"), IsTrue());
+}

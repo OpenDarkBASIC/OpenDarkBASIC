@@ -20,6 +20,7 @@
 {
     #include <stdint.h>
     typedef void* dbscan_t;
+    typedef struct dbpstate dbpstate;
 
     namespace odbc {
         namespace db {
@@ -29,6 +30,8 @@
             union Node;
         }
     }
+
+    void isTokenValidInCurrentState(dbpstate* yyps, int yychar, dbscan_t scanner);
 }
 
 /*
@@ -565,4 +568,23 @@ void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
     va_start(args, fmt);
     driver->vreportError(locp, fmt, args);
     va_end(args);
+}
+
+void isTokenValidInCurrentState(yypstate* yyps, int yychar, dbscan_t scanner)
+{
+/*
+    printf("yychar: %d\n", yychar);
+    int yytoken = YYTRANSLATE(yychar);
+    int yyn = yypact[yystate] + yytoken;
+
+    if (yyn < 0 || yyn > YYLAST || yycheck[yyn] != yytoken)
+    {
+        yyn = yydefact[yystate];
+        if (yyn == 0)
+            goto error;
+        goto ok;
+    }
+
+    ok: puts("ok"); return;
+    error: puts("error"); return;*/
 }

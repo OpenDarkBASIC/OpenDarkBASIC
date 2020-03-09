@@ -131,14 +131,14 @@ bool Driver::doParse()
     tokens.reserve(keywordMatcher_->longestKeywordWordCount());
 
     // Scans the next token and stores it in "tokens"
-    auto scanNextToken = [&tokens, &loc](dbscan_t scanner){
+    auto scanNextToken = [&](){
         DBSTYPE pushedValue;
-        int pushedChar = dblex(&pushedValue, &loc, scanner);
+        int pushedChar = dblex(&pushedValue, &loc, scanner_);
         tokens.push_back({pushedChar, pushedValue, ""});
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
-    auto scanAheadForPossibleKeyword = [&](dbscan_t scanner, const KeywordMatcher* kwMatcher, bool mustBeLonger)
+    auto scanAheadForPossibleKeyword = [&](bool mustBeLonger)
     {
 #if defined(ODBC_VERBOSE_FLEX)
         fprintf(stderr, "Scanning ahead for possible keyword match\n");
@@ -155,23 +155,28 @@ bool Driver::doParse()
         // we have to store more than one token, it's necessary to store the
         // string too.
         if (tokens.back().str.empty())
-            tokens.back().str = dbget_text(scanner);
+            tokens.back().str = dbget_text(scanner_);
 
         possibleKeyword = tokens[0].str;
         const int initialTokenLength = possibleKeyword.length();
         bool lastSymbolWasInteger = false;
-        for (int i = 1; (int)possibleKeyword.length() <= kwMatcher->longestKeywordLength(); ++i)
+        for (int i = 1; (int)possibleKeyword.length() <= keywordMatcher_->longestKeywordLength(); ++i)
         {
-            auto match = kwMatcher->findLongestKeywordMatching(possibleKeyword);
+            auto match = keywordMatcher_->findLongestKeywordMatching(possibleKeyword);
             if (match.found && match.matchedLength == (int)possibleKeyword.size())
+            {
                 result = {match, i};
+#if defined(ODBC_VERBOSE_FLEX)
+            fprintf(stderr, "possible keyword: %s\n", possibleKeyword.c_str());
+#endif
+            }
 
             // Maybe need to scan for the next token, or maybe there's enough
             // in the queue.
             if (i == (int)tokens.size())
             {
-                scanNextToken(scanner);
-                tokens.back().str = dbget_text(scanner);
+                scanNextToken();
+                tokens.back().str = dbget_text(scanner_);
             }
 
             // EOF
@@ -185,6 +190,8 @@ bool Driver::doParse()
             // a space.
             if (!lastSymbolWasInteger && tokens[i].pushedChar != TOK_DOLLAR && tokens[i].pushedChar != TOK_HASH)
                 possibleKeyword += " ";
+            else if (result.tokenIdx == i && (tokens[i].pushedChar == TOK_DOLLAR || tokens[i].pushedChar == TOK_HASH))
+                result.match.found = false;
             possibleKeyword += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
         }
@@ -226,22 +233,23 @@ bool Driver::doParse()
     // main parse loop
     do {
         if (tokens.size() == 0)
-            scanNextToken(scanner_);
+            scanNextToken();
 
         switch (tokens[0].pushedChar)
         {
             case TOK_INTEGER_LITERAL:
             case TOK_SYMBOL:
-                scanAheadForPossibleKeyword(scanner_, keywordMatcher_, false);
+                scanAheadForPossibleKeyword(false);
                 break;
 
             case TOK_LOOP: // DarkBASIC has commands that start with "loop"
-                scanAheadForPossibleKeyword(scanner_, keywordMatcher_, true);
+                scanAheadForPossibleKeyword(true);
                 break;
 
             default: break;
         }
 
+        isTokenValidInCurrentState(parser_, tokens[0].pushedChar, scanner_);
         parse_result = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
         tokens.erase(tokens.begin());
     } while (parse_result == YYPUSH_MORE);
