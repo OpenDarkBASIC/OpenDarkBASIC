@@ -56,3 +56,29 @@ TEST_F(NAME, remarks_empty_line_command)
         "sync on\n"), Eq(true));
     ASSERT_THAT(ast, NotNull());
 }
+
+TEST_F(NAME, remstart_remend)
+{
+    EXPECT_THAT(driver->parseString(
+        "remstart\n"
+        "this is a comment\n"
+        "remend\n"
+        "foo()\n"), Eq(true));
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, remstart_remend_indentation)
+{
+    EXPECT_THAT(driver->parseString(
+        "\n"
+        "    remstart\n"
+        "    flags:\n"
+        "    0 - [USER]\n"
+        "    1 - [INFO]\n"
+        "    2 - [ERROR]\n"
+        "    3 - [SEVERE]\n"
+        "    4 - [DEBUG}\n"
+        "    remend\n"
+        "    foo()\n"), Eq(true));
+    ASSERT_THAT(ast, NotNull());
+}

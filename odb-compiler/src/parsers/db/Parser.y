@@ -7,18 +7,19 @@
     #include "odbc/ast/Node.hpp"
     #include "odbc/util/Str.hpp"
 
-    void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
-
     #define driver (static_cast<odbc::db::Driver*>(dbget_extra(scanner)))
     #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
 
     using namespace odbc;
     using namespace ast;
+
+    void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
 }
 
 %code requires
 {
     #include <stdint.h>
+
     typedef void* dbscan_t;
     typedef struct dbpstate dbpstate;
 
@@ -103,7 +104,7 @@
 
 %token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
 
-%token<string> SYMBOL;
+%token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
 %token<string> KEYWORD;
 %token DOLLAR HASH;
 
@@ -489,8 +490,8 @@ literal
   ;
 symbol
   : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
-  | SYMBOL HASH                                  { $$ = newSymbol($1, SDT_FLOAT, SS_LOCAL, &yylloc); }
-  | SYMBOL DOLLAR                                { $$ = newSymbol($1, SDT_STRING, SS_LOCAL, &yylloc); }
+  | symbol_without_type HASH                     { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | symbol_without_type DOLLAR                   { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
   ;
 symbol_without_type
   : SYMBOL                                       { $$ = newSymbol($1, SDT_NONE, SS_LOCAL, &yylloc); }

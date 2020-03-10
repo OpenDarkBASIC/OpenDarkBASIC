@@ -134,7 +134,26 @@ bool Driver::doParse()
     auto scanNextToken = [&](){
         DBSTYPE pushedValue;
         int pushedChar = dblex(&pushedValue, &loc, scanner_);
-        tokens.push_back({pushedChar, pushedValue, ""});
+        switch (pushedChar)
+        {
+            case TOK_PSEUDO_STRING_SYMBOL: {
+                const char* tok = dbget_text(scanner_);
+                DBSTYPE value; value.string = newCStrRange(tok, 0, strlen(tok) - 1);
+                tokens.push_back({TOK_SYMBOL, value, ""});
+                tokens.push_back({TOK_DOLLAR, {}, ""});
+            } break;
+
+            case TOK_PSEUDO_FLOAT_SYMBOL: {
+                const char* tok = dbget_text(scanner_);
+                DBSTYPE value; value.string = newCStrRange(tok, 0, strlen(tok) - 1);
+                tokens.push_back({TOK_SYMBOL, value, ""});
+                tokens.push_back({TOK_HASH, {}, ""});
+            } break;
+
+            default: {
+                tokens.push_back({pushedChar, pushedValue, ""});
+            } break;
+        }
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
