@@ -4,67 +4,67 @@
 #include <ostream>
 
 #define NODE_TYPE_BASE_LIST                                                   \
-    X(NT_BLOCK,            block,            "block")                         \
-    X(NT_ASSIGNMENT,       assignment,       "=")                             \
-    X(NT_BRANCH,           branch,           "if")                            \
-    X(NT_BRANCH_PATHS,     paths,            "paths")                         \
-    X(NT_SELECT,           select,           "select")                        \
-    X(NT_CASE_LIST,        case_list,        "case_list")                     \
-    X(NT_CASE,             case_,            "case")                          \
-    X(NT_FUNC_RETURN,      func_return,      "endfunction")                   \
-    X(NT_SUB_RETURN,       sub_return,       "return")                        \
-    X(NT_GOTO,             goto_,            "goto")                          \
-    X(NT_LOOP,             loop,             "loop")                          \
-    X(NT_LOOP_WHILE,       loop_while,       "while")                         \
-    X(NT_LOOP_UNTIL,       loop_until,       "until")                         \
-    X(NT_BREAK,            break_,           "break")                         \
-    X(NT_UDT_SUBTYPE_LIST, udt_subtype_list, "UDT Subtypes")                  \
-    X(NT_LITERAL,          literal,          "literal")
+    X(NT_BLOCK,            block,            "block",        stmnt,    next)  \
+    X(NT_ASSIGNMENT,       assignment,       "=",            lvalue,   expr)  \
+    X(NT_BRANCH,           branch,           "if",           cond,     paths) \
+    X(NT_BRANCH_PATHS,     paths,            "paths",        is_true,  is_false) \
+    X(NT_SELECT,           select,           "select",       expr,     cases) \
+    X(NT_CASE_LIST,        case_list,        "case_list",    case_,    next)  \
+    X(NT_CASE,             case_,            "case",         cond,     body)  \
+    X(NT_FUNC_RETURN,      func_return,      "endfunction",  _pad1,    _pad2) \
+    X(NT_SUB_RETURN,       sub_return,       "return",       _pad1,    _pad2) \
+    X(NT_GOTO,             goto_,            "goto",         label,    _pad)  \
+    X(NT_LOOP,             loop,             "loop",         _pad,     body)  \
+    X(NT_LOOP_WHILE,       loop_while,       "while",        cond,     body)  \
+    X(NT_LOOP_UNTIL,       loop_until,       "until",        cond,     body)  \
+    X(NT_BREAK,            break_,           "break",        _pad1,    _pad2) \
+    X(NT_UDT_SUBTYPE_LIST, udt_subtype_list, "UDT Subtypes", sym_decl, next)  \
+    X(NT_LITERAL,          literal,          "literal",      _pad1,    _pad2)
 
 #define NODE_TYPE_OP_LIST                                                     \
-    X(NT_OP_ADD,  add,    "+")                                                \
-    X(NT_OP_INC,  inc,    "inc")                                              \
-    X(NT_OP_SUB,  sub,    "-")                                                \
-    X(NT_OP_DEC,  dec,    "dec")                                              \
-    X(NT_OP_MUL,  mul,    "*")                                                \
-    X(NT_OP_DIV,  div,    "/")                                                \
-    X(NT_OP_MOD,  mod,    "mod")                                              \
-    X(NT_OP_POW,  pow,    "^")                                                \
+    X(NT_OP_ADD,  add,    "+",   left, right)                                 \
+    X(NT_OP_INC,  inc,    "inc", left, right)                                 \
+    X(NT_OP_SUB,  sub,    "-",   left, right)                                 \
+    X(NT_OP_DEC,  dec,    "dec", left, right)                                 \
+    X(NT_OP_MUL,  mul,    "*",   left, right)                                 \
+    X(NT_OP_DIV,  div,    "/",   left, right)                                 \
+    X(NT_OP_MOD,  mod,    "mod", left, right)                                 \
                                                                               \
-    X(NT_OP_BSHL, bshl,   "<<")                                               \
-    X(NT_OP_BSHR, bshr,   ">>")                                               \
-    X(NT_OP_BOR,  bor,    "||")                                               \
-    X(NT_OP_BAND, band,   "&&")                                               \
-    X(NT_OP_BXOR, bxor,   "~~")                                               \
-    X(NT_OP_BNOT, bnot,   "..")                                               \
+    X(NT_OP_BSHL, bshl,   "<<",  left, right)                                 \
+    X(NT_OP_BSHR, bshr,   ">>",  left, right)                                 \
+    X(NT_OP_BOR,  bor,    "||",  left, right)                                 \
+    X(NT_OP_BAND, band,   "&&",  left, right)                                 \
+    X(NT_OP_BXOR, bxor,   "~~",  left, right)                                 \
+    X(NT_OP_BNOT, bnot,   "..",  left, right)                                 \
                                                                               \
-    X(NT_OP_LT,    lt,    "<")                                                \
-    X(NT_OP_LE,    le,    "<=")                                               \
-    X(NT_OP_GT,    gt,    ">")                                                \
-    X(NT_OP_GE,    ge,    ">=")                                               \
-    X(NT_OP_EQ,    eq,    "==")                                               \
-    X(NT_OP_NE,    ne,    "<>")                                               \
-    X(NT_OP_LOR,   lor,   "or")                                               \
-    X(NT_OP_LAND,  land,  "and")                                              \
-    X(NT_OP_LXOR,  lxor,  "xor")                                              \
-    X(NT_OP_LNOT,  lnot,  "not")                                              \
-    X(NT_OP_COMMA, comma, ",")
+    X(NT_OP_LT,    lt,    "<",   left, right)                                 \
+    X(NT_OP_LE,    le,    "<=",  left, right)                                 \
+    X(NT_OP_GT,    gt,    ">",   left, right)                                 \
+    X(NT_OP_GE,    ge,    ">=",  left, right)                                 \
+    X(NT_OP_EQ,    eq,    "==",  left, right)                                 \
+    X(NT_OP_NE,    ne,    "<>",  left, right)                                 \
+    X(NT_OP_LOR,   lor,   "or",  left, right)                                 \
+    X(NT_OP_POW,  pow,    "^",   left, right)                                 \
+    X(NT_OP_LAND,  land,  "and", left, right)                                 \
+    X(NT_OP_LXOR,  lxor,  "xor", left, right)                                 \
+    X(NT_OP_LNOT,  lnot,  "not", left, right)                                 \
+    X(NT_OP_COMMA, comma, ",",   left, right)
 
 #define NODE_TYPE_SYMBOL_LIST                                                 \
-    X(NT_SYM, sym, "symbol")                                                  \
-    X(NT_SYM_CONST_DECL, const_decl, "constant decl")                         \
-    X(NT_SYM_CONST_REF, const_ref, "constant ref")                            \
-    X(NT_SYM_VAR_DECL, var_decl, "variable decl")                             \
-    X(NT_SYM_VAR_REF, var_ref, "variable ref")                                \
-    X(NT_SYM_ARRAY_DECL, array_decl, "array decl")                            \
-    X(NT_SYM_ARRAY_REF, array_ref, "array ref")                               \
-    X(NT_SYM_UDT_DECL, udt_decl, "udt decl")                                  \
-    X(NT_SYM_UDT_TYPE_REF, udt_type_ref, "udt type ref")                      \
-    X(NT_SYM_FUNC_CALL, func_call, "function call")                           \
-    X(NT_SYM_FUNC_DECL, func_decl, "function decl")                           \
-    X(NT_SYM_SUB_CALL, sub_call, "subroutine call")                           \
-    X(NT_SYM_LABEL, label, "label")                                           \
-    X(NT_SYM_KEYWORD, keyword, "keyword")
+    X(NT_SYM, base, "symbol", left, right)                                    \
+    X(NT_SYM_CONST_DECL, const_decl, "constant decl", literal, _pad)          \
+    X(NT_SYM_CONST_REF, const_ref, "constant ref", _pad1, _pad2)              \
+    X(NT_SYM_VAR_DECL, var_decl, "variable decl", udt, _pad)                  \
+    X(NT_SYM_VAR_REF, var_ref, "variable ref", udt, _pad)                     \
+    X(NT_SYM_ARRAY_DECL, array_decl, "array decl", udt, arglist)              \
+    X(NT_SYM_ARRAY_REF, array_ref, "array ref", udt, arglist)                 \
+    X(NT_SYM_UDT_DECL, udt_decl, "udt decl", subtypes, _pad)                  \
+    X(NT_SYM_UDT_TYPE_REF, udt_type_ref, "udt type ref", _pad1, _pad2)        \
+    X(NT_SYM_FUNC_CALL, func_call, "function call", _pad, arglist)            \
+    X(NT_SYM_FUNC_DECL, func_decl, "function decl", body, arglist)            \
+    X(NT_SYM_SUB_CALL, sub_call, "subroutine call", _pad1, _pad2)             \
+    X(NT_SYM_LABEL, label, "label", _pad1, _pad2)                             \
+    X(NT_SYM_KEYWORD, keyword, "keyword", _pad, arglist)
 
 #define NODE_TYPE_LIST                                                        \
     NODE_TYPE_BASE_LIST                                                       \
@@ -85,7 +85,7 @@ namespace ast {
 
 enum NodeType
 {
-#define X(type, name, str) type,
+#define X(type, name, str, left, right) type,
     NODE_TYPE_LIST
 #undef X
 };
@@ -182,11 +182,9 @@ union Node {
     /*! Every node in the AST has this data at the beginning */
     struct Info
     {
+        Node* parent;
         NodeType type;
         LocationInfo loc;
-#ifdef ODBC_DOT_EXPORT
-        int guid;
-#endif
     } info;
 
     /*! Every node in the AST can be aliased to this basic type. Left and Right
@@ -208,8 +206,8 @@ union Node {
     struct
     {
         Info info;
-        Node* next;
         Node* stmnt;
+        Node* next;
     } block;
 
     /*!
@@ -232,7 +230,7 @@ union Node {
             Node* right;
         } base;
 
-#define X(type, name, str)  \
+#define X(type, name, str, left, right)  \
         struct              \
         {                   \
             Info info;      \
@@ -376,27 +374,16 @@ union Node {
                 uint16_t flags;                                 \
                 SymbolFlag flag;                                \
             };                                                  \
-        } sym_name
+        } sym_name;
 
         /*!
          * Every symbol has at least an identifier (name) and some associated
          * flags describing the symbol's visibility and associated datatype.
          */
-        DEFINE_SYMBOL_STRUCT(base, left, right);
-
-        DEFINE_SYMBOL_STRUCT(const_decl, literal, _padding);
-        DEFINE_SYMBOL_STRUCT(const_ref, _padding1, _padding2);
-        DEFINE_SYMBOL_STRUCT(var_decl, udt, _padding2);
-        DEFINE_SYMBOL_STRUCT(var_ref, udt, _padding2);
-        DEFINE_SYMBOL_STRUCT(array_decl, udt, arglist);
-        DEFINE_SYMBOL_STRUCT(array_ref, udt, arglist);
-        DEFINE_SYMBOL_STRUCT(udt_decl, subtypes_list, _padding);
-        DEFINE_SYMBOL_STRUCT(udt_type_ref, _padding1, _padding2);
-        DEFINE_SYMBOL_STRUCT(func_call, _padding, arglist);
-        DEFINE_SYMBOL_STRUCT(func_decl, body, arglist);
-        DEFINE_SYMBOL_STRUCT(sub_call, _padding1, _padding2);
-        DEFINE_SYMBOL_STRUCT(label, _padding1, _padding2);
-        DEFINE_SYMBOL_STRUCT(keyword, _padding, arglist);
+#define X(type, name, str, left, right) DEFINE_SYMBOL_STRUCT(name, left, right)
+        NODE_TYPE_SYMBOL_LIST
+#undef X
+#undef DEFINE_SYMBOL_STRUCT
     } sym;
 
     struct literal_t
@@ -410,7 +397,7 @@ union Node {
 };
 
 #ifdef ODBC_DOT_EXPORT
-ODBC_PUBLIC_API void dumpToDOT(std::ostream& os, Node* root);
+ODBC_PUBLIC_API void dumpToDOT(FILE* fp, Node* root);
 #endif
 
 ODBC_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
@@ -425,7 +412,7 @@ Node* newIntegerLiteral(int32_t value, const DBLTYPE* loc);
 Node* newFloatLiteral(double value, const DBLTYPE* loc);
 Node* newStringLiteral(char* value, const DBLTYPE* loc);
 
-Node* newAssignment(Node* symbol, Node* statement, const DBLTYPE* loc);
+Node* newAssignment(Node* symbol, Node* expr, const DBLTYPE* loc);
 
 Node* newBranch(Node* condition, Node* true_branch, Node* false_branch, const DBLTYPE* loc);
 
@@ -448,9 +435,9 @@ Node* newUDTSubtypeList(Node* varOrArrDecl, const DBLTYPE* loc);
 Node* appendUDTSubtypeList(Node* subtypeList, Node* varOrArrDecl, const DBLTYPE* loc);
 Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc);
 
-Node* newBlock(Node* expr, Node* next, const DBLTYPE* loc);
-Node* appendStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
-Node* prependStatementToBlock(Node* block, Node* expr, const DBLTYPE* loc);
+Node* newBlock(Node* stmnt, Node* next, const DBLTYPE* loc);
+Node* appendStatementToBlock(Node* block, Node* stmnt, const DBLTYPE* loc);
+Node* prependStatementToBlock(Node* block, Node* stmnt, const DBLTYPE* loc);
 
 }
 }

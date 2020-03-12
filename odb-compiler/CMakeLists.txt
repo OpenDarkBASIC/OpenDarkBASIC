@@ -79,9 +79,12 @@ add_library (odbc ${ODBC_LIB_TYPE}
     ${FLEX_DarkBASICScanner_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
+    "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"
+    "src/ast/Process.cpp"
+    "src/ast/ResolveArrayFuncAmbiguity.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"

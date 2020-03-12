@@ -12,6 +12,9 @@ class NAME : public ParserTestHarness
 {
 };
 
+using namespace odbc;
+using namespace ast;
+
 TEST_F(NAME, some_remarks)
 {
     EXPECT_THAT(driver->parseString(
@@ -24,8 +27,14 @@ TEST_F(NAME, some_remarks)
         "\trem\n"
         "   rem\t\n"
         "\trem\t\n"
-        "rem rem rem\n"), Eq(true));
-    EXPECT_THAT(ast, IsNull());
+        "rem rem rem\n"
+        "foo()\n"), Eq(true));
+    ASSERT_THAT(ast, NotNull());
+    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_FUNC_CALL));
+    ASSERT_THAT(ast->block.stmnt->sym.func_call.name, StrEq("foo"));
+    ASSERT_THAT(ast->block.next, IsNull());
 }
 
 TEST_F(NAME, remarks_with_empty_lines)
@@ -42,19 +51,28 @@ TEST_F(NAME, remarks_with_empty_lines)
         "   rem\t\n"
         "\trem\t\n"
         "rem rem rem\n"
-        "\n\n\n"), Eq(true));
-    EXPECT_THAT(ast, IsNull());
+        "\n\n\n"
+        "foo()\n"), Eq(true));
+    ASSERT_THAT(ast, NotNull());
+    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_FUNC_CALL));
+    ASSERT_THAT(ast->block.stmnt->sym.func_call.name, StrEq("foo"));
+    ASSERT_THAT(ast->block.next, IsNull());
 }
 
 TEST_F(NAME, remarks_empty_line_command)
 {
-    db.addKeyword({"sync on", "", {}, false});
-    matcher.updateFromDB(&db);
     EXPECT_THAT(driver->parseString(
         "rem some remark\n"
         "\n"
-        "sync on\n"), Eq(true));
+        "foo()\n"), Eq(true));
     ASSERT_THAT(ast, NotNull());
+    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_FUNC_CALL));
+    ASSERT_THAT(ast->block.stmnt->sym.func_call.name, StrEq("foo"));
+    ASSERT_THAT(ast->block.next, IsNull());
 }
 
 TEST_F(NAME, remstart_remend)
@@ -65,6 +83,11 @@ TEST_F(NAME, remstart_remend)
         "remend\n"
         "foo()\n"), Eq(true));
     ASSERT_THAT(ast, NotNull());
+    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_FUNC_CALL));
+    ASSERT_THAT(ast->block.stmnt->sym.func_call.name, StrEq("foo"));
+    ASSERT_THAT(ast->block.next, IsNull());
 }
 
 TEST_F(NAME, remstart_remend_indentation)
@@ -81,4 +104,9 @@ TEST_F(NAME, remstart_remend_indentation)
         "    remend\n"
         "    foo()\n"), Eq(true));
     ASSERT_THAT(ast, NotNull());
+    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+    ASSERT_THAT(ast->block.stmnt, NotNull());
+    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_FUNC_CALL));
+    ASSERT_THAT(ast->block.stmnt->sym.func_call.name, StrEq("foo"));
+    ASSERT_THAT(ast->block.next, IsNull());
 }

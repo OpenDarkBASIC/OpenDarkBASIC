@@ -2,6 +2,7 @@
 #include "odbc/parsers/db/Driver.hpp"
 #include "odbc/ast/Node.hpp"
 #include "odbc/tests/ParserTestHarness.hpp"
+#include "odbc/ast/ResolveArrayFuncAmbiguity.hpp"
 
 #define NAME db_arrays
 
@@ -50,7 +51,7 @@ TEST_F(NAME, reading_from_array_is_function_call_if_array_was_not_declared)
     ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());
     ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_SYM_FUNC_CALL));
     ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.name, StrEq("arr"));
-    ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.flag.datatype, Eq(SDT_INTEGER));
+    ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.flag.datatype, Eq(SDT_NONE));
     ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.flag.scope, Eq(SS_LOCAL));
     ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.arglist, NotNull());
     ASSERT_THAT(ast->block.stmnt->assignment.expr->sym.func_call.arglist->info.type, Eq(NT_LITERAL));
@@ -64,6 +65,9 @@ TEST_F(NAME, reading_from_array_is_array_if_it_was_declared)
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
+
+    ResolveArrayFuncAmbiguity post(ast);
+    ASSERT_THAT(post.execute(), Eq(true));
 
     Node* block = ast->block.next;
     ASSERT_THAT(block, NotNull());

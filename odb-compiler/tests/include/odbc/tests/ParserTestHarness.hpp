@@ -5,7 +5,7 @@
 #include "odbc/parsers/keywords/KeywordDB.hpp"
 #include "odbc/ast/Node.hpp"
 #include <gmock/gmock.h>
-#include <fstream>
+#include <cstdio>
 #include <filesystem>
 
 class ParserTestHarness : public testing::Test
@@ -27,8 +27,9 @@ public:
             std::string filename = std::string("ast/") + info->test_suite_name()
                     + "__" + info->name() + ".dot";
             std::filesystem::create_directory("ast");
-            std::ofstream out(filename);
+            FILE* out = fopen(filename.c_str(), "w");
             odbc::ast::dumpToDOT(out, ast);
+            fclose(out);
             odbc::ast::freeNodeRecursive(ast);
         }
 

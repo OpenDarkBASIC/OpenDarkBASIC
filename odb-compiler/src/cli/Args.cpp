@@ -309,15 +309,24 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
         return false;
     }
 
-    std::ofstream outfile(args[0].c_str());
-    if (outfile.is_open() == false)
+    FILE* outFile = stdout;
+    if (args.size())
     {
-        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
-        return false;
+        outFile = fopen(args[0].c_str(), "w");
+        if (!outFile)
+        {
+            fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+            return false;
+        }
+        fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
     }
+    else
+        fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format\n");
 
-    fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
-    odbc::ast::dumpToDOT(outfile, ast_);
+    odbc::ast::dumpToDOT(outFile, ast_);
+
+    if (args.size())
+        fclose(outFile);
 
     return true;
 #else

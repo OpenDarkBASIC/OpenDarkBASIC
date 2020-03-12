@@ -348,7 +348,7 @@ udt_decl
         $$ = $2;
         $$->info.type = NT_SYM_UDT_DECL;
         $$->sym.udt_decl.flag.datatype = SDT_UDT;
-        $$->sym.udt_decl.subtypes_list = $4;
+        $$->sym.udt_decl.subtypes = $4;
     }
   ;
 udt_body_decl
@@ -399,7 +399,7 @@ func_name_decl
 func_call
   : symbol LB arglist RB {
         $$ = $1;
-        $$->info.type = NT_SYM_FUNC_CALL;
+        $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.func_call.arglist = $3;
     }
   | symbol LB RB {

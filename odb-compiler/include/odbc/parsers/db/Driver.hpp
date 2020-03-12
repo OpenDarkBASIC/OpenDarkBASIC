@@ -34,6 +34,9 @@ public:
      */
     void appendBlock(ast::Node* block, const DBLTYPE* loc);
 
+    bool addArraySymbol(const char* name);
+    bool lookupArraySymbol(const char* name);
+
 private:
     bool doParse();
     bool patchLocationInfo(ast::Node* root);
