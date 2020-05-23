@@ -1,0 +1,32 @@
+foo = 2
+
+sync rate 60
+
+if foo = 2
+    print "Foo is 2"
+endif
+
+do
+ print foo
+ hello(1, 2, 3)
+ sync
+loop
+
+_func:
+print "Hello"
+_func2:
+print "World"
+gosub _func3
+return
+
+_func3:
+print "!"
+return
+
+function hello(x, y, z)
+print "I'm a function ", x, " ", y, " ", z
+endfunction
+
+function hello2(x)
+print "I'm a function2 ", x
+endfunction
