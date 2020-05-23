@@ -2,6 +2,7 @@
 
 #include "odbc/config.hpp"
 #include <ostream>
+#include <memory>
 
 #define NODE_TYPE_BASE_LIST                                                   \
     X(NT_BLOCK,            block,            "block",        stmnt,    next)  \
@@ -401,6 +402,9 @@ ODBC_PUBLIC_API void dumpToDOT(FILE* fp, Node* root);
 #endif
 
 ODBC_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
+
+ODBC_PUBLIC_API void dumpToIR(std::ostream& os, std::string module_name, Node* root);
+
 ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
 
 Node* newOp(Node* left, Node* right, NodeType op, const DBLTYPE* loc);

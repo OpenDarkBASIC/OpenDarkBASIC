@@ -13,6 +13,7 @@ You will need to install following dependencies:
   + FLEX
   + BISON 3.2 or later
   + A C++17 compliant compiler
+  + LLVM 8.0 or later (optional)
 
 For the Windows peeps out there, you can get up to date FLEX and BISON binaries from [here](https://github.com/lexxmark/winflexbison). You can unzip the release anywhere you want (I put it under ```C:\Program Files (x86)```). To get CMake to find them, you have to add the path to the executables to your PATH.
 
@@ -44,6 +45,34 @@ Other interesting CMake options:
 | ODBC_LIB_TYPE      | SHARED  | Build odbc as either SHARED or STATIC          |
 | ODBC_DOT_EXPORT    | ON      | Enable Graphviz DOT export capability          |
 
+#### LLVM
+
+#### Linux
+
+LLVM can usually be installed directly from your distributions repositories. For example, Ubuntu users can simply install `llvm-dev`, and CMake will detect it.
+It can also be [build from source](#building-from-source).
+
+#### macOS
+
+Untested. Binaries seem to be available [here](https://github.com/llvm/llvm-project/releases/tag/llvmorg-10.0.0), so that may work. If not, you could [build from source](#building-from-source).
+
+#### Windows
+
+Unfortunately, development binaries don't exist for Windows, so you'll need to [build from source](#building-from-source).
+
+#### Building from source
+If you want a quick list of instructions to build LLVM from source with the minimum required components, follow these instructions:
+
+1. `git clone https://github.com/llvm/llvm-project -b llvmorg-10.0.0` (for LLVM 10.0)
+1. `cd llvm-project`
+1. `mkdir build && cd build`
+1. `cmake ../llvm -DCMAKE_INSTALL_PREFIX=$(pwd)/install -DLLVM_INCLUDE_TESTS=0 -DLLVM_INCLUDE_BENCHMARKS=0 -DLLVM_TARGETS_TO_BUILD="X86"`
+    * If on Windows, add these options: `-DLLVM_COMPILER_JOBS=$(nproc) -Thost=x64`
+    * If on Linux, it is recommended to use ninja build by adding this option: `-GNinja`
+1. `cmake --build . --target install` (this took about 15 minutes on a Ryzen 2700X)
+1. LLVM binaries will be installed to `path/to/llvm-project/build/install`.
+    * Pass `-DLLVM_DIR=path/to/llvm-project/build/install/lib/cmake/llvm` to CMake when configuring OpenDarkBASIC to point it to your binaries.
+
 Running
 =======
 
@@ -68,4 +97,6 @@ In this example we'll parse the file ```iced.dba```, which is an old DarkBASIC C
 ```--parse-dba```: This takes a list of DarkBASIC source files.
 
 ```--dump-ast-json```: This will output the AST of the parser to JSON format.
+
+```--emit-llvm```: This flag will emit LLVM IR to stdout.
 

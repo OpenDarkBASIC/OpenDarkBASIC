@@ -6,6 +6,8 @@ include (GNUInstallDirs)
 include (TestVisibilityMacros)
 include (CheckIncludeFile)
 
+find_package(LLVM REQUIRED CONFIG)
+
 ###############################################################################
 # Configuration
 ###############################################################################
@@ -61,13 +63,26 @@ flex_target (KeywordsScanner
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Scanner.lex.cpp")
 add_flex_bison_dependency (KeywordsScanner KeywordsParser)
 
-if (ODBC_VERBOSE_BISON)
-    set_property (
-        SOURCE
-            ${BISON_DarkBASICParser_OUTPUTS}
-            ${BISON_KeywordsParser_OUTPUTS}
-        PROPERTY COMPILE_DEFINITIONS
-            YYDEBUG)
+    if (ODBC_VERBOSE_BISON)
+        set_property (
+            SOURCE
+                ${BISON_DarkBASICParser_OUTPUTS}
+                ${BISON_KeywordsParser_OUTPUTS}
+            PROPERTY COMPILE_DEFINITIONS
+                YYDEBUG)
+    endif ()
+else ()
+    set (BISON_DarkBASICParser_OUTPUTS
+            "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y.cpp"
+            "${PROJECT_SOURCE_DIR}/include/odbc/parsers/db/Parser.y.h")
+    set (FLEX_DarkBASICScanner_OUTPUTS
+            "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex.cpp")
+    set (BISON_KeywordsParser_OUTPUTS
+            "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Parser.y.cpp"
+            "${PROJECT_SOURCE_DIR}/include/odbc/parsers/keywords/Parser.y.h")
+    set (FLEX_KeywordsScanner_OUTPUTS
+            "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y.cpp"
+            "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Scanner.lex.cpp" include/odbc/ast/Node2.hpp)
 endif ()
 
 ###############################################################################
@@ -81,10 +96,12 @@ add_library (odbc ${ODBC_LIB_TYPE}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
+    "src/ast/Node2.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
+    "src/ast/Node_dumpToLLVM.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
@@ -111,6 +128,11 @@ target_compile_options (odbc
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
 target_compile_features (odbc PUBLIC cxx_std_17)
+target_include_directories(odbc PUBLIC ${LLVM_INCLUDE_DIRS})
+target_compile_definitions(odbc PUBLIC ${LLVM_DEFINITIONS})
+llvm_map_components_to_libnames(llvm_libs Core)
+target_link_libraries(odbc PUBLIC ${llvm_libs})
+message(STATUS LLVM libs: ${llvm_libs})
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests

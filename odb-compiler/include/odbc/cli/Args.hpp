@@ -28,6 +28,7 @@ public:
     bool dumpkWJSON(const std::vector<std::string>& args);
     bool dumpkWINI(const std::vector<std::string>& args);
     bool dumpkWNames(const std::vector<std::string>& args);
+    bool emitLLVM(const std::vector<std::string>& args);
 
 private:
     odbc::KeywordDB keywordDB_;
