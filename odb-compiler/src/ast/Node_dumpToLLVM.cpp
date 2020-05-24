@@ -246,15 +246,15 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, literal->value.i));
             case ast::LT_FLOAT:
                 return llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx), llvm::APFloat(literal->value.f));
-			case ast::LT_STRING: {
-//				llvm::Value* string_constant = llvm::ConstantDataArray::getString(ctx, literal->value.s, false);
-//                llvm::Value* addr_offset = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
-//                llvm::Value* index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
-				return llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(ctx));
-			}
-			default:
+            case ast::LT_STRING: {
+//	        llvm::Value* string_constant = llvm::ConstantDataArray::getString(ctx, literal->value.s, false);
+//              llvm::Value* addr_offset = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
+//              llvm::Value* index = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
+                return llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(ctx));
+            }
+            default:
                 assert(false && "Unimplemented literal type");
-		}
+        }
     } else if (auto* keyword_call = dynamic_cast<ast2::KeywordFunctionCallExpression*>(e)) {
         std::vector<llvm::Value*> args;
         for (const auto& arg_expression : keyword_call->arguments) {
@@ -270,6 +270,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
     } else {
         assert(false && "Unimplemented expression");
     }
+    return nullptr;
 }
 
 llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab, const ast2::StatementBlock& block, llvm::Function* function, std::string name) {
