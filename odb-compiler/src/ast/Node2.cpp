@@ -1,8 +1,9 @@
 #include "odbc/ast/Node2.hpp"
+#include <algorithm>
 #include <cassert>
 #include <iostream>
+#include <odbc/ast/Node.hpp>
 #include <unordered_map>
-#include <algorithm>
 
 namespace odbc {
 namespace ast2 {
@@ -271,14 +272,18 @@ Ptr<Statement> convertStatement(SymbolTable& symbol_table, ast::Node *node, Func
         }
 
         case ast::NT_SUB_RETURN: {
-//            os << "N" << node->info.guid << "[label=\"return\"];\n";
-        } break;
+          auto return_statement = std::make_unique<ReturnStatement>();
+          initialiseStatement(*return_statement, node, containing_function);
+          return return_statement;
+        }
 
         case ast::NT_GOTO: {
-//            os << "N" << node->info.guid << "[label=\"goto\"];\n";
-//            os << "N" << node->info.guid << " -> " << "N" << node->goto_.label->info.guid << "[label=\"label\"];\n";
-//            dumpToDOTRecursive(os, node->goto_.label);
-        } break;
+          assert(node->goto_.label->info.type == ast::NT_SYM);
+          auto goto_statement = std::make_unique<GotoStatement>();
+          initialiseStatement(*goto_statement, node, containing_function);
+          goto_statement->label = node->goto_.label->sym.base.name;
+          return goto_statement;
+        }
 
         case ast::NT_LOOP: {
             auto doloop_statement = std::make_unique<DoLoopStatement>();
@@ -295,38 +300,58 @@ Ptr<Statement> convertStatement(SymbolTable& symbol_table, ast::Node *node, Func
         } break;
 
         case ast::NT_BREAK: {
-        } break;
+          auto break_statement = std::make_unique<BreakStatement>();
+          initialiseStatement(*break_statement, node, containing_function);
+          return break_statement;
+        }
 
         case ast::NT_UDT_SUBTYPE_LIST: {
         } break;
+
         case ast::NT_SYM_CONST_DECL:
             break;
+
         case ast::NT_SYM_CONST_REF:
             break;
+
         case ast::NT_SYM_VAR_DECL:
             break;
+
         case ast::NT_SYM_VAR_REF:
             break;
+
         case ast::NT_SYM_ARRAY_DECL:
             break;
+
         case ast::NT_SYM_ARRAY_REF:
             break;
+
         case ast::NT_SYM_UDT_DECL:
             break;
+
         case ast::NT_SYM_UDT_TYPE_REF:
             break;
+
         case ast::NT_SYM_FUNC_CALL: {
-          auto call_statement = std::make_unique<UserFunctionCallStatement>();
+            auto call_statement = std::make_unique<UserFunctionCallStatement>();
             initialiseStatement(*call_statement, node, containing_function);
-          convertExpression(symbol_table, node, call_statement->expr);
-          return call_statement;
+            convertExpression(symbol_table, node, call_statement->expr);
+            return call_statement;
         }
+
         case ast::NT_SYM_FUNC_DECL:
             break;
-        case ast::NT_SYM_SUB_CALL:
-            break;
+
+        case ast::NT_SYM_SUB_CALL: {
+          auto gosub_statement = std::make_unique<GosubStatement>();
+          initialiseStatement(*gosub_statement, node, containing_function);
+          gosub_statement->label = node->sym.sub_call.name;
+          return gosub_statement;
+        }
+
         case ast::NT_SYM_LABEL:
             break;
+
         case ast::NT_SYM_KEYWORD: {
             auto call_statement = std::make_unique<KeywordFunctionCallStatement>();
             initialiseStatement(*call_statement, node, containing_function);
@@ -334,8 +359,9 @@ Ptr<Statement> convertStatement(SymbolTable& symbol_table, ast::Node *node, Func
             return call_statement;
         }
         default:
-            return nullptr;
+            assert(false);
     }
+    std::cerr << "Unknown node type " << node->info.type << std::endl;
     return nullptr;
 }
 

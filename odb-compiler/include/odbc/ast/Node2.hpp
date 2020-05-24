@@ -116,11 +116,11 @@ struct LabelStatement : Statement {
 };
 
 struct GotoStatement : Statement {
-    LabelStatement* target;
+    std::string label;
 };
 
 struct GosubStatement : Statement {
-    LabelStatement* target;
+  std::string label;
 };
 
 struct KeywordFunctionCallStatement : Statement {
@@ -132,6 +132,9 @@ struct UserFunctionCallStatement : Statement {
 };
 
 struct ReturnStatement : Statement {
+};
+
+struct BreakStatement : Statement {
 };
 
 struct EndfunctionStatement : Statement {
