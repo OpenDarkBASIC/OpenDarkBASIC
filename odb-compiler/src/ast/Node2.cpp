@@ -316,10 +316,10 @@ Ptr<Statement> convertStatement(SymbolTable& symbol_table, ast::Node *node, Func
         case ast::NT_SYM_UDT_TYPE_REF:
             break;
         case ast::NT_SYM_FUNC_CALL: {
-          auto call_statement = std::make_unique<UserFunctionCallStatement>();
+            auto call_statement = std::make_unique<UserFunctionCallStatement>();
             initialiseStatement(*call_statement, node, containing_function);
-          convertExpression(symbol_table, node, call_statement->expr);
-          return call_statement;
+            convertExpression(symbol_table, node, call_statement->expr);
+            return call_statement;
         }
         case ast::NT_SYM_FUNC_DECL:
             break;

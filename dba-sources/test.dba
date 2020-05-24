@@ -24,9 +24,9 @@ print "!"
 return
 
 function hello(x, y, z)
-print "I'm a function ", x, " ", y, " ", z
+print x + y + z
 endfunction
 
 function hello2(x)
-print "I'm a function2 ", x
+print "Hello" + str$(x)
 endfunction
