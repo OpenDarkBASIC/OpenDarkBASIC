@@ -1,11 +1,39 @@
 #pragma once
 
-#include "odbc/ast/Node.hpp"
 #include <memory>
+#include <unordered_map>
 #include <vector>
+
+#include "odbc/ast/Node.hpp"
 
 namespace odbc {
 namespace ast2 {
+enum class UnaryOp { BinaryNot, LogicalNot };
+
+enum class BinaryOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Pow,
+    LeftShift,
+    RightShift,
+    BinaryOr,
+    BinaryAnd,
+    BinaryXor,
+
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
+    Equal,
+    NotEqual,
+    LogicalOr,
+    LogicalAnd,
+    LogicalXor
+};
+
 template <typename T>
 using Ptr = std::unique_ptr<T>;
 
@@ -15,12 +43,24 @@ using PtrVector = std::vector<Ptr<T>>;
 struct UDTDefinition;
 struct FunctionDefinition;
 
+// Tag for the type union.
+struct Empty{};
+
 struct Type {
-    bool is_udt;
+    bool is_void = false;
+    bool is_udt = false;
     union {
-        UDTDefinition *udt;
+        Empty void_tag;
+        UDTDefinition* udt;
         ast::LiteralType builtin;
     };
+
+    Type();
+    Type(UDTDefinition* udt);
+    Type(ast::LiteralType builtin);
+
+    bool operator==(const Type& other) const;
+    bool operator!=(const Type& other) const;
 };
 
 struct Node {
@@ -31,22 +71,29 @@ struct Node {
 // Expressions.
 
 struct Expression : Node {
+    virtual Type getType() const = 0;
 };
 
 struct UnaryExpression : Expression {
-    ast::NodeType op;
-    Ptr<Expression> inner;
+    UnaryOp op;
+    Ptr<Expression> expr;
+
+    Type getType() const override;
 };
 
 struct BinaryExpression : Expression {
-    ast::NodeType op;
+    BinaryOp op;
     Ptr<Expression> left;
     Ptr<Expression> right;
+
+    Type getType() const override;
 };
 
 struct VariableExpression : Expression {
     std::string name;
     Type type;
+
+    Type getType() const override;
 };
 
 struct LiteralExpression : Expression {
@@ -57,16 +104,24 @@ struct LiteralExpression : Expression {
         double f;
         char* s;
     } value;
+
+    Type getType() const override;
 };
 
 struct KeywordFunctionCallExpression : Expression {
     std::string keyword;
     PtrVector<Expression> arguments;
+    Type return_type;
+
+    Type getType() const override;
 };
 
 struct UserFunctionCallExpression : Expression {
     FunctionDefinition* function;
     PtrVector<Expression> arguments;
+    Type return_type;
+
+    Type getType() const override;
 };
 
 // Statements.
@@ -92,17 +147,22 @@ struct SelectStatement : Statement {
     std::vector<Case> cases;
 };
 
+struct ForNextStatement : Statement {
+    VariableExpression variable;
+    StatementBlock block;
+};
+
 struct WhileStatement : Statement {
     Ptr<Expression> expression;
     StatementBlock block;
 };
 
-struct DoLoopStatement : Statement {
+struct RepeatUntilStatement : Statement {
+    Ptr<Expression> expression;
     StatementBlock block;
 };
 
-struct ForNextStatement : Statement {
-    VariableExpression variable;
+struct DoLoopStatement : Statement {
     StatementBlock block;
 };
 
@@ -120,7 +180,17 @@ struct GotoStatement : Statement {
 };
 
 struct GosubStatement : Statement {
-  std::string label;
+    std::string label;
+};
+
+struct IncStatement : Statement {
+    VariableExpression variable;
+    Ptr<Expression> increment;
+};
+
+struct DecStatement : Statement {
+    VariableExpression variable;
+    Ptr<Expression> decrement;
 };
 
 struct KeywordFunctionCallStatement : Statement {
@@ -131,11 +201,9 @@ struct UserFunctionCallStatement : Statement {
     UserFunctionCallExpression expr;
 };
 
-struct ReturnStatement : Statement {
-};
+struct ReturnStatement : Statement {};
 
-struct BreakStatement : Statement {
-};
+struct BreakStatement : Statement {};
 
 struct EndfunctionStatement : Statement {
     Ptr<Expression> expression;
@@ -154,11 +222,17 @@ struct FunctionDefinition : Node {
     StatementBlock statements;
 };
 
+struct UDTDefinition : Node {
+    std::string name;
+    // TODO: definition.
+};
+
 struct Program {
     StatementBlock main_function;
     PtrVector<FunctionDefinition> functions;
+    std::unordered_map<std::string, std::string> constant_map;
 
     static Program fromAst(ast::Node* root);
 };
-}
-}
+}  // namespace ast2
+}  // namespace odbc
