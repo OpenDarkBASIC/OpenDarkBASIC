@@ -1,0 +1,6 @@
+[submodule "odb-compiler/libpe"]
+	path = odb-compiler/external/libpe
+	url = git@github.com:dgavedissian/libpe
+[submodule "odb-compiler/external/libpe"]
+	path = odb-compiler/external/libpe
+	url = https://github.com/dgavedissian/libpe

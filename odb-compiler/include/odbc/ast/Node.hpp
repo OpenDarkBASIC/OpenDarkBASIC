@@ -1,8 +1,9 @@
 #pragma once
 
-#include "odbc/config.hpp"
 #include <ostream>
 #include <memory>
+#include "odbc/config.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
 
 #define NODE_TYPE_BASE_LIST                                                   \
     X(NT_BLOCK,            block,            "block",        stmnt,    next)  \
