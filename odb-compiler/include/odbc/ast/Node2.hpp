@@ -1,10 +1,11 @@
 #pragma once
 
+#include "odbc/ast/Node.hpp"
+#include "odbc/parsers/keywords/KeywordDB.hpp"
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
-
-#include "odbc/ast/Node.hpp"
 
 namespace odbc {
 namespace ast2 {
@@ -230,9 +231,9 @@ struct UDTDefinition : Node {
 struct Program {
     StatementBlock main_function;
     PtrVector<FunctionDefinition> functions;
-    std::unordered_map<std::string, std::string> constant_map;
+    std::unordered_map<std::string, std::string> constants;
 
-    static Program fromAst(ast::Node* root);
+    static Program fromAst(ast::Node* root, const odbc::KeywordDB& keyword_db);
 };
 }  // namespace ast2
 }  // namespace odbc
