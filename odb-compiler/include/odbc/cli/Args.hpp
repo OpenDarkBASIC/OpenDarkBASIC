@@ -22,6 +22,7 @@ public:
     bool printHelp(const std::vector<std::string>& args);
     bool loadKeywordsINI(const std::vector<std::string>& args);
     bool loadKeywordsJSON(const std::vector<std::string>& args);
+    bool plugins(const std::vector<std::string>& visitNode);
     bool parseDBA(const std::vector<std::string>& args);
     bool dumpASTDOT(const std::vector<std::string>& args);
     bool dumpASTJSON(const std::vector<std::string>& args);

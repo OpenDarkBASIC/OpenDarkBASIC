@@ -41,6 +41,15 @@ bool KeywordDB::addKeyword(Keyword keyword)
 }
 
 // ----------------------------------------------------------------------------
+Keyword* KeywordDB::lookup(const std::string& keyword)
+{
+    auto result = map_.find(keyword);
+    if (result == map_.end())
+        return nullptr;
+    return &result->second;
+}
+
+// ----------------------------------------------------------------------------
 const Keyword* KeywordDB::lookup(const std::string& keyword) const
 {
     auto result = map_.find(keyword);

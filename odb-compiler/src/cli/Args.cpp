@@ -2,10 +2,14 @@
 #include "odbc/parsers/keywords/Driver.hpp"
 #include "odbc/parsers/db/Driver.hpp"
 #include "odbc/util/Log.hpp"
+#include <libpe/pe.h>
 #include <cstring>
 #include <fstream>
 #include <algorithm>
 #include <iostream>
+#include <unordered_set>
+#include <filesystem>
+#include <cassert>
 
 using namespace odbc;
 
@@ -36,6 +40,7 @@ static Command sequentialCommands[] = {
         {"help",          'h', nullptr,                       {0, 0},  &Args::printHelp,        "Print this help text"},
         {"parse-kw-ini",  'k', "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsINI,  "Load a specific keyword file, or load an entire directory of keyword files."},
         {"parse-kw-json", 0,   "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
+        {"plugins",       0,   "<path> [path...]",            {1, -1}, &Args::plugins,          "Plugins to load keywords from and use during executable linking."},
         {"parse-dba",     0,   "<file> [files...]",           {1, -1}, &Args::parseDBA,         "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
         {"dump-ast-dot",  0,   "[file]",                      {0, 1},  &Args::dumpASTDOT,       "Dump AST to Graphviz DOT format. The default file is stdout."},
         {"dump-ast-json", 0,   "[file]",                      {0, 1},  &Args::dumpASTJSON,      "Dump AST to JSON format. The default file is stdout"},
@@ -268,6 +273,173 @@ bool Args::loadKeywordsJSON(const std::vector<std::string> &args) {
 }
 
 // ----------------------------------------------------------------------------
+template <class Container>
+void split(const std::string& str, Container& cont,
+            char delim = ' ')
+{
+    std::size_t current, previous = 0;
+    current = str.find(delim);
+    while (current != std::string::npos) {
+        cont.push_back(str.substr(previous, current - previous));
+        previous = current + 1;
+        current = str.find(delim, previous);
+    }
+    cont.push_back(str.substr(previous, current - previous));
+}
+
+bool Args::plugins(const std::vector<std::string> &args) {
+    std::unordered_set<std::string> pluginsToLoad;
+    for (const auto &pluginPath : args) {
+        for (const auto &p: std::filesystem::recursive_directory_iterator(pluginPath)) {
+            if (p.path().extension() == ".dll") {
+                pluginsToLoad.emplace(p.path().string());
+            }
+        }
+    }
+
+    // Populate string table entries from plugins.
+    std::vector<std::string> stringTableEntries;
+    for (const auto &plugin : pluginsToLoad) {
+        fprintf(stderr, "Loading plugin %s\n", plugin.c_str());
+
+        // Open PE file.
+        pe_ctx_t ctx;
+        pe_err_e err = pe_load_file(&ctx, plugin.c_str());
+        if (err != LIBPE_E_OK) {
+            pe_error_print(stderr, err);
+            continue;
+        }
+        err = pe_parse(&ctx);
+        if (err != LIBPE_E_OK) {
+            pe_error_print(stderr, err);
+            continue;
+        }
+
+        // Recurse resource tree to discover string tables.
+        pe_resources_t *resources = pe_resources(&ctx);
+        if (resources == nullptr || resources->err != LIBPE_E_OK) {
+            fprintf(stderr, "This file has no resources");
+            continue;
+        }
+        pe_resource_node_t *rootNode = resources->root_node;
+        auto visitNode = [&ctx, &stringTableEntries](auto &&visitNode, pe_resource_node_t *node) {
+            if (!node) {
+                return;
+            }
+
+            // If we're at the resource directory level (level 1), stop traversing the tree further unless it's of type RT_STRING (string table entries).
+            if (node->type == LIBPE_RDT_RESOURCE_DIRECTORY && node->dirLevel == LIBPE_RDT_LEVEL1) {
+                if (node->parentNode != NULL && node->parentNode->type == LIBPE_RDT_DIRECTORY_ENTRY) {
+                    IMAGE_RESOURCE_DIRECTORY_ENTRY *dirEntry = node->parentNode->raw.directoryEntry;
+                    if (dirEntry->u0.Id != RT_STRING) {
+                        return;
+                    }
+                }
+            }
+
+            // If we've hit a data entry leaf node, we can assume that it's a string table entry (due to the check above).
+            if (node->type == LIBPE_RDT_DATA_ENTRY) {
+                const IMAGE_RESOURCE_DATA_ENTRY *entry = node->raw.dataEntry;
+
+                // Read data entry.
+                const uint64_t rawDataOffset = pe_rva2ofs(&ctx, entry->OffsetToData);
+                const size_t rawDataSize = entry->Size;
+                const void *rawDataPtr = LIBPE_PTR_ADD(ctx.map_addr, rawDataOffset);
+                if (!pe_can_read(&ctx, rawDataPtr, rawDataSize)) {
+                    return;
+                }
+
+                // rawDataPtr is a pointer to a UTF-16 buffer. We can use libpe to convert it to an ASCII buffer.
+                const size_t bufferSize = rawDataSize / 2;
+                char* bufferPtr = new char[bufferSize];
+                pe_utils_str_widechar2ascii(bufferPtr, reinterpret_cast<const char*>(rawDataPtr), bufferSize);
+
+                // Parse string table.
+                int i = 0;
+                while (i < bufferSize) {
+                    // The first byte in the string table entry is the length of the string.
+                    std::size_t tableEntrySize = static_cast<std::uint8_t>(bufferPtr[i++]);
+                    assert((i + tableEntrySize) <= bufferSize);
+                    if (tableEntrySize == 0) {
+                        continue;
+                    }
+
+                    // Read string table entry.
+                    // This uses the `std::string{const char *, size_t}` constructor in place in the unordered_map.
+                    stringTableEntries.emplace_back(&bufferPtr[i], tableEntrySize);
+                    i += tableEntrySize;
+                }
+
+                delete [] bufferPtr;
+            }
+            visitNode(visitNode, node->childNode);
+            visitNode(visitNode, node->nextNode);
+        };
+        visitNode(visitNode, rootNode);
+    }
+
+    // Populate keyword database.
+    for (const auto& entry : stringTableEntries) {
+        std::vector<std::string> tokens;
+        split(entry, tokens, '%');
+
+        if (tokens.size() < 2) {
+            fprintf(stderr, "Invalid string table entry: %s\n", entry.c_str());
+            continue;
+        }
+
+        auto convertTypeChar = [](char type) -> Keyword::Type {
+            return static_cast<Keyword::Type>(type);
+        };
+
+        // Extract keyword name and return type.
+        auto& keywordName = tokens[0];
+        auto& functionTypes = tokens[1];
+        const auto& dllSymbol = tokens[2];
+        std::optional<Keyword::Type> returnType;
+
+        // Extract return type.
+        if (keywordName.back() == '[') {
+            keywordName = keywordName.substr(0, keywordName.size() - 1);
+            returnType = convertTypeChar(tokens[1][0]);
+            functionTypes = functionTypes.substr(1);
+        }
+
+        // Create overload.
+        Keyword::Overload overload;
+        overload.dllSymbol = dllSymbol;
+
+        std::vector<std::string> argumentNames;
+        if (tokens.size() > 3) {
+            split(tokens[3], argumentNames, ',');
+        }
+        for (int i = 0; i < functionTypes.size(); ++i) {
+            Keyword::Arg arg;
+            arg.type = convertTypeChar(functionTypes[i]);
+            if (i < argumentNames.size()) {
+                arg.description = std::move(argumentNames[i]);
+            }
+            overload.args.emplace_back(std::move(arg));
+        }
+
+        // Add to database, or merge with existing keyword if it exists already.
+        Keyword* existingKeyword = keywordDB_.lookup(keywordName);
+        if (existingKeyword) {
+            existingKeyword->overloads.emplace_back(std::move(overload));
+        } else {
+            Keyword kw;
+            kw.name = std::move(keywordName);
+            kw.returnType = returnType;
+            kw.overloads.emplace_back(std::move(overload));
+            keywordDB_.addKeyword(kw);
+        }
+        keywordMatcherDirty_ = true;
+    }
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
 bool Args::parseDBA(const std::vector<std::string> &args) {
     if (keywordMatcherDirty_) {
         fprintf(stderr, "[db parser] Updating keyword index\n");
@@ -344,15 +516,15 @@ bool Args::dumpkWJSON(const std::vector<std::string> &args) {
     for (auto keyword = keywords.begin(); keyword != keywords.end(); ++keyword) {
         log::data("  \"%s\": {\n", keyword->name.c_str());
         log::data("    \"help\": \"%s\",\n", keyword->helpFile.c_str());
-        log::data("    \"hasReturnType\": \"%s\",\n", keyword->hasReturnType ? "true" : "false");
+        log::data("    \"hasReturnType\": \"%s\",\n", keyword->returnType.has_value() ? "true" : "false");
         log::data("    \"overloads\": [");
         for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload) {
             log::data("[");
-            auto arg = overload->begin();
-            if (arg != overload->end())
-                log::data("\"%s\"", (*arg++).c_str());
-            while (arg != overload->end())
-                log::data(", \"%s\"", (*arg++).c_str());
+            auto arg = overload->args.begin();
+            if (arg != overload->args.end())
+                log::data("\"%s\"", (*arg++).description.c_str());
+            while (arg != overload->args.end())
+                log::data(", \"%s\"", (*arg++).description.c_str());
             log::data("]%s", overload + 1 != keyword->overloads.end() ? ", " : "");
         }
         log::data("]\n");
@@ -375,18 +547,18 @@ bool Args::dumpkWINI(const std::vector<std::string> &args) {
         for (const auto &overload : keyword.overloads) {
             if (keyword.overloads.size() > 1)
                 log::data("[");
-            if (keyword.hasReturnType)
+            if (keyword.returnType.has_value())
                 log::data("(");
 
-            auto arg = overload.begin();
-            if (arg != overload.end())
-                log::data("%s", (*arg++).c_str());
+            auto arg = overload.args.begin();
+            if (arg != overload.args.end())
+                log::data("%s", (*arg++).description.c_str());
             else
                 log::data("*no parameters*");
-            while (arg != overload.end())
-                log::data(", %s", (*arg++).c_str());
+            while (arg != overload.args.end())
+                log::data(", %s", (*arg++).description.c_str());
 
-            if (keyword.hasReturnType)
+            if (keyword.returnType)
                 log::data(")");
             if (keyword.overloads.size() > 1)
                 log::data("]");
@@ -427,7 +599,7 @@ bool Args::emitLLVM(const std::vector<std::string> &args) {
         fprintf(stderr, "[ast] Emitting LLVM bitcode to stdout.\n");
     }
 
-    odbc::ast::dumpToIR(*os, "input.dba", ast_);
+    odbc::ast::dumpToIR(*os, "input.dba", ast_, keywordDB_);
 
     return false;
 }
