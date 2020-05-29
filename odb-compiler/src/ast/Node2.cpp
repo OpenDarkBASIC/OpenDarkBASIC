@@ -3,13 +3,15 @@
 #include <algorithm>
 #include <cassert>
 #include <iostream>
-#include <odbc/ast/Node.hpp>
 #include <unordered_map>
 
 namespace odbc {
 namespace ast2 {
 namespace {
 struct SymbolTable {
+    SymbolTable(const odbc::KeywordDB& keyword_db) : keyword_db(keyword_db) {}
+
+    const odbc::KeywordDB& keyword_db;
     std::unordered_map<std::string, std::pair<ast::Node*, FunctionDefinition*>> functions;
     std::unordered_map<std::string, std::string> constant_map;
 };
@@ -506,7 +508,7 @@ void convertBlock(SymbolTable& symbol_table, const std::vector<ast::Node*>& bloc
     }
 }
 
-void convertRootBlock(Program& program, ast::Node* block) {
+void convertRootBlock(Program& program, ast::Node* block, const odbc::KeywordDB& keyword_db) {
     assert(block->info.type == ast::NT_BLOCK);
 
     bool reached_end_of_main = false;
@@ -515,7 +517,7 @@ void convertRootBlock(Program& program, ast::Node* block) {
 
     // First pass: Extract main function statements, and function nodes.
     std::vector<ast::Node*> main_statements;
-    SymbolTable symbol_table;
+    SymbolTable symbol_table(keyword_db);
     for (ast::Node* s : getNodesFromBlockNode(block)) {
         // If we've reached the end of the main function, we should only processing functions.
         if (reached_end_of_main) {
@@ -631,9 +633,9 @@ Type UserFunctionCallExpression::getType() const {
     return return_type;
 }
 
-Program Program::fromAst(ast::Node* root) {
+Program Program::fromAst(ast::Node* root, const odbc::KeywordDB& keyword_db) {
     Program program;
-    convertRootBlock(program, root);
+    convertRootBlock(program, root, keyword_db);
     return program;
 }
 }  // namespace ast2

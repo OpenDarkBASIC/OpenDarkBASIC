@@ -543,13 +543,13 @@ void LLVMGenerator::generateModule(const ast2::Program& program) {
 }
 }  // namespace
 
-void dumpToIR(std::ostream& os, std::string module_name, Node* root) {
+void dumpToIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
 
     LLVMGenerator gen(context, module);
 
-    auto program = ast2::Program::fromAst(root);
+    auto program = ast2::Program::fromAst(root, keywordDb);
     gen.generateModule(program);
 
     // Write bitcode to stream.

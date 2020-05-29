@@ -403,7 +403,7 @@ ODBC_PUBLIC_API void dumpToDOT(FILE* fp, Node* root);
 
 ODBC_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
 
-ODBC_PUBLIC_API void dumpToIR(std::ostream& os, std::string module_name, Node* root);
+ODBC_PUBLIC_API void dumpToIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
 
 ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
 
