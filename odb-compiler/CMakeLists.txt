@@ -76,30 +76,11 @@ endif ()
 # Library definition
 ###############################################################################
 
-set(LIBPE_SRCS
-    external/libpe/imports.c
-    external/libpe/error.c
-    external/libpe/libfuzzy/fuzzy.c
-    external/libpe/libfuzzy/edit_dist.c
-    external/libpe/exports.c
-    external/libpe/resources.c
-    external/libpe/utils.c
-    external/libpe/pe.c
-    external/libpe/misc.c
-    external/libpe/hashes.c
-    external/libpe/libudis86/udis86.c
-    external/libpe/libudis86/decode.c
-    external/libpe/libudis86/syn.c
-    external/libpe/libudis86/syn-att.c
-    external/libpe/libudis86/itab.c
-    external/libpe/libudis86/syn-intel.c)
-
 add_library (odbc ${ODBC_LIB_TYPE}
     ${BISON_DarkBASICParser_OUTPUTS}
     ${FLEX_DarkBASICScanner_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
-    ${LIBPE_SRCS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
     "src/ast/Node2.cpp"
@@ -111,6 +92,7 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
+    "src/parsers/keywords/KeywordDLL.cpp"
     "src/parsers/keywords/KeywordMatcher.cpp"
     "src/util/Log.cpp"
     "src/util/Str.cpp"
@@ -135,7 +117,6 @@ target_compile_options (odbc
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
 target_compile_features (odbc PUBLIC cxx_std_17)
 target_include_directories(odbc PUBLIC ${LLVM_INCLUDE_DIRS})
-target_include_directories(odbc PUBLIC external/libpe/include)
 target_compile_definitions(odbc PUBLIC ${LLVM_DEFINITIONS})
 llvm_map_components_to_libnames(llvm_libs Core)
 target_link_libraries(odbc PUBLIC ${llvm_libs})
