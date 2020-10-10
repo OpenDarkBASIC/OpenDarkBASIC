@@ -3,7 +3,7 @@ foo = 2
 sync rate 60
 
 if foo = 2
-    print "Foo is 2"
+  print 2
 endif
 
 do
@@ -13,14 +13,14 @@ do
 loop
 
 _func:
-print "Hello"
+print 1
 _func2:
-print "World"
+print 2
 gosub _func3
 return
 
 _func3:
-print "!"
+print 55
 return
 
 function hello(x, y, z)
@@ -28,5 +28,5 @@ print x + y + z
 endfunction
 
 function hello2(x)
-print "Hello" + str$(x)
+print 1234
 endfunction

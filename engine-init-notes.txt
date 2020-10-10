@@ -1,0 +1,72 @@
+DarkBasic main function:
+
+// Load dlls and fill glob struct.
+dllList = array of dlls. DBProCore.dll must be at the beginning.
+dllHandles = new array of size dllList.size()
+for (int i = 0; i < dllList.size(); ++i) {
+    dllHandles[i] = LoadLibrary(dllList[i]);
+
+    if (dllList[i] == "DBProCore.dll") {
+        // CORE Pass Ptrs To Core (Error Handling, Data Statements)
+        g_CORE_PassCmdLinePtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassCmdLineHandlerPtr@@YAXPAX@Z" );
+        g_CORE_PassErrorPtr				= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassErrorHandlerPtr@@YAXPAX@Z" );
+        g_CORE_PassEscapePtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassEscapePtr@@YAXPAX@Z" );
+        g_CORE_PassBreakOutPtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassBreakOutPtr@@YAXPAX@Z" );
+        g_CORE_PassStructurePatterns	= ( GDI_RetVoidParamLPVOIDDWORD )		GetProcAddress ( hCoreDLL, "?PassStructurePatterns@@YAXPAXK@Z" );
+        g_CORE_PassDataPtrs				= ( GDI_RetVoidParamLPSTR2 )			GetProcAddress ( hCoreDLL, "?PassDataStatementPtr@@YAXPAD0@Z" );
+
+        // CORE Display Function Calls
+        g_CORE_InitDisplay		= ( GDI_RetDWORDParamDWORD4HINSTLPSTRPFN )	GetProcAddress ( hCoreDLL, "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z" );
+        g_CORE_CloseDisplay		= ( GDI_RetDWORDParamVoidPFN )			GetProcAddress ( hCoreDLL, "?CloseDisplay@@YAKXZ" );
+        g_CORE_PassDLLs			= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?PassDLLs@@YAXXZ" );
+        g_CORE_ConstructDLLs	= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?ConstructDLLs@@YAXXZ" );
+        g_CORE_GetGlobPtr		= ( GDI_RetDWORDParamVoidPFN )			GetProcAddress ( hCoreDLL, "?GetGlobPtr@@YAKXZ" );
+
+        // CORE Memory Management Function Calls
+        g_CORE_CreateVarSpace	= ( GDI_RetDWORDParamDWORDPFN )			GetProcAddress ( hCoreDLL, "?CreateVariableSpace@@YAKK@Z" );
+        g_CORE_DeleteVarSpace	= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?DeleteVariableSpace@@YAXXZ" );
+        g_CORE_CreateDataSpace	= ( GDI_RetDWORDParamDWORDPFN )			GetProcAddress ( hCoreDLL, "?CreateDataSpace@@YAKK@Z" );
+        g_CORE_DeleteDataSpace	= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?DeleteDataSpace@@YAXXZ" );
+        g_CORE_DeleteVarItem	= ( GDI_RetVoidParamDWORDPTRPFN )		GetProcAddress ( hCoreDLL, "?DeleteSingleVariableAllocation@@YAXPAK@Z" );
+        g_CORE_UnDim			= ( GDI_RetVoidParamDWORDPTRPFN )		GetProcAddress ( hCoreDLL, "?UnDimDD@@YAKK@Z" );
+        g_CORE_SyncRefresh		= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?Sync@@YAXXZ" );
+
+        // CORE SEcurity Functions
+        g_CORE_GetSecurityCode	= ( GDI_RetIntParamVoidPFN )			GetProcAddress ( hCoreDLL, "?GetSecurityCode@@YAHXZ" );
+        g_CORE_WipeSecurityCode	= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?WipeSecurityCode@@YAXXZ" );
+
+        // Get GlobStruct Ptr for rest of DLL loading
+        if(g_CORE_GetGlobPtr) g_pGlob = (GlobStruct*)g_CORE_GetGlobPtr();
+    }
+
+    if (dllList[i] == "DBProSetupDebug.dll") { g_pGlob->g_GFX = dllHandles[i]; }
+    // etc for all other DLLs, mapping DLL handles to glob struct handle.
+}
+
+Load DLLs and fill GlobStruct.
+
+// Prepare display.
+g_CORE_PassCmdLinePtr((LPVOID)pCmdLine);
+g_CORE_PassErrorPtr((LPVOID)&m_dwRuntimeErrorDWORD);
+g_CORE_PassEscapePtr((LPVOID)&g_dwEscapeValueMem);
+g_CORE_PassBreakOutPtr((LPVOID)&g_dwBreakOutPosition);
+// U71 - also pass in structure pattern qty+ptr
+g_CORE_PassStructurePatterns((LPVOID)m_pUsertypeStringPatternArray, m_dwUsertypeStringPatternQuantity);
+g_CORE_PassDLLs();
+
+g_CORE_InitDisplay ( m_dwInitialDisplayMode, m_dwInitialDisplayWidth, m_dwInitialDisplayHeight, m_dwInitialDisplayDepth, hInstance, m_pInitialAppName)
+
+// Call PassCoreData on each user DLL
+for (int i = 0; i < dllList[i]; ++i) {
+    DLL_PassCore g_DLL_PassCoreData;
+    g_DLL_PassCoreData = ( DLL_PassCore ) GetProcAddress ( hDLLMod[dllindex], "?ReceiveCoreDataPtr@@YAXPAX@Z" );
+    if (!g_DLL_PassCoreData)
+        g_DLL_PassCoreData = ( DLL_PassCore )GetProcAddress(hDLLMod[dllindex], "ReceiveCoreDataPtr");
+    if(g_DLL_PassCoreData)	g_DLL_PassCoreData( g_pGlob );
+}
+
+// Run application
+runApplication()
+
+// Shutdown
+if(g_CORE_CloseDisplay) g_CORE_CloseDisplay();

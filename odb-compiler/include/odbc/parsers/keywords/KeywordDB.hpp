@@ -14,6 +14,7 @@ public:
     ODBC_PUBLIC_API bool loadFromFile(const std::string& fileName);
     ODBC_PUBLIC_API bool exists(const std::string& keyword);
 
+    ODBC_PUBLIC_API bool addPlugin(const std::string& plugin);
     ODBC_PUBLIC_API bool addKeyword(Keyword keyword);
     ODBC_PUBLIC_API Keyword* lookup(const std::string& keyword);
     ODBC_PUBLIC_API const Keyword* lookup(const std::string& keyword) const;

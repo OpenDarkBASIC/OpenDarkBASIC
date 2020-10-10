@@ -143,7 +143,10 @@ enum LiteralType
     LT_BOOLEAN,
     LT_INTEGER,
     LT_FLOAT,
-    LT_STRING
+    LT_STRING,
+    LT_DOUBLE,
+    LT_LONG,
+    LT_DWORD // TODO: Remove LT_BOOLEAN
 };
 
 union literal_value_t
@@ -404,7 +407,10 @@ ODBC_PUBLIC_API void dumpToDOT(FILE* fp, Node* root);
 
 ODBC_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
 
-ODBC_PUBLIC_API void dumpToIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
+ODBC_PUBLIC_API void generateLLVMIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
+ODBC_PUBLIC_API void generateLLVMBC(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
+ODBC_PUBLIC_API void generateObjectFile(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
+ODBC_PUBLIC_API void generateExecutable(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb);
 
 ODBC_PUBLIC_API void freeNodeRecursive(Node* root);
 
