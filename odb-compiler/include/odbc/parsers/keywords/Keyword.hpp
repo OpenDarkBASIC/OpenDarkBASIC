@@ -16,7 +16,8 @@ struct Keyword
         String = 'S',
         Double = 'O',
         Long = 'R',
-        Dword = 'D' // Boolean, BYTE, WORD and DWORD.
+        Dword = 'D', // Boolean, BYTE, WORD and DWORD.
+        Void = '0'
     };
 
     struct Arg {

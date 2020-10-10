@@ -23,8 +23,8 @@ class LLVMGenerator {
         GlobalSymbolTable(llvm::Module& module) : module(module) {
         }
 
-        llvm::Function* getOrCreateKeywordThunk(const std::string& keyword,
-                                                const std::vector<llvm::Value*>& args);
+        llvm::Function* getOrCreateKeywordThunk(const Keyword* keyword,
+                                                int keyword_overload_index);
         llvm::Function* getFunction(ast2::FunctionDefinition* function);
 
         void addFunctionToTable(ast2::FunctionDefinition* ast_function, llvm::Function* function);
@@ -74,63 +74,75 @@ class LLVMGenerator {
 
     // Variable symbol table.
     std::unordered_map<llvm::Function*, std::unique_ptr<SymbolTable>> symbol_tables;
-
-    llvm::Type* getLLVMType(const ast2::Type& type) const;
 };
 
-std::string getMangledThunkName(const std::string& keyword, const std::vector<llvm::Value*>& args) {
-    std::string function_name = "_db_";
-    std::transform(keyword.begin(), keyword.end(), std::back_inserter(function_name),
-                   [](unsigned char c) { return c == ' ' ? '_' : std::tolower(c); });
-    for (llvm::Value* arg_value : args) {
-        llvm::Type* type = arg_value->getType();
-        if (type->isIntegerTy(1)) {
-            function_name += "b";
-        } else if (type->isIntegerTy(32)) {
-            function_name += "i";
-        } else if (type->isIntegerTy(64)) {
-            function_name += "l";
-        } else if (type->isFloatTy()) {
-            function_name += "f";
-        } else if (type->isDoubleTy()) {
-            function_name += "d";
-        } else if ((type->isPointerTy() && type->getPointerElementType()->isIntegerTy()) ||
-                   (type->isArrayTy() && type->getArrayElementType()->isIntegerTy())) {
-            function_name += "s";
-        } else {
-            assert(false);
-        }
+llvm::Type* getLLVMType(llvm::LLVMContext& ctx, Keyword::Type type) {
+    switch (type) {
+        case Keyword::Type::Integer:
+            return llvm::Type::getInt32Ty(ctx);
+        case Keyword::Type::Float:
+            return llvm::Type::getFloatTy(ctx);
+        case Keyword::Type::String:
+            return llvm::Type::getInt8PtrTy(ctx);
+        case Keyword::Type::Double:
+            return llvm::Type::getDoubleTy(ctx);
+        case Keyword::Type::Long:
+            return llvm::Type::getInt64Ty(ctx);
+        case Keyword::Type::Dword:
+            return llvm::Type::getInt32Ty(ctx);
+        case Keyword::Type::Void:
+            return llvm::Type::getVoidTy(ctx);
     }
-    return function_name;
 }
 
-llvm::Function* LLVMGenerator::GlobalSymbolTable::getOrCreateKeywordThunk(
-    const std::string& keyword, const std::vector<llvm::Value*>& args) {
-    std::string mangled_keyword = getMangledThunkName(keyword, args);
-    auto thunk_entry = keyword_thunks.find(mangled_keyword);
+llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast2::Type& type) {
+    if (type.is_udt) {
+        // TODO
+    } else {
+        switch (type.builtin) {
+            case LT_INTEGER:
+                return llvm::Type::getInt32Ty(ctx);
+            case LT_FLOAT:
+                return llvm::Type::getDoubleTy(ctx);
+            case LT_STRING:
+                return llvm::Type::getInt8PtrTy(ctx);
+            case LT_BOOLEAN:
+                return llvm::Type::getInt1Ty(ctx);
+        }
+    }
+    return nullptr;
+}
+
+llvm::Function* LLVMGenerator::GlobalSymbolTable::getOrCreateKeywordThunk(const Keyword* keyword, int keyword_overload_index) {
+    const auto& keyword_overload = keyword->overloads[keyword_overload_index];
+
+    auto thunk_entry = keyword_thunks.find(keyword_overload.dllSymbol);
     if (thunk_entry != keyword_thunks.end()) {
         return thunk_entry->second;
     }
 
     // Get argument types.
     std::vector<llvm::Type*> arg_types;
-    arg_types.reserve(args.size());
-    for (llvm::Value* arg : args) {
-        arg_types.emplace_back(arg->getType());
+    arg_types.reserve(keyword_overload.args.size());
+    for (const auto& arg : keyword_overload.args) {
+        arg_types.emplace_back(getLLVMType(module.getContext(), arg.type));
+    }
+
+    // Get return type.
+    llvm::Type* return_type;
+    if (keyword->returnType) {
+        return_type = getLLVMType(module.getContext(), *keyword->returnType);
+    } else {
+        return_type = llvm::Type::getVoidTy(module.getContext());
     }
 
     // Create thunk function.
-    llvm::FunctionType* function_type =
-        llvm::FunctionType::get(llvm::Type::getVoidTy(module.getContext()), arg_types, false);
+    llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, arg_types, false);
     llvm::Function* function = llvm::Function::Create(
-        function_type, llvm::Function::ExternalLinkage, mangled_keyword, module);
+        function_type, llvm::Function::ExternalLinkage, keyword_overload.dllSymbol, module);
+    function->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 
-    //    llvm::BasicBlock* block =
-    //    llvm::BasicBlock::Create(module.getContext(), "", function);
-    //    llvm::IRBuilder<> builder(block);
-    //    builder.CreateRetVoid();
-
-    keyword_thunks.emplace(mangled_keyword, function);
+    keyword_thunks.emplace(keyword_overload.dllSymbol, function);
 
     return function;
 }
@@ -192,7 +204,7 @@ llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
     } else {
         function_name = f->name;
         linkage_types = llvm::Function::InternalLinkage;
-        return_type = getLLVMType(f->return_type);
+        return_type = getLLVMType(ctx, f->return_type);
     }
 
     // Create argument list.
@@ -201,7 +213,7 @@ llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
         for (const auto& arg : f->arguments) {
             std::pair<std::string, llvm::Type*> arg_pair;
             arg_pair.first = arg.name;
-            arg_pair.second = getLLVMType(arg.type);
+            arg_pair.second = getLLVMType(ctx, arg.type);
             args.emplace_back(arg_pair);
         }
     }
@@ -391,7 +403,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return builder.CreateXor(left, right);
         }
     } else if (auto* var_ref = dynamic_cast<ast2::VariableExpression*>(e)) {
-        llvm::AllocaInst* alloca = symtab.getOrAddVar(var_ref->name, getLLVMType(var_ref->type));
+        llvm::AllocaInst* alloca = symtab.getOrAddVar(var_ref->name, getLLVMType(ctx, var_ref->type));
         return builder.CreateLoad(alloca, "");
     } else if (auto* literal = dynamic_cast<ast2::LiteralExpression*>(e)) {
         switch (literal->type) {
@@ -425,7 +437,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             args.emplace_back(generateExpression(symtab, builder, arg_expression));
         }
         return builder.CreateCall(
-            symtab.getGlobalTable().getOrCreateKeywordThunk(keyword_call->keyword, args), args);
+            symtab.getGlobalTable().getOrCreateKeywordThunk(keyword_call->keyword, keyword_call->keyword_overload), args);
     } else if (auto* user_function_call = dynamic_cast<ast2::UserFunctionCallExpression*>(e)) {
         std::vector<llvm::Value*> args;
         for (const auto& arg_expression : user_function_call->arguments) {
@@ -484,7 +496,7 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
         } else if (auto* assignment = dynamic_cast<ast2::AssignmentStatement*>(s)) {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression);
             llvm::AllocaInst* store_target = symtab.getOrAddVar(
-                assignment->variable.name, getLLVMType(assignment->variable.type));
+                assignment->variable.name, getLLVMType(ctx, assignment->variable.type));
             builder.CreateStore(expression, store_target);
         } else if (auto* keyword_call = dynamic_cast<ast2::KeywordFunctionCallStatement*>(s)) {
             // Generate the expression, but discard the result.
@@ -498,24 +510,6 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
     }
 
     return basic_block;
-}
-
-llvm::Type* LLVMGenerator::getLLVMType(const ast2::Type& type) const {
-    if (type.is_udt) {
-        // TODO
-    } else {
-        switch (type.builtin) {
-        case LT_INTEGER:
-            return llvm::Type::getInt32Ty(ctx);
-        case LT_FLOAT:
-            return llvm::Type::getDoubleTy(ctx);
-        case LT_STRING:
-            return llvm::Type::getInt8PtrTy(ctx);
-        case LT_BOOLEAN:
-            return llvm::Type::getInt1Ty(ctx);
-        }
-    }
-    return nullptr;
 }
 
 void LLVMGenerator::generateModule(const ast2::Program& program) {

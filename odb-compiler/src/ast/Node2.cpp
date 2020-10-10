@@ -150,12 +150,68 @@ void convertExpression(SymbolTable& symbol_table, ast::Node* node, T& expression
 template <>
 void convertExpression(SymbolTable& symbol_table, ast::Node* node,
                        KeywordFunctionCallExpression& call_expression) {
-    call_expression.keyword = node->sym.keyword.name;
+    call_expression.keyword = symbol_table.keyword_db.lookup(node->sym.keyword.name);
+    assert(call_expression.keyword);
 
+    // Extract arguments.
     auto arg_nodes = getNodesFromOpCommaNode(node->sym.keyword.arglist);
+    PtrVector<Expression> arguments;
     for (ast::Node* expression_node : arg_nodes) {
-        call_expression.arguments.emplace_back(convertExpression(symbol_table, expression_node));
+        arguments.emplace_back(convertExpression(symbol_table, expression_node));
     }
+
+    if (!arguments.empty()) {
+        // Match argument list to overload.
+        auto convertKeywordType = [](Keyword::Type type) -> Type {
+            switch (type) {
+                case Keyword::Type::Integer:
+                    return Type{ast::LT_INTEGER};
+                case Keyword::Type::Float:
+                    return Type{ast::LT_FLOAT};
+                case Keyword::Type::String:
+                    return Type{ast::LT_STRING};
+                case Keyword::Type::Double:
+                    return Type{ast::LT_DOUBLE};
+                case Keyword::Type::Long:
+                    return Type{ast::LT_LONG};
+                case Keyword::Type::Dword:
+                    return Type{ast::LT_DWORD};
+                case Keyword::Type::Void:
+                    return Type{};
+            }
+            assert(false && "Unknown keyword type!");
+        };
+
+        int overload_idx = 0;
+        bool found_overload = false;
+        for (; overload_idx < call_expression.keyword->overloads.size(); ++overload_idx) {
+            const auto &overload = call_expression.keyword->overloads[overload_idx];
+            if (overload.args.size() != arguments.size()) {
+                // Not this overload.
+                continue;
+            }
+            for (int i = 0; i < overload.args.size(); ++i) {
+                if (overload.args[i].type == Keyword::Type{88} || overload.args[i].type == Keyword::Type{65}) {
+                    continue;
+                }
+                if (convertKeywordType(overload.args[i].type) != arguments[i]->getType()) {
+                    continue;
+                }
+            }
+
+            // We found a match.
+            found_overload = true;
+            break;
+        }
+
+        if (!found_overload) {
+            std::cerr << "Unable to find matching overload for keyword " << node->sym.keyword.name << std::endl;
+            return;
+        }
+        call_expression.keyword_overload = overload_idx;
+    }
+
+    call_expression.arguments = std::move(arguments);
 }
 
 template <>

@@ -110,7 +110,8 @@ struct LiteralExpression : Expression {
 };
 
 struct KeywordFunctionCallExpression : Expression {
-    std::string keyword;
+    const Keyword* keyword; // pointer into keyword DB.
+    int keyword_overload; // index into keyword->overloads array.
     PtrVector<Expression> arguments;
     Type return_type;
 
@@ -217,6 +218,7 @@ struct FunctionDefinition : Node {
         Type type;
         std::string name;
     };
+
     std::string name;
     std::vector<Argument> arguments;
     Type return_type;

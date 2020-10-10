@@ -143,7 +143,10 @@ enum LiteralType
     LT_BOOLEAN,
     LT_INTEGER,
     LT_FLOAT,
-    LT_STRING
+    LT_STRING,
+    LT_DOUBLE,
+    LT_LONG,
+    LT_DWORD // TODO: Remove LT_BOOLEAN
 };
 
 union literal_value_t

@@ -1,6 +1,7 @@
 #include "odbc/parsers/keywords/KeywordDLL.hpp"
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 #ifdef _MSC_VER
 #define WIN32_LEAN_AND_MEAN
@@ -72,6 +73,7 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
             returnType = convertTypeChar(tokens[1][0]);
             functionTypes = functionTypes.substr(1);
         }
+        std::transform(keywordName.begin(), keywordName.end(), keywordName.begin(), [](char c) { return std::tolower(c); });
 
         // Create overload.
         Keyword::Overload overload;
