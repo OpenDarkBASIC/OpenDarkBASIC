@@ -5,9 +5,11 @@
 #endif
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/IRBuilder.h"
-#include "llvm/IR/LLVMContext.h"
-#include "llvm/IR/Module.h"
 #include "llvm/Support/raw_os_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Support/TargetRegistry.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/IR/LegacyPassManager.h"
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -29,6 +31,8 @@ class LLVMGenerator {
 
         void addFunctionToTable(ast2::FunctionDefinition* ast_function, llvm::Function* function);
 
+        llvm::Module& getModule() { return module; }
+
        private:
         llvm::Module& module;
 
@@ -47,12 +51,17 @@ class LLVMGenerator {
         }
 
         llvm::AllocaInst* getOrAddVar(const std::string& name, llvm::Type* type);
+        llvm::Value* getOrAddStrLiteral(const std::string& literal);
+        llvm::BasicBlock* addLabelBlock(const std::string& name);
+        llvm::BasicBlock* getLabelBlock(const std::string& name);
 
        private:
         llvm::Function* parent;
         GlobalSymbolTable& globals;
 
-        std::unordered_map<std::string, llvm::AllocaInst*> table;
+        std::unordered_map<std::string, llvm::AllocaInst*> variable_table;
+        std::unordered_map<std::string, llvm::Value*> str_literal_table;
+        std::unordered_map<std::string, llvm::BasicBlock*> label_blocks;
     };
 
     LLVMGenerator(llvm::LLVMContext& ctx, llvm::Module& module) : ctx(ctx), module(module) {
@@ -66,7 +75,8 @@ class LLVMGenerator {
     llvm::BasicBlock* generateBlock(SymbolTable& symtab, const ast2::StatementBlock& block,
                                     llvm::Function* function, std::string name);
 
-    void generateModule(const ast2::Program& program);
+    void generateEntryPoint(llvm::Function* game_main_func, std::vector<std::string> plugins_to_load);
+    void generateModule(const ast2::Program& program, std::vector<std::string> plugins_to_load);
 
    private:
     llvm::LLVMContext& ctx;
@@ -93,6 +103,7 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, Keyword::Type type) {
         case Keyword::Type::Void:
             return llvm::Type::getVoidTy(ctx);
     }
+    return nullptr;
 }
 
 llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast2::Type& type) {
@@ -160,37 +171,65 @@ void LLVMGenerator::GlobalSymbolTable::addFunctionToTable(ast2::FunctionDefiniti
 
 llvm::AllocaInst* LLVMGenerator::SymbolTable::getOrAddVar(const std::string& name,
                                                           llvm::Type* type) {
-    auto entry = table.find(name);
-    if (entry != table.end()) {
+    auto entry = variable_table.find(name);
+    if (entry != variable_table.end()) {
         return entry->second;
-    } else {
-        // Insert a stack allocation at the beginning of the function.
-        llvm::IRBuilder<> builder(&parent->getEntryBlock(), parent->getEntryBlock().begin());
-        llvm::AllocaInst* alloca = builder.CreateAlloca(type, nullptr, name);
-
-        // If this variable is a function argument, initialise it from that.
-        bool initialised_from_arg = false;
-        for (llvm::Argument& arg : parent->args()) {
-            if (arg.getName() == name) {
-                builder.CreateStore(&arg, alloca);
-                initialised_from_arg = true;
-            }
-        }
-
-        // Otherwise, initialise it with the default value.
-        if (!initialised_from_arg) {
-            if (type->isIntegerTy()) {
-                builder.CreateStore(
-                    llvm::ConstantInt::get(type, llvm::APInt(type->getIntegerBitWidth(), 0)),
-                    alloca);
-            } else if (type->isDoubleTy()) {
-                builder.CreateStore(llvm::ConstantFP::get(type, llvm::APFloat(0.0)), alloca);
-            }
-        }
-
-        table.emplace(name, alloca);
-        return alloca;
     }
+
+    // Insert a stack allocation at the beginning of the function.
+    llvm::IRBuilder<> builder(&parent->getEntryBlock(), parent->getEntryBlock().begin());
+    llvm::AllocaInst* alloca_inst = builder.CreateAlloca(type, nullptr, name);
+
+    // If this variable is a function argument, initialise it from that.
+    bool initialised_from_arg = false;
+    for (llvm::Argument& arg : parent->args()) {
+        if (arg.getName() == name) {
+            builder.CreateStore(&arg, alloca_inst);
+            initialised_from_arg = true;
+        }
+    }
+
+    // Otherwise, initialise it with the default value.
+    if (!initialised_from_arg) {
+        if (type->isIntegerTy()) {
+            builder.CreateStore(
+                llvm::ConstantInt::get(type, llvm::APInt(type->getIntegerBitWidth(), 0)),
+                alloca_inst);
+        } else if (type->isDoubleTy()) {
+            builder.CreateStore(llvm::ConstantFP::get(type, llvm::APFloat(0.0)), alloca_inst);
+        }
+    }
+
+    variable_table.emplace(name, alloca_inst);
+    return alloca_inst;
+}
+
+llvm::Value* LLVMGenerator::SymbolTable::getOrAddStrLiteral(const std::string& literal) {
+    auto it = str_literal_table.find(literal);
+    if (it != str_literal_table.end()) {
+        return it->second;
+    }
+
+    llvm::Constant* string_constant =
+        llvm::ConstantDataArray::getString(parent->getContext(), literal, false);
+    llvm::Value* literal_storage = new llvm::GlobalVariable(getGlobalTable().getModule(), string_constant->getType(), false, llvm::GlobalValue::PrivateLinkage, string_constant);
+    str_literal_table.emplace(literal, literal_storage);
+    return literal_storage;
+}
+
+llvm::BasicBlock* LLVMGenerator::SymbolTable::addLabelBlock(const std::string& name) {
+    llvm::BasicBlock* block =
+        llvm::BasicBlock::Create(parent->getContext(), "label_" + name, parent);
+    label_blocks.emplace(name, block);
+    return block;
+}
+
+llvm::BasicBlock* LLVMGenerator::SymbolTable::getLabelBlock(const std::string& name) {
+    auto entry = label_blocks.find(name);
+    if (entry != label_blocks.end()) {
+        return entry->second;
+    }
+    return nullptr;
 }
 
 llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
@@ -198,9 +237,9 @@ llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
     llvm::Function::LinkageTypes linkage_types;
     llvm::Type* return_type;
     if (!f) {
-        function_name = "main";
+        function_name = "db_main";
         linkage_types = llvm::Function::ExternalLinkage;
-        return_type = llvm::Type::getInt32Ty(ctx);
+        return_type = llvm::Type::getVoidTy(ctx);
     } else {
         function_name = f->name;
         linkage_types = llvm::Function::InternalLinkage;
@@ -417,16 +456,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx),
                                          llvm::APFloat(literal->value.f));
         case ast::LT_STRING: {
-            /*
-            llvm::Value* string_constant =
-                llvm::ConstantDataArray::getString(ctx, literal->value.s,
-                                                   false);
-            llvm::Value* addr_offset = llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
-            llvm::Value* index = llvm::ConstantInt::get(
-                llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0));
-            */
-            return llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(ctx));
+            return builder.CreateBitCast(symtab.getOrAddStrLiteral(literal->value.s), llvm::Type::getInt8PtrTy(ctx));
         }
         default:
             assert(false && "Unimplemented literal type");
@@ -436,8 +466,8 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         for (const auto& arg_expression : keyword_call->arguments) {
             args.emplace_back(generateExpression(symtab, builder, arg_expression));
         }
-        return builder.CreateCall(
-            symtab.getGlobalTable().getOrCreateKeywordThunk(keyword_call->keyword, keyword_call->keyword_overload), args);
+        llvm::Function* thunk = symtab.getGlobalTable().getOrCreateKeywordThunk(keyword_call->keyword, keyword_call->keyword_overload);
+        return builder.CreateCall(thunk, args);
     } else if (auto* user_function_call = dynamic_cast<ast2::UserFunctionCallExpression*>(e)) {
         std::vector<llvm::Value*> args;
         for (const auto& arg_expression : user_function_call->arguments) {
@@ -462,7 +492,22 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
 
     for (const auto& statement_ptr : block) {
         ast2::Statement* s = statement_ptr.get();
-        if (auto* branch = dynamic_cast<ast2::BranchStatement*>(s)) {
+        if (auto* label = dynamic_cast<ast2::LabelStatement*>(s)) {
+            if (symtab.getLabelBlock(label->name)) {
+                // TODO: ERROR: Duplicate label.
+                assert(false && "Duplicate label.");
+                std::terminate();
+            }
+            builder.SetInsertPoint(symtab.addLabelBlock(label->name));
+        } else if (auto* goto_ = dynamic_cast<ast2::GotoStatement*>(s)) {
+            auto* label_block = symtab.getLabelBlock(goto_->label);
+            if (!label_block) {
+                // TODO: ERROR: destination label missing.
+                assert(false && "Destination label missing.");
+                std::terminate();
+            }
+            builder.CreateBr(label_block);
+        } else if (auto* branch = dynamic_cast<ast2::BranchStatement*>(s)) {
             // Generate true and false branches.
             llvm::BasicBlock* true_block =
                 generateBlock(symtab, branch->true_branch, function, "if");
@@ -512,7 +557,162 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
     return basic_block;
 }
 
-void LLVMGenerator::generateModule(const ast2::Program& program) {
+void LLVMGenerator::generateEntryPoint(llvm::Function* game_main_func, std::vector<std::string> plugins_to_load) {
+    // Ensuring that DBProCore.dll is the first plugin.
+    for (int i = 0; i < plugins_to_load.size(); ++i) {
+        if (plugins_to_load[i] == "DBProCore.dll") {
+            // Swap with front.
+            std::swap(plugins_to_load[0], plugins_to_load[i]);
+            break;
+        }
+    }
+
+    /*
+         using FuncPtr = int (__stdcall *)();
+        __declspec(dllimport) void* __stdcall LoadLibraryA(const char* lpLibFileName);
+        __declspec(dllimport) FuncPtr GetProcAddress(void* hModule, const char* lpProcName);
+     */
+
+    llvm::PointerType* hmodule_type = llvm::Type::getInt8PtrTy(ctx);
+    llvm::PointerType* string_type = llvm::Type::getInt8PtrTy(ctx);
+    llvm::PointerType* proc_addr_type = llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), false)->getPointerTo();
+    llvm::Type* dword_type = llvm::Type::getInt64Ty(ctx);
+
+    // Declare LoadLibraryA from Kernel32.lib
+    llvm::Function* load_library_func = llvm::Function::Create(
+        llvm::FunctionType::get(hmodule_type, {string_type}, false),
+        llvm::Function::ExternalLinkage, "LoadLibraryA", module);
+    load_library_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    load_library_func->setCallingConv(llvm::CallingConv::X86_StdCall);
+
+    // Declare GetLastError from Kernel32.lib
+    llvm::Function* get_last_error_func = llvm::Function::Create(
+        llvm::FunctionType::get(dword_type, {}, false),
+        llvm::Function::ExternalLinkage, "GetLastError", module);
+    get_last_error_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    get_last_error_func->setCallingConv(llvm::CallingConv::X86_StdCall);
+
+    // Declare GetProcAddress from Kernel32.lib
+    llvm::Function* get_proc_address_func = llvm::Function::Create(
+        llvm::FunctionType::get(proc_addr_type, {hmodule_type, string_type}, false),
+        llvm::Function::ExternalLinkage, "GetProcAddress", module);
+    get_proc_address_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    get_proc_address_func->setCallingConv(llvm::CallingConv::X86_StdCall);
+
+    // Create main function.
+    llvm::Function* main_func =
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}), llvm::Function::ExternalLinkage, "main", module);
+    llvm::IRBuilder<> builder(ctx);
+
+    auto addStringConstant = [&](const std::string& str) {
+        llvm::Constant* string_constant = llvm::ConstantDataArray::getString(ctx, str, true);
+        return new llvm::GlobalVariable(module, string_constant->getType(), false, llvm::GlobalValue::PrivateLinkage, string_constant);
+    };
+
+    auto callPrintf = [&](const char *format, llvm::Value* value) {
+        llvm::Function* printf_func = module.getFunction("printf");
+        if (!printf_func) {
+            printf_func = llvm::Function::Create(
+                llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {llvm::Type::getInt8PtrTy(ctx)}, true),
+                llvm::GlobalValue::ExternalLinkage, "printf", module);
+            printf_func->setCallingConv(llvm::CallingConv::C);
+            printf_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+        }
+        builder.CreateCall(printf_func, {builder.CreateGlobalStringPtr(format), value}, "call");
+    };
+
+    auto callPuts = [&](llvm::Value* string) {
+      llvm::Function* puts_func = module.getFunction("puts");
+      if (!puts_func) {
+          puts_func = llvm::Function::Create(
+              llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {string_type}, false),
+              llvm::Function::ExternalLinkage, "puts", module);
+          puts_func->setCallingConv(llvm::CallingConv::C);
+          puts_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+      }
+      builder.CreateCall(puts_func, {string});
+    };
+
+    auto callItoa = [&](llvm::Value* integer) -> llvm::Value* {
+      llvm::Function* iota_func = module.getFunction("_iota");
+      if (!iota_func) {
+          iota_func = llvm::Function::Create(
+              llvm::FunctionType::get(string_type, {llvm::Type::getInt32Ty(ctx), string_type, llvm::Type::getInt32Ty(ctx)}, false),
+              llvm::Function::ExternalLinkage, "_iota", module);
+          iota_func->setCallingConv(llvm::CallingConv::C);
+          iota_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+      }
+      auto* buffer = builder.CreateAlloca(
+          llvm::Type::getInt8Ty(ctx),
+          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 20)));
+      builder.CreateCall(iota_func, {integer, buffer, llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 10))});
+      return buffer;
+    };
+
+    auto callLtoa = [&](llvm::Value* integer) -> llvm::Value* {
+      llvm::Function* ltoa_func = module.getFunction("_ltoa");
+      if (!ltoa_func) {
+          ltoa_func = llvm::Function::Create(
+              llvm::FunctionType::get(string_type, {llvm::Type::getInt64Ty(ctx), string_type, llvm::Type::getInt32Ty(ctx)}, false),
+              llvm::Function::ExternalLinkage, "_ltoa", module);
+          ltoa_func->setCallingConv(llvm::CallingConv::C);
+          ltoa_func->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+      }
+      auto* buffer = builder.CreateAlloca(
+          llvm::Type::getInt8Ty(ctx),
+          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 20)));
+      builder.CreateCall(ltoa_func, {integer, buffer, llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 10))});
+      return buffer;
+    };
+
+    // Initialisation blocks.
+    std::vector<llvm::BasicBlock*> plugin_load_blocks;
+    plugin_load_blocks.reserve(plugins_to_load.size());
+    for (int i = 0; i < plugins_to_load.size(); ++i) {
+        std::string plugin = plugins_to_load[i];
+        std::string plugin_name = plugin.substr(0, plugin.find_last_of('.'));
+        plugin_load_blocks.emplace_back(llvm::BasicBlock::Create(ctx, "load_" + plugin_name, main_func));
+    }
+    llvm::BasicBlock* failed_to_load_plugins_block = llvm::BasicBlock::Create(ctx, "failed_to_load_plugins", main_func);
+    llvm::BasicBlock* launch_game_block = llvm::BasicBlock::Create(ctx, "launch_game", main_func);
+
+    for (int i = 0; i < plugins_to_load.size(); ++i) {
+        std::string plugin = plugins_to_load[i];
+        std::string plugin_name = plugin.substr(0, plugin.find_last_of('.'));
+
+        builder.SetInsertPoint(plugin_load_blocks[i]);
+
+        // Call LoadLibrary.
+        auto* plugin_name_constant = builder.CreateGlobalStringPtr(plugin);
+        auto* load_library_inst = builder.CreateCall(load_library_func,
+                           {builder.CreateBitCast(plugin_name_constant, llvm::Type::getInt8PtrTy(ctx))}, plugin_name + "_hmodule");
+
+        // Print that we've trying to load that plugin.
+        callPuts(builder.CreateGlobalStringPtr("Loading plugin "));
+        callPuts(plugin_name_constant);
+
+        // Check if loaded successfully.
+        auto* next_block = i == (plugins_to_load.size() - 1) ? launch_game_block : plugin_load_blocks[i + 1];
+        builder.CreateCondBr(
+            builder.CreateCmp(llvm::CmpInst::Predicate::ICMP_NE, load_library_inst, llvm::ConstantPointerNull::get(hmodule_type)),
+            next_block,
+            failed_to_load_plugins_block);
+    }
+    builder.CreateBr(launch_game_block);
+
+    // Handle plugin failure.
+    builder.SetInsertPoint(failed_to_load_plugins_block);
+    callPuts(builder.CreateGlobalStringPtr("Failed to load plugin. GetLastError returned"));
+    callPuts(callLtoa(builder.CreateCall(get_last_error_func, {})));
+    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 1)));
+
+    // Launch application and exit.
+    builder.SetInsertPoint(launch_game_block);
+    builder.CreateCall(game_main_func, {});
+    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0)));
+}
+
+void LLVMGenerator::generateModule(const ast2::Program& program, std::vector<std::string> plugins_to_load) {
     GlobalSymbolTable global_symbol_table(module);
 
     // Generate main function.
@@ -534,23 +734,93 @@ void LLVMGenerator::generateModule(const ast2::Program& program) {
         llvm::Function* llvm_func = global_symbol_table.getFunction(function.get());
         generateBlock(*symbol_tables[llvm_func], function->statements, llvm_func, "entry");
     }
+    
+    // Generate entry point that initialises the DBP engine and calls the games main function.
+    generateEntryPoint(main_llvm_func, std::move(plugins_to_load));
 }
 }  // namespace
 
-void dumpToIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+void generateLLVMIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
-
     LLVMGenerator gen(context, module);
+    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
 
-    auto program = ast2::Program::fromAst(root, keywordDb);
-    gen.generateModule(program);
+    // Write LLVM IR to stream.
+    llvm::raw_os_ostream llvm_ostream(os);
+    module.print(llvm_ostream, nullptr);
+}
+
+void generateLLVMBC(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+    llvm::LLVMContext context;
+    llvm::Module module(module_name, context);
+    LLVMGenerator gen(context, module);
+    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+
+    // Write bitcode to stream.
+    llvm::raw_os_ostream llvm_ostream(os);
+    llvm::WriteBitcodeToFile(module, llvm_ostream);
+}
+
+void generateObjectFile(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+    llvm::LLVMContext context;
+    llvm::Module module(module_name, context);
+    LLVMGenerator gen(context, module);
+    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+
+    std::cout << "Available targets:" << std::endl;
+    for (const auto& target : llvm::TargetRegistry::targets()) {
+        std::cout << "* " << target.getName() << " - " << target.getBackendName() << std::endl;
+    }
+
+    // Lookup target machine.
+    auto target_triple = "x86-pc-windows-msvc";
+    std::string error;
+    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(target_triple, error);
+    if (!target) {
+        // TODO: Return error.
+        std::cerr << "Unknown target triple. Error: " << error;
+        std::terminate();
+    }
+
+    auto cpu = "generic";
+    auto features = "";
+    llvm::TargetOptions opt;
+    llvm::TargetMachine* target_machine = target->createTargetMachine(target_triple, cpu, features, opt, {});
+    module.setDataLayout(target_machine->createDataLayout());
+    module.setTargetTriple(target_triple);
+
+    // Emit object file to buffer.
+    llvm::SmallVector<char, 0> object_file;
+    llvm::raw_svector_ostream llvm_ostream(object_file);
+    llvm::legacy::PassManager pass;
+    if (target_machine->addPassesToEmitFile(pass, llvm_ostream, nullptr, llvm::CGFT_ObjectFile)) {
+        std::cerr << "TargetMachine can't emit a file of this type";
+        std::terminate();
+    }
+    pass.run(module);
+
+    // Flush buffer to stream.
+    os.write(object_file.data(), object_file.size());
+    os.flush();
+}
+
+void generateExecutable(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+    llvm::LLVMContext context;
+    llvm::Module module(module_name, context);
+    LLVMGenerator gen(context, module);
+    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
 
     // Write bitcode to stream.
     llvm::raw_os_ostream llvm_os(os);
     module.print(llvm_os, nullptr);
-    //    llvm::WriteBitcodeToFile(module, llvm_os);
 }
+
 
 }  // namespace ast
 }  // namespace odbc

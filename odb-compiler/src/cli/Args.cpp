@@ -47,7 +47,10 @@ static Command sequentialCommands[] = {
         {"dump-kw-json",  0,   "[file]",                      {0, 1},  &Args::dumpkWJSON,       "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
         {"dump-kw-ini",   0,   "[file]",                      {0, 1},  &Args::dumpkWINI,        "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
         {"dump-kw-names", 0,   "[file]",                      {0, 1},  &Args::dumpkWNames,      "Dump all keyword names in alphabetical order. The default file is stdout."},
-        {"emit-llvm",     0,   "[file]",                      {0, 1},  &Args::emitLLVM,         "Emits LLVM bitcode. The default file is stdout."}
+        {"output-llvm",   0,   "[file]",                      {0, 1},  &Args::outputLLVMIR,     "Generates LLVM IR. The default file is stdout."},
+        {"output-llvm-bc",0,   "<file>",                      {1, 1},  &Args::outputLLVMBC,     "Generates LLVM bitcode."},
+        {"output-object", 0,   "<file>",                      {1, 1},  &Args::outputObject,     "Generates an object file suitable for linking."},
+        {"output",        0,   "<file>",                      {1, 1},  &Args::outputExecutable, "Generates an executable."}
 };
 
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
@@ -441,7 +444,7 @@ bool Args::dumpkWNames(const std::vector<std::string> &args) {
 }
 
 // ----------------------------------------------------------------------------
-bool Args::emitLLVM(const std::vector<std::string> &args) {
+bool Args::outputLLVMIR(const std::vector<std::string> &args) {
     std::ostream *os = &std::cout;
     std::unique_ptr<std::ofstream> outfile;
     if (!args.empty()) {
@@ -452,12 +455,79 @@ bool Args::emitLLVM(const std::vector<std::string> &args) {
         }
 
         os = outfile.get();
-        fprintf(stderr, "[ast] Emitting LLVM bitcode to file: `%s`\n", args[0].c_str());
+        fprintf(stderr, "[ast] Writing LLVM IR to file: `%s`\n", args[0].c_str());
     } else {
-        fprintf(stderr, "[ast] Emitting LLVM bitcode to stdout.\n");
+        fprintf(stderr, "[ast] Writing LLVM IR to stdout.\n");
     }
 
-    odbc::ast::dumpToIR(*os, "input.dba", ast_, keywordDB_);
+    odbc::ast::generateLLVMIR(*os, "input.dba", ast_, keywordDB_);
 
-    return false;
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputLLVMBC(const std::vector<std::string> &args) {
+    if (args.empty()) {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::ofstream outfile(args[0]);
+    if (!outfile.is_open()) {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Writing LLVM bitcode to file: `%s`\n", args[0].c_str());
+
+    odbc::ast::generateObjectFile(outfile, "input.dba", ast_, keywordDB_);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputObject(const std::vector<std::string> &args) {
+    if (args.empty()) {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::ofstream outfile(args[0]);
+    if (!outfile.is_open()) {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Created object file: `%s`\n", args[0].c_str());
+
+    odbc::ast::generateObjectFile(outfile, "input.dba", ast_, keywordDB_);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputExecutable(const std::vector<std::string> &args) {
+    if (args.empty()) {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::string executable_name = args[0];
+#ifdef _WIN32
+    if (executable_name.size() < 5 || executable_name.substr(executable_name.size() - 4, 4) != ".exe") {
+        executable_name += ".exe";
+    }
+#endif
+
+    std::ofstream outfile(executable_name);
+    if (!outfile.is_open()) {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", executable_name.c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Created executable: `%s`\n", executable_name.c_str());
+
+    odbc::ast::generateExecutable(outfile, "input.dba", ast_, keywordDB_);
+
+    return true;
 }

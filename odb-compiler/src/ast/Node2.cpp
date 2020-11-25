@@ -190,13 +190,21 @@ void convertExpression(SymbolTable& symbol_table, ast::Node* node,
                 // Not this overload.
                 continue;
             }
+
+            bool matching_args = true;
             for (int i = 0; i < overload.args.size(); ++i) {
                 if (overload.args[i].type == Keyword::Type{88} || overload.args[i].type == Keyword::Type{65}) {
                     continue;
                 }
                 if (convertKeywordType(overload.args[i].type) != arguments[i]->getType()) {
-                    continue;
+                    matching_args = false;
+                    break;
                 }
+            }
+
+            // If the args doesn't match, not this overload.
+            if (!matching_args) {
+                continue;
             }
 
             // We found a match.
