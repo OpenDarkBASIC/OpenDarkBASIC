@@ -1,3 +1,5 @@
+DLL's depend on d3dx9_35.dll which can be installed from DX SDK 2010
+
 DarkBasic main function:
 
 // Load dlls and fill glob struct.
@@ -39,11 +41,51 @@ for (int i = 0; i < dllList.size(); ++i) {
         if(g_CORE_GetGlobPtr) g_pGlob = (GlobStruct*)g_CORE_GetGlobPtr();
     }
 
-    if (dllList[i] == "DBProSetupDebug.dll") { g_pGlob->g_GFX = dllHandles[i]; }
-    // etc for all other DLLs, mapping DLL handles to glob struct handle.
+    g_pGlob->g_GFX = plugin_handle["DBProSetupDebug.dll"]
+    g_pGlob->g_Basic2D = plugin_handle["DBProBasic2DDebug.dll"]
+    g_pGlob->g_Text = plugin_handle["DBProTextDebug.dll"]
+    g_pGlob->g_Transforms = plugin_handle["DBProTransformsDebug.dll"]
+    g_pGlob->g_Sprites = plugin_handle["DBProSpritesDebug.dll"]
+    g_pGlob->g_Image = plugin_handle["DBProImageDebug.dll"]
+    g_pGlob->g_Input = plugin_handle["DBProInputDebug.dll"]
+    g_pGlob->g_System = plugin_handle["DBProSystemDebug.dll"]
+    g_pGlob->g_Sound = plugin_handle["DBProSoundDebug.dll"]
+    g_pGlob->g_Music = plugin_handle["DBProMusicDebug.dll"]
+    g_pGlob->g_File = plugin_handle["DBProFileDebug.dll"]
+    g_pGlob->g_FTP = plugin_handle["DBProFTPDebug.dll"]
+    g_pGlob->g_Memblocks = plugin_handle["DBProMemblocksDebug.dll"]
+    g_pGlob->g_Animation = plugin_handle["DBProAnimationDebug.dll"]
+    g_pGlob->g_Bitmap = plugin_handle["DBProBitmapDebug.dll"]
+    g_pGlob->g_Multiplayer = plugin_handle["DBProMultiplayerDebug.dll"]
+    g_pGlob->g_Camera3D = plugin_handle["DBProCameraDebug.dll"];
+    g_pGlob->g_Light3D = plugin_handle["DBProLightDebug.dll"];
+    g_pGlob->g_Matrix3D = plugin_handle["DBProMatrixDebug.dll"];
+    g_pGlob->g_Basic3D = plugin_handle["DBProBasic3DDebug.dll"];
+    g_pGlob->g_World3D = plugin_handle["DBProWorld3DDebug.dll"];
+    g_pGlob->g_Q2BSP = plugin_handle["DBProQ2BSPDebug.dll"];
+    g_pGlob->g_OwnBSP = plugin_handle["DBProOwnBSPDebug.dll"];
+    g_pGlob->g_BSPCompiler = plugin_handle["DBProBSPCompilerDebug.dll"];
+    g_pGlob->g_Particles = plugin_handle["DBProParticlesDebug.dll"];
+    g_pGlob->g_PrimObject = plugin_handle["DBProPrimObjectDebug.dll"];
+    g_pGlob->g_Vectors = plugin_handle["DBProVectorsDebug.dll"];
+    g_pGlob->g_LODTerrain = plugin_handle["DBProLODTerrainDebug.dll"];
+    g_pGlob->g_CSG = plugin_handle["DBProCSGDebug.dll"];
 }
 
-Load DLLs and fill GlobStruct.
+// Initialise EXE directory.
+memset ( g_pGlob->pEXEUnpackDirectory, 0, _MAX_PATH );
+strcpy(g_pGlob->pEXEUnpackDirectory, m_pUnpackFolderName);
+g_pGlob->ppEXEAbsFilename = (DWORD)m_pAbsoluteAppFile;
+
+
+        g_CORE_PassCmdLinePtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassCmdLineHandlerPtr@@YAXPAX@Z" );
+        g_CORE_PassErrorPtr				= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassErrorHandlerPtr@@YAXPAX@Z" );
+        g_CORE_PassEscapePtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassEscapePtr@@YAXPAX@Z" );
+        g_CORE_PassBreakOutPtr			= ( GDI_RetVoidParamLPVOID )			GetProcAddress ( hCoreDLL, "?PassBreakOutPtr@@YAXPAX@Z" );
+        g_CORE_PassStructurePatterns	= ( GDI_RetVoidParamLPVOIDDWORD )		GetProcAddress ( hCoreDLL, "?PassStructurePatterns@@YAXPAXK@Z" );
+        g_CORE_InitDisplay		= ( GDI_RetDWORDParamDWORD4HINSTLPSTRPFN )	GetProcAddress ( hCoreDLL, "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z" );
+        g_CORE_CloseDisplay		= ( GDI_RetDWORDParamVoidPFN )			GetProcAddress ( hCoreDLL, "?CloseDisplay@@YAKXZ" );
+        g_CORE_PassDLLs			= ( GDI_RetVoidParamVoidPFN )			GetProcAddress ( hCoreDLL, "?PassDLLs@@YAXXZ" );
 
 // Prepare display.
 g_CORE_PassCmdLinePtr((LPVOID)pCmdLine);
