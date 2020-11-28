@@ -12,7 +12,7 @@ find_package(LLVM REQUIRED CONFIG)
 # Configuration
 ###############################################################################
 
-set (ODBC_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
+set (ODBC_LIB_TYPE "STATIC" CACHE STRING "Build as either SHARED or STATIC library")
 option (ODBC_TESTS "Build unit tests" ON)
 option (ODBC_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
 option (ODBC_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
@@ -102,12 +102,12 @@ add_library (odbc ${ODBC_LIB_TYPE}
     #${LIBPE_SRCS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
-    "src/ast/Node2.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
-    "src/ast/Node_dumpToLLVM.cpp"
+    "src/ir/Codegen.cpp"
+    "src/ir/Node.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"

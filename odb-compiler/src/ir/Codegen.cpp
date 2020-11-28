@@ -1,4 +1,4 @@
-#include "odbc/ast/Node2.hpp"
+#include "odbc/ir/Codegen.hpp"
 
 #ifdef _MSC_VER
 #pragma warning(push, 0)
@@ -9,14 +9,16 @@
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Host.h"
 #include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Verifier.h"
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
 #include <iostream>
 
 namespace odbc {
-namespace ast {
+namespace ir {
 namespace {
 class LLVMGenerator {
    public:
@@ -27,9 +29,9 @@ class LLVMGenerator {
 
         llvm::Function* getOrCreateKeywordThunk(const Keyword* keyword,
                                                 int keyword_overload_index);
-        llvm::Function* getFunction(ast2::FunctionDefinition* function);
+        llvm::Function* getFunction(FunctionDefinition* function);
 
-        void addFunctionToTable(ast2::FunctionDefinition* ast_function, llvm::Function* function);
+        void addFunctionToTable(FunctionDefinition* ast_function, llvm::Function* function);
 
         llvm::Module& getModule() { return module; }
 
@@ -37,7 +39,7 @@ class LLVMGenerator {
         llvm::Module& module;
 
         std::unordered_map<std::string, llvm::Function*> keyword_thunks;
-        std::unordered_map<ast2::FunctionDefinition*, llvm::Function*> function_definitions;
+        std::unordered_map<FunctionDefinition*, llvm::Function*> function_definitions;
     };
 
     class SymbolTable {
@@ -67,16 +69,16 @@ class LLVMGenerator {
     LLVMGenerator(llvm::LLVMContext& ctx, llvm::Module& module) : ctx(ctx), module(module) {
     }
 
-    llvm::Function* generateFunction(ast2::FunctionDefinition* f);
+    llvm::Function* generateFunction(FunctionDefinition* f);
     llvm::Value* generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
-                                    const ast2::Ptr<ast2::Expression>& expression);
+                                    const Ptr<Expression>& expression);
     llvm::Value* generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
-                                    ast2::Expression* expression);
-    llvm::BasicBlock* generateBlock(SymbolTable& symtab, const ast2::StatementBlock& block,
+                                    Expression* expression);
+    llvm::BasicBlock* generateBlock(SymbolTable& symtab, const StatementBlock& block,
                                     llvm::Function* function, std::string name);
 
     void generateEntryPoint(llvm::Function* game_main_func, std::vector<std::string> plugins_to_load);
-    void generateModule(const ast2::Program& program, std::vector<std::string> plugins_to_load);
+    void generateModule(const Program& program, std::vector<std::string> plugins_to_load);
 
    private:
     llvm::LLVMContext& ctx;
@@ -106,19 +108,19 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, Keyword::Type type) {
     return nullptr;
 }
 
-llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast2::Type& type) {
+llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type) {
     if (type.is_udt) {
         // TODO
     } else {
         switch (type.builtin) {
-            case LT_INTEGER:
-                return llvm::Type::getInt32Ty(ctx);
-            case LT_FLOAT:
-                return llvm::Type::getDoubleTy(ctx);
-            case LT_STRING:
-                return llvm::Type::getInt8PtrTy(ctx);
-            case LT_BOOLEAN:
-                return llvm::Type::getInt1Ty(ctx);
+        case ast::LT_INTEGER:
+            return llvm::Type::getInt32Ty(ctx);
+        case ast::LT_FLOAT:
+            return llvm::Type::getDoubleTy(ctx);
+        case ast::LT_STRING:
+            return llvm::Type::getInt8PtrTy(ctx);
+        case ast::LT_BOOLEAN:
+            return llvm::Type::getInt1Ty(ctx);
         }
     }
     return nullptr;
@@ -127,7 +129,7 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast2::Type& type) {
 llvm::Function* LLVMGenerator::GlobalSymbolTable::getOrCreateKeywordThunk(const Keyword* keyword, int keyword_overload_index) {
     const auto& keyword_overload = keyword->overloads[keyword_overload_index];
 
-    auto thunk_entry = keyword_thunks.find(keyword_overload.dllSymbol);
+    auto thunk_entry = keyword_thunks.find(keyword_overload.symbolName);
     if (thunk_entry != keyword_thunks.end()) {
         return thunk_entry->second;
     }
@@ -141,8 +143,8 @@ llvm::Function* LLVMGenerator::GlobalSymbolTable::getOrCreateKeywordThunk(const 
 
     // Get return type.
     llvm::Type* return_type;
-    if (keyword->returnType) {
-        return_type = getLLVMType(module.getContext(), *keyword->returnType);
+    if (keyword_overload.returnType) {
+        return_type = getLLVMType(module.getContext(), *keyword_overload.returnType);
     } else {
         return_type = llvm::Type::getVoidTy(module.getContext());
     }
@@ -150,21 +152,21 @@ llvm::Function* LLVMGenerator::GlobalSymbolTable::getOrCreateKeywordThunk(const 
     // Create thunk function.
     llvm::FunctionType* function_type = llvm::FunctionType::get(return_type, arg_types, false);
     llvm::Function* function = llvm::Function::Create(
-        function_type, llvm::Function::ExternalLinkage, keyword_overload.dllSymbol, module);
+        function_type, llvm::Function::ExternalLinkage, keyword_overload.symbolName, module);
     function->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 
-    keyword_thunks.emplace(keyword_overload.dllSymbol, function);
+    keyword_thunks.emplace(keyword_overload.symbolName, function);
 
     return function;
 }
 
-llvm::Function* LLVMGenerator::GlobalSymbolTable::getFunction(ast2::FunctionDefinition* function) {
+llvm::Function* LLVMGenerator::GlobalSymbolTable::getFunction(FunctionDefinition* function) {
     auto function_entry = function_definitions.find(function);
     assert(function_entry != function_definitions.end());
     return function_entry->second;
 }
 
-void LLVMGenerator::GlobalSymbolTable::addFunctionToTable(ast2::FunctionDefinition* ast_function,
+void LLVMGenerator::GlobalSymbolTable::addFunctionToTable(FunctionDefinition* ast_function,
                                                           llvm::Function* function) {
     function_definitions.emplace(ast_function, function);
 }
@@ -232,7 +234,7 @@ llvm::BasicBlock* LLVMGenerator::SymbolTable::getLabelBlock(const std::string& n
     return nullptr;
 }
 
-llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
+llvm::Function* LLVMGenerator::generateFunction(FunctionDefinition* f) {
     std::string function_name;
     llvm::Function::LinkageTypes linkage_types;
     llvm::Type* return_type;
@@ -276,19 +278,19 @@ llvm::Function* LLVMGenerator::generateFunction(ast2::FunctionDefinition* f) {
 }
 
 llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
-                                               const ast2::Ptr<ast2::Expression>& expression) {
+                                               const Ptr<Expression>& expression) {
     return generateExpression(symtab, builder, expression.get());
 }
 
 llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
-                                               ast2::Expression* e) {
+                                               Expression* e) {
     if (!e) {
         return nullptr;
     }
 
-    if (auto* unary = dynamic_cast<ast2::UnaryExpression*>(e)) {
+    if (auto* unary = dynamic_cast<UnaryExpression*>(e)) {
         assert(false && "Unimplemented unary op");
-    } else if (auto* binary = dynamic_cast<ast2::BinaryExpression*>(e)) {
+    } else if (auto* binary = dynamic_cast<BinaryExpression*>(e)) {
         llvm::Value* left = generateExpression(symtab, builder, binary->left);
         llvm::Value* right = generateExpression(symtab, builder, binary->right);
         if (binary->left->getType() != binary->right->getType()) {
@@ -297,7 +299,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         }
 
         switch (binary->op) {
-        case ast2::BinaryOp::Add:
+        case BinaryOp::Add:
             if (left->getType()->isIntegerTy()) {
                 return builder.CreateAdd(left, right);
             } else if (left->getType()->isFloatTy()) {
@@ -310,7 +312,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 std::cerr << "Unknown type in add binary op." << std::endl;
                 std::terminate();
             }
-        case ast2::BinaryOp::Sub:
+        case BinaryOp::Sub:
             if (left->getType()->isIntegerTy()) {
                 return builder.CreateSub(left, right);
             } else if (left->getType()->isFloatTy()) {
@@ -319,7 +321,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 std::cerr << "Unknown type in sub binary op." << std::endl;
                 std::terminate();
             }
-        case ast2::BinaryOp::Mul:
+        case BinaryOp::Mul:
             if (left->getType()->isIntegerTy()) {
                 return builder.CreateMul(left, right);
             } else if (left->getType()->isFloatTy()) {
@@ -328,7 +330,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 std::cerr << "Unknown type in mul binary op." << std::endl;
                 std::terminate();
             }
-        case ast2::BinaryOp::Div:
+        case BinaryOp::Div:
             if (left->getType()->isIntegerTy()) {
                 return builder.CreateSDiv(left, right);
             } else if (left->getType()->isFloatTy()) {
@@ -337,7 +339,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 std::cerr << "Unknown type in div binary op." << std::endl;
                 std::terminate();
             }
-        case ast2::BinaryOp::Mod:
+        case BinaryOp::Mod:
             if (left->getType()->isIntegerTy()) {
                 return builder.CreateSRem(left, right);
             } else if (left->getType()->isFloatTy()) {
@@ -346,56 +348,56 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 std::cerr << "Unknown type in modulo binary op." << std::endl;
                 std::terminate();
             }
-        case ast2::BinaryOp::Pow:
+        case BinaryOp::Pow:
             // TODO: implement
             std::cerr << "Pow binary op unimplemented." << std::endl;
             std::terminate();
-        case ast2::BinaryOp::LeftShift:
+        case BinaryOp::LeftShift:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateShl(left, right);
-        case ast2::BinaryOp::RightShift:
+        case BinaryOp::RightShift:
             // TODO: Arithmetic shift right (sign extension), or logical shift right (zero bits)?
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAShr(left, right);
-        case ast2::BinaryOp::BinaryOr:
+        case BinaryOp::BinaryOr:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateOr(left, right);
-        case ast2::BinaryOp::BinaryAnd:
+        case BinaryOp::BinaryAnd:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAnd(left, right);
-        case ast2::BinaryOp::BinaryXor:
+        case BinaryOp::BinaryXor:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateXor(left, right);
-        case ast2::BinaryOp::LessThan:
-        case ast2::BinaryOp::LessThanOrEqual:
-        case ast2::BinaryOp::GreaterThan:
-        case ast2::BinaryOp::GreaterThanOrEqual:
-        case ast2::BinaryOp::Equal:
-        case ast2::BinaryOp::NotEqual: {
+        case BinaryOp::LessThan:
+        case BinaryOp::LessThanOrEqual:
+        case BinaryOp::GreaterThan:
+        case BinaryOp::GreaterThanOrEqual:
+        case BinaryOp::Equal:
+        case BinaryOp::NotEqual: {
             if (left->getType()->isIntegerTy()) {
                 llvm::CmpInst::Predicate cmp_predicate;
                 switch (binary->op) {
-                case ast2::BinaryOp::LessThan:
+                case BinaryOp::LessThan:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_SLT;
                     break;
-                case ast2::BinaryOp::LessThanOrEqual:
+                case BinaryOp::LessThanOrEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_SLE;
                     break;
-                case ast2::BinaryOp::GreaterThan:
+                case BinaryOp::GreaterThan:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_SGT;
                     break;
-                case ast2::BinaryOp::GreaterThanOrEqual:
+                case BinaryOp::GreaterThanOrEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_SGE;
                     break;
-                case ast2::BinaryOp::Equal:
+                case BinaryOp::Equal:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_EQ;
                     break;
-                case ast2::BinaryOp::NotEqual:
+                case BinaryOp::NotEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::ICMP_NE;
                     break;
                 default:
@@ -405,22 +407,22 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             } else if (left->getType()->isFloatTy()) {
                 llvm::CmpInst::Predicate cmp_predicate;
                 switch (binary->op) {
-                case ast2::BinaryOp::LessThan:
+                case BinaryOp::LessThan:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_OLT;
                     break;
-                case ast2::BinaryOp::LessThanOrEqual:
+                case BinaryOp::LessThanOrEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_OLE;
                     break;
-                case ast2::BinaryOp::GreaterThan:
+                case BinaryOp::GreaterThan:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_OGT;
                     break;
-                case ast2::BinaryOp::GreaterThanOrEqual:
+                case BinaryOp::GreaterThanOrEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_OGE;
                     break;
-                case ast2::BinaryOp::Equal:
+                case BinaryOp::Equal:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_OEQ;
                     break;
-                case ast2::BinaryOp::NotEqual:
+                case BinaryOp::NotEqual:
                     cmp_predicate = llvm::CmpInst::Predicate::FCMP_ONE;
                     break;
                 default:
@@ -434,17 +436,17 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             std::cerr << "Unimplemented compare operator." << std::endl;
         } break;
-        case ast2::BinaryOp::LogicalOr:
+        case BinaryOp::LogicalOr:
             return builder.CreateOr(left, right);
-        case ast2::BinaryOp::LogicalAnd:
+        case BinaryOp::LogicalAnd:
             return builder.CreateAnd(left, right);
-        case ast2::BinaryOp::LogicalXor:
+        case BinaryOp::LogicalXor:
             return builder.CreateXor(left, right);
         }
-    } else if (auto* var_ref = dynamic_cast<ast2::VariableExpression*>(e)) {
+    } else if (auto* var_ref = dynamic_cast<VariableExpression*>(e)) {
         llvm::AllocaInst* alloca = symtab.getOrAddVar(var_ref->name, getLLVMType(ctx, var_ref->type));
         return builder.CreateLoad(alloca, "");
-    } else if (auto* literal = dynamic_cast<ast2::LiteralExpression*>(e)) {
+    } else if (auto* literal = dynamic_cast<LiteralExpression*>(e)) {
         switch (literal->type) {
         case ast::LT_BOOLEAN:
             return llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx),
@@ -461,14 +463,14 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         default:
             assert(false && "Unimplemented literal type");
         }
-    } else if (auto* keyword_call = dynamic_cast<ast2::KeywordFunctionCallExpression*>(e)) {
+    } else if (auto* keyword_call = dynamic_cast<KeywordFunctionCallExpression*>(e)) {
         std::vector<llvm::Value*> args;
         for (const auto& arg_expression : keyword_call->arguments) {
             args.emplace_back(generateExpression(symtab, builder, arg_expression));
         }
         llvm::Function* thunk = symtab.getGlobalTable().getOrCreateKeywordThunk(keyword_call->keyword, keyword_call->keyword_overload);
         return builder.CreateCall(thunk, args);
-    } else if (auto* user_function_call = dynamic_cast<ast2::UserFunctionCallExpression*>(e)) {
+    } else if (auto* user_function_call = dynamic_cast<UserFunctionCallExpression*>(e)) {
         std::vector<llvm::Value*> args;
         for (const auto& arg_expression : user_function_call->arguments) {
             args.emplace_back(generateExpression(symtab, builder, arg_expression));
@@ -482,7 +484,7 @@ llvm::Value* LLVMGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 }
 
 llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
-                                               const ast2::StatementBlock& block,
+                                               const StatementBlock& block,
                                                llvm::Function* function, std::string name) {
     llvm::IRBuilder<> builder(ctx);
 
@@ -491,15 +493,17 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
     builder.SetInsertPoint(basic_block);
 
     for (const auto& statement_ptr : block) {
-        ast2::Statement* s = statement_ptr.get();
-        if (auto* label = dynamic_cast<ast2::LabelStatement*>(s)) {
+        Statement* s = statement_ptr.get();
+        if (auto* label = dynamic_cast<LabelStatement*>(s)) {
             if (symtab.getLabelBlock(label->name)) {
                 // TODO: ERROR: Duplicate label.
                 assert(false && "Duplicate label.");
                 std::terminate();
             }
-            builder.SetInsertPoint(symtab.addLabelBlock(label->name));
-        } else if (auto* goto_ = dynamic_cast<ast2::GotoStatement*>(s)) {
+            auto* label_block = symtab.addLabelBlock(label->name);
+            builder.CreateBr(label_block);
+            builder.SetInsertPoint(label_block);
+        } else if (auto* goto_ = dynamic_cast<GotoStatement*>(s)) {
             auto* label_block = symtab.getLabelBlock(goto_->label);
             if (!label_block) {
                 // TODO: ERROR: destination label missing.
@@ -507,7 +511,7 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
                 std::terminate();
             }
             builder.CreateBr(label_block);
-        } else if (auto* branch = dynamic_cast<ast2::BranchStatement*>(s)) {
+        } else if (auto* branch = dynamic_cast<BranchStatement*>(s)) {
             // Generate true and false branches.
             llvm::BasicBlock* true_block =
                 generateBlock(symtab, branch->true_branch, function, "if");
@@ -528,8 +532,8 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
             // Set continue branch as the insertion point for future
             // instructions.
             builder.SetInsertPoint(continue_block);
-        } else if (auto* select = dynamic_cast<ast2::SelectStatement*>(s)) {
-        } else if (auto* do_loop = dynamic_cast<ast2::DoLoopStatement*>(s)) {
+        } else if (auto* select = dynamic_cast<SelectStatement*>(s)) {
+        } else if (auto* do_loop = dynamic_cast<DoLoopStatement*>(s)) {
             llvm::BasicBlock* inner_block = generateBlock(symtab, do_loop->block, function, "loop");
             llvm::BasicBlock* continue_block = llvm::BasicBlock::Create(ctx, "loop_end", function);
             builder.SetInsertPoint(inner_block);
@@ -538,18 +542,18 @@ llvm::BasicBlock* LLVMGenerator::generateBlock(SymbolTable& symtab,
             // Set continue branch as the insertion point for future
             // instructions.
             builder.SetInsertPoint(continue_block);
-        } else if (auto* assignment = dynamic_cast<ast2::AssignmentStatement*>(s)) {
+        } else if (auto* assignment = dynamic_cast<AssignmentStatement*>(s)) {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression);
             llvm::AllocaInst* store_target = symtab.getOrAddVar(
                 assignment->variable.name, getLLVMType(ctx, assignment->variable.type));
             builder.CreateStore(expression, store_target);
-        } else if (auto* keyword_call = dynamic_cast<ast2::KeywordFunctionCallStatement*>(s)) {
+        } else if (auto* keyword_call = dynamic_cast<KeywordFunctionCallStatement*>(s)) {
             // Generate the expression, but discard the result.
             generateExpression(symtab, builder, &keyword_call->expr);
-        } else if (auto* user_function_call = dynamic_cast<ast2::UserFunctionCallStatement*>(s)) {
+        } else if (auto* user_function_call = dynamic_cast<UserFunctionCallStatement*>(s)) {
             // Generate the expression, but discard the result.
             generateExpression(symtab, builder, &user_function_call->expr);
-        } else if (auto* endfunction = dynamic_cast<ast2::EndfunctionStatement*>(s)) {
+        } else if (auto* endfunction = dynamic_cast<EndfunctionStatement*>(s)) {
             builder.CreateRet(generateExpression(symtab, builder, endfunction->expression));
         }
     }
@@ -675,12 +679,16 @@ void LLVMGenerator::generateEntryPoint(llvm::Function* game_main_func, std::vect
     }
     llvm::BasicBlock* failed_to_load_plugins_block = llvm::BasicBlock::Create(ctx, "failed_to_load_plugins", main_func);
     llvm::BasicBlock* launch_game_block = llvm::BasicBlock::Create(ctx, "launch_game", main_func);
-
+    llvm::Value* loading_plugin_string = nullptr;
     for (int i = 0; i < plugins_to_load.size(); ++i) {
         std::string plugin = plugins_to_load[i];
         std::string plugin_name = plugin.substr(0, plugin.find_last_of('.'));
 
         builder.SetInsertPoint(plugin_load_blocks[i]);
+
+        if (!loading_plugin_string) {
+            loading_plugin_string = builder.CreateGlobalStringPtr("Loading plugin");
+        }
 
         // Call LoadLibrary.
         auto* plugin_name_constant = builder.CreateGlobalStringPtr(plugin);
@@ -688,7 +696,7 @@ void LLVMGenerator::generateEntryPoint(llvm::Function* game_main_func, std::vect
                            {builder.CreateBitCast(plugin_name_constant, llvm::Type::getInt8PtrTy(ctx))}, plugin_name + "_hmodule");
 
         // Print that we've trying to load that plugin.
-        callPuts(builder.CreateGlobalStringPtr("Loading plugin "));
+        callPuts(loading_plugin_string);
         callPuts(plugin_name_constant);
 
         // Check if loaded successfully.
@@ -698,7 +706,6 @@ void LLVMGenerator::generateEntryPoint(llvm::Function* game_main_func, std::vect
             next_block,
             failed_to_load_plugins_block);
     }
-    builder.CreateBr(launch_game_block);
 
     // Handle plugin failure.
     builder.SetInsertPoint(failed_to_load_plugins_block);
@@ -712,7 +719,7 @@ void LLVMGenerator::generateEntryPoint(llvm::Function* game_main_func, std::vect
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), llvm::APInt(32, 0)));
 }
 
-void LLVMGenerator::generateModule(const ast2::Program& program, std::vector<std::string> plugins_to_load) {
+void LLVMGenerator::generateModule(const Program& program, std::vector<std::string> plugins_to_load) {
     GlobalSymbolTable global_symbol_table(module);
 
     // Generate main function.
@@ -737,49 +744,56 @@ void LLVMGenerator::generateModule(const ast2::Program& program, std::vector<std
     
     // Generate entry point that initialises the DBP engine and calls the games main function.
     generateEntryPoint(main_llvm_func, std::move(plugins_to_load));
+
+    // Verify module.
+    bool error_flag;
+    std::string verify_result_str;
+    llvm::raw_string_ostream verify_result{verify_result_str};
+    if (llvm::verifyModule(module, &verify_result, &error_flag)) {
+        module.dump();
+        std::cerr << std::endl;
+        std::cerr << "Failed to verify LLVM module. Aborting compile." << std::endl;
+        std::cerr << verify_result_str << std::endl;
+        std::exit(1);
+    }
 }
 }  // namespace
 
-void generateLLVMIR(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+void generateLLVMIR(std::ostream& os, std::string module_name, Program& program, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
     LLVMGenerator gen(context, module);
-    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+    gen.generateModule(program, keywordDb.pluginsAsList());
 
     // Write LLVM IR to stream.
     llvm::raw_os_ostream llvm_ostream(os);
     module.print(llvm_ostream, nullptr);
 }
 
-void generateLLVMBC(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+void generateLLVMBC(std::ostream& os, std::string module_name, Program& program, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
     LLVMGenerator gen(context, module);
-    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+    gen.generateModule(program, keywordDb.pluginsAsList());
 
     // Write bitcode to stream.
     llvm::raw_os_ostream llvm_ostream(os);
     llvm::WriteBitcodeToFile(module, llvm_ostream);
 }
 
-void generateObjectFile(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+void generateObjectFile(std::ostream& os, std::string module_name, Program& program, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
     LLVMGenerator gen(context, module);
-    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+    gen.generateModule(program, keywordDb.pluginsAsList());
 
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmPrinters();
 
-    std::cout << "Available targets:" << std::endl;
-    for (const auto& target : llvm::TargetRegistry::targets()) {
-        std::cout << "* " << target.getName() << " - " << target.getBackendName() << std::endl;
-    }
-
     // Lookup target machine.
-    auto target_triple = "x86-pc-windows-msvc";
+    auto target_triple = "i386-pc-windows-msvc";
     std::string error;
     const llvm::Target* target = llvm::TargetRegistry::lookupTarget(target_triple, error);
     if (!target) {
@@ -810,11 +824,11 @@ void generateObjectFile(std::ostream& os, std::string module_name, Node* root, c
     os.flush();
 }
 
-void generateExecutable(std::ostream& os, std::string module_name, Node* root, const KeywordDB& keywordDb) {
+void generateExecutable(std::ostream& os, std::string module_name, Program& program, const KeywordDB& keywordDb) {
     llvm::LLVMContext context;
     llvm::Module module(module_name, context);
     LLVMGenerator gen(context, module);
-    gen.generateModule(ast2::Program::fromAst(root, keywordDb), keywordDb.pluginsAsList());
+    gen.generateModule(program, keywordDb.pluginsAsList());
 
     // Write bitcode to stream.
     llvm::raw_os_ostream llvm_os(os);
@@ -823,4 +837,4 @@ void generateExecutable(std::ostream& os, std::string module_name, Node* root, c
 
 
 }  // namespace ast
-}  // namespace odbc
+}  // namespace odb

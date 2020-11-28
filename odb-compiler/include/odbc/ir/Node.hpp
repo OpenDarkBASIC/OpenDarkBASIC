@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace odbc {
-namespace ast2 {
+namespace ir {
 enum class UnaryOp { BinaryNot, LogicalNot };
 
 enum class BinaryOp {

@@ -1,1 +1,0 @@
-..\..\llvm-project\build\install\bin\llc -filetype=obj -march=x86 test.ll && link.exe test.obj /defaultlib:ucrt /defaultlib:msvcrt && test.exe

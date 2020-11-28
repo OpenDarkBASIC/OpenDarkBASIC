@@ -2,6 +2,7 @@
 #include "odbc/parsers/keywords/Driver.hpp"
 #include "odbc/parsers/keywords/KeywordDLL.hpp"
 #include "odbc/parsers/db/Driver.hpp"
+#include "odbc/ir/Codegen.hpp"
 #include "odbc/util/Log.hpp"
 #include <cstring>
 #include <fstream>
@@ -40,7 +41,7 @@ static Command sequentialCommands[] = {
         {"help",          'h', nullptr,                       {0, 0},  &Args::printHelp,        "Print this help text"},
         {"parse-kw-ini",  'k', "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsINI,  "Load a specific keyword file, or load an entire directory of keyword files."},
         {"parse-kw-json", 0,   "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
-        {"plugins",       0,   "<path> [path...]",            {1, -1}, &Args::plugins,          "Plugins to load keywords from and use during executable linking."},
+        {"plugins",       0,   "<path> [path...]",            {1, -1}, &Args::plugins,          "TGC compatible .dll plugins to load keywords from and use during executable linking."},
         {"parse-dba",     0,   "<file> [files...]",           {1, -1}, &Args::parseDBA,         "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
         {"dump-ast-dot",  0,   "[file]",                      {0, 1},  &Args::dumpASTDOT,       "Dump AST to Graphviz DOT format. The default file is stdout."},
         {"dump-ast-json", 0,   "[file]",                      {0, 1},  &Args::dumpASTJSON,      "Dump AST to JSON format. The default file is stdout"},
@@ -472,7 +473,8 @@ bool Args::outputLLVMIR(const std::vector<std::string> &args) {
         fprintf(stderr, "[ast] Writing LLVM IR to stdout.\n");
     }
 
-    odbc::ast::generateLLVMIR(*os, "input.dba", ast_, keywordDB_);
+    auto program = ir::Program::fromAst(ast_, keywordDB_);
+    odbc::ir::generateLLVMIR(*os, "input.dba", program, keywordDB_);
 
     return true;
 }
@@ -492,7 +494,8 @@ bool Args::outputLLVMBC(const std::vector<std::string> &args) {
 
     fprintf(stderr, "[ast] Writing LLVM bitcode to file: `%s`\n", args[0].c_str());
 
-    odbc::ast::generateObjectFile(outfile, "input.dba", ast_, keywordDB_);
+    auto program = ir::Program::fromAst(ast_, keywordDB_);
+    odbc::ir::generateObjectFile(outfile, "input.dba", program, keywordDB_);
 
     return true;
 }
@@ -504,15 +507,16 @@ bool Args::outputObject(const std::vector<std::string> &args) {
         return false;
     }
 
-    std::ofstream outfile(args[0]);
+    std::ofstream outfile(args[0], std::ios::binary);
     if (!outfile.is_open()) {
         fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
         return false;
     }
 
-    fprintf(stderr, "[ast] Created object file: `%s`\n", args[0].c_str());
+    fprintf(stderr, "[ast] Creating object file: `%s`\n", args[0].c_str());
 
-    odbc::ast::generateObjectFile(outfile, "input.dba", ast_, keywordDB_);
+    auto program = ir::Program::fromAst(ast_, keywordDB_);
+    odbc::ir::generateObjectFile(outfile, "input.dba", program, keywordDB_);
 
     return true;
 }
@@ -539,7 +543,8 @@ bool Args::outputExecutable(const std::vector<std::string> &args) {
 
     fprintf(stderr, "[ast] Created executable: `%s`\n", executable_name.c_str());
 
-    odbc::ast::generateExecutable(outfile, "input.dba", ast_, keywordDB_);
+    auto program = ir::Program::fromAst(ast_, keywordDB_);
+    odbc::ir::generateExecutable(outfile, "input.dba", program, keywordDB_);
 
     return true;
 }

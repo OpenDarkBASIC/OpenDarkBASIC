@@ -1,4 +1,4 @@
-#include "odbc/ast/Node2.hpp"
+#include "odbc/ir/Node.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -6,12 +6,12 @@
 #include <unordered_map>
 
 namespace odbc {
-namespace ast2 {
+namespace ir {
 namespace {
 struct SymbolTable {
-    SymbolTable(const odbc::KeywordDB& keyword_db) : keyword_db(keyword_db) {}
+    SymbolTable(const KeywordDB& keyword_db) : keyword_db(keyword_db) {}
 
-    const odbc::KeywordDB& keyword_db;
+    const KeywordDB& keyword_db;
     std::unordered_map<std::string, std::pair<ast::Node*, FunctionDefinition*>> functions;
     std::unordered_map<std::string, std::string> constant_map;
 };
@@ -572,7 +572,7 @@ void convertBlock(SymbolTable& symbol_table, const std::vector<ast::Node*>& bloc
     }
 }
 
-void convertRootBlock(Program& program, ast::Node* block, const odbc::KeywordDB& keyword_db) {
+void convertRootBlock(Program& program, ast::Node* block, const KeywordDB& keyword_db) {
     assert(block->info.type == ast::NT_BLOCK);
 
     bool reached_end_of_main = false;
@@ -697,7 +697,7 @@ Type UserFunctionCallExpression::getType() const {
     return return_type;
 }
 
-Program Program::fromAst(ast::Node* root, const odbc::KeywordDB& keyword_db) {
+Program Program::fromAst(ast::Node* root, const KeywordDB& keyword_db) {
     Program program;
     convertRootBlock(program, root, keyword_db);
     return program;

@@ -132,10 +132,12 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
     fprintf(stderr, "Loading plugin %s\n", dllPath.c_str());
 
     stringTableEntries = extractStringTableFromPEFile(dllPath);
-
-    if (!stringTableEntries.empty()) {
-        keywordDB.addPlugin(std::filesystem::path{dllPath}.filename().string());
+    if (stringTableEntries.empty()) {
+        return false;
     }
+
+    std::string pluginName = std::filesystem::path{dllPath}.filename().string();
+    keywordDB.addPlugin(pluginName);
 
     // Populate keyword database.
     for (const auto& entry : stringTableEntries) {
@@ -167,7 +169,8 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
 
         // Create overload.
         Keyword::Overload overload;
-        overload.dllSymbol = dllSymbol;
+        overload.symbolName = dllSymbol;
+        overload.returnType = returnType;
 
         std::vector<std::string> argumentNames;
         if (tokens.size() > 3) {
@@ -189,8 +192,8 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
         } else {
             Keyword kw;
             kw.name = std::move(keywordName);
-            kw.returnType = returnType;
             kw.overloads.emplace_back(std::move(overload));
+            kw.plugin = pluginName;
             keywordDB.addKeyword(kw);
         }
     }

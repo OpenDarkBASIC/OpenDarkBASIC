@@ -192,8 +192,10 @@ int main() {
         }
     }
 
-    // Set up glob struct.
     auto core_dll = plugin_handles["DBProCore.dll"];
+    auto basic3d_dll = plugin_handles["DBProBasic3DDebug.dll"];
+
+    // Set up glob struct.
     auto GetGlobPtr = (DWORD (*)())GetProcAddress(core_dll, "?GetGlobPtr@@YAKXZ");
     auto* glob_ptr = (GlobStruct*)GetGlobPtr(); 
     glob_ptr->g_GFX = plugin_handles["DBProSetupDebug.dll"];
@@ -262,14 +264,18 @@ int main() {
     }
 
     // Run some commands.
-    auto Print = (void (*)(char*))GetProcAddress(core_dll, "?PrintS@@YAXPAD@Z");
+    // auto Print = (void (*)(char*))GetProcAddress(core_dll, "?PrintS@@YAXPAD@Z");
     auto Sync = (void (*)())GetProcAddress(core_dll, "?Sync@@YAXXZ");
+    auto MakeObjectCube = (void (*)(int, float))GetProcAddress(basic3d_dll, "?MakeCube@@YAXHM@Z");
+    auto YRotateObject = (void (*)(int, float))GetProcAddress(basic3d_dll, "?YRotate@@YAXHM@Z");
 
-    char text[] = "Hello World!";
-    Print(text);
-    Sync();
-
-    Sleep(100000);
+    MakeObjectCube(1, 10.0f);
+    float angle = 0.0f;
+    while (true) {
+        angle += 0.02f;
+        YRotateObject(1, angle);
+        Sync();
+    }
 
     CloseDisplay();
 
