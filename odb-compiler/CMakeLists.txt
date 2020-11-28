@@ -110,8 +110,7 @@ target_compile_options (odbc
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-set_target_properties (odbc
-    PROPERTIES CXX_STANDARD 17)
+target_compile_features (odbc PUBLIC cxx_std_17)
 
 if (${ODBC_TESTS})
     add_executable (odbc_tests

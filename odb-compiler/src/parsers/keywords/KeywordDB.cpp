@@ -37,7 +37,17 @@ bool KeywordDB::exists(const std::string& keyword)
 bool KeywordDB::addKeyword(Keyword keyword)
 {
     auto result = map_.insert({keyword.name, keyword});
+    plugins_.insert(keyword.plugin);
     return result.second;
+}
+
+// ----------------------------------------------------------------------------
+Keyword* KeywordDB::lookup(const std::string& keyword)
+{
+    auto result = map_.find(keyword);
+    if (result == map_.end())
+        return nullptr;
+    return &result->second;
 }
 
 // ----------------------------------------------------------------------------
@@ -66,6 +76,16 @@ std::vector<std::string> KeywordDB::keywordNamesAsList() const
     list.reserve(map_.size());
     for (const auto& kv : map_)
         list.push_back(kv.first);
+    return list;
+}
+
+// ----------------------------------------------------------------------------
+std::vector<std::string> KeywordDB::pluginsAsList() const
+{
+    std::vector<std::string> list;
+    list.reserve(plugins_.size());
+    for (const auto& plugin : plugins_)
+        list.push_back(plugin);
     return list;
 }
 

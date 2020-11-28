@@ -44,13 +44,20 @@ static Command sequentialCommands[] = {
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
 #define N_EXECUTABLE_COMMANDS (sizeof(sequentialCommands) / sizeof(*sequentialCommands))
 
-static const char* banner =
-"________                         ________                __   __________    _____    _________.____________  \n"
-"\\_____  \\ ______   ____   ____   \\______ \\ _____ _______|  | _\\______   \\  /  _  \\  /   _____/|   \\_   ___ \\ \n"
-" /   |   \\\\____ \\_/ __ \\ /    \\   |    |  \\\\__  \\\\_  __ \\  |/ /|    |  _/ /  /_\\  \\ \\_____  \\ |   /    \\  \\/ \n"
-"/    |    \\  |_> >  ___/|   |  \\  |    `   \\/ __ \\|  | \\/    < |    |   \\/    |    \\/        \\|   \\     \\____\n"
-"\\_______  /   __/ \\___  >___|  / /_______  (____  /__|  |__|_ \\|______  /\\____|__  /_______  /|___|\\______  /\n"
-"        \\/|__|        \\/     \\/          \\/     \\/           \\/       \\/         \\/        \\/             \\/ \n";
+static const char *banner =
+        R"(             ▄▀▀█
+            ▄▀`╫╫╠▀█
+          ▄▀░"/╠╢╟▓▒▀█,               ____                   _____             _    ____           _____ _____ _____
+        ▄█▓▒░░╨╢R▒▓▓▌▒▀█,            / __ \                 |  __ \           | |  |  _ \   /\    / ____|_   _/ ____|
+      ▄▀Å▀▓╬░]╗φ╫▀T▀▀▀██▀█,         | |  | |_ __   ___ _ __ | |  | | __ _ _ __| | _| |_) | /  \  | (___   | || |
+    ▄▀.┤D╠╬7┴j╟å J▒─▀█▄▀████,       | |  | | '_ \ / _ | '_ \| |  | |/ _` | '__| |/ |  _ < / /\ \  \___ \  | || |
+  ▄▀ ^j]╚DD░÷╠╠╣~`╓▄▄▌▄▄██████,     | |__| | |_) |  __| | | | |__| | (_| | |  |   <| |_) / ____ \ ____) |_| || |____
+╓▀   ^░░░ß░Ü<║╫▓▓███████████████,    \____/| .__/ \___|_| |_|_____/ \__,_|_|  |_|\_|____/_/    \_|_____/|_____\_____|
+▐█▄  ~░─╚░*U⌐Å▒▒█████▀████████████,        | |
+  `██▄─ %.='╦╢╫▌█████▌▄▐██████████▌
+     ▀██░⌂r3▄▒▓█████████▀▀└
+        ▀█▀▀▀▀`
+)";
 
 // ----------------------------------------------------------------------------
 static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, CommandQueue* sequentialQueue)
@@ -77,7 +84,7 @@ static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, Com
     };
 
     int argsProcessed;
-    while (1)
+    while (true)
     {
         if ((argsProcessed = processTable(globalQueue, globalSwitches, N_GLOBAL_SWITCHES)) > 0)
             return argsProcessed;
@@ -370,26 +377,28 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
 bool Args::dumpkWJSON(const std::vector<std::string>& args)
 {
     auto keywords = keywordDB_.keywordsAsList();
-    std::sort(keywords.begin(), keywords.end(), [](const Keyword& a,const  Keyword& b) { return a.name < b.name; });
+    std::sort(keywords.begin(), keywords.end(), [](const Keyword& a, const Keyword& b) { return a.name < b.name; });
 
     log::data("{\n");
     for (auto keyword = keywords.begin(); keyword != keywords.end(); ++keyword)
     {
         log::data("  \"%s\": {\n", keyword->name.c_str());
         log::data("    \"help\": \"%s\",\n", keyword->helpFile.c_str());
-        log::data("    \"hasReturnType\": \"%s\",\n", keyword->hasReturnType ? "true" : "false");
-        log::data("    \"overloads\": [");
+        log::data("    \"overloads\": [\n");
         for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload)
         {
-            log::data("[");
-            auto arg = overload->begin();
-            if (arg != overload->end())
-                log::data("\"%s\"", (*arg++).c_str());
-            while (arg != overload->end())
-                log::data(", \"%s\"",(*arg++).c_str());
-            log::data("]%s", overload + 1 != keyword->overloads.end() ? ", " : "");
+            log::data("      {\n");
+            log::data("        \"returnType\": \"%s\",\n", overload->returnType.has_value() ? std::string{(char)overload->returnType.value()}.c_str() : "void");
+            log::data("        \"args\": [");
+            auto arg = overload->args.begin();
+            if (arg != overload->args.end())
+                log::data("\"%s\"", (*arg++).description.c_str());
+            while (arg != overload->args.end())
+                log::data(", \"%s\"", (*arg++).description.c_str());
+            log::data("]\n");
+            log::data("      }%s\n", overload + 1 != keyword->overloads.end() ? ", " : "");
         }
-        log::data("]\n");
+        log::data("    ]\n");
         log::data("  }%s\n", keyword + 1 != keywords.end() ? "," : "");
     }
     log::data("}\n");
@@ -399,31 +408,31 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::dumpkWINI(const std::vector<std::string>& args)
+bool Args::dumpkWINI(const std::vector<std::string> &args)
 {
     auto keywords = keywordDB_.keywordsAsList();
-    std::sort(keywords.begin(), keywords.end(), [](const Keyword& a,const  Keyword& b) { return a.name < b.name; });
+    std::sort(keywords.begin(), keywords.end(), [](const Keyword &a, const Keyword &b) { return a.name < b.name; });
 
     log::data("[LINKS]\n");
-    for (const auto& keyword : keywords)
+    for (const auto &keyword : keywords)
     {
         log::data("%s=%s=", keyword.name.c_str(), keyword.helpFile.c_str());
-        for (const auto& overload : keyword.overloads)
+        for (const auto &overload : keyword.overloads)
         {
             if (keyword.overloads.size() > 1)
                 log::data("[");
-            if (keyword.hasReturnType)
+            if (overload.returnType.has_value())
                 log::data("(");
 
-            auto arg = overload.begin();
-            if (arg != overload.end())
-                log::data("%s", (*arg++).c_str());
+            auto arg = overload.args.begin();
+            if (arg != overload.args.end())
+                log::data("%s", (*arg++).description.c_str());
             else
                 log::data("*no parameters*");
-            while (arg != overload.end())
-                log::data(", %s",(*arg++).c_str());
+            while (arg != overload.args.end())
+                log::data(", %s", (*arg++).description.c_str());
 
-            if (keyword.hasReturnType)
+            if (overload.returnType)
                 log::data(")");
             if (keyword.overloads.size() > 1)
                 log::data("]");
