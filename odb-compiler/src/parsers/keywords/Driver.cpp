@@ -217,16 +217,17 @@ void Driver::finishKeyword()
     keyword.name = keywordName_;
     if (helpFile_)
         keyword.helpFile = helpFile_;
-    keyword.hasReturnType = hasReturnType_;
+    std::optional<Keyword::Type> returnType = hasReturnType_ ? std::optional<Keyword::Type>(Keyword::Type::Integer) : std::nullopt;
     for (auto& overload : currentOverloadList_)
     {
-        std::vector<std::string> overloadArgs;
+        Keyword::Overload kwOverload;
         for (auto& arg : overload)
         {
-            overloadArgs.push_back(arg);
-            strip(overloadArgs.back());
+            kwOverload.args.emplace_back(Keyword::Arg{arg, Keyword::Type::Integer});
+            strip(kwOverload.args.back().description);
         }
-        keyword.overloads.push_back(overloadArgs);
+        kwOverload.returnType = returnType;
+        keyword.overloads.push_back(kwOverload);
     }
 
     db_->addKeyword(std::move(keyword));
