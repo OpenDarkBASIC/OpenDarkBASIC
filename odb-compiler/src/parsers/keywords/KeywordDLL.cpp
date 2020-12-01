@@ -137,7 +137,6 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
     }
 
     std::string pluginName = std::filesystem::path{dllPath}.filename().string();
-    keywordDB.addPlugin(pluginName);
 
     // Populate keyword database.
     for (const auto& entry : stringTableEntries) {
@@ -179,6 +178,9 @@ bool addKeywordDBFromDLL(KeywordDB& keywordDB, const std::string& dllPath) {
         for (int i = 0; i < functionTypes.size(); ++i) {
             Keyword::Arg arg;
             arg.type = convertTypeChar(functionTypes[i]);
+            if (arg.type == Keyword::Type::Void) {
+                continue;
+            }
             if (i < argumentNames.size()) {
                 arg.description = std::move(argumentNames[i]);
             }

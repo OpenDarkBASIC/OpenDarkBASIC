@@ -13,25 +13,7 @@ typedef void (*PTR_VOID)(void);
 typedef void (*PTR_DWORD)(DWORD);
 
 struct GlobStruct {
-    // Function Ptrs (for remote DLLs)
-    PTR_FuncCreateStr CreateDeleteString;
-    PTR_ProcessMessages ProcessMessageFunction;
-    PTR_PrintString PrintStringFunction;
-    PTR_DWORD UpdateFilenameFromVirtualTable;
-    PTR_DWORD Decrypt;
-    PTR_DWORD Encrypt;
-    PTR_DWORD ChangeMouseFunction;
-    PTR_DWORD SpareFunction1;
-    PTR_VOID SpareFunction2;
-    PTR_VOID SpareFunction3;
-
-    // Variable Memory Ptr
-    LPVOID g_pVariableSpace;
-
-    // Error Handler Ptr
-    LPVOID g_pErrorHandlerRef;
-
-    // DLL Handles and Active Flags
+    char unused[48];
     HINSTANCE g_GFX;
     HINSTANCE g_Text;
     HINSTANCE g_Basic2D;
@@ -68,85 +50,6 @@ struct GlobStruct {
     HINSTANCE g_igLoader;
     HINSTANCE g_GameFX;
     HINSTANCE g_Transforms;
-    HINSTANCE g_Spare04;
-    HINSTANCE g_Spare05;
-    HINSTANCE g_Spare06;
-    HINSTANCE g_Spare07;
-    HINSTANCE g_Spare08;
-    HINSTANCE g_Spare09;
-    HINSTANCE g_Spare10;
-    HINSTANCE g_Spare11;
-    HINSTANCE g_Spare12;
-    HINSTANCE g_Spare13;
-    HINSTANCE g_Spare14;
-    HINSTANCE g_Spare15;
-    HINSTANCE g_Spare16;
-    HINSTANCE g_Spare17;
-    HINSTANCE g_Spare18;
-    HINSTANCE g_Spare19;
-    HINSTANCE g_Spare20;
-    bool g_GFXmade;
-    bool g_Textmade;
-    bool g_Basic2Dmade;
-    bool g_Spritesmade;
-    bool g_Imagemade;
-    bool g_Inputmade;
-    bool g_Systemmade;
-    bool g_Filemade;
-    bool g_FTPmade;
-    bool g_Memblocksmade;
-    bool g_Bitmapmade;
-    bool g_Animationmade;
-    bool g_Multiplayermade;
-    bool g_Basic3Dmade;
-    bool g_Camera3Dmade;
-    bool g_Matrix3Dmade;
-    bool g_Light3Dmade;
-    bool g_World3Dmade;
-    bool g_Particlesmade;
-    bool g_PrimObjectmade;
-    bool g_Vectorsmade;
-    bool g_XObjectmade;
-    bool g_3DSObjectmade;
-    bool g_MDLObjectmade;
-    bool g_MD2Objectmade;
-    bool g_MD3Objectmade;
-    bool g_Soundmade;
-    bool g_Musicmade;
-    bool g_LODTerrainmade;
-    bool g_Q2BSPmade;
-    bool g_OwnBSPmade;
-    bool g_BSPCompilermade;
-    bool g_CSGmade;
-    bool g_igLoadermade;
-    bool g_GameFXmade;
-    bool g_Transformsmade;
-    bool g_Spare04made;
-    bool g_Spare05made;
-    bool g_Spare06made;
-    bool g_Spare07made;
-    bool g_Spare08made;
-    bool g_Spare09made;
-    bool g_Spare10made;
-    bool g_Spare11made;
-    bool g_Spare12made;
-    bool g_Spare13made;
-    bool g_Spare14made;
-    bool g_Spare15made;
-    bool g_Spare16made;
-    bool g_Spare17made;
-    bool g_Spare18made;
-    bool g_Spare19made;
-    bool g_Spare20made;
-
-    // Executable Media Handling Data
-    char pEXEUnpackDirectory[_MAX_PATH];
-    DWORD dwEncryptionUniqueKey;
-    DWORD ppEXEAbsFilename;
-    DWORD dwInternalFunctionCode;
-    DWORD g_pMachineCodeBlock;
-    DWORD dwEMHDSpare4;
-    DWORD dwEMHDSpare5;
 
     // Extra parts of the GlobStruct that we don't care about has been omitted...
 };
@@ -254,11 +157,11 @@ int main() {
     }
     */
 
-    PassCmdLinePtr((void*)cmdline_ptr);
+//    PassCmdLinePtr((void*)cmdline_ptr);
     PassErrorPtr((void*)&runtime_error);
     PassDLLs();
     if (InitDisplay(initial_display_mode, initial_display_width, initial_display_height,
-                    initial_display_depth, ::GetModuleHandle(NULL), app_name) != 0) {
+                    initial_display_depth, ::GetModuleHandle(NULL), nullptr) != 0) {
         cout << "Failed to initialise display." << endl;
         return 1;
     }

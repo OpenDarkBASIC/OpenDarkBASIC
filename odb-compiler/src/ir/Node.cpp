@@ -5,8 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 
-namespace odbc {
-namespace ir {
+namespace odbc::ir {
 namespace {
 struct SymbolTable {
     SymbolTable(const KeywordDB& keyword_db) : keyword_db(keyword_db) {}
@@ -148,16 +147,16 @@ template <typename T>
 void convertExpression(SymbolTable& symbol_table, ast::Node* node, T& expression);
 
 template <>
-void convertExpression(SymbolTable& symbol_table, ast::Node* node,
-                       KeywordFunctionCallExpression& call_expression) {
-    call_expression.keyword = symbol_table.keyword_db.lookup(node->sym.keyword.name);
-    assert(call_expression.keyword);
+void convertExpression(SymbolTable& symbolTable, ast::Node* node,
+                       KeywordFunctionCallExpression& callExpression) {
+    callExpression.keyword = symbolTable.keyword_db.lookup(node->sym.keyword.name);
+    assert(callExpression.keyword);
 
     // Extract arguments.
     auto arg_nodes = getNodesFromOpCommaNode(node->sym.keyword.arglist);
     PtrVector<Expression> arguments;
     for (ast::Node* expression_node : arg_nodes) {
-        arguments.emplace_back(convertExpression(symbol_table, expression_node));
+        arguments.emplace_back(convertExpression(symbolTable, expression_node));
     }
 
     if (!arguments.empty()) {
@@ -182,44 +181,51 @@ void convertExpression(SymbolTable& symbol_table, ast::Node* node,
             assert(false && "Unknown keyword type!");
         };
 
-        int overload_idx = 0;
-        bool found_overload = false;
-        for (; overload_idx < call_expression.keyword->overloads.size(); ++overload_idx) {
-            const auto &overload = call_expression.keyword->overloads[overload_idx];
-            if (overload.args.size() != arguments.size()) {
-                // Not this overload.
-                continue;
-            }
+        std::vector<const Keyword::Overload*> candidates;
 
-            bool matching_args = true;
-            for (int i = 0; i < overload.args.size(); ++i) {
-                if (overload.args[i].type == Keyword::Type{88} || overload.args[i].type == Keyword::Type{65}) {
-                    continue;
-                }
-                if (convertKeywordType(overload.args[i].type) != arguments[i]->getType()) {
-                    matching_args = false;
-                    break;
-                }
+        // Search for overload candidates.
+        for (const auto &overload : callExpression.keyword->overloads) {
+            if (overload.args.size() == arguments.size()) {
+                candidates.emplace_back(&overload);
             }
-
-            // If the args doesn't match, not this overload.
-            if (!matching_args) {
-                continue;
-            }
-
-            // We found a match.
-            found_overload = true;
-            break;
         }
 
-        if (!found_overload) {
+        if (candidates.empty()) {
             std::cerr << "Unable to find matching overload for keyword " << node->sym.keyword.name << std::endl;
             return;
         }
-        call_expression.keyword_overload = overload_idx;
+
+        // Sort candidates in ascending order by number of matching arguments. The candidate at the
+        // end of the sorted list is the best match.
+        std::sort(candidates.begin(), candidates.end(), [&](const Keyword::Overload* candidateA, const Keyword::Overload* candidateB) -> bool {
+            auto countMatchingArgs = [&](const Keyword::Overload& overload) -> int {
+                int matchingArgs = 0;
+                for (int i = 0; i < overload.args.size(); ++i) {
+                    if (overload.args[i].type == Keyword::Type{88} ||
+                        overload.args[i].type == Keyword::Type{65}) {
+                        continue;
+                    }
+                    if (convertKeywordType(overload.args[i].type) == arguments[i]->getType()) {
+                        matchingArgs++;
+                    }
+                }
+                return matchingArgs;
+            };
+            return countMatchingArgs(*candidateA) < countMatchingArgs(*candidateB);
+        });
+
+        // Set overload ID.
+        // TODO: Consider just setting keywordOverload to the overload pointer itself.
+        int overloadIdx = 0;
+        for (; overloadIdx < callExpression.keyword->overloads.size(); ++overloadIdx) {
+            if (&callExpression.keyword->overloads[overloadIdx] == candidates.back()) {
+                break;
+            }
+        }
+        callExpression.keywordOverload = overloadIdx;
     }
 
-    call_expression.arguments = std::move(arguments);
+    callExpression.arguments = std::move(arguments);
 }
 
 template <>
@@ -613,7 +619,7 @@ void convertRootBlock(Program& program, ast::Node* block, const KeywordDB& keywo
     }
 
     // Third pass: Generate statements.
-    convertBlock(symbol_table, main_statements, nullptr, program.main_function);
+    convertBlock(symbol_table, main_statements, nullptr, program.mainStatements);
     for (auto& function_entry : symbol_table.functions) {
         convertBlock(symbol_table,
                      getNodesFromBlockNode(function_entry.second.first->sym.func_decl.body),
@@ -702,5 +708,4 @@ Program Program::fromAst(ast::Node* root, const KeywordDB& keyword_db) {
     convertRootBlock(program, root, keyword_db);
     return program;
 }
-}  // namespace ast2
-}  // namespace odbc
+}  // namespace odbc::ir

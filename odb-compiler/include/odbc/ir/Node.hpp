@@ -111,7 +111,7 @@ struct LiteralExpression : Expression {
 
 struct KeywordFunctionCallExpression : Expression {
     const Keyword* keyword; // pointer into keyword DB.
-    int keyword_overload; // index into keyword->overloads array.
+    int keywordOverload; // index into keyword->overloads array.
     PtrVector<Expression> arguments;
     Type return_type;
 
@@ -231,7 +231,7 @@ struct UDTDefinition : Node {
 };
 
 struct Program {
-    StatementBlock main_function;
+    StatementBlock mainStatements;
     PtrVector<FunctionDefinition> functions;
     std::unordered_map<std::string, std::string> constants;
 

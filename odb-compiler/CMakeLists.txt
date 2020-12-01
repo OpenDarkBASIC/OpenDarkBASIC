@@ -108,6 +108,7 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
     "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
+    "src/ir/TGCEngineInterface.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
