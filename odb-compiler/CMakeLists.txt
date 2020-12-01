@@ -23,6 +23,14 @@ test_visibility_macros (
 
 check_include_file ("unistd.h" HAVE_UNISTD_H)
 
+if (WIN32)
+    set (ODBC_PLATFORM_WIN32 ON)
+elseif (APPLE)
+    set (ODBC_PLATFORM_MACOS ON)
+elseif (UNIX)
+    set (ODBC_PLATFORM_LINUX ON)
+endif ()
+
 configure_file ("templates/config.hpp.in" "include/odbc/config.hpp")
 
 ###############################################################################
@@ -89,12 +97,11 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/parsers/keywords/Driver.cpp"
     "src/parsers/keywords/KeywordDB.cpp"
     "src/parsers/keywords/KeywordMatcher.cpp"
+    "src/util/FileSystem.cpp"
     "src/util/Log.cpp"
+    "src/util/Plugin.cpp"
     "src/util/Str.cpp"
-    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
-    $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>
-    $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/FileSystem_darwin.cpp>
-    $<$<PLATFORM_ID:Windows>:src/util/platform/win32/FileSystem_win32.cpp>)
+    "src/util/TGCPlugin.cpp")
 target_include_directories (odbc
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

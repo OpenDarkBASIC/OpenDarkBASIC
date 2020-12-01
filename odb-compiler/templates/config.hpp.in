@@ -15,6 +15,10 @@
 #cmakedefine ODBC_VERBOSE_BISON
 #cmakedefine ODBC_VERBOSE_FLEX
 
+#cmakedefine ODBC_PLATFORM_WIN32
+#cmakedefine ODBC_PLATFORM_MACOS
+#cmakedefine ODBC_PLATFORM_LINUX
+
 #if defined(ODBC_SHARED)
 #   if defined(ODBC_BUILDING)
 #       define ODBC_PUBLIC_API ${ODBC_API_EXPORT}
