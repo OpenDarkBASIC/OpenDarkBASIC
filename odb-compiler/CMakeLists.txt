@@ -91,6 +91,7 @@ add_library (odbc ${ODBC_LIB_TYPE}
     "src/parsers/keywords/KeywordMatcher.cpp"
     "src/util/Log.cpp"
     "src/util/Str.cpp"
+    "src/util/TGCPlugin.cpp"
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/Plugin_linux.cpp>
     $<$<PLATFORM_ID:Linux>:src/util/platform/linux/FileSystem_linux.cpp>
     $<$<PLATFORM_ID:Darwin>:src/util/platform/darwin/FileSystem_darwin.cpp>

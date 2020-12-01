@@ -2,13 +2,17 @@
 #include "odbc/parsers/keywords/Driver.hpp"
 #include "odbc/parsers/db/Driver.hpp"
 #include "odbc/util/Log.hpp"
+#include "odbc/util/TGCPlugin.hpp"
 #include <cstring>
 #include <fstream>
 #include <algorithm>
+#include <filesystem>
+#include <memory>
 
 using namespace odbc;
 
-struct Command {
+struct Command
+{
     const char* fullOption;
     char shortOption;
     const char* argDoc;
@@ -34,6 +38,7 @@ static Command sequentialCommands[] = {
     { "parse-kw-ini", 'k',"<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsINI, "Load a specific keyword file, or load an entire directory of keyword files."},
     { "parse-kw-json", 0, "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
     { "parse-dba",     0, "<file> [files...]",           {1, -1}, &Args::parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
+    { "sdkroot",       0, "<path> [path...]",            {1, -1}, &Args::sdkroot, "Plugins to load keywords from and link against when building an executable."},
     { "dump-ast-dot",  0, "[file]",                      {0, 1},  &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
     { "dump-ast-json", 0, "[file]",                      {0, 1},  &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
     { "dump-kw-json",  0, "[file]",                      {0, 1},  &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
@@ -301,6 +306,43 @@ bool Args::parseDBA(const std::vector<std::string>& args)
         odbc::db::Driver driver(&ast_, &keywordMatcher_);
         if (driver.parseFile(arg.c_str()) == false)
             return false;
+    }
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::sdkroot(const std::vector<std::string>& sdkroot)
+{
+    // TODO: This should do slightly different things depending on whether this is in TGC mode or odb-sdk mode.
+    
+    std::unordered_set<std::string> pluginsToLoad;
+    for (const auto &pluginPath : sdkroot)
+    {
+        if (std::filesystem::is_directory(pluginPath))
+        {
+            for (const auto &p: std::filesystem::recursive_directory_iterator(pluginPath))
+            {
+                if (p.path().extension() == ".dll")
+                {
+                    pluginsToLoad.emplace(p.path().string());
+                }
+            }
+        } else
+        {
+            if (std::filesystem::path{pluginPath}.extension() == ".dll")
+            {
+                pluginsToLoad.emplace(pluginPath);
+            }
+        }
+    }
+
+    for (const auto& path : pluginsToLoad)
+    {
+        fprintf(stderr, "[kw] Loading plugin `%s`\n", path.c_str());
+        std::unique_ptr<TGCPlugin> plugin{TGCPlugin::load(path.c_str())};
+        plugin->loadKeywords(keywordDB_);
+        keywordMatcherDirty_ = true;
     }
 
     return true;

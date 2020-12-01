@@ -16,7 +16,7 @@ public:
 
     static Plugin* load(const char* filename);
 
-    bool loadKeywords(KeywordDB* db) const;
+    bool loadKeywords(KeywordDB& db) const;
 
 private:
     Plugin(void* handle) : handle_(handle) {}

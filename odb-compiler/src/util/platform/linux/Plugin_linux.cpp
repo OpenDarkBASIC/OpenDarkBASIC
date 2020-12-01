@@ -62,7 +62,7 @@ static int getSymbolCountInGNUHashTable(const uint32_t* hashtab)
 }
 
 // ----------------------------------------------------------------------------
-bool Plugin::loadKeywords(KeywordDB* db) const
+bool Plugin::loadKeywords(KeywordDB& db) const
 {
     puts("loading keywords");
     link_map* lm;
