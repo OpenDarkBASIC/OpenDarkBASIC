@@ -44,7 +44,7 @@
     X(NT_OP_EQ,    eq,    "==",  left, right)                                 \
     X(NT_OP_NE,    ne,    "<>",  left, right)                                 \
     X(NT_OP_LOR,   lor,   "or",  left, right)                                 \
-    X(NT_OP_POW,  pow,    "^",   left, right)                                 \
+    X(NT_OP_POW,   pow,   "^",   left, right)                                 \
     X(NT_OP_LAND,  land,  "and", left, right)                                 \
     X(NT_OP_LXOR,  lxor,  "xor", left, right)                                 \
     X(NT_OP_LNOT,  lnot,  "not", left, right)                                 \

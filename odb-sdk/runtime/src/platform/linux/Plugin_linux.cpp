@@ -43,7 +43,7 @@ static int getSymbolCountInGNUHashTable(const uint32_t* hashtab)
     const uint32_t symoffset   = hashtab[1];
     const uint32_t bloom_size  = hashtab[2];
     /*const uint32_t bloom_shift = hashtab[3];*/
-    const void** bloom     = (const void**)&hashtab[4];
+    const void** bloom         = (const void**)&hashtab[4];
     const uint32_t* buckets    = (const uint32_t*)&bloom[bloom_size];
     const uint32_t* chain      = &buckets[nbuckets];
 

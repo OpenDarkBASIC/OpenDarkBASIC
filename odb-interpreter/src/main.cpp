@@ -5,7 +5,7 @@
 
 int main(int argc, char** argv)
 {
-    odb::Plugin* p = odb::Plugin::load("odb-sdk/test-plugin/test-plugin.so");
+    odb::Plugin* p = odb::Plugin::load("odb-sdk/plugins/test-plugin/test-plugin.so");
     if (p == nullptr)
         return 1;
     odb::KeywordDB db;
