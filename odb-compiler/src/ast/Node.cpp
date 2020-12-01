@@ -1,11 +1,11 @@
-#include "odbc/ast/Node.hpp"
-#include "odbc/parsers/db/Parser.y.h"
-#include "odbc/util/Str.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-util/Str.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------

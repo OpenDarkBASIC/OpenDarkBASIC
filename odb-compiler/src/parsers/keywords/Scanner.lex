@@ -14,9 +14,9 @@
             } \
         }
 
-    #include "odbc/parsers/keywords/Parser.y.h"
-    #include "odbc/parsers/keywords/Scanner.hpp"
-    #include "odbc/util/Str.hpp"
+    #include "odb-compiler/parsers/keywords/Parser.y.h"
+    #include "odb-compiler/parsers/keywords/Scanner.hpp"
+    #include "odb-util/Str.hpp"
 
     #if defined(ODBC_VERBOSE_FLEX)
     #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
@@ -30,7 +30,7 @@
 %option reentrant
 %option bison-bridge
 %option bison-locations
-%option extra-type="odbc::kw::Driver*"
+%option extra-type="odb::kw::Driver*"
 %option prefix="kw"
 
 %%
@@ -44,7 +44,7 @@
 [\t ]+                                { dbg("whitespace"); }
 "\n"                                  { dbg("newline"); return TOK_NEWLINE; }
 (?i:"no parameters")                  { dbg("no params"); return TOK_NO_PARAMS; }
-[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = odbc::newCStr(yytext); return TOK_HELPFILE; }
-[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = odbc::newCStr(yytext); return TOK_WORDS; }
+[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = odb::newCStr(yytext); return TOK_HELPFILE; }
+[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = odb::newCStr(yytext); return TOK_WORDS; }
 .                                     {}
 %%

@@ -1,11 +1,11 @@
-#include "odbc/parsers/db/Driver.hpp"
-#include "odbc/parsers/db/Parser.y.h"
-#include "odbc/parsers/db/Scanner.hpp"
-#include "odbc/parsers/keywords/KeywordMatcher.hpp"
-#include "odbc/util/Log.hpp"
-#include "odbc/util/Str.hpp"
-#include "odbc/util/FileSystem.hpp"
-#include "odbc/ast/Node.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-compiler/parsers/db/Scanner.hpp"
+#include "odb-compiler/keywords/KeywordMatcher.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-util/Log.hpp"
+#include "odb-util/Str.hpp"
+#include "odb-util/FileSystem.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>
@@ -14,7 +14,7 @@
 extern int dbdebug;
 #endif
 
-namespace odbc {
+namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------

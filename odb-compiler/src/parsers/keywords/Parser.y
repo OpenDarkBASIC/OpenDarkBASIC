@@ -1,17 +1,17 @@
 %require "3.2"
 %code top
 {
-    #include "odbc/parsers/keywords/Parser.y.h"
-    #include "odbc/parsers/keywords/Scanner.hpp"
-    #include "odbc/parsers/keywords/Driver.hpp"
+    #include "odb-compiler/parsers/keywords/Parser.y.h"
+    #include "odb-compiler/parsers/keywords/Scanner.hpp"
+    #include "odb-compiler/parsers/keywords/Driver.hpp"
     #include <stdarg.h>
 
     void kwerror(KWLTYPE *locp, kwscan_t scanner, const char* msg, ...);
 
-    #define driver (static_cast<odbc::kw::Driver*>(kwget_extra(scanner)))
+    #define driver (static_cast<odb::kw::Driver*>(kwget_extra(scanner)))
     #define error(x, ...) kwerror(kwpushed_loc, scanner, x, __VA_ARGS__)
 
-    using namespace odbc;
+    using namespace odb;
 }
 
 %code requires
@@ -19,7 +19,7 @@
     #include <stdint.h>
     typedef void* kwscan_t;
 
-    namespace odbc {
+    namespace odb {
         namespace kw {
             class Driver;
         }

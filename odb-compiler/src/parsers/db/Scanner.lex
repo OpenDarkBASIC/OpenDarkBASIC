@@ -15,12 +15,12 @@
         } \
     }
 
-#include "odbc/parsers/db/Parser.y.h"
-#include "odbc/parsers/db/Scanner.hpp"
-#include "odbc/parsers/db/Driver.hpp"
-#include "odbc/util/Str.hpp"
+#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-compiler/parsers/db/Scanner.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-util/Str.hpp"
 
-#define driver (static_cast<odbc::db::Driver*>(dbget_extra(yyg)))
+#define driver (static_cast<odb::db::Driver*>(dbget_extra(yyg)))
 #if defined(ODBC_VERBOSE_FLEX)
 #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
 #else
@@ -38,7 +38,7 @@
 %option reentrant
 %option bison-bridge
 %option bison-locations
-%option extra-type="odbc::db::Driver*"
+%option extra-type="odb::db::Driver*"
 %option prefix="db"
 
 REMARK ((?i:rem)|"`"|"//")
@@ -85,7 +85,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string = odbc::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
+    {STRING_LITERAL}    { yylval->string = odb::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
     {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(FLOAT_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(INTEGER_LITERAL); }
@@ -162,7 +162,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     (?:case)            { RETURN_TOKEN(CASE); }
     (?:default)         { RETURN_TOKEN(DEFAULT); }
 
-    {SYMBOL}            { yylval->string = odbc::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
+    {SYMBOL}            { yylval->string = odb::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 
     "#"                 { RETURN_TOKEN(HASH); }
     "$"                 { RETURN_TOKEN(DOLLAR); }

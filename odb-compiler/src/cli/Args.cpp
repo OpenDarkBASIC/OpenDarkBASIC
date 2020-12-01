@@ -1,15 +1,15 @@
-#include "odbc/cli/Args.hpp"
-#include "odbc/parsers/keywords/Driver.hpp"
-#include "odbc/parsers/db/Driver.hpp"
-#include "odbc/util/Log.hpp"
-#include "odbc/util/TGCPlugin.hpp"
+#include "odb-compiler/cli/Args.hpp"
+#include "odb-compiler/parsers/keywords/Driver.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-sdk/runtime/TGCPlugin.hpp"
+#include "odb-util/Log.hpp"
 #include <cstring>
 #include <fstream>
 #include <algorithm>
 #include <filesystem>
 #include <memory>
 
-using namespace odbc;
+using namespace odb;
 
 struct Command
 {
@@ -30,13 +30,13 @@ struct CommandHandler
 typedef std::vector<CommandHandler> CommandQueue;
 
 static Command globalSwitches[] = {
-    { "no-banner",    'n',"",                  {0, 0}, &Args::disableBanner, "Don't print the cool ASCII art banner"}
+    { "no-banner",    'n',"",                            {0, 0},  &Args::disableBanner, "Don't print the cool ASCII art banner"},
+    { "sdkroot",       0, "<path>",                      {1, 1},  &Args::setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
 };
 
 static Command sequentialCommands[] = {
     { "help",         'h',nullptr,                       {0, 0},  &Args::printHelp, "Print this help text"},
-    { "parse-kw-ini", 'k',"<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsINI, "Load a specific keyword file, or load an entire directory of keyword files."},
-    { "parse-kw-json", 0, "<path/file> [path/files...]", {1, -1}, &Args::loadKeywordsJSON, "Load a specific keyword file, or load an entire directory of keyword files."},
+    { "print-sdkroot", 0, "",                            {0, 0},  &Args::printSDKRootDir, "Prints the location of the SDK"},
     { "parse-dba",     0, "<file> [files...]",           {1, -1}, &Args::parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
     { "sdkroot",       0, "<path> [path...]",            {1, -1}, &Args::sdkroot, "Plugins to load keywords from and link against when building an executable."},
     { "dump-ast-dot",  0, "[file]",                      {0, 1},  &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
@@ -211,7 +211,7 @@ bool Args::parse(int argc, char** argv)
         fprintf(stderr, RIGHT, 34);
         fprintf(stderr, "github.com/TheComet/OpenDarkBASIC");
         fprintf(stderr, RIGHT, 7);
-        fprintf(stderr, "Version " ODBC_VERSION_STR "\n\n");
+        fprintf(stderr, "Version " ODBCOMPILER_VERSION_STR "\n\n");
     }
 
     // Process all sequential commands
@@ -269,41 +269,35 @@ bool Args::disableBanner(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::loadKeywordsINI(const std::vector<std::string>& args)
+bool Args::setSDKRootDir(const std::vector<std::string>& args)
 {
-    for (const auto& arg : args)
-    {
-        fprintf(stderr, "[kw parser] Loading keyword file `%s`\n", arg.c_str());
-        odbc::kw::Driver driver(&keywordDB_);
-        keywordMatcherDirty_ = true;
-        if (driver.parseFile(arg.c_str()) == false)
-            return false;
-    }
-
+    sdkRootDir_ = args[0];
+    sdkRootDirChanged_ = true;
+    fprintf(stderr, "[] New SDK root directory: %s\n", sdkRootDir_.c_str());
     return true;
 }
 
 // ----------------------------------------------------------------------------
-bool Args::loadKeywordsJSON(const std::vector<std::string>& args)
+bool Args::printSDKRootDir(const std::vector<std::string>& args)
 {
-    fprintf(stderr, "[kw parser] Error: Not implemented");
+    fprintf(stderr, "[] SDK root directory: %s\n", sdkRootDir_.c_str());
     return false;
 }
 
 // ----------------------------------------------------------------------------
 bool Args::parseDBA(const std::vector<std::string>& args)
 {
-    if (keywordMatcherDirty_)
+    if (sdkRootDirChanged_)
     {
         fprintf(stderr, "[db parser] Updating keyword index\n");
         keywordMatcher_.updateFromDB(&keywordDB_);
-        keywordMatcherDirty_ = false;
+        sdkRootDirChanged_ = false;
     }
 
     for (const auto& arg : args)
     {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
-        odbc::db::Driver driver(&ast_, &keywordMatcher_);
+        odb::db::Driver driver(&ast_, &keywordMatcher_);
         if (driver.parseFile(arg.c_str()) == false)
             return false;
     }
@@ -407,7 +401,7 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
     else
         fprintf(stderr, "[ast] Dumping AST to JSON\n");
 
-    odbc::ast::dumpToJSON(outFile, ast_);
+    odb::ast::dumpToJSON(outFile, ast_);
 
     if (args.size())
         fclose(outFile);
@@ -430,7 +424,7 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
         for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload)
         {
             log::data("      {\n");
-            log::data("        \"returnType\": \"%s\",\n", overload->returnType.has_value() ? std::string{(char)overload->returnType.value()}.c_str() : "void");
+            log::data("        \"returnType\": \"%s\",\n", keyword->returnType.has_value() ? std::string{(char)keyword->returnType.value()}.c_str() : "void");
             log::data("        \"args\": [");
             auto arg = overload->args.begin();
             if (arg != overload->args.end())
@@ -456,14 +450,14 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
     std::sort(keywords.begin(), keywords.end(), [](const Keyword &a, const Keyword &b) { return a.name < b.name; });
 
     log::data("[LINKS]\n");
-    for (const auto &keyword : keywords)
+    for (const auto& keyword : keywords)
     {
         log::data("%s=%s=", keyword.name.c_str(), keyword.helpFile.c_str());
         for (const auto &overload : keyword.overloads)
         {
             if (keyword.overloads.size() > 1)
                 log::data("[");
-            if (overload.returnType.has_value())
+            if (keyword.returnType.has_value())
                 log::data("(");
 
             auto arg = overload.args.begin();
@@ -474,7 +468,7 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
             while (arg != overload.args.end())
                 log::data(", %s", (*arg++).description.c_str());
 
-            if (overload.returnType)
+            if (keyword.returnType)
                 log::data(")");
             if (keyword.overloads.size() > 1)
                 log::data("]");

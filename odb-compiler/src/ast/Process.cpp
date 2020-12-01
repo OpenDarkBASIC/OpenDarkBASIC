@@ -1,8 +1,8 @@
-#include "odbc/ast/Process.hpp"
-#include "odbc/ast/Node.hpp"
+#include "odb-compiler/ast/Process.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <cassert>
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------

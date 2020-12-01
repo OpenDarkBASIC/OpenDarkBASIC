@@ -1,9 +1,9 @@
-#include "odbc/parsers/keywords/Driver.hpp"
-#include "odbc/parsers/keywords/Parser.y.h"
-#include "odbc/parsers/keywords/Scanner.hpp"
-#include "odbc/parsers/keywords/Keyword.hpp"
-#include "odbc/parsers/keywords/KeywordDB.hpp"
-#include "odbc/util/Log.hpp"
+#include "odb-compiler/parsers/keywords/Driver.hpp"
+#include "odb-compiler/parsers/keywords/Parser.y.h"
+#include "odb-compiler/parsers/keywords/Scanner.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-util/Log.hpp"
 #include <cassert>
 #include <algorithm>
 #include <functional>
@@ -18,7 +18,7 @@ static void strip(std::string& str)
     str.erase(std::find_if(str.rbegin(), str.rend(), std::bind(std::not_equal_to<char>(), ' ', std::placeholders::_1)).base(), str.end());
 }
 
-namespace odbc {
+namespace odb {
 namespace kw {
 
 // ----------------------------------------------------------------------------
@@ -217,7 +217,7 @@ void Driver::finishKeyword()
     keyword.name = keywordName_;
     if (helpFile_)
         keyword.helpFile = helpFile_;
-    std::optional<Keyword::Type> returnType = hasReturnType_ ? std::optional<Keyword::Type>(Keyword::Type::Integer) : std::nullopt;
+    keyword.returnType = hasReturnType_ ? std::optional<Keyword::Type>(Keyword::Type::Integer) : std::nullopt;
     for (auto& overload : currentOverloadList_)
     {
         Keyword::Overload kwOverload;
@@ -226,7 +226,6 @@ void Driver::finishKeyword()
             kwOverload.args.emplace_back(Keyword::Arg{arg, Keyword::Type::Integer});
             strip(kwOverload.args.back().description);
         }
-        kwOverload.returnType = returnType;
         keyword.overloads.push_back(kwOverload);
     }
 

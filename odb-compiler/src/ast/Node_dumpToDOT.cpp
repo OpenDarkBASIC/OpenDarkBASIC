@@ -1,7 +1,7 @@
-#include "odbc/ast/Node.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <unordered_map>
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 #ifdef ODBC_DOT_EXPORT

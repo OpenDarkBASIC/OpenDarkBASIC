@@ -1,16 +1,16 @@
 %require "3.2"
 %code top
 {
-    #include "odbc/parsers/db/Parser.y.h"
-    #include "odbc/parsers/db/Scanner.hpp"
-    #include "odbc/parsers/db/Driver.hpp"
-    #include "odbc/ast/Node.hpp"
-    #include "odbc/util/Str.hpp"
+    #include "odb-compiler/parsers/db/Parser.y.h"
+    #include "odb-compiler/parsers/db/Scanner.hpp"
+    #include "odb-compiler/parsers/db/Driver.hpp"
+    #include "odb-compiler/ast/Node.hpp"
+    #include "odb-util/Str.hpp"
 
-    #define driver (static_cast<odbc::db::Driver*>(dbget_extra(scanner)))
+    #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
     #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
 
-    using namespace odbc;
+    using namespace odb;
     using namespace ast;
 
     void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
@@ -23,7 +23,7 @@
     typedef void* dbscan_t;
     typedef struct dbpstate dbpstate;
 
-    namespace odbc {
+    namespace odb {
         namespace db {
             class Driver;
         }
@@ -75,7 +75,7 @@
     double float_value;
     char* string;
 
-    odbc::ast::Node* node;
+    odb::ast::Node* node;
 }
 
 %define api.token.prefix {TOK_}

@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
-#include "odbc/parsers/keywords/KeywordMatcher.hpp"
-#include "odbc/parsers/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordMatcher.hpp"
+#include "odb-compiler/keywords/KeywordDB.hpp"
 
 #define NAME kw_matcher
 
@@ -11,7 +11,7 @@ class NAME : public Test
 public:
     void SetUp() override
     {
-        matcher = new odbc::KeywordMatcher;
+        matcher = new odb::KeywordMatcher;
     }
 
     void TearDown() override
@@ -19,10 +19,10 @@ public:
         delete matcher;
     }
 
-    odbc::KeywordMatcher* matcher;
+    odb::KeywordMatcher* matcher;
 };
 
-using namespace odbc;
+using namespace odb;
 
 TEST_F(NAME, empty_db)
 {
@@ -35,11 +35,11 @@ TEST_F(NAME, empty_db)
 TEST_F(NAME, exact_string)
 {
     KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, false});
-    db.addKeyword({"randomize", "", {}, false});
-    db.addKeyword({"randomize matrix", "", {}, false});
-    db.addKeyword({"randomize mesh", "", {}, false});
-    db.addKeyword({"read", "", {}, false});
+    db.addKeyword({"projection matrix4", "", {}, ""});
+    db.addKeyword({"randomize", "", {}, ""});
+    db.addKeyword({"randomize matrix", "", {}, ""});
+    db.addKeyword({"randomize mesh", "", {}, ""});
+    db.addKeyword({"read", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("randomize");
@@ -51,11 +51,11 @@ TEST_F(NAME, exact_string)
 TEST_F(NAME, trailing_space)
 {
     KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, false});
-    db.addKeyword({"randomize", "", {}, false});
-    db.addKeyword({"randomize matrix", "", {}, false});
-    db.addKeyword({"randomize mesh", "", {}, false});
-    db.addKeyword({"read", "", {}, false});
+    db.addKeyword({"projection matrix4", "", {}, ""});
+    db.addKeyword({"randomize", "", {}, ""});
+    db.addKeyword({"randomize matrix", "", {}, ""});
+    db.addKeyword({"randomize mesh", "", {}, ""});
+    db.addKeyword({"read", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("randomize ");
@@ -67,11 +67,11 @@ TEST_F(NAME, trailing_space)
 TEST_F(NAME, longer_symbol)
 {
     KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, false});
-    db.addKeyword({"randomize", "", {}, false});
-    db.addKeyword({"randomize matrix", "", {}, false});
-    db.addKeyword({"randomize mesh", "", {}, false});
-    db.addKeyword({"read", "", {}, false});
+    db.addKeyword({"projection matrix4", "", {}, ""});
+    db.addKeyword({"randomize", "", {}, ""});
+    db.addKeyword({"randomize matrix", "", {}, ""});
+    db.addKeyword({"randomize mesh", "", {}, ""});
+    db.addKeyword({"read", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("randomized");
@@ -83,11 +83,11 @@ TEST_F(NAME, longer_symbol)
 TEST_F(NAME, match_longer_string_to_shorter_command)
 {
     KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, false});
-    db.addKeyword({"randomize", "", {}, false});
-    db.addKeyword({"randomize matrix", "", {}, false});
-    db.addKeyword({"randomize mesh", "", {}, false});
-    db.addKeyword({"read", "", {}, false});
+    db.addKeyword({"projection matrix4", "", {}, ""});
+    db.addKeyword({"randomize", "", {}, ""});
+    db.addKeyword({"randomize matrix", "", {}, ""});
+    db.addKeyword({"randomize mesh", "", {}, ""});
+    db.addKeyword({"read", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("randomize timer");
@@ -99,7 +99,7 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
 TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 {
     KeywordDB db;
-    db.addKeyword({"dec", "", {}, false});
+    db.addKeyword({"dec", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("decalmax");
@@ -111,9 +111,9 @@ TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
 {
     KeywordDB db;
-    db.addKeyword({"DELETE OBJECT COLLISION BOX", "", {}, false});
-    db.addKeyword({"DELETE OBJECT", "", {}, false});
-    db.addKeyword({"DELETE OBJECTS", "", {}, false});
+    db.addKeyword({"DELETE OBJECT COLLISION BOX", "", {}, ""});
+    db.addKeyword({"DELETE OBJECT", "", {}, ""});
+    db.addKeyword({"DELETE OBJECTS", "", {}, ""});
     matcher->updateFromDB(&db);
 
     auto result = matcher->findLongestKeywordMatching("delete object 100");

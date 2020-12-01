@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
-#include "odbc/parsers/db/Driver.hpp"
-#include "odbc/ast/Node.hpp"
-#include "odbc/tests/ParserTestHarness.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 
 #define NAME db_op_precedence
 
@@ -12,7 +12,7 @@ class NAME : public ParserTestHarness
 public:
 };
 
-using namespace odbc;
+using namespace odb;
 using namespace ast;
 
 #define TEST_LEFT_RECURSION_I(opupper, oplower, symstr)                       \

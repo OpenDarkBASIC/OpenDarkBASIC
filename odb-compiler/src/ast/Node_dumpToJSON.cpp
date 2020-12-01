@@ -1,7 +1,7 @@
-#include "odbc/ast/Node.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <cstdio>
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------

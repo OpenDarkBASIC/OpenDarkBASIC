@@ -1,9 +1,9 @@
-#include "odbc/ast/ResolveArrayFuncAmbiguity.hpp"
-#include "odbc/ast/Node.hpp"
-#include "odbc/util/Log.hpp"
+#include "odb-compiler/ast/ResolveArrayFuncAmbiguity.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-util/Log.hpp"
 #include <cassert>
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------

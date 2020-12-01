@@ -1,6 +1,6 @@
-#include "odbc/ast/ErrorHighlighter.hpp"
+#include "odb-compiler/ast/ErrorHighlighter.hpp"
 
-namespace odbc {
+namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------

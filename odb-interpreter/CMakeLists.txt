@@ -30,7 +30,8 @@ set_target_properties (odbi
     PROPERTIES CXX_STANDARD 17)
 target_link_libraries (odbi
     PRIVATE
-        odbc)
+        odb-compiler
+        odb-runtime)
 
 ###############################################################################
 # Installation
