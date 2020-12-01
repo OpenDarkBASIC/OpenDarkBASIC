@@ -340,8 +340,8 @@ bool Args::sdkroot(const std::vector<std::string>& sdkroot)
     for (const auto& path : pluginsToLoad)
     {
         fprintf(stderr, "[kw] Loading plugin `%s`\n", path.c_str());
-        std::unique_ptr<TGCPlugin> plugin{TGCPlugin::load(path.c_str())};
-        plugin->loadKeywords(keywordDB_);
+        auto plugin = TGCPlugin::load(path.c_str());
+        plugin->loadKeywords(&keywordDB_);
         keywordMatcherDirty_ = true;
     }
 

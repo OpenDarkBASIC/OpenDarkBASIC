@@ -15,16 +15,9 @@
 #cmakedefine ODBC_VERBOSE_BISON
 #cmakedefine ODBC_VERBOSE_FLEX
 
-#define ODBC_WIN32 0
-#define ODBC_MACOS 1
-#define ODBC_LINUX 2
-#if defined(__WIN32__) || defined(_WIN32)
-#define ODBC_PLATFORM ODBC_WIN32
-#elif defined(__APPLE_CC__)
-#define ODBC_PLATFORM ODBC_MACOS
-#elif defined(__linux__) && !defined(__ANDROID__)
-#define ODBC_PLATFORM ODBC_LINUX
-#endif
+#cmakedefine ODBC_PLATFORM_WIN32
+#cmakedefine ODBC_PLATFORM_MACOS
+#cmakedefine ODBC_PLATFORM_LINUX
 
 #if defined(ODBC_SHARED)
 #   if defined(ODBC_BUILDING)

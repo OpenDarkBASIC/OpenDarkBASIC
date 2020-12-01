@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <filesystem>
 
-#if ODBC_PLATFORM == ODBC_WIN32
+#ifdef ODBC_PLATFORM_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
@@ -29,10 +29,10 @@ void split(const std::string &str, Container &cont,
     cont.push_back(str.substr(previous, current - previous));
 }
 
-std::vector<std::string> extractStringTableFromPEFile(HMODULE hModule) {
+#ifdef ODBC_PLATFORM_WIN32
+std::vector<std::string> extractStringTableFromPEFile(HMODULE hModule)
+{
     std::vector<std::string> stringTableEntries;
-
-#if ODBC_PLATFORM == ODBC_WIN32
     char buffer[512];
     int resourceIdx = 1;
     while (true)
@@ -44,17 +44,16 @@ std::vector<std::string> extractStringTableFromPEFile(HMODULE hModule) {
         }
         stringTableEntries.emplace_back(buffer, charactersRead);
     }
-#endif
-
     return stringTableEntries;
 }
+#endif
 
 }
 
 // ----------------------------------------------------------------------------
-TGCPlugin* TGCPlugin::load(const char* filename)
+std::unique_ptr<TGCPlugin> TGCPlugin::load(const char* filename)
 {
-#if ODBC_PLATFORM == ODBC_WIN32
+#ifdef ODBC_PLATFORM_WIN32
     HMODULE hModule = LoadLibraryExA(filename, nullptr, LOAD_LIBRARY_AS_DATAFILE);
     if (!hModule)
     {
@@ -63,7 +62,7 @@ TGCPlugin* TGCPlugin::load(const char* filename)
         return nullptr;
     }
 
-    return new TGCPlugin(static_cast<void*>(hModule), std::filesystem::path{filename}.filename().string());
+    return std::unique_ptr<TGCPlugin>(new TGCPlugin(static_cast<void*>(hModule), std::filesystem::path{filename}.filename().string()));
 #else
     return nullptr;
 #endif
@@ -72,13 +71,13 @@ TGCPlugin* TGCPlugin::load(const char* filename)
 // ----------------------------------------------------------------------------
 TGCPlugin::~TGCPlugin()
 {
-#if ODBC_PLATFORM == ODBC_WIN32
+#ifdef ODBC_PLATFORM_WIN32
     FreeLibrary(static_cast<HMODULE>(handle_));
 #endif
 }
 
 // ----------------------------------------------------------------------------
-bool TGCPlugin::loadKeywords(KeywordDB& db) const
+bool TGCPlugin::loadKeywords(KeywordDB* db) const
 {
     std::vector<std::string> stringTableEntries = extractStringTableFromPEFile(static_cast<HMODULE>(handle_));
     if (stringTableEntries.empty())
@@ -141,7 +140,7 @@ bool TGCPlugin::loadKeywords(KeywordDB& db) const
         }
 
         // Add to database, or merge with existing keyword if it exists already.
-        Keyword* existingKeyword = db.lookup(keywordName);
+        Keyword* existingKeyword = db->lookup(keywordName);
         if (existingKeyword)
         {
             existingKeyword->overloads.emplace_back(std::move(overload));
@@ -152,7 +151,7 @@ bool TGCPlugin::loadKeywords(KeywordDB& db) const
             kw.name = std::move(keywordName);
             kw.overloads.emplace_back(std::move(overload));
             kw.plugin = pluginName_;
-            db.addKeyword(kw);
+            db->addKeyword(kw);
         }
     }
     return true;

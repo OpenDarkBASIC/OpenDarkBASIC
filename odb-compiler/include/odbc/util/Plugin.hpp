@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odbc/config.hpp"
+#include <memory>
 
 namespace odbc {
 
@@ -14,9 +15,9 @@ public:
     Plugin(Plugin&& other) = default;
     ~Plugin();
 
-    static Plugin* load(const char* filename);
+    static std::unique_ptr<Plugin> load(const char* filename);
 
-    bool loadKeywords(KeywordDB& db) const;
+    bool loadKeywords(KeywordDB* db) const;
 
 private:
     Plugin(void* handle) : handle_(handle) {}

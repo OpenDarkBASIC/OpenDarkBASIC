@@ -2,6 +2,7 @@
 
 #include "odbc/config.hpp"
 #include <string>
+#include <memory>
 
 namespace odbc {
 
@@ -15,9 +16,9 @@ public:
     TGCPlugin(TGCPlugin&& other) = default;
     ~TGCPlugin();
 
-    static TGCPlugin* load(const char* filename);
+    static std::unique_ptr<TGCPlugin> load(const char* filename);
 
-    bool loadKeywords(KeywordDB& db) const;
+    bool loadKeywords(KeywordDB* db) const;
 
 private:
     TGCPlugin(void* handle, const std::string& pluginName) : handle_(handle), pluginName_(pluginName) {}
