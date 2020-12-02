@@ -1,18 +1,13 @@
-#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/parsers/keywords/Driver.hpp"
+#include "odb-runtime/Plugin.hpp"
 #include <cstdio>
 #include <iostream>
 
 namespace odb {
 
 // ----------------------------------------------------------------------------
-bool KeywordDB::loadFromDirectory(const std::string& dir)
-{
-    return false;
-}
-
-// ----------------------------------------------------------------------------
-bool KeywordDB::loadFromFile(const std::string& fileName)
+bool KeywordIndex::loadFromINIFile(const std::string& fileName)
 {
     bool result;
 
@@ -28,13 +23,35 @@ bool KeywordDB::loadFromFile(const std::string& fileName)
 }
 
 // ----------------------------------------------------------------------------
-bool KeywordDB::exists(const std::string& keyword)
+bool KeywordIndex::loadFromPlugin(const Plugin& plugin)
 {
-    return map_.find(keyword) != map_.end();
+    const char* keyword;
+    const char* typeinfo;
+    const char* helpfile;
+
+    auto lookupString = [&plugin](std::string sym) -> const char* {
+        const char** addr = reinterpret_cast<const char**>(
+            plugin.lookupSymbolAddress(sym.c_str()));
+        return addr ? *addr : nullptr;
+    };
+
+    for (int i = 0; i != plugin.getSymbolCount(); ++i)
+    {
+        std::string sym = plugin.getSymbolAt(i);
+
+        if (!(keyword = lookupString(sym + "_keyword")))
+            continue;
+        if (!(typeinfo = lookupString(sym + "_typeinfo")))
+            continue;
+        helpfile = lookupString(sym + "_helpfile");  // optional symbol
+
+        addKeyword({keyword, plugin.getName(), helpfile, {}, std::nullopt});
+    }
+    return true;
 }
 
 // ----------------------------------------------------------------------------
-bool KeywordDB::addKeyword(Keyword keyword)
+bool KeywordIndex::addKeyword(Keyword keyword)
 {
     auto result = map_.insert({keyword.name, keyword});
     plugins_.insert(keyword.plugin);
@@ -42,7 +59,7 @@ bool KeywordDB::addKeyword(Keyword keyword)
 }
 
 // ----------------------------------------------------------------------------
-Keyword* KeywordDB::lookup(const std::string& keyword)
+Keyword* KeywordIndex::lookup(const std::string& keyword)
 {
     auto result = map_.find(keyword);
     if (result == map_.end())
@@ -51,7 +68,7 @@ Keyword* KeywordDB::lookup(const std::string& keyword)
 }
 
 // ----------------------------------------------------------------------------
-const Keyword* KeywordDB::lookup(const std::string& keyword) const
+const Keyword* KeywordIndex::lookup(const std::string& keyword) const
 {
     const auto result = map_.find(keyword);
     if (result == map_.end())
@@ -60,7 +77,13 @@ const Keyword* KeywordDB::lookup(const std::string& keyword) const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<Keyword> KeywordDB::keywordsAsList() const
+int KeywordIndex::keywordCount() const
+{
+    return map_.size();
+}
+
+// ----------------------------------------------------------------------------
+std::vector<Keyword> KeywordIndex::keywordsAsList() const
 {
     std::vector<Keyword> list;
     list.reserve(map_.size());
@@ -70,7 +93,7 @@ std::vector<Keyword> KeywordDB::keywordsAsList() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> KeywordDB::keywordNamesAsList() const
+std::vector<std::string> KeywordIndex::keywordNamesAsList() const
 {
     std::vector<std::string> list;
     list.reserve(map_.size());
@@ -80,7 +103,7 @@ std::vector<std::string> KeywordDB::keywordNamesAsList() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> KeywordDB::pluginsAsList() const
+std::vector<std::string> KeywordIndex::pluginsAsList() const
 {
     std::vector<std::string> list;
     list.reserve(plugins_.size());

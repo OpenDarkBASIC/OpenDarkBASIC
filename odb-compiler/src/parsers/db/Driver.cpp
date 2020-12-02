@@ -10,7 +10,7 @@
 #include <cstring>
 #include <algorithm>
 
-#if defined(ODBC_VERBOSE_BISON)
+#if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int dbdebug;
 #endif
 
@@ -25,7 +25,7 @@ Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
 
-#if defined(ODBC_VERBOSE_BISON)
+#if defined(ODBCOMPILER_VERBOSE_BISON)
     dbdebug = 1;
 #endif
 }
@@ -159,7 +159,7 @@ bool Driver::doParse()
     // Scans ahead to get as many TOK_SYMBOL type tokens
     auto scanAheadForPossibleKeyword = [&](bool mustBeLonger)
     {
-#if defined(ODBC_VERBOSE_FLEX)
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
         fprintf(stderr, "Scanning ahead for possible keyword match\n");
 #endif
         struct
@@ -185,7 +185,7 @@ bool Driver::doParse()
             if (match.found && match.matchedLength == (int)possibleKeyword.size())
             {
                 result = {match, i};
-#if defined(ODBC_VERBOSE_FLEX)
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
             fprintf(stderr, "possible keyword: %s\n", possibleKeyword.c_str());
 #endif
             }
@@ -233,7 +233,7 @@ bool Driver::doParse()
             // Ownership of the string is passed to BISON
             tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
             tokens[0].pushedChar = TOK_KEYWORD;
-#if defined(ODBC_VERBOSE_FLEX)
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
             fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
             fprintf(stderr, "Tokens in queue:");
             for (const auto& token : tokens)
@@ -243,7 +243,7 @@ bool Driver::doParse()
         }
         else
         {
-#if defined(ODBC_VERBOSE_FLEX)
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
             fprintf(stderr, "No keyword match found\n");
 #endif
         }

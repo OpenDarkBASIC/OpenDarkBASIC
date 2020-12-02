@@ -18,7 +18,7 @@
     #include "odb-compiler/parsers/keywords/Scanner.hpp"
     #include "odb-util/Str.hpp"
 
-    #if defined(ODBC_VERBOSE_FLEX)
+    #if defined(ODBCOMPILER_VERBOSE_FLEX)
     #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
     #else
     #   define dbg(text)

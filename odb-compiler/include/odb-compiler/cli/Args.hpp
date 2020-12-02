@@ -1,11 +1,16 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include <vector>
 #include <string>
+#include <memory>
+
+namespace odb {
+    class Plugin;
+}
 
 class Args
 {
@@ -13,14 +18,17 @@ public:
     typedef bool (Args::*HandlerFunc)(const std::vector<std::string>& args);
 
     bool parse(int argc, char** argv);
-
     int parseFullOption(int argc, char** argv);
     int parseShortOptiones(int argc, char** argv);
 
+    // Global commands
     bool disableBanner(const std::vector<std::string>& args);
 
+    // Sequential commands
     bool printHelp(const std::vector<std::string>& args);
     bool setSDKRootDir(const std::vector<std::string>& args);
+    bool setSDKType(const std::vector<std::string>& args);
+    bool setAdditionalPluginsDir(const std::vector<std::string>& args);
     bool printSDKRootDir(const std::vector<std::string>& args);
     bool parseDBA(const std::vector<std::string>& args);
     bool dumpASTDOT(const std::vector<std::string>& args);
@@ -30,11 +38,19 @@ public:
     bool dumpkWNames(const std::vector<std::string>& args);
 
 private:
-    odb::KeywordDB keywordDB_;
-    odb::KeywordMatcher keywordMatcher_;
-    odb::ast::Node* ast_ = nullptr;
+    bool loadPluginsFromDirOrFile(const std::string& dir);
+
+private:
+    bool printBanner_ = true;
+    bool kwIndexDirty_ = true;
+    bool kwMatcherDirty_ = true;
+
     std::string programName_;
     std::string sdkRootDir_;
-    bool sdkRootDirChanged_ = true;
-    bool printBanner_ = true;
+    std::string sdkType_;
+    std::vector<std::unique_ptr<odb::Plugin>> plugins_;
+
+    odb::KeywordIndex kwIndex_;
+    odb::KeywordMatcher kwMatcher_;
+    odb::ast::Node* ast_ = nullptr;
 };

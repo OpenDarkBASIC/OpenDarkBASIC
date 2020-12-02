@@ -7,13 +7,13 @@
 #include <cstdarg>
 
 namespace odb {
-class KeywordDB;
+class KeywordIndex;
 namespace kw {
 
 class Driver
 {
 public:
-    ODBCOMPILER_PUBLIC_API Driver(KeywordDB* targetDB);
+    ODBCOMPILER_PUBLIC_API Driver(KeywordIndex* targetDB);
     ODBCOMPILER_PUBLIC_API ~Driver();
 
     ODBCOMPILER_PUBLIC_API bool parseFile(const std::string& fileName);
@@ -43,7 +43,7 @@ private:
     const std::string* activeString_ = nullptr;
     FILE* activeFilePtr_ = nullptr;
 
-    KeywordDB* db_ = nullptr;
+    KeywordIndex* kwMap_ = nullptr;
     kwscan_t scanner_ = nullptr;
     kwpstate* parser_ = nullptr;
 

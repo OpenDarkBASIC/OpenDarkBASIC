@@ -16,50 +16,50 @@ using namespace odb;
 
 TEST_F(NAME, print_command)
 {
-    db.addKeyword({"print", "", {}, ""});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"print", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "print \"hello world\"\n"), IsTrue());
 }
 
 TEST_F(NAME, command_with_spaces)
 {
-    db.addKeyword({"make object sphere", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"make object sphere", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "make object sphere 1, 10\n"), IsTrue());
 }
 
 TEST_F(NAME, randomize_timer)
 {
-    db.addKeyword({"randomize", "", {}, false});
-    db.addKeyword({"timer", "", {}, true});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"randomize", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"timer", "", "", {}, {Keyword::Type::Integer}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "randomize timer()\n"), IsTrue());
 }
 
 TEST_F(NAME, load_3d_sound)
 {
-    db.addKeyword({"load 3dsound", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"load 3dsound", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "load 3dsound \"howl.wav\",s\n"), IsTrue());
 }
 
 TEST_F(NAME, command_with_variable_args)
 {
-    db.addKeyword({"clone sound", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"clone sound", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "clone sound s,2\n"), IsTrue());
 }
 
 TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
 {
-    db.addKeyword({"make object sphere", "", {}, false});
-    db.addKeyword({"get ground height", "", {}, true});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"make object sphere", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"get ground height", "", "", {}, {Keyword::Type::Integer}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "make object sphere get ground height(1, x, y), 10\n"), IsTrue());
 }
@@ -67,46 +67,46 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
 TEST_F(NAME, keyword_starting_with_builtin)
 {
     // "loop" is a builtin keyword
-    db.addKeyword({"loop", "", {}, false});
-    db.addKeyword({"loop sound", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"loop", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"loop sound", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString("loop sound 1\n"), IsTrue());
 }
 
 TEST_F(NAME, builtin_shadowing_keyword)
 {
     // "loop" is a builtin keyword
-    db.addKeyword({"loop", "", {}, false});
-    db.addKeyword({"loop sound", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"loop", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"loop sound", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString("do : foo() : loop"), IsTrue());
 }
 
 TEST_F(NAME, multiple_similar_keywords_with_spaces)
 {
     // "loop" is a builtin keyword
-    db.addKeyword({"set object", "", {}, false});
-    db.addKeyword({"set object speed", "", {}, false});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"set object", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"set object speed", "", "", {}, std::nullopt});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString("set object speed 1, 10\n"), IsTrue());
 }
 
 TEST_F(NAME, multiple_similar_keywords_with_spaces_2)
 {
-    db.addKeyword({"SET OBJECT AMBIENT", "", {}});
-    db.addKeyword({"SET OBJECT COLLISION ON", "", {}});
-    db.addKeyword({"SET OBJECT COLLISION OFF", "", {}});
-    db.addKeyword({"SET OBJECT COLLISION TO BOXES", "", {}});
-    db.addKeyword({"SET OBJECT", "", {}});
-    db.addKeyword({"set object collision off", "", {}});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"SET OBJECT AMBIENT", "", "", {}});
+    kwIndex.addKeyword({"SET OBJECT COLLISION ON", "", "", {}});
+    kwIndex.addKeyword({"SET OBJECT COLLISION OFF", "", "", {}});
+    kwIndex.addKeyword({"SET OBJECT COLLISION TO BOXES", "", "", {}});
+    kwIndex.addKeyword({"SET OBJECT", "", "", {}});
+    kwIndex.addKeyword({"set object collision off", "", "", {}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString("set object collision off 1\n"), IsTrue());
 }
 
 TEST_F(NAME, incomplete_keyword_at_end_of_file)
 {
-    db.addKeyword({"color object", "", {}});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"color object", "", "", {}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "function foo()\n"
         "    a = 2\n"
@@ -115,32 +115,32 @@ TEST_F(NAME, incomplete_keyword_at_end_of_file)
 
 TEST_F(NAME, keywords_with_type)
 {
-    db.addKeyword({"get dir$", "", {}, true});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"get dir$", "", "", {}, {Keyword::Type::Integer}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "OriginalDirectory$ = get dir$()"), IsTrue());
 }
 
 TEST_F(NAME, keyword_containing_builtin_in_middle)
 {
-    db.addKeyword({"set effect constant boolean", "", {}});
-    db.addKeyword({"set effect constant float", "", {}});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"set effect constant boolean", "", "", {}});
+    kwIndex.addKeyword({"set effect constant float", "", "", {}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n"), IsTrue());
 }
 
 TEST_F(NAME, keyword_variable_name)
 {
-    db.addKeyword({"text", "", {}});
-    matcher.updateFromDB(&db);
+    kwIndex.addKeyword({"text", "", "", {}});
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "text$ as string"), IsTrue());
 }
 
 TEST_F(NAME, builtin_keyword_variable_name)
 {
-    matcher.updateFromDB(&db);
+    matcher.updateFromIndex(&kwIndex);
     ASSERT_THAT(driver->parseString(
         "string$ as string"), IsTrue());
 }

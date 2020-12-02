@@ -1,15 +1,23 @@
 #include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/keywords/KeywordDB.hpp"
-#include "odb-sdk/runtime/Plugin.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
+#include "odb-runtime/Plugin.hpp"
+
+#include <iostream>
 
 int main(int argc, char** argv)
 {
-    odb::Plugin* p = odb::Plugin::load("odb-sdk/plugins/test-plugin/test-plugin.so");
+    std::cout << "Loading plugin..." << std::endl;
+    auto p = odb::Plugin::open("odb-sdk/plugins/test-plugin/test-plugin.so");
     if (p == nullptr)
         return 1;
-    odb::KeywordDB db;
-    p->loadKeywords(&db);
-    delete p;
+
+    std::cout << "Reading keywords..." << std::endl;
+    odb::KeywordIndex kwIndex;
+    kwIndex.loadFromPlugin(*p);
+
+    for (const auto& name : kwIndex.keywordNamesAsList())
+        std::cout << name << std::endl;
+
     return 0;
 }

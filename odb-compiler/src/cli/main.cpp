@@ -1,4 +1,5 @@
 #include "odb-compiler/cli/Args.hpp"
+#include "odb-runtime/Plugin.hpp"
 #include "odb-util/Log.hpp"
 #include <cstdio>
 

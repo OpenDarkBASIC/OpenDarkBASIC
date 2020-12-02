@@ -7,17 +7,19 @@
 
 namespace odb {
 
-class KeywordDB
+class Plugin;
+
+class KeywordIndex
 {
 public:
-    ODBCOMPILER_PUBLIC_API bool loadFromDirectory(const std::string& dir);
-    ODBCOMPILER_PUBLIC_API bool loadFromFile(const std::string& fileName);
-    ODBCOMPILER_PUBLIC_API bool exists(const std::string& keyword);
+    ODBCOMPILER_PUBLIC_API bool loadFromINIFile(const std::string& fileName);
+    ODBCOMPILER_PUBLIC_API bool loadFromPlugin(const Plugin& plugin);
 
     ODBCOMPILER_PUBLIC_API bool addKeyword(Keyword keyword);
     ODBCOMPILER_PUBLIC_API Keyword* lookup(const std::string& keyword);
     ODBCOMPILER_PUBLIC_API const Keyword* lookup(const std::string& keyword) const;
 
+    ODBCOMPILER_PUBLIC_API int keywordCount() const;
     ODBCOMPILER_PUBLIC_API std::vector<Keyword> keywordsAsList() const;
     ODBCOMPILER_PUBLIC_API std::vector<std::string> keywordNamesAsList() const;
 

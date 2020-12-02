@@ -2,13 +2,13 @@
 #include "odb-compiler/parsers/keywords/Parser.y.h"
 #include "odb-compiler/parsers/keywords/Scanner.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
-#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-util/Log.hpp"
 #include <cassert>
 #include <algorithm>
 #include <functional>
 
-#if defined(ODBC_VERBOSE_BISON)
+#if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int kwdebug;
 #endif
 
@@ -22,13 +22,13 @@ namespace odb {
 namespace kw {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(KeywordDB* targetDB) :
-    db_(targetDB)
+Driver::Driver(KeywordIndex* targetDB) :
+    kwMap_(targetDB)
 {
     kwlex_init_extra(this, &scanner_);
     parser_ = kwpstate_new();
 
-#if defined(ODBC_VERBOSE_BISON)
+#if defined(ODBCOMPILER_VERBOSE_BISON)
     kwdebug = 1;
 #endif
 }
@@ -214,22 +214,24 @@ void Driver::setHelpFile(char* path)
 void Driver::finishKeyword()
 {
     Keyword keyword;
+
     keyword.name = keywordName_;
+
     if (helpFile_)
         keyword.helpFile = helpFile_;
-    keyword.returnType = hasReturnType_ ? std::optional<Keyword::Type>(Keyword::Type::Integer) : std::nullopt;
+
+    keyword.returnType = hasReturnType_ ?
+        std::optional<Keyword::Type>(Keyword::Type::Integer) : std::nullopt;
+
     for (auto& overload : currentOverloadList_)
     {
         Keyword::Overload kwOverload;
         for (auto& arg : overload)
-        {
-            kwOverload.args.emplace_back(Keyword::Arg{arg, Keyword::Type::Integer});
-            strip(kwOverload.args.back().description);
-        }
+            kwOverload.arglist.emplace_back(Keyword::Arg{Keyword::Type::Integer, arg});
         keyword.overloads.push_back(kwOverload);
     }
 
-    db_->addKeyword(std::move(keyword));
+    kwMap_->addKeyword(std::move(keyword));
 
     resetParserState();
 }

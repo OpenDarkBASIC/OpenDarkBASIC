@@ -7,7 +7,7 @@
 
 namespace odb {
 
-class KeywordDB;
+class KeywordIndex;
 
 class KeywordMatcher
 {
@@ -18,7 +18,7 @@ public:
         bool found = false;
     };
 
-    ODBCOMPILER_PUBLIC_API void updateFromDB(const KeywordDB* db);
+    ODBCOMPILER_PUBLIC_API void updateFromIndex(const KeywordIndex* db);
     ODBCOMPILER_PUBLIC_API MatchResult findLongestKeywordMatching(const std::string& str) const;
     ODBCOMPILER_PUBLIC_API int longestKeywordLength() const;
     ODBCOMPILER_PUBLIC_API int longestKeywordWordCount() const;

@@ -93,23 +93,11 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
-    "src/keywords/KeywordDB.cpp"
+    "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
     "src/parsers/db/Driver.cpp"
-<<<<<<< HEAD
-    "src/parsers/keywords/Driver.cpp"
-    "src/parsers/keywords/KeywordDB.cpp"
-    "src/parsers/keywords/KeywordMatcher.cpp"
-    "src/util/FileSystem.cpp"
-    "src/util/Log.cpp"
-    "src/util/Plugin.cpp"
-    "src/util/Str.cpp"
-    "src/util/TGCPlugin.cpp")
-target_include_directories (odbc
-=======
     "src/parsers/keywords/Driver.cpp")
 target_include_directories (odb-compiler
->>>>>>> ae030c7... Restructuring files and projects
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
@@ -128,6 +116,7 @@ target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
+        odb-runtime
         odb-util)
 
 if (${ODBCOMPILER_TESTS})

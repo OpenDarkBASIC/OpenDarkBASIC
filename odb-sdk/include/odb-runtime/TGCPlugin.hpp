@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odbc/config.hpp"
+#include "odb-sdk/runtime/config.hpp"
 #include <string>
 #include <memory>
 
@@ -16,7 +16,7 @@ public:
     TGCPlugin(TGCPlugin&& other) = default;
     ~TGCPlugin();
 
-    static std::unique_ptr<TGCPlugin> load(const char* filename);
+    static std::unique_ptr<TGCPlugin> open(const char* filename);
 
     bool loadKeywords(KeywordDB* db) const;
 

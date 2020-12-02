@@ -1,7 +1,7 @@
 #include "odb-compiler/cli/Args.hpp"
 #include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-sdk/runtime/TGCPlugin.hpp"
+#include "odb-runtime/Plugin.hpp"
 #include "odb-util/Log.hpp"
 #include <cstring>
 #include <fstream>
@@ -30,20 +30,21 @@ struct CommandHandler
 typedef std::vector<CommandHandler> CommandQueue;
 
 static Command globalSwitches[] = {
-    { "no-banner",    'n',"",                            {0, 0},  &Args::disableBanner, "Don't print the cool ASCII art banner"},
-    { "sdkroot",       0, "<path>",                      {1, 1},  &Args::setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
+    { "no-banner",    'n',"",                            {0,  0}, &Args::disableBanner, "Don't print the cool ASCII art banner"},
 };
 
 static Command sequentialCommands[] = {
-    { "help",         'h',nullptr,                       {0, 0},  &Args::printHelp, "Print this help text"},
-    { "print-sdkroot", 0, "",                            {0, 0},  &Args::printSDKRootDir, "Prints the location of the SDK"},
+    { "help",         'h',nullptr,                       {0,  0}, &Args::printHelp, "Print this help text"},
+    { "sdkroot",       0, "<path>",                      {1,  1}, &Args::setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
+    { "sdktype",       0, "<odb|dbpro>",                 {1,  1}, &Args::setSDKType, "Specify if the SDK is the original DBPro SDK, or if it is the ODB reimplementation"},
+    { "plugins",       0, "<path|file> [path|file...]",  {1, -1}, &Args::setAdditionalPluginsDir, "Add additional directories to scan for thirdparty plugins"},
+    { "print-sdkroot", 0, "",                            {0,  0}, &Args::printSDKRootDir, "Prints the location of the SDK"},
     { "parse-dba",     0, "<file> [files...]",           {1, -1}, &Args::parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
-    { "sdkroot",       0, "<path> [path...]",            {1, -1}, &Args::sdkroot, "Plugins to load keywords from and link against when building an executable."},
-    { "dump-ast-dot",  0, "[file]",                      {0, 1},  &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
-    { "dump-ast-json", 0, "[file]",                      {0, 1},  &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
-    { "dump-kw-json",  0, "[file]",                      {0, 1},  &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
-    { "dump-kw-ini",   0, "[file]",                      {0, 1},  &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
-    { "dump-kw-names", 0, "[file]",                      {0, 1},  &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
+    { "dump-ast-dot",  0, "[file]",                      {0,  1}, &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
+    { "dump-ast-json", 0, "[file]",                      {0,  1}, &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
+    { "dump-kw-json",  0, "[file]",                      {0,  1}, &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
+    { "dump-kw-ini",   0, "[file]",                      {0,  1}, &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
+    { "dump-kw-names", 0, "[file]",                      {0,  1}, &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
 };
 
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
@@ -207,10 +208,10 @@ bool Args::parse(int argc, char** argv)
 #define UP "\u001b[%dA"
 #define RIGHT "\u001b[%dC"
         fprintf(stderr, "%s", banner);
-        fprintf(stderr, UP, 1);
-        fprintf(stderr, RIGHT, 34);
-        fprintf(stderr, "github.com/TheComet/OpenDarkBASIC");
-        fprintf(stderr, RIGHT, 7);
+        fprintf(stderr, UP, 2);
+        fprintf(stderr, RIGHT, 37);
+        fprintf(stderr, "github.com/TheComet/OpenDarkBASIC\n");
+        fprintf(stderr, RIGHT, 37);
         fprintf(stderr, "Version " ODBCOMPILER_VERSION_STR "\n\n");
     }
 
@@ -258,46 +259,138 @@ bool Args::printHelp(const std::vector<std::string>& args)
     printTable(globalSwitches, N_GLOBAL_SWITCHES);
     printTable(sequentialCommands, N_EXECUTABLE_COMMANDS);
 
-    return 1;
+    return true;
 }
 
 // ----------------------------------------------------------------------------
 bool Args::disableBanner(const std::vector<std::string>& args)
 {
     printBanner_ = false;
-    return 1;
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::loadPluginsFromDirOrFile(const std::string& dirOrFile)
+{
+    std::unordered_set<std::string> pluginsToLoad;
+    if (std::filesystem::is_directory(dirOrFile))
+    {
+        for (const auto& p: std::filesystem::recursive_directory_iterator(dirOrFile))
+        {
+            if (p.path().extension() == ".dll" ||
+                p.path().extension() == ".so")
+            {
+                pluginsToLoad.emplace(p.path().string());
+            }
+        }
+    }
+    else
+    {
+        if (std::filesystem::path{dirOrFile}.extension() == ".dll" ||
+            std::filesystem::path{dirOrFile}.extension() == ".so")
+        {
+            pluginsToLoad.emplace(dirOrFile);
+        }
+    }
+
+    for (const auto& path : pluginsToLoad)
+    {
+        fprintf(stderr, "[runtime] Loading plugin `%s`\n", path.c_str());
+        auto plugin = Plugin::open(path.c_str());
+        if (!plugin)
+            return false;
+        plugins_.push_back(std::move(plugin));
+    }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
 bool Args::setSDKRootDir(const std::vector<std::string>& args)
 {
+    if (sdkRootDir_ != "")
+    {
+        fprintf(stderr, "[runtime] SDK root directory is already set to `%s'\n", sdkRootDir_.c_str());
+        return false;
+    }
+
     sdkRootDir_ = args[0];
-    sdkRootDirChanged_ = true;
-    fprintf(stderr, "[] New SDK root directory: %s\n", sdkRootDir_.c_str());
+    fprintf(stderr, "[runtime] Using SDK root directory: `%s'\n", sdkRootDir_.c_str());
+
+    if (loadPluginsFromDirOrFile(sdkRootDir_) == false)
+        return false;
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::setSDKType(const std::vector<std::string>& args)
+{
+    if (sdkType_ != "")
+    {
+        fprintf(stderr, "[runtime] SDK type is already set to `%s'\n", sdkType_.c_str());
+        return false;
+    }
+
+    sdkType_ = args[0];
+    fprintf(stderr, "[runtime] Setting SDK type to `%s'\n", sdkType_.c_str());
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::setAdditionalPluginsDir(const std::vector<std::string>& args)
+{
+    for (const auto& dirOrFile : args)
+        if (loadPluginsFromDirOrFile(dirOrFile) == false)
+            return false;
+
     return true;
 }
 
 // ----------------------------------------------------------------------------
 bool Args::printSDKRootDir(const std::vector<std::string>& args)
 {
-    fprintf(stderr, "[] SDK root directory: %s\n", sdkRootDir_.c_str());
-    return false;
+    fprintf(stderr, "[runtime] SDK root directory: `%s'\n", sdkRootDir_.c_str());
+    return true;
 }
 
 // ----------------------------------------------------------------------------
 bool Args::parseDBA(const std::vector<std::string>& args)
 {
-    if (sdkRootDirChanged_)
+    // SDK needs to be initialized before parsing
+    if (sdkType_ == "")
+        sdkType_ = "odb-sdk";
+    if (sdkRootDir_ == "")
     {
-        fprintf(stderr, "[db parser] Updating keyword index\n");
-        keywordMatcher_.updateFromDB(&keywordDB_);
-        sdkRootDirChanged_ = false;
+        sdkRootDir_ = "odb-sdk";  // Should be here if odbc is executed from build/
+        if (loadPluginsFromDirOrFile(sdkRootDir_) == false)
+            return false;
+    }
+
+    if (kwIndexDirty_)
+    {
+        fprintf(stderr, "[runtime] Loading keywords from plugins\n");
+        // TODO: This should do slightly different things depending on whether this is in TGC mode or odb-sdk mode.
+
+        for (const auto& plugin : plugins_)
+            kwIndex_.loadFromPlugin(*plugin);
+
+        fprintf(stderr, "[runtime] Loaded %d keywords\n", kwIndex_.keywordCount());
+        kwIndexDirty_ = false;
+    }
+
+    if (kwMatcherDirty_)
+    {
+        fprintf(stderr, "[db parser] Updating keyword matcher\n");
+        kwMatcher_.updateFromIndex(&kwIndex_);
+        kwMatcherDirty_ = false;
     }
 
     for (const auto& arg : args)
     {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
-        odb::db::Driver driver(&ast_, &keywordMatcher_);
+        odb::db::Driver driver(&ast_, &kwMatcher_);
         if (driver.parseFile(arg.c_str()) == false)
             return false;
     }
@@ -306,46 +399,9 @@ bool Args::parseDBA(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::sdkroot(const std::vector<std::string>& sdkroot)
-{
-    // TODO: This should do slightly different things depending on whether this is in TGC mode or odb-sdk mode.
-    
-    std::unordered_set<std::string> pluginsToLoad;
-    for (const auto &pluginPath : sdkroot)
-    {
-        if (std::filesystem::is_directory(pluginPath))
-        {
-            for (const auto &p: std::filesystem::recursive_directory_iterator(pluginPath))
-            {
-                if (p.path().extension() == ".dll")
-                {
-                    pluginsToLoad.emplace(p.path().string());
-                }
-            }
-        } else
-        {
-            if (std::filesystem::path{pluginPath}.extension() == ".dll")
-            {
-                pluginsToLoad.emplace(pluginPath);
-            }
-        }
-    }
-
-    for (const auto& path : pluginsToLoad)
-    {
-        fprintf(stderr, "[kw] Loading plugin `%s`\n", path.c_str());
-        auto plugin = TGCPlugin::load(path.c_str());
-        plugin->loadKeywords(&keywordDB_);
-        keywordMatcherDirty_ = true;
-    }
-
-    return true;
-}
-
-// ----------------------------------------------------------------------------
 bool Args::dumpASTDOT(const std::vector<std::string>& args)
 {
-#if defined(ODBC_DOT_EXPORT)
+#if defined(ODBCOMPILER_DOT_EXPORT)
     if (ast_ == nullptr)
     {
         fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
@@ -366,14 +422,14 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
     else
         fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format\n");
 
-    odbc::ast::dumpToDOT(outFile, ast_);
+    odb::ast::dumpToDOT(outFile, ast_);
 
     if (args.size())
         fclose(outFile);
 
     return true;
 #else
-    fprintf(stderr, "Error: odbclib was built without DOT export support. Recompile with -DODBC_DOT_EXPORT=ON.\n");
+    fprintf(stderr, "Error: odb-compiler was built without DOT export support. Recompile with -DODBCOMPILER_DOT_EXPORT=ON.\n");
     return false;
 #endif
 }
@@ -412,7 +468,7 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWJSON(const std::vector<std::string>& args)
 {
-    auto keywords = keywordDB_.keywordsAsList();
+    auto keywords = kwIndex_.keywordsAsList();
     std::sort(keywords.begin(), keywords.end(), [](const Keyword& a, const Keyword& b) { return a.name < b.name; });
 
     log::data("{\n");
@@ -426,11 +482,11 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
             log::data("      {\n");
             log::data("        \"returnType\": \"%s\",\n", keyword->returnType.has_value() ? std::string{(char)keyword->returnType.value()}.c_str() : "void");
             log::data("        \"args\": [");
-            auto arg = overload->args.begin();
-            if (arg != overload->args.end())
-                log::data("\"%s\"", (*arg++).description.c_str());
-            while (arg != overload->args.end())
-                log::data(", \"%s\"", (*arg++).description.c_str());
+            auto arg = overload->arglist.begin();
+            if (arg != overload->arglist.end())
+                log::data("\"%s\"", (*arg++).name.c_str());
+            while (arg != overload->arglist.end())
+                log::data(", \"%s\"", (*arg++).name.c_str());
             log::data("]\n");
             log::data("      }%s\n", overload + 1 != keyword->overloads.end() ? ", " : "");
         }
@@ -446,7 +502,7 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWINI(const std::vector<std::string> &args)
 {
-    auto keywords = keywordDB_.keywordsAsList();
+    auto keywords = kwIndex_.keywordsAsList();
     std::sort(keywords.begin(), keywords.end(), [](const Keyword &a, const Keyword &b) { return a.name < b.name; });
 
     log::data("[LINKS]\n");
@@ -460,13 +516,13 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
             if (keyword.returnType.has_value())
                 log::data("(");
 
-            auto arg = overload.args.begin();
-            if (arg != overload.args.end())
-                log::data("%s", (*arg++).description.c_str());
+            auto arg = overload.arglist.begin();
+            if (arg != overload.arglist.end())
+                log::data("%s", (*arg++).name.c_str());
             else
                 log::data("*no parameters*");
-            while (arg != overload.args.end())
-                log::data(", %s", (*arg++).description.c_str());
+            while (arg != overload.arglist.end())
+                log::data(", %s", (*arg++).name.c_str());
 
             if (keyword.returnType)
                 log::data(")");
@@ -483,7 +539,7 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWNames(const std::vector<std::string>& args)
 {
-    auto keywords = keywordDB_.keywordNamesAsList();
+    auto keywords = kwIndex_.keywordNamesAsList();
     std::sort(keywords.begin(), keywords.end(), [](const std::string& a,const  std::string& b) { return a < b; });
     for (const auto& keyword : keywords)
     {

@@ -21,7 +21,7 @@
 #include "odb-util/Str.hpp"
 
 #define driver (static_cast<odb::db::Driver*>(dbget_extra(yyg)))
-#if defined(ODBC_VERBOSE_FLEX)
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
 #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)
 #else
 #   define dbg(text)

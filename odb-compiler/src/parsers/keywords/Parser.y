@@ -45,6 +45,9 @@
 
 %define api.prefix {kw}
 
+/* Tell bison where and how it should include the generated header file */
+%define api.header.include {"odb-compiler/parsers/keywords/Parser.y.h"}
+
 /*
  * These two options are related to Flex's %option reentrant, These options add an argument to
  * each of the yylex() call and the yyparse() method, respectively.

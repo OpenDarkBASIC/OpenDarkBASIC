@@ -1,6 +1,6 @@
 #include <gmock/gmock.h>
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
 
 #define NAME kw_matcher
 
@@ -34,13 +34,13 @@ TEST_F(NAME, empty_db)
 
 TEST_F(NAME, exact_string)
 {
-    KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, ""});
-    db.addKeyword({"randomize", "", {}, ""});
-    db.addKeyword({"randomize matrix", "", {}, ""});
-    db.addKeyword({"randomize mesh", "", {}, ""});
-    db.addKeyword({"read", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"projection matrix4", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize matrix", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize mesh", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"read", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize");
 
@@ -50,13 +50,13 @@ TEST_F(NAME, exact_string)
 
 TEST_F(NAME, trailing_space)
 {
-    KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, ""});
-    db.addKeyword({"randomize", "", {}, ""});
-    db.addKeyword({"randomize matrix", "", {}, ""});
-    db.addKeyword({"randomize mesh", "", {}, ""});
-    db.addKeyword({"read", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"projection matrix4", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize matrix", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize mesh", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"read", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize ");
 
@@ -66,13 +66,13 @@ TEST_F(NAME, trailing_space)
 
 TEST_F(NAME, longer_symbol)
 {
-    KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, ""});
-    db.addKeyword({"randomize", "", {}, ""});
-    db.addKeyword({"randomize matrix", "", {}, ""});
-    db.addKeyword({"randomize mesh", "", {}, ""});
-    db.addKeyword({"read", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"projection matrix4", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize matrix", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize mesh", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"read", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomized");
 
@@ -82,13 +82,13 @@ TEST_F(NAME, longer_symbol)
 
 TEST_F(NAME, match_longer_string_to_shorter_command)
 {
-    KeywordDB db;
-    db.addKeyword({"projection matrix4", "", {}, ""});
-    db.addKeyword({"randomize", "", {}, ""});
-    db.addKeyword({"randomize matrix", "", {}, ""});
-    db.addKeyword({"randomize mesh", "", {}, ""});
-    db.addKeyword({"read", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"projection matrix4", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize matrix", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"randomize mesh", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"read", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize timer");
 
@@ -98,9 +98,9 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
 
 TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 {
-    KeywordDB db;
-    db.addKeyword({"dec", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"dec", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("decalmax");
 
@@ -110,11 +110,11 @@ TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 
 TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
 {
-    KeywordDB db;
-    db.addKeyword({"DELETE OBJECT COLLISION BOX", "", {}, ""});
-    db.addKeyword({"DELETE OBJECT", "", {}, ""});
-    db.addKeyword({"DELETE OBJECTS", "", {}, ""});
-    matcher->updateFromDB(&db);
+    KeywordIndex kwIndex;
+    kwIndex.addKeyword({"DELETE OBJECT COLLISION BOX", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"DELETE OBJECT", "", "", {}, std::nullopt});
+    kwIndex.addKeyword({"DELETE OBJECTS", "", "", {}, std::nullopt});
+    matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("delete object 100");
 

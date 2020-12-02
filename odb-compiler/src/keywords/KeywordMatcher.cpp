@@ -1,5 +1,5 @@
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/keywords/KeywordDB.hpp"
+#include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-util/Str.hpp"
 #include <algorithm>
 #include <iostream>
@@ -22,7 +22,7 @@ static bool charIsSymbolToken(char c)
 }
 
 // ----------------------------------------------------------------------------
-void KeywordMatcher::updateFromDB(const KeywordDB* db)
+void KeywordMatcher::updateFromIndex(const KeywordIndex* db)
 {
     longestKeywordLength_ = 0;
     longestKeywordWordCount_ = 0;

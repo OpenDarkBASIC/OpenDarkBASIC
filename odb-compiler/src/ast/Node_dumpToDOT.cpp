@@ -4,7 +4,7 @@
 namespace odb {
 namespace ast {
 
-#ifdef ODBC_DOT_EXPORT
+#ifdef ODBCOMPILER_DOT_EXPORT
 
 /*
 // ----------------------------------------------------------------------------
