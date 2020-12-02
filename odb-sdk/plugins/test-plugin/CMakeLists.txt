@@ -1,11 +1,12 @@
-project ("test-plugin"
-    VERSION 0.0.1)
+include (ODBPlugin)
 
-add_library (test-plugin SHARED
-    "src/print.c")
-target_include_directories (test-plugin
-    PRIVATE
+project ("test-plugin"
+    VERSION 0.0.1
+    LANGUAGES C)
+
+odb_add_plugin (test-plugin
+    SOURCES
+        "src/test_command.c"
+    INCLUDE_DIRECTORIES
         "include")
-set_target_properties (test-plugin
-    PROPERTIES
-        PREFIX "")
+
