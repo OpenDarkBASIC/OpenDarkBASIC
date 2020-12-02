@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-util/config.hpp"
+#include "odb-sdk/config.hpp"
 
 namespace odb {
 

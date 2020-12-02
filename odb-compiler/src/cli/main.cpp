@@ -1,6 +1,6 @@
 #include "odb-compiler/cli/Args.hpp"
-#include "odb-runtime/Plugin.hpp"
-#include "odb-util/Log.hpp"
+#include "odb-sdk/Plugin.hpp"
+#include "odb-sdk/Log.hpp"
 #include <cstdio>
 
 // ----------------------------------------------------------------------------

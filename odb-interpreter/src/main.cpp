@@ -1,7 +1,7 @@
 #include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-runtime/Plugin.hpp"
+#include "odb-sdk/Plugin.hpp"
 
 #include <iostream>
 

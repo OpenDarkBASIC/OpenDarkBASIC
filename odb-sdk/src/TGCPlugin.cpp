@@ -1,10 +1,10 @@
-#include "odb-runtime/TGCPlugin.hpp"
+#include "odb-sdk/TGCPlugin.hpp"
 #include <iostream>
 #include <cassert>
 #include <algorithm>
 #include <filesystem>
 
-#ifdef ODBRUNTIME_PLATFORM_WIN32
+#ifdef ODBSDK_PLATFORM_WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #endif
@@ -28,7 +28,7 @@ void split(const std::string &str, Container &cont,
     cont.push_back(str.substr(previous, current - previous));
 }
 
-#ifdef ODBRUNTIME_PLATFORM_WIN32
+#ifdef ODBSDK_PLATFORM_WIN32
 std::vector<std::string> extractStringTableFromPEFile(HMODULE hModule)
 {
     std::vector<std::string> stringTableEntries;
@@ -52,7 +52,7 @@ std::vector<std::string> extractStringTableFromPEFile(HMODULE hModule)
 // ----------------------------------------------------------------------------
 std::unique_ptr<TGCPlugin> TGCPlugin::open(const char* filename)
 {
-#ifdef ODBRUNTIME_PLATFORM_WIN32
+#ifdef ODBSDK_PLATFORM_WIN32
     HMODULE hModule = LoadLibraryExA(filename, nullptr, LOAD_LIBRARY_AS_DATAFILE);
     if (!hModule)
     {
@@ -70,7 +70,7 @@ std::unique_ptr<TGCPlugin> TGCPlugin::open(const char* filename)
 // ----------------------------------------------------------------------------
 TGCPlugin::~TGCPlugin()
 {
-#ifdef ODBRUNTIME_PLATFORM_WIN32
+#ifdef ODBSDK_PLATFORM_WIN32
     FreeLibrary(static_cast<HMODULE>(handle_));
 #endif
 }
@@ -78,7 +78,7 @@ TGCPlugin::~TGCPlugin()
 // ----------------------------------------------------------------------------
 bool TGCPlugin::loadKeywords(KeywordDB* db) const
 {
-#ifdef ODBRUNTIME_PLATFORM_WIN32
+#ifdef ODBSDK_PLATFORM_WIN32
     std::vector<std::string> stringTableEntries = extractStringTableFromPEFile(static_cast<HMODULE>(handle_));
     if (stringTableEntries.empty())
     {

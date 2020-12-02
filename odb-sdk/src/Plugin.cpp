@@ -1,9 +1,9 @@
-#include "odb-runtime/Plugin.hpp"
+#include "odb-sdk/Plugin.hpp"
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
 
-#if defined(ODBRUNTIME_PLATFORM_LINUX)
+#if defined(ODBSDK_PLATFORM_LINUX)
 #include <dlfcn.h>
 #include <link.h>
 #include <elf.h>
@@ -11,7 +11,7 @@
 
 namespace odb {
 
-#if defined(ODBRUNTIME_PLATFORM_LINUX)
+#if defined(ODBSDK_PLATFORM_LINUX)
 struct PluginPlatformData
 {
     void* handle;
@@ -28,7 +28,7 @@ std::unique_ptr<Plugin> Plugin::open(const char* filename)
 {
     auto data = std::make_unique<PluginPlatformData>();
 
-#if defined(ODBRUNTIME_PLATFORM_LINUX)
+#if defined(ODBSDK_PLATFORM_LINUX)
     data->handle = dlopen(filename, RTLD_NOW);
     if (data->handle == nullptr)
         return nullptr;
@@ -91,7 +91,7 @@ Plugin::Plugin(std::unique_ptr<PluginPlatformData> data) :
 // ----------------------------------------------------------------------------
 Plugin::~Plugin()
 {
-#if defined(ODBRUNTIME_PLATFORM_LINUX)
+#if defined(ODBSDK_PLATFORM_LINUX)
     dlclose(data_->handle);
 #endif
 }

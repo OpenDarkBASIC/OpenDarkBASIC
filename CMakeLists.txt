@@ -21,7 +21,6 @@ elseif (UNIX)
 endif ()
 
 add_subdirectory ("thirdparty/googletest")
-add_subdirectory ("odb-util")
 add_subdirectory ("odb-sdk")
 add_subdirectory ("odb-compiler")
 add_subdirectory ("odb-interpreter")

@@ -9,42 +9,44 @@ include (TestVisibilityMacros)
 # Configuration
 ###############################################################################
 
-set (ODBRUNTIME_LIB_TYPE "SHARED" CACHE STRING "Build either as SHARED or STATIC library")
+set (ODBSDK_LIB_TYPE "SHARED" CACHE STRING "Build either as SHARED or STATIC library")
 
 test_visibility_macros (
-    ODBRUNTIME_API_EXPORT
-    ODBRUNTIME_API_IMPORT
-    ODBRUNTIME_API_LOCAL)
+    ODBSDK_API_EXPORT
+    ODBSDK_API_IMPORT
+    ODBSDK_API_LOCAL)
 
-configure_file ("templates/config.hpp.in" "include/odb-sdk/runtime/config.hpp")
+configure_file ("templates/config.hpp.in" "include/odb-sdk/config.hpp")
 
 ###############################################################################
 # Library definition
 ###############################################################################
 
-add_library (odb-runtime ${ODBRUNTIME_LIB_TYPE}
+add_library (odb-sdk ${ODBSDK_LIB_TYPE}
+    "src/FileSystem.cpp"
+    "src/Log.cpp"
     "src/Plugin.cpp"
-    "src/TGCPlugin.cpp")
-target_include_directories (odb-runtime
+    "src/TGCPlugin.cpp"
+    "src/Str.cpp")
+target_include_directories (odb-sdk
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
         $<INSTALL_INTERFACE:include>)
-target_compile_definitions (odb-runtime
+target_compile_definitions (odb-sdk
     PRIVATE
         ODBSDK_BUILDING)
-target_compile_options (odb-runtime
+target_compile_options (odb-sdk
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-target_compile_features (odb-runtime
+target_compile_features (odb-sdk
     PUBLIC cxx_std_17)
 
 if (UNIX)
     find_package (DL REQUIRED)
-    target_link_libraries (odb-runtime PRIVATE DL::DL)
+    target_link_libraries (odb-sdk PRIVATE DL::DL)
 endif ()
 
 add_subdirectory ("plugins")
-

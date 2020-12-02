@@ -116,8 +116,7 @@ target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
-        odb-runtime
-        odb-util)
+        odb-sdk)
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
@@ -145,7 +144,6 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
-            odbc
             gmock
             odb-compiler
             $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)

@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ResolveArrayFuncAmbiguity.hpp"
 #include "odb-compiler/ast/Node.hpp"
-#include "odb-util/Log.hpp"
+#include "odb-sdk/Log.hpp"
 #include <cassert>
 
 namespace odb {

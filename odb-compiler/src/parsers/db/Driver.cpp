@@ -3,9 +3,9 @@
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/ast/Node.hpp"
-#include "odb-util/Log.hpp"
-#include "odb-util/Str.hpp"
-#include "odb-util/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
+#include "odb-sdk/Str.hpp"
+#include "odb-sdk/FileSystem.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>

@@ -3,7 +3,7 @@
 #include "odb-compiler/parsers/keywords/Scanner.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-util/Log.hpp"
+#include "odb-sdk/Log.hpp"
 #include <cassert>
 #include <algorithm>
 #include <functional>

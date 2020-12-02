@@ -1,8 +1,8 @@
 #include "odb-compiler/cli/Args.hpp"
 #include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-runtime/Plugin.hpp"
-#include "odb-util/Log.hpp"
+#include "odb-sdk/Plugin.hpp"
+#include "odb-sdk/Log.hpp"
 #include <cstring>
 #include <fstream>
 #include <algorithm>

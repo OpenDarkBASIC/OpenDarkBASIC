@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-sdk/runtime/config.hpp"
+#include "odb-sdk/config.hpp"
 #include <string>
 #include <memory>
 

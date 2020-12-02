@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
-#include "odb-util/Str.hpp"
+#include "odb-sdk/Str.hpp"
 #include <cstdlib>
 #include <cstring>
 #include <cassert>

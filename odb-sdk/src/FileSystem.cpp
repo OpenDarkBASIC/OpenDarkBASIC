@@ -1,18 +1,18 @@
-#include "odbc/util/FileSystem.hpp"
+#include "odb-sdk/FileSystem.hpp"
 
-#if defined(ODBC_PLATFORM_WIN32)
+#if defined(ODBSDK_PLATFORM_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <io.h>
-#elif defined(ODBC_PLATFORM_MACOS) || defined(ODBC_PLATFORM_LINUX)
+#elif defined(ODBSDK_PLATFORM_MACOS) || defined(ODBSDK_PLATFORM_LINUX)
 #include <unistd.h>
 #endif
 
-namespace odbc {
+namespace odb {
 
 // ----------------------------------------------------------------------------
 FILE* dupFilePointer(FILE* file)
 {
-#if defined(ODBC_PLATFORM_WIN32)
+#if defined(ODBSDK_PLATFORM_WIN32)
     FILE* newFp;
     int fd = _fileno(file);
     int newFd = _dup(fd);
@@ -26,7 +26,7 @@ FILE* dupFilePointer(FILE* file)
 
     fdopen_failed : _close(newFd);
     dup_failed    : return nullptr;
-#elif defined(ODBC_PLATFORM_MACOS) || defined(ODBC_PLATFORM_LINUX)
+#elif defined(ODBSDK_PLATFORM_MACOS) || defined(ODBSDK_PLATFORM_LINUX)
     FILE* newFp;
     int fd = fileno(file);
     int newFd = dup(fd);

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <memory>
-#include "odb-sdk/runtime/config.hpp"
+#include "odb-sdk/config.hpp"
 
 namespace odb {
 

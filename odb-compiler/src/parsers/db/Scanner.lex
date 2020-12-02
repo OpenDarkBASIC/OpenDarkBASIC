@@ -18,7 +18,7 @@
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-util/Str.hpp"
+#include "odb-sdk/Str.hpp"
 
 #define driver (static_cast<odb::db::Driver*>(dbget_extra(yyg)))
 #if defined(ODBCOMPILER_VERBOSE_FLEX)

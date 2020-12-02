@@ -5,7 +5,7 @@
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
     #include "odb-compiler/ast/Node.hpp"
-    #include "odb-util/Str.hpp"
+    #include "odb-sdk/Str.hpp"
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
     #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
