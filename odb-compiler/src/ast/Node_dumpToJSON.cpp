@@ -12,7 +12,7 @@ static void doIndent(FILE* fp, int count)
 }
 
 // ----------------------------------------------------------------------------
-int dumpToJSON(FILE* fp, Node* node, int indent)
+int dumpToJSON(FILE* fp, const Node* node, int indent)
 {
 #define IND \
     doIndent(fp, indent);

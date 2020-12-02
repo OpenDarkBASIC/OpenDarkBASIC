@@ -163,7 +163,11 @@ Node* newStringLiteral(char* s, const DBLTYPE* loc)    { literal_value_t value; 
 Node* newAssignment(Node* symbol, Node* expr, const DBLTYPE* loc)
 {
     ASSERT_SYMBOL_RANGE(symbol);
+
     Node* ass = (Node*)malloc(sizeof *ass);
+    if (ass == nullptr)
+        return nullptr;
+
     initInfo(ass, NT_ASSIGNMENT, loc);
     linkNode(ass, assignment.symbol, symbol);
     linkNode(ass, assignment.expr, expr);
@@ -413,8 +417,8 @@ Node* newKeyword(char* name, Node* arglist, const DBLTYPE* loc)
     if (node == nullptr)
         return nullptr;
 
-    node->info.type = NT_SYM_KEYWORD;
-    node->sym.keyword.arglist = arglist;
+    initInfo(node, NT_SYM_KEYWORD, loc);
+    linkNode(node, sym.keyword.arglist, arglist);
     return node;
 }
 

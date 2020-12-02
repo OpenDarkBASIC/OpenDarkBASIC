@@ -397,10 +397,10 @@ union Node {
 };
 
 #ifdef ODBCOMPILER_DOT_EXPORT
-ODBCOMPILER_PUBLIC_API void dumpToDOT(FILE* fp, Node* root);
+ODBCOMPILER_PUBLIC_API void dumpToDOT(FILE* fp, const Node* root);
 #endif
 
-ODBCOMPILER_PUBLIC_API int dumpToJSON(FILE* fp, Node* root, int indent=0);
+ODBCOMPILER_PUBLIC_API int dumpToJSON(FILE* fp, const Node* root, int indent=0);
 ODBCOMPILER_PUBLIC_API void freeNodeRecursive(Node* root);
 
 Node* newOp(Node* left, Node* right, NodeType op, const DBLTYPE* loc);

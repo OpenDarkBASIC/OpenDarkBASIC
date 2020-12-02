@@ -5,7 +5,6 @@ namespace odb {
 namespace ast {
 
 #ifdef ODBCOMPILER_DOT_EXPORT
-
 /*
 // ----------------------------------------------------------------------------
 static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
@@ -13,7 +12,7 @@ static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
     (*guid)++;
     switch (node->info.type)
     {
-#define X(type, name, str) case type:
+#define X(type, name, str, left, right) case type:
         NODE_TYPE_OP_LIST {
             int guidLeft = dumpToDOTRecursive(os, guid, node->op.base.left);
             int guidRight = dumpToDOTRecursive(os, guid, node->op.base.right);
@@ -277,8 +276,8 @@ static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
 }*/
 
 // ----------------------------------------------------------------------------
-typedef std::unordered_map<Node*, int> GUIDMap;
-static void calculateGUIDs(Node* node, int* guid, GUIDMap* map)
+typedef std::unordered_map<const Node*, int> GUIDMap;
+static void calculateGUIDs(const Node* node, int* guid, GUIDMap* map)
 {
     map->emplace(node, (*guid)++);
     if (node->base.left)
@@ -286,7 +285,7 @@ static void calculateGUIDs(Node* node, int* guid, GUIDMap* map)
     if (node->base.right)
         calculateGUIDs(node->base.right, guid, map);
 }
-static void calculateGUIDs(Node* node, GUIDMap* map)
+static void calculateGUIDs(const Node* node, GUIDMap* map)
 {
     int guid = 1;
     calculateGUIDs(node, &guid, map);
@@ -299,7 +298,7 @@ static const char* connectionTable[] = {
     NODE_TYPE_LIST
 #undef X
 };
-static void dumpConnections(FILE* fp, const GUIDMap& guids, Node* node)
+static void dumpConnections(FILE* fp, const GUIDMap& guids, const Node* node)
 {
     if (node->base.left)
     {
@@ -322,7 +321,7 @@ static const char* nodeNames[] = {
 #undef X
 };
 
-static void dumpNames(FILE* fp, const GUIDMap& guids, Node* node)
+static void dumpNames(FILE* fp, const GUIDMap& guids, const Node* node)
 {
     fprintf(fp, "N%d [label=\"%s\"];\n", guids.at(node), nodeNames[node->info.type]);
 
@@ -332,7 +331,7 @@ static void dumpNames(FILE* fp, const GUIDMap& guids, Node* node)
         dumpNames(fp, guids, node->base.right);
 }
 
-void dumpToDOT(FILE* fp, Node* root)
+void dumpToDOT(FILE* fp, const Node* root)
 {
     GUIDMap guids;
     calculateGUIDs(root, &guids);

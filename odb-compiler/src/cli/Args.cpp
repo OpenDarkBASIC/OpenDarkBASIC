@@ -197,8 +197,13 @@ bool Args::parse(int argc, char** argv)
         i += processed;
     }
 
+    // If help appears anywhere, print help and exit
+    for (const auto& command : sequentialCommandQueue)
+        if (command.func == &Args::printHelp)
+            return (this->*command.func)(command.args);
+
     // Process all global commands first
-    for (auto& command : globalCommandQueue)
+    for (const auto& command : globalCommandQueue)
         if ((this->*command.func)(command.args) == false)
             return false;
 
@@ -216,7 +221,7 @@ bool Args::parse(int argc, char** argv)
     }
 
     // Process all sequential commands
-    for (auto& command : sequentialCommandQueue)
+    for (const auto& command : sequentialCommandQueue)
         if ((this->*command.func)(command.args) == false)
             return false;
 

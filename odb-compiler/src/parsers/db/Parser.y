@@ -448,7 +448,7 @@ expr
   | arglist
   ;
 arglist
-  : expr ADD expr                                { $$ = newOp($1, $3,  NT_OP_ADD, &yylloc); }
+  : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD, &yylloc); }
   | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB, &yylloc); }
   | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL, &yylloc); }
   | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV, &yylloc); }
