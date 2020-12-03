@@ -1,3 +1,4 @@
+
 project ("odb-compiler"
     LANGUAGES C CXX
     VERSION 0.0.1)
@@ -89,6 +90,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
+    "src/ast/OldNode.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
