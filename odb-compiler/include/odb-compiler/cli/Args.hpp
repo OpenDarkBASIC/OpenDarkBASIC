@@ -3,6 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
+#include "odb-compiler/keywords/SDKType.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include <vector>
 #include <string>
@@ -47,7 +48,7 @@ private:
 
     std::string programName_;
     std::string sdkRootDir_;
-    std::string sdkType_;
+    odb::SDKType sdkType_ = odb::SDKType::ODB;
     std::vector<std::unique_ptr<odb::Plugin>> plugins_;
 
     odb::KeywordIndex kwIndex_;

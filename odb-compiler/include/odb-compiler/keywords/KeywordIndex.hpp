@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/keywords/SDKType.hpp"
 #include <unordered_map>
 #include <unordered_set>
 
@@ -13,9 +14,9 @@ class KeywordIndex
 {
 public:
     ODBCOMPILER_PUBLIC_API bool loadFromINIFile(const std::string& fileName);
-    ODBCOMPILER_PUBLIC_API bool loadFromPlugin(const Plugin& plugin);
+    ODBCOMPILER_PUBLIC_API bool loadFromPlugin(const Plugin& plugin, SDKType sdkType);
 
-    ODBCOMPILER_PUBLIC_API bool addKeyword(Keyword keyword);
+    ODBCOMPILER_PUBLIC_API bool addKeyword(const Keyword& keyword);
     ODBCOMPILER_PUBLIC_API Keyword* lookup(const std::string& keyword);
     ODBCOMPILER_PUBLIC_API const Keyword* lookup(const std::string& keyword) const;
 

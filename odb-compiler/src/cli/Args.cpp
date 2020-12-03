@@ -301,7 +301,7 @@ bool Args::loadPluginsFromDirOrFile(const std::string& dirOrFile)
     for (const auto& path : pluginsToLoad)
     {
         fprintf(stderr, "[runtime] Loading plugin `%s`\n", path.c_str());
-        auto plugin = Plugin::open(path.c_str());
+        auto plugin = Plugin::open(path.c_str(), true);
         if (!plugin)
             return false;
         plugins_.push_back(std::move(plugin));
@@ -331,15 +331,16 @@ bool Args::setSDKRootDir(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::setSDKType(const std::vector<std::string>& args)
 {
-    if (sdkType_ != "")
-    {
-        fprintf(stderr, "[runtime] SDK type is already set to `%s'\n", sdkType_.c_str());
-        return false;
+    if (args[0] == "dbpro") {
+      sdkType_ = odb::SDKType::DarkBASIC;
+    } else if (args[0] == "odb-sdk") {
+      sdkType_ = odb::SDKType::ODB;
+    } else {
+      fprintf(stderr, "[runtime] Unknown SDK type `%s'\n", args[0].c_str());
+      return false;
     }
 
-    sdkType_ = args[0];
-    fprintf(stderr, "[runtime] Setting SDK type to `%s'\n", sdkType_.c_str());
-
+    fprintf(stderr, "[runtime] Setting SDK type to `%s'\n", args[0].c_str());
     return true;
 }
 
@@ -364,8 +365,6 @@ bool Args::printSDKRootDir(const std::vector<std::string>& args)
 bool Args::parseDBA(const std::vector<std::string>& args)
 {
     // SDK needs to be initialized before parsing
-    if (sdkType_ == "")
-        sdkType_ = "odb-sdk";
     if (sdkRootDir_ == "")
     {
         sdkRootDir_ = "odb-sdk";  // Should be here if odbc is executed from build/
@@ -376,10 +375,9 @@ bool Args::parseDBA(const std::vector<std::string>& args)
     if (kwIndexDirty_)
     {
         fprintf(stderr, "[runtime] Loading keywords from plugins\n");
-        // TODO: This should do slightly different things depending on whether this is in TGC mode or odb-sdk mode.
 
         for (const auto& plugin : plugins_)
-            kwIndex_.loadFromPlugin(*plugin);
+            kwIndex_.loadFromPlugin(*plugin, sdkType_);
 
         fprintf(stderr, "[runtime] Loaded %d keywords\n", kwIndex_.keywordCount());
         kwIndexDirty_ = false;

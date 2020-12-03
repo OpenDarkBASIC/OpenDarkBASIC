@@ -1,14 +1,15 @@
 #pragma once
 
-#include <memory>
 #include "odb-sdk/config.hpp"
+#include <memory>
+#include <string>
 
 namespace odb {
 
 struct PluginPlatformData;
 class KeywordIndex;
 
-class Plugin
+class ODBSDK_PUBLIC_API Plugin
 {
 public:
     Plugin() = delete;
@@ -18,8 +19,11 @@ public:
 
     /*!
      * @brief Attempts to load the specified shared library or DLL.
+     * @arg openAsDataFile If this is set to true, then this plugin is loaded as data only, rather
+     * than being loaded as executable. Symbol addresses from data only plugins will raise a
+     * read-only access violation when called.
      */
-    static std::unique_ptr<Plugin> open(const char* filename);
+    static std::unique_ptr<Plugin> open(const char* filename, bool openAsDataFile = false);
 
     /*!
      * @brief The name of the plugin.
@@ -43,8 +47,18 @@ public:
      */
     const char* getSymbolAt(int idx) const;
 
+    /*!
+     * @brief Returns the total number of strings present in the string table.
+     */
+    int getStringTableSize() const;
+
+    /*!
+     * @brief Returns a string at the specified index in the string table.
+     */
+    std::string getStringTableEntryAt(int idx) const;
+
 private:
-    Plugin(std::unique_ptr<PluginPlatformData> data);
+    explicit Plugin(std::unique_ptr<PluginPlatformData> data);
     std::unique_ptr<PluginPlatformData> data_;
 };
 
