@@ -26,6 +26,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/FileSystem.cpp"
     "src/Log.cpp"
     "src/Plugin.cpp"
+    "src/RefCounted.cpp"
     "src/Str.cpp")
 target_include_directories (odb-sdk
     PUBLIC

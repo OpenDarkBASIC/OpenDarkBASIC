@@ -44,7 +44,7 @@
 [\t ]+                                { dbg("whitespace"); }
 "\n"                                  { dbg("newline"); return TOK_NEWLINE; }
 (?i:"no parameters")                  { dbg("no params"); return TOK_NO_PARAMS; }
-[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = odb::newCStr(yytext); return TOK_HELPFILE; }
-[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = odb::newCStr(yytext); return TOK_WORDS; }
+[a-zA-Z0-9_/\\$# ]+\.html?            { dbg("help file"); yylval->string = odb::str::newCStr(yytext); return TOK_HELPFILE; }
+[a-zA-Z0-9_$#\- ]+                    { dbg("words"); yylval->string = odb::str::newCStr(yytext); return TOK_WORDS; }
 .                                     {}
 %%

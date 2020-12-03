@@ -3,7 +3,7 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include <gmock/gmock.h>
 #include <cstdio>
 #include <filesystem>
@@ -11,6 +11,19 @@
 class ParserTestHarness : public testing::Test
 {
 public:
+    void checkParentConnectionConsistencies(const odb::ast::Node* node)
+    {
+        if (node->base.left)
+            ASSERT_THAT(node->base.left->info.parent, testing::Eq(node));
+        if (node->base.right)
+            ASSERT_THAT(node->base.right->info.parent, testing::Eq(node));
+
+        if (node->base.left)
+            checkParentConnectionConsistencies(node->base.left);
+        if (node->base.right)
+            checkParentConnectionConsistencies(node->base.right);
+    }
+
     void SetUp() override
     {
 
@@ -32,6 +45,9 @@ public:
             odb::ast::dumpToDOT(out, ast);
             fclose(out);
 #endif
+
+            if (ast)
+                checkParentConnectionConsistencies(ast);
             odb::ast::freeNodeRecursive(ast);
         }
 

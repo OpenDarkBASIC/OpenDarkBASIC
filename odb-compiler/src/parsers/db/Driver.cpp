@@ -2,13 +2,14 @@
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include "odb-sdk/FileSystem.hpp"
 #include <cassert>
 #include <cstring>
 #include <algorithm>
+#include <memory>
 
 #if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int dbdebug;
@@ -138,14 +139,14 @@ bool Driver::doParse()
         {
             case TOK_PSEUDO_STRING_SYMBOL: {
                 const char* tok = dbget_text(scanner_);
-                DBSTYPE value; value.string = newCStrRange(tok, 0, strlen(tok) - 1);
+                DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
                 tokens.push_back({TOK_SYMBOL, value, ""});
                 tokens.push_back({TOK_DOLLAR, {}, ""});
             } break;
 
             case TOK_PSEUDO_FLOAT_SYMBOL: {
                 const char* tok = dbget_text(scanner_);
-                DBSTYPE value; value.string = newCStrRange(tok, 0, strlen(tok) - 1);
+                DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
                 tokens.push_back({TOK_SYMBOL, value, ""});
                 tokens.push_back({TOK_HASH, {}, ""});
             } break;
@@ -227,11 +228,11 @@ bool Driver::doParse()
             // a single keyword now.
             for (int i = 0; i != result.tokenIdx; ++i)
                 if (tokenHasFreeableString(tokens[i].pushedChar))
-                    deleteCStr(tokens[i].pushedValue.string);
+                    str::deleteCStr(tokens[i].pushedValue.string);
             tokens.erase(tokens.begin() + 1, tokens.begin() + result.tokenIdx);
 
             // Ownership of the string is passed to BISON
-            tokens[0].pushedValue.string = newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
+            tokens[0].pushedValue.string = str::newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
             tokens[0].pushedChar = TOK_KEYWORD;
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
             fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
@@ -276,7 +277,7 @@ bool Driver::doParse()
     // May need to clean up
     for (auto& token : tokens)
         if (tokenHasFreeableString(token.pushedChar))
-            deleteCStr(token.pushedValue.string);
+            str::deleteCStr(token.pushedValue.string);
 
     // Location information doesn't yet include a file pointer or input string,
     // and location merging needs to be performed as well. Do this if parsing

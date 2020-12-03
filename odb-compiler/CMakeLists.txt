@@ -93,6 +93,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
+    "src/ast/SourceLocation.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
     "src/parsers/db/Driver.cpp"
@@ -141,6 +142,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/test_db_variables.cpp"
         "tests/src/test_kw_index.cpp"
         "tests/src/test_kw_matcher.cpp"
+        "tests/src/test_SourceLocation.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE

@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include <cstdio>
 
 namespace odb {

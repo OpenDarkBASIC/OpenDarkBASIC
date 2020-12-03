@@ -82,7 +82,7 @@ KeywordMatcher::MatchResult KeywordMatcher::findLongestKeywordMatching(const std
     while (keywordStack.size())
     {
         auto keyword = keywordStack.back();
-        if (keyword != keywords_.end() && strncicmp(str.c_str(), keyword->c_str(), keyword->length()) == 0)
+        if (keyword != keywords_.end() && str::strncicmp(str.c_str(), keyword->c_str(), keyword->length()) == 0)
             return { (int)keyword->length(), true };
         keywordStack.pop_back();
     }

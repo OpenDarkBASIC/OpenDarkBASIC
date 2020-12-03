@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-sdk/Str.hpp"
 #include <cstdlib>
@@ -97,7 +97,7 @@ static Node* dupNode(Node* other)
         NODE_TYPE_SYMBOL_LIST {
             node->sym.base.flags = other->sym.base.flags;
             node->sym.base.flag.scope = SS_LOCAL;
-            node->sym.base.name = newCStr(other->sym.base.name);
+            node->sym.base.name = str::newCStr(other->sym.base.name);
             if (node->sym.base.name == nullptr)
                 goto allocSymbolNameFailed;
         } break;

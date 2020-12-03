@@ -4,7 +4,7 @@
     #include "odb-compiler/parsers/db/Parser.y.h"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
-    #include "odb-compiler/ast/Node.hpp"
+    #include "odb-compiler/ast/OldNode.hpp"
     #include "odb-sdk/Str.hpp"
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
@@ -196,7 +196,7 @@
 %left POW
 %left LB RB
 
-%destructor { deleteCStr($$); } <string>
+%destructor { str::deleteCStr($$); } <string>
 %destructor { freeNodeRecursive($$); } <node>
 
 %start program

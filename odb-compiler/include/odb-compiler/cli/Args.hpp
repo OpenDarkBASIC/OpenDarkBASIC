@@ -4,7 +4,7 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/SDKType.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include <vector>
 #include <string>
 #include <memory>

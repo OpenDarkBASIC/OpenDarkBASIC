@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/Process.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/OldNode.hpp"
 #include <cassert>
 
 namespace odb {

@@ -85,7 +85,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string = odb::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
+    {STRING_LITERAL}    { yylval->string = odb::str::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
     {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(FLOAT_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(INTEGER_LITERAL); }
@@ -162,7 +162,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     (?:case)            { RETURN_TOKEN(CASE); }
     (?:default)         { RETURN_TOKEN(DEFAULT); }
 
-    {SYMBOL}            { yylval->string = odb::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
+    {SYMBOL}            { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 
     "#"                 { RETURN_TOKEN(HASH); }
     "$"                 { RETURN_TOKEN(DOLLAR); }
