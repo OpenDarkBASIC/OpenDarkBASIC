@@ -25,11 +25,13 @@ struct Keyword
     {
         Type type;
         std::string name;
+        std::string description;
     };
 
     struct Overload
     {
         std::vector<Arg> arglist;
+        std::string symbolName;
     };
 
     std::string name;

@@ -2,29 +2,35 @@
 #include <cstring>
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 
 #if defined(ODBSDK_PLATFORM_LINUX)
 #include <dlfcn.h>
 #include <link.h>
 #include <elf.h>
+#else
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
 #endif
 
 namespace odb {
 
-#if defined(ODBSDK_PLATFORM_LINUX)
 struct PluginPlatformData
 {
+#if defined(ODBSDK_PLATFORM_LINUX)
     void* handle;
     const ElfW(Sym)* symtab = nullptr;
     const uint32_t* hashtab = nullptr;
     const uint32_t* gnuhashtab = nullptr;
     const char* strtab = nullptr;
     size_t symsize = 0;
-};
+#else
+    HMODULE handle;
 #endif
+};
 
 // ----------------------------------------------------------------------------
-std::unique_ptr<Plugin> Plugin::open(const char* filename)
+std::unique_ptr<Plugin> Plugin::open(const char* filename, bool openAsDataFile)
 {
     auto data = std::make_unique<PluginPlatformData>();
 
@@ -75,11 +81,17 @@ std::unique_ptr<Plugin> Plugin::open(const char* filename)
         dlclose(data->handle);
         return nullptr;
     }
+#else
+    data->handle = LoadLibraryExA(filename, nullptr, openAsDataFile ? LOAD_LIBRARY_AS_DATAFILE : 0);
+    if (!data->handle)
+    {
+        auto error = GetLastError();
+        std::cerr << "Failed to load library: " << error << std::endl;
+        return nullptr;
+    }
+#endif
 
     return std::unique_ptr<Plugin>(new Plugin(std::move(data)));
-#else
-    return nullptr;
-#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -93,6 +105,8 @@ Plugin::~Plugin()
 {
 #if defined(ODBSDK_PLATFORM_LINUX)
     dlclose(data_->handle);
+#else
+    FreeLibrary(data_->handle);
 #endif
 }
 
@@ -105,7 +119,11 @@ std::string Plugin::getName() const
 // ----------------------------------------------------------------------------
 void* Plugin::lookupSymbolAddress(const char* name) const
 {
+#if defined(ODBSDK_PLATFORM_LINUX)
     return dlsym(data_->handle, name);
+#else
+    return nullptr;
+#endif
 }
 
 // ----------------------------------------------------------------------------
@@ -141,18 +159,53 @@ static int getSymbolCountInGNUHashTable(const uint32_t* hashtab)
 }
 int Plugin::getSymbolCount() const
 {
+#if defined(ODBSDK_PLATFORM_LINUX)
     return data_->gnuhashtab ?
         getSymbolCountInGNUHashTable(data_->gnuhashtab) :
         getSymbolCountInHashTable(data_->hashtab);
+#else
+    return 0;
+#endif
 }
 
 // ----------------------------------------------------------------------------
 const char* Plugin::getSymbolAt(int idx) const
 {
+#if defined(ODBSDK_PLATFORM_LINUX)
     const ElfW(Sym)* sym = reinterpret_cast<const ElfW(Sym)*>(
         reinterpret_cast<const char*>(data_->symtab) + data_->symsize * (idx+1));
 
     return data_->strtab + sym->st_name;
+#else
+    return nullptr;
+#endif
+}
+
+// ----------------------------------------------------------------------------
+int Plugin::getStringTableSize() const {
+#if defined(ODBSDK_PLATFORM_WIN32)
+    char buffer[512];
+    int stringTableSize = 0;
+    while (LoadStringA(data_->handle, stringTableSize + 1, buffer, 512) > 0)
+    {
+        stringTableSize++;
+    }
+    return stringTableSize;
+#else
+    return 0;
+#endif
+}
+
+// ----------------------------------------------------------------------------
+std::string Plugin::getStringTableEntryAt(int idx) const {
+#if defined(ODBSDK_PLATFORM_WIN32)
+    char buffer[512];
+    // String table entries are indexed from 1.
+    int size = LoadStringA(data_->handle, idx + 1, buffer, 512);
+    return std::string(buffer, size);
+#else
+    return "";
+#endif
 }
 
 }
