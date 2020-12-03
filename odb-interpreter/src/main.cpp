@@ -1,6 +1,7 @@
 #include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
+#include "odb-compiler/keywords/SDKType.hpp"
 #include "odb-sdk/Plugin.hpp"
 
 #include <iostream>
@@ -14,7 +15,7 @@ int main(int argc, char** argv)
 
     std::cout << "Reading keywords..." << std::endl;
     odb::KeywordIndex kwIndex;
-    kwIndex.loadFromPlugin(*p);
+    kwIndex.loadFromPlugin(*p, odb::SDKType::ODB);
 
     for (const auto& name : kwIndex.keywordNamesAsList())
         std::cout << name << std::endl;
