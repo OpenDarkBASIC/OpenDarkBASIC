@@ -1,21 +1,19 @@
 #include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
-#include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
-#include <unordered_set>
 #include <set>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
-namespace odb {
-namespace cmd {
+namespace odb::cmd {
 
 // ----------------------------------------------------------------------------
-DBPCommandLoader::DBPCommandLoader(const std::string& sdkRoot,
-                                   const std::vector<std::string>& pluginDirs) :
-    CommandLoader(sdkRoot, pluginDirs)
+DBPCommandLoader::DBPCommandLoader(const std::string& sdkRoot, const std::vector<std::string>& pluginDirs)
+    : CommandLoader(sdkRoot, pluginDirs)
 {
 }
 
@@ -77,6 +75,13 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
 {
 #if defined(ODBCOMPILER_PLATFORM_WIN32)
+    static const std::unordered_set<std::string> builtInCommands = {
+        "constant",     "if",          "then",    "else",   "elseif", "endif",  "while",     "endwhile", "repeat",
+        "until",        "do",          "loop",    "break",  "for",    "to",     "step",      "next",     "function",
+        "exitfunction", "endfunction", "gosub",   "return", "goto",   "select", "endselect", "case",     "endcase",
+        "default",      "dim",         "global",  "local",  "as",     "type",   "endtype",   "boolean",  "dword",
+        "word",         "byte",        "integer", "float",  "double", "string", "increment", "decrement"};
+
     std::set<std::string> stringTable;
 
     // Load string table from library. We use a set here to deal with any duplicate entries in the library.
@@ -117,7 +122,14 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
             returnType = convertTypeChar(tokens[1][0]);
             functionTypes = functionTypes.substr(1);
         }
-        std::transform(commandName.begin(), commandName.end(), commandName.begin(), [](char c) { return std::tolower(c); });
+        std::transform(commandName.begin(), commandName.end(), commandName.begin(),
+                       [](char c) { return std::tolower(c); });
+
+        // Skip built in commands.
+        if (builtInCommands.count(commandName))
+        {
+            continue;
+        }
 
         // Extract arguments.
         std::vector<std::string> argumentNames;
@@ -150,5 +162,4 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
 #endif
 }
 
-}
-}
+} // namespace odb::cmd

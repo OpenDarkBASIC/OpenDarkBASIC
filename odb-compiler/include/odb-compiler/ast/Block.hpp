@@ -14,6 +14,8 @@ class ODBCOMPILER_PUBLIC_API Block : public Node
 {
 public:
     Block(SourceLocation* location);
+    ~Block();
+
     void appendStatement(Statement* stmnt);
 
     void accept(Visitor* visitor) const override;
