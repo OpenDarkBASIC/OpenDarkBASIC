@@ -1,0 +1,32 @@
+foo = 2
+
+sync rate 60
+
+if foo = 2
+  print 2
+endif
+
+do
+ print foo
+ hello(1, 2, 3)
+ sync
+loop
+
+_func:
+print 1
+_func2:
+print 2
+gosub _func3
+return
+
+_func3:
+print 55
+return
+
+function hello(x, y, z)
+print x + y + z
+endfunction
+
+function hello2(x)
+print 1234
+endfunction

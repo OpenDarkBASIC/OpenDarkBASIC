@@ -1,0 +1,1 @@
+link.exe test.obj /defaultlib:ucrt /defaultlib:msvcrt && test.exe

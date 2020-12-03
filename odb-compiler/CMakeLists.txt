@@ -6,6 +6,8 @@ include (GNUInstallDirs)
 include (TestVisibilityMacros)
 include (CheckIncludeFile)
 
+find_package(LLVM REQUIRED CONFIG)
+
 ###############################################################################
 # Configuration
 ###############################################################################
@@ -82,18 +84,39 @@ endif ()
 # Library definition
 ###############################################################################
 
+set(LIBPE_SRCS
+    external/libpe/imports.c
+    external/libpe/error.c
+    external/libpe/libfuzzy/fuzzy.c
+    external/libpe/libfuzzy/edit_dist.c
+    external/libpe/exports.c
+    external/libpe/resources.c
+    external/libpe/utils.c
+    external/libpe/pe.c
+    external/libpe/misc.c
+    external/libpe/hashes.c
+    external/libpe/libudis86/udis86.c
+    external/libpe/libudis86/decode.c
+    external/libpe/libudis86/syn.c
+    external/libpe/libudis86/syn-att.c
+    external/libpe/libudis86/itab.c
+    external/libpe/libudis86/syn-intel.c)
+
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${BISON_DarkBASICParser_OUTPUTS}
     ${FLEX_DarkBASICScanner_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
+    #${LIBPE_SRCS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
+    "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
+    "src/ir/TGCEngineInterface.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
     "src/parsers/db/Driver.cpp"
@@ -118,6 +141,12 @@ target_compile_features (odb-compiler
 target_link_libraries (odb-compiler
     PUBLIC
         odb-sdk)
+target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
+target_include_directories (odb-compiler PUBLIC external/libpe/include)
+target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+llvm_map_components_to_libnames (llvm_libs core bitwriter x86codegen)
+target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
+target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests

@@ -1,12 +1,16 @@
 #include "odb-compiler/cli/Args.hpp"
-#include "odb-compiler/parsers/keywords/Driver.hpp"
+#include "odb-compiler/ir/Codegen.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/parsers/keywords/Driver.hpp"
 #include "odb-sdk/Plugin.hpp"
 #include "odb-sdk/Log.hpp"
 #include <cstring>
 #include <fstream>
 #include <algorithm>
+#include <iostream>
+#include <unordered_set>
 #include <filesystem>
+#include <cassert>
 #include <memory>
 
 using namespace odb;
@@ -44,7 +48,11 @@ static Command sequentialCommands[] = {
     { "dump-ast-json", 0, "[file]",                      {0,  1}, &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
     { "dump-kw-json",  0, "[file]",                      {0,  1}, &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
     { "dump-kw-ini",   0, "[file]",                      {0,  1}, &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
-    { "dump-kw-names", 0, "[file]",                      {0,  1}, &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
+    { "dump-kw-names", 0, "[file]",                      {0,  1}, &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."},
+    { "output-llvm",   0, "[file]",                      {0, 1},  &Args::outputLLVMIR, "Generates LLVM IR. The default file is stdout."},
+    { "output-llvm-bc",0, "<file>",                      {1, 1},  &Args::outputLLVMBC, "Generates LLVM bitcode."},
+    { "output-object", 0, "<file>",                      {1, 1},  &Args::outputObject, "Generates an object file suitable for linking."},
+    { "output",        0, "<file>",                      {1, 1},  &Args::outputExecutable, "Generates an executable."}
 };
 
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
@@ -66,17 +74,14 @@ static const char *banner =
 )";
 
 // ----------------------------------------------------------------------------
-static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, CommandQueue* sequentialQueue)
-{
-    char* str = &argv[0][2];  // skip "--"
-    auto processTable = [str, argc, argv](CommandQueue* queue, const Command* table, int tableSize) -> int
-    {
+static int parseFullOption(int argc, char **argv, CommandQueue *globalQueue, CommandQueue *sequentialQueue) {
+    char *str = &argv[0][2];  // skip "--"
+    auto processTable = [str, argc, argv](CommandQueue *queue, const Command *table, int tableSize) -> int {
         for (int i = 0; i != tableSize; ++i)
-            if (strcmp(str, table[i].fullOption) == 0)
-            {
-                if (argc <= table[i].argRange.l)
-                {
-                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], table[i].argRange.l, table[i].argRange.l == 1 ? "" : "s");
+            if (strcmp(str, table[i].fullOption) == 0) {
+                if (argc <= table[i].argRange.l) {
+                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], table[i].argRange.l,
+                            table[i].argRange.l == 1 ? "" : "s");
                     return -1;
                 }
 
@@ -90,8 +95,7 @@ static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, Com
     };
 
     int argsProcessed;
-    while (true)
-    {
+    while (true) {
         if ((argsProcessed = processTable(globalQueue, globalSwitches, N_GLOBAL_SWITCHES)) > 0)
             return argsProcessed;
         else if (argsProcessed == -1)
@@ -112,28 +116,23 @@ static int parseFullOption(int argc, char** argv, CommandQueue* globalQueue, Com
 }
 
 // ----------------------------------------------------------------------------
-static int parseShortOptions(int argc, char** argv, CommandQueue* globalQueue, CommandQueue* sequentialQueue)
-{
-    auto processTable = [argc, argv](CommandQueue* queue, const Command* table, int tableSize, const char* str) -> int
-    {
+static int parseShortOptions(int argc, char **argv, CommandQueue *globalQueue, CommandQueue *sequentialQueue) {
+    auto processTable = [argc, argv](CommandQueue *queue, const Command *table, int tableSize, const char *str) -> int {
         for (int i = 0; i != tableSize; ++i)
-            if (table[i].shortOption == *str)
-            {
-                if (table[i].argRange.l > 0 && str[1] != '\0')
-                {
+            if (table[i].shortOption == *str) {
+                if (table[i].argRange.l > 0 && str[1] != '\0') {
                     fprintf(stderr, "Option `-%c` must be at end of short option list (before `-%c`)\n", *str, str[1]);
                     return -1;
                 }
-                if (argc <= table[i].argRange.l)
-                {
-                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], table[i].argRange.l, table[i].argRange.l == 1 ? "" : "s");
+                if (argc <= table[i].argRange.l) {
+                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], table[i].argRange.l,
+                            table[i].argRange.l == 1 ? "" : "s");
                     return -1;
                 }
 
                 queue->push_back({});
                 queue->back().func = table[i].handler;
-                if (str[1] == '\0')
-                {
+                if (str[1] == '\0') {
                     for (int arg = 0; arg != table[i].argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
                         queue->back().args.push_back(argv[arg + 1]);
                 }
@@ -143,8 +142,7 @@ static int parseShortOptions(int argc, char** argv, CommandQueue* globalQueue, C
         return 0;
     };
 
-    for (char* str = &argv[0][1]; *str; ++str)
-    {
+    for (char *str = &argv[0][1]; *str; ++str) {
         int argsProcessed;
         if ((argsProcessed = processTable(globalQueue, globalSwitches, N_GLOBAL_SWITCHES, str)) > 1)
             return argsProcessed;
@@ -165,10 +163,8 @@ static int parseShortOptions(int argc, char** argv, CommandQueue* globalQueue, C
 }
 
 // ----------------------------------------------------------------------------
-static int parseOption(int argc, char** argv, CommandQueue* globalQueue, CommandQueue* sequentialQueue)
-{
-    if (argv[0][0] == '-')
-    {
+static int parseOption(int argc, char **argv, CommandQueue *globalQueue, CommandQueue *sequentialQueue) {
+    if (argv[0][0] == '-') {
         if (argv[0][1] == '-')
             return parseFullOption(argc, argv, globalQueue, sequentialQueue);
         else
@@ -179,8 +175,7 @@ static int parseOption(int argc, char** argv, CommandQueue* globalQueue, Command
 }
 
 // ----------------------------------------------------------------------------
-bool Args::parse(int argc, char** argv)
-{
+bool Args::parse(int argc, char **argv) {
     CommandQueue globalCommandQueue;
     CommandQueue sequentialCommandQueue;
     programName_ = argv[0];
@@ -189,8 +184,7 @@ bool Args::parse(int argc, char** argv)
     // list and the "sequential" list. One group of commands only toggle some
     // flags (such as --no-banner) whereas the other group of commands needs to
     // be executed in the order they appear in.
-    for (int i = 1; i < argc; )
-    {
+    for (int i = 1; i < argc;) {
         int processed = parseOption(argc - i, &argv[i], &globalCommandQueue, &sequentialCommandQueue);
         if (processed == 0)
             return false;
@@ -208,8 +202,7 @@ bool Args::parse(int argc, char** argv)
             return false;
 
     // Now we can print the banner (unless --no-banner was specified)
-    if (printBanner_)
-    {
+    if (printBanner_) {
 #define UP "\u001b[%dA"
 #define RIGHT "\u001b[%dC"
         fprintf(stderr, "%s", banner);
@@ -233,15 +226,12 @@ bool Args::parse(int argc, char** argv)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::printHelp(const std::vector<std::string>& args)
-{
+bool Args::printHelp(const std::vector<std::string> &args) {
     fprintf(stderr, "Usage: %s <options> <input> <output>\n", programName_.c_str());
     fprintf(stderr, "Available options:\n");
 
-    auto printTable = [](const Command* table, int tableSize)
-    {
-        for (int i = 0; i != tableSize; ++i)
-        {
+    auto printTable = [](const Command *table, int tableSize) {
+        for (int i = 0; i != tableSize; ++i) {
             int padding = 40;
 
             if (table[i].shortOption)
@@ -268,8 +258,7 @@ bool Args::printHelp(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::disableBanner(const std::vector<std::string>& args)
-{
+bool Args::disableBanner(const std::vector<std::string> &args) {
     printBanner_ = false;
     return true;
 }
@@ -390,8 +379,7 @@ bool Args::parseDBA(const std::vector<std::string>& args)
         kwMatcherDirty_ = false;
     }
 
-    for (const auto& arg : args)
-    {
+    for (const auto &arg : args) {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
         odb::db::Driver driver(&ast_, &kwMatcher_);
         if (driver.parseFile(arg.c_str()) == false)
@@ -415,12 +403,12 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
     if (args.size())
     {
         outFile = fopen(args[0].c_str(), "w");
-        if (!outFile)
-        {
+        if (!outFile) {
             fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
-            return false;
-        }
-        fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
     }
     else
         fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format\n");
@@ -438,26 +426,21 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::dumpASTJSON(const std::vector<std::string>& args)
-{
-    if (ast_ == nullptr)
-    {
+bool Args::dumpASTJSON(const std::vector<std::string> &args) {
+    if (ast_ == nullptr) {
         fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
         return false;
     }
 
-    FILE* outFile = stdout;
-    if (args.size())
-    {
+    FILE *outFile = stdout;
+    if (args.size()) {
         outFile = fopen(args[0].c_str(), "w");
-        if (!outFile)
-        {
+        if (!outFile) {
             fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
             return false;
         }
         fprintf(stderr, "[ast] Dumping AST to JSON: `%s`\n", args[0].c_str());
-    }
-    else
+    } else
         fprintf(stderr, "[ast] Dumping AST to JSON\n");
 
     odb::ast::dumpToJSON(outFile, ast_);
@@ -475,13 +458,11 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
     std::sort(keywords.begin(), keywords.end(), [](const Keyword& a, const Keyword& b) { return a.name < b.name; });
 
     log::data("{\n");
-    for (auto keyword = keywords.begin(); keyword != keywords.end(); ++keyword)
-    {
+    for (auto keyword = keywords.begin(); keyword != keywords.end(); ++keyword) {
         log::data("  \"%s\": {\n", keyword->name.c_str());
         log::data("    \"help\": \"%s\",\n", keyword->helpFile.c_str());
         log::data("    \"overloads\": [\n");
-        for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload)
-        {
+        for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload) {
             log::data("      {\n");
             log::data("        \"returnType\": \"%s\",\n", keyword->returnType.has_value() ? std::string{(char)keyword->returnType.value()}.c_str() : "void");
             log::data("        \"args\": [");
@@ -512,8 +493,7 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
     for (const auto& keyword : keywords)
     {
         log::data("%s=%s=", keyword.name.c_str(), keyword.helpFile.c_str());
-        for (const auto &overload : keyword.overloads)
-        {
+        for (const auto &overload : keyword.overloads) {
             if (keyword.overloads.size() > 1)
                 log::data("[");
             if (keyword.returnType.has_value())
@@ -550,5 +530,109 @@ bool Args::dumpkWNames(const std::vector<std::string>& args)
     }
 
     log::kwParser(log::INFO, "Keywords dumped\n");
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputLLVMIR(const std::vector<std::string> &args)
+{
+    std::ostream *os = &std::cout;
+    std::unique_ptr<std::ofstream> outfile;
+    if (!args.empty()) {
+        outfile = std::make_unique<std::ofstream>(args[0]);
+        if (!outfile->is_open()) {
+            fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+            return false;
+        }
+
+        os = outfile.get();
+        fprintf(stderr, "[ast] Writing LLVM IR to file: `%s`\n", args[0].c_str());
+    } else {
+        fprintf(stderr, "[ast] Writing LLVM IR to stdout.\n");
+    }
+
+    auto program = ir::Program::fromAst(ast_, kwIndex_);
+    ir::generateLLVMIR(*os, "input.dba", program, kwIndex_);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputLLVMBC(const std::vector<std::string> &args)
+{
+    if (args.empty())
+    {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::ofstream outfile(args[0]);
+    if (!outfile.is_open())
+    {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Writing LLVM bitcode to file: `%s`\n", args[0].c_str());
+
+    auto program = ir::Program::fromAst(ast_, kwIndex_);
+    ir::generateObjectFile(outfile, "input.dba", program, kwIndex_);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputObject(const std::vector<std::string> &args)
+{
+    if (args.empty())
+    {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::ofstream outfile(args[0], std::ios::binary);
+    if (!outfile.is_open())
+    {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", args[0].c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Creating object file: `%s`\n", args[0].c_str());
+
+    auto program = ir::Program::fromAst(ast_, kwIndex_);
+    ir::generateObjectFile(outfile, "input.dba", program, kwIndex_);
+
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool Args::outputExecutable(const std::vector<std::string> &args)
+{
+    if (args.empty())
+    {
+        fprintf(stderr, "[ast] An argument must be specified when emitting an object file.\n");
+        return false;
+    }
+
+    std::string executable_name = args[0];
+#ifdef _WIN32
+    if (executable_name.size() < 5 || executable_name.substr(executable_name.size() - 4, 4) != ".exe")
+    {
+        executable_name += ".exe";
+    }
+#endif
+
+    std::ofstream outfile(executable_name);
+    if (!outfile.is_open())
+    {
+        fprintf(stderr, "[ast] Error: Failed to open file `%s`\n", executable_name.c_str());
+        return false;
+    }
+
+    fprintf(stderr, "[ast] Created executable: `%s`\n", executable_name.c_str());
+
+    auto program = ir::Program::fromAst(ast_, kwIndex_);
+    ir::generateExecutable(outfile, "input.dba", program, kwIndex_);
+
     return true;
 }

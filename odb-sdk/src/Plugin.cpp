@@ -3,6 +3,8 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <string>
+#include <filesystem>
 
 #if defined(ODBSDK_PLATFORM_LINUX)
 #include <dlfcn.h>
@@ -17,6 +19,7 @@ namespace odb {
 
 struct PluginPlatformData
 {
+    std::string pluginName;
 #if defined(ODBSDK_PLATFORM_LINUX)
     void* handle;
     const ElfW(Sym)* symtab = nullptr;
@@ -33,6 +36,7 @@ struct PluginPlatformData
 std::unique_ptr<Plugin> Plugin::open(const char* filename, bool openAsDataFile)
 {
     auto data = std::make_unique<PluginPlatformData>();
+    data->pluginName = std::filesystem::path{filename}.filename().string();
 
 #if defined(ODBSDK_PLATFORM_LINUX)
     data->handle = dlopen(filename, RTLD_NOW);
@@ -113,7 +117,7 @@ Plugin::~Plugin()
 // ----------------------------------------------------------------------------
 std::string Plugin::getName() const
 {
-    return "";
+    return data_->pluginName;
 }
 
 // ----------------------------------------------------------------------------

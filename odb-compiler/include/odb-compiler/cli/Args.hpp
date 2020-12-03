@@ -37,6 +37,11 @@ public:
     bool dumpkWJSON(const std::vector<std::string>& args);
     bool dumpkWINI(const std::vector<std::string>& args);
     bool dumpkWNames(const std::vector<std::string>& args);
+    bool outputLLVMIR(const std::vector<std::string>& args);
+    bool outputLLVMBC(const std::vector<std::string>& args);
+    bool outputObject(const std::vector<std::string>& args);
+    bool outputExecutable(const std::vector<std::string>& args);
+
 
 private:
     bool loadPluginsFromDirOrFile(const std::string& dir);
