@@ -115,7 +115,7 @@ bool KeywordIndex::loadFromPlugin(const Plugin& plugin, SDKType sdkType)
             {
                 split(tokens[3], argumentNames, ',');
             }
-            for (int typeIdx = 0; typeIdx < functionTypes.size(); ++typeIdx)
+            for (std::size_t typeIdx = 0; typeIdx < functionTypes.size(); ++typeIdx)
             {
                 Keyword::Arg arg;
                 arg.type = convertTypeChar(functionTypes[typeIdx]);

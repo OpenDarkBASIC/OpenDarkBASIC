@@ -93,6 +93,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Node_dumpToJSON.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
+    "src/ir/Node.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
     "src/parsers/db/Driver.cpp"
