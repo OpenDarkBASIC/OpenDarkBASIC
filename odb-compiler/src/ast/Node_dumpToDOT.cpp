@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/OldNode.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <unordered_map>
 
 namespace odb {
@@ -273,75 +273,157 @@ static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
             }
         } break;
     }
-}
+}*/
 
 // ----------------------------------------------------------------------------
-typedef std::unordered_map<const Node*, int> GUIDMap;
-static void calculateGUIDs(const Node* node, int* guid, GUIDMap* map)
+class NodeGUIDs : public GenericVisitor
 {
-    map->emplace(node, (*guid)++);
-    if (node->base.left)
-        calculateGUIDs(node->base.left, guid, map);
-    if (node->base.right)
-        calculateGUIDs(node->base.right, guid, map);
-}
-static void calculateGUIDs(const Node* node, GUIDMap* map)
-{
-    int guid = 1;
-    calculateGUIDs(node, &guid, map);
-    map->emplace(nullptr, 0);
-}
+public:
+    void calculate(const Node* root) { root->accept(this); }
 
-// ----------------------------------------------------------------------------
-static const char* connectionTable[] = {
-#define X(type, name, str, left, right) #left, #right,
-    NODE_TYPE_LIST
-#undef X
-};
-static void dumpConnections(FILE* fp, const GUIDMap& guids, const Node* node)
-{
-    if (node->base.left)
-    {
-        dumpConnections(fp, guids, node->base.left);
-        fprintf(fp, "N%d -> N%d [label=\"%s\"];\n", guids.at(node), guids.at(node->base.left), connectionTable[node->info.type*2]);
-        fprintf(fp, "N%d -> N%d [color=\"blue\"];\n", guids.at(node->base.left), guids.at(node->base.left->info.parent));
-    }
-    if (node->base.right)
-    {
-        dumpConnections(fp, guids, node->base.right);
-        fprintf(fp, "N%d -> N%d [label=\"%s\"];\n", guids.at(node), guids.at(node->base.right), connectionTable[node->info.type*2+1]);
-        fprintf(fp, "N%d -> N%d [color=\"blue\"];\n", guids.at(node->base.right), guids.at(node->base.right->info.parent));
-    }
-}
+public:
+    void visit(const Node* node) { map_.emplace(node, guidCounter_++); }
+    int get(const Node* node) const { return map_.at(node); }
 
-// ----------------------------------------------------------------------------
-static const char* nodeNames[] = {
-#define X(type, name, str, left, right) str,
-    NODE_TYPE_LIST
-#undef X
+private:
+    std::unordered_map<const Node*, int> map_;
+    int guidCounter_ = 1;
 };
 
-static void dumpNames(FILE* fp, const GUIDMap& guids, const Node* node)
+// ----------------------------------------------------------------------------
+class ConnectionWriter : public Visitor
 {
-    fprintf(fp, "N%d [label=\"%s\"];\n", guids.at(node), nodeNames[node->info.type]);
+public:
+    void write(FILE* fp, const NodeGUIDs* guids, const Node* root)
+    {
+        fp_ = fp;
+        guids_ = guids;
+        root->accept(this);
+    }
 
-    if (node->base.left)
-        dumpNames(fp, guids, node->base.left);
-    if (node->base.right)
-        dumpNames(fp, guids, node->base.right);
-}
+private:
+    void writeNamedConnection(const Node* from, const Node* to, const std::string& name)
+    {
+        fprintf(fp_, "N%d -> N%d [label=\"%s\"];\n",
+                guids_->get(from), guids_->get(to), name.c_str());
+    }
+    void writeBlueConnection(const Node* from, const Node* to)
+    {
+        fprintf(fp_, "N%d -> N%d [color=\"blue\"];\n",
+                guids_->get(from), guids_->get(to));
+    }
 
+    void visitBlock(const Block* node) override
+    {
+        int i = 0;
+        for (const auto& stmnt : node->statements())
+        {
+            writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
+            writeBlueConnection(stmnt, node);
+        }
+    }
+    void visitBooleanLiteral(const BooleanLiteral* node) override {}
+    void visitIntegerLiteral(const IntegerLiteral* node) override {}
+    void visitFloatLiteral(const FloatLiteral* node) override {}
+    void visitStringLiteral(const StringLiteral* node) override {}
+    void visitSymbol(const Symbol* node) override {}
+    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
+    void visitScopedSymbol(const ScopedSymbol* node) override {}
+    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
+    void visitConstDecl(const ConstDecl* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->literal(), "literal");
+        writeBlueConnection(node->symbol(), node);
+        writeBlueConnection(node->literal(), node);
+    }
+
+private:
+    FILE* fp_;
+    const NodeGUIDs* guids_;
+};
+
+// ----------------------------------------------------------------------------
+class NameWriter : public Visitor
+{
+public:
+    void write(FILE* fp, const NodeGUIDs* guids, const Node* root)
+    {
+        fp_ = fp;
+        guids_ = guids;
+        root->accept(this);
+    }
+
+private:
+    void writeName(const Node* node, const std::string& name)
+    {
+        fprintf(fp_, "N%d [label=\"%s\"];\n", guids_->get(node), name.c_str());
+    }
+
+    void visitBlock(const Block* node) override
+        { writeName(node, "block"); }
+    void visitBooleanLiteral(const BooleanLiteral* node) override
+        { writeName(node, "bool: " + std::to_string(node->value())); }
+    void visitIntegerLiteral(const IntegerLiteral* node) override
+        { writeName(node, "int: " + std::to_string(node->value())); }
+    void visitFloatLiteral(const FloatLiteral* node) override
+        { writeName(node, "float: " + std::to_string(node->value())); }
+    void visitStringLiteral(const StringLiteral* node) override
+        { writeName(node, "string: " + node->value()); }
+    void visitSymbol(const Symbol* node) override
+        { writeName(node, "symbol: " + node->name()); }
+    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override
+    {
+        auto strAnnotation = [&node]() -> std::string {
+            using Ann = AnnotatedSymbol::Annotation;
+            switch (node->annotation()) {
+                default:
+                case Ann::NONE: return "NONE";
+                case Ann::STRING: return "STRING";
+                case Ann::FLOAT: return "FLOAT";
+            }
+        };
+        writeName(node, "symbol (" + strAnnotation() + "): " + node->name());
+    }
+    void visitScopedSymbol(const ScopedSymbol* node) override
+    {
+        using Scope = ScopedSymbol::Scope;
+        writeName(node, std::string("symbol (") + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ")");
+    }
+    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override
+    {
+        using Scope = ScopedSymbol::Scope;
+        using Ann = AnnotatedSymbol::Annotation;
+        auto strAnnotation = [&node]() -> std::string {
+            switch (node->annotation()) {
+                default:
+                case Ann::NONE: return "NONE";
+                case Ann::STRING: return "STRING";
+                case Ann::FLOAT: return "FLOAT";
+            }
+        };
+
+        writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ")");
+    }
+    void visitConstDecl(const ConstDecl* node) override { writeName(node, "#constant"); }
+private:
+    FILE* fp_;
+    const NodeGUIDs* guids_;
+};
+
+// ----------------------------------------------------------------------------
 void dumpToDOT(FILE* fp, const Node* root)
 {
-    GUIDMap guids;
-    calculateGUIDs(root, &guids);
+    NodeGUIDs guids;
+    guids.calculate(root);
 
     fprintf(fp, "digraph name {\n");
-    dumpConnections(fp, guids, root);
-    dumpNames(fp, guids, root);
+    ConnectionWriter conns;
+    conns.write(fp, &guids, root);
+    NameWriter names;
+    names.write(fp, &guids, root);
     fprintf(fp, "}\n");
 }
-*/
 #endif
 }
 }

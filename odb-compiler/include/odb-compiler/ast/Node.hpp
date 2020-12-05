@@ -11,14 +11,23 @@ namespace odb {
 namespace ast {
 
 class SourceLocation;
+class Visitor;
 
 class Node : public RefCounted
 {
 public:
     Node(SourceLocation* location);
 
-    Node* parent;
-    Reference<ast::SourceLocation> location;
+    Node* parent() const;
+    void setParent(Node* node);
+    SourceLocation* location() const;
+
+    virtual void accept(Visitor* visitor) const = 0;
+
+
+private:
+    Node* parent_;
+    Reference<SourceLocation> location_;
 };
 
 /* A single executable statement */
@@ -40,6 +49,8 @@ public:
     Block(SourceLocation* location);
     void appendStatement(Statement* stmnt);
 
+    void accept(Visitor* visitor) const override;
+
     const std::vector<Reference<Statement>>& statements() const;
 
 private:
@@ -59,6 +70,8 @@ public:
     BooleanLiteral(bool value, SourceLocation* location);
     bool value() const;
 
+    void accept(Visitor* visitor) const override;
+
 private:
     bool value_;
 };
@@ -68,6 +81,8 @@ class IntegerLiteral : public Literal
 public:
     IntegerLiteral(int32_t value, SourceLocation* location);
     int32_t value() const;
+
+    void accept(Visitor* visitor) const override;
 
 private:
     int32_t value_;
@@ -79,6 +94,8 @@ public:
     FloatLiteral(double value, SourceLocation* location);
     double value() const;
 
+    void accept(Visitor* visitor) const override;
+
 private:
     double value_;
 };
@@ -89,6 +106,8 @@ public:
     StringLiteral(const std::string& value, SourceLocation* location);
     const std::string& value() const;
 
+    void accept(Visitor* visitor) const override;
+
 private:
     std::string value_;
 };
@@ -98,6 +117,8 @@ class Symbol : public Node
 public:
     Symbol(const std::string& name, SourceLocation* location);
     const std::string& name() const;
+
+    void accept(Visitor* visitor) const override;
 
 private:
     std::string name_;
@@ -115,6 +136,8 @@ public:
     AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
     Annotation annotation() const;
 
+    void accept(Visitor* visitor) const override;
+
 private:
     Annotation annotation_;
 };
@@ -128,14 +151,20 @@ public:
     };
 
     ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location);
+    Scope scope() const;
 
-    Scope scope;
+    void accept(Visitor* visitor) const override;
+
+private:
+    Scope scope_;
 };
 
 class ScopedAnnotatedSymbol : public ScopedSymbol, public AnnotatedSymbol
 {
 public:
     ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);
+
+    void accept(Visitor* visitor) const override;
 };
 
 /*! #constant x = 42 */
@@ -146,6 +175,8 @@ public:
 
     AnnotatedSymbol* symbol() const;
     Literal* literal() const;
+
+    void accept(Visitor* visitor) const override;
 
 private:
     Reference<AnnotatedSymbol> symbol_;
@@ -238,10 +269,47 @@ private:
 class Assignment : public Statement
 {
 public:
-private:
-    Reference<Symbol> symbol_;
-    Reference<Expr> expr_;
+    void accept(Visitor* visitor) const override;
+
+    Reference<Symbol> symbol;
+    Reference<Expr> expr;
 };
+
+class Visitor
+{
+public:
+    virtual void visitBlock(const Block* node) = 0;
+    virtual void visitBooleanLiteral(const BooleanLiteral* node) = 0;
+    virtual void visitIntegerLiteral(const IntegerLiteral* node) = 0;
+    virtual void visitFloatLiteral(const FloatLiteral* node) = 0;
+    virtual void visitStringLiteral(const StringLiteral* node) = 0;
+    virtual void visitSymbol(const Symbol* node) = 0;
+    virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
+    virtual void visitScopedSymbol(const ScopedSymbol* node) = 0;
+    virtual void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) = 0;
+    virtual void visitConstDecl(const ConstDecl* node) = 0;
+};
+
+class GenericVisitor : public Visitor
+{
+public:
+    void visitBlock(const Block* node) override;
+    void visitBooleanLiteral(const BooleanLiteral* node) override;
+    void visitIntegerLiteral(const IntegerLiteral* node) override;
+    void visitFloatLiteral(const FloatLiteral* node) override;
+    void visitStringLiteral(const StringLiteral* node) override;
+    void visitSymbol(const Symbol* node) override;
+    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
+    void visitScopedSymbol(const ScopedSymbol* node) override;
+    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override;
+    void visitConstDecl(const ConstDecl* node) override;
+
+    virtual void visit(const Node* node) = 0;
+};
+
+#if defined(ODBCOMPILER_DOT_EXPORT)
+void dumpToDOT(FILE* fp, const Node* root);
+#endif
 
 }
 }

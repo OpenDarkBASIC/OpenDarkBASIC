@@ -7,8 +7,12 @@ namespace ast {
 
 // ----------------------------------------------------------------------------
 Node::Node(SourceLocation* location) :
-    location(location)
+    location_(location)
 {
+}
+void Node::setParent(Node* node)
+{
+    parent_ = node;
 }
 
 // ----------------------------------------------------------------------------
@@ -24,11 +28,18 @@ Block::Block(SourceLocation* location) :
 }
 void Block::appendStatement(Statement* stmnt)
 {
+    stmnt->setParent(this);
     statements_.push_back(stmnt);
 }
 const std::vector<Reference<Statement>>& Block::statements() const
 {
     return statements_;
+}
+void Block::accept(Visitor* visitor) const
+{
+    visitor->visitBlock(this);
+    for (const auto& stmnt : statements())
+        stmnt->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -47,6 +58,10 @@ bool BooleanLiteral::value() const
 {
     return value_;
 }
+void BooleanLiteral::accept(Visitor* visitor) const
+{
+    visitor->visitBooleanLiteral(this);
+}
 
 // ----------------------------------------------------------------------------
 IntegerLiteral::IntegerLiteral(int32_t value, SourceLocation* location) :
@@ -57,6 +72,10 @@ IntegerLiteral::IntegerLiteral(int32_t value, SourceLocation* location) :
 int32_t IntegerLiteral::value() const
 {
     return value_;
+}
+void IntegerLiteral::accept(Visitor* visitor) const
+{
+    visitor->visitIntegerLiteral(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -69,6 +88,10 @@ double FloatLiteral::value() const
 {
     return value_;
 }
+void FloatLiteral::accept(Visitor* visitor) const
+{
+    visitor->visitFloatLiteral(this);
+}
 
 // ----------------------------------------------------------------------------
 StringLiteral::StringLiteral(const std::string& value, SourceLocation* location) :
@@ -79,6 +102,10 @@ StringLiteral::StringLiteral(const std::string& value, SourceLocation* location)
 const std::string& StringLiteral::value() const
 {
     return value_;
+}
+void StringLiteral::accept(Visitor* visitor) const
+{
+    visitor->visitStringLiteral(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -91,6 +118,10 @@ const std::string& Symbol::name() const
 {
     return name_;
 }
+void Symbol::accept(Visitor* visitor) const
+{
+    visitor->visitSymbol(this);
+}
 
 // ----------------------------------------------------------------------------
 AnnotatedSymbol::AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location) :
@@ -102,6 +133,25 @@ AnnotatedSymbol::Annotation AnnotatedSymbol::annotation() const
 {
     return annotation_;
 }
+void AnnotatedSymbol::accept(Visitor* visitor) const
+{
+    visitor->visitAnnotatedSymbol(this);
+}
+
+// ----------------------------------------------------------------------------
+ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location) :
+    Symbol(name, location),
+    scope_(scope)
+{
+}
+ScopedSymbol::Scope ScopedSymbol::scope() const
+{
+    return scope_;
+}
+void ScopedSymbol::accept(Visitor* visitor) const
+{
+    visitor->visitScopedSymbol(this);
+}
 
 // ----------------------------------------------------------------------------
 ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location) :
@@ -109,6 +159,8 @@ ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* 
     symbol_(symbol),
     literal_(literal)
 {
+    symbol->setParent(this);
+    literal->setParent(this);
 }
 AnnotatedSymbol* ConstDecl::symbol() const
 {
@@ -118,6 +170,24 @@ Literal* ConstDecl::literal() const
 {
     return literal_;
 }
+void ConstDecl::accept(Visitor* visitor) const
+{
+    visitor->visitConstDecl(this);
+    symbol()->accept(visitor);
+    literal()->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void GenericVisitor::visitBlock(const Block* node)                                 { visit(node); }
+void GenericVisitor::visitBooleanLiteral(const BooleanLiteral* node)               { visit(node); }
+void GenericVisitor::visitIntegerLiteral(const IntegerLiteral* node)               { visit(node); }
+void GenericVisitor::visitFloatLiteral(const FloatLiteral* node)                   { visit(node); }
+void GenericVisitor::visitStringLiteral(const StringLiteral* node)                 { visit(node); }
+void GenericVisitor::visitSymbol(const Symbol* node)                               { visit(node); }
+void GenericVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)             { visit(node); }
+void GenericVisitor::visitScopedSymbol(const ScopedSymbol* node)                   { visit(node); }
+void GenericVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) { visit(node); }
+void GenericVisitor::visitConstDecl(const ConstDecl* node)                         { visit(node); }
 
 }
 }

@@ -239,7 +239,7 @@ seps_maybe
   |
   ;
 block
-  : block seps stmnt                             { $$ = $1;                $$->appendStatement($3); }
+  : block seps stmnt                             { $$ = $1; $$->appendStatement($3); }
   | stmnt                                        { $$ = new Block(driver->newLocation(&yylloc)); $$->appendStatement($1); }
   ;
 stmnt

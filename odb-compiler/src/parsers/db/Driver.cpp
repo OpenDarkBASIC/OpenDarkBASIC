@@ -264,12 +264,15 @@ ast::Block* Driver::doParse()
         if (tokenHasFreeableString(token.pushedChar))
             str::deleteCStr(token.pushedValue.string);
 
-    return program_;
+    if (parse_result == 0)
+        return program_;
+    return nullptr;
 }
 
 // ----------------------------------------------------------------------------
 void Driver::giveProgram(ast::Block* program)
 {
+    log::info("Set program\n");
     program_ = program;
 }
 
@@ -297,13 +300,11 @@ void Driver::vreportError(const DBLTYPE* loc, const char* fmt, va_list args)
     snprintf(errorMsg.data(), errorMsg.size(), fmt, copy);
     va_end(copy);
 
-    std::string msg = fileLocInfo + ": " + errorMsg + "\n";
-    for (const auto& line : location->getSectionHighlight())
-        msg += line + "\n";
-
+    std::string msg = fileLocInfo + ": " + errorMsg;
     log::dbParser(log::ERROR, "%s\n", msg.c_str());
     for (const auto& line : location->getSectionHighlight())
         log::info("%s\n", line.c_str());
+
 }
 
 }

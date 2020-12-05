@@ -3,7 +3,7 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/ast/OldNode.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <gmock/gmock.h>
 #include <cstdio>
@@ -34,7 +34,7 @@ public:
                     + "__" + info->name() + ".dot";
             std::filesystem::create_directory("ast");
             FILE* out = fopen(filename.c_str(), "w");
-            // TODO odb::ast::dumpToDOT(out, ast);
+            odb::ast::dumpToDOT(out, ast);
             fclose(out);
 #endif
 
@@ -47,5 +47,5 @@ public:
     odb::KeywordIndex kwIndex;
     odb::KeywordMatcher matcher;
     odb::db::Driver* driver;
-    odb::Reference<odb::ast::Node> ast;
+    odb::Reference<odb::ast::Block> ast;
 };
