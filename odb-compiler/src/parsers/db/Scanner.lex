@@ -66,10 +66,6 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 %x SINGLE_COMMENT
 
 %%
-<INITIAL>{
-    {REMARK_START}      { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
-    {REMARK}            { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
-}
 <SINGLE_COMMENT>{
     .
     \n                  { BEGIN(INITIAL); }
@@ -81,6 +77,9 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 }
 
 <INITIAL>{
+    {REMARK_START}      { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
+    {REMARK}            { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
+
     {CONSTANT}          { RETURN_TOKEN(CONSTANT); }
 
     {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
@@ -124,43 +123,44 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     (?i:and)            { RETURN_TOKEN(LAND); }
     (?i:not)            { RETURN_TOKEN(LNOT); }
 
-    (?:then)            { RETURN_TOKEN(THEN); }
-    (?:endif)           { RETURN_TOKEN(ENDIF); }
-    (?:elseif)          { RETURN_TOKEN(ELSEIF); }
-    (?:if)              { RETURN_TOKEN(IF); }
-    (?:else)            { RETURN_TOKEN(ELSE); }
-    (?:endwhile)        { RETURN_TOKEN(ENDWHILE); }
-    (?:while)           { RETURN_TOKEN(WHILE); }
-    (?:repeat)          { RETURN_TOKEN(REPEAT); }
-    (?:until)           { RETURN_TOKEN(UNTIL); }
-    (?:do)              { RETURN_TOKEN(DO); }
-    (?:loop)            { RETURN_TOKEN(LOOP); }
-    (?:break)           { RETURN_TOKEN(BREAK); }
-    (?:for)             { RETURN_TOKEN(FOR); }
-    (?:to)              { RETURN_TOKEN(TO); }
-    (?:step)            { RETURN_TOKEN(STEP); }
-    (?:next)            { RETURN_TOKEN(NEXT); }
-    (?:endfunction)     { RETURN_TOKEN(ENDFUNCTION); }
-    (?:exitfunction)    { RETURN_TOKEN(EXITFUNCTION); }
-    (?:function)        { RETURN_TOKEN(FUNCTION); }
-    (?:gosub)           { RETURN_TOKEN(GOSUB); }
-    (?:return)          { RETURN_TOKEN(RETURN); }
-    (?:goto)            { RETURN_TOKEN(GOTO); }
-    (?:dim)             { RETURN_TOKEN(DIM); }
-    (?:global)          { RETURN_TOKEN(GLOBAL); }
-    (?:local)           { RETURN_TOKEN(LOCAL); }
-    (?:as)              { RETURN_TOKEN(AS); }
-    (?:endtype)         { RETURN_TOKEN(ENDTYPE); }
-    (?:type)            { RETURN_TOKEN(TYPE); }
-    (?:boolean)         { RETURN_TOKEN(BOOLEAN); }
-    (?:integer)         { RETURN_TOKEN(INTEGER); }
-    (?:float)           { RETURN_TOKEN(FLOAT); }
-    (?:string)          { RETURN_TOKEN(STRING); }
-    (?:endselect)       { RETURN_TOKEN(ENDSELECT); }
-    (?:select)          { RETURN_TOKEN(SELECT); }
-    (?:endcase)         { RETURN_TOKEN(ENDCASE); }
-    (?:case)            { RETURN_TOKEN(CASE); }
-    (?:default)         { RETURN_TOKEN(DEFAULT); }
+    (?i:then)           { RETURN_TOKEN(THEN); }
+    (?i:endif)          { RETURN_TOKEN(ENDIF); }
+    (?i:elseif)         { RETURN_TOKEN(ELSEIF); }
+    (?i:if)             { RETURN_TOKEN(IF); }
+    (?i:else)           { RETURN_TOKEN(ELSE); }
+    (?i:endwhile)       { RETURN_TOKEN(ENDWHILE); }
+    (?i:while)          { RETURN_TOKEN(WHILE); }
+    (?i:repeat)         { RETURN_TOKEN(REPEAT); }
+    (?i:until)          { RETURN_TOKEN(UNTIL); }
+    (?i:do)             { RETURN_TOKEN(DO); }
+    (?i:loop)           { RETURN_TOKEN(LOOP); }
+    (?i:break)          { RETURN_TOKEN(BREAK); }
+    (?i:for)            { RETURN_TOKEN(FOR); }
+    (?i:to)             { RETURN_TOKEN(TO); }
+    (?i:step)           { RETURN_TOKEN(STEP); }
+    (?i:next)           { RETURN_TOKEN(NEXT); }
+    (?i:endfunction)    { RETURN_TOKEN(ENDFUNCTION); }
+    (?i:exitfunction)   { RETURN_TOKEN(EXITFUNCTION); }
+    (?i:function)       { RETURN_TOKEN(FUNCTION); }
+    (?i:gosub)          { RETURN_TOKEN(GOSUB); }
+    (?i:return)         { RETURN_TOKEN(RETURN); }
+    (?i:goto)           { RETURN_TOKEN(GOTO); }
+    (?i:dim)            { RETURN_TOKEN(DIM); }
+    (?i:global)         { RETURN_TOKEN(GLOBAL); }
+    (?i:local)          { RETURN_TOKEN(LOCAL); }
+    (?i:as)             { RETURN_TOKEN(AS); }
+    (?i:endtype)        { RETURN_TOKEN(ENDTYPE); }
+    (?i:type)           { RETURN_TOKEN(TYPE); }
+    (?i:boolean)        { RETURN_TOKEN(BOOLEAN); }
+    (?i:integer)        { RETURN_TOKEN(INTEGER); }
+    (?i:float)          { RETURN_TOKEN(FLOAT); }
+    (?i:double)         { RETURN_TOKEN(DOUBLE); }
+    (?i:string)         { RETURN_TOKEN(STRING); }
+    (?i:endselect)      { RETURN_TOKEN(ENDSELECT); }
+    (?i:select)         { RETURN_TOKEN(SELECT); }
+    (?i:endcase)        { RETURN_TOKEN(ENDCASE); }
+    (?i:case)           { RETURN_TOKEN(CASE); }
+    (?i:default)        { RETURN_TOKEN(DEFAULT); }
 
     {SYMBOL}            { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
 

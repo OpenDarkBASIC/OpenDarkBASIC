@@ -95,6 +95,7 @@ enum NodeType
     X(SDT_BOOLEAN) \
     X(SDT_INTEGER) \
     X(SDT_FLOAT) \
+    X(SDT_DOUBLE) \
     X(SDT_STRING) \
     X(SDT_UDT)
 

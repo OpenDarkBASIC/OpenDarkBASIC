@@ -105,7 +105,7 @@
 %token GOSUB RETURN GOTO
 %token SELECT ENDSELECT CASE ENDCASE DEFAULT
 
-%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
+%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER DOUBLE FLOAT STRING
 
 %token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
 %token<string> KEYWORD;
@@ -275,6 +275,7 @@ var_decl_as_type
   : var_decl_name AS BOOLEAN                     { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
   | var_decl_name AS INTEGER                     { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
   | var_decl_name AS FLOAT                       { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
+  | var_decl_name AS DOUBLE FLOAT                { $$ = $1; $$->sym.base.flag.datatype = SDT_DOUBLE; }
   | var_decl_name AS STRING                      { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
   | var_decl_name AS udt_name                    { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
   ;
