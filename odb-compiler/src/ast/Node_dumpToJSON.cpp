@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/OldNode.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <cstdio>
 
 namespace odb {
@@ -14,6 +14,7 @@ static void doIndent(FILE* fp, int count)
 // ----------------------------------------------------------------------------
 int dumpToJSON(FILE* fp, const Node* node, int indent)
 {
+#if 0
 #define IND \
     doIndent(fp, indent);
 
@@ -48,6 +49,8 @@ int dumpToJSON(FILE* fp, const Node* node, int indent)
         fprintf(fp, "\n");
 
     return nodes;
+#endif
+    return 0;
 }
 
 }

@@ -81,7 +81,7 @@ typedef struct DBLTYPE DBLTYPE;
 
 namespace odb {
 class Driver;
-namespace ast {
+namespace oldast {
 
 enum NodeType
 {

@@ -23,6 +23,7 @@ bool ResolveArrayFuncAmbiguity::processNode(Node* node)
 {
     if (visitChildren(node) == false)
         return false;
+/*
 
     switch (node->info.type)
     {
@@ -59,7 +60,7 @@ bool ResolveArrayFuncAmbiguity::processNode(Node* node)
         } break;
 
         default: break;
-    }
+    }*/
 
     return true;
 }

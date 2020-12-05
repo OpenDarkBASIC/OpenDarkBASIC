@@ -2,7 +2,8 @@
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/ast/OldNode.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include "odb-sdk/FileSystem.hpp"
@@ -10,6 +11,7 @@
 #include <cstring>
 #include <algorithm>
 #include <memory>
+#include <cstdio>
 
 #if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int dbdebug;
@@ -19,9 +21,8 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(ast::Node** root, const KeywordMatcher* keywordMatcher) :
-    keywordMatcher_(keywordMatcher),
-    astRoot_(root)
+Driver::Driver(const KeywordMatcher* keywordMatcher) :
+    keywordMatcher_(keywordMatcher)
 {
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
@@ -39,41 +40,33 @@ Driver::~Driver()
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::parseFile(const std::string& fileName)
+ast::Block* Driver::parseFile(const std::string& fileName)
 {
     FILE* fp = fopen(fileName.c_str(), "r");
     if (fp == nullptr)
     {
         log::dbParser(log::ERROR, "Failed to open file `%s`\n", fileName.c_str());
-        return false;
+        return nullptr;
     }
 
-    activeFileName_ = &fileName;
-    bool result = parseStream(fp);
-    activeFileName_ = nullptr;
+    sourceName_ = fileName;
+    ast::Block* program = doParse();
+    sourceName_.clear();
     fclose(fp);
-    return result;
+    return program;
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::parseStream(FILE* fp)
-{
-    dbset_in(fp, scanner_);
-    activeFilePtr_ = fp;
-    bool result = doParse();
-    activeFilePtr_ = nullptr;
-    return result;
-}
-
-// ----------------------------------------------------------------------------
-bool Driver::parseString(const std::string& str)
+ast::Block* Driver::parseString(const std::string& sourceName, const std::string& str)
 {
     YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
-    activeString_ = &str;
-    bool result = doParse();
-    activeString_ = nullptr;
+    code_ = str;
+    sourceName_ = sourceName;
+    ast::Block* program = doParse();
+    sourceName_ = "";
+    code_.clear();
     db_delete_buffer(buf, scanner_);
-    return result;
+    return program;
 }
 
 // ----------------------------------------------------------------------------
@@ -92,7 +85,7 @@ static bool tokenHasFreeableString(int pushedChar)
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::doParse()
+ast::Block* Driver::doParse()
 {
     int parse_result;
     DBLTYPE loc = {1, 1, 1, 1};
@@ -109,15 +102,6 @@ bool Driver::doParse()
         int lookAheadEnd;
         int kwlen;
     };
-
-    // appendBlock() is called multiple times throughout this process.
-    // In case parsing is unsuccessful, this would leave us with a partially
-    // built AST. The caller probably doesn't want a partial result, so swap
-    // the destination AST with a temporary pointer and only when parsing
-    // completes successfully do we append it to the final destination.
-    ast::Node** storeDestinationAST = astRoot_;
-    ast::Node* intermediateResult = nullptr;
-    astRoot_ = &intermediateResult;
 
     // This is used as a buffer to assemble a keyword out of multiple tokens
     // and check it against the keyword matcher.
@@ -251,6 +235,7 @@ bool Driver::doParse()
     };
 
     // main parse loop
+    program_ = nullptr;
     do {
         if (tokens.size() == 0)
             scanNextToken();
@@ -279,179 +264,46 @@ bool Driver::doParse()
         if (tokenHasFreeableString(token.pushedChar))
             str::deleteCStr(token.pushedValue.string);
 
-    // Location information doesn't yet include a file pointer or input string,
-    // and location merging needs to be performed as well. Do this if parsing
-    // was successful
-    bool success = (parse_result == 0);
-    if (success && intermediateResult)
-        success &= patchLocationInfo(intermediateResult);
-
-    // Success, append intermediate result with final destination
-    if (success)
-    {
-        astRoot_ = storeDestinationAST;
-        if (intermediateResult)
-            appendBlock(intermediateResult, &loc);
-    }
-    else
-    {
-        ast::freeNodeRecursive(intermediateResult);
-    }
-
-    return success;
+    return program_;
 }
 
 // ----------------------------------------------------------------------------
-static void updateLocationSourceInChildren(ast::Node* node)
+void Driver::giveProgram(ast::Block* program)
 {
-    ast::Node* left = node->base.left;
-    ast::Node* right = node->base.right;
-
-    if (left)
-    {
-        left->info.loc.source = node->info.loc.source;
-        left->info.loc.source.owning = 0;
-        updateLocationSourceInChildren(left);
-    }
-    if (right)
-    {
-        right->info.loc.source = node->info.loc.source;
-        right->info.loc.source.owning = 0;
-        updateLocationSourceInChildren(right);
-    }
+    program_ = program;
 }
 
 // ----------------------------------------------------------------------------
-bool Driver::patchLocationInfo(ast::Node* root)
+ast::SourceLocation* Driver::newLocation(const DBLTYPE* loc)
 {
-    if (activeFilePtr_)
-    {
-        FILE* newFp = dupFilePointer(activeFilePtr_);
-        if (newFp == nullptr)
-            return false;
-
-        root->info.loc.source.type = ast::LOC_FILE;
-        root->info.loc.source.owning = 1;
-        root->info.loc.source.file = newFp;
-    }
-    else
-    {
-        assert(activeString_);
-
-        root->info.loc.source.type = ast::LOC_STRING;
-        root->info.loc.source.owning = 1;
-        root->info.loc.source.string = (char*)malloc(activeString_->size() + 1);
-        if (root->info.loc.source.string == nullptr)
-            return false;
-        memcpy(root->info.loc.source.string, activeString_->data(), activeString_->size());
-        root->info.loc.source.string[activeString_->size()] = '\0';
-    }
-
-    // Every node in the tree shares the same location info
-    updateLocationSourceInChildren(root);
-
-    return true;
+    if (code_.length() > 0)
+        return new ast::InlineSourceLocation(sourceName_, code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+    return new ast::FileSourceLocation(sourceName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
 }
 
 // ----------------------------------------------------------------------------
-void Driver::reportError(DBLTYPE* loc, const char* fmt, ...)
+void Driver::vreportError(const DBLTYPE* loc, const char* fmt, va_list args)
 {
-    va_list args;
-    va_start(args, fmt);
-    vreportError(loc, fmt, args);
-    va_end(args);
-}
+    auto location = newLocation(loc);
+    std::string fileLocInfo = location->getFileLineColumn();
+    std::string errorMsg;
 
-// ----------------------------------------------------------------------------
-void Driver::vreportError(DBLTYPE* loc, const char* fmt, va_list args)
-{
-    if (activeFileName_)
-        log::info("%s:%d:%d: ", activeFileName_->c_str(), loc->first_line, loc->first_column);
+    va_list copy;
+    va_copy(copy, args);
+    errorMsg.resize(vsnprintf(nullptr, 0, fmt, copy) + 1);
+    va_end(copy);
 
-    log::info(fmt, args);
-    log::info("\n");
+    va_copy(copy, args);
+    snprintf(errorMsg.data(), errorMsg.size(), fmt, copy);
+    va_end(copy);
 
-    int tabCount = 0;
-    if (activeFilePtr_)
-    {
-        // Seek to offending line
-        char c;
-        fseek(activeFilePtr_, 0, SEEK_SET);
-        int currentLine = 1;
-        while (currentLine != loc->first_line)
-        {
-            if (fread(&c, 1, 1, activeFilePtr_) != 1)
-                return;
-            if (c == '\n')
-                currentLine++;
-        }
+    std::string msg = fileLocInfo + ": " + errorMsg + "\n";
+    for (const auto& line : location->getSectionHighlight())
+        msg += line + "\n";
 
-        // Print offending line
-        log::info("  ");
-        while (1)
-        {
-            if (fread(&c, 1, 1, activeFilePtr_) != 1)
-                return;
-            if (c == '\n')
-                break;
-            if (c == '\t')
-                tabCount++;
-            log::info("%c", c);
-        }
-        log::info("\n  ");
-    }
-    else
-    {
-        assert(activeString_ != nullptr);
-
-        // Seek to offending line
-        int currentLine = 1;
-        int idx = 0;
-        for (; currentLine != loc->first_line; idx++)
-        {
-            if ((*activeString_)[idx] == '\n')
-                currentLine++;
-            if ((*activeString_)[idx] == '\0')
-                return;
-        }
-
-        // Print offending line
-        log::info("  ");
-        for (size_t i = idx; i < activeString_->size(); ++i)
-        {
-            char c = (*activeString_)[i];
-            if (c == '\n')
-                break;
-            if ((*activeString_)[idx] == '\t')
-                tabCount++;
-            log::info("%c", c);
-        }
-        log::info("\n  ");
-    }
-
-    // Print visual indicator of which token is affected
-    for (int i = 1; i < loc->first_column; ++i)
-    {
-        if (tabCount-- > 0)
-            log::info("\t");
-        else
-            log::info(" ");
-    }
-    log::info("^");
-    for (int i = loc->first_column + 1; i < loc->last_column; ++i)
-        log::info("~");
-    log::info("\n");
-}
-
-// ----------------------------------------------------------------------------
-void Driver::appendBlock(ast::Node* block, const DBLTYPE* loc)
-{
-    assert(block->info.type == ast::NT_BLOCK);
-
-    if (*astRoot_ == nullptr)
-        *astRoot_ = block;
-    else
-        *astRoot_ = ast::appendStatementToBlock(*astRoot_, block, loc);
+    log::dbParser(log::ERROR, "%s\n", msg.c_str());
+    for (const auto& line : location->getSectionHighlight())
+        log::info("%s\n", line.c_str());
 }
 
 }

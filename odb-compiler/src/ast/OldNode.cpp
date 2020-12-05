@@ -6,7 +6,7 @@
 #include <cassert>
 
 namespace odb {
-namespace ast {
+namespace oldast {
 
 // ----------------------------------------------------------------------------
 static void init_info(Node* node, NodeType type, int first_line, int last_line, int first_column, int last_column)

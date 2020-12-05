@@ -393,9 +393,13 @@ bool Args::parseDBA(const std::vector<std::string>& args)
     for (const auto& arg : args)
     {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
-        odb::db::Driver driver(&ast_, &kwMatcher_);
-        if (driver.parseFile(arg.c_str()) == false)
+        odb::db::Driver driver(&kwMatcher_);
+        odb::ast::Block* block = driver.parseFile(arg.c_str());
+        if (block == nullptr)
             return false;
+
+        for (auto& stmnt : block->statements())
+            ast_->appendStatement(stmnt);
     }
 
     return true;
@@ -425,7 +429,7 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
     else
         fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format\n");
 
-    odb::ast::dumpToDOT(outFile, ast_);
+    // TODO odb::ast::dumpToDOT(outFile, ast_);
 
     if (args.size())
         fclose(outFile);
@@ -460,7 +464,7 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
     else
         fprintf(stderr, "[ast] Dumping AST to JSON\n");
 
-    odb::ast::dumpToJSON(outFile, ast_);
+    // TODO odb::ast::dumpToJSON(outFile, ast_);
 
     if (args.size())
         fclose(outFile);

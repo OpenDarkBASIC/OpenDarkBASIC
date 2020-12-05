@@ -4,8 +4,9 @@
     #include "odb-compiler/parsers/db/Parser.y.h"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
-    #include "odb-compiler/ast/OldNode.hpp"
+    #include "odb-compiler/ast/Node.hpp"
     #include "odb-sdk/Str.hpp"
+    #include <cstdarg>
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
     #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
@@ -28,7 +29,15 @@
             class Driver;
         }
         namespace ast {
-            union Node;
+            class Node;
+            class Block;
+            class Statement;
+            class Literal;
+            class ConstDecl;
+            class Symbol;
+            class AnnotatedSymbol;
+            class ScopedSymbol;
+            class ScopedAnnotatedSymbol;
         }
     }
 
@@ -78,7 +87,14 @@
     double float_value;
     char* string;
 
-    odb::ast::Node* node;
+    odb::ast::Block* block;
+    odb::ast::Statement* stmnt;
+    odb::ast::Literal* literal;
+    odb::ast::ConstDecl* const_decl;
+    odb::ast::Symbol* symbol;
+    odb::ast::AnnotatedSymbol* annotated_symbol;
+    odb::ast::ScopedSymbol* scoped_symbol;
+    odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
 }
 
 %define api.token.prefix {TOK_}
@@ -111,9 +127,11 @@
 %token<string> KEYWORD;
 %token DOLLAR HASH;
 
-%type<node> stmnts;
-%type<node> stmnt;
-%type<node> constant_decl;
+%type<block> program;
+%type<block> block;
+%type<stmnt> stmnt;
+%type<const_decl> constant_decl;
+/*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
 %type<node> lvalue;
@@ -144,10 +162,13 @@
 %type<node> keyword_returning_value;
 %type<node> expr;
 %type<node> arglist;
-%type<node> decl_arglist;
-%type<node> literal;
-%type<node> symbol;
-%type<node> symbol_without_type;
+%type<node> decl_arglist;*/
+%type<literal> literal;
+%type<symbol> symbol;
+%type<annotated_symbol> annotated_symbol;
+%type<scoped_symbol> scoped_symbol;
+%type<scoped_annotated_symbol> scoped_annotated_symbol;
+/*
 %type<node> conditional;
 %type<node> conditional_singleline;
 %type<node> conditional_begin;
@@ -161,7 +182,7 @@
 %type<node> loop_until;
 %type<node> loop_for;
 %type<node> loop_for_next;
-%type<node> break;
+%type<node> break;*/
 
 /* precedence rules */
 %nonassoc NO_ELSE
@@ -197,14 +218,13 @@
 %left LB RB
 
 %destructor { str::deleteCStr($$); } <string>
-%destructor { freeNodeRecursive($$); } <node>
 
 %start program
 
 %%
 program
-  : seps_maybe stmnts seps_maybe                 { driver->appendBlock($2, &yylloc); }
-  | seps_maybe
+  : seps_maybe block seps_maybe                  { driver->giveProgram($2); }
+  | seps_maybe                                   { $$ = nullptr; }
   ;
 sep
   : NEWLINE
@@ -218,10 +238,14 @@ seps_maybe
   : seps
   |
   ;
-stmnts
-  : stmnts seps stmnt                            { $$ = appendStatementToBlock($1, $3, &yylloc); }
-  | stmnt                                        { $$ = newBlock($1, nullptr, &yylloc); }
+block
+  : block seps stmnt                             { $$ = $1;                $$->appendStatement($3); }
+  | stmnt                                        { $$ = new Block(driver->newLocation(&yylloc)); $$->appendStatement($1); }
   ;
+stmnt
+  : constant_decl                                { $$ = $1; }
+  ;
+/*
 stmnt
   : var_assignment                               { $$ = $1; }
   | constant_decl                                { $$ = $1; }
@@ -241,14 +265,11 @@ stmnt
   | select                                       { $$ = $1; }
   | loop                                         { $$ = $1; }
   | break                                        { $$ = $1; }
-  ;
+  ;*/
 constant_decl
-  : CONSTANT symbol literal {
-        $$ = $2;
-        $$->info.type = NT_SYM_CONST_DECL;
-        $$->sym.const_decl.literal = $3;
-    }
+  : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, driver->newLocation(&yylloc)); }
   ;
+/*
 dec_or_inc
   : DEC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC, &yylloc); }
   | INC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC, &yylloc); }
@@ -279,7 +300,7 @@ var_decl_as_type
   | var_decl_name AS udt_name                    { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
   ;
 var_decl_name
-  : symbol {
+  : annotated_symbol {
         $$ = $1;
         $$->info.type = NT_SYM_VAR_DECL;
         // default type of a variable is integer
@@ -288,7 +309,7 @@ var_decl_name
     }
   ;
 var_ref
-  : symbol {
+  : annotated_symbol {
         $$ = $1;
         $$->info.type = NT_SYM_VAR_REF;
         // default type of a variable is integer
@@ -312,7 +333,7 @@ array_decl_as_type
   | array_decl_name AS udt_name                  { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.array_decl.udt = $3; }
   ;
 array_decl_name
-  : DIM symbol LB arglist RB {
+  : DIM annotated_symbol LB arglist RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
         $$->sym.array_decl.arglist = $4;
@@ -320,7 +341,7 @@ array_decl_name
         if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
-  | DIM symbol LB RB {
+  | DIM annotated_symbol LB RB {
         $$ = $2;
         $$->info.type = NT_SYM_ARRAY_DECL;
         // default type of a variable is integer
@@ -329,7 +350,7 @@ array_decl_name
     }
   ;
 array_ref
-  : symbol LB arglist RB {
+  : annotated_symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.array_ref.arglist = $3;
@@ -337,7 +358,7 @@ array_ref
         if ($$->sym.base.flag.datatype == SDT_NONE)
             $$->sym.base.flag.datatype = SDT_INTEGER;
     }
-  | symbol LB RB {
+  | annotated_symbol LB RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         // default type of a variable is integer
@@ -361,7 +382,7 @@ udt_body_decl
   | array_decl                                   { $$ = newUDTSubtypeList($1, &yylloc); }
   ;
 udt_name
-  : symbol_without_type {
+  : annotated_symbol_without_type {
         $$ = $1;
         $$->info.type = NT_SYM_UDT_TYPE_REF;
         $$->sym.var_ref.flag.datatype = SDT_UDT;
@@ -378,7 +399,7 @@ udt_refs
   | var_ref                                      { $$ = $1; }
   ;
 func_decl
-  : func_name_decl seps stmnts seps func_end {
+  : func_name_decl seps block seps func_end {
         $$ = $1;
         $$->sym.func_decl.body = appendStatementToBlock($3, $5, &yylloc);
     }
@@ -396,39 +417,39 @@ func_exit
   | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr, &yylloc); }
   ;
 func_name_decl
-  : FUNCTION symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
-  | FUNCTION symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
+  : FUNCTION annotated_symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
+  | FUNCTION annotated_symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
   ;
 func_call
-  : symbol LB arglist RB {
+  : annotated_symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_ARRAY_REF;
         $$->sym.func_call.arglist = $3;
     }
-  | symbol LB RB {
+  | annotated_symbol LB RB {
         $$ = $1;
         $$->info.type = NT_SYM_FUNC_CALL;
     }
   ;
 sub_call
-  : GOSUB symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
+  : GOSUB annotated_symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
 sub_return
   : RETURN                                       { $$ = newSubReturn(&yylloc); }
   ;
 label_decl
-  : symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
+  : annotated_symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
   ;
 goto_label
-  : GOTO symbol_without_type                     { $$ = newGoto($2, &yylloc); }
+  : GOTO annotated_symbol_without_type                     { $$ = newGoto($2, &yylloc); }
   ;
 func_call_or_array_ref
-  : symbol LB arglist RB {
+  : annotated_symbol LB arglist RB {
         $$ = $1;
         $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
         $$->sym.func_call.arglist = $3;
     }
-  | symbol LB RB {
+  | annotated_symbol LB RB {
         $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
         $$ = $1;
     }
@@ -482,23 +503,34 @@ decl_arglist
   | var_decl_as_type                             { $$ = $1; }
   | var_decl_name                                { $$ = $1; }
   | array_decl                                   { $$ = $1; }
-  ;
+  ;*/
 literal
-  : BOOLEAN_LITERAL                              { $$ = newBooleanLiteral($1, &yylloc); }
-  | INTEGER_LITERAL                              { $$ = newIntegerLiteral($1, &yylloc); }
-  | FLOAT_LITERAL                                { $$ = newFloatLiteral($1, &yylloc); }
-  | STRING_LITERAL                               { $$ = newStringLiteral($1, &yylloc); }
-  | SUB INTEGER_LITERAL                          { $$ = newIntegerLiteral(-$2, &yylloc); }
-  | SUB FLOAT_LITERAL                            { $$ = newFloatLiteral(-$2, &yylloc); }
+  : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
+  | INTEGER_LITERAL                              { $$ = new IntegerLiteral($1, driver->newLocation(&yylloc)); }
+  | FLOAT_LITERAL                                { $$ = new FloatLiteral($1, driver->newLocation(&yylloc)); }
+  | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); }
+  | SUB INTEGER_LITERAL                          { $$ = new IntegerLiteral(-$2, driver->newLocation(&yylloc)); }
+  | SUB FLOAT_LITERAL                            { $$ = new FloatLiteral(-$2, driver->newLocation(&yylloc)); }
+  ;
+scoped_annotated_symbol
+  : LOCAL annotated_symbol                       { $$ = new ScopedAnnotatedSymbol(ScopedAnnotatedSymbol::Scope::LOCAL, $2->annotation(), $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
+  | GLOBAL annotated_symbol                      { $$ = new ScopedAnnotatedSymbol(ScopedAnnotatedSymbol::Scope::GLOBAL, $2->annotation(), $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
+  | annotated_symbol                             { $$ = new ScopedAnnotatedSymbol(ScopedAnnotatedSymbol::Scope::LOCAL, $1->annotation(), $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  ;
+scoped_symbol
+  : LOCAL symbol                                 { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
+  | GLOBAL symbol                                { $$ = new ScopedSymbol(ScopedSymbol::Scope::GLOBAL, $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
+  | symbol                                       { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  ;
+annotated_symbol
+  : symbol %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::NONE, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  | symbol HASH                                  { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::FLOAT, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  | symbol DOLLAR                                { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::STRING, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
   ;
 symbol
-  : symbol_without_type %prec NO_HASH_OR_DOLLAR  { $$ = $1; }
-  | symbol_without_type HASH                     { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
-  | symbol_without_type DOLLAR                   { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
+  : SYMBOL                                       { $$ = new Symbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
-symbol_without_type
-  : SYMBOL                                       { $$ = newSymbol($1, SDT_NONE, SS_LOCAL, &yylloc); }
-  ;
+/*
 conditional
   : conditional_singleline                       { $$ = $1; }
   | conditional_begin                            { $$ = $1; }
@@ -510,14 +542,14 @@ conditional_singleline
   ;
 conditional_begin
   : IF expr seps conditional_next                { $$ = newBranch($2, nullptr, $4, &yylloc); }
-  | IF expr seps stmnts seps conditional_next    { $$ = newBranch($2, $4, $6, &yylloc); }
+  | IF expr seps block seps conditional_next     { $$ = newBranch($2, $4, $6, &yylloc); }
   ;
 conditional_next
   : ENDIF                                        { $$ = nullptr; }
-  | ELSE seps stmnts seps ENDIF                  { $$ = $3; }
+  | ELSE seps block seps ENDIF                   { $$ = $3; }
   | ELSE seps ENDIF                              { $$ = nullptr; }
   | ELSEIF expr seps conditional_next            { $$ = newBranch($2, nullptr, $4, &yylloc); }
-  | ELSEIF expr seps stmnts seps conditional_next { $$ = newBranch($2, $4, $6, &yylloc); }
+  | ELSEIF expr seps block seps conditional_next { $$ = newBranch($2, $4, $6, &yylloc); }
   ;
 select
   : SELECT expr seps case_list seps ENDSELECT    { $$ = newSelectStatement($2, $4, &yylloc); }
@@ -528,9 +560,9 @@ case_list
   | case                                         { $$ = newCaseList($1, &yylloc); }
   ;
 case
-  : CASE expr seps stmnts seps ENDCASE           { $$ = newCase($2, $4, &yylloc); }
+  : CASE expr seps block seps ENDCASE            { $$ = newCase($2, $4, &yylloc); }
   | CASE expr seps ENDCASE                       { $$ = newCase($2, nullptr, &yylloc); }
-  | CASE DEFAULT seps stmnts seps ENDCASE        { $$ = newCase(nullptr, $4, &yylloc); }
+  | CASE DEFAULT seps block seps ENDCASE         { $$ = newCase(nullptr, $4, &yylloc); }
   | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
   ;
 loop
@@ -540,30 +572,30 @@ loop
   | loop_for                                     { $$ = $1; }
   ;
 loop_do
-  : DO seps stmnts seps LOOP                     { $$ = newLoop($3, &yylloc); }
+  : DO seps block seps LOOP                      { $$ = newLoop($3, &yylloc); }
   | DO seps LOOP                                 { $$ = newLoop(nullptr, &yylloc); }
   ;
 loop_while
-  : WHILE expr seps stmnts seps ENDWHILE         { $$ = newLoopWhile($2, $4, &yylloc); }
+  : WHILE expr seps block seps ENDWHILE          { $$ = newLoopWhile($2, $4, &yylloc); }
   | WHILE expr seps ENDWHILE                     { $$ = newLoopWhile($2, nullptr, &yylloc); }
   ;
 loop_until
-  : REPEAT seps stmnts seps UNTIL expr           { $$ = newLoopUntil($6, $3, &yylloc); }
+  : REPEAT seps block seps UNTIL expr            { $$ = newLoopUntil($6, $3, &yylloc); }
   | REPEAT seps UNTIL expr                       { $$ = newLoopUntil($4, nullptr, &yylloc); }
   ;
 loop_for
-  : FOR symbol EQ expr TO expr STEP expr seps stmnts seps loop_for_next { $$ = newLoopFor($2, $4, $6, $8, $12, $10, &yylloc); }
-  | FOR symbol EQ expr TO expr STEP expr seps loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr, &yylloc); }
-  | FOR symbol EQ expr TO expr seps stmnts seps loop_for_next           { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8, &yylloc); }
-  | FOR symbol EQ expr TO expr seps loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr, &yylloc); }
+  : FOR annotated_symbol EQ expr TO expr STEP expr seps block seps loop_for_next  { $$ = newLoopFor($2, $4, $6, $8, $12, $10, &yylloc); }
+  | FOR annotated_symbol EQ expr TO expr STEP expr seps loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr, &yylloc); }
+  | FOR annotated_symbol EQ expr TO expr seps block seps loop_for_next            { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8, &yylloc); }
+  | FOR annotated_symbol EQ expr TO expr seps loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr, &yylloc); }
   ;
 loop_for_next
   : NEXT                                         { $$ = nullptr; }
-  | NEXT symbol                                  { $$ = $2; }
+  | NEXT annotated_symbol                                  { $$ = $2; }
   ;
 break
   : BREAK                                        { $$ = newBreak(&yylloc); }
-  ;
+  ;*/
 %%
 
 void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)

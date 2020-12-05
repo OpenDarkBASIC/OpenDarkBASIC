@@ -21,13 +21,19 @@ SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int
 // ----------------------------------------------------------------------------
 std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code) const
 {
+    auto retError = [this]() -> std::vector<std::string> {
+        return {"(Invalid location " + std::to_string(firstLine_) + ","
+                                     + std::to_string(lastLine_) + ","
+                                     + std::to_string(firstColumn_) + ","
+                                     + std::to_string(lastColumn_) + ")"};
+    };
     // Seek to first line
     int currentLine = 0;
     std::string line;
     while (currentLine < firstLine_)
     {
         if (code.eof())
-            return {"(Invalid location)"};
+            return retError();
         std::getline(code, line);
         currentLine++;
     }
@@ -39,7 +45,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
     while (currentLine < lastLine_)
     {
         if (code.eof())
-            return {"(Invalid location)"};
+            return retError();
         std::getline(code, line);
         lines.push_back(line);
         currentLine++;
@@ -50,7 +56,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
     for (int i = 1; i < firstColumn_; ++i)
     {
         if (i >= (int)lines[0].length())
-            return {"(Invalid location)"};
+            return retError();
         squiggles.back() += " ";
         if (lines[0][i-1] == '\t')
             squiggles.back() += "   ";
@@ -93,7 +99,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
         for (int i = pos; i < lastColumn_; ++i)
         {
             if (i >= (int)lines.back().length())
-                return {"(Invalid location)"};
+                return retError();
             squiggles.back() += "~";
             if (lines.back()[i] == '\t')
                 squiggles.back() += "~~~";
@@ -104,7 +110,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
         for (int i = firstColumn_; i < lastColumn_; ++i)
         {
             if (i >= (int)lines[0].length())
-                return {"(Invalid location)"};
+                return retError();
             squiggles.back() += "~";
             if (lines[0][i-1] == '\t')
                 squiggles.back() += "~~~";

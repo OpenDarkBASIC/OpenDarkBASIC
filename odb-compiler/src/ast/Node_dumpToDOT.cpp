@@ -273,7 +273,7 @@ static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
             }
         } break;
     }
-}*/
+}
 
 // ----------------------------------------------------------------------------
 typedef std::unordered_map<const Node*, int> GUIDMap;
@@ -341,7 +341,7 @@ void dumpToDOT(FILE* fp, const Node* root)
     dumpNames(fp, guids, root);
     fprintf(fp, "}\n");
 }
+*/
 #endif
-
 }
 }

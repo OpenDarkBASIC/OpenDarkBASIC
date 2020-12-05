@@ -10,7 +10,8 @@ namespace odb {
 class KeywordMatcher;
 
 namespace ast {
-    union Node;
+    class Block;
+    class SourceLocation;
 }
 
 namespace db {
@@ -18,40 +19,27 @@ namespace db {
 class Driver
 {
 public:
-    ODBCOMPILER_PUBLIC_API Driver(ast::Node** root, const KeywordMatcher* keywordMatcher);
+    ODBCOMPILER_PUBLIC_API Driver(const KeywordMatcher* keywordMatcher);
     ODBCOMPILER_PUBLIC_API ~Driver();
 
-    ODBCOMPILER_PUBLIC_API bool parseFile(const std::string& fileName);
-    ODBCOMPILER_PUBLIC_API bool parseStream(FILE* fp);
-    ODBCOMPILER_PUBLIC_API bool parseString(const std::string& str);
+    ODBCOMPILER_PUBLIC_API ast::Block* parseFile(const std::string& fileName);
+    ODBCOMPILER_PUBLIC_API ast::Block* parseString(const std::string& sourceName, const std::string& str);
 
-    void reportError(DBLTYPE* loc, const char* fmt, ...);
-    void vreportError(DBLTYPE* loc, const char* fmt, va_list args);
-
-    /*!
-     * @brief Called by Bison to pass in a finished block. Appends the block to
-     * the root node.
-     */
-    void appendBlock(ast::Node* block, const DBLTYPE* loc);
-
-    bool addArraySymbol(const char* name);
-    bool lookupArraySymbol(const char* name);
+    // Functions called by BISON
+    ODBCOMPILER_PRIVATE_API void giveProgram(ast::Block* program);
+    ODBCOMPILER_PRIVATE_API ast::SourceLocation* newLocation(const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API void vreportError(const DBLTYPE* loc, const char* fmt, va_list args);
 
 private:
-    bool doParse();
-    bool patchLocationInfo(ast::Node* root);
+    ast::Block* doParse();
 
-    // For error reporting
-    const std::string* activeFileName_ = nullptr;
-    const std::string* activeString_ = nullptr;
-    FILE* activeFilePtr_ = nullptr;
+    std::string sourceName_;
+    std::string code_;
 
     dbscan_t scanner_ = nullptr;
     dbpstate* parser_ = nullptr;
     const KeywordMatcher* keywordMatcher_;
-
-    // Final destination for result of parse, if it succeeds
-    ast::Node** astRoot_;
+    ast::Block* program_;
 };
 
 }

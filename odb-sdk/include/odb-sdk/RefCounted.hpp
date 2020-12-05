@@ -58,6 +58,8 @@ public:
     RefCounted();
     /// Destruct. Mark as expired and also delete the reference count structure if no outside weak references exist.
     virtual ~RefCounted();
+    /// Prevent copy construction.
+    RefCounted(const RefCounted& rhs) = delete;
 
     /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
     void addRef();
@@ -72,8 +74,6 @@ public:
     RefCount* refCountPtr() { return refCount_; }
 
 private:
-    /// Prevent copy construction.
-    RefCounted(const RefCounted& rhs);
     /// Prevent assignment.
     RefCounted& operator =(const RefCounted& rhs);
 

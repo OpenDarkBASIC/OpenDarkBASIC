@@ -4,7 +4,7 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/SDKType.hpp"
-#include "odb-compiler/ast/OldNode.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include <vector>
 #include <string>
 #include <memory>
@@ -53,5 +53,5 @@ private:
 
     odb::KeywordIndex kwIndex_;
     odb::KeywordMatcher kwMatcher_;
-    odb::ast::Node* ast_ = nullptr;
+    odb::ast::Block* ast_ = nullptr;
 };

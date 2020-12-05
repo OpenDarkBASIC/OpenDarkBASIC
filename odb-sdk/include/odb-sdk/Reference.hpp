@@ -520,4 +520,10 @@ WeakReference<T> dynamicCast(const WeakReference<U>& ptr)
     return ret;
 }
 
+template <class T>
+void TouchRef(T* obj)
+{
+    Reference<T> ref(obj);
+}
+
 }
