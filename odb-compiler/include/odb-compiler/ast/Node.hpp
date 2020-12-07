@@ -5,6 +5,17 @@
 #include <memory>
 #include <vector>
 
+/*!
+ * @brief All of the DarkBASIC primitive types that can exist and what types
+ * they map to in C++
+ */
+#define ODB_DATATYPE_LIST     \
+    X(Boolean, bool)          \
+    X(Integer, int32_t)       \
+    X(Float, float)           \
+    X(Double, double)         \
+    X(String, std::string)
+
 typedef struct DBLTYPE DBLTYPE;
 
 namespace odb {
@@ -64,53 +75,22 @@ public:
     Literal(SourceLocation* location);
 };
 
-class BooleanLiteral : public Literal
+template <typename T>
+class LiteralTemplate : public Literal
 {
 public:
-    BooleanLiteral(bool value, SourceLocation* location);
-    bool value() const;
+    LiteralTemplate(const T& value, SourceLocation* location) : Literal(location), value_(value) {}
+    const T& value() const { return value_; }
 
     void accept(Visitor* visitor) const override;
 
 private:
-    bool value_;
+    const T value_;
 };
 
-class IntegerLiteral : public Literal
-{
-public:
-    IntegerLiteral(int32_t value, SourceLocation* location);
-    int32_t value() const;
-
-    void accept(Visitor* visitor) const override;
-
-private:
-    int32_t value_;
-};
-
-class FloatLiteral : public Literal
-{
-public:
-    FloatLiteral(double value, SourceLocation* location);
-    double value() const;
-
-    void accept(Visitor* visitor) const override;
-
-private:
-    double value_;
-};
-
-class StringLiteral : public Literal
-{
-public:
-    StringLiteral(const std::string& value, SourceLocation* location);
-    const std::string& value() const;
-
-    void accept(Visitor* visitor) const override;
-
-private:
-    std::string value_;
-};
+#define X(dbname, cppname) typedef LiteralTemplate<cppname> dbname##Literal;
+ODB_DATATYPE_LIST
+#undef X
 
 class Symbol : public Node
 {
@@ -273,38 +253,6 @@ public:
 
     Reference<Symbol> symbol;
     Reference<Expr> expr;
-};
-
-class Visitor
-{
-public:
-    virtual void visitBlock(const Block* node) = 0;
-    virtual void visitBooleanLiteral(const BooleanLiteral* node) = 0;
-    virtual void visitIntegerLiteral(const IntegerLiteral* node) = 0;
-    virtual void visitFloatLiteral(const FloatLiteral* node) = 0;
-    virtual void visitStringLiteral(const StringLiteral* node) = 0;
-    virtual void visitSymbol(const Symbol* node) = 0;
-    virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
-    virtual void visitScopedSymbol(const ScopedSymbol* node) = 0;
-    virtual void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) = 0;
-    virtual void visitConstDecl(const ConstDecl* node) = 0;
-};
-
-class GenericVisitor : public Visitor
-{
-public:
-    void visitBlock(const Block* node) override;
-    void visitBooleanLiteral(const BooleanLiteral* node) override;
-    void visitIntegerLiteral(const IntegerLiteral* node) override;
-    void visitFloatLiteral(const FloatLiteral* node) override;
-    void visitStringLiteral(const StringLiteral* node) override;
-    void visitSymbol(const Symbol* node) override;
-    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
-    void visitScopedSymbol(const ScopedSymbol* node) override;
-    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override;
-    void visitConstDecl(const ConstDecl* node) override;
-
-    virtual void visit(const Node* node) = 0;
 };
 
 #if defined(ODBCOMPILER_DOT_EXPORT)

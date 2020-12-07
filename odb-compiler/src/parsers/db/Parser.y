@@ -4,6 +4,7 @@
     #include "odb-compiler/parsers/db/Parser.y.h"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
+    #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Node.hpp"
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
@@ -84,7 +85,8 @@
 %union {
     bool boolean_value;
     int32_t integer_value;
-    double float_value;
+    float float_value;
+    double double_value;
     char* string;
 
     odb::ast::Block* block;
@@ -108,6 +110,7 @@
 %token<boolean_value> BOOLEAN_LITERAL "boolean";
 %token<integer_value> INTEGER_LITERAL "integer";
 %token<float_value> FLOAT_LITERAL "float";
+%token<double_value> DOUBLE_LITERAL "double";
 %token<string> STRING_LITERAL "string";
 
 %token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
@@ -121,7 +124,7 @@
 %token GOSUB RETURN GOTO
 %token SELECT ENDSELECT CASE ENDCASE DEFAULT
 
-%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT STRING
+%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN INTEGER FLOAT DOUBLE STRING
 
 %token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
 %token<string> KEYWORD;

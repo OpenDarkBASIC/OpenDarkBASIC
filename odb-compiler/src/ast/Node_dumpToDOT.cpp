@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Visitor.hpp"
 #include <unordered_map>
 
 namespace odb {
@@ -322,10 +323,9 @@ private:
             writeBlueConnection(stmnt, node);
         }
     }
-    void visitBooleanLiteral(const BooleanLiteral* node) override {}
-    void visitIntegerLiteral(const IntegerLiteral* node) override {}
-    void visitFloatLiteral(const FloatLiteral* node) override {}
-    void visitStringLiteral(const StringLiteral* node) override {}
+#define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override {}
+    ODB_DATATYPE_LIST
+#undef X
     void visitSymbol(const Symbol* node) override {}
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
     void visitScopedSymbol(const ScopedSymbol* node) override {}
@@ -368,6 +368,8 @@ private:
         { writeName(node, "int: " + std::to_string(node->value())); }
     void visitFloatLiteral(const FloatLiteral* node) override
         { writeName(node, "float: " + std::to_string(node->value())); }
+    void visitDoubleLiteral(const DoubleLiteral* node) override
+        { writeName(node, "double: " + std::to_string(node->value())); }
     void visitStringLiteral(const StringLiteral* node) override
         { writeName(node, "string: " + node->value()); }
     void visitSymbol(const Symbol* node) override
