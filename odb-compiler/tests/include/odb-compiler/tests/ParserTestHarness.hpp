@@ -20,7 +20,6 @@ public:
     void SetUp() override
     {
         ast = nullptr;
-        matcher.updateFromIndex(&kwIndex);
         driver = new odb::db::Driver(&matcher);
     }
 

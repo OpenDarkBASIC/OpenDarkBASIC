@@ -37,7 +37,7 @@ TEST_F(NAME, bool_constant)
     ast->accept(&v);
 }
 
-TEST_F(NAME, integer_constant)
+TEST_F(NAME, byte_constant)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
@@ -50,43 +50,115 @@ TEST_F(NAME, integer_constant)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(20)));
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(20)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_constant)
+TEST_F(NAME, word_constant)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 5.2\n");
+        "#constant myint 2000\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(5.2)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(2000)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_constant_annotated)
+TEST_F(NAME, integer_constant)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat# 5.2\n");
+        "#constant myint 2147483647\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::FLOAT))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(5.2)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647)));
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, dword_constant)
+{
+    using Annotation = ast::AnnotatedSymbol::Annotation;
+
+    ast = driver->parseString("test",
+        "#constant myint 4294967295\n");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDWordLiteral(DWordLiteralEq(4294967295)));
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, double_integer_constant)
+{
+    using Annotation = ast::AnnotatedSymbol::Annotation;
+
+    ast = driver->parseString("test",
+        "#constant myint 4294967296\n");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(4294967296)));
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, double_constant)
+{
+    using Annotation = ast::AnnotatedSymbol::Annotation;
+
+    ast = driver->parseString("test",
+        "#constant mydouble 5.2\n");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, double_constant_annotated)
+{
+    using Annotation = ast::AnnotatedSymbol::Annotation;
+
+    ast = driver->parseString("test",
+        "#constant mydouble# 5.2\n");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::FLOAT))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
 
     ast->accept(&v);
 }
@@ -135,146 +207,146 @@ TEST_F(NAME, more_than_one_value_fails)
         "#constant fail2 23 3.4\n"), IsNull());
 }
 
-TEST_F(NAME, float_1_notation)
+TEST_F(NAME, double_1_notation)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 53.\n");
+        "#constant mydouble 53.\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(53)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(53)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_2_notation)
+TEST_F(NAME, double_2_notation)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat .53\n");
+        "#constant mydouble .53\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(.53)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(.53)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_3_notation)
+TEST_F(NAME, double_3_notation)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 53.f\n");
+        "#constant mydouble 53.f\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(53)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(53)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_4_notation)
+TEST_F(NAME, double_4_notation)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat .53f\n");
+        "#constant mydouble .53f\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(.53)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(.53)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_exponential_notation_1)
+TEST_F(NAME, double_exponential_notation_1)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 12e2\n");
+        "#constant mydouble 12e2\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(12e2)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12e2)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_exponential_notation_2)
+TEST_F(NAME, double_exponential_notation_2)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 12.4e2\n");
+        "#constant mydouble 12.4e2\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(12.4e2)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12.4e2)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_exponential_notation_3)
+TEST_F(NAME, double_exponential_notation_3)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat .4e2\n");
+        "#constant mydouble .4e2\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(40)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(40)));
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, float_exponential_notation_4)
+TEST_F(NAME, double_exponential_notation_4)
 {
     using Annotation = ast::AnnotatedSymbol::Annotation;
 
     ast = driver->parseString("test",
-        "#constant myfloat 43.e2\n");
+        "#constant mydouble 43.e2\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myfloat", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(4300)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4300)));
 
     ast->accept(&v);
 }

@@ -1,19 +1,20 @@
-#include <gmock/gmock.h>
-#include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
 #define NAME db_keyword
 
 using namespace testing;
+using namespace odb;
 
 class NAME : public ParserTestHarness
 {
 public:
 };
 
-using namespace odb;
-
+/*
 TEST_F(NAME, print_command)
 {
     kwIndex.addKeyword({"print", "", "", {}, std::nullopt});
@@ -144,3 +145,4 @@ TEST_F(NAME, builtin_keyword_variable_name)
     ASSERT_THAT(driver->parseString(
         "string$ as string"), IsTrue());
 }
+*/

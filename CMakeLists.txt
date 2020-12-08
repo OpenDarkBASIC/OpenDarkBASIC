@@ -12,6 +12,8 @@ include (ConfigureMSVCRuntime)
 set (MSVC_RUNTIME "shared")
 configure_msvc_runtime()
 
+# Each subproject uses ODB_PLATFORM to create their own platform defines.
+# Makes sense to put this here.
 if (WIN32)
     set (ODB_PLATFORM "WIN32")
 elseif (APPLE)

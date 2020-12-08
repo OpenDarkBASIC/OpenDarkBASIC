@@ -16,6 +16,7 @@ option (ODBCOMPILER_TESTS "Build unit tests" ON)
 option (ODBCOMPILER_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
+option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
 
 test_visibility_macros (
     ODBCOMPILER_API_EXPORT
@@ -52,11 +53,14 @@ if (${ODBCOMPILER_VERBOSE_BISON})
     set (BISON_VERBOSE_OPTION "VERBOSE")
 endif ()
 
+if (ODBCOMPILER_BISON_COUNTER_EXAMPLES)
+    set (BISON_COMPILE_FLAGS -Wcounterexamples)
+endif ()
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
     DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db/Parser.y.h" ${BISON_VERBOSE_OPTION}
-    COMPILE_FLAGS -Wcounterexamples)
+    COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
@@ -65,7 +69,8 @@ add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
 bison_target (KeywordsParser
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/keywords/Parser.y.h" ${BISON_VERBOSE_OPTION})
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/keywords/Parser.y.h" ${BISON_VERBOSE_OPTION}
+    COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
 flex_target (KeywordsScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Scanner.lex"
     "${PROJECT_BINARY_DIR}/src/parsers/keywords/Scanner.lex.cpp")
@@ -131,7 +136,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/test_db_function_call.cpp"
         # "tests/src/test_db_function_decl.cpp"
         # "tests/src/test_db_goto.cpp"
-        # "tests/src/test_db_keyword.cpp"
+        "tests/src/test_db_keyword.cpp"
         # "tests/src/test_db_loop_do.cpp"
         # "tests/src/test_db_loop_for.cpp"
         # "tests/src/test_db_loop_repeat.cpp"

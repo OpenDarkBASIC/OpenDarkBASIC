@@ -8,6 +8,7 @@ namespace odb {
 
 struct Keyword
 {
+public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
     // for a table of keyword types.
     enum class Type: char

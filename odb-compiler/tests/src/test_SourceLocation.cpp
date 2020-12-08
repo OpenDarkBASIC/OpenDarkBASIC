@@ -175,42 +175,42 @@ TEST(NAME, InvalidLocation1)
 {
     InlineSourceLocation sl("test", "lol", 1, 1, 4, 4);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 1,1,4,4)"));
 }
 
 TEST(NAME, InvalidLocation2)
 {
     InlineSourceLocation sl("test", "lol", 1, 1, 3, 4);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 1,1,3,4)"));
 }
 
 TEST(NAME, InvalidLocation3)
 {
     InlineSourceLocation sl("test", "lol", 2, 2, 2, 2);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 2,2,2,2)"));
 }
 
 TEST(NAME, InvalidLocation4)
 {
     InlineSourceLocation sl("test", "lol", 1, 2, 2, 2);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 1,2,2,2)"));
 }
 
 TEST(NAME, InvalidLocation5)
 {
     InlineSourceLocation sl("test", "lol\nlel\nlil", 1, 3, 4, 2);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 1,3,4,2)"));
 }
 
 TEST(NAME, InvalidLocation6)
 {
     InlineSourceLocation sl("test", "lol\nlel\nlil", 1, 3, 2, 4);
     std::vector<std::string> sh = sl.getSectionHighlight();
-    EXPECT_THAT(sh[0], StrEq("(Invalid location)"));
+    EXPECT_THAT(sh[0], StrEq("(Invalid location 1,3,2,4)"));
 }
 
 TEST(NAME, EmptyLines)

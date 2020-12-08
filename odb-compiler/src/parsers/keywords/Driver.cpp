@@ -227,7 +227,7 @@ void Driver::finishKeyword()
     {
         Keyword::Overload kwOverload;
         for (auto& arg : overload)
-            kwOverload.arglist.emplace_back(Keyword::Arg{Keyword::Type::Integer, arg});
+            kwOverload.arglist.emplace_back(Keyword::Arg{Keyword::Type::Integer, arg, ""});
         keyword.overloads.push_back(kwOverload);
     }
 
