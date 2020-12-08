@@ -125,14 +125,14 @@ ast::Block* Driver::doParse()
                 const char* tok = dbget_text(scanner_);
                 DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
                 tokens.push_back({TOK_SYMBOL, value, ""});
-                tokens.push_back({TOK_DOLLAR, {}, ""});
+                tokens.push_back({'$', {}, ""});
             } break;
 
             case TOK_PSEUDO_FLOAT_SYMBOL: {
                 const char* tok = dbget_text(scanner_);
                 DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
                 tokens.push_back({TOK_SYMBOL, value, ""});
-                tokens.push_back({TOK_HASH, {}, ""});
+                tokens.push_back({'#', {}, ""});
             } break;
 
             default: {
@@ -192,9 +192,9 @@ ast::Block* Driver::doParse()
             // in between integers and following symbols. Additionally, keywords
             // can end in $ or #, in which case we also do not want to append
             // a space.
-            if (!lastSymbolWasInteger && tokens[i].pushedChar != TOK_DOLLAR && tokens[i].pushedChar != TOK_HASH)
+            if (!lastSymbolWasInteger && tokens[i].pushedChar != '$' && tokens[i].pushedChar != '#')
                 possibleKeyword += " ";
-            else if (result.tokenIdx == i && (tokens[i].pushedChar == TOK_DOLLAR || tokens[i].pushedChar == TOK_HASH))
+            else if (result.tokenIdx == i && (tokens[i].pushedChar == '$' || tokens[i].pushedChar == '#'))
                 result.match.found = false;
             possibleKeyword += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
@@ -254,7 +254,6 @@ ast::Block* Driver::doParse()
             default: break;
         }
 
-        isTokenValidInCurrentState(parser_, tokens[0].pushedChar, scanner_);
         parse_result = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
         tokens.erase(tokens.begin());
     } while (parse_result == YYPUSH_MORE);
@@ -265,14 +264,17 @@ ast::Block* Driver::doParse()
             str::deleteCStr(token.pushedValue.string);
 
     if (parse_result == 0)
-        return program_;
+    {
+        ast::Block* program = program_;
+        program_ = nullptr;
+        return program;
+    }
     return nullptr;
 }
 
 // ----------------------------------------------------------------------------
 void Driver::giveProgram(ast::Block* program)
 {
-    log::info("Set program\n");
     program_ = program;
 }
 
@@ -282,6 +284,30 @@ ast::SourceLocation* Driver::newLocation(const DBLTYPE* loc)
     if (code_.length() > 0)
         return new ast::InlineSourceLocation(sourceName_, code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
     return new ast::FileSourceLocation(sourceName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+}
+
+// ----------------------------------------------------------------------------
+ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location)
+{
+    if (value > std::numeric_limits<uint32_t>::max())
+        return new ast::DoubleIntegerLiteral(value, location);
+    if (value > std::numeric_limits<int32_t>::max())
+        return new ast::DWordLiteral(value, location);
+    if (value > std::numeric_limits<uint16_t>::max())
+        return new ast::IntegerLiteral(value, location);
+    if (value > std::numeric_limits<uint8_t>::max())
+        return new ast::WordLiteral(value, location);
+    if (value > 1)
+        return new ast::ByteLiteral(value, location);
+    return new ast::BooleanLiteral(value, location);
+}
+
+// ----------------------------------------------------------------------------
+ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location)
+{
+    if (value < std::numeric_limits<int32_t>::min())
+        return new ast::DoubleIntegerLiteral(value, location);
+    return new ast::IntegerLiteral(value, location);
 }
 
 // ----------------------------------------------------------------------------

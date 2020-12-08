@@ -9,6 +9,7 @@ class Visitor
 {
 public:
     virtual void visitBlock(const Block* node) = 0;
+    virtual void visitExprList(const ExprList* node) = 0;
 #define X(dbname, cppname) virtual void visit##dbname##Literal(const dbname##Literal* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
@@ -16,6 +17,9 @@ public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitScopedSymbol(const ScopedSymbol* node) = 0;
     virtual void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) = 0;
+    virtual void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node)  = 0;
+    virtual void visitFuncCall(const FuncCall* node) = 0;
+    virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
 };
 
@@ -23,6 +27,7 @@ class GenericVisitor : public Visitor
 {
 public:
     void visitBlock(const Block* node) override;
+    void visitExprList(const ExprList* node) override;
 #define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override;
     ODB_DATATYPE_LIST
 #undef X
@@ -30,6 +35,9 @@ public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
     void visitScopedSymbol(const ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override;
+    void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node) override;
+    void visitFuncCall(const FuncCall* node) override;
+    void visitArrayRef(const ArrayRef* node) override;
     void visitConstDecl(const ConstDecl* node) override;
 
     virtual void visit(const Node* node) = 0;

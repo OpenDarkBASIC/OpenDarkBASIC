@@ -10,10 +10,14 @@
  * they map to in C++
  */
 #define ODB_DATATYPE_LIST     \
-    X(Boolean, bool)          \
+    X(DoubleInteger, int64_t) \
     X(Integer, int32_t)       \
+    X(DWord, uint32_t)        \
+    X(Word, uint16_t)         \
+    X(Byte, uint8_t)          \
+    X(Boolean, bool)          \
+    X(DoubleFloat, double)    \
     X(Float, float)           \
-    X(Double, double)         \
     X(String, std::string)
 
 typedef struct DBLTYPE DBLTYPE;
@@ -41,16 +45,31 @@ private:
     Reference<SourceLocation> location_;
 };
 
+class Expr : public Node
+{
+public:
+    Expr(SourceLocation* location);
+};
+
 /* A single executable statement */
-class Statement : public Node
+class Statement : public Expr
 {
 public:
     Statement(SourceLocation* location);
 };
 
-class Expr : public Node
+class ExprList : public Node
 {
 public:
+    ExprList(SourceLocation* location);
+    void appendExpression(Expr* expr);
+
+    const std::vector<Reference<Expr>>& expressions() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    std::vector<Reference<Expr>> expressions_;
 };
 
 /*! A sequence of one or more statements */
@@ -68,8 +87,8 @@ private:
     std::vector<Reference<Statement>> statements_;
 };
 
-/*! Any literal value */
-class Literal : public Node
+/*! Base class for any literal value */
+class Literal : public Expr
 {
 public:
     Literal(SourceLocation* location);
@@ -143,6 +162,54 @@ class ScopedAnnotatedSymbol : public ScopedSymbol, public AnnotatedSymbol
 {
 public:
     ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);
+
+    void accept(Visitor* visitor) const override;
+};
+
+/*!
+ * It's not possible to determine whether
+ *
+ *   foo(3, 4)
+ *
+ * is a function call or an array access. This class represents such an entity.
+ * This is fixed in a second stage later.
+ */
+class FuncCallOrArrayRef : public Expr
+{
+public:
+    FuncCallOrArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
+    FuncCallOrArrayRef(AnnotatedSymbol* symbol, SourceLocation* location);
+
+    AnnotatedSymbol* symbol() const;
+    ExprList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<AnnotatedSymbol> symbol_;
+    Reference<ExprList> args_;
+};
+
+class FuncCall : public Statement
+{
+public:
+    FuncCall(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
+    FuncCall(AnnotatedSymbol* symbol, SourceLocation* location);
+
+    AnnotatedSymbol* symbol() const;
+    ExprList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<AnnotatedSymbol> symbol_;
+    Reference<ExprList> args_;
+};
+
+class ArrayRef : public FuncCallOrArrayRef
+{
+public:
+    ArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
 
     void accept(Visitor* visitor) const override;
 };

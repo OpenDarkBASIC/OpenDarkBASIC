@@ -6,16 +6,7 @@
 using namespace ::testing;
 using namespace odb;
 
-std::string symbolAnnotationToString(ast::AnnotatedSymbol::Annotation annotation)
-{
-    using Ann = ast::AnnotatedSymbol::Annotation;
-    switch (annotation) {
-        default:
-        case Ann::NONE : return "NONE";
-        case Ann::FLOAT : return "FLOAT";
-        case Ann::STRING : return "STRING";
-    }
-}
+std::string symbolAnnotationToString(ast::AnnotatedSymbol::Annotation annotation);
 
 class BlockStmntCountEqMatcher : public MatcherInterface<const ast::Block*>
 {
@@ -30,6 +21,25 @@ public:
     }
     void DescribeNegationTo(::std::ostream* os) const override {
         *os << "block->statements().size() does not equal " << expectedCount_;
+    }
+
+private:
+    const int expectedCount_;
+};
+
+class ExprListCountEqMatcher : public MatcherInterface<const ast::ExprList*>
+{
+public:
+    explicit ExprListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
+    bool MatchAndExplain(const ast::ExprList* node, MatchResultListener* listener) const override {
+        *listener << "node->expressions().size() equals " << node->expressions().size();
+        return node->expressions().size() == expectedCount_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->expressions().size() equals " << expectedCount_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->expressions().size() does not equal " << expectedCount_;
     }
 
 private:
@@ -84,23 +94,11 @@ private:
     const T expectedValue_;
 };
 
-template <>
-bool LiteralEqMatcher<bool>::MatchAndExplain(const ast::BooleanLiteral* literal, MatchResultListener* listener) const
-{
-    *listener << "literal->value() equals " << (literal->value() ? "true" : "false");
-    return literal->value() == expectedValue_;
-}
-template <>
-void LiteralEqMatcher<bool>::DescribeTo(::std::ostream* os) const {
-    *os << "literal->value() equals " << (expectedValue_ ? "true" : "false");
-}
-template <>
-void LiteralEqMatcher<bool>::DescribeNegationTo(::std::ostream* os) const {
-    *os << "literal->value() does not equal " << (expectedValue_ ? "true" : "false");
-}
-
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
+}
+inline Matcher<const ast::ExprList*> ExprListCountEq(int expectedCount) {
+    return MakeMatcher(new ExprListCountEqMatcher(expectedCount));
 }
 inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(const std::string& name, ast::AnnotatedSymbol::Annotation annotation) {
     return MakeMatcher(new AnnotatedSymbolEqMatcher(name, annotation));

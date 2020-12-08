@@ -10,7 +10,11 @@ namespace odb {
 class KeywordMatcher;
 
 namespace ast {
+    class AnnotatedSymbol;
     class Block;
+    class Expr;
+    class ExprList;
+    class Literal;
     class SourceLocation;
 }
 
@@ -28,6 +32,8 @@ public:
     // Functions called by BISON
     ODBCOMPILER_PRIVATE_API void giveProgram(ast::Block* program);
     ODBCOMPILER_PRIVATE_API ast::SourceLocation* newLocation(const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location);
+    ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location);
     ODBCOMPILER_PRIVATE_API void vreportError(const DBLTYPE* loc, const char* fmt, va_list args);
 
 private:

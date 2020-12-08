@@ -29,8 +29,11 @@
 
 #define RETURN_TOKEN(token) do {                                              \
         dbg(#token);                                                          \
-        return TOK_##token; }                                                 \
-    while(0)
+        return token;                                                         \
+    } while(0)
+
+#define DB_KEYWORD_LIST \
+    X(MOD)
 %}
 
 %option nodefault
@@ -41,7 +44,7 @@
 %option extra-type="odb::db::Driver*"
 %option prefix="db"
 
-REMARK ((?i:rem)|"`"|"//")
+REMARK          ((?i:rem)|"`"|"//")
 REMARK_START    ((?i:remstart)|"/*")
 REMARK_END      ((?i:remend)|"*/")
 
@@ -63,11 +66,13 @@ INTEGER         [0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %x MULTI_COMMENT
+%x MULTI_COMMENT_C
 %x SINGLE_COMMENT
 
 %%
 <INITIAL>{
-    {REMARK_START}      { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
+    (?i:remstart)       { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
+    "/*"                { BEGIN(MULTI_COMMENT_C); dbg("multiline remark"); }
     {REMARK}            { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
 }
 <SINGLE_COMMENT>{
@@ -75,103 +80,109 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     \n                  { BEGIN(INITIAL); }
 }
 <MULTI_COMMENT>{
-    {REMARK_END}        { BEGIN(INITIAL); dbg("multiline remark end"); }
+    (?i:remend)         { BEGIN(INITIAL); dbg("multiline remark end"); }
+    .
+    \n
+}
+<MULTI_COMMENT_C>{
+    "*/"                { BEGIN(INITIAL); dbg("multiline remark end"); }
     .
     \n
 }
 
 <INITIAL>{
-    {CONSTANT}          { RETURN_TOKEN(CONSTANT); }
+    {CONSTANT}          { RETURN_TOKEN(TOK_CONSTANT); }
 
-    {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(BOOLEAN_LITERAL); }
-    {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string = odb::str::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(STRING_LITERAL); }
-    {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(FLOAT_LITERAL); }
-    {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(INTEGER_LITERAL); }
-    {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(INTEGER_LITERAL); }
-    {INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(INTEGER_LITERAL); }
+    {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {STRING_LITERAL}    { yylval->string = odb::str::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
+    {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    {SYMBOL}\$          { RETURN_TOKEN(PSEUDO_STRING_SYMBOL); }
-    {SYMBOL}#           { RETURN_TOKEN(PSEUDO_FLOAT_SYMBOL); }
+    {SYMBOL}\$          { RETURN_TOKEN(TOK_PSEUDO_STRING_SYMBOL); }
+    {SYMBOL}#           { RETURN_TOKEN(TOK_PSEUDO_FLOAT_SYMBOL); }
 
-    "+"                 { RETURN_TOKEN(ADD); }
-    "-"                 { RETURN_TOKEN(SUB); }
-    "*"                 { RETURN_TOKEN(MUL); }
-    "/"                 { RETURN_TOKEN(DIV); }
-    (?i:mod)            { RETURN_TOKEN(MOD); }
-    "^"                 { RETURN_TOKEN(POW); }
-    "("                 { RETURN_TOKEN(LB); }
-    ")"                 { RETURN_TOKEN(RB); }
-    ","                 { RETURN_TOKEN(COMMA);}
-    (?i:inc)            { RETURN_TOKEN(INC); }
-    (?i:dec)            { RETURN_TOKEN(DEC); }
+    "+"                 { RETURN_TOKEN('+'); }
+    "-"                 { RETURN_TOKEN('-'); }
+    "*"                 { RETURN_TOKEN('*'); }
+    "/"                 { RETURN_TOKEN('/'); }
+    (?i:mod)            { RETURN_TOKEN(TOK_MOD); }
+    "^"                 { RETURN_TOKEN('^'); }
+    "("                 { RETURN_TOKEN('('); }
+    ")"                 { RETURN_TOKEN(')'); }
+    ","                 { RETURN_TOKEN(','); }
+    (?i:inc)            { RETURN_TOKEN(TOK_INC); }
+    (?i:dec)            { RETURN_TOKEN(TOK_DEC); }
 
-    "<<"                { RETURN_TOKEN(BSHL); }
-    ">>"                { RETURN_TOKEN(BSHR); }
-    "||"                { RETURN_TOKEN(BOR); }
-    "&&"                { RETURN_TOKEN(BAND); }
-    "~~"                { RETURN_TOKEN(BXOR); }
-    ".."                { RETURN_TOKEN(BNOT); }
+    "<<"                { RETURN_TOKEN(TOK_BSHL); }
+    ">>"                { RETURN_TOKEN(TOK_BSHR); }
+    "||"                { RETURN_TOKEN(TOK_BOR); }
+    "&&"                { RETURN_TOKEN(TOK_BAND); }
+    "~~"                { RETURN_TOKEN(TOK_BXOR); }
+    ".."                { RETURN_TOKEN(TOK_BNOT); }
 
-    "<>"                { RETURN_TOKEN(NE); }
-    "<="                { RETURN_TOKEN(LE); }
-    ">="                { RETURN_TOKEN(GE); }
-    "="                 { RETURN_TOKEN(EQ); }
-    "<"                 { RETURN_TOKEN(LT); }
-    ">"                 { RETURN_TOKEN(GT); }
-    (?i:xor)            { RETURN_TOKEN(LXOR); }
-    (?i:or)             { RETURN_TOKEN(LOR); }
-    (?i:and)            { RETURN_TOKEN(LAND); }
-    (?i:not)            { RETURN_TOKEN(LNOT); }
+    "<>"                { RETURN_TOKEN(TOK_NE); }
+    "<="                { RETURN_TOKEN(TOK_LE); }
+    ">="                { RETURN_TOKEN(TOK_GE); }
+    "="                 { RETURN_TOKEN('='); }
+    "<"                 { RETURN_TOKEN('<'); }
+    ">"                 { RETURN_TOKEN('>'); }
 
-    (?i:then)           { RETURN_TOKEN(THEN); }
-    (?i:endif)          { RETURN_TOKEN(ENDIF); }
-    (?i:elseif)         { RETURN_TOKEN(ELSEIF); }
-    (?i:if)             { RETURN_TOKEN(IF); }
-    (?i:else)           { RETURN_TOKEN(ELSE); }
-    (?i:endwhile)       { RETURN_TOKEN(ENDWHILE); }
-    (?i:while)          { RETURN_TOKEN(WHILE); }
-    (?i:repeat)         { RETURN_TOKEN(REPEAT); }
-    (?i:until)          { RETURN_TOKEN(UNTIL); }
-    (?i:do)             { RETURN_TOKEN(DO); }
-    (?i:loop)           { RETURN_TOKEN(LOOP); }
-    (?i:break)          { RETURN_TOKEN(BREAK); }
-    (?i:for)            { RETURN_TOKEN(FOR); }
-    (?i:to)             { RETURN_TOKEN(TO); }
-    (?i:step)           { RETURN_TOKEN(STEP); }
-    (?i:next)           { RETURN_TOKEN(NEXT); }
-    (?i:endfunction)    { RETURN_TOKEN(ENDFUNCTION); }
-    (?i:exitfunction)   { RETURN_TOKEN(EXITFUNCTION); }
-    (?i:function)       { RETURN_TOKEN(FUNCTION); }
-    (?i:gosub)          { RETURN_TOKEN(GOSUB); }
-    (?i:return)         { RETURN_TOKEN(RETURN); }
-    (?i:goto)           { RETURN_TOKEN(GOTO); }
-    (?i:dim)            { RETURN_TOKEN(DIM); }
-    (?i:global)         { RETURN_TOKEN(GLOBAL); }
-    (?i:local)          { RETURN_TOKEN(LOCAL); }
-    (?i:as)             { RETURN_TOKEN(AS); }
-    (?i:endtype)        { RETURN_TOKEN(ENDTYPE); }
-    (?i:type)           { RETURN_TOKEN(TYPE); }
-    (?i:boolean)        { RETURN_TOKEN(BOOLEAN); }
-    (?i:integer)        { RETURN_TOKEN(INTEGER); }
-    (?i:float)          { RETURN_TOKEN(FLOAT); }
-    (?i:double)         { RETURN_TOKEN(DOUBLE); }
-    (?i:string)         { RETURN_TOKEN(STRING); }
-    (?i:endselect)      { RETURN_TOKEN(ENDSELECT); }
-    (?i:select)         { RETURN_TOKEN(SELECT); }
-    (?i:endcase)        { RETURN_TOKEN(ENDCASE); }
-    (?i:case)           { RETURN_TOKEN(CASE); }
-    (?i:default)        { RETURN_TOKEN(DEFAULT); }
+    (?i:xor)            { RETURN_TOKEN(TOK_LXOR); }
+    (?i:or)             { RETURN_TOKEN(TOK_LOR); }
+    (?i:and)            { RETURN_TOKEN(TOK_LAND); }
+    (?i:not)            { RETURN_TOKEN(TOK_LNOT); }
 
-    {SYMBOL}            { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(SYMBOL); }
+    (?i:then)           { RETURN_TOKEN(TOK_THEN); }
+    (?i:endif)          { RETURN_TOKEN(TOK_ENDIF); }
+    (?i:elseif)         { RETURN_TOKEN(TOK_ELSEIF); }
+    (?i:if)             { RETURN_TOKEN(TOK_IF); }
+    (?i:else)           { RETURN_TOKEN(TOK_ELSE); }
+    (?i:endwhile)       { RETURN_TOKEN(TOK_ENDWHILE); }
+    (?i:while)          { RETURN_TOKEN(TOK_WHILE); }
+    (?i:repeat)         { RETURN_TOKEN(TOK_REPEAT); }
+    (?i:until)          { RETURN_TOKEN(TOK_UNTIL); }
+    (?i:do)             { RETURN_TOKEN(TOK_DO); }
+    (?i:loop)           { RETURN_TOKEN(TOK_LOOP); }
+    (?i:break)          { RETURN_TOKEN(TOK_BREAK); }
+    (?i:for)            { RETURN_TOKEN(TOK_FOR); }
+    (?i:to)             { RETURN_TOKEN(TOK_TO); }
+    (?i:step)           { RETURN_TOKEN(TOK_STEP); }
+    (?i:next)           { RETURN_TOKEN(TOK_NEXT); }
+    (?i:endfunction)    { RETURN_TOKEN(TOK_ENDFUNCTION); }
+    (?i:exitfunction)   { RETURN_TOKEN(TOK_EXITFUNCTION); }
+    (?i:function)       { RETURN_TOKEN(TOK_FUNCTION); }
+    (?i:gosub)          { RETURN_TOKEN(TOK_GOSUB); }
+    (?i:return)         { RETURN_TOKEN(TOK_RETURN); }
+    (?i:goto)           { RETURN_TOKEN(TOK_GOTO); }
+    (?i:dim)            { RETURN_TOKEN(TOK_DIM); }
+    (?i:global)         { RETURN_TOKEN(TOK_GLOBAL); }
+    (?i:local)          { RETURN_TOKEN(TOK_LOCAL); }
+    (?i:as)             { RETURN_TOKEN(TOK_AS); }
+    (?i:endtype)        { RETURN_TOKEN(TOK_ENDTYPE); }
+    (?i:type)           { RETURN_TOKEN(TOK_TYPE); }
+    (?i:boolean)        { RETURN_TOKEN(TOK_BOOLEAN); }
+    (?i:integer)        { RETURN_TOKEN(TOK_INTEGER); }
+    (?i:float)          { RETURN_TOKEN(TOK_FLOAT); }
+    (?i:double)         { RETURN_TOKEN(TOK_DOUBLE); }
+    (?i:string)         { RETURN_TOKEN(TOK_STRING); }
+    (?i:endselect)      { RETURN_TOKEN(TOK_ENDSELECT); }
+    (?i:select)         { RETURN_TOKEN(TOK_SELECT); }
+    (?i:endcase)        { RETURN_TOKEN(TOK_ENDCASE); }
+    (?i:case)           { RETURN_TOKEN(TOK_CASE); }
+    (?i:default)        { RETURN_TOKEN(TOK_DEFAULT); }
 
-    "#"                 { RETURN_TOKEN(HASH); }
-    "$"                 { RETURN_TOKEN(DOLLAR); }
-    "."                 { RETURN_TOKEN(PERIOD); }
+    {SYMBOL}            { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(TOK_SYMBOL); }
 
-    "\n"                { RETURN_TOKEN(NEWLINE); }
-    ":"                 { RETURN_TOKEN(COLON); }
-    ";"                 { RETURN_TOKEN(SEMICOLON); }
-    .                   {}
+    "#"                 { RETURN_TOKEN('#'); }
+    "$"                 { RETURN_TOKEN('$'); }
+    "."                 { RETURN_TOKEN('.'); }
+
+    "\n"                { RETURN_TOKEN('\n'); }
+    ":"                 { RETURN_TOKEN(':'); }
+    ";"                 { RETURN_TOKEN(';'); }
+    .
 }
 %%

@@ -323,6 +323,15 @@ private:
             writeBlueConnection(stmnt, node);
         }
     }
+    void visitExprList(const ExprList* node) override
+    {
+        int i = 0;
+        for (const auto& expr : node->expressions())
+        {
+            writeNamedConnection(node, expr, "exprlist[" + std::to_string(i++) + "]");
+            writeBlueConnection(expr, node);
+        }
+    }
 #define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override {}
     ODB_DATATYPE_LIST
 #undef X
@@ -330,6 +339,24 @@ private:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
+    void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->args(), "args");
+        writeBlueConnection(node->symbol(), node);
+        writeBlueConnection(node->args(), node);
+    }
+    void visitFuncCall(const FuncCall* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeBlueConnection(node->symbol(), node);
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
+    void visitArrayRef(const ArrayRef* node) override { visitFuncCallOrArrayRef(node); }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -361,17 +388,27 @@ private:
     }
 
     void visitBlock(const Block* node) override
-        { writeName(node, "block"); }
-    void visitBooleanLiteral(const BooleanLiteral* node) override
-        { writeName(node, "bool: " + std::to_string(node->value())); }
+        { writeName(node, "Block"); }
+    void visitExprList(const ExprList* node) override
+        { writeName(node, "ExprList"); }
+    void visitDoubleIntegerLiteral(const DoubleIntegerLiteral* node) override
+        { writeName(node, "DoubleInteger: " + std::to_string(node->value())); }
     void visitIntegerLiteral(const IntegerLiteral* node) override
-        { writeName(node, "int: " + std::to_string(node->value())); }
+        { writeName(node, "Integer: " + std::to_string(node->value())); }
+    void visitDWordLiteral(const DWordLiteral* node) override
+        { writeName(node, "DWord: " + std::to_string(node->value())); }
+    void visitWordLiteral(const WordLiteral* node) override
+        { writeName(node, "Word: " + std::to_string(node->value())); }
+    void visitByteLiteral(const ByteLiteral* node) override
+        { writeName(node, "Byte: " + std::to_string(node->value())); }
+    void visitBooleanLiteral(const BooleanLiteral* node) override
+        { writeName(node, std::string("Boolean: ") + (node->value() ? "true" : "false")); }
+    void visitDoubleFloatLiteral(const DoubleFloatLiteral* node) override
+        { writeName(node, "DoubleFloat: " + std::to_string(node->value())); }
     void visitFloatLiteral(const FloatLiteral* node) override
-        { writeName(node, "float: " + std::to_string(node->value())); }
-    void visitDoubleLiteral(const DoubleLiteral* node) override
-        { writeName(node, "double: " + std::to_string(node->value())); }
+        { writeName(node, "Float: " + std::to_string(node->value())); }
     void visitStringLiteral(const StringLiteral* node) override
-        { writeName(node, "string: " + node->value()); }
+        { writeName(node, "String: " + node->value()); }
     void visitSymbol(const Symbol* node) override
         { writeName(node, "symbol: " + node->name()); }
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override
@@ -407,7 +444,10 @@ private:
 
         writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ")");
     }
-    void visitConstDecl(const ConstDecl* node) override { writeName(node, "#constant"); }
+    void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node) override { writeName(node, "FuncCall or ArrayRef"); }
+    void visitFuncCall(const FuncCall* node) override { writeName(node, "FuncCall"); }
+    void visitArrayRef(const ArrayRef* node) override { writeName(node, "ArrayRef"); }
+    void visitConstDecl(const ConstDecl* node) override { writeName(node, "ConstDecl"); }
 private:
     FILE* fp_;
     const NodeGUIDs* guids_;

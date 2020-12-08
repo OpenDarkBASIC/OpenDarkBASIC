@@ -39,10 +39,11 @@
             class AnnotatedSymbol;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
+            class FuncCall;
+            class Expr;
+            class ExprList;
         }
     }
-
-    void isTokenValidInCurrentState(dbpstate* yyps, int yychar, dbscan_t scanner);
 }
 
 /*
@@ -84,9 +85,8 @@
 /* This is the union that will become known as YYSTYPE in the generated code */
 %union {
     bool boolean_value;
-    int32_t integer_value;
-    float float_value;
-    double double_value;
+    int64_t integer_value;
+    double float_value;
     char* string;
 
     odb::ast::Block* block;
@@ -97,25 +97,27 @@
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
+    odb::ast::FuncCall* func_call;
+    odb::ast::Expr* expr;
+    odb::ast::ExprList* expr_list;
 }
 
 %define api.token.prefix {TOK_}
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token NEWLINE COLON SEMICOLON PERIOD
+%token '\n' ':' ';' '.'
 
 %token CONSTANT
 
 %token<boolean_value> BOOLEAN_LITERAL "boolean";
 %token<integer_value> INTEGER_LITERAL "integer";
 %token<float_value> FLOAT_LITERAL "float";
-%token<double_value> DOUBLE_LITERAL "double";
 %token<string> STRING_LITERAL "string";
 
-%token ADD SUB MUL DIV POW MOD LB RB COMMA INC DEC;
+%token '+' '-' '*' '/' '^' MOD '(' ')' ',' INC DEC;
 %token BSHL BSHR BOR BAND BXOR BNOT;
-%token LT GT LE GE NE EQ LOR LAND LNOT;
+%token '<' '>' LE GE NE '=' LOR LAND LNOT;
 
 %token IF THEN ELSE ELSEIF NO_ELSE ENDIF
 %token WHILE ENDWHILE REPEAT UNTIL DO LOOP BREAK
@@ -128,12 +130,16 @@
 
 %token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
 %token<string> KEYWORD;
-%token DOLLAR HASH;
+%token '$' '#';
 
 %type<block> program;
 %type<block> block;
 %type<stmnt> stmnt;
 %type<const_decl> constant_decl;
+%type<stmnt> func_call;
+%type<expr> func_call_or_array_ref;
+%type<expr> expr;
+%type<expr_list> expr_list;
 /*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
@@ -230,9 +236,9 @@ program
   | seps_maybe                                   { $$ = nullptr; }
   ;
 sep
-  : NEWLINE
-  | COLON
-  | SEMICOLON
+  : '\n'
+  | ':'
+  | ';'
   ;
 seps
   : seps sep
@@ -247,6 +253,7 @@ block
   ;
 stmnt
   : constant_decl                                { $$ = $1; }
+  | func_call                                    { $$ = $1; }
   ;
 /*
 stmnt
@@ -423,17 +430,6 @@ func_name_decl
   : FUNCTION annotated_symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
   | FUNCTION annotated_symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
   ;
-func_call
-  : annotated_symbol LB arglist RB {
-        $$ = $1;
-        $$->info.type = NT_SYM_ARRAY_REF;
-        $$->sym.func_call.arglist = $3;
-    }
-  | annotated_symbol LB RB {
-        $$ = $1;
-        $$->info.type = NT_SYM_FUNC_CALL;
-    }
-  ;
 sub_call
   : GOSUB annotated_symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
@@ -445,18 +441,24 @@ label_decl
   ;
 goto_label
   : GOTO annotated_symbol_without_type                     { $$ = newGoto($2, &yylloc); }
-  ;
+  ;*/
 func_call_or_array_ref
-  : annotated_symbol LB arglist RB {
-        $$ = $1;
-        $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
-        $$->sym.func_call.arglist = $3;
-    }
-  | annotated_symbol LB RB {
-        $$->info.type = NT_SYM_FUNC_CALL;  // Kind of hacky, fix this later by doing a lookup
-        $$ = $1;
-    }
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCall($1, driver->newLocation(&yylloc)); }
   ;
+func_call
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCall($1, $3, driver->newLocation(&yylloc)); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCall($1, driver->newLocation(&yylloc)); }
+  ;
+expr_list
+  : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
+  | expr                                         { $$ = new ExprList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
+  ;
+expr
+  : literal                                      { $$ = $1; }
+  | func_call_or_array_ref                       { $$ = $1; }
+  ;
+/*
 keyword
   : KEYWORD                                      { $$ = newKeyword($1, nullptr, &yylloc); }
   | KEYWORD arglist                              { $$ = newKeyword($1, $2, &yylloc); }
@@ -471,8 +473,9 @@ expr
   : LB arglist RB                                { $$ = $2; }
   | arglist
   ;
-arglist
-  : expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD, &yylloc); }
+expr
+  : '('  ')'
+  | expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD, &yylloc); }
   | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB, &yylloc); }
   | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL, &yylloc); }
   | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV, &yylloc); }
@@ -509,11 +512,11 @@ decl_arglist
   ;*/
 literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
-  | INTEGER_LITERAL                              { $$ = new IntegerLiteral($1, driver->newLocation(&yylloc)); }
-  | FLOAT_LITERAL                                { $$ = new FloatLiteral($1, driver->newLocation(&yylloc)); }
+  | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
+  | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
   | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); }
-  | SUB INTEGER_LITERAL                          { $$ = new IntegerLiteral(-$2, driver->newLocation(&yylloc)); }
-  | SUB FLOAT_LITERAL                            { $$ = new FloatLiteral(-$2, driver->newLocation(&yylloc)); }
+  | SUB INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
+  | SUB FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
   ;
 scoped_annotated_symbol
   : LOCAL annotated_symbol                       { $$ = new ScopedAnnotatedSymbol(ScopedAnnotatedSymbol::Scope::LOCAL, $2->annotation(), $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
@@ -527,8 +530,8 @@ scoped_symbol
   ;
 annotated_symbol
   : symbol %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::NONE, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
-  | symbol HASH                                  { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::FLOAT, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
-  | symbol DOLLAR                                { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::STRING, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  | symbol '#'                                   { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::FLOAT, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  | symbol '$'                                   { $$ = new AnnotatedSymbol(AnnotatedSymbol::Annotation::STRING, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
   ;
 symbol
   : SYMBOL                                       { $$ = new Symbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
@@ -607,23 +610,4 @@ void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
     va_start(args, fmt);
     driver->vreportError(locp, fmt, args);
     va_end(args);
-}
-
-void isTokenValidInCurrentState(yypstate* yyps, int yychar, dbscan_t scanner)
-{
-/*
-    printf("yychar: %d\n", yychar);
-    int yytoken = YYTRANSLATE(yychar);
-    int yyn = yypact[yystate] + yytoken;
-
-    if (yyn < 0 || yyn > YYLAST || yycheck[yyn] != yytoken)
-    {
-        yyn = yydefact[yystate];
-        if (yyn == 0)
-            goto error;
-        goto ok;
-    }
-
-    ok: puts("ok"); return;
-    error: puts("error"); return;*/
 }

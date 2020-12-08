@@ -128,7 +128,7 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_arrays.cpp"
         # "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
-        # "tests/src/test_db_function_call.cpp"
+        "tests/src/test_db_function_call.cpp"
         # "tests/src/test_db_function_decl.cpp"
         # "tests/src/test_db_goto.cpp"
         # "tests/src/test_db_keyword.cpp"
@@ -138,7 +138,7 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_loop_while.cpp"
         # "tests/src/test_db_op_add.cpp"
         # "tests/src/test_db_op_precedence.cpp"
-        # "tests/src/test_db_remarks.cpp"
+        "tests/src/test_db_remarks.cpp"
         # "tests/src/test_db_select.cpp"
         # "tests/src/test_db_string_literal.cpp"
         # "tests/src/test_db_subroutine.cpp"
@@ -147,6 +147,7 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_kw_index.cpp"
         # "tests/src/test_kw_matcher.cpp"
         "tests/src/test_SourceLocation.cpp"
+        "tests/src/ASTMatchers.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
