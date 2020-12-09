@@ -45,14 +45,14 @@ private:
     Reference<SourceLocation> location_;
 };
 
-class Expr : public Node
+class Expr : virtual public Node
 {
 public:
     Expr(SourceLocation* location);
 };
 
 /* A single executable statement */
-class Statement : public Expr
+class Statement : virtual public Node
 {
 public:
     Statement(SourceLocation* location);
@@ -98,7 +98,7 @@ template <typename T>
 class LiteralTemplate : public Literal
 {
 public:
-    LiteralTemplate(const T& value, SourceLocation* location) : Literal(location), value_(value) {}
+    LiteralTemplate(const T& value, SourceLocation* location) : Node(location), Literal(location), value_(value) {}
     const T& value() const { return value_; }
 
     void accept(Visitor* visitor) const override;
@@ -178,7 +178,6 @@ class FuncCallOrArrayRef : public Expr
 {
 public:
     FuncCallOrArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
-    FuncCallOrArrayRef(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
     ExprList* args() const;
@@ -190,7 +189,7 @@ private:
     Reference<ExprList> args_;
 };
 
-class FuncCall : public Statement
+class FuncCall : public Statement, public Expr
 {
 public:
     FuncCall(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
