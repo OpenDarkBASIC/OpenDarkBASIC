@@ -213,7 +213,7 @@ void Driver::setHelpFile(char* path)
 // ----------------------------------------------------------------------------
 void Driver::finishKeyword()
 {
-    Keyword keyword;
+    Keyword* keyword = new Keyword
 
     keyword.name = keywordName_;
 
@@ -231,7 +231,12 @@ void Driver::finishKeyword()
         keyword.overloads.push_back(kwOverload);
     }
 
-    kwMap_->addKeyword(std::move(keyword));
+    for (auto& overload : currentOverloadList_)
+    {
+        kwMap_->addKeyword(new Keyword(nullptr,
+            keywordName_
+    }
+
 
     resetParserState();
 }

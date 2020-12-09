@@ -1,12 +1,16 @@
 #pragma once
 
+#include "odb-compiler/config.hpp"
+#include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
 #include <optional>
 
 namespace odb {
 
-class Keyword
+class DynamicLibrary;
+
+class Keyword : public RefCounted
 {
 public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
@@ -25,14 +29,24 @@ public:
     struct Arg
     {
         Type type;
-        std::string name;
+        std::string symName;
         std::string description;
     };
 
-    std::string name;
-    std::string helpFile;
-    std::vector<Arg> args;
-    Type returnType;
+    Keyword(DynamicLibrary* sourceLibrary,
+            const std::string& dbSymbol,
+            const std::string& cppSymbol,
+            Type returnType,
+            const std::vector<Arg>& args,
+            const std::string helpFile="");
+
+private:
+    Reference<DynamicLibrary> library_;
+    std::string dbSymbol_;
+    std::string cppSymbol_;
+    std::string helpFile_;
+    std::vector<Arg> args_;
+    Type returnType_;
 };
 
 }

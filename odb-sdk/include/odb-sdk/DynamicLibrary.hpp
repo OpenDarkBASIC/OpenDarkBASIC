@@ -1,34 +1,26 @@
 #pragma once
 
 #include "odb-sdk/config.hpp"
+#include "odb-sdk/RefCounted.hpp"
 #include <memory>
 #include <string>
 
 namespace odb {
 
-struct PluginPlatformData;
-class KeywordIndex;
+struct DynLibPlatformData;
 
-class ODBSDK_PUBLIC_API Plugin
+class ODBSDK_PUBLIC_API DynamicLibrary : public RefCounted
 {
 public:
-    Plugin() = delete;
-    Plugin(const Plugin& other) = delete;
-    Plugin(Plugin&& other) = default;
-    ~Plugin();
+    DynamicLibrary() = delete;
+    ~DynamicLibrary();
 
     /*!
      * @brief Attempts to load the specified shared library or DLL.
-     * @arg openAsDataFile If this is set to true, then this plugin is loaded as data only, rather
-     * than being loaded as executable. Symbol addresses from data only plugins will raise a
-     * read-only access violation when called.
+     * @return Returns nullptr on failure, otherwise returns a new instance of
+     * this class.
      */
-    static std::unique_ptr<Plugin> open(const char* filename, bool openAsDataFile = false);
-
-    /*!
-     * @brief The name of the plugin.
-     */
-    std::string getName() const;
+    static DynamicLibrary* open(const char* filename);
 
     /*!
      * @brief Looks up the address of a given symbol in the shared library or
@@ -50,16 +42,20 @@ public:
     /*!
      * @brief Returns the total number of strings present in the string table.
      */
+#if defined(ODBSDK_PLATFORM_WIN32)
     int getStringTableSize() const;
+#endif
 
     /*!
      * @brief Returns a string at the specified index in the string table.
      */
+#if defined(ODBSDK_PLATFORM_WIN32)
     std::string getStringTableEntryAt(int idx) const;
+#endif
 
 private:
-    explicit Plugin(std::unique_ptr<PluginPlatformData> data);
-    std::unique_ptr<PluginPlatformData> data_;
+    explicit DynamicLibrary(std::unique_ptr<DynLibPlatformData> data);
+    std::unique_ptr<DynLibPlatformData> data_;
 };
 
 }

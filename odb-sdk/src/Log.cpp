@@ -65,8 +65,9 @@ void vdbParser(Severity severity, const char* fmt, va_list ap)
     switch (severity)
     {
         case INFO : break;
+        case NOTICE :
         case WARNING : fprintf(infofp, "%s", YELLOW); break;
-        case ERROR : fprintf(infofp, "%s", RED); break;
+        case ERROR :
         case FATAL : fprintf(infofp, "%s", RED); break;
     }
     fprintf(infofp, "[db Parser] ");
@@ -91,8 +92,9 @@ void vkwParser(Severity severity, const char* fmt, va_list ap)
     switch (severity)
     {
         case INFO : break;
+        case NOTICE :
         case WARNING : fprintf(infofp, "%s", YELLOW); break;
-        case ERROR : fprintf(infofp, "%s", RED); break;
+        case ERROR :
         case FATAL : fprintf(infofp, "%s", RED); break;
     }
     fprintf(infofp, "[kw Parser] ");
@@ -110,6 +112,33 @@ void ast(Severity severity, const char* fmt, ...)
     va_start(ap, fmt);
     vfprintf(infofp, fmt, ap);
     va_end(ap);
+}
+
+// ----------------------------------------------------------------------------
+void sdk(Severity severity, const char* fmt, ...)
+{
+    assert(infofp);
+
+    va_list ap;
+    va_start(ap, fmt);
+    vsdk(severity, fmt, ap);
+    va_end(ap);
+}
+void vsdk(Severity severity, const char* fmt, va_list ap)
+{
+    assert(infofp);
+
+    switch (severity)
+    {
+        case INFO : break;
+        case NOTICE :
+        case WARNING : fprintf(infofp, "%s", YELLOW); break;
+        case ERROR :
+        case FATAL : fprintf(infofp, "%s", RED); break;
+    }
+    fprintf(infofp, "[SDK] ");
+    vfprintf(infofp, fmt, ap);
+    fprintf(infofp, "%s", RESET);
 }
 
 }

@@ -7,6 +7,8 @@
 #include <unistd.h>
 #endif
 
+namespace fs = std::filesystem;
+
 namespace odb {
 
 // ----------------------------------------------------------------------------
@@ -41,6 +43,13 @@ FILE* dupFilePointer(FILE* file)
     fdopen_failed : close(newFd);
     dup_failed    : return nullptr;
 #endif
+}
+
+// ----------------------------------------------------------------------------
+bool fileIsDynamicLib(const std::filesystem::path& filename)
+{
+    return filename.extension() == ".dll"
+        || filename.extension() == ".so";
 }
 
 }

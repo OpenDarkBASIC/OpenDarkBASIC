@@ -119,5 +119,5 @@ TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
     auto result = matcher->findLongestKeywordMatching("delete object 100");
 
     EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(strlen("delete object")));
+    EXPECT_THAT(result.matchedLength, Eq(sizeof("delete object")));
 }

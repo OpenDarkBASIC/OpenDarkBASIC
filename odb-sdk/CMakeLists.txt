@@ -23,9 +23,9 @@ configure_file ("templates/config.hpp.in" "include/odb-sdk/config.hpp")
 ###############################################################################
 
 add_library (odb-sdk ${ODBSDK_LIB_TYPE}
+    "src/DynamicLibrary.cpp"
     "src/FileSystem.cpp"
     "src/Log.cpp"
-    "src/Plugin.cpp"
     "src/RefCounted.cpp"
     "src/Str.cpp")
 target_include_directories (odb-sdk
