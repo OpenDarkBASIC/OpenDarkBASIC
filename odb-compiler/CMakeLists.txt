@@ -66,16 +66,6 @@ flex_target (DarkBASICScanner
     "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
 add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
 
-bison_target (KeywordsParser
-    "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Parser.y"
-    "${PROJECT_BINARY_DIR}/src/parsers/keywords/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/keywords/Parser.y.h" ${BISON_VERBOSE_OPTION}
-    COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
-flex_target (KeywordsScanner
-    "${PROJECT_SOURCE_DIR}/src/parsers/keywords/Scanner.lex"
-    "${PROJECT_BINARY_DIR}/src/parsers/keywords/Scanner.lex.cpp")
-add_flex_bison_dependency (KeywordsScanner KeywordsParser)
-
 if (ODBCOMPILER_VERBOSE_BISON)
     set_property (
         SOURCE
@@ -107,8 +97,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/keywords/DBPKeywordLoader.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
-    "src/parsers/db/Driver.cpp"
-    "src/parsers/keywords/Driver.cpp")
+    "src/parsers/db/Driver.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
