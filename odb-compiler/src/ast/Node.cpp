@@ -130,6 +130,18 @@ void ScopedSymbol::accept(Visitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+ScopedAnnotatedSymbol::ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location) :
+    Symbol(name, location),
+    ScopedSymbol(scope, name, location),
+    AnnotatedSymbol(annotation, name, location)
+{
+}
+void ScopedAnnotatedSymbol::accept(Visitor* visitor) const
+{
+    visitor->visitScopedAnnotatedSymbol(this);
+}
+
+// ----------------------------------------------------------------------------
 FuncCallOrArrayRef::FuncCallOrArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location) :
     Node(location),
     Expr(location),
