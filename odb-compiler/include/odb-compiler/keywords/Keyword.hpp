@@ -6,7 +6,7 @@
 
 namespace odb {
 
-struct Keyword
+class Keyword
 {
 public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
@@ -29,17 +29,10 @@ public:
         std::string description;
     };
 
-    struct Overload
-    {
-        std::vector<Arg> arglist;
-        std::string symbolName;
-    };
-
     std::string name;
-    std::string plugin;
     std::string helpFile;
-    std::vector<Overload> overloads;
-    std::optional<Type> returnType;
+    std::vector<Arg> args;
+    Type returnType;
 };
 
 }
