@@ -63,7 +63,10 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
 
     if (*t != ')')
     {
-        log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `)`", *t, typeinfo);
+        if (*t)
+            log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `)`", *t, typeinfo);
+        else
+            log::sdk(log::ERROR, "Missing `)` while parsing typeinfo string `%s`.", typeinfo);
         return false;
     }
 
@@ -149,7 +152,7 @@ bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
         std::vector<Keyword::Arg> args;
         if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            log::sdk(log::NOTICE, "Error occurred while loading keywords from `%s`", library->getFilename());
+            log::sdk(log::NOTICE, "Error occurred while loading keyword `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
             return false;
         }
 

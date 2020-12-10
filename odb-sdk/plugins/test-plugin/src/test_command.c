@@ -8,4 +8,3 @@ ODBPLUGIN_API void test_command(void)
 {
     puts("Hello from test_command!");
 }
-

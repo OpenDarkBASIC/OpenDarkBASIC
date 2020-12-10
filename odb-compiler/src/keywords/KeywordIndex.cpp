@@ -50,7 +50,14 @@ bool KeywordIndex::findConflicts() const
 
             if (compare(kw, overload))
             {
-                log::sdk(log::ERROR, "Keyword `%s` redefined in library `%s`", kw->dbSymbol().c_str(), kw->library()->getFilename());
+                std::string typeinfo;
+                typeinfo.push_back(static_cast<char>(kw->returnType()));
+                typeinfo.push_back('(');
+                for (const auto& arg : kw->args())
+                    typeinfo.push_back(static_cast<char>(arg.type));
+                typeinfo.push_back(')');
+
+                log::sdk(log::ERROR, "Keyword `%s %s` redefined in library `%s`", kw->dbSymbol().c_str(), typeinfo.c_str(), kw->library()->getFilename());
                 log::sdk(log::NOTICE, "Keyword was first declared in library `%s`", overload->library()->getFilename());
                 return true;
             }
