@@ -31,9 +31,6 @@
         dbg(#token);                                                          \
         return token;                                                         \
     } while(0)
-
-#define DB_KEYWORD_LIST \
-    X(MOD)
 %}
 
 %option nodefault

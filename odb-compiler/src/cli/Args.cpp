@@ -355,10 +355,10 @@ bool Args::loadKeywords(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::parseDBA(const std::vector<std::string>& args)
 {
+    odb::db::Driver driver(&kwMatcher_);
     for (const auto& arg : args)
     {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
-        odb::db::Driver driver(&kwMatcher_);
         odb::ast::Block* block = driver.parseFile(arg.c_str());
         if (block == nullptr)
             return false;
