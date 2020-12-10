@@ -3,27 +3,39 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/keywords/SDKType.hpp"
 #include "odb-sdk/Reference.hpp"
-#include <unordered_map>
+#include <string>
 #include <vector>
 
 namespace odb {
 
 class Keyword;
 
-class KeywordIndex
+/*!
+ * This class is a generic container for all keywords. It acts as an
+ * intermediate storage when collecting keywords from plugins or config files.
+ *
+ * This class is not designed for fast keyword queries. It is recommended to
+ * create a specialized container if this is required. An example of this is
+ * the @see KeywordMatcher class.
+ */
+class ODBCOMPILER_PUBLIC_API KeywordIndex
 {
 public:
-    ODBCOMPILER_PUBLIC_API bool addKeyword(Keyword* keyword);
-    ODBCOMPILER_PUBLIC_API Keyword* lookup(const std::string& keyword);
+    void addKeyword(Keyword* keyword);
 
-    ODBCOMPILER_PUBLIC_API int keywordCount() const;
-    ODBCOMPILER_PUBLIC_API std::vector<Keyword*> keywordsAsList() const;
-    ODBCOMPILER_PUBLIC_API std::vector<std::string> keywordNamesAsList() const;
+    /*!
+     * @brief Tries to find any globally conflicting keywords, such as identical
+     * keywords coming from different plugins, or keywords that share the same
+     * overload.
+     */
+    bool findConflicts() const;
 
-    ODBCOMPILER_PUBLIC_API std::vector<std::string> pluginsAsList() const;
+    const std::vector<Reference<Keyword>>& keywords() const;
+    std::vector<std::string> keywordNamesAsList() const;
+    std::vector<std::string> librariesAsList() const;
 
 private:
-    std::unordered_map<std::string, Reference<Keyword>> map_;
+    std::vector<Reference<Keyword>> keywords_;
 };
 
 }

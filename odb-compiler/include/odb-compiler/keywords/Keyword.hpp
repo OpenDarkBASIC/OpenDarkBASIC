@@ -40,6 +40,14 @@ public:
             const std::vector<Arg>& args,
             const std::string helpFile="");
 
+    const std::string& dbSymbol() const;
+    const std::string& cppSymbol() const;
+    const std::string& helpFile() const;
+    const std::vector<Arg>& args() const;
+    Type returnType() const;
+
+    DynamicLibrary* library() const;
+
 private:
     Reference<DynamicLibrary> library_;
     std::string dbSymbol_;

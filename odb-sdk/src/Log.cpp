@@ -72,7 +72,7 @@ void vdbParser(Severity severity, const char* fmt, va_list ap)
     }
     fprintf(infofp, "[db Parser] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s", RESET);
+    fprintf(infofp, "%s\n", RESET);
 }
 
 // ----------------------------------------------------------------------------
@@ -99,7 +99,7 @@ void vkwParser(Severity severity, const char* fmt, va_list ap)
     }
     fprintf(infofp, "[kw Parser] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s", RESET);
+    fprintf(infofp, "%s\n", RESET);
 }
 
 // ----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ void vsdk(Severity severity, const char* fmt, va_list ap)
     }
     fprintf(infofp, "[SDK] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s", RESET);
+    fprintf(infofp, "%s\n", RESET);
 }
 
 }

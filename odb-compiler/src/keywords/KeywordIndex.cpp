@@ -1,4 +1,8 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-sdk/DynamicLibrary.hpp"
+#include "odb-sdk/Log.hpp"
+#include "odb-sdk/Str.hpp"
 
 #include <algorithm>
 #include <cstdio>
@@ -6,90 +10,79 @@
 
 namespace odb {
 
-namespace {
-
-template <class Container>
-void split(const std::string &str, Container &cont,
-           char delim = ' ')
+// ----------------------------------------------------------------------------
+void KeywordIndex::addKeyword(Keyword* keyword)
 {
-    std::size_t current, previous = 0;
-    current = str.find(delim);
-    while (current != std::string::npos)
+    keywords_.push_back(keyword);
+}
+
+// ----------------------------------------------------------------------------
+bool KeywordIndex::findConflicts() const
+{
+    std::unordered_map<std::string, std::vector<const Keyword*>> map_;
+
+    for (const auto& kw : keywords_)
     {
-        cont.push_back(str.substr(previous, current - previous));
-        previous = current + 1;
-        current = str.find(delim, previous);
+        auto it = map_.insert({str::toLower(kw->dbSymbol()), {kw}});
+        if (it.second)
+            continue;
+
+        // This dbSymbol already exists. Have to compare the new keyword with
+        // all overloads of the existing symbol
+        for (const auto& overload : it.first->second)
+        {
+            auto compare = [](const Keyword* a, const Keyword* b) -> bool {
+                // Compare each argument type
+                for (std::size_t i = 0; i != a->args().size() && i != b->args().size(); ++i)
+                {
+                    if (a->args()[i].type != b->args()[i].type)
+                        return false;
+                }
+                if (a->args().size() != b->args().size())
+                    return false;
+
+                // Compare return type
+                if (a->returnType() != b->returnType())
+                    return false;
+
+                return true;
+            };
+
+            if (compare(kw, overload))
+            {
+                log::sdk(log::ERROR, "Keyword `%s` redefined in library `%s`", kw->dbSymbol().c_str(), kw->library()->getFilename());
+                log::sdk(log::NOTICE, "Keyword was first declared in library `%s`", overload->library()->getFilename());
+                return true;
+            }
+        }
     }
-    cont.push_back(str.substr(previous, current - previous));
-}
 
-}
-
-// ----------------------------------------------------------------------------
-bool KeywordIndex::loadFromPlugin(const Plugin& plugin, SDKType sdkType)
-{
-
+    return false;
 }
 
 // ----------------------------------------------------------------------------
-bool KeywordIndex::addKeyword(const Keyword& keyword)
+const std::vector<Reference<Keyword>>& KeywordIndex::keywords() const
 {
-    auto result = map_.insert({keyword.name, keyword});
-    plugins_.insert(keyword.plugin);
-    return result.second;
-}
-
-// ----------------------------------------------------------------------------
-Keyword* KeywordIndex::lookup(const std::string& keyword)
-{
-    auto result = map_.find(keyword);
-    if (result == map_.end())
-        return nullptr;
-    return &result->second;
-}
-
-// ----------------------------------------------------------------------------
-const Keyword* KeywordIndex::lookup(const std::string& keyword) const
-{
-    const auto result = map_.find(keyword);
-    if (result == map_.end())
-        return nullptr;
-    return &result->second;
-}
-
-// ----------------------------------------------------------------------------
-int KeywordIndex::keywordCount() const
-{
-    return map_.size();
-}
-
-// ----------------------------------------------------------------------------
-std::vector<Keyword> KeywordIndex::keywordsAsList() const
-{
-    std::vector<Keyword> list;
-    list.reserve(map_.size());
-    for (const auto& kv : map_)
-        list.push_back(kv.second);
-    return list;
+    return keywords_;
 }
 
 // ----------------------------------------------------------------------------
 std::vector<std::string> KeywordIndex::keywordNamesAsList() const
 {
     std::vector<std::string> list;
-    list.reserve(map_.size());
-    for (const auto& kv : map_)
-        list.push_back(kv.first);
+    list.reserve(keywords_.size());
+    for (const auto& kw : keywords_)
+        list.push_back(kw->dbSymbol());
     return list;
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> KeywordIndex::pluginsAsList() const
+std::vector<std::string> KeywordIndex::librariesAsList() const
 {
     std::vector<std::string> list;
-    list.reserve(plugins_.size());
-    for (const auto& plugin : plugins_)
-        list.push_back(plugin);
+    list.reserve(keywords_.size());
+    for (const auto& kw : keywords_)
+        list.push_back(kw->library()->getFilename());
     return list;
 }
 

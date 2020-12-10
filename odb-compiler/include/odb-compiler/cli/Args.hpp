@@ -31,6 +31,7 @@ public:
     bool setSDKType(const std::vector<std::string>& args);
     bool setAdditionalPluginsDir(const std::vector<std::string>& args);
     bool printSDKRootDir(const std::vector<std::string>& args);
+    bool loadKeywords(const std::vector<std::string>& args);
     bool parseDBA(const std::vector<std::string>& args);
     bool dumpASTDOT(const std::vector<std::string>& args);
     bool dumpASTJSON(const std::vector<std::string>& args);
@@ -39,17 +40,12 @@ public:
     bool dumpkWNames(const std::vector<std::string>& args);
 
 private:
-    bool loadPluginsFromDirOrFile(const std::string& dir);
-
-private:
     bool printBanner_ = true;
-    bool kwIndexDirty_ = true;
-    bool kwMatcherDirty_ = true;
 
     std::string programName_;
     std::string sdkRootDir_;
+    std::vector<std::string> pluginDirs_;
     odb::SDKType sdkType_ = odb::SDKType::ODB;
-    std::vector<std::unique_ptr<odb::Plugin>> plugins_;
 
     odb::KeywordIndex kwIndex_;
     odb::KeywordMatcher kwMatcher_;

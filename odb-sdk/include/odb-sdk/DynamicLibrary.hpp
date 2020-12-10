@@ -22,6 +22,8 @@ public:
      */
     static DynamicLibrary* open(const char* filename);
 
+    const char* getFilename() const;
+
     /*!
      * @brief Looks up the address of a given symbol in the shared library or
      * DLL. This is equivalent to calling dlsym() on linux and GetProcAddress()
@@ -54,8 +56,9 @@ public:
 #endif
 
 private:
-    explicit DynamicLibrary(std::unique_ptr<DynLibPlatformData> data);
+    explicit DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename);
     std::unique_ptr<DynLibPlatformData> data_;
+    const std::string filename_;
 };
 
 }

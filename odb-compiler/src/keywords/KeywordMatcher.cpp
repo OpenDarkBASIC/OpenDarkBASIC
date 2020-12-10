@@ -30,7 +30,7 @@ void KeywordMatcher::updateFromIndex(const KeywordIndex* db)
 
     // Keywords are case insensitive, so transform all to lower case
     for (auto& s : keywords_)
-        std::transform(s.begin(), s.end(), s.begin(), [](char c){ return std::tolower(c); });
+        str::toLowerInplace(s);
 
     // Lexicographic sort so we can binary search later
     std::sort(keywords_.begin(), keywords_.end(), [](const std::string& a,const  std::string& b) { return a < b; });

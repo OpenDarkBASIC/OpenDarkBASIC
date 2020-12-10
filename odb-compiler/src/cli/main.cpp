@@ -1,7 +1,6 @@
 #include "odb-compiler/cli/Args.hpp"
-#include "odb-sdk/Plugin.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-sdk/Log.hpp"
-#include <cstdio>
 
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv)

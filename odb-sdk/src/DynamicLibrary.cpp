@@ -91,12 +91,13 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
     }
 #endif
 
-    return new DynamicLibrary(std::move(data));
+    return new DynamicLibrary(std::move(data), filename);
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary::DynamicLibrary(std::unique_ptr<DynLibPlatformData> data) :
-    data_(std::move(data))
+DynamicLibrary::DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename) :
+    data_(std::move(data)),
+    filename_(filename)
 {
 }
 
@@ -108,6 +109,12 @@ DynamicLibrary::~DynamicLibrary()
 #else
     FreeLibrary(data_->handle);
 #endif
+}
+
+// ----------------------------------------------------------------------------
+const char* DynamicLibrary::getFilename() const
+{
+    return filename_.c_str();
 }
 
 // ----------------------------------------------------------------------------

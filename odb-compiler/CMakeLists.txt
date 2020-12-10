@@ -93,8 +93,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
     "src/ast/SourceLocation.cpp"
     "src/ast/Visitor.cpp"
+    "src/keywords/KeywordLoader.cpp"
     "src/keywords/ODBKeywordLoader.cpp"
     "src/keywords/DBPKeywordLoader.cpp"
+    "src/keywords/Keyword.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
     "src/parsers/db/Driver.cpp")

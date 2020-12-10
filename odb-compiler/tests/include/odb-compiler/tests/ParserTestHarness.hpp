@@ -3,6 +3,7 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <gmock/gmock.h>

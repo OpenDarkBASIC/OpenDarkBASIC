@@ -55,5 +55,19 @@ void replaceAll(std::string& subject, const std::string& search, const std::stri
     }
 }
 
+// ----------------------------------------------------------------------------
+void toLowerInplace(std::string& str)
+{
+    std::transform(str.begin(), str.end(), str.begin(), [](char c){ return std::tolower(c); });
+}
+
+// ----------------------------------------------------------------------------
+std::string toLower(const std::string& str)
+{
+    std::string s(str);
+    toLowerInplace(s);
+    return s;
+}
+
 }
 }

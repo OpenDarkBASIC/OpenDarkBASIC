@@ -43,7 +43,7 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
     }
 
     t++;
-    if (*typeinfo != '(')
+    if (*t != '(')
     {
         log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `(`", *t, typeinfo);
         return false;
@@ -61,7 +61,7 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
         }
     }
 
-    if (*typeinfo != ')')
+    if (*t != ')')
     {
         log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `)`", *t, typeinfo);
         return false;
@@ -71,8 +71,8 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
 }
 
 // ----------------------------------------------------------------------------
-ODBKeywordLoader::ODBKeywordLoader(const std::filesystem::path& sdkRoot,
-                                   const std::vector<std::filesystem::path>& pluginDirs) :
+ODBKeywordLoader::ODBKeywordLoader(const std::string& sdkRoot,
+                                   const std::vector<std::string>& pluginDirs) :
     KeywordLoader(sdkRoot, pluginDirs)
 {
 }
@@ -117,34 +117,43 @@ bool ODBKeywordLoader::populateIndex(KeywordIndex* index)
         if (lib == nullptr)
             continue;
 
-        auto lookupString = [&lib](std::string sym) -> std::string {
-            const char** addr = reinterpret_cast<const char**>(
-                lib->lookupSymbolAddress(sym.c_str()));
-            return addr ? *addr : "";
-        };
+        if (!populateIndexFromLibrary(index, lib))
+            return false;
+    }
 
-        for (int i = 0; i != lib->getSymbolCount(); ++i)
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibrary* library)
+{
+    auto lookupString = [&library](std::string sym) -> std::string {
+        const char** addr = reinterpret_cast<const char**>(
+            library->lookupSymbolAddress(sym.c_str()));
+        return addr ? *addr : "";
+    };
+
+    for (int i = 0; i != library->getSymbolCount(); ++i)
+    {
+        std::string cppSymbol = library->getSymbolAt(i);
+
+        std::string dbSymbol = lookupString(cppSymbol + "_keyword");
+        if (dbSymbol == "")
+            continue;
+        std::string typeinfo = lookupString(cppSymbol + "_typeinfo");
+        if (typeinfo == "")
+            continue;
+        std::string helpfile = lookupString(cppSymbol + "_helpfile");  // optional symbol
+
+        Keyword::Type retType;
+        std::vector<Keyword::Arg> args;
+        if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            std::string cppSymbol = lib->getSymbolAt(i);
-
-            std::string dbSymbol = lookupString(cppSymbol + "_keyword");
-            if (dbSymbol == "")
-                continue;
-            std::string typeinfo = lookupString(cppSymbol + "_typeinfo");
-            if (typeinfo == "")
-                continue;
-            std::string helpfile = lookupString(cppSymbol + "_helpfile");  // optional symbol
-
-            Keyword::Type retType;
-            std::vector<Keyword::Arg> args;
-            if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
-            {
-                log::sdk(log::NOTICE, "Error occurred while loading keywords from `%s`", path.c_str());
-                break;
-            }
-
-            index->addKeyword(new Keyword(lib, dbSymbol, cppSymbol, retType, args, helpfile));
+            log::sdk(log::NOTICE, "Error occurred while loading keywords from `%s`", library->getFilename());
+            return false;
         }
+
+        index->addKeyword(new Keyword(library, dbSymbol, cppSymbol, retType, args, helpfile));
     }
 
     return true;

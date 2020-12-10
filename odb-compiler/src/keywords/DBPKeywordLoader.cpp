@@ -4,8 +4,8 @@
 namespace odb {
 
 // ----------------------------------------------------------------------------
-DBPKeywordLoader::DBPKeywordLoader(const std::filesystem::path& sdkRoot,
-                                   const std::vector<std::filesystem::path>& pluginDirs) :
+DBPKeywordLoader::DBPKeywordLoader(const std::string& sdkRoot,
+                                   const std::vector<std::string>& pluginDirs) :
     KeywordLoader(sdkRoot, pluginDirs)
 {
 }
@@ -87,4 +87,12 @@ bool DBPKeywordLoader::populateIndex(KeywordIndex* index)
 #endif
 
     return false;
+}
+
+// ----------------------------------------------------------------------------
+bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibrary* library)
+{
+    return false;
+}
+
 }
