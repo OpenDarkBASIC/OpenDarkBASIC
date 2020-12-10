@@ -22,6 +22,52 @@ elseif (UNIX)
     set (ODB_PLATFORM "LINUX")
 endif ()
 
+# Try to create the following directory structure in both build and install
+# trees (see issue #11)
+#
+#    build/bin/
+#    ├── dbp-sdk/
+#    │   ├── plugins/
+#    │   └── thirdparty-plugins/
+#    ├── odb-sdk/
+#    │   ├── plugins/
+#    │   |   └── test-plugin.dll
+#    |   └── thirdparty-plugins/
+#    ├── include/
+#    │   ├── odb-compiler
+#    │   └── odb-sdk
+#    ├── lib/
+#    │   ├── odb-compiler.lib
+#    │   └── odb-sdk.lib
+#    ├── odbc
+#    ├── odbc_tests
+#    ├── odbi
+#    ├── odb-sdk.dll
+#    └── odb-compiler.dll
+#
+set (ODB_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
+set (ODB_RUNTIME_DIR ${ODB_OUTPUT_DIR})
+set (ODB_SDK_DIR "${ODB_OUTPUT_DIR}/odb-sdk")
+if (WIN32)
+    set (ODB_LIBRARY_DIR ${ODB_OUTPUT_DIR})
+    set (ODB_SDK_LIBRARY_DIR ${ODB_OUTPUT_DIR})
+else ()
+    set (ODB_LIBRARY_DIR "${ODB_OUTPUT_DIR}/lib")
+    set (ODB_SDK_LIBRARY_DIR "${ODB_SDK_DIR}/lib")
+endif ()
+set (ODB_ARCHIVE_DIR "${ODB_RUNTIME_DIR}/lib")
+set (ODB_SDK_ARCHIVE_DIR "${ODB_SDK_DIR}/lib")
+
+set (CMAKE_INSTALL_BINDIR "${CMAKE_INSTALL_PREFIX}")
+set (CMAKE_INSTALL_LIBDIR "lib")
+set (CMAKE_INSTALL_INCLUDEDIR "include")
+set (CMAKE_INSTALL_ODBSDKDIR "odb-sdk")
+set (CMAKE_INSTALL_ODBSDK_BINDIR ${CMAKE_INSTALL_BINDIR})
+set (CMAKE_INSTALL_ODBSDK_LIBDIR "${CMAKE_INSTALL_ODBSDKDIR}/lib")
+set (CMAKE_INSTALL_ODBSDK_INCLUDEDIR "${CMAKE_INSTALL_ODBSDKDIR}/include")
+
+set (INSTALL_GTEST OFF CACHE BOOL "")
+
 add_subdirectory ("thirdparty/googletest")
 add_subdirectory ("odb-sdk")
 add_subdirectory ("odb-compiler")

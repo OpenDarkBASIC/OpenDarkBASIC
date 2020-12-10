@@ -31,6 +31,9 @@ set_target_properties (odbi
 target_link_libraries (odbi
     PRIVATE
         odb-compiler)
+set_target_properties (odbi
+    PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
 
 ###############################################################################
 # Installation

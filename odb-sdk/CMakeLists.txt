@@ -32,7 +32,7 @@ target_include_directories (odb-sdk
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_ODBSDK_INCLUDEDIR}>)
 target_compile_definitions (odb-sdk
     PRIVATE
         ODBSDK_BUILDING)
@@ -43,6 +43,11 @@ target_compile_options (odb-sdk
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
 target_compile_features (odb-sdk
     PUBLIC cxx_std_17)
+set_target_properties (odb-sdk
+    PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
 
 if (UNIX)
     find_package (DL REQUIRED)
@@ -50,3 +55,19 @@ if (UNIX)
 endif ()
 
 add_subdirectory ("plugins")
+
+install (
+    TARGETS odb-sdk
+    EXPORT OpenDarkBASICConfig
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_ODBSDK_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_ODBSDK_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_ODBSDK_BINDIR})
+install (
+    DIRECTORY "include/odb-sdk"
+    DESTINATION ${CMAKE_INSTALL_ODBSDK_INCLUDEDIR})
+install (
+    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-sdk"
+    DESTINATION ${CMAKE_INSTALL_ODBSDK_INCLUDEDIR})
+install (
+    EXPORT OpenDarkBASICConfig
+    DESTINATION "share/odb/cmake")
