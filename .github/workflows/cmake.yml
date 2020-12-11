@@ -21,8 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Build bison
+      run: wget http://ftp.gnu.org/gnu/bison/bison-3.7.tar.gz && tar -zxvf bison-3.4.tar.gz && pushd bison-3.4/ && ./configure && sudo make install && popd
+
     - name: Update packages
-      run: sudo apt update && sudo apt --only-upgrade install bison flex
+      run: sudo apt update && sudo apt --only-upgrade install flex
 
     - name: Versions
       run: bison --version; flex --version
