@@ -23,6 +23,8 @@
 typedef struct DBLTYPE DBLTYPE;
 
 namespace odb {
+class Keyword;
+
 namespace ast {
 
 class SourceLocation;
@@ -133,7 +135,7 @@ public:
     void accept(Visitor* visitor) const override;
 
 private:
-    std::string name_;
+    const std::string name_;
 };
 
 class AnnotatedSymbol : public Symbol
@@ -259,6 +261,70 @@ public:
 private:
     Reference<AnnotatedSymbol> symbol_;
     Reference<Literal> literal_;
+};
+
+class KeywordExprSymbol : public Expression
+{
+public:
+    KeywordExprSymbol(const std::string& keyword, ExpressionList* args, SourceLocation* location);
+    KeywordExprSymbol(const std::string& keyword, SourceLocation* location);
+
+    const std::string& keyword() const;
+    ExpressionList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<ExpressionList> args_;
+    const std::string keyword_;
+};
+
+class KeywordStmntSymbol : public Statement
+{
+public:
+    KeywordStmntSymbol(const std::string& keyword, ExpressionList* args, SourceLocation* location);
+    KeywordStmntSymbol(const std::string& keyword, SourceLocation* location);
+
+    const std::string& keyword() const;
+    ExpressionList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<ExpressionList> args_;
+    const std::string keyword_;
+};
+
+class KeywordExpr : public Expression
+{
+public:
+    KeywordExpr(Keyword* keyword, ExpressionList* args, SourceLocation* location);
+    KeywordExpr(Keyword* keyword, SourceLocation* location);
+
+    Keyword* keyword() const;
+    ExpressionList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<Keyword> keyword_;
+    Reference<ExpressionList> args_;
+};
+
+class KeywordStmnt : public Statement
+{
+public:
+    KeywordStmnt(Keyword* keyword, ExpressionList* args, SourceLocation* location);
+    KeywordStmnt(Keyword* keyword, SourceLocation* location);
+
+    Keyword* keyword() const;
+    ExpressionList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<Keyword> keyword_;
+    Reference<ExpressionList> args_;
 };
 
 /* x = myconstant */

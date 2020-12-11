@@ -19,6 +19,10 @@ void GenericVisitor::visitFuncCallExpr(const FuncCallExpr* node)                
 void GenericVisitor::visitFuncCallStmnt(const FuncCallStmnt* node)                   { visit(node); }
 void GenericVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
+void GenericVisitor::visitKeywordExprSymbol(const KeywordExprSymbol* node)           { visit(node); }
+void GenericVisitor::visitKeywordStmntSymbol(const KeywordStmntSymbol* node)         { visit(node); }
+void GenericVisitor::visitKeywordExpr(const KeywordExpr* node)                       { visit(node); }
+void GenericVisitor::visitKeywordStmnt(const KeywordStmnt* node)                     { visit(node); }
 
 }
 }

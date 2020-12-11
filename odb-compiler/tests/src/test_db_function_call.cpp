@@ -18,7 +18,7 @@ public:
 
 TEST_F(NAME, function_call_no_args)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo()\n");
     ASSERT_THAT(ast, NotNull());
@@ -34,7 +34,7 @@ TEST_F(NAME, function_call_no_args)
 
 TEST_F(NAME, function_call_no_args_string_return_type)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo$()\n");
     ASSERT_THAT(ast, NotNull());
@@ -53,7 +53,7 @@ TEST_F(NAME, function_call_no_args_string_return_type)
 
 TEST_F(NAME, function_call_no_args_float_return_type)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo#()\n");
     ASSERT_THAT(ast, NotNull());
@@ -69,7 +69,7 @@ TEST_F(NAME, function_call_no_args_float_return_type)
 
 TEST_F(NAME, function_call_one_arg)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo(3)\n");
     ASSERT_THAT(ast, NotNull());
@@ -87,7 +87,7 @@ TEST_F(NAME, function_call_one_arg)
 
 TEST_F(NAME, function_call_multiple_args)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo(3, 4.5, true)\n");
     ASSERT_THAT(ast, NotNull());
@@ -107,7 +107,7 @@ TEST_F(NAME, function_call_multiple_args)
 
 TEST_F(NAME, nested_function_calls)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test", "foo(bar#(lil(), lel$()), baz$(lol(), lul(false)), 2)\n");
     ASSERT_THAT(ast, NotNull());

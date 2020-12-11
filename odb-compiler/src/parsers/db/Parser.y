@@ -43,6 +43,8 @@
             class FuncCallStmnt;
             class Expression;
             class ExpressionList;
+            class KeywordExprSymbol;
+            class KeywordStmntSymbol;
         }
     }
 }
@@ -98,10 +100,11 @@
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
-    odb::ast::FuncCallExpr* func_call_expr;
     odb::ast::FuncCallStmnt* func_call_stmnt;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
+    odb::ast::KeywordExprSymbol* keyword_expr;
+    odb::ast::KeywordStmntSymbol* keyword_stmnt;
 }
 
 %define api.token.prefix {TOK_}
@@ -139,10 +142,11 @@
 %type<stmnt> stmnt;
 %type<const_decl> constant_decl;
 %type<func_call_stmnt> func_call_stmnt;
-%type<func_call_expr> func_call_expr;
 %type<expr> func_call_expr_or_array_ref;
 %type<expr> expr;
 %type<expr_list> expr_list;
+%type<keyword_expr> keyword_expr;
+%type<keyword_stmnt> keyword_stmnt;
 /*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
@@ -257,6 +261,7 @@ block
 stmnt
   : constant_decl                                { $$ = $1; }
   | func_call_stmnt                              { $$ = $1; }
+  | keyword_stmnt                                { $$ = $1; }
   ;
 /*
 stmnt
@@ -449,10 +454,6 @@ func_call_expr_or_array_ref
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
   ;
-func_call_expr
-  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExpr($1, $3, driver->newLocation(&yylloc)); }
-  | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
-  ;
 func_call_stmnt
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
@@ -464,18 +465,19 @@ expr_list
 expr
   : literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
+  | keyword_expr                                 { $$ = $1; }
+  ;
+keyword_stmnt
+  : KEYWORD                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  ;
+keyword_expr
+  : KEYWORD '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
-keyword
-  : KEYWORD                                      { $$ = newKeyword($1, nullptr, &yylloc); }
-  | KEYWORD arglist                              { $$ = newKeyword($1, $2, &yylloc); }
-  | KEYWORD LB RB                                { $$ = newKeyword($1, nullptr, &yylloc); }
-  | KEYWORD LB arglist RB                        { $$ = newKeyword($1, $3, &yylloc); }
-  ;
-keyword_returning_value
-  : KEYWORD LB RB                                { $$ = newKeyword($1, nullptr, &yylloc); }
-  | KEYWORD LB expr RB                           { $$ = newKeyword($1, $3, &yylloc); }
-  ;
 expr
   : LB arglist RB                                { $$ = $2; }
   | arglist

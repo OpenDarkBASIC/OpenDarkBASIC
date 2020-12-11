@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
 #include <unordered_map>
 
 namespace odb {
@@ -380,6 +381,38 @@ private:
         writeBlueConnection(node->symbol(), node);
         writeBlueConnection(node->literal(), node);
     }
+    void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
+    {
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
+    void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
+    {
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
+    void visitKeywordExpr(const KeywordExpr* node) override
+    {
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
+    void visitKeywordStmnt(const KeywordStmnt* node) override
+    {
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
 
 private:
     FILE* fp_;
@@ -465,6 +498,10 @@ private:
     void visitFuncCallStmnt(const FuncCallStmnt* node) override { writeName(node, "FuncCallStmnt"); }
     void visitArrayRef(const ArrayRef* node) override { writeName(node, "ArrayRef"); }
     void visitConstDecl(const ConstDecl* node) override { writeName(node, "ConstDecl"); }
+    void visitKeywordExprSymbol(const KeywordExprSymbol* node) override { writeName(node, "KeywordExprSymbol: " + node->keyword()); }
+    void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override { writeName(node, "KeywordStmntSymbol: " + node->keyword()); }
+    void visitKeywordExpr(const KeywordExpr* node) override { writeName(node, "KeywordExpr: " + node->keyword()->dbSymbol()); }
+    void visitKeywordStmnt(const KeywordStmnt* node) override { writeName(node, "KeywordStmnt" + node->keyword()->dbSymbol()); }
 private:
     FILE* fp_;
     const NodeGUIDs* guids_;

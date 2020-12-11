@@ -46,6 +46,27 @@ private:
     const int expectedCount_;
 };
 
+class SymbolEqMatcher : public MatcherInterface<const ast::Symbol*>
+{
+public:
+    explicit SymbolEqMatcher(const std::string& name)
+        : expectedName_(name) {}
+    bool MatchAndExplain(const ast::Symbol* node, MatchResultListener* listener) const override {
+        *listener
+            << "node->name() == " << node->name();
+        return node->name() == expectedName_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->name() equals " << expectedName_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->name() does not equal " << expectedName_;
+    }
+
+private:
+    const std::string expectedName_;
+};
+
 class AnnotatedSymbolEqMatcher : public MatcherInterface<const ast::AnnotatedSymbol*>
 {
 public:
@@ -94,14 +115,63 @@ private:
     const T expectedValue_;
 };
 
+class KeywordExprSymbolEqMatcher : public MatcherInterface<const ast::KeywordExprSymbol*>
+{
+public:
+    explicit KeywordExprSymbolEqMatcher(const std::string& name)
+        : expectedKeyword_(name) {}
+    bool MatchAndExplain(const ast::KeywordExprSymbol* node, MatchResultListener* listener) const override {
+        *listener << "node->keyword() == " << node->keyword();
+        return node->keyword() == expectedKeyword_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->keyword() equals " << expectedKeyword_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->keyword() does not equal " << expectedKeyword_;
+    }
+
+private:
+    const std::string expectedKeyword_;
+};
+
+class KeywordStmntSymbolEqMatcher : public MatcherInterface<const ast::KeywordStmntSymbol*>
+{
+public:
+    explicit KeywordStmntSymbolEqMatcher(const std::string& name)
+        : expectedKeyword_(name) {}
+    bool MatchAndExplain(const ast::KeywordStmntSymbol* node, MatchResultListener* listener) const override {
+        *listener << "node->keyword() == " << node->keyword();
+        return node->keyword() == expectedKeyword_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->keyword() equals " << expectedKeyword_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->keyword() does not equal " << expectedKeyword_;
+    }
+
+private:
+    const std::string expectedKeyword_;
+};
+
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
 }
 inline Matcher<const ast::ExpressionList*> ExpressionListCountEq(int expectedCount) {
     return MakeMatcher(new ExpressionListCountEqMatcher(expectedCount));
 }
+inline Matcher<const ast::Symbol*> SymbolEq(const std::string& name) {
+    return MakeMatcher(new SymbolEqMatcher(name));
+}
 inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(const std::string& name, ast::AnnotatedSymbol::Annotation annotation) {
     return MakeMatcher(new AnnotatedSymbolEqMatcher(name, annotation));
+}
+inline Matcher<const ast::KeywordExprSymbol*> KeywordExprSymbolEq(const std::string& name) {
+    return MakeMatcher(new KeywordExprSymbolEqMatcher(name));
+}
+inline Matcher<const ast::KeywordStmntSymbol*> KeywordStmntSymbolEq(const std::string& name) {
+    return MakeMatcher(new KeywordStmntSymbolEqMatcher(name));
 }
 #define X(dbname, cppname) \
 inline Matcher<const ast::dbname##Literal*> dbname##LiteralEq(const cppname& value) { \

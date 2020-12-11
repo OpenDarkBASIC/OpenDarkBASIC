@@ -22,6 +22,10 @@ public:
     virtual void visitFuncCallStmnt(const FuncCallStmnt* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
+    virtual void visitKeywordExprSymbol(const KeywordExprSymbol* node) = 0;
+    virtual void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) = 0;
+    virtual void visitKeywordExpr(const KeywordExpr* node) = 0;
+    virtual void visitKeywordStmnt(const KeywordStmnt* node) = 0;
 };
 
 class GenericVisitor : public Visitor
@@ -41,6 +45,10 @@ public:
     void visitFuncCallStmnt(const FuncCallStmnt* node) override;
     void visitArrayRef(const ArrayRef* node) override;
     void visitConstDecl(const ConstDecl* node) override;
+    void visitKeywordExprSymbol(const KeywordExprSymbol* node) override;
+    void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override;
+    void visitKeywordExpr(const KeywordExpr* node) override;
+    void visitKeywordStmnt(const KeywordStmnt* node) override;
 
     virtual void visit(const Node* node) = 0;
 };

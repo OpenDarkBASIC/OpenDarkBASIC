@@ -180,6 +180,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     "\n"                { RETURN_TOKEN('\n'); }
     ":"                 { RETURN_TOKEN(':'); }
     ";"                 { RETURN_TOKEN(';'); }
-    .
+    [ \t]
+    .                   { RETURN_TOKEN(yytext[0]); }
 }
 %%

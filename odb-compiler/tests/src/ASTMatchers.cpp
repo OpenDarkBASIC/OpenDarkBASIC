@@ -25,3 +25,18 @@ template <>
 void LiteralEqMatcher<bool>::DescribeNegationTo(::std::ostream* os) const {
     *os << "literal->value() does not equal " << (expectedValue_ ? "true" : "false");
 }
+
+template <>
+bool LiteralEqMatcher<uint8_t>::MatchAndExplain(const ast::ByteLiteral* literal, MatchResultListener* listener) const
+{
+    *listener << "literal->value() equals " << static_cast<int>(literal->value());
+    return literal->value() == expectedValue_;
+}
+template <>
+void LiteralEqMatcher<uint8_t>::DescribeTo(::std::ostream* os) const {
+    *os << "literal->value() equals " << static_cast<int>(expectedValue_);
+}
+template <>
+void LiteralEqMatcher<uint8_t>::DescribeNegationTo(::std::ostream* os) const {
+    *os << "literal->value() does not equal " << static_cast<int>(expectedValue_);
+}

@@ -146,7 +146,7 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_udt.cpp"
         # "tests/src/test_db_variables.cpp"
         # "tests/src/test_kw_index.cpp"
-        # "tests/src/test_kw_matcher.cpp"
+        "tests/src/test_kw_matcher.cpp"
         "tests/src/test_SourceLocation.cpp"
         "tests/src/ASTMatchers.cpp"
         "tests/src/main.cpp")
