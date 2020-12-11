@@ -39,9 +39,10 @@
             class AnnotatedSymbol;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
-            class FuncCall;
-            class Expr;
-            class ExprList;
+            class FuncCallExpr;
+            class FuncCallStmnt;
+            class Expression;
+            class ExpressionList;
         }
     }
 }
@@ -97,9 +98,10 @@
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
-    odb::ast::FuncCall* func_call;
-    odb::ast::Expr* expr;
-    odb::ast::ExprList* expr_list;
+    odb::ast::FuncCallExpr* func_call_expr;
+    odb::ast::FuncCallStmnt* func_call_stmnt;
+    odb::ast::Expression* expr;
+    odb::ast::ExpressionList* expr_list;
 }
 
 %define api.token.prefix {TOK_}
@@ -136,8 +138,9 @@
 %type<block> block;
 %type<stmnt> stmnt;
 %type<const_decl> constant_decl;
-%type<stmnt> func_call;
-%type<expr> func_call_or_array_ref;
+%type<func_call_stmnt> func_call_stmnt;
+%type<func_call_expr> func_call_expr;
+%type<expr> func_call_expr_or_array_ref;
 %type<expr> expr;
 %type<expr_list> expr_list;
 /*
@@ -253,7 +256,7 @@ block
   ;
 stmnt
   : constant_decl                                { $$ = $1; }
-  | func_call                                    { $$ = $1; }
+  | func_call_stmnt                              { $$ = $1; }
   ;
 /*
 stmnt
@@ -442,21 +445,25 @@ label_decl
 goto_label
   : GOTO annotated_symbol_without_type                     { $$ = newGoto($2, &yylloc); }
   ;*/
-func_call_or_array_ref
-  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
-  | annotated_symbol '(' ')'                     { $$ = new FuncCall($1, driver->newLocation(&yylloc)); }
+func_call_expr_or_array_ref
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
   ;
-func_call
-  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCall($1, $3, driver->newLocation(&yylloc)); }
-  | annotated_symbol '(' ')'                     { $$ = new FuncCall($1, driver->newLocation(&yylloc)); }
+func_call_expr
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExpr($1, $3, driver->newLocation(&yylloc)); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
+  ;
+func_call_stmnt
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
-  | expr                                         { $$ = new ExprList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
+  | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
   ;
 expr
   : literal                                      { $$ = $1; }
-  | func_call_or_array_ref                       { $$ = $1; }
+  | func_call_expr_or_array_ref                  { $$ = $1; }
   ;
 /*
 keyword

@@ -21,27 +21,30 @@ void Node::setParent(Node* node)
 }
 
 // ----------------------------------------------------------------------------
-Expr::Expr(SourceLocation* location) :
+Expression::Expression(SourceLocation* location) :
     Node(location)
+{
+}
+Expression::~Expression()
 {
 }
 
 // ----------------------------------------------------------------------------
-ExprList::ExprList(SourceLocation* location) :
+ExpressionList::ExpressionList(SourceLocation* location) :
     Node(location)
 {
 }
-void ExprList::appendExpression(Expr* expr)
+void ExpressionList::appendExpression(Expression* expr)
 {
     expressions_.push_back(expr);
 }
-const std::vector<Reference<Expr>>& ExprList::expressions() const
+const std::vector<Reference<Expression>>& ExpressionList::expressions() const
 {
     return expressions_;
 }
-void ExprList::accept(Visitor* visitor) const
+void ExpressionList::accept(Visitor* visitor) const
 {
-    visitor->visitExprList(this);
+    visitor->visitExpressionList(this);
     for (const auto& expr : expressions_)
         expr->accept(visitor);
 }
@@ -49,6 +52,9 @@ void ExprList::accept(Visitor* visitor) const
 // ----------------------------------------------------------------------------
 Statement::Statement(SourceLocation* location) :
     Node(location)
+{
+}
+Statement::~Statement()
 {
 }
 
@@ -75,7 +81,10 @@ void Block::accept(Visitor* visitor) const
 
 // ----------------------------------------------------------------------------
 Literal::Literal(SourceLocation* location) :
-    Expr(location)
+    Expression(location)
+{
+}
+Literal::~Literal()
 {
 }
 #define X(dbname, cppname) \
@@ -105,7 +114,7 @@ AnnotatedSymbol::AnnotatedSymbol(Annotation annotation, const std::string& name,
     annotation_(annotation)
 {
 }
-AnnotatedSymbol::Annotation AnnotatedSymbol::annotation() const
+Symbol::Annotation AnnotatedSymbol::annotation() const
 {
     return annotation_;
 }
@@ -120,7 +129,7 @@ ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation*
     scope_(scope)
 {
 }
-ScopedSymbol::Scope ScopedSymbol::scope() const
+Symbol::Scope ScopedSymbol::scope() const
 {
     return scope_;
 }
@@ -132,9 +141,17 @@ void ScopedSymbol::accept(Visitor* visitor) const
 // ----------------------------------------------------------------------------
 ScopedAnnotatedSymbol::ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location) :
     Symbol(name, location),
-    ScopedSymbol(scope, name, location),
-    AnnotatedSymbol(annotation, name, location)
+    scope_(scope),
+    annotation_(annotation)
 {
+}
+Symbol::Scope ScopedAnnotatedSymbol::scope() const
+{
+    return scope_;
+}
+Symbol::Annotation ScopedAnnotatedSymbol::annotation() const
+{
+    return annotation_;
 }
 void ScopedAnnotatedSymbol::accept(Visitor* visitor) const
 {
@@ -142,70 +159,107 @@ void ScopedAnnotatedSymbol::accept(Visitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
-FuncCallOrArrayRef::FuncCallOrArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location) :
-    Node(location),
-    Expr(location),
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+    Expression(location),
     symbol_(symbol),
     args_(args)
 {
-    symbol_->setParent(this);
-    args_->setParent(this);
+    symbol->setParent(this);
+    args->setParent(this);
 }
-AnnotatedSymbol* FuncCallOrArrayRef::symbol() const
+AnnotatedSymbol* FuncCallExprOrArrayRef::symbol() const
 {
     return symbol_;
 }
-ExprList* FuncCallOrArrayRef::args() const
+ExpressionList* FuncCallExprOrArrayRef::args() const
 {
     return args_;
 }
-void FuncCallOrArrayRef::accept(Visitor* visitor) const
+void FuncCallExprOrArrayRef::accept(Visitor* visitor) const
 {
-    visitor->visitFuncCallOrArrayRef(this);
+    visitor->visitFuncCallExprOrArrayRef(this);
     symbol_->accept(visitor);
     args_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-FuncCall::FuncCall(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location) :
-    Node(location),
-    Statement(location),
-    Expr(location),
+FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+    Expression(location),
     symbol_(symbol),
     args_(args)
 {
-    symbol_->setParent(this);
-    args_->setParent(this);
+    symbol->setParent(this);
+    args->setParent(this);
 }
-FuncCall::FuncCall(AnnotatedSymbol* symbol, SourceLocation* location) :
-    Node(location),
-    Statement(location),
-    Expr(location),
+FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location) :
+    Expression(location),
     symbol_(symbol)
 {
-    symbol_->setParent(this);
+    symbol->setParent(this);
 }
-AnnotatedSymbol* FuncCall::symbol() const
+AnnotatedSymbol* FuncCallExpr::symbol() const
 {
     return symbol_;
 }
-ExprList* FuncCall::args() const
+ExpressionList* FuncCallExpr::args() const
 {
     return args_;
 }
-void FuncCall::accept(Visitor* visitor) const
+void FuncCallExpr::accept(Visitor* visitor) const
 {
-    visitor->visitFuncCall(this);
+    visitor->visitFuncCallExpr(this);
     symbol_->accept(visitor);
     if (args_)
         args_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location) :
-    Node(location),
-    FuncCallOrArrayRef(symbol, args, location)
+FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+    Statement(location),
+    symbol_(symbol),
+    args_(args)
 {
+    symbol->setParent(this);
+    args->setParent(this);
+}
+FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location) :
+    Statement(location),
+    symbol_(symbol)
+{
+    symbol->setParent(this);
+}
+AnnotatedSymbol* FuncCallStmnt::symbol() const
+{
+    return symbol_;
+}
+ExpressionList* FuncCallStmnt::args() const
+{
+    return args_;
+}
+void FuncCallStmnt::accept(Visitor* visitor) const
+{
+    visitor->visitFuncCallStmnt(this);
+    symbol_->accept(visitor);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+    Expression(location),
+    symbol_(symbol),
+    args_(args)
+{
+    symbol->setParent(this);
+    args->setParent(this);
+}
+AnnotatedSymbol* ArrayRef::symbol() const
+{
+    return symbol_;
+}
+ExpressionList* ArrayRef::args() const
+{
+    return args_;
 }
 void ArrayRef::accept(Visitor* visitor) const
 {
@@ -216,13 +270,12 @@ void ArrayRef::accept(Visitor* visitor) const
 
 // ----------------------------------------------------------------------------
 ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location) :
-    Node(location),
     Statement(location),
     symbol_(symbol),
     literal_(literal)
 {
-    symbol_->setParent(this);
-    literal_->setParent(this);
+    symbol->setParent(this);
+    literal->setParent(this);
 }
 AnnotatedSymbol* ConstDecl::symbol() const
 {

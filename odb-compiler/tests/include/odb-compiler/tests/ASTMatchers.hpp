@@ -27,11 +27,11 @@ private:
     const int expectedCount_;
 };
 
-class ExprListCountEqMatcher : public MatcherInterface<const ast::ExprList*>
+class ExpressionListCountEqMatcher : public MatcherInterface<const ast::ExpressionList*>
 {
 public:
-    explicit ExprListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
-    bool MatchAndExplain(const ast::ExprList* node, MatchResultListener* listener) const override {
+    explicit ExpressionListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
+    bool MatchAndExplain(const ast::ExpressionList* node, MatchResultListener* listener) const override {
         *listener << "node->expressions().size() equals " << node->expressions().size();
         return node->expressions().size() == expectedCount_;
     }
@@ -97,8 +97,8 @@ private:
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
 }
-inline Matcher<const ast::ExprList*> ExprListCountEq(int expectedCount) {
-    return MakeMatcher(new ExprListCountEqMatcher(expectedCount));
+inline Matcher<const ast::ExpressionList*> ExpressionListCountEq(int expectedCount) {
+    return MakeMatcher(new ExpressionListCountEqMatcher(expectedCount));
 }
 inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(const std::string& name, ast::AnnotatedSymbol::Annotation annotation) {
     return MakeMatcher(new AnnotatedSymbolEqMatcher(name, annotation));

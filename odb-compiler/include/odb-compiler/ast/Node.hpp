@@ -39,37 +39,38 @@ public:
 
     virtual void accept(Visitor* visitor) const = 0;
 
-
 private:
     Node* parent_;
     Reference<SourceLocation> location_;
 };
 
-class Expr : virtual public Node
+class Expression : public Node
 {
 public:
-    Expr(SourceLocation* location);
+    Expression(SourceLocation* location);
+    virtual ~Expression() = 0;
 };
 
 /* A single executable statement */
-class Statement : virtual public Node
+class Statement : public Node
 {
 public:
     Statement(SourceLocation* location);
+    virtual ~Statement() = 0;
 };
 
-class ExprList : public Node
+class ExpressionList : public Node
 {
 public:
-    ExprList(SourceLocation* location);
-    void appendExpression(Expr* expr);
+    ExpressionList(SourceLocation* location);
+    void appendExpression(Expression* expr);
 
-    const std::vector<Reference<Expr>>& expressions() const;
+    const std::vector<Reference<Expression>>& expressions() const;
 
     void accept(Visitor* visitor) const override;
 
 private:
-    std::vector<Reference<Expr>> expressions_;
+    std::vector<Reference<Expression>> expressions_;
 };
 
 /*! A sequence of one or more statements */
@@ -88,17 +89,18 @@ private:
 };
 
 /*! Base class for any literal value */
-class Literal : public Expr
+class Literal : public Expression
 {
 public:
     Literal(SourceLocation* location);
+    ~Literal() = 0;
 };
 
 template <typename T>
 class LiteralTemplate : public Literal
 {
 public:
-    LiteralTemplate(const T& value, SourceLocation* location) : Node(location), Literal(location), value_(value) {}
+    LiteralTemplate(const T& value, SourceLocation* location) : Literal(location), value_(value) {}
     const T& value() const { return value_; }
 
     void accept(Visitor* visitor) const override;
@@ -114,6 +116,17 @@ ODB_DATATYPE_LIST
 class Symbol : public Node
 {
 public:
+    enum class Annotation : char {
+        NONE,
+        STRING,
+        FLOAT
+    };
+
+    enum class Scope : char {
+        LOCAL,
+        GLOBAL
+    };
+
     Symbol(const std::string& name, SourceLocation* location);
     const std::string& name() const;
 
@@ -123,14 +136,9 @@ private:
     std::string name_;
 };
 
-class AnnotatedSymbol : virtual public Symbol
+class AnnotatedSymbol : public Symbol
 {
 public:
-    enum class Annotation : char {
-        NONE,
-        STRING,
-        FLOAT
-    };
 
     AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
     Annotation annotation() const;
@@ -141,14 +149,9 @@ private:
     Annotation annotation_;
 };
 
-class ScopedSymbol : virtual public Symbol
+class ScopedSymbol : public Symbol
 {
 public:
-    enum class Scope : char {
-        LOCAL,
-        GLOBAL
-    };
-
     ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location);
     Scope scope() const;
 
@@ -158,12 +161,18 @@ private:
     Scope scope_;
 };
 
-class ScopedAnnotatedSymbol : public ScopedSymbol, public AnnotatedSymbol
+class ScopedAnnotatedSymbol : public Symbol
 {
 public:
     ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);
+    Scope scope() const;
+    Annotation annotation() const;
 
     void accept(Visitor* visitor) const override;
+
+private:
+    Scope scope_;
+    Annotation annotation_;
 };
 
 /*!
@@ -174,43 +183,66 @@ public:
  * is a function call or an array access. This class represents such an entity.
  * This is fixed in a second stage later.
  */
-class FuncCallOrArrayRef : public Expr
+class FuncCallExprOrArrayRef : public Expression
 {
 public:
-    FuncCallOrArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
+    FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExprList* args() const;
+    ExpressionList* args() const;
 
     void accept(Visitor* visitor) const override;
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExprList> args_;
+    Reference<ExpressionList> args_;
 };
 
-class FuncCall : public Statement, public Expr
+class FuncCallExpr : public Expression
 {
 public:
-    FuncCall(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
-    FuncCall(AnnotatedSymbol* symbol, SourceLocation* location);
+    FuncCallExpr(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExprList* args() const;
+    ExpressionList* args() const;
 
     void accept(Visitor* visitor) const override;
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExprList> args_;
+    Reference<ExpressionList> args_;
 };
 
-class ArrayRef : public FuncCallOrArrayRef
+class FuncCallStmnt : public Statement
 {
 public:
-    ArrayRef(AnnotatedSymbol* symbol, ExprList* args, SourceLocation* location);
+    FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location);
+
+    AnnotatedSymbol* symbol() const;
+    ExpressionList* args() const;
 
     void accept(Visitor* visitor) const override;
+
+private:
+    Reference<AnnotatedSymbol> symbol_;
+    Reference<ExpressionList> args_;
+};
+
+class ArrayRef : public Expression
+{
+public:
+    ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+
+    AnnotatedSymbol* symbol() const;
+    ExpressionList* args() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<AnnotatedSymbol> symbol_;
+    Reference<ExpressionList> args_;
 };
 
 /*! #constant x = 42 */
@@ -315,10 +347,14 @@ private:
 class Assignment : public Statement
 {
 public:
+    Symbol* symbol() const;
+    Expression* expression() const;
+
     void accept(Visitor* visitor) const override;
 
-    Reference<Symbol> symbol;
-    Reference<Expr> expr;
+private:
+    Reference<Symbol> symbol_;
+    Reference<Expression> expr_;
 };
 
 #if defined(ODBCOMPILER_DOT_EXPORT)

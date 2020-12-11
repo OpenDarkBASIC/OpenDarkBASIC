@@ -323,7 +323,7 @@ private:
             writeBlueConnection(stmnt, node);
         }
     }
-    void visitExprList(const ExprList* node) override
+    void visitExpressionList(const ExpressionList* node) override
     {
         int i = 0;
         for (const auto& expr : node->expressions())
@@ -339,14 +339,14 @@ private:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
-    void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node) override
+    void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
         writeBlueConnection(node->symbol(), node);
         writeBlueConnection(node->args(), node);
     }
-    void visitFuncCall(const FuncCall* node) override
+    void visitFuncCallExpr(const FuncCallExpr* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeBlueConnection(node->symbol(), node);
@@ -356,7 +356,23 @@ private:
             writeBlueConnection(node->args(), node);
         }
     }
-    void visitArrayRef(const ArrayRef* node) override { visitFuncCallOrArrayRef(node); }
+    void visitFuncCallStmnt(const FuncCallStmnt* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeBlueConnection(node->symbol(), node);
+        if (node->args())
+        {
+            writeNamedConnection(node, node->args(), "args");
+            writeBlueConnection(node->args(), node);
+        }
+    }
+    void visitArrayRef(const ArrayRef* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->args(), "args");
+        writeBlueConnection(node->symbol(), node);
+        writeBlueConnection(node->args(), node);
+    }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -389,8 +405,8 @@ private:
 
     void visitBlock(const Block* node) override
         { writeName(node, "Block"); }
-    void visitExprList(const ExprList* node) override
-        { writeName(node, "ExprList"); }
+    void visitExpressionList(const ExpressionList* node) override
+        { writeName(node, "ExpressionList"); }
     void visitDoubleIntegerLiteral(const DoubleIntegerLiteral* node) override
         { writeName(node, "DoubleInteger: " + std::to_string(node->value())); }
     void visitIntegerLiteral(const IntegerLiteral* node) override
@@ -444,8 +460,9 @@ private:
 
         writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ")");
     }
-    void visitFuncCallOrArrayRef(const FuncCallOrArrayRef* node) override { writeName(node, "FuncCall or ArrayRef"); }
-    void visitFuncCall(const FuncCall* node) override { writeName(node, "FuncCall"); }
+    void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override { writeName(node, "FuncCallExpr or ArrayRef"); }
+    void visitFuncCallExpr(const FuncCallExpr* node) override { writeName(node, "FuncCallExpr"); }
+    void visitFuncCallStmnt(const FuncCallStmnt* node) override { writeName(node, "FuncCallStmnt"); }
     void visitArrayRef(const ArrayRef* node) override { writeName(node, "ArrayRef"); }
     void visitConstDecl(const ConstDecl* node) override { writeName(node, "ConstDecl"); }
 private:

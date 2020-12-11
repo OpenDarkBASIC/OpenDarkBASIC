@@ -26,7 +26,7 @@ TEST_F(NAME, function_call_no_args)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::NONE))).After(exp);
 
     ast->accept(&v);
@@ -42,7 +42,7 @@ TEST_F(NAME, function_call_no_args_string_return_type)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::STRING))).After(exp);
 
     ast->accept(&v);
@@ -61,7 +61,7 @@ TEST_F(NAME, function_call_no_args_float_return_type)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::FLOAT))).After(exp);
 
     ast->accept(&v);
@@ -77,9 +77,9 @@ TEST_F(NAME, function_call_one_arg)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(_)).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
     ast->accept(&v);
@@ -95,9 +95,9 @@ TEST_F(NAME, function_call_multiple_args)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(ExprListCountEq(3))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(3))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4.5))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
@@ -115,24 +115,24 @@ TEST_F(NAME, nested_function_calls)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(ExprListCountEq(3))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCallOrArrayRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(3))).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("bar", Annotation::FLOAT))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(ExprListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("lil", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("lel", Annotation::STRING))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCallOrArrayRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("baz", Annotation::STRING))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(ExprListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("lol", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitFuncCallOrArrayRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("lul", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitExprList(ExprListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
