@@ -4,6 +4,7 @@
 #include "odb-sdk/Reference.hpp"
 #include <memory>
 #include <vector>
+#include <string>
 
 /*!
  * @brief All of the DarkBASIC primitive types that can exist and what types
