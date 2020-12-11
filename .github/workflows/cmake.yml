@@ -18,7 +18,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Update packages
-      run: sudo apt update && sudo apt upgrade bison flex
+      run: sudo apt update && sudo apt --only-upgrade install bison flex
 
     - name: Versions
       run: bison --version || flex --version
