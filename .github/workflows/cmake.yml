@@ -11,6 +11,7 @@ jobs:
     env:
       CXX: /usr/bin/g++-10
       CC: /usr/bin/gcc-10
+      BISON_VERSION: 3.7
 
     # The CMake configure and build commands are platform agnostic and should work equally
     # well on Windows or Mac.  You can convert this to a matrix build if you need
@@ -21,8 +22,20 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Cache bison
+      uses: actions/cache@v2
+      env:
+        cache-name: cache-bison
+      with:
+        path: /usr/local/bin/bison
+        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ env.BISON_VERSION }}
+        restore-keys: |
+          ${{ runner.os }}-build-${{ env.cache-name }}-
+          ${{ runner.os }}-build-
+          ${{ runner.os }}-
+
     - name: Build bison
-      run: wget http://ftp.gnu.org/gnu/bison/bison-3.7.tar.gz && tar -zxvf bison-3.7.tar.gz && pushd bison-3.7/ && ./configure && sudo make install && popd
+      run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && sudo make install && popd
 
     - name: Update packages
       run: sudo apt update && sudo apt --only-upgrade install flex
