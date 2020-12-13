@@ -44,8 +44,11 @@ jobs:
 
     - name: Build bison
       if: steps.cache-bison.outputs.cache-hit != 'true'
-      run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && make && popd && export PATH=bison-$BISON_VERSION/src/:$PATH
+      run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && make && popd
 
+    - name: Add bison to PATH
+      run: echo "${{github.workspace}}/bison-$BISON_VERSION/src/" >> $GITHUB_PATH
+    
     - name: Update packages
       run: sudo apt update && sudo apt --only-upgrade install flex
 
