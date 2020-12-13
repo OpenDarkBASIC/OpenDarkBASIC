@@ -34,23 +34,23 @@ jobs:
           ${{ runner.os }}-build-
           ${{ runner.os }}-
 
+    - name: Debugging with tmate
+      # You may pin to the exact commit or the version.
+      # uses: mxschmitt/action-tmate@04c73044e0fd6cbed37de0cbdd0321d8b4359775
+      uses: mxschmitt/action-tmate@v3.1
+      with:
+        # If apt should be executed with sudo or without
+        sudo: true # optional, default is true
+
     - name: Build bison
       if: steps.cache-bison.outputs.cache-hit != 'true'
-      run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && sudo make install && popd
+      run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && make && popd
 
     - name: Update packages
       run: sudo apt update && sudo apt --only-upgrade install flex
 
     - name: Versions
       run: bison --version; flex --version
-
-    # - name: Debugging with tmate
-    #   # You may pin to the exact commit or the version.
-    #   # uses: mxschmitt/action-tmate@04c73044e0fd6cbed37de0cbdd0321d8b4359775
-    #   uses: mxschmitt/action-tmate@v3.1
-    #   with:
-    #     # If apt should be executed with sudo or without
-    #     sudo: true # optional, default is true
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
