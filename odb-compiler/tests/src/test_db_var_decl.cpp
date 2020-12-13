@@ -461,9 +461,21 @@ TEST_F(NAME, global_string_variable_cannot_be_float)
     ASSERT_THAT(ast, IsNull());
 }
 
-TEST_F(NAME, wtf)
+TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_1)
 {
     ast = driver->parseString("test", "global byte as byte");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_2)
+{
+    ast = driver->parseString("test", "byte as byte");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_3)
+{
+    ast = driver->parseString("test", "local integer");
     ASSERT_THAT(ast, IsNull());
 }
 

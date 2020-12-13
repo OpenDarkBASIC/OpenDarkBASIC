@@ -333,7 +333,7 @@ var_decl_scope
 var_decl_as_type
   : var_decl_int_sym AS DOUBLE INTEGER           { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&yylloc)); }
   | var_decl_int_sym AS INTEGER                  { $$ = new IntegerVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS DWORD                    { $$ = new DWordVarDecl($1, driver->newLocation(&yylloc)); }
+  | var_decl_int_sym AS DWORD                    { $$ = new DwordVarDecl($1, driver->newLocation(&yylloc)); }
   | var_decl_int_sym AS WORD                     { $$ = new WordVarDecl($1, driver->newLocation(&yylloc)); }
   | var_decl_int_sym AS BYTE                     { $$ = new ByteVarDecl($1, driver->newLocation(&yylloc)); }
   | var_decl_int_sym AS BOOLEAN                  { $$ = new BooleanVarDecl($1, driver->newLocation(&yylloc)); }
