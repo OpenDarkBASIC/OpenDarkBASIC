@@ -117,8 +117,7 @@ target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
-        odb-sdk
-        stdc++fs)
+        odb-sdk)
 set_target_properties (odb-compiler
     PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
@@ -155,8 +154,7 @@ if (${ODBCOMPILER_TESTS})
     target_link_libraries (odbc_tests
         PRIVATE
             gmock
-            odb-compiler
-            $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)
+            odb-compiler)
     target_include_directories (odbc_tests
         PRIVATE
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
@@ -181,8 +179,7 @@ target_include_directories (odbc
         $<INSTALL_INTERFACE:include>)
 target_link_libraries (odbc
     PRIVATE
-        odb-compiler
-        stdc++fs)
+        odb-compiler)
 set_target_properties (odbc
     PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
