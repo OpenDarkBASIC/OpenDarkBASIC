@@ -48,6 +48,9 @@ set_target_properties (odb-sdk
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
+target_link_libraries (odb-sdk
+    PUBLIC
+        stdc++fs)
 
 if (UNIX)
     find_package (DL REQUIRED)
