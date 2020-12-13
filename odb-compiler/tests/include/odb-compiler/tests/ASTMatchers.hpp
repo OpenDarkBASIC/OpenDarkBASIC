@@ -6,7 +6,8 @@
 using namespace ::testing;
 using namespace odb;
 
-std::string symbolAnnotationToString(ast::AnnotatedSymbol::Annotation annotation);
+std::string symbolScopeToString(ast::Symbol::Scope annotation);
+std::string symbolAnnotationToString(ast::Symbol::Annotation annotation);
 
 class BlockStmntCountEqMatcher : public MatcherInterface<const ast::Block*>
 {
@@ -70,28 +71,64 @@ private:
 class AnnotatedSymbolEqMatcher : public MatcherInterface<const ast::AnnotatedSymbol*>
 {
 public:
-    explicit AnnotatedSymbolEqMatcher(const std::string& name, ast::AnnotatedSymbol::Annotation annotation)
-        : expectedName_(name)
-        , expectedAnnotation_(annotation) {}
+    explicit AnnotatedSymbolEqMatcher(ast::Symbol::Annotation annotation, const std::string& name)
+        : expectedAnnotation_(annotation)
+        , expectedName_(name) {}
     bool MatchAndExplain(const ast::AnnotatedSymbol* node, MatchResultListener* listener) const override {
         *listener
-            << "node->name() == " << node->name()
-            << ", node->annotation() == " << symbolAnnotationToString(node->annotation());
-        return node->name() == expectedName_
-            && node->annotation() == expectedAnnotation_;
+            << "node->annotation() == " << symbolAnnotationToString(node->annotation())
+            << ", node->name() == " << node->name();
+        return node->annotation() == expectedAnnotation_
+            && node->name() == expectedName_;
     }
     void DescribeTo(::std::ostream* os) const override {
-        *os << "node->name() equals " << expectedName_
-            << ", node->annotation() equals " << symbolAnnotationToString(expectedAnnotation_);
+        *os
+            << "node->annotation() equals " << symbolAnnotationToString(expectedAnnotation_)
+            << ", node->name() equals " << expectedName_;
     }
     void DescribeNegationTo(::std::ostream* os) const override {
-        *os << "node->name() does not equal " << expectedName_
-            << ", node->annotation() does not equal " << symbolAnnotationToString(expectedAnnotation_);
+        *os
+            << "node->annotation() does not equal " << symbolAnnotationToString(expectedAnnotation_)
+            << "node->name() does not equal " << expectedName_;
     }
 
 private:
+    const ast::Symbol::Annotation expectedAnnotation_;
     const std::string expectedName_;
-    const ast::AnnotatedSymbol::Annotation expectedAnnotation_;
+};
+
+class ScopedAnnotatedSymbolEqMatcher : public MatcherInterface<const ast::ScopedAnnotatedSymbol*>
+{
+public:
+    explicit ScopedAnnotatedSymbolEqMatcher(ast::Symbol::Scope scope, ast::Symbol::Annotation annotation, const std::string& name)
+        : expectedScope_(scope)
+        , expectedAnnotation_(annotation)
+        , expectedName_(name) {}
+    bool MatchAndExplain(const ast::ScopedAnnotatedSymbol* node, MatchResultListener* listener) const override {
+        *listener
+            << "node->scope() == " << symbolScopeToString(node->scope())
+            << ", node->annotation() == " << symbolAnnotationToString(node->annotation())
+            << ", node->name() == " << node->name();
+        return node->annotation() == expectedAnnotation_
+            && node->name() == expectedName_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os
+            << "node->scope() equals" << symbolScopeToString(expectedScope_)
+            << ", node->annotation() equals " << symbolAnnotationToString(expectedAnnotation_)
+            << ", node->name() equals " << expectedName_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os
+            << "node->scope() does not equal " << symbolScopeToString(expectedScope_)
+            << ", node->annotation() does not equal " << symbolAnnotationToString(expectedAnnotation_)
+            << ", node->name() does not equal " << expectedName_;
+    }
+
+private:
+    const ast::Symbol::Scope expectedScope_;
+    const ast::Symbol::Annotation expectedAnnotation_;
+    const std::string expectedName_;
 };
 
 template <class T>
@@ -164,8 +201,11 @@ inline Matcher<const ast::ExpressionList*> ExpressionListCountEq(int expectedCou
 inline Matcher<const ast::Symbol*> SymbolEq(const std::string& name) {
     return MakeMatcher(new SymbolEqMatcher(name));
 }
-inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(const std::string& name, ast::AnnotatedSymbol::Annotation annotation) {
-    return MakeMatcher(new AnnotatedSymbolEqMatcher(name, annotation));
+inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(ast::Symbol::Annotation annotation, const std::string& name) {
+    return MakeMatcher(new AnnotatedSymbolEqMatcher(annotation, name));
+}
+inline Matcher<const ast::ScopedAnnotatedSymbol*> ScopedAnnotatedSymbolEq(ast::Symbol::Scope scope, ast::Symbol::Annotation annotation, const std::string& name) {
+    return MakeMatcher(new ScopedAnnotatedSymbolEqMatcher(scope, annotation, name));
 }
 inline Matcher<const ast::KeywordExprSymbol*> KeywordExprSymbolEq(const std::string& name) {
     return MakeMatcher(new KeywordExprSymbolEqMatcher(name));

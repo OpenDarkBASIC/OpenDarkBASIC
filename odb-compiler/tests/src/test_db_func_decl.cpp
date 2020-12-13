@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME db_function_decl
+#define NAME db_func_decl
 
 using namespace testing;
 

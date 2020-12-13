@@ -1,13 +1,23 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 
-std::string symbolAnnotationToString(ast::AnnotatedSymbol::Annotation annotation)
+std::string symbolAnnotationToString(ast::Symbol::Annotation annotation)
 {
-    using Ann = ast::AnnotatedSymbol::Annotation;
+    using Ann = ast::Symbol::Annotation;
     switch (annotation) {
         default:
         case Ann::NONE : return "NONE";
         case Ann::FLOAT : return "FLOAT";
         case Ann::STRING : return "STRING";
+    }
+}
+
+std::string symbolScopeToString(ast::Symbol::Scope scope)
+{
+    using Scope = ast::Symbol::Scope;
+    switch (scope) {
+        default:
+        case Scope::LOCAL : return "LOCAL";
+        case Scope::GLOBAL : return "GLOBAL";
     }
 }
 
