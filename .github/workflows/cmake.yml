@@ -35,6 +35,7 @@ jobs:
           ${{ runner.os }}-
 
     - name: Build bison
+      if: steps.cache-bison.outputs.cache-hit != 'true'
       run: wget http://ftp.gnu.org/gnu/bison/bison-$BISON_VERSION.tar.gz && tar -zxvf bison-$BISON_VERSION.tar.gz && pushd bison-$BISON_VERSION/ && ./configure && sudo make install && popd
 
     - name: Update packages
