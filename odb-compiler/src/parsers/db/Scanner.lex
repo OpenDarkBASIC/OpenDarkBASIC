@@ -162,6 +162,9 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     (?i:type)           { RETURN_TOKEN(TOK_TYPE); }
     (?i:boolean)        { RETURN_TOKEN(TOK_BOOLEAN); }
     (?i:integer)        { RETURN_TOKEN(TOK_INTEGER); }
+    (?i:dword)          { RETURN_TOKEN(TOK_DWORD); }
+    (?i:word)           { RETURN_TOKEN(TOK_WORD); }
+    (?i:byte)           { RETURN_TOKEN(TOK_BYTE); }
     (?i:float)          { RETURN_TOKEN(TOK_FLOAT); }
     (?i:double)         { RETURN_TOKEN(TOK_DOUBLE); }
     (?i:string)         { RETURN_TOKEN(TOK_STRING); }

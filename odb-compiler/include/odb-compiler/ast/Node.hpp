@@ -13,7 +13,7 @@
 #define ODB_DATATYPE_LIST     \
     X(DoubleInteger, int64_t) \
     X(Integer, int32_t)       \
-    X(DWord, uint32_t)        \
+    X(Dword, uint32_t)        \
     X(Word, uint16_t)         \
     X(Byte, uint8_t)          \
     X(Boolean, bool)          \
@@ -96,7 +96,7 @@ class Literal : public Expression
 {
 public:
     Literal(SourceLocation* location);
-    ~Literal() = 0;
+    virtual ~Literal() = 0;
 };
 
 template <typename T>
@@ -328,50 +328,46 @@ private:
     Reference<ExpressionList> args_;
 };
 
-/* x = myconstant */
-class ConstRef : public Statement
+class VarDecl : public Statement
 {
 public:
-private:
+    VarDecl(SourceLocation* location);
+    virtual ~VarDecl() = 0;
+    virtual void setInitialValue(Expression* expression) = 0;
 };
 
-/* local x */
-class VarDecl : public Symbol
+template <typename T>
+class VarDeclTemplate : public VarDecl
 {
 public:
+    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, Expression* initalValue, SourceLocation* location);
+    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
+
+    ScopedAnnotatedSymbol* symbol() const;
+    Expression* initialValue() const;
+
+    void setInitialValue(Expression* expression) override;
+
+    void accept(Visitor* visitor) const override;
+
 private:
+    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<Expression> initialValue_;
 };
 
-/* x as boolean */
-class BooleanVarDecl : public VarDecl
-{
-public:
-private:
-};
-
-/* x as integer */
-class IntegerVarDecl : public VarDecl
-{
-public:
-private:
-};
-
-/* x as float */
-class FloatVarDecl : public VarDecl
-{
-public:
-private:
-};
-
-/* x as string */
-class StringVarDecl : public VarDecl
-{
-public:
-private:
-};
+#define X(dbname, cppname) typedef VarDeclTemplate<cppname> dbname##VarDecl;
+ODB_DATATYPE_LIST
+#undef X
 
 /* x as udt */
-class UDTVarDecl : public VarDecl
+class UDTVarDecl : public Statement
+{
+public:
+private:
+};
+
+/* x = myconstant */
+class ConstRef : public Statement
 {
 public:
 private:
@@ -409,19 +405,6 @@ class UDTVarRef : public VarRef
 {
 public:
 private:
-};
-
-class Assignment : public Statement
-{
-public:
-    Symbol* symbol() const;
-    Expression* expression() const;
-
-    void accept(Visitor* visitor) const override;
-
-private:
-    Reference<Symbol> symbol_;
-    Reference<Expression> expr_;
 };
 
 #if defined(ODBCOMPILER_DOT_EXPORT)

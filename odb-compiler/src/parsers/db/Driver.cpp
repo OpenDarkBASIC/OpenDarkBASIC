@@ -292,7 +292,7 @@ ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocati
     if (value > std::numeric_limits<uint32_t>::max())
         return new ast::DoubleIntegerLiteral(value, location);
     if (value > std::numeric_limits<int32_t>::max())
-        return new ast::DWordLiteral(value, location);
+        return new ast::DwordLiteral(value, location);
     if (value > std::numeric_limits<uint16_t>::max())
         return new ast::IntegerLiteral(value, location);
     if (value > std::numeric_limits<uint8_t>::max())
