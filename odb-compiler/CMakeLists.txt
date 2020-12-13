@@ -117,7 +117,8 @@ target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
-        odb-sdk)
+        odb-sdk
+        stdc++fs)
 set_target_properties (odb-compiler
     PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
@@ -180,7 +181,8 @@ target_include_directories (odbc
         $<INSTALL_INTERFACE:include>)
 target_link_libraries (odbc
     PRIVATE
-        odb-compiler)
+        odb-compiler
+        stdc++fs)
 set_target_properties (odbc
     PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
