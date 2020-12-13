@@ -181,7 +181,8 @@ target_include_directories (odbc
         $<INSTALL_INTERFACE:include>)
 target_link_libraries (odbc
     PRIVATE
-        odb-compiler)
+        odb-compiler
+        stdc++fs)
 set_target_properties (odbc
     PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
