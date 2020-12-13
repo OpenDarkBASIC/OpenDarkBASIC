@@ -117,7 +117,8 @@ target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
-        odb-sdk)
+        odb-sdk
+        stdc++fs)
 set_target_properties (odb-compiler
     PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
