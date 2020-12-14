@@ -31,7 +31,12 @@ jobs:
     - name: Versions
       run: bison --version; flex --version
       if: ${{ matrix.os != 'windows-latest' }}
-      
+
+    - name: Download bison and flex
+      run: |
+        Invoke-WebRequest -Uri https://github.com/lexxmark/winflexbison/files/5146142/win_flex_bison-2.5.23.zip -OutFile win_flex_bison-2.5.23.zip
+        Expand-Archive win_flex_bison-2.5.23.zip -DestinationPath win_flex_bison-2.5.23 -Force
+
     # - name: Debugging with tmate
     #   # You may pin to the exact commit or the version.
     #   # uses: mxschmitt/action-tmate@04c73044e0fd6cbed37de0cbdd0321d8b4359775
