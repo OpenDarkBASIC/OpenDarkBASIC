@@ -31,9 +31,6 @@
         dbg(#token);                                                          \
         return token;                                                         \
     } while(0)
-
-#define DB_KEYWORD_LIST \
-    X(MOD)
 %}
 
 %option nodefault
@@ -165,6 +162,9 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     (?i:type)           { RETURN_TOKEN(TOK_TYPE); }
     (?i:boolean)        { RETURN_TOKEN(TOK_BOOLEAN); }
     (?i:integer)        { RETURN_TOKEN(TOK_INTEGER); }
+    (?i:dword)          { RETURN_TOKEN(TOK_DWORD); }
+    (?i:word)           { RETURN_TOKEN(TOK_WORD); }
+    (?i:byte)           { RETURN_TOKEN(TOK_BYTE); }
     (?i:float)          { RETURN_TOKEN(TOK_FLOAT); }
     (?i:double)         { RETURN_TOKEN(TOK_DOUBLE); }
     (?i:string)         { RETURN_TOKEN(TOK_STRING); }
@@ -183,6 +183,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     "\n"                { RETURN_TOKEN('\n'); }
     ":"                 { RETURN_TOKEN(':'); }
     ";"                 { RETURN_TOKEN(';'); }
-    .
+    [ \t]
+    .                   { RETURN_TOKEN(yytext[0]); }
 }
 %%

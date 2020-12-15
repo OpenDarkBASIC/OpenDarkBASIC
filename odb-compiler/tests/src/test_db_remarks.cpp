@@ -42,8 +42,8 @@ public:
             StrictMock<ASTMockVisitor> v;
             Expectation exp;
             exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-            exp = EXPECT_CALL(v, visitFuncCall(_)).After(exp);
-            exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("foo", Annotation::NONE))).After(exp);
+            exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
+            exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
 
             ast->accept(&v);
         }

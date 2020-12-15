@@ -44,9 +44,7 @@ find_package (BISON REQUIRED 3.2)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/keywords")
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db")
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/keywords")
 
 set (BISON_VERBOSE_OPTION "")
 if (${ODBCOMPILER_VERBOSE_BISON})
@@ -104,7 +102,7 @@ target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     PRIVATE
         $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
 target_compile_definitions (odb-compiler
@@ -120,14 +118,19 @@ target_compile_features (odb-compiler
 target_link_libraries (odb-compiler
     PUBLIC
         odb-sdk)
+set_target_properties (odb-compiler
+    PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
+        LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
         # "tests/src/test_db_arrays.cpp"
         # "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
-        "tests/src/test_db_function_call.cpp"
-        # "tests/src/test_db_function_decl.cpp"
+        "tests/src/test_db_func_call.cpp"
+        # "tests/src/test_db_func_decl.cpp"
         # "tests/src/test_db_goto.cpp"
         "tests/src/test_db_keyword.cpp"
         # "tests/src/test_db_loop_do.cpp"
@@ -141,23 +144,26 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_string_literal.cpp"
         # "tests/src/test_db_subroutine.cpp"
         # "tests/src/test_db_udt.cpp"
-        # "tests/src/test_db_variables.cpp"
+        "tests/src/test_db_var_decl.cpp"
+        # "tests/src/test_db_var_ref.cpp"
         # "tests/src/test_kw_index.cpp"
-        # "tests/src/test_kw_matcher.cpp"
+        "tests/src/test_kw_matcher.cpp"
         "tests/src/test_SourceLocation.cpp"
         "tests/src/ASTMatchers.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
             gmock
-            odb-compiler
-            $<$<NOT:$<PLATFORM_ID:Windows>>:stdc++fs>)
+            odb-compiler)
     target_include_directories (odbc_tests
         PRIVATE
             $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
     target_compile_features (odbc_tests
         PUBLIC
             cxx_std_17)
+    set_target_properties (odbc_tests
+        PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
 endif ()
 
 ###############################################################################
@@ -174,39 +180,30 @@ target_include_directories (odbc
 target_link_libraries (odbc
     PRIVATE
         odb-compiler)
+set_target_properties (odbc
+    PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
 
 ###############################################################################
 # Installation
 ###############################################################################
 
-if (${ODBCOMPILER_LIB_TYPE} MATCHES "SHARED")
-    install (
-        TARGETS odb-compiler
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-endif ()
+install (
+    TARGETS odb-compiler
+    EXPORT OpenDarkBASICConfig
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install (
+    DIRECTORY "include/odb-compiler"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install (
+    DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install (
+    EXPORT OpenDarkBASICConfig
+    DESTINATION "share/odb/cmake")
 
-if (${INSTALL_DEV})
-    install (
-        TARGETS odbc
-        EXPORT ODBCConfig
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-    install (
-        DIRECTORY "include/odb-compiler"
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install (
-        DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler"
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-    install (
-        EXPORT ODBCConfig
-        DESTINATION "share/odbc/cmake")
-endif ()
-
-export (
+install (
     TARGETS odbc
-    NAMESPACE ODBC
-    FILE ODBCConfig.cmake)
-export (
-    PACKAGE ODBC)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

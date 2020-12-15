@@ -17,7 +17,7 @@ public:
 
 TEST_F(NAME, bool_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mybool1 true\n"
@@ -28,10 +28,10 @@ TEST_F(NAME, bool_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mybool1", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mybool1"))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mybool2", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mybool2"))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);
 
     ast->accept(&v);
@@ -39,7 +39,7 @@ TEST_F(NAME, bool_constant)
 
 TEST_F(NAME, byte_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant myint 20\n");
@@ -49,7 +49,7 @@ TEST_F(NAME, byte_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(20)));
 
     ast->accept(&v);
@@ -57,7 +57,7 @@ TEST_F(NAME, byte_constant)
 
 TEST_F(NAME, word_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant myint 2000\n");
@@ -67,7 +67,7 @@ TEST_F(NAME, word_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(2000)));
 
     ast->accept(&v);
@@ -75,7 +75,7 @@ TEST_F(NAME, word_constant)
 
 TEST_F(NAME, integer_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant myint 2147483647\n");
@@ -85,7 +85,7 @@ TEST_F(NAME, integer_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647)));
 
     ast->accept(&v);
@@ -93,7 +93,7 @@ TEST_F(NAME, integer_constant)
 
 TEST_F(NAME, dword_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant myint 4294967295\n");
@@ -103,15 +103,15 @@ TEST_F(NAME, dword_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitDWordLiteral(DWordLiteralEq(4294967295)));
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
+    exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(4294967295)));
 
     ast->accept(&v);
 }
 
 TEST_F(NAME, double_integer_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant myint 4294967296\n");
@@ -121,7 +121,7 @@ TEST_F(NAME, double_integer_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("myint", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(4294967296)));
 
     ast->accept(&v);
@@ -129,7 +129,7 @@ TEST_F(NAME, double_integer_constant)
 
 TEST_F(NAME, double_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 5.2\n");
@@ -139,7 +139,7 @@ TEST_F(NAME, double_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
 
     ast->accept(&v);
@@ -147,7 +147,7 @@ TEST_F(NAME, double_constant)
 
 TEST_F(NAME, double_constant_annotated)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble# 5.2\n");
@@ -157,7 +157,7 @@ TEST_F(NAME, double_constant_annotated)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::FLOAT))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
 
     ast->accept(&v);
@@ -165,7 +165,7 @@ TEST_F(NAME, double_constant_annotated)
 
 TEST_F(NAME, string_constant)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mystring \"hello world!\"\n");
@@ -175,7 +175,7 @@ TEST_F(NAME, string_constant)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mystring", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mystring"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));
 
     ast->accept(&v);
@@ -183,7 +183,7 @@ TEST_F(NAME, string_constant)
 
 TEST_F(NAME, string_constant_annotated)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mystring$ \"hello world!\"\n");
@@ -193,7 +193,7 @@ TEST_F(NAME, string_constant_annotated)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mystring", Annotation::STRING))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "mystring"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));
 
     ast->accept(&v);
@@ -209,7 +209,7 @@ TEST_F(NAME, more_than_one_value_fails)
 
 TEST_F(NAME, double_1_notation)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 53.\n");
@@ -219,7 +219,7 @@ TEST_F(NAME, double_1_notation)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(53)));
 
     ast->accept(&v);
@@ -227,7 +227,7 @@ TEST_F(NAME, double_1_notation)
 
 TEST_F(NAME, double_2_notation)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble .53\n");
@@ -237,7 +237,7 @@ TEST_F(NAME, double_2_notation)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(.53)));
 
     ast->accept(&v);
@@ -245,7 +245,7 @@ TEST_F(NAME, double_2_notation)
 
 TEST_F(NAME, double_3_notation)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 53.f\n");
@@ -255,7 +255,7 @@ TEST_F(NAME, double_3_notation)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(53)));
 
     ast->accept(&v);
@@ -263,7 +263,7 @@ TEST_F(NAME, double_3_notation)
 
 TEST_F(NAME, double_4_notation)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble .53f\n");
@@ -273,7 +273,7 @@ TEST_F(NAME, double_4_notation)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(.53)));
 
     ast->accept(&v);
@@ -281,7 +281,7 @@ TEST_F(NAME, double_4_notation)
 
 TEST_F(NAME, double_exponential_notation_1)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 12e2\n");
@@ -291,7 +291,7 @@ TEST_F(NAME, double_exponential_notation_1)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12e2)));
 
     ast->accept(&v);
@@ -299,7 +299,7 @@ TEST_F(NAME, double_exponential_notation_1)
 
 TEST_F(NAME, double_exponential_notation_2)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 12.4e2\n");
@@ -309,7 +309,7 @@ TEST_F(NAME, double_exponential_notation_2)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12.4e2)));
 
     ast->accept(&v);
@@ -317,7 +317,7 @@ TEST_F(NAME, double_exponential_notation_2)
 
 TEST_F(NAME, double_exponential_notation_3)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble .4e2\n");
@@ -327,7 +327,7 @@ TEST_F(NAME, double_exponential_notation_3)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(40)));
 
     ast->accept(&v);
@@ -335,7 +335,7 @@ TEST_F(NAME, double_exponential_notation_3)
 
 TEST_F(NAME, double_exponential_notation_4)
 {
-    using Annotation = ast::AnnotatedSymbol::Annotation;
+    using Annotation = ast::Symbol::Annotation;
 
     ast = driver->parseString("test",
         "#constant mydouble 43.e2\n");
@@ -345,7 +345,7 @@ TEST_F(NAME, double_exponential_notation_4)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq("mydouble", Annotation::NONE))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4300)));
 
     ast->accept(&v);

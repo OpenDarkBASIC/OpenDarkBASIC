@@ -12,7 +12,7 @@ class KeywordMatcher;
 namespace ast {
     class AnnotatedSymbol;
     class Block;
-    class Expr;
+    class Expression;
     class ExprList;
     class Literal;
     class SourceLocation;

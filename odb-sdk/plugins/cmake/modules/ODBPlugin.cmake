@@ -4,7 +4,7 @@ macro (odb_add_plugin PLUGIN)
     set (multiValueArgs SOURCES HEADERS INCLUDE_DIRECTORIES)
     cmake_parse_arguments (${PLUGIN} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-    configure_file ("${PLUGIN_CONFIG_TEMPLATE_PATH}/config.hpp.in" 
+    configure_file ("${PLUGIN_CONFIG_TEMPLATE_PATH}/config.hpp.in"
                     "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.hpp")
 
     add_library (${PLUGIN} SHARED
@@ -23,5 +23,12 @@ macro (odb_add_plugin PLUGIN)
     set_target_properties (${PLUGIN}
         PROPERTIES
             PREFIX "")
+    set_target_properties (${PLUGIN}
+        PROPERTIES
+            LIBRARY_OUTPUT_DIRECTORY "${ODB_SDK_DIR}/plugins"
+            RUNTIME_OUTPUT_DIRECTORY "${ODB_SDK_DIR}/plugins")
+    install (
+        TARGETS ${PLUGIN}
+        LIBRARY DESTINATION "${CMAKE_INSTALL_ODBSDKDIR}/plugins"
+        RUNTIME DESTINATION "${CMAKE_INSTALL_ODBSDKDIR}/plugins")
 endmacro ()
-
