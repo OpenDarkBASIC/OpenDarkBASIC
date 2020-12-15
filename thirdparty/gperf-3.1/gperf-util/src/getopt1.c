@@ -20,7 +20,7 @@
 #include <config.h>
 #endif
 
-#include "getopt.h"
+#include "gperf-util/getopt.h"
 
 #include <stdio.h>
 
