@@ -7,8 +7,9 @@
 #include <filesystem>
 
 namespace odb {
-
 class DynamicLibrary;
+
+namespace kw {
 class KeywordIndex;
 
 class KeywordLoader
@@ -27,4 +28,5 @@ protected:
     const std::vector<std::filesystem::path> pluginDirs_;
 };
 
+}
 }

@@ -2,6 +2,7 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 
 namespace odb {
+namespace kw {
 
 // ----------------------------------------------------------------------------
 DBPKeywordLoader::DBPKeywordLoader(const std::string& sdkRoot,
@@ -95,4 +96,5 @@ bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
     return false;
 }
 
+}
 }

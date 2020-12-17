@@ -84,6 +84,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Node.cpp"
+    "src/ast/Block.cpp"
+    "src/ast/Expression.cpp"
+    "src/ast/ExpressionList.cpp"
+    "src/ast/Literal.cpp"
+    "src/ast/Statement.cpp"
+    "src/ast/Symbol.cpp"
     "src/ast/OldNode.cpp"
     "src/ast/Node_dumpToDOT.cpp"
     "src/ast/Node_dumpToJSON.cpp"

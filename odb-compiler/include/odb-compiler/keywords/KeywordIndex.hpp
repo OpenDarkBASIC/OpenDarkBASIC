@@ -7,6 +7,7 @@
 #include <vector>
 
 namespace odb {
+namespace kw {
 
 class Keyword;
 
@@ -38,4 +39,5 @@ private:
     std::vector<Reference<Keyword>> keywords_;
 };
 
+}
 }

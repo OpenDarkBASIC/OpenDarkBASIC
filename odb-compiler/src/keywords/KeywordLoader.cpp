@@ -1,6 +1,7 @@
 #include "odb-compiler/keywords/KeywordLoader.hpp"
 
 namespace odb {
+namespace kw {
 
 static std::vector<std::filesystem::path> stringsToPaths(const std::vector<std::string>& strings)
 {
@@ -18,4 +19,5 @@ KeywordLoader::KeywordLoader(const std::string& sdkRoot,
 {
 }
 
+}
 }
