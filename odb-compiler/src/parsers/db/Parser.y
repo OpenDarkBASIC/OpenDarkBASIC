@@ -31,6 +31,7 @@
         }
         namespace ast {
             class AnnotatedSymbol;
+            class Assignment;
             class Block;
             class ConstDecl;
             class Literal;
@@ -45,7 +46,9 @@
             class ScopedAnnotatedSymbol;
             class Statement;
             class Symbol;
+            class VarAssignment;
             class VarDecl;
+            class VarRef;
         }
     }
 }
@@ -106,7 +109,9 @@
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
     odb::ast::Symbol* symbol;
+    odb::ast::Assignment* assignment;
     odb::ast::VarDecl* var_decl;
+    odb::ast::VarRef* var_ref;
 }
 
 %define api.token.prefix {TOK_}
@@ -139,6 +144,7 @@
 %token<string> KEYWORD;
 %token '$' '#';
 
+%type<assignment> assignment;
 %type<block> program;
 %type<block> block;
 %type<stmnt> stmnt;
@@ -150,7 +156,6 @@
 %type<keyword_expr> keyword_expr;
 %type<keyword_stmnt> keyword_stmnt;
 %type<var_decl> var_decl;
-%type<var_decl> var_decl_implicit;
 %type<var_decl> var_decl_as_type;
 %type<var_decl> var_decl_scope;
 %type<literal> literal;
@@ -158,6 +163,7 @@
 %type<scoped_annotated_symbol> var_decl_int_sym;
 %type<scoped_annotated_symbol> var_decl_str_sym;
 %type<scoped_annotated_symbol> var_decl_float_sym;
+%type<var_ref> var_ref;
 /*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
@@ -248,18 +254,9 @@ program
   : seps_maybe block seps_maybe                  { driver->giveProgram($2); }
   | seps_maybe                                   { $$ = nullptr; }
   ;
-sep
-  : '\n'
-  | ':'
-  | ';'
-  ;
-seps
-  : seps sep
-  | sep;
-seps_maybe
-  : seps
-  |
-  ;
+sep : '\n' | ':' | ';' ;
+seps : seps sep | sep;
+seps_maybe : seps | ;
 block
   : block seps stmnt                             { $$ = $1; $$->appendStatement($3); }
   | stmnt                                        { $$ = new Block(driver->newLocation(&yylloc)); $$->appendStatement($1); }
@@ -269,6 +266,27 @@ stmnt
   | func_call_stmnt                              { $$ = $1; }
   | keyword_stmnt                                { $$ = $1; }
   | var_decl                                     { $$ = $1; }
+  | assignment                                   { $$ = $1; }
+  ;
+expr_list
+  : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
+  | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
+  ;
+expr
+  : literal                                      { $$ = $1; }
+  | func_call_expr_or_array_ref                  { $$ = $1; }
+  | keyword_expr                                 { $$ = $1; }
+  | var_ref                                      { $$ = $1; }
+  ;
+keyword_stmnt
+  : KEYWORD                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  ;
+keyword_expr
+  : KEYWORD '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
 stmnt
@@ -310,17 +328,14 @@ lvalue
   | var_ref                                      { $$ = $1; }
   | array_ref                                    { $$ = $1; }
   ;*/
+assignment
+  : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&yylloc)); }
+  ;
 var_decl
-  : var_decl_implicit                            { $$ = $1; }
-  | var_decl_as_type                             { $$ = $1; }
+  : var_decl_as_type                             { $$ = $1; }
   | var_decl_scope                               { $$ = $1; }
   | var_decl_as_type '=' expr                    { $$ = $1; $$->setInitialValue($3); }
   | var_decl_scope '=' expr                      { $$ = $1; $$->setInitialValue($3); }
-  ;
-var_decl_implicit
-  : SYMBOL %prec NO_HASH_OR_DOLLAR '=' expr      { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, loc), $3, loc); str::deleteCStr($1); }
-  | SYMBOL '#' '=' expr                          { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, loc), $4, loc); str::deleteCStr($1); }
-  | SYMBOL '$' '=' expr                          { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, loc), $4, loc); str::deleteCStr($1); }
   ;
 var_decl_scope
   : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
@@ -359,39 +374,9 @@ var_decl_str_sym
   | LOCAL SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
   | SYMBOL '$'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
-/*
-var_decl
-  : LOCAL var_decl_as_type                       { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
-  | GLOBAL var_decl_as_type                      { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
-  | LOCAL var_decl_name                          { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
-  | GLOBAL var_decl_name                         { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
-  | var_decl_as_type                             { $$ = $1; }
-  ;
-var_decl_as_type
-  : var_decl_name AS BOOLEAN                     { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
-  | var_decl_name AS INTEGER                     { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
-  | var_decl_name AS FLOAT                       { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
-  | var_decl_name AS STRING                      { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
-  | var_decl_name AS udt_name                    { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.var_decl.udt = $3; }
-  ;
-var_decl_name
-  : annotated_symbol {
-        $$ = $1;
-        $$->info.type = NT_SYM_VAR_DECL;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
-  ;
 var_ref
-  : annotated_symbol {
-        $$ = $1;
-        $$->info.type = NT_SYM_VAR_REF;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
-  ;
+  : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&yylloc)); }
+/*
 array_decl
   : LOCAL array_decl_as_type                     { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
   | GLOBAL array_decl_as_type                    { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
@@ -514,25 +499,6 @@ func_call_expr_or_array_ref
 func_call_stmnt
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
-  ;
-expr_list
-  : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
-  | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
-  ;
-expr
-  : literal                                      { $$ = $1; }
-  | func_call_expr_or_array_ref                  { $$ = $1; }
-  | keyword_expr                                 { $$ = $1; }
-  ;
-keyword_stmnt
-  : KEYWORD                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  ;
-keyword_expr
-  : KEYWORD '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
 expr

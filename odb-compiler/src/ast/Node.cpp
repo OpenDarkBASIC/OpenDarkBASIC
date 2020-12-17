@@ -467,5 +467,52 @@ VarDecl::~VarDecl()
 ODB_DATATYPE_LIST
 #undef X
 
+// ----------------------------------------------------------------------------
+VarRef::VarRef(AnnotatedSymbol* symbol, SourceLocation* location) :
+    Expression(location),
+    symbol_(symbol)
+{
+    symbol->setParent(this);
+}
+AnnotatedSymbol* VarRef::symbol() const
+{
+    return symbol_;
+}
+void VarRef::accept(Visitor* visitor) const
+{
+    visitor->visitVarRef(this);
+    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Assignment::Assignment(SourceLocation* location) :
+    Statement(location)
+{
+}
+
+// ----------------------------------------------------------------------------
+VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* location) :
+    Assignment(location),
+    var_(var),
+    expr_(expr)
+{
+    var->setParent(this);
+    expr->setParent(this);
+}
+VarRef* VarAssignment::variable() const
+{
+    return var_;
+}
+Expression* VarAssignment::expression() const
+{
+    return expr_;
+}
+void VarAssignment::accept(Visitor* visitor) const
+{
+    visitor->visitVarAssignment(this);
+    var_->accept(visitor);
+    expr_->accept(visitor);
+}
+
 }
 }

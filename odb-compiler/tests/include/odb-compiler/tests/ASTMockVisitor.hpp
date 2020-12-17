@@ -21,6 +21,8 @@ public:
     MOCK_METHOD(void, visitScopedSymbol, (const ast::ScopedSymbol* node), (override));
     MOCK_METHOD(void, visitScopedAnnotatedSymbol, (const ast::ScopedAnnotatedSymbol* node), (override));
     MOCK_METHOD(void, visitSymbol, (const ast::Symbol* node), (override));
+    MOCK_METHOD(void, visitVarAssignment, (const ast::VarAssignment* node), (override));
+    MOCK_METHOD(void, visitVarRef, (const ast::VarRef* node), (override));
 
 #define X(dbname, cppname) \
     MOCK_METHOD(void, visit##dbname##Literal, (const ast::dbname##Literal* node), (override));

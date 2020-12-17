@@ -1,25 +1,11 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
+#include "odb-compiler/ast/Datatypes.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <memory>
 #include <vector>
 #include <string>
-
-/*!
- * @brief All of the DarkBASIC primitive types that can exist and what types
- * they map to in C++
- */
-#define ODB_DATATYPE_LIST     \
-    X(DoubleInteger, int64_t) \
-    X(Integer, int32_t)       \
-    X(Dword, uint32_t)        \
-    X(Word, uint16_t)         \
-    X(Byte, uint8_t)          \
-    X(Boolean, bool)          \
-    X(DoubleFloat, double)    \
-    X(Float, float)           \
-    X(String, std::string)
 
 typedef struct DBLTYPE DBLTYPE;
 
@@ -359,6 +345,11 @@ private:
 ODB_DATATYPE_LIST
 #undef X
 
+class UDTTypeDecl : public Statement
+{
+
+};
+
 /* x as udt */
 class UDTVarDecl : public Statement
 {
@@ -366,17 +357,17 @@ public:
 private:
 };
 
-/* x = myconstant */
-class ConstRef : public Statement
+class VarRef : public Expression
 {
 public:
-private:
-};
+    VarRef(AnnotatedSymbol* symbol, SourceLocation* location);
 
-class VarRef : public Symbol
-{
-public:
+    AnnotatedSymbol* symbol() const;
+
+    void accept(Visitor* visitor) const override;
+
 private:
+    Reference<AnnotatedSymbol> symbol_;
 };
 
 /* x = foo() */
@@ -400,11 +391,39 @@ public:
 private:
 };
 
+/* x = myconstant */
+class ConstRef : public VarRef
+{
+public:
+private:
+};
+
 /* x.value = foo() */
 class UDTVarRef : public VarRef
 {
 public:
 private:
+};
+
+class Assignment : public Statement
+{
+public:
+    Assignment(SourceLocation* location);
+};
+
+class VarAssignment : public Assignment
+{
+public:
+    VarAssignment(VarRef* var, Expression* expr, SourceLocation* location);
+
+    VarRef* variable() const;
+    Expression* expression() const;
+
+    void accept(Visitor* visitor) const override;
+
+private:
+    Reference<VarRef> var_;
+    Reference<Expression> expr_;
 };
 
 #if defined(ODBCOMPILER_DOT_EXPORT)

@@ -19,10 +19,6 @@ public:
 /*
  * All possible valid variable declarations:
  *
- *     var = x
- *     var# = x
- *     var$ = x
- *
  *     local var
  *     local var#
  *     local var$

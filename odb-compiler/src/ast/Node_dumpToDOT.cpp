@@ -309,7 +309,7 @@ private:
         fprintf(fp_, "N%d -> N%d [label=\"%s\"];\n",
                 guids_->get(from), guids_->get(to), name.c_str());
     }
-    void writeBlueConnection(const Node* from, const Node* to)
+    void writeParentConnection(const Node* from, const Node* to)
     {
         fprintf(fp_, "N%d -> N%d [color=\"blue\"];\n",
                 guids_->get(from), guids_->get(to));
@@ -320,8 +320,8 @@ private:
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
-        writeBlueConnection(node->symbol(), node);
-        writeBlueConnection(node->args(), node);
+        writeParentConnection(node->symbol(), node->symbol()->parent());
+        writeParentConnection(node->args(), node->args()->parent());
     }
     void visitBlock(const Block* node) override
     {
@@ -329,15 +329,15 @@ private:
         for (const auto& stmnt : node->statements())
         {
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
-            writeBlueConnection(stmnt, node);
+            writeParentConnection(stmnt, stmnt->parent());
         }
     }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
-        writeBlueConnection(node->symbol(), node);
-        writeBlueConnection(node->literal(), node);
+        writeParentConnection(node->symbol(), node->symbol()->parent());
+        writeParentConnection(node->literal(), node->literal()->parent());
     }
     void visitExpressionList(const ExpressionList* node) override
     {
@@ -345,34 +345,34 @@ private:
         for (const auto& expr : node->expressions())
         {
             writeNamedConnection(node, expr, "exprlist[" + std::to_string(i++) + "]");
-            writeBlueConnection(expr, node);
+            writeParentConnection(expr, expr->parent());
         }
     }
     void visitFuncCallExpr(const FuncCallExpr* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
-        writeBlueConnection(node->symbol(), node);
+        writeParentConnection(node->symbol(), node->symbol()->parent());
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
-        writeBlueConnection(node->symbol(), node);
-        writeBlueConnection(node->args(), node);
+        writeParentConnection(node->symbol(), node->symbol()->parent());
+        writeParentConnection(node->args(), node->args()->parent());
     }
     void visitFuncCallStmnt(const FuncCallStmnt* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
-        writeBlueConnection(node->symbol(), node);
+        writeParentConnection(node->symbol(), node->symbol()->parent());
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitKeywordExpr(const KeywordExpr* node) override
@@ -380,7 +380,7 @@ private:
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
@@ -388,7 +388,7 @@ private:
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitKeywordStmnt(const KeywordStmnt* node) override
@@ -396,7 +396,7 @@ private:
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
@@ -404,12 +404,24 @@ private:
         if (node->args())
         {
             writeNamedConnection(node, node->args(), "args");
-            writeBlueConnection(node->args(), node);
+            writeParentConnection(node->args(), node->args()->parent());
         }
     }
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
     void visitSymbol(const Symbol* node) override {}
+    void visitVarAssignment(const VarAssignment* node) override
+    {
+        writeNamedConnection(node, node->variable(), "var");
+        writeParentConnection(node->variable(), node->variable()->parent());
+        writeNamedConnection(node, node->expression(), "expr");
+        writeParentConnection(node->expression(), node->expression()->parent());
+    }
+    void visitVarRef(const VarRef* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeParentConnection(node->symbol(), node->symbol()->parent());
+    }
 
 #define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override {}
     ODB_DATATYPE_LIST
@@ -420,8 +432,8 @@ private:
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
         writeNamedConnection(node, node->initialValue(), "initialValue");     \
-        writeBlueConnection(node->symbol(), node);                            \
-        writeBlueConnection(node->initialValue(), node);                      \
+        writeParentConnection(node->symbol(), node->symbol()->parent());      \
+        writeParentConnection(node->initialValue(), node->initialValue()->parent()); \
     }
     ODB_DATATYPE_LIST
 #undef X
@@ -505,6 +517,10 @@ private:
 
         writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + "): " + node->name());
     }
+    void visitVarAssignment(const VarAssignment* node) override
+        { writeName(node, "VarAssignment"); }
+    void visitVarRef(const VarRef* node) override
+        { writeName(node, "VarRef"); }
 
     void visitDoubleIntegerLiteral(const DoubleIntegerLiteral* node) override
         { writeName(node, "DoubleInteger: " + std::to_string(node->value())); }

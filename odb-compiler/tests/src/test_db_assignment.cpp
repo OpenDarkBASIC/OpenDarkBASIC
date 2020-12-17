@@ -1,0 +1,70 @@
+#include "gmock/gmock.h"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+
+#define NAME db_assignment
+
+using namespace testing;
+using namespace odb;
+
+class NAME : public ParserTestHarness
+{
+public:
+};
+
+TEST_F(NAME, variable_with_assignment_has_default_type_integer)
+{
+    using Annotation = ast::Symbol::Annotation;
+
+    ast = driver->parseString("test", "var = 5.4");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, float_variable_with_assignment_has_type_float)
+{
+    using Annotation = ast::Symbol::Annotation;
+
+    ast = driver->parseString("test", "var# = 5.4");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);
+
+    ast->accept(&v);
+}
+
+TEST_F(NAME, string_variable_with_assignment_has_type_string)
+{
+    using Annotation = ast::Symbol::Annotation;
+
+    ast = driver->parseString("test", "var$ = \"string\"");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("string"))).After(exp);
+
+    ast->accept(&v);
+}

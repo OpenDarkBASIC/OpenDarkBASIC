@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {
@@ -19,6 +20,8 @@ void GenericVisitor::visitKeywordStmnt(const KeywordStmnt* node)                
 void GenericVisitor::visitScopedSymbol(const ScopedSymbol* node)                     { visit(node); }
 void GenericVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
 void GenericVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }
+void GenericVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }
+void GenericVisitor::visitVarRef(const VarRef* node)                                 { visit(node); }
 
 #define X(dbname, cppname) \
     void GenericVisitor::visit##dbname##Literal(const dbname##Literal* node)         { visit(node); }

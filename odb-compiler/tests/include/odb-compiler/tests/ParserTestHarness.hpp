@@ -5,6 +5,7 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <gmock/gmock.h>
 #include <cstdio>
@@ -13,9 +14,10 @@
 class ParserTestHarness : public testing::Test
 {
 public:
-    void checkParentConnectionConsistencies(const odb::ast::Node* node)
+    void checkParentConnectionConsistencies(const odb::ast::Node* ast)
     {
-        // TODO
+        ASTParentConsistenciesChecker checker;
+        ast->accept(&checker);
     }
 
     void SetUp() override
@@ -44,6 +46,7 @@ public:
 
         delete driver;
     }
+
     odb::KeywordIndex kwIndex;
     odb::KeywordMatcher matcher;
     odb::db::Driver* driver;

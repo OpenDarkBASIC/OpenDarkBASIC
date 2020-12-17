@@ -126,6 +126,7 @@ set_target_properties (odb-compiler
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
+        "tests/src/test_db_assignment.cpp"
         # "tests/src/test_db_arrays.cpp"
         # "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
@@ -145,11 +146,12 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_subroutine.cpp"
         # "tests/src/test_db_udt.cpp"
         "tests/src/test_db_var_decl.cpp"
-        # "tests/src/test_db_var_ref.cpp"
+        "tests/src/test_db_var_ref.cpp"
         # "tests/src/test_kw_index.cpp"
         "tests/src/test_kw_matcher.cpp"
         "tests/src/test_SourceLocation.cpp"
         "tests/src/ASTMatchers.cpp"
+        "tests/src/ASTParentConsistenciesChecker.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE
