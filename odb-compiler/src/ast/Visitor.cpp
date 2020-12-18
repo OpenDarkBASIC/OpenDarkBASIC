@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
@@ -21,6 +22,7 @@ namespace ast {
 void GenericVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)               { visit(node); }
 void GenericVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBlock(const Block* node)                                   { visit(node); }
+void GenericVisitor::visitBreak(const Break* node)                                   { visit(node); }
 void GenericVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
 void GenericVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }
 void GenericVisitor::visitForLoop(const ForLoop* node)                               { visit(node); }

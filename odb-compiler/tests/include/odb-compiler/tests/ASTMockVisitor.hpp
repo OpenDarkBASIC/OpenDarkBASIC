@@ -9,6 +9,7 @@ public:
     MOCK_METHOD(void, visitAnnotatedSymbol, (const ast::AnnotatedSymbol* node), (override));
     MOCK_METHOD(void, visitArrayRef, (const ast::ArrayRef* node), (override));
     MOCK_METHOD(void, visitBlock, (const ast::Block* node), (override));
+    MOCK_METHOD(void, visitBreak, (const ast::Break* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const ast::ConstDecl* node), (override));
     MOCK_METHOD(void, visitExpressionList, (const ast::ExpressionList* node), (override));
     MOCK_METHOD(void, visitForLoop, (const ast::ForLoop* node), (override));

@@ -11,6 +11,7 @@ class Node;
 class AnnotatedSymbol;
 class ArrayRef;
 class Block;
+class Break;
 class ConstDecl;
 class ExpressionList;
 class ForLoop;
@@ -45,6 +46,7 @@ public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitBlock(const Block* node) = 0;
+    virtual void visitBreak(const Break* node) = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
     virtual void visitExpressionList(const ExpressionList* node) = 0;
     virtual void visitForLoop(const ForLoop* node) = 0;
@@ -77,6 +79,7 @@ public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
     void visitArrayRef(const ArrayRef* node) override;
     void visitBlock(const Block* node) override;
+    void visitBreak(const Break* node) override;
     void visitConstDecl(const ConstDecl* node) override;
     void visitExpressionList(const ExpressionList* node) override;
     void visitForLoop(const ForLoop* node) override;

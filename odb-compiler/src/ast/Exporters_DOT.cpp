@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
@@ -338,6 +339,7 @@ private:
         for (const auto& stmnt : node->statements())
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
     }
+    void visitBreak(const Break* node) override {}
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -469,6 +471,8 @@ private:
         { writeName(node, "ArrayRef"); }
     void visitBlock(const Block* node) override
         { writeName(node, "Block"); }
+    void visitBreak(const Break* node) override
+        { writeName(node, "Break"); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
     void visitExpressionList(const ExpressionList* node) override

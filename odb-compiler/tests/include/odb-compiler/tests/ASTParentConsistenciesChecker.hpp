@@ -8,6 +8,7 @@ public:
     void visitAnnotatedSymbol(const odb::ast::AnnotatedSymbol* node) override;
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
     void visitBlock(const odb::ast::Block* node) override;
+    void visitBreak(const odb::ast::Break* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
     void visitForLoop(const odb::ast::ForLoop* node) override;

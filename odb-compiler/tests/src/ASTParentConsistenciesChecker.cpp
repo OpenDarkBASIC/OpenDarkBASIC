@@ -1,6 +1,7 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
@@ -30,6 +31,9 @@ void ASTParentConsistenciesChecker::visitBlock(const Block* node)
 {
     for (const auto& stmnt : node->statements())
         EXPECT_THAT(node, Eq(stmnt->parent()));
+}
+void ASTParentConsistenciesChecker::visitBreak(const Break* node)
+{
 }
 void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
 {

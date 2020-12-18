@@ -85,6 +85,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
     "src/ast/Block.cpp"
+    "src/ast/Break.cpp"
     "src/ast/ConstDecl.cpp"
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Exporters_DOT.cpp"

@@ -3,6 +3,7 @@
 {
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/Block.hpp"
+    #include "odb-compiler/ast/Break.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
@@ -44,6 +45,7 @@
             class AnnotatedSymbol;
             class Assignment;
             class Block;
+            class Break;
             class ConstDecl;
             class ForLoop;
             class FuncCallExpr;
@@ -115,6 +117,7 @@
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
+    odb::ast::Break* break_;
     odb::ast::ConstDecl* const_decl;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
@@ -193,6 +196,7 @@
 %type<until_loop> loop_until;
 %type<for_loop> loop_for;
 %type<annotated_symbol> loop_for_next;
+%type<break_> break;
 /*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
@@ -297,6 +301,7 @@ stmnt
   | var_decl                                     { $$ = $1; }
   | assignment                                   { $$ = $1; }
   | loop                                         { $$ = $1; }
+  | break                                        { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -666,38 +671,9 @@ loop_for_next
   | NEXT annotated_symbol                        { $$ = $2; }
   | NEXT stmnt /* DBP compatibility */           { $$ = nullptr; /* TODO warning */ }
   ;
-/*
-loop
-  : loop_do                                      { $$ = $1; }
-  | loop_while                                   { $$ = $1; }
-  | loop_until                                   { $$ = $1; }
-  | loop_for                                     { $$ = $1; }
-  ;
-loop_do
-  : DO seps block seps LOOP                      { $$ = newLoop($3, &yylloc); }
-  | DO seps LOOP                                 { $$ = newLoop(nullptr, &yylloc); }
-  ;
-loop_while
-  : WHILE expr seps block seps ENDWHILE          { $$ = newLoopWhile($2, $4, &yylloc); }
-  | WHILE expr seps ENDWHILE                     { $$ = newLoopWhile($2, nullptr, &yylloc); }
-  ;
-loop_until
-  : REPEAT seps block seps UNTIL expr            { $$ = newLoopUntil($6, $3, &yylloc); }
-  | REPEAT seps UNTIL expr                       { $$ = newLoopUntil($4, nullptr, &yylloc); }
-  ;
-loop_for
-  : FOR annotated_symbol EQ expr TO expr STEP expr seps block seps loop_for_next  { $$ = newLoopFor($2, $4, $6, $8, $12, $10, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr STEP expr seps loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr seps block seps loop_for_next            { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr seps loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr, &yylloc); }
-  ;
-loop_for_next
-  : NEXT                                         { $$ = nullptr; }
-  | NEXT annotated_symbol                                  { $$ = $2; }
-  ;
 break
-  : BREAK                                        { $$ = newBreak(&yylloc); }
-  ;*/
+  : BREAK                                        { $$ = new Break(driver->newLocation(&yylloc)); }
+  ;
 %%
 
 void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
