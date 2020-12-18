@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"
 
 std::string symbolAnnotationToString(ast::Symbol::Annotation annotation)

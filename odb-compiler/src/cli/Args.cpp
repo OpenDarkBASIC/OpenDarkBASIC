@@ -330,14 +330,14 @@ bool Args::loadKeywords(const std::vector<std::string>& args)
     if (sdkRootDir_ == "")
         sdkRootDir_ = "odb-sdk";  // Should be here if odbc is executed from build/
 
-    std::unique_ptr<odb::KeywordLoader> loader;
+    std::unique_ptr<odb::kw::KeywordLoader> loader;
     switch (sdkType_)
     {
         case odb::SDKType::ODB :
-            loader = std::make_unique<ODBKeywordLoader>(sdkRootDir_, pluginDirs_);
+            loader = std::make_unique<kw::ODBKeywordLoader>(sdkRootDir_, pluginDirs_);
             break;
         case odb::SDKType::DarkBASIC :
-            loader = std::make_unique<DBPKeywordLoader>(sdkRootDir_, pluginDirs_);
+            loader = std::make_unique<kw::DBPKeywordLoader>(sdkRootDir_, pluginDirs_);
             break;
     }
 
@@ -440,8 +440,8 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWJSON(const std::vector<std::string>& args)
 {
-    std::vector<Reference<Keyword>> keywords = kwIndex_.keywords();
-    std::sort(keywords.begin(), keywords.end(), [](const Keyword* a, const Keyword* b) { return a->dbSymbol() < b->dbSymbol(); });
+    std::vector<Reference<kw::Keyword>> keywords = kwIndex_.keywords();
+    std::sort(keywords.begin(), keywords.end(), [](const kw::Keyword* a, const kw::Keyword* b) { return a->dbSymbol() < b->dbSymbol(); });
 
 #if 0
     log::data("{\n");

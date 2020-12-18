@@ -7,8 +7,9 @@
 #include <optional>
 
 namespace odb {
-
 class DynamicLibrary;
+
+namespace kw {
 
 class Keyword : public RefCounted
 {
@@ -57,4 +58,5 @@ private:
     Type returnType_;
 };
 
+}
 }

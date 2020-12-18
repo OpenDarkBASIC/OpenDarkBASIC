@@ -1,12 +1,14 @@
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/ast/Node.hpp"
-#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include "odb-sdk/FileSystem.hpp"
+
 #include <cassert>
 #include <cstring>
 #include <algorithm>
@@ -21,7 +23,7 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(const KeywordMatcher* keywordMatcher) :
+Driver::Driver(const kw::KeywordMatcher* keywordMatcher) :
     keywordMatcher_(keywordMatcher)
 {
     dblex_init_extra(this, &scanner_);
@@ -50,6 +52,7 @@ ast::Block* Driver::parseFile(const std::string& fileName)
     }
 
     sourceName_ = fileName;
+    dbset_in(fp, scanner_);
     ast::Block* program = doParse();
     sourceName_.clear();
     fclose(fp);
@@ -149,7 +152,7 @@ ast::Block* Driver::doParse()
 #endif
         struct
         {
-            KeywordMatcher::MatchResult match;
+            kw::KeywordMatcher::MatchResult match;
             int tokenIdx;
         } result = {};
 

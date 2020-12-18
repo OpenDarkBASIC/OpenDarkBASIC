@@ -11,6 +11,7 @@
 namespace fs = std::filesystem;
 
 namespace odb {
+namespace kw {
 
 // ----------------------------------------------------------------------------
 static bool typeExists (Keyword::Type t)
@@ -162,4 +163,5 @@ bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
     return true;
 }
 
+}
 }

@@ -9,6 +9,7 @@
 #include <iostream>
 
 namespace odb {
+namespace kw {
 
 // ----------------------------------------------------------------------------
 void KeywordIndex::addKeyword(Keyword* keyword)
@@ -93,4 +94,5 @@ std::vector<std::string> KeywordIndex::librariesAsList() const
     return list;
 }
 
+}
 }

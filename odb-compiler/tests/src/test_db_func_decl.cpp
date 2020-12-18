@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
-#include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include <fstream>
 

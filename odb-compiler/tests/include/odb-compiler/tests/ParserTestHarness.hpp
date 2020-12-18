@@ -1,54 +1,28 @@
 #pragma once
 
-#include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
-#include "odb-compiler/ast/Node.hpp"
-#include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-sdk/Reference.hpp"
-#include <gmock/gmock.h>
-#include <cstdio>
-#include <filesystem>
+#include "gmock/gmock.h"
+
+namespace odb {
+namespace ast {
+    class Block;
+}
+namespace db {
+    class Driver;
+}
+}
 
 class ParserTestHarness : public testing::Test
 {
 public:
-    void checkParentConnectionConsistencies(const odb::ast::Node* ast)
-    {
-        ASTParentConsistenciesChecker checker;
-        ast->accept(&checker);
-    }
+    void checkParentConnectionConsistencies(const odb::ast::Block* ast);
+    void SetUp() override;
+    void TearDown() override;
 
-    void SetUp() override
-    {
-        ast = nullptr;
-        driver = new odb::db::Driver(&matcher);
-    }
-
-    void TearDown() override
-    {
-        if (ast)
-        {
-#if defined(ODBCOMPILER_DOT_EXPORT)
-            const testing::TestInfo* info = testing::UnitTest::GetInstance()->current_test_info();
-            std::string filename = std::string("ast/") + info->test_suite_name()
-                    + "__" + info->name() + ".dot";
-            std::filesystem::create_directory("ast");
-            FILE* out = fopen(filename.c_str(), "w");
-            odb::ast::dumpToDOT(out, ast);
-            fclose(out);
-#endif
-
-            if (ast)
-                checkParentConnectionConsistencies(ast);
-        }
-
-        delete driver;
-    }
-
-    odb::KeywordIndex kwIndex;
-    odb::KeywordMatcher matcher;
+    odb::kw::KeywordIndex kwIndex;
+    odb::kw::KeywordMatcher matcher;
     odb::db::Driver* driver;
     odb::Reference<odb::ast::Block> ast;
 };

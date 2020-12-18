@@ -6,6 +6,7 @@
 #include <cstring>
 
 namespace odb {
+namespace kw {
 
 // ----------------------------------------------------------------------------
 static bool charIsSymbolToken(char c)
@@ -102,4 +103,5 @@ int KeywordMatcher::longestKeywordWordCount() const
     return longestKeywordWordCount_;
 }
 
+}
 }

@@ -6,6 +6,7 @@
 #include <vector>
 
 namespace odb {
+namespace kw {
 
 class KeywordIndex;
 
@@ -61,4 +62,5 @@ private:
     int longestKeywordWordCount_ = 0;
 };
 
+}
 }

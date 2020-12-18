@@ -7,8 +7,6 @@
 
 namespace odb {
 
-class KeywordMatcher;
-
 namespace ast {
     class AnnotatedSymbol;
     class Block;
@@ -18,12 +16,16 @@ namespace ast {
     class SourceLocation;
 }
 
+namespace kw {
+    class KeywordMatcher;
+}
+
 namespace db {
 
 class Driver
 {
 public:
-    ODBCOMPILER_PUBLIC_API Driver(const KeywordMatcher* keywordMatcher);
+    ODBCOMPILER_PUBLIC_API Driver(const kw::KeywordMatcher* keywordMatcher);
     ODBCOMPILER_PUBLIC_API ~Driver();
 
     ODBCOMPILER_PUBLIC_API ast::Block* parseFile(const std::string& fileName);
@@ -44,7 +46,7 @@ private:
 
     dbscan_t scanner_ = nullptr;
     dbpstate* parser_ = nullptr;
-    const KeywordMatcher* keywordMatcher_;
+    const kw::KeywordMatcher* keywordMatcher_;
     ast::Block* program_;
 };
 

@@ -4,14 +4,10 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
 #include "odb-compiler/keywords/KeywordMatcher.hpp"
 #include "odb-compiler/keywords/SDKType.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include <vector>
 #include <string>
 #include <memory>
-
-namespace odb {
-    class Plugin;
-}
 
 class Args
 {
@@ -47,7 +43,7 @@ private:
     std::vector<std::string> pluginDirs_;
     odb::SDKType sdkType_ = odb::SDKType::ODB;
 
-    odb::KeywordIndex kwIndex_;
-    odb::KeywordMatcher kwMatcher_;
+    odb::kw::KeywordIndex kwIndex_;
+    odb::kw::KeywordMatcher kwMatcher_;
     odb::ast::Block* ast_ = nullptr;
 };

@@ -2,6 +2,7 @@
 #include "odb-sdk/DynamicLibrary.hpp"
 
 namespace odb {
+namespace kw {
 
 // ----------------------------------------------------------------------------
 Keyword::Keyword(DynamicLibrary* sourceLibrary,
@@ -55,4 +56,5 @@ DynamicLibrary* Keyword::library() const
     return library_;
 }
 
+}
 }

@@ -18,8 +18,8 @@ int main(int argc, char** argv)
         return 1;
 
     std::cout << "Reading keywords..." << std::endl;
-    odb::KeywordIndex kwIndex;
-    odb::ODBKeywordLoader loader("");
+    odb::kw::KeywordIndex kwIndex;
+    odb::kw::ODBKeywordLoader loader("");
     loader.populateIndexFromLibrary(&kwIndex, p);
 
     for (const auto& name : kwIndex.keywordNamesAsList())
