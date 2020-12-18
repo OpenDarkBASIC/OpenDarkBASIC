@@ -11,7 +11,7 @@ class DynamicLibrary;
 
 namespace kw {
 
-class Keyword : public RefCounted
+class ODBCOMPILER_PUBLIC_API Keyword : public RefCounted
 {
 public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
@@ -39,7 +39,8 @@ public:
             const std::string& cppSymbol,
             Type returnType,
             const std::vector<Arg>& args,
-            const std::string helpFile="");
+            const std::string& helpFile="");
+    ~Keyword();
 
     const std::string& dbSymbol() const;
     const std::string& cppSymbol() const;

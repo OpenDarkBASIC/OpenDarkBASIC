@@ -12,7 +12,7 @@ class DynamicLibrary;
 namespace kw {
 class KeywordIndex;
 
-class KeywordLoader
+class ODBCOMPILER_PUBLIC_API KeywordLoader
 {
 public:
     KeywordLoader(const std::string& sdkRoot,

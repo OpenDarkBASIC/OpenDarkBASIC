@@ -82,7 +82,7 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
         return nullptr;
     }
 #else
-    data->handle = LoadLibraryExA(filename, nullptr, openAsDataFile ? LOAD_LIBRARY_AS_DATAFILE : 0);
+    data->handle = LoadLibraryExA(filename, nullptr, LOAD_LIBRARY_AS_DATAFILE);
     if (!data->handle)
     {
         auto error = GetLastError();

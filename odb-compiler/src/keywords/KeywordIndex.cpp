@@ -1,5 +1,4 @@
 #include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
@@ -7,6 +6,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <iostream>
+#include <unordered_map>
 
 namespace odb {
 namespace kw {

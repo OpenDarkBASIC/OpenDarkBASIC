@@ -194,7 +194,7 @@ public:
     int refs() const { return ptr_ ? ptr_->refs() : 0; }
 
     /// Return the object's weak reference count, or 0 if the pointer is null.
-    int weakRefs() const { return ptr_ ? ptr_->WeakRefs() : 0; }
+    int weakRefs() const { return ptr_ ? ptr_->weakRefs() : 0; }
 
     /// Return pointer to the RefCount structure.
     RefCount* refCountPtr() const { return ptr_ ? ptr_->refCountPtr() : 0; }

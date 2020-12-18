@@ -11,10 +11,11 @@ namespace ast {
 class SourceLocation;
 class Visitor;
 
-class Node : public RefCounted
+class ODBCOMPILER_PUBLIC_API Node : public RefCounted
 {
 public:
     Node(SourceLocation* location);
+    ~Node();
 
     Node* parent() const;
     void setParent(Node* node);

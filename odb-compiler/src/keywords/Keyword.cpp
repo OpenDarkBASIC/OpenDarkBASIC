@@ -10,7 +10,7 @@ Keyword::Keyword(DynamicLibrary* sourceLibrary,
                  const std::string& cppSymbol,
                  Type returnType,
                  const std::vector<Arg>& args,
-                 const std::string helpFile) :
+                 const std::string& helpFile) :
     library_(sourceLibrary),
     dbSymbol_(dbSymbol),
     cppSymbol_(cppSymbol),
@@ -19,6 +19,9 @@ Keyword::Keyword(DynamicLibrary* sourceLibrary,
     returnType_(returnType)
 {
 }
+
+// ----------------------------------------------------------------------------
+Keyword::~Keyword() = default;
 
 // ----------------------------------------------------------------------------
 const std::string& Keyword::dbSymbol() const

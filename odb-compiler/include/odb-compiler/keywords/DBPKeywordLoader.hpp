@@ -6,7 +6,7 @@
 namespace odb {
 namespace kw {
 
-class DBPKeywordLoader : public KeywordLoader
+class ODBCOMPILER_PUBLIC_API DBPKeywordLoader : public KeywordLoader
 {
 public:
     DBPKeywordLoader(const std::string& sdkRoot,
