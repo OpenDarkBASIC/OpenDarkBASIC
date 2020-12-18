@@ -1,6 +1,8 @@
 #include "odb-compiler/ast/VarDecl.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
 #include "odb-compiler/ast/Expression.hpp"
+#include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {
@@ -52,6 +54,7 @@ VarDecl::VarDecl(SourceLocation* location) :
     template <>                                                               \
     void VarDeclTemplate<cppname>::setInitialValue(Expression* expression)    \
     {                                                                         \
+        expression->setParent(this);                                          \
         initialValue_ = expression;                                           \
     }                                                                         \
                                                                               \

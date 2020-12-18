@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 

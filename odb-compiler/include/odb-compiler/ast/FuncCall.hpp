@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Expression.hpp"
+#include "odb-compiler/ast/Statement.hpp"
 
 namespace odb {
 namespace ast {

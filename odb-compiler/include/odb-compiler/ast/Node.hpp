@@ -27,9 +27,5 @@ private:
     Reference<SourceLocation> location_;
 };
 
-#if defined(ODBCOMPILER_DOT_EXPORT)
-void dumpToDOT(FILE* fp, const Node* root);
-#endif
-
 }
 }

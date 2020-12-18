@@ -12,7 +12,7 @@ class NAME : public Test
 public:
     void SetUp() override
     {
-        matcher = new odb::KeywordMatcher;
+        matcher = new odb::kw::KeywordMatcher;
     }
 
     void TearDown() override
@@ -20,7 +20,7 @@ public:
         delete matcher;
     }
 
-    odb::KeywordMatcher* matcher;
+    odb::kw::KeywordMatcher* matcher;
 };
 
 using namespace odb;
@@ -35,12 +35,12 @@ TEST_F(NAME, empty_db)
 
 TEST_F(NAME, exact_string)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "projection matrix4", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize matrix", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize mesh", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "read", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "projection matrix4", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize matrix", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize mesh", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "read", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize");
@@ -51,12 +51,12 @@ TEST_F(NAME, exact_string)
 
 TEST_F(NAME, trailing_space)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "projection matrix4", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize matrix", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize mesh", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "read", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "projection matrix4", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize matrix", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize mesh", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "read", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize ");
@@ -67,12 +67,12 @@ TEST_F(NAME, trailing_space)
 
 TEST_F(NAME, longer_symbol)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "projection matrix4", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize matrix", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize mesh", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "read", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "projection matrix4", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize matrix", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize mesh", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "read", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomized");
@@ -83,12 +83,12 @@ TEST_F(NAME, longer_symbol)
 
 TEST_F(NAME, match_longer_string_to_shorter_command)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "projection matrix4", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize matrix", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "randomize mesh", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "read", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "projection matrix4", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize matrix", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "randomize mesh", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "read", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("randomize timer");
@@ -99,8 +99,8 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
 
 TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "dec", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "dec", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("decalmax");
@@ -111,10 +111,10 @@ TEST_F(NAME, dont_match_shorter_string_to_longer_command)
 
 TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
 {
-    KeywordIndex kwIndex;
-    kwIndex.addKeyword(new Keyword(nullptr, "DELETE OBJECT COLLISION BOX", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "DELETE OBJECT", "", Keyword::Type::Void, {}));
-    kwIndex.addKeyword(new Keyword(nullptr, "DELETE OBJECTS", "", Keyword::Type::Void, {}));
+    kw::KeywordIndex kwIndex;
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "DELETE OBJECT COLLISION BOX", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "DELETE OBJECT", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "DELETE OBJECTS", "", kw::Keyword::Type::Void, {}));
     matcher->updateFromIndex(&kwIndex);
 
     auto result = matcher->findLongestKeywordMatching("delete object 100");

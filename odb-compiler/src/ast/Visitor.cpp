@@ -1,4 +1,16 @@
+#include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/VarDecl.hpp"
+#include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {

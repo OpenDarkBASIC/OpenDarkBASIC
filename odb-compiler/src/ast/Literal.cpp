@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {

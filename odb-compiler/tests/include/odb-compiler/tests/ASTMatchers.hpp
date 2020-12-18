@@ -1,7 +1,11 @@
 #pragma once
 
 #include "gmock/gmock.h"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/Symbol.hpp"
 
 using namespace ::testing;
 using namespace odb;

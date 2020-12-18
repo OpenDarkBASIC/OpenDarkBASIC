@@ -82,20 +82,26 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${FLEX_DarkBASICScanner_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
-    "src/ast/ErrorHighlighter.cpp"
-    "src/ast/Node.cpp"
+    "src/ast/ArrayRef.cpp"
+    "src/ast/Assignment.cpp"
     "src/ast/Block.cpp"
+    "src/ast/ConstDecl.cpp"
+    "src/ast/ErrorHighlighter.cpp"
+    "src/ast/Exporters_DOT.cpp"
+    "src/ast/Exporters_JSON.cpp"
     "src/ast/Expression.cpp"
     "src/ast/ExpressionList.cpp"
+    "src/ast/FuncCall.cpp"
+    "src/ast/Keyword.cpp"
     "src/ast/Literal.cpp"
-    "src/ast/Statement.cpp"
-    "src/ast/Symbol.cpp"
-    "src/ast/OldNode.cpp"
-    "src/ast/Node_dumpToDOT.cpp"
-    "src/ast/Node_dumpToJSON.cpp"
+    "src/ast/Node.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
     "src/ast/SourceLocation.cpp"
+    "src/ast/Statement.cpp"
+    "src/ast/Symbol.cpp"
+    "src/ast/VarDecl.cpp"
+    "src/ast/VarRef.cpp"
     "src/ast/Visitor.cpp"
     "src/keywords/KeywordLoader.cpp"
     "src/keywords/ODBKeywordLoader.cpp"
@@ -158,6 +164,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/test_SourceLocation.cpp"
         "tests/src/ASTMatchers.cpp"
         "tests/src/ASTParentConsistenciesChecker.cpp"
+        "tests/src/ParserTestHarness.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests
         PRIVATE

@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 

@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Expression.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {
@@ -14,6 +15,7 @@ ExpressionList::ExpressionList(SourceLocation* location) :
 // ----------------------------------------------------------------------------
 void ExpressionList::appendExpression(Expression* expr)
 {
+    expr->setParent(this);
     expressions_.push_back(expr);
 }
 

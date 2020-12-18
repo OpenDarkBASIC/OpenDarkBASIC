@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/Keyword.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
 
