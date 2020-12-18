@@ -22,6 +22,7 @@ DBPKeywordLoader::DBPKeywordLoader(const std::string& sdkRoot,
 // ----------------------------------------------------------------------------
 bool DBPKeywordLoader::populateIndex(KeywordIndex* index)
 {
+#if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::unordered_set<std::string> pluginsToLoad;
 
     if (!fs::is_directory(sdkRoot_))
@@ -66,11 +67,16 @@ bool DBPKeywordLoader::populateIndex(KeywordIndex* index)
     }
 
     return true;
+#else
+    // Not implemented on other platforms... yet.
+    return false;
+#endif
 }
 
 // ----------------------------------------------------------------------------
 bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibrary* library)
 {
+#if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::set<std::string> stringTable;
 
     // Load string table from library. We use a set here to deal with any duplicate entries in the library.
@@ -138,6 +144,10 @@ bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
     }
 
     return true;
+#else
+    // Not implemented on other platforms... yet.
+    return false;
+#endif
 }
 
 }
