@@ -2,14 +2,13 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/keywords/SDKType.hpp"
+#include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
 
 namespace odb {
 namespace kw {
-
-class Keyword;
 
 /*!
  * This class is a generic container for all keywords. It acts as an
