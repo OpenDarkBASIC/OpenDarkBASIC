@@ -3,6 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-sdk/MaybeNull.hpp"
 #include <string>
 
 namespace odb {
@@ -22,7 +23,7 @@ public:
     KeywordExprSymbol(const std::string& keyword, SourceLocation* location);
 
     const std::string& keyword() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 
@@ -38,7 +39,7 @@ public:
     KeywordStmntSymbol(const std::string& keyword, SourceLocation* location);
 
     const std::string& keyword() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 
@@ -54,7 +55,7 @@ public:
     KeywordExpr(kw::Keyword* keyword, SourceLocation* location);
 
     kw::Keyword* keyword() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 
@@ -70,7 +71,7 @@ public:
     KeywordStmnt(kw::Keyword* keyword, SourceLocation* location);
 
     kw::Keyword* keyword() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 

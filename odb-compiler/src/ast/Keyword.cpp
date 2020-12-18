@@ -24,9 +24,9 @@ const std::string& KeywordExprSymbol::keyword() const
 {
     return keyword_;
 }
-ExpressionList* KeywordExprSymbol::args() const
+MaybeNull<ExpressionList> KeywordExprSymbol::args() const
 {
-    return args_;
+    return args_.get();
 }
 void KeywordExprSymbol::accept(Visitor* visitor) const
 {
@@ -52,9 +52,9 @@ const std::string& KeywordStmntSymbol::keyword() const
 {
     return keyword_;
 }
-ExpressionList* KeywordStmntSymbol::args() const
+MaybeNull<ExpressionList> KeywordStmntSymbol::args() const
 {
-    return args_;
+    return args_.get();
 }
 void KeywordStmntSymbol::accept(Visitor* visitor) const
 {
@@ -80,9 +80,9 @@ kw::Keyword* KeywordExpr::keyword() const
 {
     return keyword_;
 }
-ExpressionList* KeywordExpr::args() const
+MaybeNull<ExpressionList> KeywordExpr::args() const
 {
-    return args_;
+    return args_.get();
 }
 void KeywordExpr::accept(Visitor* visitor) const
 {
@@ -108,9 +108,9 @@ kw::Keyword* KeywordStmnt::keyword() const
 {
     return keyword_;
 }
-ExpressionList* KeywordStmnt::args() const
+MaybeNull<ExpressionList> KeywordStmnt::args() const
 {
-    return args_;
+    return args_.get();
 }
 void KeywordStmnt::accept(Visitor* visitor) const
 {

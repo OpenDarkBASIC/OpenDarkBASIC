@@ -9,6 +9,7 @@
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/Keyword.hpp"
     #include "odb-compiler/ast/Literal.hpp"
+    #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
@@ -44,21 +45,26 @@
             class Assignment;
             class Block;
             class ConstDecl;
-            class Literal;
+            class ForLoop;
             class FuncCallExpr;
             class FuncCallStmnt;
             class Expression;
             class ExpressionList;
+            class InfiniteLoop;
             class KeywordExprSymbol;
             class KeywordStmntSymbol;
+            class Literal;
+            class Loop;
             class Node;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
             class Statement;
             class Symbol;
+            class UntilLoop;
             class VarAssignment;
             class VarDecl;
             class VarRef;
+            class WhileLoop;
         }
     }
 }
@@ -107,21 +113,27 @@
     char* string;
 
     odb::ast::AnnotatedSymbol* annotated_symbol;
+    odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::ConstDecl* const_decl;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
+    odb::ast::ForLoop* for_loop;
     odb::ast::FuncCallStmnt* func_call_stmnt;
+    odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::KeywordExprSymbol* keyword_expr;
     odb::ast::KeywordStmntSymbol* keyword_stmnt;
     odb::ast::Literal* literal;
+    odb::ast::Loop* loop;
     odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
     odb::ast::Symbol* symbol;
-    odb::ast::Assignment* assignment;
+    odb::ast::UntilLoop* until_loop;
+    odb::ast::VarAssignment* var_assignment;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
+    odb::ast::WhileLoop* while_loop;
 }
 
 %define api.token.prefix {TOK_}
@@ -154,6 +166,7 @@
 %token<string> KEYWORD;
 %token '$' '#';
 
+%type<var_assignment> var_assignment;
 %type<assignment> assignment;
 %type<block> program;
 %type<block> block;
@@ -174,6 +187,12 @@
 %type<scoped_annotated_symbol> var_decl_str_sym;
 %type<scoped_annotated_symbol> var_decl_float_sym;
 %type<var_ref> var_ref;
+%type<loop> loop;
+%type<infinite_loop> loop_do;
+%type<while_loop> loop_while;
+%type<until_loop> loop_until;
+%type<for_loop> loop_for;
+%type<annotated_symbol> loop_for_next;
 /*
 %type<node> dec_or_inc;
 %type<node> var_assignment;
@@ -277,6 +296,7 @@ stmnt
   | keyword_stmnt                                { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | assignment                                   { $$ = $1; }
+  | loop                                         { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -339,6 +359,9 @@ lvalue
   | array_ref                                    { $$ = $1; }
   ;*/
 assignment
+  : var_assignment                               { $$ = $1; }
+  ;
+var_assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&yylloc)); }
   ;
 var_decl
@@ -605,7 +628,45 @@ case
   | CASE expr seps ENDCASE                       { $$ = newCase($2, nullptr, &yylloc); }
   | CASE DEFAULT seps block seps ENDCASE         { $$ = newCase(nullptr, $4, &yylloc); }
   | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
+  ;*/
+loop
+  : loop_do                                      { $$ = $1; }
+  | loop_while                                   { $$ = $1; }
+  | loop_until                                   { $$ = $1; }
+  | loop_for                                     { $$ = $1; }
   ;
+loop_do
+  : DO seps block seps LOOP                      { $$ = new InfiniteLoop($3, driver->newLocation(&yylloc)); }
+  | DO seps LOOP                                 { $$ = new InfiniteLoop(driver->newLocation(&yylloc)); }
+  ;
+loop_while
+  : WHILE expr seps block seps ENDWHILE          { $$ = new WhileLoop($2, $4, driver->newLocation(&yylloc)); }
+  | WHILE expr seps ENDWHILE                     { $$ = new WhileLoop($2, driver->newLocation(&yylloc)); }
+  ;
+loop_until
+  : REPEAT seps block seps UNTIL expr            { $$ = new UntilLoop($6, $3, driver->newLocation(&yylloc)); }
+  | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, driver->newLocation(&yylloc)); }
+  ;
+loop_for
+  : FOR var_assignment TO expr STEP expr seps block seps loop_for_next
+                                                 { $10 ? $$ = new ForLoop($2, $4, $6, $10, $8, driver->newLocation(&yylloc))
+                                                       : $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps loop_for_next
+                                                 { $8 ? $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc))
+                                                      : $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps block seps loop_for_next
+                                                 { $8 ? $$ = new ForLoop($2, $4, $8, $6, driver->newLocation(&yylloc))
+                                                      : $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps loop_for_next
+                                                 { $6 ? $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc))
+                                                      : $$ = new ForLoop($2, $4, driver->newLocation(&yylloc)); }
+  ;
+loop_for_next
+  : NEXT                                         { $$ = nullptr; }
+  | NEXT annotated_symbol                        { $$ = $2; }
+  | NEXT stmnt /* DBP compatibility */           { $$ = nullptr; /* TODO warning */ }
+  ;
+/*
 loop
   : loop_do                                      { $$ = $1; }
   | loop_while                                   { $$ = $1; }

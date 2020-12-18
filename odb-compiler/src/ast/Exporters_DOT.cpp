@@ -6,6 +6,7 @@
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/Keyword.hpp"
 #include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -321,11 +322,8 @@ private:
     {
         fprintf(fp_, "N%d -> N%d [label=\"%s\"];\n",
                 guids_->get(from), guids_->get(to), name.c_str());
-    }
-    void writeParentConnection(const Node* from, const Node* to)
-    {
         fprintf(fp_, "N%d -> N%d [color=\"blue\"];\n",
-                guids_->get(from), guids_->get(to));
+                guids_->get(to), guids_->get(to->parent()));
     }
 
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
@@ -333,24 +331,17 @@ private:
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
-        writeParentConnection(node->args(), node->args()->parent());
     }
     void visitBlock(const Block* node) override
     {
         int i = 0;
         for (const auto& stmnt : node->statements())
-        {
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
-            writeParentConnection(stmnt, stmnt->parent());
-        }
     }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
-        writeParentConnection(node->literal(), node->literal()->parent());
     }
     void visitExpressionList(const ExpressionList* node) override
     {
@@ -358,82 +349,85 @@ private:
         for (const auto& expr : node->expressions())
         {
             writeNamedConnection(node, expr, "exprlist[" + std::to_string(i++) + "]");
-            writeParentConnection(expr, expr->parent());
         }
+    }
+    void visitForLoop(const ForLoop* node) override
+    {
+        writeNamedConnection(node, node->counter(), "counter");
+        writeNamedConnection(node, node->endValue(), "endValue");
+
+        if (node->stepValue().notNull())
+            writeNamedConnection(node, node->stepValue(), "stepValue");
+        if (node->nextSymbol().notNull())
+            writeNamedConnection(node, node->nextSymbol(), "nextSymbol");
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
     }
     void visitFuncCallExpr(const FuncCallExpr* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
     }
     void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
-        writeParentConnection(node->args(), node->args()->parent());
     }
     void visitFuncCallStmnt(const FuncCallStmnt* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
+    }
+    void visitInfiniteLoop(const InfiniteLoop* node) override
+    {
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
     }
     void visitKeywordExpr(const KeywordExpr* node) override
     {
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
     }
     void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
     {
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
     }
     void visitKeywordStmnt(const KeywordStmnt* node) override
     {
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
     }
     void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
     {
-        if (node->args())
-        {
+        if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
-            writeParentConnection(node->args(), node->args()->parent());
-        }
     }
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
     void visitSymbol(const Symbol* node) override {}
+    void visitUntilLoop(const UntilLoop* node) override
+    {
+        writeNamedConnection(node, node->exitCondition(), "exitCondition");
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
+    }
     void visitVarAssignment(const VarAssignment* node) override
     {
         writeNamedConnection(node, node->variable(), "var");
-        writeParentConnection(node->variable(), node->variable()->parent());
         writeNamedConnection(node, node->expression(), "expr");
-        writeParentConnection(node->expression(), node->expression()->parent());
     }
     void visitVarRef(const VarRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
-        writeParentConnection(node->symbol(), node->symbol()->parent());
+    }
+    void visitWhileLoop(const WhileLoop* node) override
+    {
+        writeNamedConnection(node, node->continueCondition(), "continueCondition");
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
     }
 
 #define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override {}
@@ -445,8 +439,6 @@ private:
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
         writeNamedConnection(node, node->initialValue(), "initialValue");     \
-        writeParentConnection(node->symbol(), node->symbol()->parent());      \
-        writeParentConnection(node->initialValue(), node->initialValue()->parent()); \
     }
     ODB_DATATYPE_LIST
 #undef X
@@ -481,12 +473,16 @@ private:
         { writeName(node, "ConstDecl"); }
     void visitExpressionList(const ExpressionList* node) override
         { writeName(node, "ExpressionList"); }
+    void visitForLoop(const ForLoop* node) override
+        { writeName(node, "ForLoop"); }
     void visitFuncCallExpr(const FuncCallExpr* node) override
         { writeName(node, "FuncCallExpr"); }
     void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
         { writeName(node, "FuncCallExpr or ArrayRef"); }
     void visitFuncCallStmnt(const FuncCallStmnt* node) override
         { writeName(node, "FuncCallStmnt"); }
+    void visitInfiniteLoop(const InfiniteLoop* node) override
+        { writeName(node, "InfiniteLoop"); }
     void visitKeywordExpr(const KeywordExpr* node) override
         { writeName(node, "KeywordExpr: " + node->keyword()->dbSymbol()); }
     void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
@@ -495,6 +491,8 @@ private:
         { writeName(node, "KeywordStmnt" + node->keyword()->dbSymbol()); }
     void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
         { writeName(node, "KeywordStmntSymbol: " + node->keyword()); }
+    void visitUntilLoop(const UntilLoop* node) override
+        { writeName(node, "UntilLoop"); }
     void visitSymbol(const Symbol* node) override
         { writeName(node, "symbol: " + node->name()); }
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override
@@ -534,6 +532,8 @@ private:
         { writeName(node, "VarAssignment"); }
     void visitVarRef(const VarRef* node) override
         { writeName(node, "VarRef"); }
+    void visitWhileLoop(const WhileLoop* node) override
+        { writeName(node, "WhileLoop"); }
 
     void visitDoubleIntegerLiteral(const DoubleIntegerLiteral* node) override
         { writeName(node, "DoubleInteger: " + std::to_string(node->value())); }
