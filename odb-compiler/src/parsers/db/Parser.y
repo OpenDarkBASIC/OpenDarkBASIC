@@ -1,4 +1,4 @@
-%require "3.2"
+%require "3.7"
 %code top
 {
     #include "odb-compiler/ast/Assignment.hpp"
@@ -18,11 +18,11 @@
     #include "odb-compiler/parsers/db/Parser.y.h"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
+    #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
-    #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
 
     using namespace odb;
     using namespace ast;
@@ -105,7 +105,7 @@
 %parse-param {dbscan_t scanner}
 
 %locations
-%define parse.error verbose
+%define parse.error custom
 
 /* This is the union that will become known as YYSTYPE in the generated code */
 %union {
@@ -143,31 +143,94 @@
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token '\n' ':' ';' '.'
+%token '\n' "end of line"
+%token ':' "colon"
+%token ';' "semi-colon"
+%token '.' "period"
+%token '$' "$"
+%token '#' "#"
 
-%token CONSTANT
+/*s */
+%token CONSTANT "constant"
+%token IF "if"
+%token THEN "then"
+%token ELSE "else"
+%token ELSEIF "elseif"
+%token NO_ELSE
+%token ENDIF "endif"
+%token WHILE "while"
+%token ENDWHILE "endwhile"
+%token REPEAT "repeat"
+%token UNTIL "until"
+%token DO "do"
+%token LOOP "loop"
+%token BREAK "break"
+%token FOR "for"
+%token TO "to"
+%token STEP "step"
+%token NEXT "next"
+%token FUNCTION "function"
+%token EXITFUNCTION "exitfunction"
+%token ENDFUNCTION "endfunction"
+%token GOSUB "gosub"
+%token RETURN "return"
+%token GOTO "goto"
+%token SELECT "select"
+%token ENDSELECT "endselect"
+%token CASE "case"
+%token ENDCASE "endcase"
+%token DEFAULT "default"
+%token DIM "dim"
+%token GLOBAL "global"
+%token LOCAL "local"
+%token AS "as"
+%token TYPE "type"
+%token ENDTYPE "endtype"
+%token BOOLEAN "boolean"
+%token DWORD "dword"
+%token WORD "word"
+%token BYTE "byte"
+%token INTEGER "integer"
+%token FLOAT "float"
+%token DOUBLE "double"
+%token STRING "string"
+%token INC "increment"
+%token DEC "decrement"
 
-%token<boolean_value> BOOLEAN_LITERAL "boolean";
-%token<integer_value> INTEGER_LITERAL "integer";
-%token<float_value> FLOAT_LITERAL "float";
-%token<string> STRING_LITERAL "string";
+/* Literals */
+%token<boolean_value> BOOLEAN_LITERAL "boolean literal";
+%token<integer_value> INTEGER_LITERAL "integer literal";
+%token<float_value> FLOAT_LITERAL "float literal";
+%token<string> STRING_LITERAL "string literal";
 
-%token '+' '-' '*' '/' '^' MOD '(' ')' ',' INC DEC;
-%token BSHL BSHR BOR BAND BXOR BNOT;
-%token '<' '>' LE GE NE '=' LOR LAND LNOT;
+/* Operators */
+%token '+' "+"
+%token '-' "-"
+%token '*' "*"
+%token '/' "/"
+%token '^' "^"
+%token MOD "modulus operator"
+%token '(' "open-bracket"
+%token ')' "close-bracket"
+%token ',' "comma"
+%token BSHL "<<"
+%token BSHR ">>"
+%token BOR "||"
+%token BAND "&&"
+%token BXOR "~~"
+%token BNOT ".."
+%token '<' "<"
+%token '>' ">"
+%token LE "<="
+%token GE ">="
+%token NE "<>"
+%token '=' "="
+%token LOR "or"
+%token LAND "and"
+%token LNOT "not"
 
-%token IF THEN ELSE ELSEIF NO_ELSE ENDIF
-%token WHILE ENDWHILE REPEAT UNTIL DO LOOP BREAK
-%token FOR TO STEP NEXT
-%token FUNCTION EXITFUNCTION ENDFUNCTION
-%token GOSUB RETURN GOTO
-%token SELECT ENDSELECT CASE ENDCASE DEFAULT
-
-%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN DWORD WORD BYTE INTEGER FLOAT DOUBLE STRING
-
-%token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
-%token<string> KEYWORD;
-%token '$' '#';
+%token<string> SYMBOL
+%token<string> KEYWORD
 
 %type<var_assignment> var_assignment;
 %type<assignment> assignment;
@@ -197,53 +260,6 @@
 %type<for_loop> loop_for;
 %type<annotated_symbol> loop_for_next;
 %type<break_> break;
-/*
-%type<node> dec_or_inc;
-%type<node> var_assignment;
-%type<node> lvalue;
-%type<node> udt_body_decl;
-%type<node> var_decl;
-%type<node> var_decl_name;
-%type<node> var_decl_as_type;
-%type<node> var_ref;
-%type<node> array_decl;
-%type<node> array_decl_name;
-%type<node> array_decl_as_type;
-%type<node> array_ref;
-%type<node> udt_decl;
-%type<node> udt_name;
-%type<node> udt_ref;
-%type<node> udt_refs;
-%type<node> func_decl;
-%type<node> func_end;
-%type<node> func_exit;
-%type<node> func_name_decl;
-%type<node> func_call;
-%type<node> sub_call;
-%type<node> sub_return;
-%type<node> label_decl;
-%type<node> goto_label;
-%type<node> func_call_or_array_ref;
-%type<node> keyword;
-%type<node> keyword_returning_value;
-%type<node> expr;
-%type<node> arglist;
-%type<node> decl_arglist;*/
-/*
-%type<node> conditional;
-%type<node> conditional_singleline;
-%type<node> conditional_begin;
-%type<node> conditional_next;
-%type<node> select;
-%type<node> case_list;
-%type<node> case;
-%type<node> loop;
-%type<node> loop_do;
-%type<node> loop_while;
-%type<node> loop_until;
-%type<node> loop_for;
-%type<node> loop_for_next;
-%type<node> break;*/
 
 /* precedence rules */
 %nonassoc NO_ELSE
@@ -676,10 +692,43 @@ break
   ;
 %%
 
-void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
+void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    driver->vreportError(locp, fmt, args);
+    odb::db::vprintParserError(locp, scanner, fmt, args);
     va_end(args);
+}
+
+static int
+yyreport_syntax_error (const yypcontext_t *ctx, dbscan_t scanner)
+{
+    /*
+     * NOTE: dbtokentype and yysymbol_kind_t are different enums, but contain
+     * the exact same values. yysymbol_kind_t is only available in this file
+     * because it is defined in Parser.y.cpp, but dbtokentype is available
+     * through Parser.y.h. That is why we must convert it to dbtokentype.
+     */
+    int ret = 0;
+    DBLTYPE* loc = yypcontext_location(ctx);
+
+    std::pair<dbtokentype, std::string> unexpectedToken;
+    unexpectedToken.first = (dbtokentype)yypcontext_token(ctx);
+    if (unexpectedToken.first != TOK_DBEMPTY)
+        unexpectedToken.second = yysymbol_name((yysymbol_kind_t)unexpectedToken.first);
+
+    enum { TOKENMAX = 10 };
+    std::vector<std::pair<dbtokentype, std::string>> expectedTokens;
+    dbtokentype expected[TOKENMAX];
+    int n = yypcontext_expected_tokens(ctx, (yysymbol_kind_t*)expected, TOKENMAX);
+    if (n < 0)
+        // Forward errors to yyparse.
+        ret = n;
+    else
+        for (int i = 0; i < n; ++i)
+            expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
+
+    odb::db::printSyntaxError(loc, scanner, unexpectedToken, expectedTokens);
+
+    return ret;
 }

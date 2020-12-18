@@ -111,7 +111,8 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/keywords/Keyword.cpp"
     "src/keywords/KeywordIndex.cpp"
     "src/keywords/KeywordMatcher.cpp"
-    "src/parsers/db/Driver.cpp")
+    "src/parsers/db/Driver.cpp"
+    "src/parsers/db/ErrorPrinter.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

@@ -13,7 +13,6 @@
 #include <cstring>
 #include <algorithm>
 #include <memory>
-#include <cstdio>
 
 #if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int dbdebug;
@@ -123,7 +122,7 @@ ast::Block* Driver::doParse()
         DBSTYPE pushedValue;
         int pushedChar = dblex(&pushedValue, &loc, scanner_);
         switch (pushedChar)
-        {
+        {/*
             case TOK_PSEUDO_STRING_SYMBOL: {
                 const char* tok = dbget_text(scanner_);
                 DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
@@ -136,7 +135,7 @@ ast::Block* Driver::doParse()
                 DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
                 tokens.push_back({TOK_SYMBOL, value, ""});
                 tokens.push_back({'#', {}, ""});
-            } break;
+            } break;*/
 
             default: {
                 tokens.push_back({pushedChar, pushedValue, ""});
@@ -311,29 +310,6 @@ ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocati
     if (value < std::numeric_limits<int32_t>::min())
         return new ast::DoubleIntegerLiteral(value, location);
     return new ast::IntegerLiteral(value, location);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::vreportError(const DBLTYPE* loc, const char* fmt, va_list args)
-{
-    auto location = newLocation(loc);
-    std::string fileLocInfo = location->getFileLineColumn();
-    std::string errorMsg;
-
-    va_list copy;
-    va_copy(copy, args);
-    errorMsg.resize(vsnprintf(nullptr, 0, fmt, copy) + 1);
-    va_end(copy);
-
-    va_copy(copy, args);
-    snprintf(errorMsg.data(), errorMsg.size(), fmt, copy);
-    va_end(copy);
-
-    std::string msg = fileLocInfo + ": " + errorMsg;
-    log::dbParser(log::ERROR, "%s\n", msg.c_str());
-    for (const auto& line : location->getSectionHighlight())
-        log::info("%s\n", line.c_str());
-
 }
 
 }

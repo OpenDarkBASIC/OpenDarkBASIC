@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/cli/Args.hpp"
 #include "odb-compiler/keywords/Keyword.hpp"
 #include "odb-compiler/keywords/ODBKeywordLoader.hpp"
@@ -363,8 +364,13 @@ bool Args::parseDBA(const std::vector<std::string>& args)
         if (block == nullptr)
             return false;
 
-        for (auto& stmnt : block->statements())
-            ast_->appendStatement(stmnt);
+        if (ast_.isNull())
+            ast_ = block;
+        else
+        {
+            for (auto& stmnt : block->statements())
+                ast_->appendStatement(stmnt);
+        }
     }
 
     return true;
@@ -374,7 +380,7 @@ bool Args::parseDBA(const std::vector<std::string>& args)
 bool Args::dumpASTDOT(const std::vector<std::string>& args)
 {
 #if defined(ODBCOMPILER_DOT_EXPORT)
-    if (ast_ == nullptr)
+    if (ast_.isNull())
     {
         fprintf(stderr, "[ast] Error: AST is empty, nothing to dump\n");
         return false;
@@ -394,7 +400,7 @@ bool Args::dumpASTDOT(const std::vector<std::string>& args)
     else
         fprintf(stderr, "[ast] Dumping AST to Graphviz DOT format\n");
 
-    // TODO odb::ast::dumpToDOT(outFile, ast_);
+    odb::ast::dumpToDOT(outFile, ast_);
 
     if (args.size())
         fclose(outFile);

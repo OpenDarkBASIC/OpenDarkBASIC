@@ -17,6 +17,11 @@ public:
     virtual std::string getFileLineColumn() const = 0;
     virtual std::vector<std::string> getSectionHighlight() const = 0;
 
+    int getFirstLine() const;
+    int getLastLine() const;
+    int getFirstColumn() const;
+    int getLastColumn() const;
+
 protected:
     std::vector<std::string> getSectionHighlight(std::istream& code) const;
 

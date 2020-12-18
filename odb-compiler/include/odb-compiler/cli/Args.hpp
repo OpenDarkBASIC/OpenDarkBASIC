@@ -45,5 +45,5 @@ private:
 
     odb::kw::KeywordIndex kwIndex_;
     odb::kw::KeywordMatcher kwMatcher_;
-    odb::ast::Block* ast_ = nullptr;
+    odb::Reference<odb::ast::Block> ast_;
 };

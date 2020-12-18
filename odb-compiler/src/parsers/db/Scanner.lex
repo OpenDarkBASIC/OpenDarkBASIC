@@ -98,9 +98,6 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    {SYMBOL}\$          { RETURN_TOKEN(TOK_PSEUDO_STRING_SYMBOL); }
-    {SYMBOL}#           { RETURN_TOKEN(TOK_PSEUDO_FLOAT_SYMBOL); }
-
     "+"                 { RETURN_TOKEN('+'); }
     "-"                 { RETURN_TOKEN('-'); }
     "*"                 { RETURN_TOKEN('*'); }

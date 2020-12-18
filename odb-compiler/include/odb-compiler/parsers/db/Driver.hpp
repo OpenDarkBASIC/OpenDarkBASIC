@@ -3,7 +3,8 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include <string>
-#include <cstdarg>
+
+typedef struct DBLTYPE DBLTYPE;
 
 namespace odb {
 
@@ -36,7 +37,6 @@ public:
     ODBCOMPILER_PRIVATE_API ast::SourceLocation* newLocation(const DBLTYPE* loc);
     ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location);
     ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location);
-    ODBCOMPILER_PRIVATE_API void vreportError(const DBLTYPE* loc, const char* fmt, va_list args);
 
 private:
     ast::Block* doParse();
