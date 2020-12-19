@@ -230,7 +230,7 @@
 %token LNOT "not"
 
 %token<string> SYMBOL
-%token<string> KEYWORD
+%token<string> COMMAND
 
 %type<var_assignment> var_assignment;
 %type<assignment> assignment;
@@ -330,14 +330,14 @@ expr
   | var_ref                                      { $$ = $1; }
   ;
 keyword_stmnt
-  : KEYWORD                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 keyword_expr
-  : KEYWORD '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
 stmnt
@@ -696,12 +696,12 @@ void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    odb::db::vprintParserError(locp, scanner, fmt, args);
+    odb::db::vprintParserMessage(odb::log::ERROR, locp, scanner, fmt, args);
     va_end(args);
 }
 
 static int
-yyreport_syntax_error (const yypcontext_t *ctx, dbscan_t scanner)
+yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
 {
     /*
      * NOTE: dbtokentype and yysymbol_kind_t are different enums, but contain
@@ -728,7 +728,7 @@ yyreport_syntax_error (const yypcontext_t *ctx, dbscan_t scanner)
         for (int i = 0; i < n; ++i)
             expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
 
-    odb::db::printSyntaxError(loc, scanner, unexpectedToken, expectedTokens);
+    odb::db::printSyntaxMessage(odb::log::ERROR, loc, scanner, unexpectedToken, expectedTokens);
 
     return ret;
 }

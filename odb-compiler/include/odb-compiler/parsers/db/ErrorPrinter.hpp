@@ -3,11 +3,15 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-sdk/Log.hpp"
 #include <string>
 #include <vector>
 #include <cstdarg>
 
 namespace odb {
+namespace ast {
+    class SourceLocation;
+}
 namespace db {
 
 /*!
@@ -16,18 +20,27 @@ namespace db {
  * error, or something just as catastrophic).
  */
 ODBCOMPILER_PRIVATE_API
-void vprintParserError(DBLTYPE *locp, dbscan_t scanner, const char* fmt, va_list args);
+void vprintParserMessage(log::Severity severity,
+                         const DBLTYPE *locp,
+                         dbscan_t scanner,
+                         const char* fmt,
+                         va_list args);
 
 /*!
  * @brief This is the standard callback handler when a syntax error occurs in
  * the BISON parser.
  */
 ODBCOMPILER_PRIVATE_API
-void
-printSyntaxError(const DBLTYPE* loc,
-                 dbscan_t scanner,
-                 std::pair<dbtokentype, std::string> unexpectedToken,
-                 const std::vector<std::pair<dbtokentype, std::string>> expectedTokens);
+void printSyntaxMessage(log::Severity severity,
+                        const DBLTYPE* loc,
+                        dbscan_t scanner,
+                        std::pair<dbtokentype, std::string> unexpectedToken,
+                        const std::vector<std::pair<dbtokentype, std::string>> expectedTokens);
+
+ODBCOMPILER_PRIVATE_API
+void printLocationHighlight(const DBLTYPE* loc, dbscan_t scanner);
+ODBCOMPILER_PRIVATE_API
+void printLocationHighlight(const ast::SourceLocation* location);
 
 }
 }

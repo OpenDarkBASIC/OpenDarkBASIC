@@ -39,8 +39,9 @@ configure_file ("templates/config.hpp.in" "include/odb-compiler/config.hpp")
 # Parsers
 ###############################################################################
 
-find_package (FLEX REQUIRED)
-find_package (BISON REQUIRED 3.2)
+find_package (FLEX REQUIRED )
+find_package (BISON REQUIRED 3.7)
+find_package (Gperf REQUIRED)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
@@ -73,6 +74,17 @@ if (ODBCOMPILER_VERBOSE_BISON)
             YYDEBUG)
 endif ()
 
+gperf_target (DarkBASICKeywordToken
+    "${PROJECT_SOURCE_DIR}/src/parsers/db/KeywordToken.gperf"
+    "${PROJECT_BINARY_DIR}/src/parsers/db/KeywordToken.gperf.cpp")
+set_source_files_properties (${Gperf_DarkBASICKeywordToken_OUTPUTS}
+    PROPERTIES COMPILE_FLAGS
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
+#XXX this is broken
+add_gperf_bison_dependency (DarkBASICKeywordToken DarkBASICParser)
+
 ###############################################################################
 # Library definition
 ###############################################################################
@@ -80,6 +92,7 @@ endif ()
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${BISON_DarkBASICParser_OUTPUTS}
     ${FLEX_DarkBASICScanner_OUTPUTS}
+    ${Gperf_DarkBASICKeywordToken_OUTPUTS}
     ${BISON_KeywordsParser_OUTPUTS}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/ArrayRef.cpp"

@@ -39,6 +39,7 @@ public:
     ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location);
 
 private:
+    ast::Block* doParseOld();
     ast::Block* doParse();
 
     std::string sourceName_;

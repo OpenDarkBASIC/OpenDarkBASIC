@@ -6,7 +6,7 @@
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_keyword
+#define NAME db_command
 
 using namespace testing;
 using namespace odb;
@@ -93,7 +93,7 @@ TEST_F(NAME, randomize_timer_args)
     ast->accept(&v);
 }
 
-TEST_F(NAME, keyword_with_string_annotation)
+TEST_F(NAME, command_with_string_annotation)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "str$", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "print", "", kw::Keyword::Type::Void, {}));
@@ -114,7 +114,7 @@ TEST_F(NAME, keyword_with_string_annotation)
     ast->accept(&v);
 }
 
-TEST_F(NAME, keyword_with_float_annotation)
+TEST_F(NAME, command_with_float_annotation)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "str#", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "print", "", kw::Keyword::Type::Void, {}));
@@ -149,9 +149,9 @@ TEST_F(NAME, load_3d_sound)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitKeywordStmntSymbol(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("load 3dsound"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("howl.wav"))).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
 
     ast->accept(&v);
@@ -161,7 +161,7 @@ TEST_F(NAME, command_with_variable_args)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    kwIndex.addKeyword(new kw::Keyword(nullptr, "cone sound", "", kw::Keyword::Type::Void, {}));
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "clone sound", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
     ast = driver->parseString("test",
         "clone sound s,2\n");
@@ -170,11 +170,11 @@ TEST_F(NAME, command_with_variable_args)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitKeywordStmntSymbol(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("load 3dsound"))).After(exp);
+    exp = EXPECT_CALL(v, visitKeywordStmntSymbol(KeywordStmntSymbolEq("clone sound"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("howl.wav"))).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
     ast->accept(&v);
 }
@@ -187,24 +187,29 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
     kwIndex.addKeyword(new kw::Keyword(nullptr, "get ground height", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
     ast = driver->parseString("test",
-        "make object sphere get ground height(1, x, y), 10\n");
+        "make object sphere get ground height(2, x, y), 10\n");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitKeywordStmntSymbol(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("load 3dsound"))).After(exp);
+    exp = EXPECT_CALL(v, visitKeywordStmntSymbol(KeywordStmntSymbolEq("make object sphere"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("howl.wav"))).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
+    exp = EXPECT_CALL(v, visitKeywordExprSymbol(KeywordExprSymbolEq("get ground height"))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(3))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, keyword_starting_with_builtin)
+TEST_F(NAME, command_starting_with_builtin)
 {
-    // "loop" is a builtin keyword
+    // "loop" is a builtin command
     kwIndex.addKeyword(new kw::Keyword(nullptr, "loop", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "loop sound", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
@@ -222,9 +227,9 @@ TEST_F(NAME, keyword_starting_with_builtin)
     ast->accept(&v);
 }
 
-TEST_F(NAME, builtin_shadowing_keyword)
+TEST_F(NAME, builtin_shadowing_command)
 {
-    // "loop" is a builtin keyword
+    // "loop" is a builtin command
     kwIndex.addKeyword(new kw::Keyword(nullptr, "loop", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "loop sound", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
@@ -233,7 +238,7 @@ TEST_F(NAME, builtin_shadowing_keyword)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, multiple_similar_keywords_with_spaces)
+TEST_F(NAME, multiple_similar_commands_with_spaces)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "set object", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "set object speed", "", kw::Keyword::Type::Void, {}));
@@ -243,7 +248,7 @@ TEST_F(NAME, multiple_similar_keywords_with_spaces)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, multiple_similar_keywords_with_spaces_2)
+TEST_F(NAME, multiple_similar_commands_with_spaces_2)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "SET OBJECT AMBIENT", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "SET OBJECT COLLISION ON", "", kw::Keyword::Type::Void, {}));
@@ -256,7 +261,7 @@ TEST_F(NAME, multiple_similar_keywords_with_spaces_2)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, incomplete_keyword_at_end_of_file)
+TEST_F(NAME, incomplete_command_at_end_of_file)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "color object", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
@@ -267,7 +272,7 @@ TEST_F(NAME, incomplete_keyword_at_end_of_file)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, keywords_with_type)
+TEST_F(NAME, commands_with_type)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "get dir$", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
@@ -276,7 +281,7 @@ TEST_F(NAME, keywords_with_type)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, keyword_containing_builtin_in_middle)
+TEST_F(NAME, command_containing_builtin_in_middle)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "set effect constant boolean", "", kw::Keyword::Type::Void, {}));
     kwIndex.addKeyword(new kw::Keyword(nullptr, "set effect constant float", "", kw::Keyword::Type::Void, {}));
@@ -286,7 +291,7 @@ TEST_F(NAME, keyword_containing_builtin_in_middle)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, keyword_variable_name)
+TEST_F(NAME, command_variable_name)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "text", "", kw::Keyword::Type::Void, {}));
     matcher.updateFromIndex(&kwIndex);
@@ -295,10 +300,45 @@ TEST_F(NAME, keyword_variable_name)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, builtin_keyword_variable_name)
+TEST_F(NAME, builtin_keyword_variable_name_1)
 {
     matcher.updateFromIndex(&kwIndex);
     ast = driver->parseString("test",
         "string$ as string");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, builtin_keyword_variable_name_2)
+{
+    matcher.updateFromIndex(&kwIndex);
+    ast = driver->parseString("test",
+        "string# as float");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, command_variable_name_1)
+{
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "command", "", kw::Keyword::Type::Void, {}));
+    matcher.updateFromIndex(&kwIndex);
+    ast = driver->parseString("test",
+        "command$ as string");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, command_variable_name_2)
+{
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "command", "", kw::Keyword::Type::Void, {}));
+    matcher.updateFromIndex(&kwIndex);
+    ast = driver->parseString("test",
+        "command# as float");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, command_with_same_name_as_keyword)
+{
+    kwIndex.addKeyword(new kw::Keyword(nullptr, "loop", "", kw::Keyword::Type::Void, {}));
+    matcher.updateFromIndex(&kwIndex);
+    ast = driver->parseString("test",
+        "do\nloop");
     ASSERT_THAT(ast, NotNull());
 }
