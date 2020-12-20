@@ -32,12 +32,13 @@ public:
     MOCK_METHOD(void, visitWhileLoop, (const ast::WhileLoop* node), (override));
 
 #define X(dbname, cppname) \
-    MOCK_METHOD(void, visit##dbname##Literal, (const ast::dbname##Literal* node), (override));
+    MOCK_METHOD(void, visit##dbname##Literal, (const ast::dbname##Literal* node), (override)); \
+    MOCK_METHOD(void, visit##dbname##VarDecl, (const ast::dbname##VarDecl* node), (override));
     ODB_DATATYPE_LIST
 #undef X
 
-#define X(dbname, cppname) \
-    MOCK_METHOD(void, visit##dbname##VarDecl, (const ast::dbname##VarDecl* node), (override));
-    ODB_DATATYPE_LIST
+#define X(op, tok) \
+    MOCK_METHOD(void, visitBinaryOp##op, (const ast::BinaryOp##op* node), (override));
+    ODB_BINARY_OP_LIST
 #undef X
 };

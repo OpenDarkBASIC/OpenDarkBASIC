@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/BinaryOperators.hpp"
 
 namespace odb {
 namespace ast {
@@ -42,6 +43,10 @@ template <typename T> class VarDeclTemplate;
 ODB_DATATYPE_LIST
 #undef X
 
+#define X(op, str) class BinaryOp##op;
+ODB_BINARY_OP_LIST
+#undef X
+
 class ODBCOMPILER_PUBLIC_API Visitor
 {
 public:
@@ -74,6 +79,11 @@ public:
     virtual void visit##dbname##Literal(const dbname##Literal* node) = 0; \
     virtual void visit##dbname##VarDecl(const dbname##VarDecl* node) = 0;
     ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, str) \
+    virtual void visitBinaryOp##op(const BinaryOp##op* node) = 0;
+    ODB_BINARY_OP_LIST
 #undef X
 };
 
@@ -109,6 +119,11 @@ public:
     void visit##dbname##Literal(const dbname##Literal* node) override; \
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override;
     ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, str) \
+    void visitBinaryOp##op(const BinaryOp##op* node) override;
+    ODB_BINARY_OP_LIST
 #undef X
 
     virtual void visit(const Node* node) = 0;

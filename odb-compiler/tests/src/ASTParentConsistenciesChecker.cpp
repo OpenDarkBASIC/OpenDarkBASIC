@@ -1,5 +1,6 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
@@ -153,4 +154,13 @@ void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
         EXPECT_THAT(node, Eq(node->initialValue()->parent()));                \
     }
 ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void ASTParentConsistenciesChecker::visitBinaryOp##op(const BinaryOp##op* node) \
+    {                                                                         \
+        EXPECT_THAT(node, Eq(node->lhs()->parent()));                         \
+        EXPECT_THAT(node, Eq(node->rhs()->parent()));                         \
+    }
+ODB_BINARY_OP_LIST
 #undef X

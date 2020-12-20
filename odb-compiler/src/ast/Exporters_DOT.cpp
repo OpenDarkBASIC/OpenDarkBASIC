@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
@@ -448,17 +449,23 @@ private:
             writeNamedConnection(node, node->body(), "body");
     }
 
-#define X(dbname, cppname) void visit##dbname##Literal(const dbname##Literal* node) override {}
-    ODB_DATATYPE_LIST
-#undef X
-
 #define X(dbname, cppname)                                                    \
+    void visit##dbname##Literal(const dbname##Literal* node) override {}      \
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
         writeNamedConnection(node, node->initialValue(), "initialValue");     \
     }
     ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void visitBinaryOp##op(const BinaryOp##op* node) override                 \
+    {                                                                         \
+        writeNamedConnection(node, node->lhs(), "lhs");                       \
+        writeNamedConnection(node, node->rhs(), "rhs");                       \
+    }
+    ODB_BINARY_OP_LIST
 #undef X
 
 private:
@@ -582,6 +589,12 @@ private:
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
         { writeName(node, #dbname "VarDecl"); }
     ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void visitBinaryOp##op(const BinaryOp##op* node) override                 \
+        { writeName(node, tok); }
+    ODB_BINARY_OP_LIST
 #undef X
 
 private:

@@ -35,4 +35,9 @@ public:
     void visit##dbname##VarDecl(const odb::ast::dbname##VarDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X
+
+#define X(op, tok) \
+    void visitBinaryOp##op(const odb::ast::BinaryOp##op* node) override;
+    ODB_BINARY_OP_LIST
+#undef X
 };

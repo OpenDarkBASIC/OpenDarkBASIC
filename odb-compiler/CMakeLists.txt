@@ -97,6 +97,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${FLEX_KeywordsScanner_OUTPUTS}
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
+    "src/ast/BinaryOp.cpp"
     "src/ast/Block.cpp"
     "src/ast/Break.cpp"
     "src/ast/ConstDecl.cpp"
@@ -167,7 +168,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/test_db_loop_for.cpp"
         "tests/src/test_db_loop_repeat.cpp"
         "tests/src/test_db_loop_while.cpp"
-        # "tests/src/test_db_op_add.cpp"
+        "tests/src/test_db_op_add.cpp"
         # "tests/src/test_db_op_precedence.cpp"
         "tests/src/test_db_remarks.cpp"
         # "tests/src/test_db_select.cpp"

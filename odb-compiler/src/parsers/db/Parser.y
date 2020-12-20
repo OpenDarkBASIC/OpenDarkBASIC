@@ -2,6 +2,7 @@
 %code top
 {
     #include "odb-compiler/ast/Assignment.hpp"
+    #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
     #include "odb-compiler/ast/Break.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
@@ -129,8 +130,8 @@
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
     odb::ast::InfiniteLoop* infinite_loop;
-    odb::ast::KeywordExprSymbol* keyword_expr;
-    odb::ast::KeywordStmntSymbol* keyword_stmnt;
+    odb::ast::KeywordExprSymbol* command_expr;
+    odb::ast::KeywordStmntSymbol* command_stmnt;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
     odb::ast::ScopedSymbol* scoped_symbol;
@@ -247,8 +248,8 @@
 %type<expr> func_call_expr_or_array_ref;
 %type<expr> expr;
 %type<expr_list> expr_list;
-%type<keyword_expr> keyword_expr;
-%type<keyword_stmnt> keyword_stmnt;
+%type<command_expr> command_expr;
+%type<command_stmnt> command_stmnt;
 %type<var_decl> var_decl;
 %type<var_decl> var_decl_as_type;
 %type<var_decl> var_decl_scope;
@@ -276,8 +277,7 @@
  *   symbol: label_without_type
  *   label : label_without_type COLON */
 %nonassoc NO_HASH_OR_DOLLAR
-%nonassoc COLON
-%left COMMA
+%nonassoc ':'
 %left LXOR
 %left LOR
 %left LAND
@@ -286,21 +286,21 @@
 %left BXOR
 %left BOR
 %left BAND
-%left EQ
-%left LT
-%left GT
+%left '='
+%left '<'
+%left '>'
 %left LE
 %left GE
 %left NE
 %left BSHL
 %left BSHR
-%left ADD
-%left SUB
-%left MUL
+%left '+'
+%left '-'
+%left '*'
 %left MOD
-%left DIV
-%left POW
-%left LB RB
+%left '/'
+%left '^'
+%left '(' ')'
 
 %destructor { str::deleteCStr($$); } <string>
 
@@ -321,7 +321,7 @@ block
 stmnt
   : constant_decl                                { $$ = $1; }
   | func_call_stmnt                              { $$ = $1; }
-  | keyword_stmnt                                { $$ = $1; }
+  | command_stmnt                                { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | assignment                                   { $$ = $1; }
   | loop                                         { $$ = $1; }
@@ -334,18 +334,47 @@ expr_list
   | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
   ;
 expr
-  : literal                                      { $$ = $1; }
+  : '(' expr ')'                                 { $$ = $2; }
+  | expr '+' expr                                { $$ = new BinaryOpAdd($1, $3, driver->newLocation(&yylloc)); }
+  | expr '-' expr                                { $$ = new BinaryOpSub($1, $3, driver->newLocation(&yylloc)); }
+  | expr '*' expr                                { $$ = new BinaryOpMul($1, $3, driver->newLocation(&yylloc)); }
+  | expr '/' expr                                { $$ = new BinaryOpDiv($1, $3, driver->newLocation(&yylloc)); }
+  | expr MOD expr                                { $$ = new BinaryOpMod($1, $3, driver->newLocation(&yylloc)); }
+  | expr '^' expr                                { $$ = new BinaryOpPow($1, $3, driver->newLocation(&yylloc)); }
+  | expr BSHL expr                               { $$ = new BinaryOpShiftLeft($1, $3, driver->newLocation(&yylloc)); }
+  | expr BSHR expr                               { $$ = new BinaryOpShiftRight($1, $3, driver->newLocation(&yylloc)); }
+  | expr BOR expr                                { $$ = new BinaryOpBitwiseOr($1, $3, driver->newLocation(&yylloc)); }
+  | expr BAND expr                               { $$ = new BinaryOpBitwiseAnd($1, $3, driver->newLocation(&yylloc)); }
+  | expr BXOR expr                               { $$ = new BinaryOpBitwiseXor($1, $3, driver->newLocation(&yylloc)); }
+  | expr BNOT expr                               { $$ = new BinaryOpBitwiseNot($1, $3, driver->newLocation(&yylloc)); }
+  | expr '<' expr                                { $$ = new BinaryOpLess($1, $3, driver->newLocation(&yylloc)); }
+  | expr '>' expr                                { $$ = new BinaryOpGreater($1, $3, driver->newLocation(&yylloc)); }
+  | expr LE expr                                 { $$ = new BinaryOpLessEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr GE expr                                 { $$ = new BinaryOpGreaterEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr '=' expr                                { $$ = new BinaryOpEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr NE expr                                 { $$ = new BinaryOpNotEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr LOR expr                                { $$ = new BinaryOpOr($1, $3, driver->newLocation(&yylloc)); }
+  | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&yylloc)); }
+  | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, driver->newLocation(&yylloc)); }
+  | expr LNOT expr                               { $$ = new BinaryOpNot($1, $3, driver->newLocation(&yylloc)); }
+  | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
-  | keyword_expr                                 { $$ = $1; }
+  | command_expr                                 { $$ = $1; }
   | var_ref                                      { $$ = $1; }
   ;
-keyword_stmnt
+
+/* Commands appearing as statements usually don't have arguments surrounded by
+ * brackets, but it is valid to call a command with brackets as a statement */
+command_stmnt
   : COMMAND                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   | COMMAND expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   | COMMAND '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+/* This case is already handled by expr
+  | COMMAND '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); } */
   ;
-keyword_expr
+
+/* Commands appearing in expressions must be called with arguments in brackets */
+command_expr
   : COMMAND '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   | COMMAND '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
@@ -364,7 +393,7 @@ stmnt
   | sub_return                                   { $$ = $1; }
   | goto_label                                   { $$ = $1; }
   | label_decl                                   { $$ = $1; }
-  | keyword                                      { $$ = $1; }
+  | command                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | select                                       { $$ = $1; }
   | loop                                         { $$ = $1; }
@@ -558,55 +587,13 @@ func_call_stmnt
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
   ;
-/*
-expr
-  : LB arglist RB                                { $$ = $2; }
-  | arglist
-  ;
-expr
-  : '('  ')'
-  | expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD, &yylloc); }
-  | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB, &yylloc); }
-  | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL, &yylloc); }
-  | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV, &yylloc); }
-  | expr POW expr                                { $$ = newOp($1, $3, NT_OP_POW, &yylloc); }
-  | expr MOD expr                                { $$ = newOp($1, $3, NT_OP_MOD, &yylloc); }
-  | expr COMMA expr                              { $$ = newOp($1, $3, NT_OP_COMMA, &yylloc); }
-  | expr NE expr                                 { $$ = newOp($1, $3, NT_OP_NE, &yylloc); }
-  | expr LE expr                                 { $$ = newOp($1, $3, NT_OP_LE, &yylloc); }
-  | expr GE expr                                 { $$ = newOp($1, $3, NT_OP_GE, &yylloc); }
-  | expr EQ expr                                 { $$ = newOp($1, $3, NT_OP_EQ, &yylloc); }
-  | expr LT expr                                 { $$ = newOp($1, $3, NT_OP_LT, &yylloc); }
-  | expr GT expr                                 { $$ = newOp($1, $3, NT_OP_GT, &yylloc); }
-  | expr LOR expr                                { $$ = newOp($1, $3, NT_OP_LOR, &yylloc); }
-  | expr LAND expr                               { $$ = newOp($1, $3, NT_OP_LAND, &yylloc); }
-  | expr LXOR expr                               { $$ = newOp($1, $3, NT_OP_LXOR, &yylloc); }
-  | expr LNOT expr                               { $$ = newOp($1, $3, NT_OP_LNOT, &yylloc); }
-  | expr BSHL expr                               { $$ = newOp($1, $3, NT_OP_BSHL, &yylloc); }
-  | expr BSHR expr                               { $$ = newOp($1, $3, NT_OP_BSHR, &yylloc); }
-  | expr BOR expr                                { $$ = newOp($1, $3, NT_OP_BOR, &yylloc); }
-  | expr BAND expr                               { $$ = newOp($1, $3, NT_OP_BAND, &yylloc); }
-  | expr BXOR expr                               { $$ = newOp($1, $3, NT_OP_BXOR, &yylloc); }
-  | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT, &yylloc); }
-  | literal                                      { $$ = $1; }
-  | udt_ref                                      { $$ = $1; }
-  | var_ref                                      { $$ = $1; }
-  | func_call_or_array_ref                       { $$ = $1; }
-  | keyword_returning_value                      { $$ = $1; }
-  ;
-decl_arglist
-  : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA, &yylloc); }
-  | var_decl_as_type                             { $$ = $1; }
-  | var_decl_name                                { $$ = $1; }
-  | array_decl                                   { $$ = $1; }
-  ;*/
 literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
   | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
   | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
   | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); }
-  | SUB INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
-  | SUB FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
+  | '-' INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
+  | '-' FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
   ;
 /*
 scoped_symbol
