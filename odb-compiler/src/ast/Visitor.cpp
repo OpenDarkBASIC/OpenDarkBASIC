@@ -7,7 +7,7 @@
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
@@ -34,10 +34,10 @@ void GenericVisitor::visitFuncCallStmnt(const FuncCallStmnt* node)              
 void GenericVisitor::visitFuncDecl(const FuncDecl* node)                             { visit(node); }
 void GenericVisitor::visitFuncExit(const FuncExit* node)                             { visit(node); }
 void GenericVisitor::visitInfiniteLoop(const InfiniteLoop* node)                     { visit(node); }
-void GenericVisitor::visitKeywordExpr(const KeywordExpr* node)                       { visit(node); }
-void GenericVisitor::visitKeywordExprSymbol(const KeywordExprSymbol* node)           { visit(node); }
-void GenericVisitor::visitKeywordStmntSymbol(const KeywordStmntSymbol* node)         { visit(node); }
-void GenericVisitor::visitKeywordStmnt(const KeywordStmnt* node)                     { visit(node); }
+void GenericVisitor::visitCommandExpr(const CommandExpr* node)                       { visit(node); }
+void GenericVisitor::visitCommandExprSymbol(const CommandExprSymbol* node)           { visit(node); }
+void GenericVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node)         { visit(node); }
+void GenericVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
 void GenericVisitor::visitScopedSymbol(const ScopedSymbol* node)                     { visit(node); }
 void GenericVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
 void GenericVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }

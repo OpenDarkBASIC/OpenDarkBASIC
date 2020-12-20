@@ -9,7 +9,7 @@
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
-#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -95,22 +95,22 @@ void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
     if (node->body().notNull())
         EXPECT_THAT(node, Eq(node->body()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordExpr(const KeywordExpr* node)
+void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordExprSymbol(const KeywordExprSymbol* node)
+void ASTParentConsistenciesChecker::visitCommandExprSymbol(const CommandExprSymbol* node)
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordStmnt(const KeywordStmnt* node)
+void ASTParentConsistenciesChecker::visitCommandStmnt(const CommandStmnt* node)
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordStmntSymbol(const KeywordStmntSymbol* node)
+void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSymbol* node)
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));

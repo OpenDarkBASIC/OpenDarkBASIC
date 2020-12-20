@@ -10,7 +10,7 @@
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
-    #include "odb-compiler/ast/Keyword.hpp"
+    #include "odb-compiler/ast/Command.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
@@ -57,8 +57,8 @@
             class Expression;
             class ExpressionList;
             class InfiniteLoop;
-            class KeywordExprSymbol;
-            class KeywordStmntSymbol;
+            class CommandExprSymbol;
+            class CommandStmntSymbol;
             class Literal;
             class Loop;
             class Node;
@@ -130,8 +130,8 @@
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
     odb::ast::InfiniteLoop* infinite_loop;
-    odb::ast::KeywordExprSymbol* command_expr;
-    odb::ast::KeywordStmntSymbol* command_stmnt;
+    odb::ast::CommandExprSymbol* command_expr;
+    odb::ast::CommandStmntSymbol* command_stmnt;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
     odb::ast::ScopedSymbol* scoped_symbol;
@@ -366,17 +366,17 @@ expr
 /* Commands appearing as statements usually don't have arguments surrounded by
  * brackets, but it is valid to call a command with brackets as a statement */
 command_stmnt
-  : COMMAND                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND                                      { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND expr_list                            { $$ = new CommandStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' ')'                              { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
 /* This case is already handled by expr
-  | COMMAND '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); } */
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); } */
   ;
 
 /* Commands appearing in expressions must be called with arguments in brackets */
 command_expr
-  : COMMAND '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND '(' ')'                              { $$ = new CommandExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
 stmnt

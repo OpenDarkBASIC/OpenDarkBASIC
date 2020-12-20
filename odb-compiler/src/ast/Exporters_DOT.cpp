@@ -7,7 +7,7 @@
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
@@ -17,7 +17,7 @@
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include <unordered_map>
 
 namespace odb {
@@ -238,7 +238,7 @@ static int dumpToDOTRecursive(std::ostream& os, int* guid, Node* node)
         case NT_SYM_LABEL:
             goto symbol_common;
         case NT_SYM_KEYWORD:
-            if (node->sym.keyword.arglist)
+            if (node->sym.command.arglist)
                 os << "N" << *guid << " -> " << "N" << guidParent << "[label=\"arglist\"];\n";
             goto symbol_common;
         case NT_SYM: {
@@ -404,22 +404,22 @@ private:
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
     }
-    void visitKeywordExpr(const KeywordExpr* node) override
+    void visitCommandExpr(const CommandExpr* node) override
     {
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
-    void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
+    void visitCommandExprSymbol(const CommandExprSymbol* node) override
     {
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
-    void visitKeywordStmnt(const KeywordStmnt* node) override
+    void visitCommandStmnt(const CommandStmnt* node) override
     {
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
-    void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
+    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
     {
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
@@ -514,14 +514,14 @@ private:
         { writeName(node, "FuncExit"); }
     void visitInfiniteLoop(const InfiniteLoop* node) override
         { writeName(node, "InfiniteLoop"); }
-    void visitKeywordExpr(const KeywordExpr* node) override
-        { writeName(node, "KeywordExpr: " + node->keyword()->dbSymbol()); }
-    void visitKeywordExprSymbol(const KeywordExprSymbol* node) override
-        { writeName(node, "KeywordExprSymbol: " + node->keyword()); }
-    void visitKeywordStmnt(const KeywordStmnt* node) override
-        { writeName(node, "KeywordStmnt" + node->keyword()->dbSymbol()); }
-    void visitKeywordStmntSymbol(const KeywordStmntSymbol* node) override
-        { writeName(node, "KeywordStmntSymbol: " + node->keyword()); }
+    void visitCommandExpr(const CommandExpr* node) override
+        { writeName(node, "CommandExpr: " + node->command()->dbSymbol()); }
+    void visitCommandExprSymbol(const CommandExprSymbol* node) override
+        { writeName(node, "CommandExprSymbol: " + node->command()); }
+    void visitCommandStmnt(const CommandStmnt* node) override
+        { writeName(node, "CommandStmnt" + node->command()->dbSymbol()); }
+    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
+        { writeName(node, "CommandStmntSymbol: " + node->command()); }
     void visitUntilLoop(const UntilLoop* node) override
         { writeName(node, "UntilLoop"); }
     void visitSymbol(const Symbol* node) override

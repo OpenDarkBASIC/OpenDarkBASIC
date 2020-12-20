@@ -6,7 +6,7 @@
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-compiler/parsers/db/KeywordToken.hpp"
-#include "odb-compiler/keywords/KeywordMatcher.hpp"
+#include "odb-compiler/commands/CommandMatcher.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include "odb-sdk/FileSystem.hpp"
@@ -24,8 +24,8 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(const kw::KeywordMatcher* keywordMatcher) :
-    keywordMatcher_(keywordMatcher)
+Driver::Driver(const cmd::CommandMatcher* commandMatcher) :
+    commandMatcher_(commandMatcher)
 {
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
@@ -104,18 +104,18 @@ ast::Block* Driver::doParse()
     struct MergedTokenOffset
     {
         int lookAheadEnd;
-        int kwlen;
+        int cmdlen;
     };
 
-    // This is used as a buffer to assemble a keyword out of multiple tokens
-    // and check it against the keyword matcher.
-    std::string possibleKeyword;
-    possibleKeyword.reserve(keywordMatcher_->longestKeywordLength());
+    // This is used as a buffer to assemble a command out of multiple tokens
+    // and check it against the command matcher.
+    std::string possibleCommand;
+    possibleCommand.reserve(commandMatcher_->longestCommandLength());
 
     // This is used to store all tokens that haven't been push parsed yet, which
-    // will be more than 1 when doing a keyword match.
+    // will be more than 1 when doing a command match.
     std::vector<Token> tokens;
-    tokens.reserve(keywordMatcher_->longestKeywordWordCount());
+    tokens.reserve(commandMatcher_->longestCommandWordCount());
 
     // Scans the next token and stores it in "tokens"
     auto scanNextToken = [&](){
@@ -125,13 +125,13 @@ ast::Block* Driver::doParse()
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
-    auto scanAheadForPossibleKeyword = [&]() {
+    auto scanAheadForPossibleCommand = [&]() {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-        fprintf(stderr, "Scanning ahead for possible keyword match\n");
+        fprintf(stderr, "Scanning ahead for possible command match\n");
 #endif
         struct
         {
-            kw::KeywordMatcher::MatchResult match;
+            cmd::CommandMatcher::MatchResult match;
             int tokenIdx;
         } result = {};
 
@@ -143,15 +143,15 @@ ast::Block* Driver::doParse()
         if (tokens.back().str.empty())
             tokens.back().str = dbget_text(scanner_);
 
-        possibleKeyword = tokens[0].str;
+        possibleCommand = tokens[0].str;
         bool lastSymbolWasInteger = false;
-        for (int i = 1; (int)possibleKeyword.length() <= keywordMatcher_->longestKeywordLength(); ++i)
+        for (int i = 1; (int)possibleCommand.length() <= commandMatcher_->longestCommandLength(); ++i)
         {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "findLongestKeywordMatching(\"%s\")\n", possibleKeyword.c_str());
+            fprintf(stderr, "findLongestCommandMatching(\"%s\")\n", possibleCommand.c_str());
 #endif
-            auto match = keywordMatcher_->findLongestKeywordMatching(possibleKeyword);
-            if (match.found && match.matchedLength == (int)possibleKeyword.size())
+            auto match = commandMatcher_->findLongestCommandMatching(possibleCommand);
+            if (match.found && match.matchedLength == (int)possibleCommand.size())
                 result = {match, i};
 
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
@@ -170,16 +170,16 @@ ast::Block* Driver::doParse()
             if (tokens[i].pushedChar == TOK_END || tokens[i].pushedChar == TOK_DBEMPTY)
                 break;
 
-            // Keywords unfortunately can start with integers, or have words
+            // Commands unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
-            // in between integers and following symbols. Additionally, keywords
+            // in between integers and following symbols. Additionally, commands
             // can end in $ or #, in which case we also do not want to append
             // a space.
             if (!lastSymbolWasInteger && tokens[i].pushedChar != '$' && tokens[i].pushedChar != '#')
-                possibleKeyword += " ";
+                possibleCommand += " ";
             else if (result.tokenIdx == i && (tokens[i].pushedChar == '$' || tokens[i].pushedChar == '#'))
                 result.match.found = false;
-            possibleKeyword += tokens[i].str;
+            possibleCommand += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
         }
 
@@ -187,17 +187,17 @@ ast::Block* Driver::doParse()
         {
             // All tokens we scanned leading up to the last one can
             // be discarded, because they can all be merged into
-            // a single keyword now.
+            // a single command now.
             for (int i = 0; i != result.tokenIdx; ++i)
                 if (tokenHasFreeableString(tokens[i].pushedChar))
                     str::deleteCStr(tokens[i].pushedValue.string);
             tokens.erase(tokens.begin() + 1, tokens.begin() + result.tokenIdx);
 
             // Ownership of the string is passed to BISON
-            tokens[0].pushedValue.string = str::newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
+            tokens[0].pushedValue.string = str::newCStrRange(possibleCommand.c_str(), 0, result.match.matchedLength);
             tokens[0].pushedChar = TOK_COMMAND;
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
+            fprintf(stderr, "Merged into command: \"%s\"\n", tokens[0].pushedValue.string);
             fprintf(stderr, "Tokens in queue:");
             for (const auto& token : tokens)
                 fprintf(stderr, " %d", token.pushedChar);
@@ -207,7 +207,7 @@ ast::Block* Driver::doParse()
         else
         {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "No keyword match found\n");
+            fprintf(stderr, "No command match found\n");
 #endif
         }
     };
@@ -221,8 +221,8 @@ ast::Block* Driver::doParse()
             scanNextToken();
 
         // We must differentiate between builtin DBP keywords (such as "if" or
-        // "loop") and commands (such as "make object") that originate from
-        // plugins. Each builtin keyword is its own token, while every command
+        // "loop") and commands (such as "make object" that originate from
+        // plugins). Each builtin keyword is its own token, while every command
         // uses the same token value, but passes the command string to the parser.
         //
         // Unfortunately, commands can start with or contain keywords, such as
@@ -248,7 +248,7 @@ ast::Block* Driver::doParse()
             // commands can start with an integer literal or with a string
             case TOK_INTEGER_LITERAL:
             case TOK_SYMBOL: {
-                scanAheadForPossibleKeyword();
+                scanAheadForPossibleCommand();
             } break;
             default: break;
         }
@@ -271,7 +271,7 @@ ast::Block* Driver::doParse()
                     tokens[0].pushedChar = result->token;
             } break;
 
-            // Allow commands to be changed to builtin keywords. This is something
+            // Allow commands to be changed to builtin commands. This is something
             // DBP did, but ODB should not do. Issue a warning if this happens.
             case TOK_COMMAND: {
                 // See above comment for why this is here

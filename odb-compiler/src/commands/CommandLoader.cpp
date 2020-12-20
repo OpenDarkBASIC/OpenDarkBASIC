@@ -1,7 +1,7 @@
-#include "odb-compiler/keywords/KeywordLoader.hpp"
+#include "odb-compiler/commands/CommandLoader.hpp"
 
 namespace odb {
-namespace kw {
+namespace cmd {
 
 static std::vector<std::filesystem::path> stringsToPaths(const std::vector<std::string>& strings)
 {
@@ -12,7 +12,7 @@ static std::vector<std::filesystem::path> stringsToPaths(const std::vector<std::
 }
 
 // ----------------------------------------------------------------------------
-KeywordLoader::KeywordLoader(const std::string& sdkRoot,
+CommandLoader::CommandLoader(const std::string& sdkRoot,
                              const std::vector<std::string>& pluginDirs) :
     sdkRoot_(sdkRoot),
     pluginDirs_(stringsToPaths(pluginDirs))

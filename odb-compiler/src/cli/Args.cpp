@@ -1,8 +1,8 @@
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/cli/Args.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
-#include "odb-compiler/keywords/ODBKeywordLoader.hpp"
-#include "odb-compiler/keywords/DBPKeywordLoader.hpp"
+#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/commands/ODBCommandLoader.hpp"
+#include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-sdk/Log.hpp"
 #include <cstring>
@@ -41,13 +41,13 @@ static Command sequentialCommands[] = {
     { "sdktype",       0, "<odb|dbpro>",                 {1,  1}, &Args::setSDKType, "Specify if the SDK is the original DBPro SDK, or if it is the ODB reimplementation"},
     { "plugins",       0, "<path|file> [path|file...]",  {1, -1}, &Args::setAdditionalPluginsDir, "Add additional directories to scan for thirdparty plugins"},
     { "print-sdkroot", 0, "",                            {0,  0}, &Args::printSDKRootDir, "Prints the location of the SDK"},
-    { "load-keywords", 0, nullptr,                       {0,  0}, &Args::loadKeywords, "" },
+    { "load-commands", 0, nullptr,                       {0,  0}, &Args::loadCommands, "" },
     { "parse-dba",     0, "<file> [files...]",           {1, -1}, &Args::parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
     { "dump-ast-dot",  0, "[file]",                      {0,  1}, &Args::dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
     { "dump-ast-json", 0, "[file]",                      {0,  1}, &Args::dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
-    { "dump-kw-json",  0, "[file]",                      {0,  1}, &Args::dumpkWJSON, "Dump all keywords (and their type/argument info) to JSON format. The default file is stdout."},
-    { "dump-kw-ini",   0, "[file]",                      {0,  1}, &Args::dumpkWINI, "Dump all keywords (and their type/argument info) to INI format. The default file is stdout."},
-    { "dump-kw-names", 0, "[file]",                      {0,  1}, &Args::dumpkWNames, "Dump all keyword names in alphabetical order. The default file is stdout."}
+    { "dump-cmd-json",  0, "[file]",                     {0,  1}, &Args::dumpkWJSON, "Dump all commands (and their type/argument info) to JSON format. The default file is stdout."},
+    { "dump-cmd-ini",   0, "[file]",                     {0,  1}, &Args::dumpkWINI, "Dump all commands (and their type/argument info) to INI format. The default file is stdout."},
+    { "dump-cmd-names", 0, "[file]",                     {0,  1}, &Args::dumpkWNames, "Dump all command names in alphabetical order. The default file is stdout."}
 };
 
 #define N_GLOBAL_SWITCHES     (sizeof(globalSwitches) / sizeof(*globalSwitches))
@@ -325,30 +325,30 @@ bool Args::printSDKRootDir(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool Args::loadKeywords(const std::vector<std::string>& args)
+bool Args::loadCommands(const std::vector<std::string>& args)
 {
     // SDK needs to be initialized before parsing
     if (sdkRootDir_ == "")
         sdkRootDir_ = "odb-sdk";  // Should be here if odbc is executed from build/
 
-    std::unique_ptr<odb::kw::KeywordLoader> loader;
+    std::unique_ptr<odb::cmd::CommandLoader> loader;
     switch (sdkType_)
     {
         case odb::SDKType::ODB :
-            loader = std::make_unique<kw::ODBKeywordLoader>(sdkRootDir_, pluginDirs_);
+            loader = std::make_unique<cmd::ODBCommandLoader>(sdkRootDir_, pluginDirs_);
             break;
         case odb::SDKType::DarkBASIC :
-            loader = std::make_unique<kw::DBPKeywordLoader>(sdkRootDir_, pluginDirs_);
+            loader = std::make_unique<cmd::DBPCommandLoader>(sdkRootDir_, pluginDirs_);
             break;
     }
 
-    if (loader->populateIndex(&kwIndex_) == false)
+    if (loader->populateIndex(&cmdIndex_) == false)
         return false;
 
-    if (kwIndex_.findConflicts())
+    if (cmdIndex_.findConflicts())
         return false;
 
-    kwMatcher_.updateFromIndex(&kwIndex_);
+    cmdMatcher_.updateFromIndex(&cmdIndex_);
 
     return true;
 }
@@ -356,7 +356,7 @@ bool Args::loadKeywords(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::parseDBA(const std::vector<std::string>& args)
 {
-    odb::db::Driver driver(&kwMatcher_);
+    odb::db::Driver driver(&cmdMatcher_);
     for (const auto& arg : args)
     {
         fprintf(stderr, "[db parser] Parsing file `%s`\n", arg.c_str());
@@ -446,20 +446,20 @@ bool Args::dumpASTJSON(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWJSON(const std::vector<std::string>& args)
 {
-    std::vector<Reference<kw::Keyword>> keywords = kwIndex_.keywords();
-    std::sort(keywords.begin(), keywords.end(), [](const kw::Keyword* a, const kw::Keyword* b) { return a->dbSymbol() < b->dbSymbol(); });
+    std::vector<Reference<cmd::Command>> commands = cmdIndex_.commands();
+    std::sort(commands.begin(), commands.end(), [](const cmd::Command* a, const cmd::Command* b) { return a->dbSymbol() < b->dbSymbol(); });
 
 #if 0
     log::data("{\n");
-    for (const auto& keyword : keywords)
+    for (const auto& command : commands)
     {
-        log::data("  \"%s\": {\n", keyword->dbSymbol().c_str());
-        log::data("    \"help\": \"%s\",\n", keyword->helpFile().c_str());
+        log::data("  \"%s\": {\n", command->dbSymbol().c_str());
+        log::data("    \"help\": \"%s\",\n", command->helpFile().c_str());
         log::data("    \"overloads\": [\n");
-        for (auto overload = keyword->overloads.begin(); overload != keyword->overloads.end(); ++overload)
+        for (auto overload = command->overloads.begin(); overload != command->overloads.end(); ++overload)
         {
             log::data("      {\n");
-            log::data("        \"returnType\": \"%s\",\n", keyword->returnType.has_value() ? std::string{(char)keyword->returnType.value()}.c_str() : "void");
+            log::data("        \"returnType\": \"%s\",\n", command->returnType.has_value() ? std::string{(char)command->returnType.value()}.c_str() : "void");
             log::data("        \"args\": [");
             auto arg = overload->arglist.begin();
             if (arg != overload->arglist.end())
@@ -467,14 +467,14 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
             while (arg != overload->arglist.end())
                 log::data(", \"%s\"", (*arg++).name.c_str());
             log::data("]\n");
-            log::data("      }%s\n", overload + 1 != keyword->overloads.end() ? ", " : "");
+            log::data("      }%s\n", overload + 1 != command->overloads.end() ? ", " : "");
         }
         log::data("    ]\n");
-        log::data("  }%s\n", keyword + 1 != keywords.end() ? "," : "");
+        log::data("  }%s\n", command + 1 != commands.end() ? "," : "");
     }
     log::data("}\n");
 
-    log::kwParser(log::INFO, "Keywords dumped\n");
+    log::cmdParser(log::INFO, "Commands dumped\n");
 #endif
     return true;
 }
@@ -483,18 +483,18 @@ bool Args::dumpkWJSON(const std::vector<std::string>& args)
 bool Args::dumpkWINI(const std::vector<std::string> &args)
 {
 #if 0
-    auto keywords = kwIndex_.keywordsAsList();
-    std::sort(keywords.begin(), keywords.end(), [](const Keyword &a, const Keyword &b) { return a.name < b.name; });
+    auto commands = cmdIndex_.commandsAsList();
+    std::sort(commands.begin(), commands.end(), [](const Command &a, const Command &b) { return a.name < b.name; });
 
     log::data("[LINKS]\n");
-    for (const auto& keyword : keywords)
+    for (const auto& command : commands)
     {
-        log::data("%s=%s=", keyword.name.c_str(), keyword.helpFile.c_str());
-        for (const auto &overload : keyword.overloads)
+        log::data("%s=%s=", command.name.c_str(), command.helpFile.c_str());
+        for (const auto &overload : command.overloads)
         {
-            if (keyword.overloads.size() > 1)
+            if (command.overloads.size() > 1)
                 log::data("[");
-            if (keyword.returnType.has_value())
+            if (command.returnType.has_value())
                 log::data("(");
 
             auto arg = overload.arglist.begin();
@@ -505,15 +505,15 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
             while (arg != overload.arglist.end())
                 log::data(", %s", (*arg++).name.c_str());
 
-            if (keyword.returnType)
+            if (command.returnType)
                 log::data(")");
-            if (keyword.overloads.size() > 1)
+            if (command.overloads.size() > 1)
                 log::data("]");
         }
         log::data("\n");
     }
 
-    log::kwParser(log::INFO, "Keywords dumped\n");
+    log::cmdParser(log::INFO, "Commands dumped\n");
 #endif
     return true;
 }
@@ -521,13 +521,13 @@ bool Args::dumpkWINI(const std::vector<std::string> &args)
 // ----------------------------------------------------------------------------
 bool Args::dumpkWNames(const std::vector<std::string>& args)
 {
-    auto keywords = kwIndex_.keywordNamesAsList();
-    std::sort(keywords.begin(), keywords.end(), [](const std::string& a,const  std::string& b) { return a < b; });
-    for (const auto& keyword : keywords)
+    auto commands = cmdIndex_.commandNamesAsList();
+    std::sort(commands.begin(), commands.end(), [](const std::string& a,const  std::string& b) { return a < b; });
+    for (const auto& command : commands)
     {
-        log::data("%s\n", keyword.c_str());
+        log::data("%s\n", command.c_str());
     }
 
-    log::kwParser(log::INFO, "Keywords dumped\n");
+    log::cmdParser(log::INFO, "Commands dumped\n");
     return true;
 }

@@ -1,6 +1,6 @@
-#include "odb-compiler/keywords/ODBKeywordLoader.hpp"
-#include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/ODBCommandLoader.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
@@ -11,12 +11,12 @@
 namespace fs = std::filesystem;
 
 namespace odb {
-namespace kw {
+namespace cmd {
 
 // ----------------------------------------------------------------------------
-static bool typeExists (Keyword::Type t)
+static bool typeExists (Command::Type t)
 {
-    using T = Keyword::Type;
+    using T = Command::Type;
     switch (t)
     {
         case T::Integer:
@@ -33,10 +33,10 @@ static bool typeExists (Keyword::Type t)
 }
 
 // ----------------------------------------------------------------------------
-static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg>* args, const char* typeinfo)
+static bool parseTypeinfoString(Command::Type* retType, std::vector<Command::Arg>* args, const char* typeinfo)
 {
     const char* t = typeinfo;
-    *retType = static_cast<Keyword::Type>(*t);
+    *retType = static_cast<Command::Type>(*t);
     if (!typeExists(*retType))
     {
         log::sdk(log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
@@ -54,7 +54,7 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
     for (t++; *t && *t != ')'; t++)
     {
         args->emplace({});
-        args->back().type = static_cast<Keyword::Type>(*t);
+        args->back().type = static_cast<Command::Type>(*t);
         if (!typeExists(args->back().type))
         {
             log::sdk(log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
@@ -75,14 +75,14 @@ static bool parseTypeinfoString(Keyword::Type* retType, std::vector<Keyword::Arg
 }
 
 // ----------------------------------------------------------------------------
-ODBKeywordLoader::ODBKeywordLoader(const std::string& sdkRoot,
+ODBCommandLoader::ODBCommandLoader(const std::string& sdkRoot,
                                    const std::vector<std::string>& pluginDirs) :
-    KeywordLoader(sdkRoot, pluginDirs)
+    CommandLoader(sdkRoot, pluginDirs)
 {
 }
 
 // ----------------------------------------------------------------------------
-bool ODBKeywordLoader::populateIndex(KeywordIndex* index)
+bool ODBCommandLoader::populateIndex(CommandIndex* index)
 {
     std::unordered_set<std::string> pluginsToLoad;
 
@@ -129,7 +129,7 @@ bool ODBKeywordLoader::populateIndex(KeywordIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibrary* library)
+bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
 {
     auto lookupString = [&library](std::string sym) -> std::string {
         const char** addr = reinterpret_cast<const char**>(
@@ -141,7 +141,7 @@ bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
     {
         std::string cppSymbol = library->getSymbolAt(i);
 
-        std::string dbSymbol = lookupString(cppSymbol + "_keyword");
+        std::string dbSymbol = lookupString(cppSymbol + "_name");
         if (dbSymbol == "")
             continue;
         std::string typeinfo = lookupString(cppSymbol + "_typeinfo");
@@ -149,15 +149,15 @@ bool ODBKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
             continue;
         std::string helpfile = lookupString(cppSymbol + "_helpfile");  // optional symbol
 
-        Keyword::Type retType;
-        std::vector<Keyword::Arg> args;
+        Command::Type retType;
+        std::vector<Command::Arg> args;
         if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            log::sdk(log::NOTICE, "Error occurred while loading keyword `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
+            log::sdk(log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
             return false;
         }
 
-        index->addKeyword(new Keyword(library, dbSymbol, cppSymbol, retType, args, helpfile));
+        index->addCommand(new Command(library, dbSymbol, cppSymbol, retType, args, helpfile));
     }
 
     return true;

@@ -18,10 +18,10 @@ public:
     void visitFuncDecl(const odb::ast::FuncDecl* node) override;
     void visitFuncExit(const odb::ast::FuncExit* node) override;
     void visitInfiniteLoop(const odb::ast::InfiniteLoop* node) override;
-    void visitKeywordExpr(const odb::ast::KeywordExpr* node) override;
-    void visitKeywordExprSymbol(const odb::ast::KeywordExprSymbol* node) override;
-    void visitKeywordStmnt(const odb::ast::KeywordStmnt* node) override;
-    void visitKeywordStmntSymbol(const odb::ast::KeywordStmntSymbol* node) override;
+    void visitCommandExpr(const odb::ast::CommandExpr* node) override;
+    void visitCommandExprSymbol(const odb::ast::CommandExprSymbol* node) override;
+    void visitCommandStmnt(const odb::ast::CommandStmnt* node) override;
+    void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const odb::ast::ScopedAnnotatedSymbol* node) override;
     void visitSymbol(const odb::ast::Symbol* node) override;

@@ -17,8 +17,8 @@ namespace ast {
     class SourceLocation;
 }
 
-namespace kw {
-    class KeywordMatcher;
+namespace cmd {
+    class CommandMatcher;
 }
 
 namespace db {
@@ -26,7 +26,7 @@ namespace db {
 class Driver
 {
 public:
-    ODBCOMPILER_PUBLIC_API Driver(const kw::KeywordMatcher* keywordMatcher);
+    ODBCOMPILER_PUBLIC_API Driver(const cmd::CommandMatcher* commandMatcher);
     ODBCOMPILER_PUBLIC_API ~Driver();
 
     ODBCOMPILER_PUBLIC_API ast::Block* parseFile(const std::string& fileName);
@@ -47,7 +47,7 @@ private:
 
     dbscan_t scanner_ = nullptr;
     dbpstate* parser_ = nullptr;
-    const kw::KeywordMatcher* keywordMatcher_;
+    const cmd::CommandMatcher* commandMatcher_;
     ast::Block* program_;
 };
 

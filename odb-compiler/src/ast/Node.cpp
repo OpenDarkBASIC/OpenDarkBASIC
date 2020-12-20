@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
 
 namespace odb {

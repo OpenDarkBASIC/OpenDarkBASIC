@@ -6,18 +6,18 @@
 #include <vector>
 
 namespace odb {
-namespace kw {
+namespace cmd {
 
-class KeywordIndex;
+class CommandIndex;
 
 /*!
  * The Purpose of this class is to provide the lexer a way to determine if
- * a sequence of symbol tokens represents a keyword or not.
+ * a sequence of symbol tokens represents a command or not.
  *
- * This class only stores the keywords as strings and sorts them lexicographically
+ * This class only stores the commands as strings and sorts them lexicographically
  * to make matching fast.
  */
-class ODBCOMPILER_PUBLIC_API KeywordMatcher
+class ODBCOMPILER_PUBLIC_API CommandMatcher
 {
 public:
     struct MatchResult
@@ -27,9 +27,9 @@ public:
     };
 
     /*!
-     * Loads all keywords as strings and sorts them lexicographically.
+     * Loads all commands as strings and sorts them lexicographically.
      */
-    void updateFromIndex(const KeywordIndex* index);
+    void updateFromIndex(const CommandIndex* index);
 
     /*!
      * Matches as many characters of the input string as possible.
@@ -38,28 +38,28 @@ public:
      * matched, and if the input string was an exact match, MatchResult::found
      * will be set to true.
      *
-     * Note that keywords can be partially matched (matchedLength>0, found=false)
+     * Note that commands can be partially matched (matchedLength>0, found=false)
      * but also exact matches shorter than the input string can occur
      * (matchedLength < str.length(), found=true).
      */
-    MatchResult findLongestKeywordMatching(const std::string& str) const;
+    MatchResult findLongestCommandMatching(const std::string& str) const;
 
     /*!
      * Returns the longest possible match length. Useful for preallocating a
      * buffer.
      */
-    int longestKeywordLength() const;
+    int longestCommandLength() const;
 
     /*!
      * Returns the maximum number of words (separated by space) that can make
-     * up a keyword. Useful for preallocating a buffer.
+     * up a command. Useful for preallocating a buffer.
      */
-    int longestKeywordWordCount() const;
+    int longestCommandWordCount() const;
 
 private:
-    std::vector<std::string> keywords_;
-    int longestKeywordLength_ = 0;
-    int longestKeywordWordCount_ = 0;
+    std::vector<std::string> commands_;
+    int longestCommandLength_ = 0;
+    int longestCommandWordCount_ = 0;
 };
 
 }
