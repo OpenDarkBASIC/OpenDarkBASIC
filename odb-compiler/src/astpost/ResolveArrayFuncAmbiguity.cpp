@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/ResolveArrayFuncAmbiguity.hpp"
+#include "odb-compiler/astpost/ResolveArrayFuncAmbiguity.hpp"
 #include "odb-compiler/ast/OldNode.hpp"
 #include "odb-sdk/Log.hpp"
 #include <cassert>

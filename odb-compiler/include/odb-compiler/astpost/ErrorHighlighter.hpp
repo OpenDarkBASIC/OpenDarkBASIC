@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/ast/Process.hpp"
+#include "odb-compiler/astpost/Process.hpp"
 
 namespace odb {
 namespace ast {

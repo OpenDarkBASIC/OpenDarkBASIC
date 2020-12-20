@@ -65,3 +65,85 @@ TEST_F(NAME, function_exitfunction)
         "endfunction a+b\n");
     ASSERT_THAT(ast, NotNull());
 }
+
+TEST_F(NAME, function_can_be_annotated_1)
+{
+    ast = driver->parseString("test",
+        "function myfunc$()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, function_can_be_annotated_2)
+{
+    ast = driver->parseString("test",
+        "function myfunc#()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, functions_may_not_start_with_integers)
+{
+    ast = driver->parseString("test",
+        "function 3myfunc()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_start_with_dollar)
+{
+    ast = driver->parseString("test",
+        "function $myfunc()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_start_with_hash)
+{
+    ast = driver->parseString("test",
+        "function #myfunc()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_be_a_single_hash)
+{
+    ast = driver->parseString("test",
+        "function #()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_be_a_single_dollar)
+{
+    ast = driver->parseString("test",
+        "function $()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_have_spaces)
+{
+    ast = driver->parseString("test",
+        "function my func()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_shadow_keywords)
+{
+    ast = driver->parseString("test",
+        "function function()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, functions_may_not_shadow_commands)
+{
+    cmdIndex.addCommand(new cmd::Command(nullptr, "print", "", cmd::Command::Type::Void, {}));
+    matcher.updateFromIndex(&cmdIndex);
+    ast = driver->parseString("test",
+        "function print()\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, IsNull());
+}

@@ -203,10 +203,13 @@ TEST_F(NAME, string_constant_annotated)
 
 TEST_F(NAME, more_than_one_value_fails)
 {
-    EXPECT_THAT(driver->parseString("test",
-        "#constant fail1 true false\n"), IsNull());
-    EXPECT_THAT(driver->parseString("test",
-        "#constant fail2 23 3.4\n"), IsNull());
+    ast = driver->parseString("test",
+        "#constant fail1 true false\n");
+    EXPECT_THAT(ast, IsNull());
+
+    ast = driver->parseString("test",
+        "#constant fail2 23 3.4\n");
+    EXPECT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, double_1_notation)
