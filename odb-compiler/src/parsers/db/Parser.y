@@ -134,10 +134,8 @@
     odb::ast::CommandStmntSymbol* command_stmnt;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
-    odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
-    odb::ast::Symbol* symbol;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarAssignment* var_assignment;
     odb::ast::VarDecl* var_decl;
@@ -303,12 +301,35 @@
 %left '(' ')'
 
 %destructor { str::deleteCStr($$); } <string>
+%destructor { TouchRef($$); } <annotated_symbol>
+%destructor { TouchRef($$); } <assignment>
+%destructor { TouchRef($$); } <block>
+%destructor { TouchRef($$); } <break_>
+%destructor { TouchRef($$); } <const_decl>
+%destructor { TouchRef($$); } <expr>
+%destructor { TouchRef($$); } <expr_list>
+%destructor { TouchRef($$); } <for_loop>
+%destructor { TouchRef($$); } <func_call_stmnt>
+%destructor { TouchRef($$); } <func_decl>
+%destructor { TouchRef($$); } <func_exit>
+%destructor { TouchRef($$); } <infinite_loop>
+%destructor { TouchRef($$); } <command_expr>
+%destructor { TouchRef($$); } <command_stmnt>
+%destructor { TouchRef($$); } <literal>
+%destructor { TouchRef($$); } <loop>
+%destructor { TouchRef($$); } <scoped_annotated_symbol>
+%destructor { TouchRef($$); } <stmnt>
+%destructor { TouchRef($$); } <until_loop>
+%destructor { TouchRef($$); } <var_assignment>
+%destructor { TouchRef($$); } <var_decl>
+%destructor { TouchRef($$); } <var_ref>
+%destructor { TouchRef($$); } <while_loop>
 
 %start program
 
 %%
 program
-  : seps_maybe block seps_maybe                  { driver->giveProgram($2); }
+  : seps_maybe block seps_maybe                  { $$ = $2; driver->giveProgram($2); }
   | seps_maybe                                   { $$ = nullptr; }
   ;
 sep : '\n' | ':' | ';' ;
@@ -591,7 +612,7 @@ literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
   | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
   | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
-  | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); }
+  | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   | '-' INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
   | '-' FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
   ;

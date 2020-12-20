@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/ErrorHighlighter.hpp"
+#include "odb-compiler/astpost/ErrorHighlighter.hpp"
 
 namespace odb {
 namespace ast {

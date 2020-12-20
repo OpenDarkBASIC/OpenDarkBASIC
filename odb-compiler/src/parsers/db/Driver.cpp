@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
@@ -213,7 +213,7 @@ ast::Block* Driver::doParse()
     };
 
     // main parse loop
-    program_ = nullptr;
+    program_.reset();
     do {
 
         // If we've run out of tokens in the queue, scan ahead one
@@ -268,7 +268,11 @@ ast::Block* Driver::doParse()
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
                 if (result)
+                {
+                    // Change token type and don't forget to free the symbol string
                     tokens[0].pushedChar = result->token;
+                    str::deleteCStr(tokens[0].pushedValue.string);
+                }
             } break;
 
             // Allow commands to be changed to builtin commands. This is something
@@ -283,7 +287,6 @@ ast::Block* Driver::doParse()
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
                 if (result == nullptr)
                     break;
-                tokens[0].pushedChar = result->token;
 
                 // Print out a warning
                 Reference<ast::SourceLocation> location = newLocation(&loc);
@@ -292,6 +295,10 @@ ast::Block* Driver::doParse()
                     location->getFileLineColumn().c_str(), tokens[0].pushedValue.string);
                 printLocationHighlight(location);
                 log::dbParser(log::NOTICE, "This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
+
+                // Change token type and don't forget to free the symbol string
+                tokens[0].pushedChar = result->token;
+                str::deleteCStr(tokens[0].pushedValue.string);
             } break;
 
             default: break;
@@ -309,7 +316,7 @@ ast::Block* Driver::doParse()
     if (parseResult == 0)
     {
         ast::Block* program = program_;
-        program_ = nullptr;
+        program_.detach();
         return program;
     }
 
@@ -319,6 +326,12 @@ ast::Block* Driver::doParse()
 // ----------------------------------------------------------------------------
 void Driver::giveProgram(ast::Block* program)
 {
+    if (program_.notNull())
+    {
+        log::dbParser(log::ERROR, "BUG! giveProgram() was called more than once in a single run. This should never happen!");
+        assert(program_.isNull());
+    }
+
     program_ = program;
 }
 

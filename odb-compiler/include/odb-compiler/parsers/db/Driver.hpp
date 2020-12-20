@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
+#include "odb-sdk/Reference.hpp"
 #include <string>
 
 typedef struct DBLTYPE DBLTYPE;
@@ -48,7 +49,7 @@ private:
     dbscan_t scanner_ = nullptr;
     dbpstate* parser_ = nullptr;
     const cmd::CommandMatcher* commandMatcher_;
-    ast::Block* program_;
+    odb::Reference<ast::Block> program_;
 };
 
 }
