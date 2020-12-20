@@ -61,9 +61,7 @@ TEST_F(NAME, function_exitfunction)
 {
     ast = driver->parseString("test",
         "function myfunc()\n"
-        "    if a = 3\n"
-        "        exitfunction a+b\n"
-        "    endif\n"
+        "    exitfunction c+d\n"
         "endfunction a+b\n");
     ASSERT_THAT(ast, NotNull());
 }
