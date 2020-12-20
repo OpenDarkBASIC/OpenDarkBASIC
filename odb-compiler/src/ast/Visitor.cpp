@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Keyword.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -29,6 +30,8 @@ void GenericVisitor::visitForLoop(const ForLoop* node)                          
 void GenericVisitor::visitFuncCallExpr(const FuncCallExpr* node)                     { visit(node); }
 void GenericVisitor::visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) { visit(node); }
 void GenericVisitor::visitFuncCallStmnt(const FuncCallStmnt* node)                   { visit(node); }
+void GenericVisitor::visitFuncDecl(const FuncDecl* node)                             { visit(node); }
+void GenericVisitor::visitFuncExit(const FuncExit* node)                             { visit(node); }
 void GenericVisitor::visitInfiniteLoop(const InfiniteLoop* node)                     { visit(node); }
 void GenericVisitor::visitKeywordExpr(const KeywordExpr* node)                       { visit(node); }
 void GenericVisitor::visitKeywordExprSymbol(const KeywordExprSymbol* node)           { visit(node); }

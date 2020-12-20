@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Keyword.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -382,6 +383,21 @@ private:
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
+    void visitFuncDecl(const FuncDecl* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        if (node->args().notNull())
+            writeNamedConnection(node, node->args(), "args");
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
+        if (node->returnValue().notNull())
+            writeNamedConnection(node, node->returnValue(), "returnValue");
+    }
+    void visitFuncExit(const FuncExit* node) override
+    {
+        if (node->returnValue().notNull())
+            writeNamedConnection(node, node->returnValue(), "returnValue");
+    }
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
         if (node->body().notNull())
@@ -485,6 +501,10 @@ private:
         { writeName(node, "FuncCallExpr or ArrayRef"); }
     void visitFuncCallStmnt(const FuncCallStmnt* node) override
         { writeName(node, "FuncCallStmnt"); }
+    void visitFuncDecl(const FuncDecl* node) override
+        { writeName(node, "FuncDecl"); }
+    void visitFuncExit(const FuncExit* node) override
+        { writeName(node, "FuncExit"); }
     void visitInfiniteLoop(const InfiniteLoop* node) override
         { writeName(node, "InfiniteLoop"); }
     void visitKeywordExpr(const KeywordExpr* node) override

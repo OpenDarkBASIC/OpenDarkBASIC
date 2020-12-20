@@ -8,6 +8,7 @@
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
+    #include "odb-compiler/ast/FuncDecl.hpp"
     #include "odb-compiler/ast/Keyword.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
@@ -50,6 +51,8 @@
             class ForLoop;
             class FuncCallExpr;
             class FuncCallStmnt;
+            class FuncDecl;
+            class FuncExit;
             class Expression;
             class ExpressionList;
             class InfiniteLoop;
@@ -123,6 +126,8 @@
     odb::ast::ExpressionList* expr_list;
     odb::ast::ForLoop* for_loop;
     odb::ast::FuncCallStmnt* func_call_stmnt;
+    odb::ast::FuncDecl* func_decl;
+    odb::ast::FuncExit* func_exit;
     odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::KeywordExprSymbol* keyword_expr;
     odb::ast::KeywordStmntSymbol* keyword_stmnt;
@@ -249,6 +254,7 @@
 %type<var_decl> var_decl_scope;
 %type<literal> literal;
 %type<annotated_symbol> annotated_symbol;
+%type<annotated_symbol> loop_next_sym;
 %type<scoped_annotated_symbol> var_decl_int_sym;
 %type<scoped_annotated_symbol> var_decl_str_sym;
 %type<scoped_annotated_symbol> var_decl_float_sym;
@@ -258,10 +264,12 @@
 %type<while_loop> loop_while;
 %type<until_loop> loop_until;
 %type<for_loop> loop_for;
-%type<annotated_symbol> loop_for_next;
 %type<break_> break;
+%type<func_decl> func_decl;
+%type<func_exit> func_exit;
 
 /* precedence rules */
+%nonassoc NO_NEXT_SYM
 %nonassoc NO_ELSE
 %nonassoc ELSE ELSEIF
 /* Fixes sr conflict of
@@ -318,6 +326,8 @@ stmnt
   | assignment                                   { $$ = $1; }
   | loop                                         { $$ = $1; }
   | break                                        { $$ = $1; }
+  | func_decl                                    { $$ = $1; }
+  | func_exit                                    { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -430,6 +440,7 @@ var_decl_str_sym
   ;
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&yylloc)); }
+  ;
 /*
 array_decl
   : LOCAL array_decl_as_type                     { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
@@ -511,29 +522,22 @@ udt_refs
   | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
   | array_ref                                    { $$ = $1; }
   | var_ref                                      { $$ = $1; }
-  ;
+  ;*/
 func_decl
-  : func_name_decl seps block seps func_end {
-        $$ = $1;
-        $$->sym.func_decl.body = appendStatementToBlock($3, $5, &yylloc);
-    }
-  | func_name_decl seps func_end {
-        $$ = $1;
-        $$->sym.func_decl.body = newBlock($3, nullptr, &yylloc);
-    }
-  ;
-func_end
-  : ENDFUNCTION expr                             { $$ = newFuncReturn($2, &yylloc); }
-  | ENDFUNCTION                                  { $$ = newFuncReturn(nullptr, &yylloc); }
+  : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr           { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                      { $$ = new FuncDecl($2, $7, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION                { $$ = new FuncDecl($2, $6, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                           { $$ = new FuncDecl($2, driver->newLocation(&yylloc)); }
   ;
 func_exit
-  : EXITFUNCTION expr                            { $$ = newFuncReturn($2, &yylloc); }
-  | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr, &yylloc); }
+  : EXITFUNCTION expr                            { $$ = new FuncExit($2, driver->newLocation(&yylloc)); }
+  | EXITFUNCTION                                 { $$ = new FuncExit(driver->newLocation(&yylloc)); }
   ;
-func_name_decl
-  : FUNCTION annotated_symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
-  | FUNCTION annotated_symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
-  ;
+/*
 sub_call
   : GOSUB annotated_symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
@@ -669,23 +673,18 @@ loop_until
   | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, driver->newLocation(&yylloc)); }
   ;
 loop_for
-  : FOR var_assignment TO expr STEP expr seps block seps loop_for_next
-                                                 { $10 ? $$ = new ForLoop($2, $4, $6, $10, $8, driver->newLocation(&yylloc))
-                                                       : $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr STEP expr seps loop_for_next
-                                                 { $8 ? $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc))
-                                                      : $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps block seps loop_for_next
-                                                 { $8 ? $$ = new ForLoop($2, $4, $8, $6, driver->newLocation(&yylloc))
-                                                      : $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps loop_for_next
-                                                 { $6 ? $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc))
-                                                      : $$ = new ForLoop($2, $4, driver->newLocation(&yylloc)); }
+  : FOR var_assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, driver->newLocation(&yylloc)); }
   ;
-loop_for_next
-  : NEXT                                         { $$ = nullptr; }
-  | NEXT annotated_symbol                        { $$ = $2; }
-  | NEXT stmnt /* DBP compatibility */           { $$ = nullptr; /* TODO warning */ }
+loop_next_sym
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 break
   : BREAK                                        { $$ = new Break(driver->newLocation(&yylloc)); }

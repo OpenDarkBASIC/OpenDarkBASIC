@@ -18,6 +18,8 @@ class ForLoop;
 class FuncCallExpr;
 class FuncCallExprOrArrayRef;
 class FuncCallStmnt;
+class FuncDecl;
+class FuncExit;
 class InfiniteLoop;
 class KeywordExpr;
 class KeywordExprSymbol;
@@ -53,6 +55,8 @@ public:
     virtual void visitFuncCallExpr(const FuncCallExpr* node) = 0;
     virtual void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node)  = 0;
     virtual void visitFuncCallStmnt(const FuncCallStmnt* node) = 0;
+    virtual void visitFuncDecl(const FuncDecl* node) = 0;
+    virtual void visitFuncExit(const FuncExit* node) = 0;
     virtual void visitInfiniteLoop(const InfiniteLoop* node) = 0;
     virtual void visitKeywordExpr(const KeywordExpr* node) = 0;
     virtual void visitKeywordExprSymbol(const KeywordExprSymbol* node) = 0;
@@ -86,6 +90,8 @@ public:
     void visitFuncCallExpr(const FuncCallExpr* node) override;
     void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override;
     void visitFuncCallStmnt(const FuncCallStmnt* node) override;
+    void visitFuncDecl(const FuncDecl* node) override;
+    void visitFuncExit(const FuncExit* node) override;
     void visitInfiniteLoop(const InfiniteLoop* node) override;
     void visitKeywordExpr(const KeywordExpr* node) override;
     void visitKeywordExprSymbol(const KeywordExprSymbol* node) override;

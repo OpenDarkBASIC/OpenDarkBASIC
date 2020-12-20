@@ -280,7 +280,7 @@ TEST_F(NAME, commands_with_type)
         "OriginalDirectory$ = get dir$()");
     ASSERT_THAT(ast, NotNull());
 }
-
+/*
 TEST_F(NAME, command_containing_builtin_in_middle)
 {
     kwIndex.addKeyword(new kw::Keyword(nullptr, "set effect constant boolean", "", kw::Keyword::Type::Void, {}));
@@ -289,7 +289,7 @@ TEST_F(NAME, command_containing_builtin_in_middle)
     ast = driver->parseString("test",
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n");
     ASSERT_THAT(ast, NotNull());
-}
+}*/
 
 TEST_F(NAME, command_variable_name)
 {

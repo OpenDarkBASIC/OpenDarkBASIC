@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Keyword.hpp"
@@ -72,6 +73,21 @@ void ASTParentConsistenciesChecker::visitFuncCallStmnt(const FuncCallStmnt* node
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
+}
+void ASTParentConsistenciesChecker::visitFuncDecl(const FuncDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+    if (node->returnValue().notNull())
+        EXPECT_THAT(node, Eq(node->returnValue()->parent()));
+}
+void ASTParentConsistenciesChecker::visitFuncExit(const FuncExit* node)
+{
+    if (node->returnValue().notNull())
+        EXPECT_THAT(node, Eq(node->returnValue()->parent()));
 }
 void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
 {

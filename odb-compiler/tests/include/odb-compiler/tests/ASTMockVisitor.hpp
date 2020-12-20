@@ -17,6 +17,8 @@ public:
     MOCK_METHOD(void, visitFuncCallExpr, (const ast::FuncCallExpr* node), (override));
     MOCK_METHOD(void, visitKeywordExprSymbol, (const ast::KeywordExprSymbol* node), (override));
     MOCK_METHOD(void, visitFuncCallStmnt, (const ast::FuncCallStmnt* node), (override));
+    MOCK_METHOD(void, visitFuncDecl, (const ast::FuncDecl* node), (override));
+    MOCK_METHOD(void, visitFuncExit, (const ast::FuncExit* node), (override));
     MOCK_METHOD(void, visitInfiniteLoop, (const ast::InfiniteLoop* node), (override));
     MOCK_METHOD(void, visitKeywordStmntSymbol, (const ast::KeywordStmntSymbol* node), (override));
     MOCK_METHOD(void, visitKeywordExpr, (const ast::KeywordExpr* node), (override));
