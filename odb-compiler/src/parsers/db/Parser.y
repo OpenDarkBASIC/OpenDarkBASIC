@@ -111,6 +111,8 @@
 %locations
 %define parse.error custom
 
+%define api.token.prefix {TOK_}
+
 /* This is the union that will become known as YYSTYPE in the generated code */
 %union {
     bool boolean_value;
@@ -143,7 +145,30 @@
     odb::ast::WhileLoop* while_loop;
 }
 
-%define api.token.prefix {TOK_}
+%destructor { str::deleteCStr($$); } <string>
+%destructor { TouchRef($$); } <annotated_symbol>
+%destructor { TouchRef($$); } <assignment>
+%destructor { TouchRef($$); } <block>
+%destructor { TouchRef($$); } <break_>
+%destructor { TouchRef($$); } <const_decl>
+%destructor { TouchRef($$); } <expr>
+%destructor { TouchRef($$); } <expr_list>
+%destructor { TouchRef($$); } <for_loop>
+%destructor { TouchRef($$); } <func_call_stmnt>
+%destructor { TouchRef($$); } <func_decl>
+%destructor { TouchRef($$); } <func_exit>
+%destructor { TouchRef($$); } <infinite_loop>
+%destructor { TouchRef($$); } <command_expr>
+%destructor { TouchRef($$); } <command_stmnt>
+%destructor { TouchRef($$); } <literal>
+%destructor { TouchRef($$); } <loop>
+%destructor { TouchRef($$); } <scoped_annotated_symbol>
+%destructor { TouchRef($$); } <stmnt>
+%destructor { TouchRef($$); } <until_loop>
+%destructor { TouchRef($$); } <var_assignment>
+%destructor { TouchRef($$); } <var_decl>
+%destructor { TouchRef($$); } <var_ref>
+%destructor { TouchRef($$); } <while_loop>
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
@@ -208,33 +233,33 @@
 %token<string> STRING_LITERAL "string literal";
 
 /* Operators */
-%token '+' "+"
-%token '-' "-"
-%token '*' "*"
-%token '/' "/"
-%token '^' "^"
-%token MOD "modulus operator"
-%token '(' "open-bracket"
-%token ')' "close-bracket"
+%token '+' "`+`"
+%token '-' "`-`"
+%token '*' "`*`"
+%token '/' "`/`"
+%token '^' "`^`"
+%token MOD "mod"
+%token '(' "open bracket"
+%token ')' "close bracket"
 %token ',' "comma"
-%token BSHL "<<"
-%token BSHR ">>"
-%token BOR "||"
-%token BAND "&&"
-%token BXOR "~~"
-%token BNOT ".."
-%token '<' "<"
-%token '>' ">"
-%token LE "<="
-%token GE ">="
-%token NE "<>"
-%token '=' "="
+%token BSHL "left shift"
+%token BSHR "right shift"
+%token BOR "bitwise or"
+%token BAND "bitwise and"
+%token BXOR "bitwise xor"
+%token BNOT "bitwise not"
+%token '<' "`<`"
+%token '>' "`>`"
+%token LE "`<=`"
+%token GE "`>=`"
+%token NE "`<>`"
+%token '=' "`=`"
 %token LOR "or"
 %token LAND "and"
 %token LNOT "not"
 
-%token<string> SYMBOL
-%token<string> COMMAND
+%token<string> SYMBOL "symbol"
+%token<string> COMMAND "command"
 
 %type<var_assignment> var_assignment;
 %type<assignment> assignment;
@@ -299,31 +324,6 @@
 %left '/'
 %left '^'
 %left '(' ')'
-
-%destructor { str::deleteCStr($$); } <string>
-%destructor { TouchRef($$); } <annotated_symbol>
-%destructor { TouchRef($$); } <assignment>
-%destructor { TouchRef($$); } <block>
-%destructor { TouchRef($$); } <break_>
-%destructor { TouchRef($$); } <const_decl>
-%destructor { TouchRef($$); } <expr>
-%destructor { TouchRef($$); } <expr_list>
-%destructor { TouchRef($$); } <for_loop>
-%destructor { TouchRef($$); } <func_call_stmnt>
-%destructor { TouchRef($$); } <func_decl>
-%destructor { TouchRef($$); } <func_exit>
-%destructor { TouchRef($$); } <infinite_loop>
-%destructor { TouchRef($$); } <command_expr>
-%destructor { TouchRef($$); } <command_stmnt>
-%destructor { TouchRef($$); } <literal>
-%destructor { TouchRef($$); } <loop>
-%destructor { TouchRef($$); } <scoped_annotated_symbol>
-%destructor { TouchRef($$); } <stmnt>
-%destructor { TouchRef($$); } <until_loop>
-%destructor { TouchRef($$); } <var_assignment>
-%destructor { TouchRef($$); } <var_decl>
-%destructor { TouchRef($$); } <var_ref>
-%destructor { TouchRef($$); } <while_loop>
 
 %start program
 
