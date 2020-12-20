@@ -9,13 +9,13 @@
 namespace odb {
 class DynamicLibrary;
 
-namespace kw {
+namespace cmd {
 
-class ODBCOMPILER_PUBLIC_API Keyword : public RefCounted
+class ODBCOMPILER_PUBLIC_API Command : public RefCounted
 {
 public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
-    // for a table of keyword types.
+    // for a table of command types.
     enum class Type: char
     {
         Integer = 'L',
@@ -34,13 +34,13 @@ public:
         std::string description;
     };
 
-    Keyword(DynamicLibrary* sourceLibrary,
+    Command(DynamicLibrary* sourceLibrary,
             const std::string& dbSymbol,
             const std::string& cppSymbol,
             Type returnType,
             const std::vector<Arg>& args,
             const std::string& helpFile="");
-    ~Keyword();
+    ~Command();
 
     const std::string& dbSymbol() const;
     const std::string& cppSymbol() const;

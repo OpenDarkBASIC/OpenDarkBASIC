@@ -1,8 +1,11 @@
-#include <gmock/gmock.h>
+#include "gmock/gmock.h"
+#include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include <fstream>
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 
 #define NAME db_loop_do
 
@@ -17,15 +20,18 @@ using namespace odb;
 
 TEST_F(NAME, infinite_loop)
 {
-    ASSERT_THAT(driver->parseString("do\nfoo()\nloop\n"), IsTrue());
+    ast = driver->parseString("test", "do\nfoo()\nloop\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_infinite_loop)
 {
-    ASSERT_THAT(driver->parseString("do\nloop\n"), IsTrue());
+    ast = driver->parseString("test", "do\nloop\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, break_from_loop)
 {
-    ASSERT_THAT(driver->parseString("do\nbreak\nloop\n"), IsTrue());
+    ast = driver->parseString("test", "do\nbreak\nloop\n");
+    ASSERT_THAT(ast, NotNull());
 }

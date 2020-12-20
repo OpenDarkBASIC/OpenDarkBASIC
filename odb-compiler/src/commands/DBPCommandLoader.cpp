@@ -1,5 +1,5 @@
-#include "odb-compiler/keywords/DBPKeywordLoader.hpp"
-#include "odb-compiler/keywords/KeywordIndex.hpp"
+#include "odb-compiler/commands/DBPCommandLoader.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
@@ -10,17 +10,17 @@
 namespace fs = std::filesystem;
 
 namespace odb {
-namespace kw {
+namespace cmd {
 
 // ----------------------------------------------------------------------------
-DBPKeywordLoader::DBPKeywordLoader(const std::string& sdkRoot,
+DBPCommandLoader::DBPCommandLoader(const std::string& sdkRoot,
                                    const std::vector<std::string>& pluginDirs) :
-    KeywordLoader(sdkRoot, pluginDirs)
+    CommandLoader(sdkRoot, pluginDirs)
 {
 }
 
 // ----------------------------------------------------------------------------
-bool DBPKeywordLoader::populateIndex(KeywordIndex* index)
+bool DBPCommandLoader::populateIndex(CommandIndex* index)
 {
 #if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::unordered_set<std::string> pluginsToLoad;
@@ -74,7 +74,7 @@ bool DBPKeywordLoader::populateIndex(KeywordIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibrary* library)
+bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
 {
 #if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::set<std::string> stringTable;
@@ -98,26 +98,26 @@ bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
             continue;
         }
 
-        auto convertTypeChar = [](char type) -> Keyword::Type
+        auto convertTypeChar = [](char type) -> Command::Type
         {
-            return static_cast<Keyword::Type>(type);
+            return static_cast<Command::Type>(type);
         };
 
-        // Extract keyword name and return type.
-        auto& keywordName = tokens[0];
+        // Extract command name and return type.
+        auto& commandName = tokens[0];
         auto& functionTypes = tokens[1];
         const auto& dllSymbol = tokens[2];
-        Keyword::Type returnType = Keyword::Type::Void;
-        std::vector<Keyword::Arg> args;
+        Command::Type returnType = Command::Type::Void;
+        std::vector<Command::Arg> args;
 
         // Extract return type.
-        if (keywordName.back() == '[')
+        if (commandName.back() == '[')
         {
-            keywordName = keywordName.substr(0, keywordName.size() - 1);
+            commandName = commandName.substr(0, commandName.size() - 1);
             returnType = convertTypeChar(tokens[1][0]);
             functionTypes = functionTypes.substr(1);
         }
-        std::transform(keywordName.begin(), keywordName.end(), keywordName.begin(), [](char c) { return std::tolower(c); });
+        std::transform(commandName.begin(), commandName.end(), commandName.begin(), [](char c) { return std::tolower(c); });
 
         // Extract arguments.
         std::vector<std::string> argumentNames;
@@ -127,9 +127,9 @@ bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
         }
         for (int typeIdx = 0; typeIdx < functionTypes.size(); ++typeIdx)
         {
-            Keyword::Arg arg;
+            Command::Arg arg;
             arg.type = convertTypeChar(functionTypes[typeIdx]);
-            if (arg.type == Keyword::Type::Void)
+            if (arg.type == Command::Type::Void)
             {
                 continue;
             }
@@ -140,7 +140,7 @@ bool DBPKeywordLoader::populateIndexFromLibrary(KeywordIndex* index, DynamicLibr
             args.emplace_back(std::move(arg));
         }
 
-        index->addKeyword(new Keyword(library, keywordName, dllSymbol, returnType, args));
+        index->addCommand(new Command(library, commandName, dllSymbol, returnType, args));
     }
 
     return true;

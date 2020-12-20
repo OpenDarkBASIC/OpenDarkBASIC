@@ -3,7 +3,7 @@
 #include "gmock/gmock.h"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
-#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 
@@ -156,44 +156,44 @@ private:
     const T expectedValue_;
 };
 
-class KeywordExprSymbolEqMatcher : public MatcherInterface<const ast::KeywordExprSymbol*>
+class CommandExprSymbolEqMatcher : public MatcherInterface<const ast::CommandExprSymbol*>
 {
 public:
-    explicit KeywordExprSymbolEqMatcher(const std::string& name)
-        : expectedKeyword_(name) {}
-    bool MatchAndExplain(const ast::KeywordExprSymbol* node, MatchResultListener* listener) const override {
-        *listener << "node->keyword() == " << node->keyword();
-        return node->keyword() == expectedKeyword_;
+    explicit CommandExprSymbolEqMatcher(const std::string& name)
+        : expectedCommand_(name) {}
+    bool MatchAndExplain(const ast::CommandExprSymbol* node, MatchResultListener* listener) const override {
+        *listener << "node->command() == " << node->command();
+        return node->command() == expectedCommand_;
     }
     void DescribeTo(::std::ostream* os) const override {
-        *os << "node->keyword() equals " << expectedKeyword_;
+        *os << "node->command() equals " << expectedCommand_;
     }
     void DescribeNegationTo(::std::ostream* os) const override {
-        *os << "node->keyword() does not equal " << expectedKeyword_;
+        *os << "node->command() does not equal " << expectedCommand_;
     }
 
 private:
-    const std::string expectedKeyword_;
+    const std::string expectedCommand_;
 };
 
-class KeywordStmntSymbolEqMatcher : public MatcherInterface<const ast::KeywordStmntSymbol*>
+class CommandStmntSymbolEqMatcher : public MatcherInterface<const ast::CommandStmntSymbol*>
 {
 public:
-    explicit KeywordStmntSymbolEqMatcher(const std::string& name)
-        : expectedKeyword_(name) {}
-    bool MatchAndExplain(const ast::KeywordStmntSymbol* node, MatchResultListener* listener) const override {
-        *listener << "node->keyword() == " << node->keyword();
-        return node->keyword() == expectedKeyword_;
+    explicit CommandStmntSymbolEqMatcher(const std::string& name)
+        : expectedCommand_(name) {}
+    bool MatchAndExplain(const ast::CommandStmntSymbol* node, MatchResultListener* listener) const override {
+        *listener << "node->command() == " << node->command();
+        return node->command() == expectedCommand_;
     }
     void DescribeTo(::std::ostream* os) const override {
-        *os << "node->keyword() equals " << expectedKeyword_;
+        *os << "node->command() equals " << expectedCommand_;
     }
     void DescribeNegationTo(::std::ostream* os) const override {
-        *os << "node->keyword() does not equal " << expectedKeyword_;
+        *os << "node->command() does not equal " << expectedCommand_;
     }
 
 private:
-    const std::string expectedKeyword_;
+    const std::string expectedCommand_;
 };
 
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
@@ -211,11 +211,11 @@ inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(ast::Symbol::Annot
 inline Matcher<const ast::ScopedAnnotatedSymbol*> ScopedAnnotatedSymbolEq(ast::Symbol::Scope scope, ast::Symbol::Annotation annotation, const std::string& name) {
     return MakeMatcher(new ScopedAnnotatedSymbolEqMatcher(scope, annotation, name));
 }
-inline Matcher<const ast::KeywordExprSymbol*> KeywordExprSymbolEq(const std::string& name) {
-    return MakeMatcher(new KeywordExprSymbolEqMatcher(name));
+inline Matcher<const ast::CommandExprSymbol*> CommandExprSymbolEq(const std::string& name) {
+    return MakeMatcher(new CommandExprSymbolEqMatcher(name));
 }
-inline Matcher<const ast::KeywordStmntSymbol*> KeywordStmntSymbolEq(const std::string& name) {
-    return MakeMatcher(new KeywordStmntSymbolEqMatcher(name));
+inline Matcher<const ast::CommandStmntSymbol*> CommandStmntSymbolEq(const std::string& name) {
+    return MakeMatcher(new CommandStmntSymbolEqMatcher(name));
 }
 #define X(dbname, cppname) \
 inline Matcher<const ast::dbname##Literal*> dbname##LiteralEq(const cppname& value) { \

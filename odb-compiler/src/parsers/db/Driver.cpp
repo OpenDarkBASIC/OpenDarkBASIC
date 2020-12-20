@@ -4,7 +4,9 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/parsers/db/Parser.y.h"
 #include "odb-compiler/parsers/db/Scanner.hpp"
-#include "odb-compiler/keywords/KeywordMatcher.hpp"
+#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
+#include "odb-compiler/parsers/db/KeywordToken.hpp"
+#include "odb-compiler/commands/CommandMatcher.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include "odb-sdk/FileSystem.hpp"
@@ -13,7 +15,6 @@
 #include <cstring>
 #include <algorithm>
 #include <memory>
-#include <cstdio>
 
 #if defined(ODBCOMPILER_VERBOSE_BISON)
 extern int dbdebug;
@@ -23,8 +24,8 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(const kw::KeywordMatcher* keywordMatcher) :
-    keywordMatcher_(keywordMatcher)
+Driver::Driver(const cmd::CommandMatcher* commandMatcher) :
+    commandMatcher_(commandMatcher)
 {
     dblex_init_extra(this, &scanner_);
     parser_ = dbpstate_new();
@@ -79,7 +80,7 @@ static bool tokenHasFreeableString(int pushedChar)
     {
         case TOK_STRING_LITERAL:
         case TOK_SYMBOL:
-        case TOK_KEYWORD:
+        case TOK_COMMAND:
             return true;
 
         default:
@@ -90,7 +91,7 @@ static bool tokenHasFreeableString(int pushedChar)
 // ----------------------------------------------------------------------------
 ast::Block* Driver::doParse()
 {
-    int parse_result;
+    int parseResult;
     DBLTYPE loc = {1, 1, 1, 1};
 
     struct Token
@@ -103,56 +104,34 @@ ast::Block* Driver::doParse()
     struct MergedTokenOffset
     {
         int lookAheadEnd;
-        int kwlen;
+        int cmdlen;
     };
 
-    // This is used as a buffer to assemble a keyword out of multiple tokens
-    // and check it against the keyword matcher.
-    std::string possibleKeyword;
-    possibleKeyword.reserve(keywordMatcher_->longestKeywordLength());
-    std::vector<MergedTokenOffset> mergedTokenOffsets;
-    mergedTokenOffsets.reserve(keywordMatcher_->longestKeywordWordCount());
+    // This is used as a buffer to assemble a command out of multiple tokens
+    // and check it against the command matcher.
+    std::string possibleCommand;
+    possibleCommand.reserve(commandMatcher_->longestCommandLength());
 
     // This is used to store all tokens that haven't been push parsed yet, which
-    // will be more than 1 when doing a keyword match.
+    // will be more than 1 when doing a command match.
     std::vector<Token> tokens;
-    tokens.reserve(keywordMatcher_->longestKeywordWordCount());
+    tokens.reserve(commandMatcher_->longestCommandWordCount());
 
     // Scans the next token and stores it in "tokens"
     auto scanNextToken = [&](){
         DBSTYPE pushedValue;
         int pushedChar = dblex(&pushedValue, &loc, scanner_);
-        switch (pushedChar)
-        {
-            case TOK_PSEUDO_STRING_SYMBOL: {
-                const char* tok = dbget_text(scanner_);
-                DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
-                tokens.push_back({TOK_SYMBOL, value, ""});
-                tokens.push_back({'$', {}, ""});
-            } break;
-
-            case TOK_PSEUDO_FLOAT_SYMBOL: {
-                const char* tok = dbget_text(scanner_);
-                DBSTYPE value; value.string = str::newCStrRange(tok, 0, strlen(tok) - 1);
-                tokens.push_back({TOK_SYMBOL, value, ""});
-                tokens.push_back({'#', {}, ""});
-            } break;
-
-            default: {
-                tokens.push_back({pushedChar, pushedValue, ""});
-            } break;
-        }
+        tokens.push_back({pushedChar, pushedValue, ""});
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
-    auto scanAheadForPossibleKeyword = [&](bool mustBeLonger)
-    {
+    auto scanAheadForPossibleCommand = [&]() {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-        fprintf(stderr, "Scanning ahead for possible keyword match\n");
+        fprintf(stderr, "Scanning ahead for possible command match\n");
 #endif
         struct
         {
-            kw::KeywordMatcher::MatchResult match;
+            cmd::CommandMatcher::MatchResult match;
             int tokenIdx;
         } result = {};
 
@@ -164,19 +143,20 @@ ast::Block* Driver::doParse()
         if (tokens.back().str.empty())
             tokens.back().str = dbget_text(scanner_);
 
-        possibleKeyword = tokens[0].str;
-        const int initialTokenLength = possibleKeyword.length();
+        possibleCommand = tokens[0].str;
         bool lastSymbolWasInteger = false;
-        for (int i = 1; (int)possibleKeyword.length() <= keywordMatcher_->longestKeywordLength(); ++i)
+        for (int i = 1; (int)possibleCommand.length() <= commandMatcher_->longestCommandLength(); ++i)
         {
-            auto match = keywordMatcher_->findLongestKeywordMatching(possibleKeyword);
-            if (match.found && match.matchedLength == (int)possibleKeyword.size())
-            {
-                result = {match, i};
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "possible keyword: %s\n", possibleKeyword.c_str());
+            fprintf(stderr, "findLongestCommandMatching(\"%s\")\n", possibleCommand.c_str());
 #endif
-            }
+            auto match = commandMatcher_->findLongestCommandMatching(possibleCommand);
+            if (match.found && match.matchedLength == (int)possibleCommand.size())
+                result = {match, i};
+
+#if defined(ODBCOMPILER_VERBOSE_FLEX)
+            fprintf(stderr, "found==%d, matchedLength: %d\n", match.found, match.matchedLength);
+#endif
 
             // Maybe need to scan for the next token, or maybe there's enough
             // in the queue.
@@ -186,43 +166,38 @@ ast::Block* Driver::doParse()
                 tokens.back().str = dbget_text(scanner_);
             }
 
-            // EOF
-            if (tokens[i].pushedChar == 0)
+            // EOF or error
+            if (tokens[i].pushedChar == TOK_END || tokens[i].pushedChar == TOK_DBEMPTY)
                 break;
 
-            // Keywords unfortunately can start with integers, or have words
+            // Commands unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
-            // in between integers and following symbols. Additionally, keywords
+            // in between integers and following symbols. Additionally, commands
             // can end in $ or #, in which case we also do not want to append
             // a space.
             if (!lastSymbolWasInteger && tokens[i].pushedChar != '$' && tokens[i].pushedChar != '#')
-                possibleKeyword += " ";
+                possibleCommand += " ";
             else if (result.tokenIdx == i && (tokens[i].pushedChar == '$' || tokens[i].pushedChar == '#'))
                 result.match.found = false;
-            possibleKeyword += tokens[i].str;
+            possibleCommand += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
         }
 
-        // For special cases such as "loop object", where "loop" is a keyword
-        // as well as a builtin, if we end up only matching "loop" then we must
-        // leave it as TOK_LOOP to retain its semantic meaning. If "mustBeLonger"
-        // is true then don't morph the token into TOK_KEYWORD if the matched
-        // length is not longer than the original token.
-        if (result.match.found && (!mustBeLonger || initialTokenLength != result.match.matchedLength))
+        if (result.match.found)
         {
             // All tokens we scanned leading up to the last one can
             // be discarded, because they can all be merged into
-            // a single keyword now.
+            // a single command now.
             for (int i = 0; i != result.tokenIdx; ++i)
                 if (tokenHasFreeableString(tokens[i].pushedChar))
                     str::deleteCStr(tokens[i].pushedValue.string);
             tokens.erase(tokens.begin() + 1, tokens.begin() + result.tokenIdx);
 
             // Ownership of the string is passed to BISON
-            tokens[0].pushedValue.string = str::newCStrRange(possibleKeyword.c_str(), 0, result.match.matchedLength);
-            tokens[0].pushedChar = TOK_KEYWORD;
+            tokens[0].pushedValue.string = str::newCStrRange(possibleCommand.c_str(), 0, result.match.matchedLength);
+            tokens[0].pushedChar = TOK_COMMAND;
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "Merged into keyword: \"%s\"\n", tokens[0].pushedValue.string);
+            fprintf(stderr, "Merged into command: \"%s\"\n", tokens[0].pushedValue.string);
             fprintf(stderr, "Tokens in queue:");
             for (const auto& token : tokens)
                 fprintf(stderr, " %d", token.pushedChar);
@@ -232,7 +207,7 @@ ast::Block* Driver::doParse()
         else
         {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
-            fprintf(stderr, "No keyword match found\n");
+            fprintf(stderr, "No command match found\n");
 #endif
         }
     };
@@ -240,38 +215,104 @@ ast::Block* Driver::doParse()
     // main parse loop
     program_ = nullptr;
     do {
+
+        // If we've run out of tokens in the queue, scan ahead one
         if (tokens.size() == 0)
             scanNextToken();
 
+        // We must differentiate between builtin DBP keywords (such as "if" or
+        // "loop") and commands (such as "make object" that originate from
+        // plugins). Each builtin keyword is its own token, while every command
+        // uses the same token value, but passes the command string to the parser.
+        //
+        // Unfortunately, commands can start with or contain keywords, such as
+        // "loop object", and commands can also start with or contain numbers,
+        // such as "load 3dsound".
+        //
+        // The solution used here is for the lexer to return every word as a
+        // TOK_SYMBOL by default. If we encounter this token, we must scan
+        // ahead to see how many TOK_SYMBOL tokens we can assemble into a valid
+        // command string. If we succeed, then the longest sequence of TOK_SYMBOL
+        // tokens matching a command will be combined into a single TOK_COMMAND
+        // token before being pushed to the parser.
+        //
+        // If we fail to identify a valid command, then the next step is to
+        // determine if this TOK_SYMBOL is a builting keyword. We do this by
+        // looking up the string associated with each TOK_SYMBOL in a hashtable
+        // (generated using gperf). If this succeeds, then we convert the token
+        // into a TOK_KEYWORD.
+        //
+        // If neither of these steps succeed, then we leave it as a TOK_SYMBOL.
         switch (tokens[0].pushedChar)
         {
+            // commands can start with an integer literal or with a string
             case TOK_INTEGER_LITERAL:
-            case TOK_SYMBOL:
-                scanAheadForPossibleKeyword(false);
-                break;
+            case TOK_SYMBOL: {
+                scanAheadForPossibleCommand();
+            } break;
+            default: break;
+        }
+        switch (tokens[0].pushedChar)
+        {
+            case TOK_SYMBOL: {
+                // This is to fix another special case:
+                //
+                //    string$ as string
+                //
+                // In order to parse this properly, we must avoid changing a
+                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a '$' or '#'
+                if (tokens.size() < 2)
+                    scanNextToken();
+                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                    break;
 
-            case TOK_LOOP: // DarkBASIC has commands that start with "loop"
-                scanAheadForPossibleKeyword(true);
-                break;
+                const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
+                if (result)
+                    tokens[0].pushedChar = result->token;
+            } break;
+
+            // Allow commands to be changed to builtin commands. This is something
+            // DBP did, but ODB should not do. Issue a warning if this happens.
+            case TOK_COMMAND: {
+                // See above comment for why this is here
+                if (tokens.size() < 2)
+                    scanNextToken();
+                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                    break;
+
+                const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
+                if (result == nullptr)
+                    break;
+                tokens[0].pushedChar = result->token;
+
+                // Print out a warning
+                Reference<ast::SourceLocation> location = newLocation(&loc);
+                log::dbParser(log::WARNING,
+                    "%s: Command `%s` has same name as a built-in keyword. Command will be ignored.\n",
+                    location->getFileLineColumn().c_str(), tokens[0].pushedValue.string);
+                printLocationHighlight(location);
+                log::dbParser(log::NOTICE, "This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
+            } break;
 
             default: break;
         }
 
-        parse_result = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
+        parseResult = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
         tokens.erase(tokens.begin());
-    } while (parse_result == YYPUSH_MORE);
+    } while (parseResult == YYPUSH_MORE);
 
     // May need to clean up
     for (auto& token : tokens)
         if (tokenHasFreeableString(token.pushedChar))
             str::deleteCStr(token.pushedValue.string);
 
-    if (parse_result == 0)
+    if (parseResult == 0)
     {
         ast::Block* program = program_;
         program_ = nullptr;
         return program;
     }
+
     return nullptr;
 }
 
@@ -311,29 +352,6 @@ ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocati
     if (value < std::numeric_limits<int32_t>::min())
         return new ast::DoubleIntegerLiteral(value, location);
     return new ast::IntegerLiteral(value, location);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::vreportError(const DBLTYPE* loc, const char* fmt, va_list args)
-{
-    auto location = newLocation(loc);
-    std::string fileLocInfo = location->getFileLineColumn();
-    std::string errorMsg;
-
-    va_list copy;
-    va_copy(copy, args);
-    errorMsg.resize(vsnprintf(nullptr, 0, fmt, copy) + 1);
-    va_end(copy);
-
-    va_copy(copy, args);
-    snprintf(errorMsg.data(), errorMsg.size(), fmt, copy);
-    va_end(copy);
-
-    std::string msg = fileLocInfo + ": " + errorMsg;
-    log::dbParser(log::ERROR, "%s\n", msg.c_str());
-    for (const auto& line : location->getSectionHighlight())
-        log::info("%s\n", line.c_str());
-
 }
 
 }

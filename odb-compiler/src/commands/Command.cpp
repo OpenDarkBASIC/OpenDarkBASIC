@@ -1,11 +1,11 @@
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 
 namespace odb {
-namespace kw {
+namespace cmd {
 
 // ----------------------------------------------------------------------------
-Keyword::Keyword(DynamicLibrary* sourceLibrary,
+Command::Command(DynamicLibrary* sourceLibrary,
                  const std::string& dbSymbol,
                  const std::string& cppSymbol,
                  Type returnType,
@@ -21,40 +21,40 @@ Keyword::Keyword(DynamicLibrary* sourceLibrary,
 }
 
 // ----------------------------------------------------------------------------
-Keyword::~Keyword() = default;
+Command::~Command() = default;
 
 // ----------------------------------------------------------------------------
-const std::string& Keyword::dbSymbol() const
+const std::string& Command::dbSymbol() const
 {
     return dbSymbol_;
 }
 
 // ----------------------------------------------------------------------------
-const std::string& Keyword::cppSymbol() const
+const std::string& Command::cppSymbol() const
 {
     return cppSymbol_;
 }
 
 // ----------------------------------------------------------------------------
-const std::string& Keyword::helpFile() const
+const std::string& Command::helpFile() const
 {
     return helpFile_;
 }
 
 // ----------------------------------------------------------------------------
-const std::vector<Keyword::Arg>& Keyword::args() const
+const std::vector<Command::Arg>& Command::args() const
 {
     return args_;
 }
 
 // ----------------------------------------------------------------------------
-Keyword::Type Keyword::returnType() const
+Command::Type Command::returnType() const
 {
     return returnType_;
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary* Keyword::library() const
+DynamicLibrary* Command::library() const
 {
     return library_;
 }

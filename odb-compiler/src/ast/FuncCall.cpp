@@ -32,9 +32,9 @@ AnnotatedSymbol* FuncCallExpr::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList* FuncCallExpr::args() const
+MaybeNull<ExpressionList> FuncCallExpr::args() const
 {
-    return args_;
+    return args_.get();
 }
 
 // ----------------------------------------------------------------------------
@@ -63,9 +63,9 @@ AnnotatedSymbol* FuncCallExprOrArrayRef::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList* FuncCallExprOrArrayRef::args() const
+MaybeNull<ExpressionList> FuncCallExprOrArrayRef::args() const
 {
-    return args_;
+    return args_.get();
 }
 
 // ----------------------------------------------------------------------------
@@ -101,9 +101,9 @@ AnnotatedSymbol* FuncCallStmnt::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList* FuncCallStmnt::args() const
+MaybeNull<ExpressionList> FuncCallStmnt::args() const
 {
-    return args_;
+    return args_.get();
 }
 
 // ----------------------------------------------------------------------------

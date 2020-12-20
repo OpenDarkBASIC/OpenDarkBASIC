@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"

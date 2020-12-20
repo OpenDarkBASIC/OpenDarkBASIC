@@ -39,8 +39,9 @@ configure_file ("templates/config.hpp.in" "include/odb-compiler/config.hpp")
 # Parsers
 ###############################################################################
 
-find_package (FLEX REQUIRED)
-find_package (BISON REQUIRED 3.2)
+find_package (FLEX REQUIRED )
+find_package (BISON REQUIRED 3.7)
+find_package (Gperf REQUIRED)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
@@ -68,10 +69,21 @@ if (ODBCOMPILER_VERBOSE_BISON)
     set_property (
         SOURCE
             ${BISON_DarkBASICParser_OUTPUTS}
-            ${BISON_KeywordsParser_OUTPUTS}
+            ${BISON_CommandsParser_OUTPUTS}
         PROPERTY COMPILE_DEFINITIONS
             YYDEBUG)
 endif ()
+
+gperf_target (DarkBASICCommandToken
+    "${PROJECT_SOURCE_DIR}/src/parsers/db/KeywordToken.gperf"
+    "${PROJECT_BINARY_DIR}/src/parsers/db/KeywordToken.gperf.cpp")
+set_source_files_properties (${Gperf_DarkBASICCommandToken_OUTPUTS}
+    PROPERTIES COMPILE_FLAGS
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
+#XXX this is broken
+add_gperf_bison_dependency (DarkBASICCommandToken DarkBASICParser)
 
 ###############################################################################
 # Library definition
@@ -80,11 +92,14 @@ endif ()
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${BISON_DarkBASICParser_OUTPUTS}
     ${FLEX_DarkBASICScanner_OUTPUTS}
-    ${BISON_KeywordsParser_OUTPUTS}
-    ${FLEX_KeywordsScanner_OUTPUTS}
+    ${Gperf_DarkBASICCommandToken_OUTPUTS}
+    ${BISON_CommandsParser_OUTPUTS}
+    ${FLEX_CommandsScanner_OUTPUTS}
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
+    "src/ast/BinaryOp.cpp"
     "src/ast/Block.cpp"
+    "src/ast/Break.cpp"
     "src/ast/ConstDecl.cpp"
     "src/ast/ErrorHighlighter.cpp"
     "src/ast/Exporters_DOT.cpp"
@@ -92,8 +107,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Expression.cpp"
     "src/ast/ExpressionList.cpp"
     "src/ast/FuncCall.cpp"
-    "src/ast/Keyword.cpp"
+    "src/ast/FuncDecl.cpp"
+    "src/ast/Command.cpp"
     "src/ast/Literal.cpp"
+    "src/ast/Loop.cpp"
     "src/ast/Node.cpp"
     "src/ast/Process.cpp"
     "src/ast/ResolveArrayFuncAmbiguity.cpp"
@@ -103,13 +120,14 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/VarDecl.cpp"
     "src/ast/VarRef.cpp"
     "src/ast/Visitor.cpp"
-    "src/keywords/KeywordLoader.cpp"
-    "src/keywords/ODBKeywordLoader.cpp"
-    "src/keywords/DBPKeywordLoader.cpp"
-    "src/keywords/Keyword.cpp"
-    "src/keywords/KeywordIndex.cpp"
-    "src/keywords/KeywordMatcher.cpp"
-    "src/parsers/db/Driver.cpp")
+    "src/commands/CommandLoader.cpp"
+    "src/commands/ODBCommandLoader.cpp"
+    "src/commands/DBPCommandLoader.cpp"
+    "src/commands/Command.cpp"
+    "src/commands/CommandIndex.cpp"
+    "src/commands/CommandMatcher.cpp"
+    "src/parsers/db/Driver.cpp"
+    "src/parsers/db/ErrorPrinter.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -143,14 +161,14 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
         "tests/src/test_db_func_call.cpp"
-        # "tests/src/test_db_func_decl.cpp"
+        "tests/src/test_db_func_decl.cpp"
         # "tests/src/test_db_goto.cpp"
-        "tests/src/test_db_keyword.cpp"
-        # "tests/src/test_db_loop_do.cpp"
-        # "tests/src/test_db_loop_for.cpp"
-        # "tests/src/test_db_loop_repeat.cpp"
-        # "tests/src/test_db_loop_while.cpp"
-        # "tests/src/test_db_op_add.cpp"
+        "tests/src/test_db_command.cpp"
+        "tests/src/test_db_loop_do.cpp"
+        "tests/src/test_db_loop_for.cpp"
+        "tests/src/test_db_loop_repeat.cpp"
+        "tests/src/test_db_loop_while.cpp"
+        "tests/src/test_db_op_add.cpp"
         # "tests/src/test_db_op_precedence.cpp"
         "tests/src/test_db_remarks.cpp"
         # "tests/src/test_db_select.cpp"
@@ -159,8 +177,8 @@ if (${ODBCOMPILER_TESTS})
         # "tests/src/test_db_udt.cpp"
         "tests/src/test_db_var_decl.cpp"
         "tests/src/test_db_var_ref.cpp"
-        # "tests/src/test_kw_index.cpp"
-        "tests/src/test_kw_matcher.cpp"
+        # "tests/src/test_cmd_index.cpp"
+        "tests/src/test_cmd_matcher.cpp"
         "tests/src/test_SourceLocation.cpp"
         "tests/src/ASTMatchers.cpp"
         "tests/src/ASTParentConsistenciesChecker.cpp"

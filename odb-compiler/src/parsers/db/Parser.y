@@ -1,14 +1,18 @@
-%require "3.2"
+%require "3.7"
 %code top
 {
     #include "odb-compiler/ast/Assignment.hpp"
+    #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
+    #include "odb-compiler/ast/Break.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
-    #include "odb-compiler/ast/Keyword.hpp"
+    #include "odb-compiler/ast/FuncDecl.hpp"
+    #include "odb-compiler/ast/Command.hpp"
     #include "odb-compiler/ast/Literal.hpp"
+    #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
@@ -16,11 +20,11 @@
     #include "odb-compiler/parsers/db/Parser.y.h"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
+    #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
-    #define error(x, ...) dberror(dbpushed_loc, scanner, x, __VA_ARGS__)
 
     using namespace odb;
     using namespace ast;
@@ -43,22 +47,30 @@
             class AnnotatedSymbol;
             class Assignment;
             class Block;
+            class Break;
             class ConstDecl;
-            class Literal;
+            class ForLoop;
             class FuncCallExpr;
             class FuncCallStmnt;
+            class FuncDecl;
+            class FuncExit;
             class Expression;
             class ExpressionList;
-            class KeywordExprSymbol;
-            class KeywordStmntSymbol;
+            class InfiniteLoop;
+            class CommandExprSymbol;
+            class CommandStmntSymbol;
+            class Literal;
+            class Loop;
             class Node;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
             class Statement;
             class Symbol;
+            class UntilLoop;
             class VarAssignment;
             class VarDecl;
             class VarRef;
+            class WhileLoop;
         }
     }
 }
@@ -97,7 +109,7 @@
 %parse-param {dbscan_t scanner}
 
 %locations
-%define parse.error verbose
+%define parse.error custom
 
 /* This is the union that will become known as YYSTYPE in the generated code */
 %union {
@@ -107,53 +119,126 @@
     char* string;
 
     odb::ast::AnnotatedSymbol* annotated_symbol;
+    odb::ast::Assignment* assignment;
     odb::ast::Block* block;
+    odb::ast::Break* break_;
     odb::ast::ConstDecl* const_decl;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
+    odb::ast::ForLoop* for_loop;
     odb::ast::FuncCallStmnt* func_call_stmnt;
-    odb::ast::KeywordExprSymbol* keyword_expr;
-    odb::ast::KeywordStmntSymbol* keyword_stmnt;
+    odb::ast::FuncDecl* func_decl;
+    odb::ast::FuncExit* func_exit;
+    odb::ast::InfiniteLoop* infinite_loop;
+    odb::ast::CommandExprSymbol* command_expr;
+    odb::ast::CommandStmntSymbol* command_stmnt;
     odb::ast::Literal* literal;
+    odb::ast::Loop* loop;
     odb::ast::ScopedSymbol* scoped_symbol;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
     odb::ast::Symbol* symbol;
-    odb::ast::Assignment* assignment;
+    odb::ast::UntilLoop* until_loop;
+    odb::ast::VarAssignment* var_assignment;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
+    odb::ast::WhileLoop* while_loop;
 }
 
 %define api.token.prefix {TOK_}
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
 %token END 0 "end of file"
-%token '\n' ':' ';' '.'
+%token '\n' "end of line"
+%token ':' "colon"
+%token ';' "semi-colon"
+%token '.' "period"
+%token '$' "$"
+%token '#' "#"
 
-%token CONSTANT
+/*s */
+%token CONSTANT "constant"
+%token IF "if"
+%token THEN "then"
+%token ELSE "else"
+%token ELSEIF "elseif"
+%token NO_ELSE
+%token ENDIF "endif"
+%token WHILE "while"
+%token ENDWHILE "endwhile"
+%token REPEAT "repeat"
+%token UNTIL "until"
+%token DO "do"
+%token LOOP "loop"
+%token BREAK "break"
+%token FOR "for"
+%token TO "to"
+%token STEP "step"
+%token NEXT "next"
+%token FUNCTION "function"
+%token EXITFUNCTION "exitfunction"
+%token ENDFUNCTION "endfunction"
+%token GOSUB "gosub"
+%token RETURN "return"
+%token GOTO "goto"
+%token SELECT "select"
+%token ENDSELECT "endselect"
+%token CASE "case"
+%token ENDCASE "endcase"
+%token DEFAULT "default"
+%token DIM "dim"
+%token GLOBAL "global"
+%token LOCAL "local"
+%token AS "as"
+%token TYPE "type"
+%token ENDTYPE "endtype"
+%token BOOLEAN "boolean"
+%token DWORD "dword"
+%token WORD "word"
+%token BYTE "byte"
+%token INTEGER "integer"
+%token FLOAT "float"
+%token DOUBLE "double"
+%token STRING "string"
+%token INC "increment"
+%token DEC "decrement"
 
-%token<boolean_value> BOOLEAN_LITERAL "boolean";
-%token<integer_value> INTEGER_LITERAL "integer";
-%token<float_value> FLOAT_LITERAL "float";
-%token<string> STRING_LITERAL "string";
+/* Literals */
+%token<boolean_value> BOOLEAN_LITERAL "boolean literal";
+%token<integer_value> INTEGER_LITERAL "integer literal";
+%token<float_value> FLOAT_LITERAL "float literal";
+%token<string> STRING_LITERAL "string literal";
 
-%token '+' '-' '*' '/' '^' MOD '(' ')' ',' INC DEC;
-%token BSHL BSHR BOR BAND BXOR BNOT;
-%token '<' '>' LE GE NE '=' LOR LAND LNOT;
+/* Operators */
+%token '+' "+"
+%token '-' "-"
+%token '*' "*"
+%token '/' "/"
+%token '^' "^"
+%token MOD "modulus operator"
+%token '(' "open-bracket"
+%token ')' "close-bracket"
+%token ',' "comma"
+%token BSHL "<<"
+%token BSHR ">>"
+%token BOR "||"
+%token BAND "&&"
+%token BXOR "~~"
+%token BNOT ".."
+%token '<' "<"
+%token '>' ">"
+%token LE "<="
+%token GE ">="
+%token NE "<>"
+%token '=' "="
+%token LOR "or"
+%token LAND "and"
+%token LNOT "not"
 
-%token IF THEN ELSE ELSEIF NO_ELSE ENDIF
-%token WHILE ENDWHILE REPEAT UNTIL DO LOOP BREAK
-%token FOR TO STEP NEXT
-%token FUNCTION EXITFUNCTION ENDFUNCTION
-%token GOSUB RETURN GOTO
-%token SELECT ENDSELECT CASE ENDCASE DEFAULT
+%token<string> SYMBOL
+%token<string> COMMAND
 
-%token DIM GLOBAL LOCAL AS TYPE ENDTYPE BOOLEAN DWORD WORD BYTE INTEGER FLOAT DOUBLE STRING
-
-%token<string> SYMBOL PSEUDO_STRING_SYMBOL PSEUDO_FLOAT_SYMBOL;
-%token<string> KEYWORD;
-%token '$' '#';
-
+%type<var_assignment> var_assignment;
 %type<assignment> assignment;
 %type<block> program;
 %type<block> block;
@@ -163,74 +248,36 @@
 %type<expr> func_call_expr_or_array_ref;
 %type<expr> expr;
 %type<expr_list> expr_list;
-%type<keyword_expr> keyword_expr;
-%type<keyword_stmnt> keyword_stmnt;
+%type<command_expr> command_expr;
+%type<command_stmnt> command_stmnt;
 %type<var_decl> var_decl;
 %type<var_decl> var_decl_as_type;
 %type<var_decl> var_decl_scope;
 %type<literal> literal;
 %type<annotated_symbol> annotated_symbol;
+%type<annotated_symbol> loop_next_sym;
 %type<scoped_annotated_symbol> var_decl_int_sym;
 %type<scoped_annotated_symbol> var_decl_str_sym;
 %type<scoped_annotated_symbol> var_decl_float_sym;
 %type<var_ref> var_ref;
-/*
-%type<node> dec_or_inc;
-%type<node> var_assignment;
-%type<node> lvalue;
-%type<node> udt_body_decl;
-%type<node> var_decl;
-%type<node> var_decl_name;
-%type<node> var_decl_as_type;
-%type<node> var_ref;
-%type<node> array_decl;
-%type<node> array_decl_name;
-%type<node> array_decl_as_type;
-%type<node> array_ref;
-%type<node> udt_decl;
-%type<node> udt_name;
-%type<node> udt_ref;
-%type<node> udt_refs;
-%type<node> func_decl;
-%type<node> func_end;
-%type<node> func_exit;
-%type<node> func_name_decl;
-%type<node> func_call;
-%type<node> sub_call;
-%type<node> sub_return;
-%type<node> label_decl;
-%type<node> goto_label;
-%type<node> func_call_or_array_ref;
-%type<node> keyword;
-%type<node> keyword_returning_value;
-%type<node> expr;
-%type<node> arglist;
-%type<node> decl_arglist;*/
-/*
-%type<node> conditional;
-%type<node> conditional_singleline;
-%type<node> conditional_begin;
-%type<node> conditional_next;
-%type<node> select;
-%type<node> case_list;
-%type<node> case;
-%type<node> loop;
-%type<node> loop_do;
-%type<node> loop_while;
-%type<node> loop_until;
-%type<node> loop_for;
-%type<node> loop_for_next;
-%type<node> break;*/
+%type<loop> loop;
+%type<infinite_loop> loop_do;
+%type<while_loop> loop_while;
+%type<until_loop> loop_until;
+%type<for_loop> loop_for;
+%type<break_> break;
+%type<func_decl> func_decl;
+%type<func_exit> func_exit;
 
 /* precedence rules */
+%nonassoc NO_NEXT_SYM
 %nonassoc NO_ELSE
 %nonassoc ELSE ELSEIF
 /* Fixes sr conflict of
  *   symbol: label_without_type
  *   label : label_without_type COLON */
 %nonassoc NO_HASH_OR_DOLLAR
-%nonassoc COLON
-%left COMMA
+%nonassoc ':'
 %left LXOR
 %left LOR
 %left LAND
@@ -239,21 +286,21 @@
 %left BXOR
 %left BOR
 %left BAND
-%left EQ
-%left LT
-%left GT
+%left '='
+%left '<'
+%left '>'
 %left LE
 %left GE
 %left NE
 %left BSHL
 %left BSHR
-%left ADD
-%left SUB
-%left MUL
+%left '+'
+%left '-'
+%left '*'
 %left MOD
-%left DIV
-%left POW
-%left LB RB
+%left '/'
+%left '^'
+%left '(' ')'
 
 %destructor { str::deleteCStr($$); } <string>
 
@@ -274,29 +321,62 @@ block
 stmnt
   : constant_decl                                { $$ = $1; }
   | func_call_stmnt                              { $$ = $1; }
-  | keyword_stmnt                                { $$ = $1; }
+  | command_stmnt                                { $$ = $1; }
   | var_decl                                     { $$ = $1; }
   | assignment                                   { $$ = $1; }
+  | loop                                         { $$ = $1; }
+  | break                                        { $$ = $1; }
+  | func_decl                                    { $$ = $1; }
+  | func_exit                                    { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
   | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
   ;
 expr
-  : literal                                      { $$ = $1; }
+  : '(' expr ')'                                 { $$ = $2; }
+  | expr '+' expr                                { $$ = new BinaryOpAdd($1, $3, driver->newLocation(&yylloc)); }
+  | expr '-' expr                                { $$ = new BinaryOpSub($1, $3, driver->newLocation(&yylloc)); }
+  | expr '*' expr                                { $$ = new BinaryOpMul($1, $3, driver->newLocation(&yylloc)); }
+  | expr '/' expr                                { $$ = new BinaryOpDiv($1, $3, driver->newLocation(&yylloc)); }
+  | expr MOD expr                                { $$ = new BinaryOpMod($1, $3, driver->newLocation(&yylloc)); }
+  | expr '^' expr                                { $$ = new BinaryOpPow($1, $3, driver->newLocation(&yylloc)); }
+  | expr BSHL expr                               { $$ = new BinaryOpShiftLeft($1, $3, driver->newLocation(&yylloc)); }
+  | expr BSHR expr                               { $$ = new BinaryOpShiftRight($1, $3, driver->newLocation(&yylloc)); }
+  | expr BOR expr                                { $$ = new BinaryOpBitwiseOr($1, $3, driver->newLocation(&yylloc)); }
+  | expr BAND expr                               { $$ = new BinaryOpBitwiseAnd($1, $3, driver->newLocation(&yylloc)); }
+  | expr BXOR expr                               { $$ = new BinaryOpBitwiseXor($1, $3, driver->newLocation(&yylloc)); }
+  | expr BNOT expr                               { $$ = new BinaryOpBitwiseNot($1, $3, driver->newLocation(&yylloc)); }
+  | expr '<' expr                                { $$ = new BinaryOpLess($1, $3, driver->newLocation(&yylloc)); }
+  | expr '>' expr                                { $$ = new BinaryOpGreater($1, $3, driver->newLocation(&yylloc)); }
+  | expr LE expr                                 { $$ = new BinaryOpLessEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr GE expr                                 { $$ = new BinaryOpGreaterEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr '=' expr                                { $$ = new BinaryOpEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr NE expr                                 { $$ = new BinaryOpNotEqual($1, $3, driver->newLocation(&yylloc)); }
+  | expr LOR expr                                { $$ = new BinaryOpOr($1, $3, driver->newLocation(&yylloc)); }
+  | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&yylloc)); }
+  | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, driver->newLocation(&yylloc)); }
+  | expr LNOT expr                               { $$ = new BinaryOpNot($1, $3, driver->newLocation(&yylloc)); }
+  | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
-  | keyword_expr                                 { $$ = $1; }
+  | command_expr                                 { $$ = $1; }
   | var_ref                                      { $$ = $1; }
   ;
-keyword_stmnt
-  : KEYWORD                                      { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD expr_list                            { $$ = new KeywordStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' ')'                              { $$ = new KeywordStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+
+/* Commands appearing as statements usually don't have arguments surrounded by
+ * brackets, but it is valid to call a command with brackets as a statement */
+command_stmnt
+  : COMMAND                                      { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND expr_list                            { $$ = new CommandStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' ')'                              { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+/* This case is already handled by expr
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); } */
   ;
-keyword_expr
-  : KEYWORD '(' ')'                              { $$ = new KeywordExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | KEYWORD '(' expr_list ')'                    { $$ = new KeywordExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+
+/* Commands appearing in expressions must be called with arguments in brackets */
+command_expr
+  : COMMAND '(' ')'                              { $$ = new CommandExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 /*
 stmnt
@@ -313,7 +393,7 @@ stmnt
   | sub_return                                   { $$ = $1; }
   | goto_label                                   { $$ = $1; }
   | label_decl                                   { $$ = $1; }
-  | keyword                                      { $$ = $1; }
+  | command                                      { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | select                                       { $$ = $1; }
   | loop                                         { $$ = $1; }
@@ -339,6 +419,9 @@ lvalue
   | array_ref                                    { $$ = $1; }
   ;*/
 assignment
+  : var_assignment                               { $$ = $1; }
+  ;
+var_assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&yylloc)); }
   ;
 var_decl
@@ -386,6 +469,7 @@ var_decl_str_sym
   ;
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&yylloc)); }
+  ;
 /*
 array_decl
   : LOCAL array_decl_as_type                     { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
@@ -467,29 +551,22 @@ udt_refs
   | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
   | array_ref                                    { $$ = $1; }
   | var_ref                                      { $$ = $1; }
-  ;
+  ;*/
 func_decl
-  : func_name_decl seps block seps func_end {
-        $$ = $1;
-        $$->sym.func_decl.body = appendStatementToBlock($3, $5, &yylloc);
-    }
-  | func_name_decl seps func_end {
-        $$ = $1;
-        $$->sym.func_decl.body = newBlock($3, nullptr, &yylloc);
-    }
-  ;
-func_end
-  : ENDFUNCTION expr                             { $$ = newFuncReturn($2, &yylloc); }
-  | ENDFUNCTION                                  { $$ = newFuncReturn(nullptr, &yylloc); }
+  : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr           { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                      { $$ = new FuncDecl($2, $7, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION                { $$ = new FuncDecl($2, $6, driver->newLocation(&yylloc)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                           { $$ = new FuncDecl($2, driver->newLocation(&yylloc)); }
   ;
 func_exit
-  : EXITFUNCTION expr                            { $$ = newFuncReturn($2, &yylloc); }
-  | EXITFUNCTION                                 { $$ = newFuncReturn(nullptr, &yylloc); }
+  : EXITFUNCTION expr                            { $$ = new FuncExit($2, driver->newLocation(&yylloc)); }
+  | EXITFUNCTION                                 { $$ = new FuncExit(driver->newLocation(&yylloc)); }
   ;
-func_name_decl
-  : FUNCTION annotated_symbol LB decl_arglist RB           { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; $$->sym.func_decl.arglist = $4; }
-  | FUNCTION annotated_symbol LB RB                        { $$ = $2; $$->info.type = NT_SYM_FUNC_DECL; }
-  ;
+/*
 sub_call
   : GOSUB annotated_symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
   ;
@@ -510,55 +587,13 @@ func_call_stmnt
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
   ;
-/*
-expr
-  : LB arglist RB                                { $$ = $2; }
-  | arglist
-  ;
-expr
-  : '('  ')'
-  | expr ADD expr                                { $$ = newOp($1, $3, NT_OP_ADD, &yylloc); }
-  | expr SUB expr                                { $$ = newOp($1, $3, NT_OP_SUB, &yylloc); }
-  | expr MUL expr                                { $$ = newOp($1, $3, NT_OP_MUL, &yylloc); }
-  | expr DIV expr                                { $$ = newOp($1, $3, NT_OP_DIV, &yylloc); }
-  | expr POW expr                                { $$ = newOp($1, $3, NT_OP_POW, &yylloc); }
-  | expr MOD expr                                { $$ = newOp($1, $3, NT_OP_MOD, &yylloc); }
-  | expr COMMA expr                              { $$ = newOp($1, $3, NT_OP_COMMA, &yylloc); }
-  | expr NE expr                                 { $$ = newOp($1, $3, NT_OP_NE, &yylloc); }
-  | expr LE expr                                 { $$ = newOp($1, $3, NT_OP_LE, &yylloc); }
-  | expr GE expr                                 { $$ = newOp($1, $3, NT_OP_GE, &yylloc); }
-  | expr EQ expr                                 { $$ = newOp($1, $3, NT_OP_EQ, &yylloc); }
-  | expr LT expr                                 { $$ = newOp($1, $3, NT_OP_LT, &yylloc); }
-  | expr GT expr                                 { $$ = newOp($1, $3, NT_OP_GT, &yylloc); }
-  | expr LOR expr                                { $$ = newOp($1, $3, NT_OP_LOR, &yylloc); }
-  | expr LAND expr                               { $$ = newOp($1, $3, NT_OP_LAND, &yylloc); }
-  | expr LXOR expr                               { $$ = newOp($1, $3, NT_OP_LXOR, &yylloc); }
-  | expr LNOT expr                               { $$ = newOp($1, $3, NT_OP_LNOT, &yylloc); }
-  | expr BSHL expr                               { $$ = newOp($1, $3, NT_OP_BSHL, &yylloc); }
-  | expr BSHR expr                               { $$ = newOp($1, $3, NT_OP_BSHR, &yylloc); }
-  | expr BOR expr                                { $$ = newOp($1, $3, NT_OP_BOR, &yylloc); }
-  | expr BAND expr                               { $$ = newOp($1, $3, NT_OP_BAND, &yylloc); }
-  | expr BXOR expr                               { $$ = newOp($1, $3, NT_OP_BXOR, &yylloc); }
-  | expr BNOT expr                               { $$ = newOp($1, $3, NT_OP_BNOT, &yylloc); }
-  | literal                                      { $$ = $1; }
-  | udt_ref                                      { $$ = $1; }
-  | var_ref                                      { $$ = $1; }
-  | func_call_or_array_ref                       { $$ = $1; }
-  | keyword_returning_value                      { $$ = $1; }
-  ;
-decl_arglist
-  : decl_arglist COMMA decl_arglist              { $$ = newOp($1, $3, NT_OP_COMMA, &yylloc); }
-  | var_decl_as_type                             { $$ = $1; }
-  | var_decl_name                                { $$ = $1; }
-  | array_decl                                   { $$ = $1; }
-  ;*/
 literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
   | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
   | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
   | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); }
-  | SUB INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
-  | SUB FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
+  | '-' INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
+  | '-' FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
   ;
 /*
 scoped_symbol
@@ -605,7 +640,7 @@ case
   | CASE expr seps ENDCASE                       { $$ = newCase($2, nullptr, &yylloc); }
   | CASE DEFAULT seps block seps ENDCASE         { $$ = newCase(nullptr, $4, &yylloc); }
   | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
-  ;
+  ;*/
 loop
   : loop_do                                      { $$ = $1; }
   | loop_while                                   { $$ = $1; }
@@ -613,36 +648,73 @@ loop
   | loop_for                                     { $$ = $1; }
   ;
 loop_do
-  : DO seps block seps LOOP                      { $$ = newLoop($3, &yylloc); }
-  | DO seps LOOP                                 { $$ = newLoop(nullptr, &yylloc); }
+  : DO seps block seps LOOP                      { $$ = new InfiniteLoop($3, driver->newLocation(&yylloc)); }
+  | DO seps LOOP                                 { $$ = new InfiniteLoop(driver->newLocation(&yylloc)); }
   ;
 loop_while
-  : WHILE expr seps block seps ENDWHILE          { $$ = newLoopWhile($2, $4, &yylloc); }
-  | WHILE expr seps ENDWHILE                     { $$ = newLoopWhile($2, nullptr, &yylloc); }
+  : WHILE expr seps block seps ENDWHILE          { $$ = new WhileLoop($2, $4, driver->newLocation(&yylloc)); }
+  | WHILE expr seps ENDWHILE                     { $$ = new WhileLoop($2, driver->newLocation(&yylloc)); }
   ;
 loop_until
-  : REPEAT seps block seps UNTIL expr            { $$ = newLoopUntil($6, $3, &yylloc); }
-  | REPEAT seps UNTIL expr                       { $$ = newLoopUntil($4, nullptr, &yylloc); }
+  : REPEAT seps block seps UNTIL expr            { $$ = new UntilLoop($6, $3, driver->newLocation(&yylloc)); }
+  | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, driver->newLocation(&yylloc)); }
   ;
 loop_for
-  : FOR annotated_symbol EQ expr TO expr STEP expr seps block seps loop_for_next  { $$ = newLoopFor($2, $4, $6, $8, $12, $10, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr STEP expr seps loop_for_next             { $$ = newLoopFor($2, $4, $6, $8, $10, nullptr, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr seps block seps loop_for_next            { $$ = newLoopFor($2, $4, $6, nullptr, $10, $8, &yylloc); }
-  | FOR annotated_symbol EQ expr TO expr seps loop_for_next                       { $$ = newLoopFor($2, $4, $6, nullptr, $8, nullptr, &yylloc); }
+  : FOR var_assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
+  | FOR var_assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, driver->newLocation(&yylloc)); }
   ;
-loop_for_next
-  : NEXT                                         { $$ = nullptr; }
-  | NEXT annotated_symbol                                  { $$ = $2; }
+loop_next_sym
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 break
-  : BREAK                                        { $$ = newBreak(&yylloc); }
-  ;*/
+  : BREAK                                        { $$ = new Break(driver->newLocation(&yylloc)); }
+  ;
 %%
 
-void dberror(YYLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
+void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    driver->vreportError(locp, fmt, args);
+    odb::db::vprintParserMessage(odb::log::ERROR, locp, scanner, fmt, args);
     va_end(args);
+}
+
+static int
+yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
+{
+    /*
+     * NOTE: dbtokentype and yysymbol_kind_t are different enums, but contain
+     * the exact same values. yysymbol_kind_t is only available in this file
+     * because it is defined in Parser.y.cpp, but dbtokentype is available
+     * through Parser.y.h. That is why we must convert it to dbtokentype.
+     */
+    int ret = 0;
+    DBLTYPE* loc = yypcontext_location(ctx);
+
+    std::pair<dbtokentype, std::string> unexpectedToken;
+    unexpectedToken.first = (dbtokentype)yypcontext_token(ctx);
+    if (unexpectedToken.first != TOK_DBEMPTY)
+        unexpectedToken.second = yysymbol_name((yysymbol_kind_t)unexpectedToken.first);
+
+    enum { TOKENMAX = 10 };
+    std::vector<std::pair<dbtokentype, std::string>> expectedTokens;
+    dbtokentype expected[TOKENMAX];
+    int n = yypcontext_expected_tokens(ctx, (yysymbol_kind_t*)expected, TOKENMAX);
+    if (n < 0)
+        // Forward errors to yyparse.
+        ret = n;
+    else
+        for (int i = 0; i < n; ++i)
+            expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
+
+    odb::db::printSyntaxMessage(odb::log::ERROR, loc, scanner, unexpectedToken, expectedTokens);
+
+    return ret;
 }

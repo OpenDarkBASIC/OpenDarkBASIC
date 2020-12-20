@@ -1,8 +1,8 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
-#include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/keywords/ODBKeywordLoader.hpp"
-#include "odb-compiler/keywords/SDKType.hpp"
+#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/commands/ODBCommandLoader.hpp"
+#include "odb-compiler/commands/SDKType.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/Log.hpp"
 
@@ -17,12 +17,12 @@ int main(int argc, char** argv)
     if (p == nullptr)
         return 1;
 
-    std::cout << "Reading keywords..." << std::endl;
-    odb::kw::KeywordIndex kwIndex;
-    odb::kw::ODBKeywordLoader loader("");
-    loader.populateIndexFromLibrary(&kwIndex, p);
+    std::cout << "Reading commands..." << std::endl;
+    odb::cmd::CommandIndex cmdIndex;
+    odb::cmd::ODBCommandLoader loader("");
+    loader.populateIndexFromLibrary(&cmdIndex, p);
 
-    for (const auto& name : kwIndex.keywordNamesAsList())
+    for (const auto& name : cmdIndex.commandNamesAsList())
         std::cout << name << std::endl;
 
     return 0;

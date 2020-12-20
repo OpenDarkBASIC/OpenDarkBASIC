@@ -1,11 +1,15 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Literal.hpp"
-#include "odb-compiler/ast/Keyword.hpp"
+#include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -30,6 +34,9 @@ void ASTParentConsistenciesChecker::visitBlock(const Block* node)
     for (const auto& stmnt : node->statements())
         EXPECT_THAT(node, Eq(stmnt->parent()));
 }
+void ASTParentConsistenciesChecker::visitBreak(const Break* node)
+{
+}
 void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
@@ -40,10 +47,21 @@ void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* no
     for (const auto& expr : node->expressions())
         EXPECT_THAT(node, Eq(expr->parent()));
 }
+void ASTParentConsistenciesChecker::visitForLoop(const ForLoop* node)
+{
+    EXPECT_THAT(node, Eq(node->counter()->parent()));
+    EXPECT_THAT(node, Eq(node->endValue()->parent()));
+    if (node->stepValue().notNull())
+        EXPECT_THAT(node, Eq(node->stepValue()->parent()));
+    if (node->nextSymbol().notNull())
+        EXPECT_THAT(node, Eq(node->nextSymbol()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+}
 void ASTParentConsistenciesChecker::visitFuncCallExpr(const FuncCallExpr* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    if (node->args())
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
 void ASTParentConsistenciesChecker::visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node)
@@ -54,27 +72,47 @@ void ASTParentConsistenciesChecker::visitFuncCallExprOrArrayRef(const FuncCallEx
 void ASTParentConsistenciesChecker::visitFuncCallStmnt(const FuncCallStmnt* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    if (node->args())
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordExpr(const KeywordExpr* node)
+void ASTParentConsistenciesChecker::visitFuncDecl(const FuncDecl* node)
 {
-    if (node->args())
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+    if (node->returnValue().notNull())
+        EXPECT_THAT(node, Eq(node->returnValue()->parent()));
+}
+void ASTParentConsistenciesChecker::visitFuncExit(const FuncExit* node)
+{
+    if (node->returnValue().notNull())
+        EXPECT_THAT(node, Eq(node->returnValue()->parent()));
+}
+void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
+{
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+}
+void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
+{
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordExprSymbol(const KeywordExprSymbol* node)
+void ASTParentConsistenciesChecker::visitCommandExprSymbol(const CommandExprSymbol* node)
 {
-    if (node->args())
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordStmnt(const KeywordStmnt* node)
+void ASTParentConsistenciesChecker::visitCommandStmnt(const CommandStmnt* node)
 {
-    if (node->args())
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitKeywordStmntSymbol(const KeywordStmntSymbol* node)
+void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSymbol* node)
 {
-    if (node->args())
+    if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
 void ASTParentConsistenciesChecker::visitScopedSymbol(const ScopedSymbol* node)
@@ -86,6 +124,12 @@ void ASTParentConsistenciesChecker::visitScopedAnnotatedSymbol(const ScopedAnnot
 void ASTParentConsistenciesChecker::visitSymbol(const Symbol* node)
 {
 }
+void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
+{
+    EXPECT_THAT(node, Eq(node->exitCondition()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+}
 void ASTParentConsistenciesChecker::visitVarAssignment(const VarAssignment* node)
 {
     EXPECT_THAT(node, Eq(node->variable()->parent()));
@@ -94,6 +138,12 @@ void ASTParentConsistenciesChecker::visitVarAssignment(const VarAssignment* node
 void ASTParentConsistenciesChecker::visitVarRef(const VarRef* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
+}
+void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
+{
+    EXPECT_THAT(node, Eq(node->continueCondition()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
 }
 
 #define X(dbname, cppname) \
@@ -104,4 +154,13 @@ void ASTParentConsistenciesChecker::visitVarRef(const VarRef* node)
         EXPECT_THAT(node, Eq(node->initialValue()->parent()));                \
     }
 ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void ASTParentConsistenciesChecker::visitBinaryOp##op(const BinaryOp##op* node) \
+    {                                                                         \
+        EXPECT_THAT(node, Eq(node->lhs()->parent()));                         \
+        EXPECT_THAT(node, Eq(node->rhs()->parent()));                         \
+    }
+ODB_BINARY_OP_LIST
 #undef X

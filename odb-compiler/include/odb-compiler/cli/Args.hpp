@@ -1,9 +1,9 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/keywords/KeywordIndex.hpp"
-#include "odb-compiler/keywords/KeywordMatcher.hpp"
-#include "odb-compiler/keywords/SDKType.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/commands/CommandMatcher.hpp"
+#include "odb-compiler/commands/SDKType.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include <vector>
 #include <string>
@@ -27,7 +27,7 @@ public:
     bool setSDKType(const std::vector<std::string>& args);
     bool setAdditionalPluginsDir(const std::vector<std::string>& args);
     bool printSDKRootDir(const std::vector<std::string>& args);
-    bool loadKeywords(const std::vector<std::string>& args);
+    bool loadCommands(const std::vector<std::string>& args);
     bool parseDBA(const std::vector<std::string>& args);
     bool dumpASTDOT(const std::vector<std::string>& args);
     bool dumpASTJSON(const std::vector<std::string>& args);
@@ -43,7 +43,7 @@ private:
     std::vector<std::string> pluginDirs_;
     odb::SDKType sdkType_ = odb::SDKType::ODB;
 
-    odb::kw::KeywordIndex kwIndex_;
-    odb::kw::KeywordMatcher kwMatcher_;
-    odb::ast::Block* ast_ = nullptr;
+    odb::cmd::CommandIndex cmdIndex_;
+    odb::cmd::CommandMatcher cmdMatcher_;
+    odb::Reference<odb::ast::Block> ast_;
 };

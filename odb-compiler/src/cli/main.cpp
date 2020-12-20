@@ -1,5 +1,5 @@
 #include "odb-compiler/cli/Args.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/Log.hpp"
 
 // ----------------------------------------------------------------------------

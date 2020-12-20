@@ -1,9 +1,8 @@
-#include <gmock/gmock.h>
-#include "odb-compiler/ast/Node.hpp"
-#include "odb-compiler/keywords/Keyword.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include <fstream>
 
 #define NAME db_func_decl
 
@@ -18,48 +17,51 @@ using namespace odb;
 
 TEST_F(NAME, empty_function)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc()\n"
-        "endfunction\n"), IsTrue());
+        "endfunction\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_function_with_return_argument)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc()\n"
-        "endfunction a+b\n"), IsTrue());
+        "endfunction a+b\n");
 }
 
 TEST_F(NAME, function)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc()\n"
         "    foo()\n"
-        "endfunction\n"), IsTrue());
+        "endfunction\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, function_two_args)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc(a, b)\n"
         "    foo()\n"
-        "endfunction\n"), IsTrue());
+        "endfunction\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, function_retval)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc()\n"
         "    foo()\n"
-        "endfunction a+b\n"), IsTrue());
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, function_exitfunction)
 {
-    EXPECT_THAT(driver->parseString(
+    ast = driver->parseString("test",
         "function myfunc()\n"
-        "    if a = 3\n"
-        "        exitfunction a+b\n"
-        "    endif\n"
-        "endfunction a+b\n"), IsTrue());
+        "    exitfunction c+d\n"
+        "endfunction a+b\n");
+    ASSERT_THAT(ast, NotNull());
 }

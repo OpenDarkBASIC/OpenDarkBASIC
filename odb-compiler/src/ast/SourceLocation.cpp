@@ -19,6 +19,30 @@ SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int
 }
 
 // ----------------------------------------------------------------------------
+int SourceLocation::getFirstLine() const
+{
+    return firstLine_;
+}
+
+// ----------------------------------------------------------------------------
+int SourceLocation::getLastLine() const
+{
+    return lastLine_;
+}
+
+// ----------------------------------------------------------------------------
+int SourceLocation::getFirstColumn() const
+{
+    return firstColumn_;
+}
+
+// ----------------------------------------------------------------------------
+int SourceLocation::getLastColumn() const
+{
+    return lastColumn_;
+}
+
+// ----------------------------------------------------------------------------
 std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code) const
 {
     auto retError = [this]() -> std::vector<std::string> {

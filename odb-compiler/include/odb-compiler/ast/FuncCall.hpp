@@ -3,6 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-sdk/MaybeNull.hpp"
 
 namespace odb {
 namespace ast {
@@ -17,7 +18,7 @@ public:
     FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 
@@ -33,7 +34,7 @@ public:
     FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 
@@ -56,7 +57,7 @@ public:
     FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExpressionList* args() const;
+    MaybeNull<ExpressionList> args() const;
 
     void accept(Visitor* visitor) const override;
 

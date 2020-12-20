@@ -72,20 +72,20 @@ void vdbParser(Severity severity, const char* fmt, va_list ap)
     }
     fprintf(infofp, "[db Parser] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s\n", RESET);
+    fprintf(infofp, "%s", RESET);
 }
 
 // ----------------------------------------------------------------------------
-void kwParser(Severity severity, const char* fmt, ...)
+void cmdParser(Severity severity, const char* fmt, ...)
 {
     assert(infofp);
 
     va_list ap;
     va_start(ap, fmt);
-    vkwParser(severity, fmt, ap);
+    vcmdParser(severity, fmt, ap);
     va_end(ap);
 }
-void vkwParser(Severity severity, const char* fmt, va_list ap)
+void vcmdParser(Severity severity, const char* fmt, va_list ap)
 {
     assert(infofp);
 
@@ -97,9 +97,9 @@ void vkwParser(Severity severity, const char* fmt, va_list ap)
         case ERROR :
         case FATAL : fprintf(infofp, "%s", RED); break;
     }
-    fprintf(infofp, "[kw Parser] ");
+    fprintf(infofp, "[cmd Parser] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s\n", RESET);
+    fprintf(infofp, "%s", RESET);
 }
 
 // ----------------------------------------------------------------------------
@@ -138,7 +138,7 @@ void vsdk(Severity severity, const char* fmt, va_list ap)
     }
     fprintf(infofp, "[SDK] ");
     vfprintf(infofp, fmt, ap);
-    fprintf(infofp, "%s\n", RESET);
+    fprintf(infofp, "%s", RESET);
 }
 
 }
