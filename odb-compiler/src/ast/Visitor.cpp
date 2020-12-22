@@ -3,11 +3,13 @@
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
@@ -26,7 +28,12 @@ void GenericVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)          
 void GenericVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBlock(const Block* node)                                   { visit(node); }
 void GenericVisitor::visitBreak(const Break* node)                                   { visit(node); }
+void GenericVisitor::visitCommandExpr(const CommandExpr* node)                       { visit(node); }
+void GenericVisitor::visitCommandExprSymbol(const CommandExprSymbol* node)           { visit(node); }
+void GenericVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node)         { visit(node); }
+void GenericVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
 void GenericVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
+void GenericVisitor::visitDecrementVar(const DecrementVar* node)                     { visit(node); }
 void GenericVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }
 void GenericVisitor::visitForLoop(const ForLoop* node)                               { visit(node); }
 void GenericVisitor::visitFuncCallExpr(const FuncCallExpr* node)                     { visit(node); }
@@ -34,11 +41,8 @@ void GenericVisitor::visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* n
 void GenericVisitor::visitFuncCallStmnt(const FuncCallStmnt* node)                   { visit(node); }
 void GenericVisitor::visitFuncDecl(const FuncDecl* node)                             { visit(node); }
 void GenericVisitor::visitFuncExit(const FuncExit* node)                             { visit(node); }
+void GenericVisitor::visitIncrementVar(const IncrementVar* node)                     { visit(node); }
 void GenericVisitor::visitInfiniteLoop(const InfiniteLoop* node)                     { visit(node); }
-void GenericVisitor::visitCommandExpr(const CommandExpr* node)                       { visit(node); }
-void GenericVisitor::visitCommandExprSymbol(const CommandExprSymbol* node)           { visit(node); }
-void GenericVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node)         { visit(node); }
-void GenericVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
 void GenericVisitor::visitScopedSymbol(const ScopedSymbol* node)                     { visit(node); }
 void GenericVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
 void GenericVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }

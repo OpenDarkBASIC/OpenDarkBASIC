@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-compiler/parsers/db/Parser.y.hpp"
 #include <string>
 
 namespace odb {

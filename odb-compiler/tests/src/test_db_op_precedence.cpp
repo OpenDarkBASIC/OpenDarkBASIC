@@ -1,4 +1,3 @@
-#include <gmock/gmock.h>
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"

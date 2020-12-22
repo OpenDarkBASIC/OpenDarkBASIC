@@ -2,7 +2,7 @@
     #include <stddef.h>  /* size_t */
     #include <string.h>  /* strcmp */
 
-    #include "odb-compiler/parsers/db/Parser.y.h"        /* for list of token values */
+    #include "odb-compiler/parsers/db/Parser.y.hpp"      /* for list of token values */
     #include "odb-compiler/parsers/db/KeywordToken.hpp"  /* Implementing this interface */
 
     namespace odb {

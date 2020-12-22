@@ -4,11 +4,13 @@
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
@@ -344,10 +346,35 @@ private:
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
     }
     void visitBreak(const Break* node) override {}
+    void visitCommandExpr(const CommandExpr* node) override
+    {
+        if (node->args().notNull())
+            writeNamedConnection(node, node->args(), "args");
+    }
+    void visitCommandExprSymbol(const CommandExprSymbol* node) override
+    {
+        if (node->args().notNull())
+            writeNamedConnection(node, node->args(), "args");
+    }
+    void visitCommandStmnt(const CommandStmnt* node) override
+    {
+        if (node->args().notNull())
+            writeNamedConnection(node, node->args(), "args");
+    }
+    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
+    {
+        if (node->args().notNull())
+            writeNamedConnection(node, node->args(), "args");
+    }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
+    }
+    void visitDecrementVar(const DecrementVar* node) override
+    {
+        writeNamedConnection(node, node->variable(), "var");
+        writeNamedConnection(node, node->expression(), "expr");
     }
     void visitExpressionList(const ExpressionList* node) override
     {
@@ -401,30 +428,15 @@ private:
         if (node->returnValue().notNull())
             writeNamedConnection(node, node->returnValue(), "returnValue");
     }
+    void visitIncrementVar(const IncrementVar* node) override
+    {
+        writeNamedConnection(node, node->variable(), "var");
+        writeNamedConnection(node, node->expression(), "expr");
+    }
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
-    }
-    void visitCommandExpr(const CommandExpr* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
-    }
-    void visitCommandExprSymbol(const CommandExprSymbol* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
-    }
-    void visitCommandStmnt(const CommandStmnt* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
-    }
-    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
     }
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
@@ -506,8 +518,18 @@ private:
         { writeName(node, "Block"); }
     void visitBreak(const Break* node) override
         { writeName(node, "Break"); }
+    void visitCommandExpr(const CommandExpr* node) override
+        { writeName(node, "CommandExpr: " + node->command()->dbSymbol()); }
+    void visitCommandExprSymbol(const CommandExprSymbol* node) override
+        { writeName(node, "CommandExprSymbol: " + node->command()); }
+    void visitCommandStmnt(const CommandStmnt* node) override
+        { writeName(node, "CommandStmnt" + node->command()->dbSymbol()); }
+    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
+        { writeName(node, "CommandStmntSymbol: " + node->command()); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
+    void visitDecrementVar(const DecrementVar* node) override
+        { writeName(node, "DecrementVar"); }
     void visitExpressionList(const ExpressionList* node) override
         { writeName(node, "ExpressionList"); }
     void visitForLoop(const ForLoop* node) override
@@ -522,16 +544,10 @@ private:
         { writeName(node, "FuncDecl"); }
     void visitFuncExit(const FuncExit* node) override
         { writeName(node, "FuncExit"); }
+    void visitIncrementVar(const IncrementVar* node) override
+        { writeName(node, "IncrementVar"); }
     void visitInfiniteLoop(const InfiniteLoop* node) override
         { writeName(node, "InfiniteLoop"); }
-    void visitCommandExpr(const CommandExpr* node) override
-        { writeName(node, "CommandExpr: " + node->command()->dbSymbol()); }
-    void visitCommandExprSymbol(const CommandExprSymbol* node) override
-        { writeName(node, "CommandExprSymbol: " + node->command()); }
-    void visitCommandStmnt(const CommandStmnt* node) override
-        { writeName(node, "CommandStmnt" + node->command()->dbSymbol()); }
-    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
-        { writeName(node, "CommandStmntSymbol: " + node->command()); }
     void visitUntilLoop(const UntilLoop* node) override
         { writeName(node, "UntilLoop"); }
     void visitSymbol(const Symbol* node) override

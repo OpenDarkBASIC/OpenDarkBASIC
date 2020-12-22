@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-compiler/parsers/db/Parser.y.hpp"
 
 namespace odb {
 namespace ast {
@@ -27,7 +27,6 @@ void Node::setParent(Node* node)
 {
     parent_ = node;
 }
-
 
 }
 }

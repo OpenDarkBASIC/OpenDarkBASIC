@@ -57,7 +57,7 @@ endif ()
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db/Parser.y.h" ${BISON_VERBOSE_OPTION}
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db/Parser.y.hpp" ${BISON_VERBOSE_OPTION}
     COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
@@ -99,14 +99,16 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/BinaryOp.cpp"
     "src/ast/Block.cpp"
     "src/ast/Break.cpp"
+    "src/ast/Command.cpp"
     "src/ast/ConstDecl.cpp"
+    "src/ast/Decrement.cpp"
     "src/ast/Exporters_DOT.cpp"
     "src/ast/Exporters_JSON.cpp"
     "src/ast/Expression.cpp"
     "src/ast/ExpressionList.cpp"
     "src/ast/FuncCall.cpp"
     "src/ast/FuncDecl.cpp"
-    "src/ast/Command.cpp"
+    "src/ast/Increment.cpp"
     "src/ast/Literal.cpp"
     "src/ast/Loop.cpp"
     "src/ast/Node.cpp"
@@ -159,12 +161,13 @@ if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
         "tests/src/test_db_assignment.cpp"
         # "tests/src/test_db_arrays.cpp"
+        "tests/src/test_db_command.cpp"
         # "tests/src/test_db_conditional.cpp"
         "tests/src/test_db_constant.cpp"
         "tests/src/test_db_func_call.cpp"
         "tests/src/test_db_func_decl.cpp"
         # "tests/src/test_db_goto.cpp"
-        "tests/src/test_db_command.cpp"
+        "tests/src/test_db_inc_dec.cpp"
         "tests/src/test_db_loop_do.cpp"
         "tests/src/test_db_loop_for.cpp"
         "tests/src/test_db_loop_repeat.cpp"

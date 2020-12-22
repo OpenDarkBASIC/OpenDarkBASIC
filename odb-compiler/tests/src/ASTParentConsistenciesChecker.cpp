@@ -4,13 +4,15 @@
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
+#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
+#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
-#include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
@@ -38,10 +40,35 @@ void ASTParentConsistenciesChecker::visitBlock(const Block* node)
 void ASTParentConsistenciesChecker::visitBreak(const Break* node)
 {
 }
+void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
+{
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+}
+void ASTParentConsistenciesChecker::visitCommandExprSymbol(const CommandExprSymbol* node)
+{
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+}
+void ASTParentConsistenciesChecker::visitCommandStmnt(const CommandStmnt* node)
+{
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+}
+void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSymbol* node)
+{
+    if (node->args().notNull())
+        EXPECT_THAT(node, Eq(node->args()->parent()));
+}
 void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->literal()->parent()));
+}
+void ASTParentConsistenciesChecker::visitDecrementVar(const DecrementVar* node)
+{
+    EXPECT_THAT(node, Eq(node->variable()->parent()));
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
 }
 void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* node)
 {
@@ -91,30 +118,15 @@ void ASTParentConsistenciesChecker::visitFuncExit(const FuncExit* node)
     if (node->returnValue().notNull())
         EXPECT_THAT(node, Eq(node->returnValue()->parent()));
 }
+void ASTParentConsistenciesChecker::visitIncrementVar(const IncrementVar* node)
+{
+    EXPECT_THAT(node, Eq(node->variable()->parent()));
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+}
 void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
 {
     if (node->body().notNull())
         EXPECT_THAT(node, Eq(node->body()->parent()));
-}
-void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
-}
-void ASTParentConsistenciesChecker::visitCommandExprSymbol(const CommandExprSymbol* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
-}
-void ASTParentConsistenciesChecker::visitCommandStmnt(const CommandStmnt* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
-}
-void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSymbol* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
 }
 void ASTParentConsistenciesChecker::visitScopedSymbol(const ScopedSymbol* node)
 {

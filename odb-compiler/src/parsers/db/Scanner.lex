@@ -15,7 +15,7 @@
         } \
     }
 
-#include "odb-compiler/parsers/db/Parser.y.h"
+#include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-sdk/Str.hpp"

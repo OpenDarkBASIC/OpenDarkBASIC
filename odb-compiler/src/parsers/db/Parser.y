@@ -5,12 +5,14 @@
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
     #include "odb-compiler/ast/Break.hpp"
+    #include "odb-compiler/ast/Command.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
+    #include "odb-compiler/ast/Decrement.hpp"
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
-    #include "odb-compiler/ast/Command.hpp"
+    #include "odb-compiler/ast/Increment.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
@@ -18,7 +20,7 @@
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
-    #include "odb-compiler/parsers/db/Parser.y.h"
+    #include "odb-compiler/parsers/db/Parser.y.hpp"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
     #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
@@ -96,7 +98,7 @@
 %define api.prefix {db}
 
 /* Tell bison where and how it should include the generated header file */
-%define api.header.include {"odb-compiler/parsers/db/Parser.y.h"}
+%define api.header.include {"odb-compiler/parsers/db/Parser.y.hpp"}
 
 /*
  * These two options are related to Flex's %option reentrant, These options add an argument to
@@ -292,6 +294,8 @@
 %type<break_> break;
 %type<func_decl> func_decl;
 %type<func_exit> func_exit;
+%type<stmnt> increment;
+%type<stmnt> decrement;
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -351,6 +355,8 @@ stmnt
   | break                                        { $$ = $1; }
   | func_decl                                    { $$ = $1; }
   | func_exit                                    { $$ = $1; }
+  | increment                                    { $$ = $1; }
+  | decrement                                    { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -380,7 +386,7 @@ expr
   | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&yylloc)); }
   | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, driver->newLocation(&yylloc)); }
   | LNOT expr                                    { $$ = new UnaryOpNot($2, driver->newLocation(&yylloc)); }
-  | '-' expr %prec UMINUS                         { $$ = new UnaryOpNegate($2, driver->newLocation(&yylloc)); }
+  | '-' expr %prec UMINUS                        { $$ = new UnaryOpNegate($2, driver->newLocation(&yylloc)); }
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
@@ -426,13 +432,16 @@ stmnt
 constant_decl
   : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, driver->newLocation(&yylloc)); }
   ;
-/*
-dec_or_inc
-  : DEC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_DEC, &yylloc); }
-  | INC lvalue COMMA expr                        { $$ = newOp($2, $4, NT_OP_INC, &yylloc); }
-  | DEC lvalue                                   { $$ = newOp($2, newIntegerLiteral(1, &yylloc), NT_OP_DEC, &yylloc); }
-  | INC lvalue                                   { $$ = newOp($2, newIntegerLiteral(1, &yylloc), NT_OP_INC, &yylloc); }
+
+increment
+  : INC var_ref ',' expr                         { $$ = new IncrementVar($2, $4, driver->newLocation(&yylloc)); }
+  | INC var_ref                                  { $$ = new IncrementVar($2, driver->newLocation(&yylloc)); }
   ;
+decrement
+  : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, driver->newLocation(&yylloc)); }
+  | DEC var_ref                                  { $$ = new DecrementVar($2, driver->newLocation(&yylloc)); }
+  ;
+/*
 var_assignment
   : lvalue EQ expr                               { $$ = newAssignment($1, $3, &yylloc); }
   | var_decl EQ expr                             { $$ = newAssignment($1, $3, &yylloc); }

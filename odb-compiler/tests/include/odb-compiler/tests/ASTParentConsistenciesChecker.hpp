@@ -9,7 +9,12 @@ public:
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
     void visitBlock(const odb::ast::Block* node) override;
     void visitBreak(const odb::ast::Break* node) override;
+    void visitCommandExpr(const odb::ast::CommandExpr* node) override;
+    void visitCommandExprSymbol(const odb::ast::CommandExprSymbol* node) override;
+    void visitCommandStmnt(const odb::ast::CommandStmnt* node) override;
+    void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
+    void visitDecrementVar(const odb::ast::DecrementVar* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
     void visitForLoop(const odb::ast::ForLoop* node) override;
     void visitFuncCallExpr(const odb::ast::FuncCallExpr* node) override;
@@ -17,11 +22,8 @@ public:
     void visitFuncCallStmnt(const odb::ast::FuncCallStmnt* node) override;
     void visitFuncDecl(const odb::ast::FuncDecl* node) override;
     void visitFuncExit(const odb::ast::FuncExit* node) override;
+    void visitIncrementVar(const odb::ast::IncrementVar* node) override;
     void visitInfiniteLoop(const odb::ast::InfiniteLoop* node) override;
-    void visitCommandExpr(const odb::ast::CommandExpr* node) override;
-    void visitCommandExprSymbol(const odb::ast::CommandExprSymbol* node) override;
-    void visitCommandStmnt(const odb::ast::CommandStmnt* node) override;
-    void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const odb::ast::ScopedAnnotatedSymbol* node) override;
     void visitSymbol(const odb::ast::Symbol* node) override;
