@@ -1,5 +1,6 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
@@ -12,7 +13,7 @@
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include <gmock/gmock.h>
@@ -163,4 +164,12 @@ ODB_DATATYPE_LIST
         EXPECT_THAT(node, Eq(node->rhs()->parent()));                         \
     }
 ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void ASTParentConsistenciesChecker::visitUnaryOp##op(const UnaryOp##op* node) \
+    {                                                                         \
+        EXPECT_THAT(node, Eq(node->expr()->parent()));                        \
+    }
+ODB_UNARY_OP_LIST
 #undef X

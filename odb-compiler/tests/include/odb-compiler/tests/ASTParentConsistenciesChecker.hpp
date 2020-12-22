@@ -40,4 +40,9 @@ public:
     void visitBinaryOp##op(const odb::ast::BinaryOp##op* node) override;
     ODB_BINARY_OP_LIST
 #undef X
+
+#define X(op, tok) \
+    void visitUnaryOp##op(const odb::ast::UnaryOp##op* node) override;
+    ODB_UNARY_OP_LIST
+#undef X
 };

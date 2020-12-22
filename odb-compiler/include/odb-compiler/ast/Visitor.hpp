@@ -2,7 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
-#include "odb-compiler/ast/BinaryOperators.hpp"
+#include "odb-compiler/ast/Operators.hpp"
 
 namespace odb {
 namespace ast {
@@ -47,6 +47,10 @@ ODB_DATATYPE_LIST
 ODB_BINARY_OP_LIST
 #undef X
 
+#define X(op, str) class UnaryOp##op;
+ODB_UNARY_OP_LIST
+#undef X
+
 class ODBCOMPILER_PUBLIC_API Visitor
 {
 public:
@@ -84,6 +88,11 @@ public:
 #define X(op, str) \
     virtual void visitBinaryOp##op(const BinaryOp##op* node) = 0;
     ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, str) \
+    virtual void visitUnaryOp##op(const UnaryOp##op* node) = 0;
+    ODB_UNARY_OP_LIST
 #undef X
 };
 
@@ -124,6 +133,11 @@ public:
 #define X(op, str) \
     void visitBinaryOp##op(const BinaryOp##op* node) override;
     ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, str) \
+    void visitUnaryOp##op(const UnaryOp##op* node) override;
+    ODB_UNARY_OP_LIST
 #undef X
 
     virtual void visit(const Node* node) = 0;

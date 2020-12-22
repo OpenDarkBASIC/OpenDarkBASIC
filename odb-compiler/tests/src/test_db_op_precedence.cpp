@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 
 #define NAME db_op_precedence
 
@@ -15,121 +17,192 @@ public:
 using namespace odb;
 using namespace ast;
 
-#define TEST_LEFT_RECURSION_I(opupper, oplower, symstr)                       \
-    TEST_F(NAME, oplower##_is_left_recursion)                                 \
+#define TEST_LEFT_RECURSION(op, tok)                                          \
+    TEST_F(NAME, op##_is_left_recursion_1)                                    \
     {                                                                         \
-        ASSERT_THAT(driver->parseString("result = a " symstr " b " symstr " c"), IsTrue());     \
+        using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
+        ast = driver->parseString("test", "result = a " tok " b " tok " c");  \
         ASSERT_THAT(ast, NotNull());                                          \
-        ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
-        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper)); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->info.type, Eq(NT_OP_##opupper)); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.left, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.left->info.type, Eq(NT_SYM_VAR_REF)); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.right, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.left->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF));\
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.right, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower.right->info.type, Eq(NT_SYM_VAR_REF)); \
-    }
-#define TEST_LEFT_RECURSION(args) TEST_LEFT_RECURSION_I(args)
-
-#define TEST_OP1_LOWER_PRECEDENCE_THAN_OP2_I(opupper1, oplower1, symstr1, opupper2, oplower2, symstr2) \
-    TEST_F(NAME, oplower1##_lower_than_##oplower2##_1)                        \
-    {                                                                         \
-        ASSERT_THAT(driver->parseString("result = a " symstr1 " b " symstr2 " c"), IsTrue()); \
                                                                               \
-        ASSERT_THAT(ast, NotNull());                                          \
-        ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
-        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.right, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.right->info.type, Eq(NT_OP_##opupper2)); \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
     }                                                                         \
-    TEST_F(NAME, oplower1##_lower_than_##oplower2##_2)                        \
+    TEST_F(NAME, op##_is_left_recursion_2)                                    \
     {                                                                         \
-        ASSERT_THAT(driver->parseString("result = a " symstr2 " b " symstr1 " c"), IsTrue()); \
+        using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
+        ast = driver->parseString("test", "result = a " tok " (b " tok " c)");\
         ASSERT_THAT(ast, NotNull());                                          \
-        ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));                            \
-        ASSERT_THAT(ast->block.stmnt, NotNull());                             \
-        ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_ASSIGNMENT));          \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr, NotNull());            \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->info.type, Eq(NT_OP_##opupper1)); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.left, NotNull()); \
-        ASSERT_THAT(ast->block.stmnt->assignment.expr->op.oplower1.left->info.type, Eq(NT_OP_##opupper2)); \
+                                                                              \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
     }
-#define TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(args1, args2) TEST_OP1_LOWER_PRECEDENCE_THAN_OP2_I(args1, args2)
 
-#define ADD    ADD,  add,    "+"
-#define INC    INC,  inc,    "inc"
-#define SUB    SUB,  sub,    "-"
-#define DEC    DEC,  dec,    "dec"
-#define MUL    MUL,  mul,    "*"
-#define DIV    DIV,  div,    "/"
-#define MOD    MOD,  mod,    "mod"
-#define POW    POW,  pow,    "^"
+#define TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(op1, op2, tok1, tok2)            \
+    TEST_F(NAME, binary_##op1##_lower_than_##op2##_1)                         \
+    {                                                                         \
+        using Annotation = ast::Symbol::Annotation;                           \
+                                                                              \
+        ast = driver->parseString("test", "result = a " tok1 " b " tok2 " c");\
+        ASSERT_THAT(ast, NotNull());                                          \
+                                                                              \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op1(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op2(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
+    }                                                                         \
+    TEST_F(NAME, binary_##op1##_lower_than_##op2##_2)                         \
+    {                                                                         \
+        using Annotation = ast::Symbol::Annotation;                           \
+                                                                              \
+        ast = driver->parseString("test", "result = a " tok2 " b " tok1 " c");\
+        ASSERT_THAT(ast, NotNull());                                          \
+                                                                              \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitBinaryOp##op1(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitBinaryOp##op2(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
+    }                                                                         \
 
-#define BSHL   BSHL, bshl,   "<<"
-#define BSHR   BSHR, bshr,   ">>"
-#define BOR    BOR,  bor,    "||"
-#define BAND   BAND, band,   "&&"
-#define BXOR   BXOR, bxor,   "~~"
-#define BNOT   BNOT, bnot,   ".."
+#define TEST_UOP1_UOP2_RIGHT_RECURSION(op1, op2, tok1, tok2)                  \
+    TEST_F(NAME, unary_##op1##_lower_than_##op2##_1)                          \
+    {                                                                         \
+        using Annotation = ast::Symbol::Annotation;                           \
+                                                                              \
+        ast = driver->parseString("test", "result = " tok1 tok2 " a");        \
+        ASSERT_THAT(ast, NotNull());                                          \
+                                                                              \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitUnaryOp##op1(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitUnaryOp##op2(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
+    }                                                                         \
+    TEST_F(NAME, unary_##op1##_lower_than_##op2##_2)                          \
+    {                                                                         \
+        using Annotation = ast::Symbol::Annotation;                           \
+                                                                              \
+        ast = driver->parseString("test", "result = " tok2 tok1 " a");        \
+        ASSERT_THAT(ast, NotNull());                                          \
+                                                                              \
+        StrictMock<ASTMockVisitor> v;                                         \
+        Expectation exp;                                                      \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
+        exp = EXPECT_CALL(v, visitUnaryOp##op2(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitUnaryOp##op1(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
+        exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
+                                                                              \
+        ast->accept(&v);                                                      \
+    }
 
-#define LT     LT,    lt,    "<"
-#define LE     LE,    le,    "<="
-#define GT     GT,    gt,    ">"
-#define GE     GE,    ge,    ">="
-#define EQ     EQ,    eq,    "="
-#define NE     NE,    ne,    "<>"
-#define LOR    LOR,   lor,   "or"
-#define LAND   LAND,  land,  "and"
-#define LXOR   LXOR,  lxor,  "xor"
-#define LNOT   LNOT,  lnot,  "not"
-#define COMMA  COMMA, comma, ","
+// ============================================================================
+// Test grouping of binary operators when more than 1 appear next to each other
+// ============================================================================
 
-TEST_LEFT_RECURSION(ADD)
-TEST_LEFT_RECURSION(SUB)
-TEST_LEFT_RECURSION(MOD)
-TEST_LEFT_RECURSION(POW)
-TEST_LEFT_RECURSION(COMMA)
+#define X(op, tok) TEST_LEFT_RECURSION(op, tok)
+ODB_BINARY_OP_LIST
+#undef X
+
+// ============================================================================
+// Test precedence among all binary operators
+// ============================================================================
 
 // + - * mod / ^
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(DIV, POW)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(MOD, DIV)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(MUL, MOD)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(SUB, MUL)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(ADD, SUB)
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Div, Pow, "/", "^")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Mod, Div, "mod", "/")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Mul, Mod, "*", "mod")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Sub, Mul, "-", "*")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Add, Sub, "+", "-")
 
 // >> +
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BSHR, ADD)
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(ShiftRight, Add, ">>", "+")
 
 // .. ~~ || && = < > <= >= <> << >>
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BSHL, BSHR)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(NE, BSHL)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(GE, NE)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LE, GE)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(GT, LE)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LT, GT)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(EQ, LT)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BAND, EQ)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BOR, BAND)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BXOR, BOR)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(BNOT, BXOR)
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(ShiftLeft, ShiftRight, "<<", ">>")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(NotEqual, ShiftLeft, "<>", "<<")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(GreaterEqual, NotEqual, ">=", "<>")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LessEqual, GreaterEqual, "<=", ">=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Greater, LessEqual, ">", "<=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Less, Greater, "<", ">")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Equal, Less, "=", "<")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseAnd, Equal, "&&", "=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseOr, BitwiseAnd, "||", "&&")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseXor, BitwiseOr, "~~", "||")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseNot, BitwiseXor, "..", "~~")
 
-// not ..
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LNOT, BNOT)
+// and ..
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(And, BitwiseNot, "and", "..")
 
-// xor or and not
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LAND, LNOT)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LOR, LAND)
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(LXOR, LOR)
+// xor or not
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Or, And, "or", "and")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Xor, Or, "xor", "or")
 
-// , xor
-TEST_OP1_LOWER_PRECEDENCE_THAN_OP2(COMMA, LXOR)
+// ============================================================================
+// Test precedence among all unary operators
+// ============================================================================
+
+TEST_UOP1_UOP2_RIGHT_RECURSION(Not, Negate, "not", "-")

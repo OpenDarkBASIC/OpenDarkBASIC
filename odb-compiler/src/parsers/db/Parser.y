@@ -15,6 +15,7 @@
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
+    #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
     #include "odb-compiler/parsers/db/Parser.y.h"
@@ -305,7 +306,7 @@
 %left LOR
 %left LAND
 %right LNOT
-%right BNOT
+%left BNOT
 %left BXOR
 %left BOR
 %left BAND
@@ -324,6 +325,7 @@
 %left '/'
 %left '^'
 %left '(' ')'
+%right UMINUS
 
 %start program
 
@@ -377,7 +379,8 @@ expr
   | expr LOR expr                                { $$ = new BinaryOpOr($1, $3, driver->newLocation(&yylloc)); }
   | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&yylloc)); }
   | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, driver->newLocation(&yylloc)); }
-  | expr LNOT expr                               { $$ = new BinaryOpNot($1, $3, driver->newLocation(&yylloc)); }
+  | LNOT expr                                    { $$ = new UnaryOpNot($2, driver->newLocation(&yylloc)); }
+  | '-' expr %prec UMINUS                         { $$ = new UnaryOpNegate($2, driver->newLocation(&yylloc)); }
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
@@ -613,8 +616,6 @@ literal
   | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
   | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
   | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | '-' INTEGER_LITERAL                          { $$ = driver->newPositiveIntLikeLiteral(-$2, driver->newLocation(&yylloc)); }
-  | '-' FLOAT_LITERAL                            { $$ = new DoubleFloatLiteral(-$2, driver->newLocation(&yylloc)); }
   ;
 /*
 scoped_symbol

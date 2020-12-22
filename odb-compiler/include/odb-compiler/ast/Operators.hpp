@@ -3,7 +3,6 @@
 /*!
  * @brief All of the DarkBASIC operators that can exist
  */
-
 #define ODB_BINARY_OP_LIST   \
     X(Add,          "+")     \
     X(Sub,          "-")     \
@@ -27,5 +26,8 @@
     X(NotEqual,     "<>")    \
     X(Or,           "or")    \
     X(And,          "and")   \
-    X(Xor,          "xor")   \
-    X(Not,          "not")
+    X(Xor,          "xor")
+
+#define ODB_UNARY_OP_LIST    \
+    X(Not,          "not")   \
+    X(Negate,       "-")

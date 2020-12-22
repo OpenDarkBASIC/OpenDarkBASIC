@@ -41,4 +41,9 @@ public:
     MOCK_METHOD(void, visitBinaryOp##op, (const ast::BinaryOp##op* node), (override));
     ODB_BINARY_OP_LIST
 #undef X
+
+#define X(op, tok) \
+    MOCK_METHOD(void, visitUnaryOp##op, (const ast::UnaryOp##op* node), (override));
+    ODB_UNARY_OP_LIST
+#undef X
 };

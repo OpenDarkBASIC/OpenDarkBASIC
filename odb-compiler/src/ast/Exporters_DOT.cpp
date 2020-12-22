@@ -15,6 +15,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
@@ -469,6 +470,14 @@ private:
     ODB_BINARY_OP_LIST
 #undef X
 
+#define X(op, tok)                                                            \
+    void visitUnaryOp##op(const UnaryOp##op* node) override                   \
+    {                                                                         \
+        writeNamedConnection(node, node->expr(), "expr");                     \
+    }
+    ODB_UNARY_OP_LIST
+#undef X
+
 private:
     FILE* fp_;
     const NodeGUIDs* guids_;
@@ -596,6 +605,12 @@ private:
     void visitBinaryOp##op(const BinaryOp##op* node) override                 \
         { writeName(node, tok); }
     ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, tok)                                                            \
+    void visitUnaryOp##op(const UnaryOp##op* node) override                   \
+        { writeName(node, tok); }
+    ODB_UNARY_OP_LIST
 #undef X
 
 private:

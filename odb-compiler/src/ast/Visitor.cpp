@@ -13,6 +13,7 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
@@ -55,6 +56,11 @@ ODB_DATATYPE_LIST
 #define X(op, str) \
     void GenericVisitor::visitBinaryOp##op(const BinaryOp##op* node)                 { visit(node); }
 ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, str) \
+    void GenericVisitor::visitUnaryOp##op(const UnaryOp##op* node)                   { visit(node); }
+ODB_UNARY_OP_LIST
 #undef X
 
 }

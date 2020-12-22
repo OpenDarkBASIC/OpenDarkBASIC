@@ -7,28 +7,26 @@
 namespace odb {
 namespace ast {
 
-class BinaryOp : public Expression
+class UnaryOp : public Expression
 {
 public:
-    BinaryOp(Expression* lhs, Expression* rhs, SourceLocation* location);
+    UnaryOp(Expression* expr, SourceLocation* location);
 
-    Expression* lhs() const;
-    Expression* rhs() const;
+    Expression* expr() const;
 
 protected:
-    Reference<Expression> lhs_;
-    Reference<Expression> rhs_;
+    Reference<Expression> expr_;
 };
 
 #define X(op, tok)                                                            \
-class BinaryOp##op : public BinaryOp                                          \
+class UnaryOp##op : public UnaryOp                                            \
 {                                                                             \
 public:                                                                       \
-    BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location); \
+    UnaryOp##op(Expression* expr, SourceLocation* location);                  \
                                                                               \
     void accept(Visitor* visitor) const override;                             \
 };
-ODB_BINARY_OP_LIST
+ODB_UNARY_OP_LIST
 #undef X
 
 }
