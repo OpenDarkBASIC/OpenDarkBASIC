@@ -12,10 +12,13 @@
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
+    #include "odb-compiler/ast/Goto.hpp"
     #include "odb-compiler/ast/Increment.hpp"
+    #include "odb-compiler/ast/Label.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
+    #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
@@ -51,6 +54,8 @@
             class Assignment;
             class Block;
             class Break;
+            class CommandExprSymbol;
+            class CommandStmntSymbol;
             class ConstDecl;
             class ForLoop;
             class FuncCallExpr;
@@ -59,15 +64,17 @@
             class FuncExit;
             class Expression;
             class ExpressionList;
+            class GotoSymbol;
             class InfiniteLoop;
-            class CommandExprSymbol;
-            class CommandStmntSymbol;
+            class Label;
             class Literal;
             class Loop;
             class Node;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
             class Statement;
+            class SubCallSymbol;
+            class SubReturn;
             class Symbol;
             class UntilLoop;
             class VarAssignment;
@@ -127,6 +134,8 @@
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::Break* break_;
+    odb::ast::CommandExprSymbol* command_expr;
+    odb::ast::CommandStmntSymbol* command_stmnt;
     odb::ast::ConstDecl* const_decl;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
@@ -134,13 +143,16 @@
     odb::ast::FuncCallStmnt* func_call_stmnt;
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
+    odb::ast::GotoSymbol* goto_symbol;
     odb::ast::InfiniteLoop* infinite_loop;
-    odb::ast::CommandExprSymbol* command_expr;
-    odb::ast::CommandStmntSymbol* command_stmnt;
+    odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
+    odb::ast::SubCallSymbol* sub_call_symbol;
+    odb::ast::SubReturn* sub_return;
+    odb::ast::Symbol* symbol;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarAssignment* var_assignment;
     odb::ast::VarDecl* var_decl;
@@ -296,6 +308,11 @@
 %type<func_exit> func_exit;
 %type<stmnt> increment;
 %type<stmnt> decrement;
+%type<symbol> label_sym;
+%type<sub_call_symbol> sub_call;
+%type<sub_return> sub_return;
+%type<goto_symbol> goto_label;
+%type<label> label_decl;
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -357,6 +374,10 @@ stmnt
   | func_exit                                    { $$ = $1; }
   | increment                                    { $$ = $1; }
   | decrement                                    { $$ = $1; }
+  | label_decl                                   { $$ = $1; }
+  | sub_call                                     { $$ = $1; }
+  | sub_return                                   { $$ = $1; }
+  | goto_label                                   { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -599,19 +620,6 @@ func_exit
   : EXITFUNCTION expr                            { $$ = new FuncExit($2, driver->newLocation(&yylloc)); }
   | EXITFUNCTION                                 { $$ = new FuncExit(driver->newLocation(&yylloc)); }
   ;
-/*
-sub_call
-  : GOSUB annotated_symbol_without_type                    { $$ = $2; $$->info.type = NT_SYM_SUB_CALL; }
-  ;
-sub_return
-  : RETURN                                       { $$ = newSubReturn(&yylloc); }
-  ;
-label_decl
-  : annotated_symbol_without_type COLON                    { $$ = $1; $$->info.type = NT_SYM_LABEL; }
-  ;
-goto_label
-  : GOTO annotated_symbol_without_type                     { $$ = newGoto($2, &yylloc); }
-  ;*/
 func_call_expr_or_array_ref
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
@@ -619,6 +627,21 @@ func_call_expr_or_array_ref
 func_call_stmnt
   : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
+  ;
+sub_call
+  : GOSUB label_sym                              { $$ = new SubCallSymbol($2, driver->newLocation(&yylloc)); }
+  ;
+sub_return
+  : RETURN                                       { $$ = new SubReturn(driver->newLocation(&yylloc)); }
+  ;
+label_decl
+  : label_sym ':'                                { $$ = new Label($1, driver->newLocation(&yylloc)); }
+  ;
+goto_label
+  : GOTO label_sym                               { $$ = new GotoSymbol($2, driver->newLocation(&yylloc)); }
+  ;
+label_sym
+  : SYMBOL                                       { $$ = new Symbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }

@@ -1,7 +1,7 @@
-#include <gmock/gmock.h>
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 
 #define NAME db_string_literal
 
@@ -17,20 +17,28 @@ using namespace ast;
 
 TEST_F(NAME, simple_string_assignment)
 {
-    ASSERT_THAT(driver->parseString("a = \"test\""), IsTrue());
+    ast = driver->parseString("test",
+        "a = \"test\"");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_with_backslash)
 {
-    ASSERT_THAT(driver->parseString("a = \"test\\\""), IsTrue());
+    ast = driver->parseString("test",
+        "a = \"test\\\"");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_with_path_backslashes)
 {
-    ASSERT_THAT(driver->parseString("a = \"path\\to\\file\""), IsTrue());
+    ast = driver->parseString("test",
+        "a = \"path\\to\\file\"");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_append_filename_with_backslash)
 {
-    ASSERT_THAT(driver->parseString("if foo(\"maps\\\" + LevelEditor.name$) then bar(\"maps\\\" + LevelEditor.name$)"), IsTrue());
+    ast = driver->parseString("test",
+        "if foo(\"maps\\\" + LevelEditor.name$) then bar(\"maps\\\" + LevelEditor.name$)");
+    ASSERT_THAT(ast, NotNull());
 }

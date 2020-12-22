@@ -1,7 +1,7 @@
-#include <gmock/gmock.h>
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
 
 #define NAME db_goto
 
@@ -17,5 +17,7 @@ using namespace ast;
 
 TEST_F(NAME, simple_goto)
 {
-    ASSERT_THAT(driver->parseString("goto label\n"), IsTrue());
+    ast = driver->parseString("test",
+        "goto label\n");
+    ASSERT_THAT(ast, NotNull());
 }

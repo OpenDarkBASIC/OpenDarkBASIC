@@ -22,10 +22,16 @@ public:
     void visitFuncCallStmnt(const odb::ast::FuncCallStmnt* node) override;
     void visitFuncDecl(const odb::ast::FuncDecl* node) override;
     void visitFuncExit(const odb::ast::FuncExit* node) override;
+    void visitGoto(const odb::ast::Goto* node) override;
+    void visitGotoSymbol(const odb::ast::GotoSymbol* node) override;
     void visitIncrementVar(const odb::ast::IncrementVar* node) override;
     void visitInfiniteLoop(const odb::ast::InfiniteLoop* node) override;
+    void visitLabel(const odb::ast::Label* node) override;
     void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const odb::ast::ScopedAnnotatedSymbol* node) override;
+    void visitSubCall(const odb::ast::SubCall* node) override;
+    void visitSubCallSymbol(const odb::ast::SubCallSymbol* node) override;
+    void visitSubReturn(const odb::ast::SubReturn* node) override;
     void visitSymbol(const odb::ast::Symbol* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;

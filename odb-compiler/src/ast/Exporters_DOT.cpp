@@ -10,13 +10,16 @@
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
+#include "odb-compiler/ast/Goto.hpp"
 #include "odb-compiler/ast/Increment.hpp"
+#include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -428,6 +431,14 @@ private:
         if (node->returnValue().notNull())
             writeNamedConnection(node, node->returnValue(), "returnValue");
     }
+    void visitGoto(const Goto* node) override
+    {
+        writeNamedConnection(node, node->label(), "label");
+    }
+    void visitGotoSymbol(const GotoSymbol* node) override
+    {
+        writeNamedConnection(node, node->labelSymbol(), "label");
+    }
     void visitIncrementVar(const IncrementVar* node) override
     {
         writeNamedConnection(node, node->variable(), "var");
@@ -438,8 +449,21 @@ private:
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
     }
+    void visitLabel(const Label* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+    }
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
+    void visitSubCall(const SubCall* node) override
+    {
+        writeNamedConnection(node, node->label(), "label");
+    }
+    void visitSubCallSymbol(const SubCallSymbol* node) override
+    {
+        writeNamedConnection(node, node->labelSymbol(), "label");
+    }
+    void visitSubReturn(const SubReturn* node) override {}
     void visitSymbol(const Symbol* node) override {}
     void visitUntilLoop(const UntilLoop* node) override
     {
@@ -544,12 +568,24 @@ private:
         { writeName(node, "FuncDecl"); }
     void visitFuncExit(const FuncExit* node) override
         { writeName(node, "FuncExit"); }
+    void visitGoto(const Goto* node) override
+        { writeName(node, "Goto"); }
+    void visitGotoSymbol(const GotoSymbol* node) override
+        { writeName(node, "GotoSymbol"); }
     void visitIncrementVar(const IncrementVar* node) override
         { writeName(node, "IncrementVar"); }
     void visitInfiniteLoop(const InfiniteLoop* node) override
         { writeName(node, "InfiniteLoop"); }
+    void visitLabel(const Label* node) override
+        { writeName(node, "Label"); }
     void visitUntilLoop(const UntilLoop* node) override
         { writeName(node, "UntilLoop"); }
+    void visitSubCall(const SubCall* node) override
+        { writeName(node, "SubCall"); }
+    void visitSubCallSymbol(const SubCallSymbol* node) override
+        { writeName(node, "SubCallSymbol"); }
+    void visitSubReturn(const SubReturn* node) override
+        { writeName(node, "SubReturn"); }
     void visitSymbol(const Symbol* node) override
         { writeName(node, "symbol: " + node->name()); }
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override

@@ -24,9 +24,15 @@ public:
     MOCK_METHOD(void, visitFuncDecl, (const ast::FuncDecl* node), (override));
     MOCK_METHOD(void, visitFuncExit, (const ast::FuncExit* node), (override));
     MOCK_METHOD(void, visitIncrementVar, (const ast::IncrementVar* node), (override));
+    MOCK_METHOD(void, visitGoto, (const ast::Goto* node), (override));
+    MOCK_METHOD(void, visitGotoSymbol, (const ast::GotoSymbol* node), (override));
     MOCK_METHOD(void, visitInfiniteLoop, (const ast::InfiniteLoop* node), (override));
+    MOCK_METHOD(void, visitLabel, (const ast::Label* node), (override));
     MOCK_METHOD(void, visitScopedSymbol, (const ast::ScopedSymbol* node), (override));
     MOCK_METHOD(void, visitScopedAnnotatedSymbol, (const ast::ScopedAnnotatedSymbol* node), (override));
+    MOCK_METHOD(void, visitSubCall, (const ast::SubCall* node), (override));
+    MOCK_METHOD(void, visitSubCallSymbol, (const ast::SubCallSymbol* node), (override));
+    MOCK_METHOD(void, visitSubReturn, (const ast::SubReturn* node), (override));
     MOCK_METHOD(void, visitSymbol, (const ast::Symbol* node), (override));
     MOCK_METHOD(void, visitUntilLoop, (const ast::UntilLoop* node), (override));
     MOCK_METHOD(void, visitVarAssignment, (const ast::VarAssignment* node), (override));
