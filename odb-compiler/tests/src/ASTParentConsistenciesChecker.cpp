@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
@@ -58,6 +59,14 @@ void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSy
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
+}
+void ASTParentConsistenciesChecker::visitConditional(const Conditional* node)
+{
+    EXPECT_THAT(node, Eq(node->condition()->parent()));
+    if (node->trueBranch().notNull())
+        EXPECT_THAT(node, Eq(node->trueBranch()->parent()));
+    if (node->falseBranch().notNull())
+        EXPECT_THAT(node, Eq(node->falseBranch()->parent()));
 }
 void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
 {

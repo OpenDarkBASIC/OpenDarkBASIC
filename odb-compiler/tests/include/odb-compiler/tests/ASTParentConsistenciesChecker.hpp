@@ -13,6 +13,7 @@ public:
     void visitCommandExprSymbol(const odb::ast::CommandExprSymbol* node) override;
     void visitCommandStmnt(const odb::ast::CommandStmnt* node) override;
     void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
+    void visitConditional(const odb::ast::Conditional* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
     void visitDecrementVar(const odb::ast::DecrementVar* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;

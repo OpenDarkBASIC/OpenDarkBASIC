@@ -196,3 +196,17 @@ TEST_F(NAME, call_sub_string_fails)
         "gosub \"label\"\n");
     ASSERT_THAT(ast, IsNull());
 }
+
+TEST_F(NAME, call_annotated_label_fails_1)
+{
+    ast = driver->parseString("test",
+        "gosub label#\n");
+    ASSERT_THAT(ast, IsNull());
+}
+
+TEST_F(NAME, call_annotated_label_fails_2)
+{
+    ast = driver->parseString("test",
+        "gosub label$\n");
+    ASSERT_THAT(ast, IsNull());
+}

@@ -7,9 +7,16 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-Block::Block(SourceLocation* location) :
-    Node(location)
+Block::Block(SourceLocation* location)
+    : Node(location)
 {
+}
+
+// ----------------------------------------------------------------------------
+Block::Block(Statement* stmnt, SourceLocation* location)
+    : Node(location)
+{
+    appendStatement(stmnt);
 }
 
 // ----------------------------------------------------------------------------

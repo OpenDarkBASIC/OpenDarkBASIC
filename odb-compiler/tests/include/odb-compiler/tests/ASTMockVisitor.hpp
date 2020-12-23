@@ -14,6 +14,7 @@ public:
     MOCK_METHOD(void, visitCommandExpr, (const ast::CommandExpr* node), (override));
     MOCK_METHOD(void, visitCommandStmnt, (const ast::CommandStmnt* node), (override));
     MOCK_METHOD(void, visitCommandExprSymbol, (const ast::CommandExprSymbol* node), (override));
+    MOCK_METHOD(void, visitConditional, (const ast::Conditional* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const ast::ConstDecl* node), (override));
     MOCK_METHOD(void, visitDecrementVar, (const ast::DecrementVar* node), (override));
     MOCK_METHOD(void, visitExpressionList, (const ast::ExpressionList* node), (override));

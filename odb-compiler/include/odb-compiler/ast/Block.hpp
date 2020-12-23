@@ -14,13 +14,13 @@ class ODBCOMPILER_PUBLIC_API Block : public Node
 {
 public:
     Block(SourceLocation* location);
+    Block(Statement* stmnt, SourceLocation* location);
     ~Block();
 
     void appendStatement(Statement* stmnt);
+    const std::vector<Reference<Statement>>& statements() const;
 
     void accept(Visitor* visitor) const override;
-
-    const std::vector<Reference<Statement>>& statements() const;
 
 private:
     std::vector<Reference<Statement>> statements_;

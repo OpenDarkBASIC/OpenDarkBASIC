@@ -4,6 +4,7 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
@@ -35,6 +36,7 @@ void GenericVisitor::visitCommandExpr(const CommandExpr* node)                  
 void GenericVisitor::visitCommandExprSymbol(const CommandExprSymbol* node)           { visit(node); }
 void GenericVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node)         { visit(node); }
 void GenericVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
+void GenericVisitor::visitConditional(const Conditional* node)                       { visit(node); }
 void GenericVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
 void GenericVisitor::visitDecrementVar(const DecrementVar* node)                     { visit(node); }
 void GenericVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }

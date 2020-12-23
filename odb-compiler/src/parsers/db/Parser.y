@@ -6,6 +6,7 @@
     #include "odb-compiler/ast/Block.hpp"
     #include "odb-compiler/ast/Break.hpp"
     #include "odb-compiler/ast/Command.hpp"
+    #include "odb-compiler/ast/Conditional.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Decrement.hpp"
     #include "odb-compiler/ast/Expression.hpp"
@@ -30,7 +31,8 @@
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
 
-    #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
+    #define driver   (static_cast<odb::db::Driver*>(dbget_extra(scanner)))
+    #define newloc() (driver->newLocation(&yylloc))
 
     using namespace odb;
     using namespace ast;
@@ -56,6 +58,7 @@
             class Break;
             class CommandExprSymbol;
             class CommandStmntSymbol;
+            class Conditional;
             class ConstDecl;
             class ForLoop;
             class FuncCallExpr;
@@ -123,7 +126,7 @@
 
 %define api.token.prefix {TOK_}
 
-/* This is the union that will become known as YYSTYPE in the generated code */
+/* This is the union that will become known as DBSTYPE in the generated code */
 %union {
     bool boolean_value;
     int64_t integer_value;
@@ -136,6 +139,7 @@
     odb::ast::Break* break_;
     odb::ast::CommandExprSymbol* command_expr;
     odb::ast::CommandStmntSymbol* command_stmnt;
+    odb::ast::Conditional* conditional;
     odb::ast::ConstDecl* const_decl;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
@@ -313,6 +317,10 @@
 %type<sub_return> sub_return;
 %type<goto_symbol> goto_label;
 %type<label> label_decl;
+%type<conditional> conditional;
+%type<conditional> cond_oneline;
+%type<conditional> cond_begin;
+%type<block> cond_next;
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -360,7 +368,7 @@ seps : seps sep | sep;
 seps_maybe : seps | ;
 block
   : block seps stmnt                             { $$ = $1; $$->appendStatement($3); }
-  | stmnt                                        { $$ = new Block(driver->newLocation(&yylloc)); $$->appendStatement($1); }
+  | stmnt                                        { $$ = new Block(newloc()); $$->appendStatement($1); }
   ;
 stmnt
   : constant_decl                                { $$ = $1; }
@@ -378,36 +386,37 @@ stmnt
   | sub_call                                     { $$ = $1; }
   | sub_return                                   { $$ = $1; }
   | goto_label                                   { $$ = $1; }
+  | conditional                                  { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
-  | expr                                         { $$ = new ExpressionList(driver->newLocation(&yylloc)); $$->appendExpression($1); }
+  | expr                                         { $$ = new ExpressionList(newloc()); $$->appendExpression($1); }
   ;
 expr
   : '(' expr ')'                                 { $$ = $2; }
-  | expr '+' expr                                { $$ = new BinaryOpAdd($1, $3, driver->newLocation(&yylloc)); }
-  | expr '-' expr                                { $$ = new BinaryOpSub($1, $3, driver->newLocation(&yylloc)); }
-  | expr '*' expr                                { $$ = new BinaryOpMul($1, $3, driver->newLocation(&yylloc)); }
-  | expr '/' expr                                { $$ = new BinaryOpDiv($1, $3, driver->newLocation(&yylloc)); }
-  | expr MOD expr                                { $$ = new BinaryOpMod($1, $3, driver->newLocation(&yylloc)); }
-  | expr '^' expr                                { $$ = new BinaryOpPow($1, $3, driver->newLocation(&yylloc)); }
-  | expr BSHL expr                               { $$ = new BinaryOpShiftLeft($1, $3, driver->newLocation(&yylloc)); }
-  | expr BSHR expr                               { $$ = new BinaryOpShiftRight($1, $3, driver->newLocation(&yylloc)); }
-  | expr BOR expr                                { $$ = new BinaryOpBitwiseOr($1, $3, driver->newLocation(&yylloc)); }
-  | expr BAND expr                               { $$ = new BinaryOpBitwiseAnd($1, $3, driver->newLocation(&yylloc)); }
-  | expr BXOR expr                               { $$ = new BinaryOpBitwiseXor($1, $3, driver->newLocation(&yylloc)); }
-  | expr BNOT expr                               { $$ = new BinaryOpBitwiseNot($1, $3, driver->newLocation(&yylloc)); }
-  | expr '<' expr                                { $$ = new BinaryOpLess($1, $3, driver->newLocation(&yylloc)); }
-  | expr '>' expr                                { $$ = new BinaryOpGreater($1, $3, driver->newLocation(&yylloc)); }
-  | expr LE expr                                 { $$ = new BinaryOpLessEqual($1, $3, driver->newLocation(&yylloc)); }
-  | expr GE expr                                 { $$ = new BinaryOpGreaterEqual($1, $3, driver->newLocation(&yylloc)); }
-  | expr '=' expr                                { $$ = new BinaryOpEqual($1, $3, driver->newLocation(&yylloc)); }
-  | expr NE expr                                 { $$ = new BinaryOpNotEqual($1, $3, driver->newLocation(&yylloc)); }
-  | expr LOR expr                                { $$ = new BinaryOpOr($1, $3, driver->newLocation(&yylloc)); }
-  | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&yylloc)); }
-  | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, driver->newLocation(&yylloc)); }
-  | LNOT expr                                    { $$ = new UnaryOpNot($2, driver->newLocation(&yylloc)); }
-  | '-' expr %prec UMINUS                        { $$ = new UnaryOpNegate($2, driver->newLocation(&yylloc)); }
+  | expr '+' expr                                { $$ = new BinaryOpAdd($1, $3, newloc()); }
+  | expr '-' expr                                { $$ = new BinaryOpSub($1, $3, newloc()); }
+  | expr '*' expr                                { $$ = new BinaryOpMul($1, $3, newloc()); }
+  | expr '/' expr                                { $$ = new BinaryOpDiv($1, $3, newloc()); }
+  | expr MOD expr                                { $$ = new BinaryOpMod($1, $3, newloc()); }
+  | expr '^' expr                                { $$ = new BinaryOpPow($1, $3, newloc()); }
+  | expr BSHL expr                               { $$ = new BinaryOpShiftLeft($1, $3, newloc()); }
+  | expr BSHR expr                               { $$ = new BinaryOpShiftRight($1, $3, newloc()); }
+  | expr BOR expr                                { $$ = new BinaryOpBitwiseOr($1, $3, newloc()); }
+  | expr BAND expr                               { $$ = new BinaryOpBitwiseAnd($1, $3, newloc()); }
+  | expr BXOR expr                               { $$ = new BinaryOpBitwiseXor($1, $3, newloc()); }
+  | expr BNOT expr                               { $$ = new BinaryOpBitwiseNot($1, $3, newloc()); }
+  | expr '<' expr                                { $$ = new BinaryOpLess($1, $3, newloc()); }
+  | expr '>' expr                                { $$ = new BinaryOpGreater($1, $3, newloc()); }
+  | expr LE expr                                 { $$ = new BinaryOpLessEqual($1, $3, newloc()); }
+  | expr GE expr                                 { $$ = new BinaryOpGreaterEqual($1, $3, newloc()); }
+  | expr '=' expr                                { $$ = new BinaryOpEqual($1, $3, newloc()); }
+  | expr NE expr                                 { $$ = new BinaryOpNotEqual($1, $3, newloc()); }
+  | expr LOR expr                                { $$ = new BinaryOpOr($1, $3, newloc()); }
+  | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, newloc()); }
+  | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, newloc()); }
+  | LNOT expr                                    { $$ = new UnaryOpNot($2, newloc()); }
+  | '-' expr %prec UMINUS                        { $$ = new UnaryOpNegate($2, newloc()); }
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
@@ -417,17 +426,17 @@ expr
 /* Commands appearing as statements usually don't have arguments surrounded by
  * brackets, but it is valid to call a command with brackets as a statement */
 command_stmnt
-  : COMMAND                                      { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND expr_list                            { $$ = new CommandStmntSymbol($1, $2, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND '(' ')'                              { $$ = new CommandStmntSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND                                      { $$ = new CommandStmntSymbol($1, newloc()); str::deleteCStr($1); }
+  | COMMAND expr_list                            { $$ = new CommandStmntSymbol($1, $2, newloc()); str::deleteCStr($1); }
+  | COMMAND '(' ')'                              { $$ = new CommandStmntSymbol($1, newloc()); str::deleteCStr($1); }
 /* This case is already handled by expr
-  | COMMAND '(' expr_list ')'                    { $$ = new CommandStmntSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); } */
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandStmntSymbol($1, $3, newloc()); str::deleteCStr($1); } */
   ;
 
 /* Commands appearing in expressions must be called with arguments in brackets */
 command_expr
-  : COMMAND '(' ')'                              { $$ = new CommandExprSymbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | COMMAND '(' expr_list ')'                    { $$ = new CommandExprSymbol($1, $3, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : COMMAND '(' ')'                              { $$ = new CommandExprSymbol($1, newloc()); str::deleteCStr($1); }
+  | COMMAND '(' expr_list ')'                    { $$ = new CommandExprSymbol($1, $3, newloc()); str::deleteCStr($1); }
   ;
 /*
 stmnt
@@ -451,16 +460,16 @@ stmnt
   | break                                        { $$ = $1; }
   ;*/
 constant_decl
-  : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, driver->newLocation(&yylloc)); }
+  : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, newloc()); }
   ;
 
 increment
-  : INC var_ref ',' expr                         { $$ = new IncrementVar($2, $4, driver->newLocation(&yylloc)); }
-  | INC var_ref                                  { $$ = new IncrementVar($2, driver->newLocation(&yylloc)); }
+  : INC var_ref ',' expr                         { $$ = new IncrementVar($2, $4, newloc()); }
+  | INC var_ref                                  { $$ = new IncrementVar($2, newloc()); }
   ;
 decrement
-  : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, driver->newLocation(&yylloc)); }
-  | DEC var_ref                                  { $$ = new DecrementVar($2, driver->newLocation(&yylloc)); }
+  : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, newloc()); }
+  | DEC var_ref                                  { $$ = new DecrementVar($2, newloc()); }
   ;
 /*
 var_assignment
@@ -476,7 +485,7 @@ assignment
   : var_assignment                               { $$ = $1; }
   ;
 var_assignment
-  : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&yylloc)); }
+  : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, newloc()); }
   ;
 var_decl
   : var_decl_as_type                             { $$ = $1; }
@@ -485,44 +494,44 @@ var_decl
   | var_decl_scope '=' expr                      { $$ = $1; $$->setInitialValue($3); }
   ;
 var_decl_scope
-  : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
-  | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR         { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
-  | GLOBAL SYMBOL '#'                            { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
-  | LOCAL SYMBOL '#'                             { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
-  | GLOBAL SYMBOL '$'                            { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
-  | LOCAL SYMBOL '$'                             { SourceLocation* loc = driver->newLocation(&yylloc); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
+  : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { SourceLocation* loc = newloc(); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR         { SourceLocation* loc = newloc(); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '#'                            { SourceLocation* loc = newloc(); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '#'                             { SourceLocation* loc = newloc(); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '$'                            { SourceLocation* loc = newloc(); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '$'                             { SourceLocation* loc = newloc(); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
   ;
 var_decl_as_type
-  : var_decl_int_sym AS DOUBLE INTEGER           { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS INTEGER                  { $$ = new IntegerVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS DWORD                    { $$ = new DwordVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS WORD                     { $$ = new WordVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS BYTE                     { $$ = new ByteVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS BOOLEAN                  { $$ = new BooleanVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS DOUBLE FLOAT             { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS FLOAT                    { $$ = new FloatVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_int_sym AS STRING                   { $$ = new StringVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_float_sym AS DOUBLE FLOAT           { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_float_sym AS FLOAT                  { $$ = new FloatVarDecl($1, driver->newLocation(&yylloc)); }
-  | var_decl_str_sym AS STRING                   { $$ = new StringVarDecl($1, driver->newLocation(&yylloc)); }
+  : var_decl_int_sym AS DOUBLE INTEGER           { $$ = new DoubleIntegerVarDecl($1, newloc()); }
+  | var_decl_int_sym AS INTEGER                  { $$ = new IntegerVarDecl($1, newloc()); }
+  | var_decl_int_sym AS DWORD                    { $$ = new DwordVarDecl($1, newloc()); }
+  | var_decl_int_sym AS WORD                     { $$ = new WordVarDecl($1, newloc()); }
+  | var_decl_int_sym AS BYTE                     { $$ = new ByteVarDecl($1, newloc()); }
+  | var_decl_int_sym AS BOOLEAN                  { $$ = new BooleanVarDecl($1, newloc()); }
+  | var_decl_int_sym AS DOUBLE FLOAT             { $$ = new DoubleFloatVarDecl($1, newloc()); }
+  | var_decl_int_sym AS FLOAT                    { $$ = new FloatVarDecl($1, newloc()); }
+  | var_decl_int_sym AS STRING                   { $$ = new StringVarDecl($1, newloc()); }
+  | var_decl_float_sym AS DOUBLE FLOAT           { $$ = new DoubleFloatVarDecl($1, newloc()); }
+  | var_decl_float_sym AS FLOAT                  { $$ = new FloatVarDecl($1, newloc()); }
+  | var_decl_str_sym AS STRING                   { $$ = new StringVarDecl($1, newloc()); }
   ;
 var_decl_int_sym
-  : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, newloc()); str::deleteCStr($2); }
+  | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, newloc()); str::deleteCStr($2); }
+  | SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
   ;
 var_decl_float_sym
-  : GLOBAL SYMBOL '#'                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | LOCAL SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | SYMBOL '#'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : GLOBAL SYMBOL '#'                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, newloc()); str::deleteCStr($2); }
+  | LOCAL SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, newloc()); str::deleteCStr($2); }
+  | SYMBOL '#'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, newloc()); str::deleteCStr($1); }
   ;
 var_decl_str_sym
-  : GLOBAL SYMBOL '$'                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | LOCAL SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, driver->newLocation(&yylloc)); str::deleteCStr($2); }
-  | SYMBOL '$'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : GLOBAL SYMBOL '$'                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
+  | LOCAL SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
+  | SYMBOL '$'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, newloc()); str::deleteCStr($1); }
   ;
 var_ref
-  : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&yylloc)); }
+  : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
   ;
 /*
 array_decl
@@ -607,80 +616,80 @@ udt_refs
   | var_ref                                      { $$ = $1; }
   ;*/
 func_decl
-  : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr           { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                      { $$ = new FuncDecl($2, $7, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION                { $$ = new FuncDecl($2, $6, driver->newLocation(&yylloc)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                           { $$ = new FuncDecl($2, driver->newLocation(&yylloc)); }
+  : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, newloc()); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, newloc()); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr           { $$ = new FuncDecl($2, $6, $9, newloc()); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                      { $$ = new FuncDecl($2, $7, newloc()); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, newloc()); }
+  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, newloc()); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION                { $$ = new FuncDecl($2, $6, newloc()); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                           { $$ = new FuncDecl($2, newloc()); }
   ;
 func_exit
-  : EXITFUNCTION expr                            { $$ = new FuncExit($2, driver->newLocation(&yylloc)); }
-  | EXITFUNCTION                                 { $$ = new FuncExit(driver->newLocation(&yylloc)); }
+  : EXITFUNCTION expr                            { $$ = new FuncExit($2, newloc()); }
+  | EXITFUNCTION                                 { $$ = new FuncExit(newloc()); }
   ;
 func_call_expr_or_array_ref
-  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&yylloc)); }
-  | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, driver->newLocation(&yylloc)); }
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallExprOrArrayRef($1, $3, newloc()); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCallExpr($1, newloc()); }
   ;
 func_call_stmnt
-  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&yylloc)); }
-  | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, driver->newLocation(&yylloc)); }
+  : annotated_symbol '(' expr_list ')'           { $$ = new FuncCallStmnt($1, $3, newloc()); }
+  | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, newloc()); }
   ;
 sub_call
-  : GOSUB label_sym                              { $$ = new SubCallSymbol($2, driver->newLocation(&yylloc)); }
+  : GOSUB label_sym                              { $$ = new SubCallSymbol($2, newloc()); }
   ;
 sub_return
-  : RETURN                                       { $$ = new SubReturn(driver->newLocation(&yylloc)); }
+  : RETURN                                       { $$ = new SubReturn(newloc()); }
   ;
 label_decl
-  : label_sym ':'                                { $$ = new Label($1, driver->newLocation(&yylloc)); }
+  : label_sym ':'                                { $$ = new Label($1, newloc()); }
   ;
 goto_label
-  : GOTO label_sym                               { $$ = new GotoSymbol($2, driver->newLocation(&yylloc)); }
+  : GOTO label_sym                               { $$ = new GotoSymbol($2, newloc()); }
   ;
 label_sym
-  : SYMBOL                                       { $$ = new Symbol($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : SYMBOL                                       { $$ = new Symbol($1, newloc()); str::deleteCStr($1); }
   ;
 literal
-  : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&yylloc)); }
-  | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&yylloc)); }
-  | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&yylloc)); }
-  | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, newloc()); }
+  | INTEGER_LITERAL                              { $$ = driver->newPositiveIntLikeLiteral($1, newloc()); }
+  | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, newloc()); }
+  | STRING_LITERAL                               { $$ = new StringLiteral($1, newloc()); str::deleteCStr($1); }
   ;
 /*
 scoped_symbol
-  : LOCAL symbol                                 { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
-  | GLOBAL symbol                                { $$ = new ScopedSymbol(ScopedSymbol::Scope::GLOBAL, $2->name(), driver->newLocation(&yylloc)); TouchRef($2); }
-  | symbol             / default local /       { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $1->name(), driver->newLocation(&yylloc)); TouchRef($1); }
+  : LOCAL symbol                                 { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $2->name(), newloc()); TouchRef($2); }
+  | GLOBAL symbol                                { $$ = new ScopedSymbol(ScopedSymbol::Scope::GLOBAL, $2->name(), newloc()); TouchRef($2); }
+  | symbol             / default local /       { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $1->name(), newloc()); TouchRef($1); }
   ;*/
 annotated_symbol
-  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | SYMBOL '$'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::STRING, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
+  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, newloc()); str::deleteCStr($1); }
+  | SYMBOL '$'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::STRING, $1, newloc()); str::deleteCStr($1); }
   ;
-/*
 conditional
-  : conditional_singleline                       { $$ = $1; }
-  | conditional_begin                            { $$ = $1; }
+  : cond_oneline                                 { $$ = $1; }
+  | cond_begin                                   { $$ = $1; }
   ;
-conditional_singleline
-  : IF expr THEN stmnt %prec NO_ELSE             { $$ = newBranch($2, $4, nullptr, &yylloc); }
-  | IF expr THEN stmnt ELSE stmnt                { $$ = newBranch($2, $4, $6, &yylloc); }
-  | IF expr THEN ELSE stmnt                      { $$ = newBranch($2, nullptr, $5, &yylloc); }
+cond_oneline
+  : IF expr THEN stmnt ELSE stmnt                { $$ = new Conditional($2, new Block($4, newloc()), new Block($6, newloc()), newloc()); }
+  | IF expr THEN stmnt %prec NO_ELSE             { $$ = new Conditional($2, new Block($4, newloc()), nullptr, newloc()); }
+  | IF expr THEN ELSE stmnt                      { $$ = new Conditional($2, nullptr, new Block($5, newloc()), newloc()); }
   ;
-conditional_begin
-  : IF expr seps conditional_next                { $$ = newBranch($2, nullptr, $4, &yylloc); }
-  | IF expr seps block seps conditional_next     { $$ = newBranch($2, $4, $6, &yylloc); }
+cond_begin
+  : IF expr seps block seps cond_next            { $$ = new Conditional($2, $4, $6, newloc()); }
+  | IF expr seps cond_next                       { $$ = new Conditional($2, nullptr, $4, newloc()); }
   ;
-conditional_next
-  : ENDIF                                        { $$ = nullptr; }
+cond_next
+  : ELSEIF expr seps block seps cond_next        { $$ = new Block(new Conditional($2, $4, $6, newloc()), newloc()); }
+  | ELSEIF expr seps cond_next                   { $$ = new Block(new Conditional($2, nullptr, $4, newloc()), newloc()); }
   | ELSE seps block seps ENDIF                   { $$ = $3; }
   | ELSE seps ENDIF                              { $$ = nullptr; }
-  | ELSEIF expr seps conditional_next            { $$ = newBranch($2, nullptr, $4, &yylloc); }
-  | ELSEIF expr seps block seps conditional_next { $$ = newBranch($2, $4, $6, &yylloc); }
+  | ENDIF                                        { $$ = nullptr; }
   ;
+/*
 select
   : SELECT expr seps case_list seps ENDSELECT    { $$ = newSelectStatement($2, $4, &yylloc); }
   | SELECT expr seps ENDSELECT                   { $$ = newSelectStatement($2, nullptr, &yylloc); }
@@ -702,33 +711,33 @@ loop
   | loop_for                                     { $$ = $1; }
   ;
 loop_do
-  : DO seps block seps LOOP                      { $$ = new InfiniteLoop($3, driver->newLocation(&yylloc)); }
-  | DO seps LOOP                                 { $$ = new InfiniteLoop(driver->newLocation(&yylloc)); }
+  : DO seps block seps LOOP                      { $$ = new InfiniteLoop($3, newloc()); }
+  | DO seps LOOP                                 { $$ = new InfiniteLoop(newloc()); }
   ;
 loop_while
-  : WHILE expr seps block seps ENDWHILE          { $$ = new WhileLoop($2, $4, driver->newLocation(&yylloc)); }
-  | WHILE expr seps ENDWHILE                     { $$ = new WhileLoop($2, driver->newLocation(&yylloc)); }
+  : WHILE expr seps block seps ENDWHILE          { $$ = new WhileLoop($2, $4, newloc()); }
+  | WHILE expr seps ENDWHILE                     { $$ = new WhileLoop($2, newloc()); }
   ;
 loop_until
-  : REPEAT seps block seps UNTIL expr            { $$ = new UntilLoop($6, $3, driver->newLocation(&yylloc)); }
-  | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, driver->newLocation(&yylloc)); }
+  : REPEAT seps block seps UNTIL expr            { $$ = new UntilLoop($6, $3, newloc()); }
+  | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, newloc()); }
   ;
 loop_for
-  : FOR var_assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, driver->newLocation(&yylloc)); }
-  | FOR var_assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, driver->newLocation(&yylloc)); }
+  : FOR var_assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, newloc()); }
+  | FOR var_assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, newloc()); }
+  | FOR var_assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, newloc()); }
+  | FOR var_assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, newloc()); }
+  | FOR var_assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, newloc()); }
+  | FOR var_assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, newloc()); }
+  | FOR var_assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, newloc()); }
+  | FOR var_assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, newloc()); }
   ;
 loop_next_sym
-  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
-  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&yylloc)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
+  | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, newloc()); str::deleteCStr($1); }
   ;
 break
-  : BREAK                                        { $$ = new Break(driver->newLocation(&yylloc)); }
+  : BREAK                                        { $$ = new Break(newloc()); }
   ;
 %%
 

@@ -17,6 +17,7 @@ class CommandExpr;
 class CommandExprSymbol;
 class CommandStmnt;
 class CommandStmntSymbol;
+class Conditional;
 class ConstDecl;
 class DecrementVar;
 class ExpressionList;
@@ -70,6 +71,7 @@ public:
     virtual void visitCommandExprSymbol(const CommandExprSymbol* node) = 0;
     virtual void visitCommandStmnt(const CommandStmnt* node) = 0;
     virtual void visitCommandStmntSymbol(const CommandStmntSymbol* node) = 0;
+    virtual void visitConditional(const Conditional* node) = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
     virtual void visitDecrementVar(const DecrementVar* node) = 0;
     virtual void visitExpressionList(const ExpressionList* node) = 0;
@@ -123,6 +125,7 @@ public:
     void visitCommandExprSymbol(const CommandExprSymbol* node) override;
     void visitCommandStmnt(const CommandStmnt* node) override;
     void visitCommandStmntSymbol(const CommandStmntSymbol* node) override;
+    void visitConditional(const Conditional* node) override;
     void visitConstDecl(const ConstDecl* node) override;
     void visitDecrementVar(const DecrementVar* node) override;
     void visitExpressionList(const ExpressionList* node) override;

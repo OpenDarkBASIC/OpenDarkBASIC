@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
@@ -369,6 +370,14 @@ private:
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
+    void visitConditional(const Conditional* node) override
+    {
+        writeNamedConnection(node, node->condition(), "cond");
+        if (node->trueBranch().notNull())
+            writeNamedConnection(node, node->trueBranch(), "true");
+        if (node->falseBranch().notNull())
+            writeNamedConnection(node, node->falseBranch(), "false");
+    }
     void visitConstDecl(const ConstDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -550,6 +559,8 @@ private:
         { writeName(node, "CommandStmnt" + node->command()->dbSymbol()); }
     void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
         { writeName(node, "CommandStmntSymbol: " + node->command()); }
+    void visitConditional(const Conditional* node) override
+        { writeName(node, "Conditional"); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
     void visitDecrementVar(const DecrementVar* node) override
