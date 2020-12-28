@@ -3,7 +3,7 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_select
+#define NAME db_parser_select
 
 using namespace testing;
 

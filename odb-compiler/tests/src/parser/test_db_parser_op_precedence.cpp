@@ -5,7 +5,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_op_precedence
+#define NAME db_parser_op_precedence
 
 using namespace testing;
 

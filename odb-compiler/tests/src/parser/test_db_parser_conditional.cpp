@@ -5,7 +5,7 @@
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_conditional
+#define NAME db_parser_conditional
 
 using namespace testing;
 

@@ -6,7 +6,7 @@
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_command
+#define NAME db_parser_command
 
 using namespace testing;
 using namespace odb;

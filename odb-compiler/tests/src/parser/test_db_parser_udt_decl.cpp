@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME db_udt
+#define NAME db_parser_udt
 
 using namespace testing;
 

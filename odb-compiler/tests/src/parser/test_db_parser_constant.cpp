@@ -7,7 +7,7 @@
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include <fstream>
 
-#define NAME db_constant
+#define NAME db_parser_constant
 
 using namespace testing;
 using namespace odb;

@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_string_literal
+#define NAME db_parser_string_literal
 
 using namespace testing;
 

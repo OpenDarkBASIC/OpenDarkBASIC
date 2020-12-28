@@ -2,7 +2,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_udt_ref
+#define NAME db_parser_udt_ref
 
 using namespace testing;
 

@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/ast/ResolveArrayFuncAmbiguity.hpp"
 
-#define NAME db_arrays
+#define NAME db_parser_arrays
 
 using namespace testing;
 

@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_func_decl
+#define NAME db_parser_func_decl
 
 using namespace testing;
 

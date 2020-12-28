@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_subroutine
+#define NAME db_parser_subroutine
 
 using namespace testing;
 

@@ -7,7 +7,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_loop_repeat
+#define NAME db_parser_loop_do
 
 using namespace testing;
 
@@ -20,18 +20,18 @@ using namespace odb;
 
 TEST_F(NAME, infinite_loop)
 {
-    ast = driver->parseString("test", "repeat\nfoo()\nuntil cond\n");
+    ast = driver->parseString("test", "do\nfoo()\nloop\n");
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, empty_loop)
+TEST_F(NAME, empty_infinite_loop)
 {
-    ast = driver->parseString("test", "repeat\nuntil cond\n");
+    ast = driver->parseString("test", "do\nloop\n");
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, break_from_loop)
 {
-    ast = driver->parseString("test", "repeat\nbreak\nuntil cond\n");
+    ast = driver->parseString("test", "do\nbreak\nloop\n");
     ASSERT_THAT(ast, NotNull());
 }

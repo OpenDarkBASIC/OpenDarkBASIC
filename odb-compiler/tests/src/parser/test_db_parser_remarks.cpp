@@ -8,7 +8,7 @@
 #include <fstream>
 #include <tuple>
 
-#define NAME db_remarks
+#define NAME db_parser_remarks
 
 using namespace testing;
 using namespace odb;

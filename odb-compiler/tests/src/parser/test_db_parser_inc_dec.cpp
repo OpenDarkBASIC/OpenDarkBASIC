@@ -6,7 +6,7 @@
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_inc_dec
+#define NAME db_parser_inc_dec
 
 using namespace testing;
 
