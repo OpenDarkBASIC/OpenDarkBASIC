@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Label.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -20,10 +21,24 @@ Symbol* Label::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-void Label::accept(Visitor* visitor) const
+void Label::accept(Visitor* visitor)
 {
     visitor->visitLabel(this);
     symbol_->accept(visitor);
+}
+void Label::accept(ConstVisitor* visitor) const
+{
+    visitor->visitLabel(this);
+    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void Label::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<Symbol*>(newNode);
+    else
+        assert(false);
 }
 
 }

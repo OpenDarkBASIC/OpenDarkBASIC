@@ -37,11 +37,26 @@ MaybeNull<Block> InfiniteLoop::body() const
 }
 
 // ----------------------------------------------------------------------------
-void InfiniteLoop::accept(Visitor* visitor) const
+void InfiniteLoop::accept(Visitor* visitor)
 {
     visitor->visitInfiniteLoop(this);
     if (body_)
         body_->accept(visitor);
+}
+void InfiniteLoop::accept(ConstVisitor* visitor) const
+{
+    visitor->visitInfiniteLoop(this);
+    if (body_)
+        body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void InfiniteLoop::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (body_ == oldNode)
+        body_ = dynamic_cast<Block*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -75,12 +90,30 @@ MaybeNull<Block> WhileLoop::body() const
 }
 
 // ----------------------------------------------------------------------------
-void WhileLoop::accept(Visitor* visitor) const
+void WhileLoop::accept(Visitor* visitor)
 {
     visitor->visitWhileLoop(this);
     continueCondition_->accept(visitor);
     if (body_)
         body_->accept(visitor);
+}
+void WhileLoop::accept(ConstVisitor* visitor) const
+{
+    visitor->visitWhileLoop(this);
+    continueCondition_->accept(visitor);
+    if (body_)
+        body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void WhileLoop::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (continueCondition_ == oldNode)
+        continueCondition_ = dynamic_cast<Expression*>(newNode);
+    else if (body_ == oldNode)
+        body_ = dynamic_cast<Block*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -114,12 +147,30 @@ MaybeNull<Block> UntilLoop::body() const
 }
 
 // ----------------------------------------------------------------------------
-void UntilLoop::accept(Visitor* visitor) const
+void UntilLoop::accept(Visitor* visitor)
 {
     visitor->visitUntilLoop(this);
     exitCondition_->accept(visitor);
     if (body_)
         body_->accept(visitor);
+}
+void UntilLoop::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUntilLoop(this);
+    exitCondition_->accept(visitor);
+    if (body_)
+        body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (exitCondition_ == oldNode)
+        exitCondition_ = dynamic_cast<Expression*>(newNode);
+    else if (body_ == oldNode)
+        body_ = dynamic_cast<Block*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -257,7 +308,7 @@ MaybeNull<Block> ForLoop::body() const
 }
 
 // ----------------------------------------------------------------------------
-void ForLoop::accept(Visitor* visitor) const
+void ForLoop::accept(Visitor* visitor)
 {
     visitor->visitForLoop(this);
 
@@ -269,6 +320,36 @@ void ForLoop::accept(Visitor* visitor) const
         nextSymbol_->accept(visitor);
     if (body_)
         body_->accept(visitor);
+}
+void ForLoop::accept(ConstVisitor* visitor) const
+{
+    visitor->visitForLoop(this);
+
+    counter_->accept(visitor);
+    endValue_->accept(visitor);
+    if (stepValue_)
+        stepValue_->accept(visitor);
+    if (nextSymbol_)
+        nextSymbol_->accept(visitor);
+    if (body_)
+        body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void ForLoop::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (counter_ == oldNode)
+        counter_ = dynamic_cast<VarAssignment*>(newNode);
+    else if (endValue_ == oldNode)
+        endValue_ = dynamic_cast<Expression*>(newNode);
+    else if (stepValue_ == oldNode)
+        stepValue_ = dynamic_cast<Expression*>(newNode);
+    else if (nextSymbol_ == oldNode)
+        nextSymbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (body_ == oldNode)
+        body_ = dynamic_cast<Block*>(newNode);
+    else
+        assert(false);
 }
 
 }

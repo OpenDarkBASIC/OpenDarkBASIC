@@ -12,9 +12,19 @@ Break::Break(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-void Break::accept(Visitor* visitor) const
+void Break::accept(Visitor* visitor)
 {
     visitor->visitBreak(this);
+}
+void Break::accept(ConstVisitor* visitor) const
+{
+    visitor->visitBreak(this);
+}
+
+// ----------------------------------------------------------------------------
+void Break::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
 }
 
 }

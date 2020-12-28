@@ -38,12 +38,30 @@ MaybeNull<ExpressionList> FuncCallExpr::args() const
 }
 
 // ----------------------------------------------------------------------------
-void FuncCallExpr::accept(Visitor* visitor) const
+void FuncCallExpr::accept(Visitor* visitor)
 {
     visitor->visitFuncCallExpr(this);
     symbol_->accept(visitor);
     if (args_)
         args_->accept(visitor);
+}
+void FuncCallExpr::accept(ConstVisitor* visitor) const
+{
+    visitor->visitFuncCallExpr(this);
+    symbol_->accept(visitor);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -69,11 +87,28 @@ MaybeNull<ExpressionList> FuncCallExprOrArrayRef::args() const
 }
 
 // ----------------------------------------------------------------------------
-void FuncCallExprOrArrayRef::accept(Visitor* visitor) const
+void FuncCallExprOrArrayRef::accept(Visitor* visitor)
 {
     visitor->visitFuncCallExprOrArrayRef(this);
     symbol_->accept(visitor);
     args_->accept(visitor);
+}
+void FuncCallExprOrArrayRef::accept(ConstVisitor* visitor) const
+{
+    visitor->visitFuncCallExprOrArrayRef(this);
+    symbol_->accept(visitor);
+    args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -107,12 +142,30 @@ MaybeNull<ExpressionList> FuncCallStmnt::args() const
 }
 
 // ----------------------------------------------------------------------------
-void FuncCallStmnt::accept(Visitor* visitor) const
+void FuncCallStmnt::accept(Visitor* visitor)
 {
     visitor->visitFuncCallStmnt(this);
     symbol_->accept(visitor);
     if (args_)
         args_->accept(visitor);
+}
+void FuncCallStmnt::accept(ConstVisitor* visitor) const
+{
+    visitor->visitFuncCallStmnt(this);
+    symbol_->accept(visitor);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 }

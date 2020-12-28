@@ -3,29 +3,28 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Assignment::Assignment(SourceLocation* location) :
-    Statement(location)
+Assignment::Assignment(LValue* lvalue, SourceLocation* location) :
+    Statement(location),
+    lvalue_(lvalue)
 {
+    lvalue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
 VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* location) :
-    Assignment(location),
-    var_(var),
+    Assignment(var, location),
     expr_(expr)
 {
-    var->setParent(this);
     expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
 VarRef* VarAssignment::variable() const
 {
-    return var_;
+    return static_cast<VarRef*>(lvalue_.get());
 }
 
 // ----------------------------------------------------------------------------
@@ -35,12 +34,28 @@ Expression* VarAssignment::expression() const
 }
 
 // ----------------------------------------------------------------------------
-void VarAssignment::accept(Visitor* visitor) const
+void VarAssignment::accept(Visitor* visitor)
 {
     visitor->visitVarAssignment(this);
-    var_->accept(visitor);
+    lvalue_->accept(visitor);
+    expr_->accept(visitor);
+}
+void VarAssignment::accept(ConstVisitor* visitor) const
+{
+    visitor->visitVarAssignment(this);
+    lvalue_->accept(visitor);
     expr_->accept(visitor);
 }
 
+// ----------------------------------------------------------------------------
+void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (lvalue_ == oldNode)
+        lvalue_ = dynamic_cast<LValue*>(newNode);
+    else if (expr_ == oldNode)
+        expr_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
 }
+
 }

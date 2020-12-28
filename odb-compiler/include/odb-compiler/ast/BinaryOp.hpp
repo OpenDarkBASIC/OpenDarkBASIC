@@ -26,7 +26,9 @@ class BinaryOp##op : public BinaryOp                                          \
 public:                                                                       \
     BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location); \
                                                                               \
-    void accept(Visitor* visitor) const override;                             \
+    void accept(Visitor* visitor) override;                                   \
+    void accept(ConstVisitor* visitor) const override;                        \
+    void swapChild(const Node* oldNode, Node* newNode) override;              \
 };
 ODB_BINARY_OP_LIST
 #undef X

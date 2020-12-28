@@ -2,7 +2,7 @@
 
 #include "odb-compiler/ast/Visitor.hpp"
 
-class ASTParentConsistenciesChecker : public odb::ast::Visitor
+class ASTParentConsistenciesChecker : public odb::ast::ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const odb::ast::AnnotatedSymbol* node) override;

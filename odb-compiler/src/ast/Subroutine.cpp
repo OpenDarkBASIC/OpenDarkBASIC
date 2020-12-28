@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Label.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
@@ -21,10 +22,24 @@ Symbol* SubCallSymbol::labelSymbol() const
 }
 
 // ----------------------------------------------------------------------------
-void SubCallSymbol::accept(Visitor* visitor) const
+void SubCallSymbol::accept(Visitor* visitor)
 {
     visitor->visitSubCallSymbol(this);
     label_->accept(visitor);
+}
+void SubCallSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitSubCallSymbol(this);
+    label_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void SubCallSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (label_ == oldNode)
+        label_ = dynamic_cast<Symbol*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -42,10 +57,24 @@ Label* SubCall::label() const
 }
 
 // ----------------------------------------------------------------------------
-void SubCall::accept(Visitor* visitor) const
+void SubCall::accept(Visitor* visitor)
 {
     visitor->visitSubCall(this);
     label_->accept(visitor);
+}
+void SubCall::accept(ConstVisitor* visitor) const
+{
+    visitor->visitSubCall(this);
+    label_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void SubCall::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (label_ == oldNode)
+        label_ = dynamic_cast<Label*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -55,9 +84,19 @@ SubReturn::SubReturn(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-void SubReturn::accept(Visitor* visitor) const
+void SubReturn::accept(Visitor* visitor)
 {
     visitor->visitSubReturn(this);
+}
+void SubReturn::accept(ConstVisitor* visitor) const
+{
+    visitor->visitSubReturn(this);
+}
+
+// ----------------------------------------------------------------------------
+void SubReturn::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
 }
 
 }

@@ -25,7 +25,9 @@ public:
     const std::string& command() const;
     MaybeNull<ExpressionList> args() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<ExpressionList> args_;
@@ -41,7 +43,9 @@ public:
     const std::string& command() const;
     MaybeNull<ExpressionList> args() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<ExpressionList> args_;
@@ -57,7 +61,9 @@ public:
     cmd::Command* command() const;
     MaybeNull<ExpressionList> args() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<cmd::Command> command_;
@@ -73,7 +79,9 @@ public:
     cmd::Command* command() const;
     MaybeNull<ExpressionList> args() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<cmd::Command> command_;

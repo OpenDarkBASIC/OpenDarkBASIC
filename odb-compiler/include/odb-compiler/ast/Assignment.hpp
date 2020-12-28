@@ -6,13 +6,19 @@
 namespace odb {
 namespace ast {
 
-class VarRef;
 class Expression;
+class LValue;
+class VarRef;
 
 class Assignment : public Statement
 {
 public:
-    Assignment(SourceLocation* location);
+    Assignment(LValue* lvalue, SourceLocation* location);
+
+    LValue* lvalue() const;
+
+protected:
+    Reference<LValue> lvalue_;
 };
 
 class VarAssignment : public Assignment
@@ -23,10 +29,11 @@ public:
     VarRef* variable() const;
     Expression* expression() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
-    Reference<VarRef> var_;
     Reference<Expression> expr_;
 };
 

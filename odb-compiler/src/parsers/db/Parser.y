@@ -18,6 +18,7 @@
     #include "odb-compiler/ast/Label.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
+    #include "odb-compiler/ast/LValue.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
@@ -71,6 +72,7 @@
             class InfiniteLoop;
             class Label;
             class Literal;
+            class LValue;
             class Loop;
             class Node;
             class ScopedSymbol;
@@ -151,6 +153,7 @@
     odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::Label* label;
     odb::ast::Literal* literal;
+    odb::ast::LValue* lvalue;
     odb::ast::Loop* loop;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
@@ -321,6 +324,7 @@
 %type<conditional> cond_oneline;
 %type<conditional> cond_begin;
 %type<block> cond_next;
+%type<lvalue> lvalue;
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -420,7 +424,7 @@ expr
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
-  | var_ref                                      { $$ = $1; }
+  | lvalue                                       { $$ = $1; }
   ;
 
 /* Commands appearing as statements usually don't have arguments surrounded by
@@ -462,7 +466,6 @@ stmnt
 constant_decl
   : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, newloc()); }
   ;
-
 increment
   : INC var_ref ',' expr                         { $$ = new IncrementVar($2, $4, newloc()); }
   | INC var_ref                                  { $$ = new IncrementVar($2, newloc()); }
@@ -472,15 +475,14 @@ decrement
   | DEC var_ref                                  { $$ = new DecrementVar($2, newloc()); }
   ;
 /*
-var_assignment
-  : lvalue EQ expr                               { $$ = newAssignment($1, $3, &yylloc); }
-  | var_decl EQ expr                             { $$ = newAssignment($1, $3, &yylloc); }
-  ;
 lvalue
   : udt_ref                                      { $$ = $1; }
   | var_ref                                      { $$ = $1; }
   | array_ref                                    { $$ = $1; }
   ;*/
+lvalue
+  : var_ref                                      { $$ = $1; }
+  ;
 assignment
   : var_assignment                               { $$ = $1; }
   ;

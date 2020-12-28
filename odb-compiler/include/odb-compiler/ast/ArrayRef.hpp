@@ -18,7 +18,9 @@ public:
     AnnotatedSymbol* symbol() const;
     ExpressionList* args() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<AnnotatedSymbol> symbol_;

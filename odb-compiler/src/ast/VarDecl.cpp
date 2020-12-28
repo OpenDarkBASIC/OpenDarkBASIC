@@ -59,11 +59,28 @@ VarDecl::VarDecl(SourceLocation* location) :
     }                                                                         \
                                                                               \
     template<>                                                                \
-    void VarDeclTemplate<cppname>::accept(Visitor* visitor) const             \
+    void VarDeclTemplate<cppname>::accept(Visitor* visitor)                   \
     {                                                                         \
         visitor->visit##dbname##VarDecl(this);                                \
         symbol_->accept(visitor);                                             \
         initialValue_->accept(visitor);                                       \
+    }                                                                         \
+    template<>                                                                \
+    void VarDeclTemplate<cppname>::accept(ConstVisitor* visitor) const        \
+    {                                                                         \
+        visitor->visit##dbname##VarDecl(this);                                \
+        symbol_->accept(visitor);                                             \
+        initialValue_->accept(visitor);                                       \
+    }                                                                         \
+    template <>                                                               \
+    void VarDeclTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
+    {                                                                         \
+        if (symbol_ == oldNode)                                               \
+            symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
+        else if (initialValue_ == oldNode)                                    \
+            initialValue_ = dynamic_cast<Expression*>(newNode);               \
+        else                                                                  \
+            assert(false);                                                    \
     }
 ODB_DATATYPE_LIST
 #undef X

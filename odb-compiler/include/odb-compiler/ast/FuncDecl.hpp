@@ -29,7 +29,9 @@ public:
     MaybeNull<Block> body() const;
     MaybeNull<Expression> returnValue() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<AnnotatedSymbol> symbol_;
@@ -46,7 +48,9 @@ public:
 
     MaybeNull<Expression> returnValue() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<Expression> returnValue_;

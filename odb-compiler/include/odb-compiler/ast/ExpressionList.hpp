@@ -19,7 +19,9 @@ public:
 
     const std::vector<Reference<Expression>>& expressions() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     std::vector<Reference<Expression>> expressions_;

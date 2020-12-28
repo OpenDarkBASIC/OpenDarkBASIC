@@ -39,7 +39,7 @@ MaybeNull<Block> Conditional::falseBranch() const
 }
 
 // ----------------------------------------------------------------------------
-void Conditional::accept(Visitor* visitor) const
+void Conditional::accept(Visitor* visitor)
 {
     visitor->visitConditional(this);
     cond_->accept(visitor);
@@ -47,6 +47,28 @@ void Conditional::accept(Visitor* visitor) const
         true_->accept(visitor);
     if (false_)
         false_->accept(visitor);
+}
+void Conditional::accept(ConstVisitor* visitor) const
+{
+    visitor->visitConditional(this);
+    cond_->accept(visitor);
+    if (true_)
+        true_->accept(visitor);
+    if (false_)
+        false_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void Conditional::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (cond_ == oldNode)
+        cond_ = dynamic_cast<Expression*>(newNode);
+    else if (true_ == oldNode)
+        true_ = dynamic_cast<Block*>(newNode);
+    else if (false_ == oldNode)
+        false_ = dynamic_cast<Block*>(newNode);
+    else
+        assert(false);
 }
 
 }

@@ -36,11 +36,30 @@ const std::vector<Reference<Statement>>& Block::statements() const
 }
 
 // ----------------------------------------------------------------------------
-void Block::accept(Visitor* visitor) const
+void Block::accept(Visitor* visitor)
 {
     visitor->visitBlock(this);
     for (const auto& stmnt : statements())
         stmnt->accept(visitor);
+}
+void Block::accept(ConstVisitor* visitor) const
+{
+    visitor->visitBlock(this);
+    for (const auto& stmnt : statements())
+        stmnt->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void Block::swapChild(const Node* oldNode, Node* newNode)
+{
+    for (auto& stmnt : statements_)
+        if (stmnt == oldNode)
+        {
+            stmnt = dynamic_cast<Statement*>(newNode);
+            return;
+        }
+
+    assert(false);
 }
 
 }

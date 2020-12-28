@@ -3,20 +3,7 @@
 #include <cassert>
 
 namespace odb {
-namespace ast {
-
-// ----------------------------------------------------------------------------
-Process::Process(Node* root) :
-    root_(root)
-{
-}
-
-// ----------------------------------------------------------------------------
-bool Process::visitChildren(Node* node)
-{
-
-    return true;
-}
+namespace astpost {
 
 }
 }

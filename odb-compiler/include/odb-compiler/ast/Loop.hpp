@@ -26,7 +26,9 @@ public:
 
     MaybeNull<Block> body() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<Block> body_;
@@ -41,7 +43,9 @@ public:
     Expression* continueCondition() const;
     MaybeNull<Block> body() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<Expression> continueCondition_;
@@ -57,7 +61,9 @@ public:
     Expression* exitCondition() const;
     MaybeNull<Block> body() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<Expression> exitCondition_;
@@ -82,7 +88,9 @@ public:
     MaybeNull<AnnotatedSymbol> nextSymbol() const;
     MaybeNull<Block> body() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<VarAssignment> counter_;

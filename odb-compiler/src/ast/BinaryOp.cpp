@@ -33,11 +33,26 @@ BinaryOp##op::BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* loc
     BinaryOp(lhs, rhs, location)                                              \
 {                                                                             \
 }                                                                             \
-void BinaryOp##op::accept(Visitor* visitor) const                             \
+void BinaryOp##op::accept(Visitor* visitor)                                   \
 {                                                                             \
     visitor->visitBinaryOp##op(this);                                         \
     lhs_->accept(visitor);                                                    \
     rhs_->accept(visitor);                                                    \
+}                                                                             \
+void BinaryOp##op::accept(ConstVisitor* visitor) const                        \
+{                                                                             \
+    visitor->visitBinaryOp##op(this);                                         \
+    lhs_->accept(visitor);                                                    \
+    rhs_->accept(visitor);                                                    \
+}                                                                             \
+void BinaryOp##op::swapChild(const Node* oldNode, Node* newNode)              \
+{                                                                             \
+    if (lhs_ == oldNode)                                                      \
+        lhs_ = dynamic_cast<Expression*>(newNode);                            \
+    else if (rhs_ == oldNode)                                                 \
+        rhs_ = dynamic_cast<Expression*>(newNode);                            \
+    else                                                                      \
+        assert(false);                                                        \
 }
 ODB_BINARY_OP_LIST
 #undef X

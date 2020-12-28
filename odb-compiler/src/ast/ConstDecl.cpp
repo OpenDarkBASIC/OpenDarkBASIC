@@ -30,11 +30,28 @@ Literal* ConstDecl::literal() const
 }
 
 // ----------------------------------------------------------------------------
-void ConstDecl::accept(Visitor* visitor) const
+void ConstDecl::accept(Visitor* visitor)
 {
     visitor->visitConstDecl(this);
     symbol_->accept(visitor);
     literal_->accept(visitor);
+}
+void ConstDecl::accept(ConstVisitor* visitor) const
+{
+    visitor->visitConstDecl(this);
+    symbol_->accept(visitor);
+    literal_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (literal_ == oldNode)
+        literal_ = dynamic_cast<Literal*>(newNode);
+    else
+        assert(false);
 }
 
 }

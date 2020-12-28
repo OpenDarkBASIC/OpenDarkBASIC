@@ -14,9 +14,19 @@ Literal::Literal(SourceLocation* location) :
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
     template <>                                                               \
-    void LiteralTemplate<cppname>::accept(Visitor* visitor) const             \
+    void LiteralTemplate<cppname>::accept(Visitor* visitor)                   \
     {                                                                         \
         visitor->visit##dbname##Literal(this);                                \
+    }                                                                         \
+    template <>                                                               \
+    void LiteralTemplate<cppname>::accept(ConstVisitor* visitor) const        \
+    {                                                                         \
+        visitor->visit##dbname##Literal(this);                                \
+    }                                                                         \
+    template <>                                                               \
+    void LiteralTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
+    {                                                                         \
+        assert(false);                                                        \
     }
 ODB_DATATYPE_LIST
 #undef X

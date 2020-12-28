@@ -14,9 +14,6 @@ Node::Node(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-Node::~Node() = default;
-
-// ----------------------------------------------------------------------------
 Node* Node::parent() const
 {
     return parent_;
@@ -26,6 +23,12 @@ Node* Node::parent() const
 void Node::setParent(Node* node)
 {
     parent_ = node;
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* Node::location() const
+{
+    return location_;
 }
 
 }

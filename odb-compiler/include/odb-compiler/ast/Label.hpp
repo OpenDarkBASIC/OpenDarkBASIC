@@ -15,7 +15,9 @@ public:
 
     Symbol* symbol() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Reference<Symbol> symbol_;

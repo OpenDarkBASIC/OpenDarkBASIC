@@ -3,7 +3,7 @@
 #include "gmock/gmock.h"
 #include "odb-compiler/ast/Visitor.hpp"
 
-class ASTMockVisitor : public odb::ast::Visitor
+class ASTMockVisitor : public odb::ast::ConstVisitor
 {
 public:
     MOCK_METHOD(void, visitAnnotatedSymbol, (const ast::AnnotatedSymbol* node), (override));

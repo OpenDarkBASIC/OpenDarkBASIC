@@ -24,7 +24,9 @@ public:
     Symbol(const std::string& name, SourceLocation* location);
     const std::string& name() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     const std::string name_;
@@ -36,7 +38,9 @@ public:
     ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location);
     Scope scope() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Scope scope_;
@@ -49,7 +53,9 @@ public:
     AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
     Annotation annotation() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Annotation annotation_;
@@ -62,7 +68,9 @@ public:
     Scope scope() const;
     Annotation annotation() const;
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     Scope scope_;

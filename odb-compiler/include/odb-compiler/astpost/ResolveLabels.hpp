@@ -5,7 +5,7 @@
 namespace odb {
 namespace astpost {
 
-class ResolveArrayFuncAmbiguity : public Process
+class ResolveLabels : public Process
 {
 public:
     bool execute(ast::Node** root) override final;

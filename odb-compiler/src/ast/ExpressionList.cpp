@@ -29,11 +29,30 @@ const std::vector<Reference<Expression>>& ExpressionList::expressions() const
 }
 
 // ----------------------------------------------------------------------------
-void ExpressionList::accept(Visitor* visitor) const
+void ExpressionList::accept(Visitor* visitor)
 {
     visitor->visitExpressionList(this);
     for (const auto& expr : expressions_)
         expr->accept(visitor);
+}
+void ExpressionList::accept(ConstVisitor* visitor) const
+{
+    visitor->visitExpressionList(this);
+    for (const auto& expr : expressions_)
+        expr->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void ExpressionList::swapChild(const Node* oldNode, Node* newNode)
+{
+    for (auto& expr : expressions_)
+        if (expr == oldNode)
+        {
+            expr = dynamic_cast<Expression*>(newNode);
+            return;
+        }
+
+    assert(false);
 }
 
 }

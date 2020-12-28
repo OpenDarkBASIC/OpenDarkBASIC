@@ -28,11 +28,26 @@ MaybeNull<ExpressionList> CommandExprSymbol::args() const
 {
     return args_.get();
 }
-void CommandExprSymbol::accept(Visitor* visitor) const
+void CommandExprSymbol::accept(Visitor* visitor)
 {
     visitor->visitCommandExprSymbol(this);
     if (args_)
         args_->accept(visitor);
+}
+void CommandExprSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitCommandExprSymbol(this);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void CommandExprSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -56,11 +71,26 @@ MaybeNull<ExpressionList> CommandStmntSymbol::args() const
 {
     return args_.get();
 }
-void CommandStmntSymbol::accept(Visitor* visitor) const
+void CommandStmntSymbol::accept(Visitor* visitor)
 {
     visitor->visitCommandStmntSymbol(this);
     if (args_)
         args_->accept(visitor);
+}
+void CommandStmntSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitCommandStmntSymbol(this);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void CommandStmntSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -84,11 +114,26 @@ MaybeNull<ExpressionList> CommandExpr::args() const
 {
     return args_.get();
 }
-void CommandExpr::accept(Visitor* visitor) const
+void CommandExpr::accept(Visitor* visitor)
 {
     visitor->visitCommandExpr(this);
     if (args_)
         args_->accept(visitor);
+}
+void CommandExpr::accept(ConstVisitor* visitor) const
+{
+    visitor->visitCommandExpr(this);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -112,11 +157,26 @@ MaybeNull<ExpressionList> CommandStmnt::args() const
 {
     return args_.get();
 }
-void CommandStmnt::accept(Visitor* visitor) const
+void CommandStmnt::accept(Visitor* visitor)
 {
     visitor->visitCommandStmnt(this);
     if (args_)
         args_->accept(visitor);
+}
+void CommandStmnt::accept(ConstVisitor* visitor) const
+{
+    visitor->visitCommandStmnt(this);
+    if (args_)
+        args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
 }

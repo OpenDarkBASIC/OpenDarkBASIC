@@ -30,13 +30,29 @@ ExpressionList* ArrayRef::args() const
 }
 
 // ----------------------------------------------------------------------------
-void ArrayRef::accept(Visitor* visitor) const
+void ArrayRef::accept(Visitor* visitor)
+{
+    visitor->visitArrayRef(this);
+    symbol_->accept(visitor);
+    args_->accept(visitor);
+}
+void ArrayRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitArrayRef(this);
     symbol_->accept(visitor);
     args_->accept(visitor);
 }
 
-}
+// ----------------------------------------------------------------------------
+void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (args_ == oldNode)
+        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else
+        assert(false);
 }
 
+}
+}

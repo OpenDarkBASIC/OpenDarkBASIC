@@ -52,11 +52,28 @@ VarRef* DecrementVar::variable() const
 }
 
 // ----------------------------------------------------------------------------
-void DecrementVar::accept(Visitor* visitor) const
+void DecrementVar::accept(Visitor* visitor)
 {
     visitor->visitDecrementVar(this);
     var_->accept(visitor);
     expr_->accept(visitor);
+}
+void DecrementVar::accept(ConstVisitor* visitor) const
+{
+    visitor->visitDecrementVar(this);
+    var_->accept(visitor);
+    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void DecrementVar::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (var_ == oldNode)
+        var_ = dynamic_cast<VarRef*>(newNode);
+    else if (expr_ == oldNode)
+        expr_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
 }
 
 }

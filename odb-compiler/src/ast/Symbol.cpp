@@ -19,9 +19,19 @@ const std::string& Symbol::name() const
 }
 
 // ----------------------------------------------------------------------------
-void Symbol::accept(Visitor* visitor) const
+void Symbol::accept(Visitor* visitor)
 {
     visitor->visitSymbol(this);
+}
+void Symbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitSymbol(this);
+}
+
+// ----------------------------------------------------------------------------
+void Symbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -38,11 +48,20 @@ Symbol::Annotation AnnotatedSymbol::annotation() const
 }
 
 // ----------------------------------------------------------------------------
-void AnnotatedSymbol::accept(Visitor* visitor) const
+void AnnotatedSymbol::accept(Visitor* visitor)
+{
+    visitor->visitAnnotatedSymbol(this);
+}
+void AnnotatedSymbol::accept(ConstVisitor* visitor) const
 {
     visitor->visitAnnotatedSymbol(this);
 }
 
+// ----------------------------------------------------------------------------
+void AnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
+}
 
 // ----------------------------------------------------------------------------
 ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location) :
@@ -58,9 +77,19 @@ Symbol::Scope ScopedSymbol::scope() const
 }
 
 // ----------------------------------------------------------------------------
-void ScopedSymbol::accept(Visitor* visitor) const
+void ScopedSymbol::accept(Visitor* visitor)
 {
     visitor->visitScopedSymbol(this);
+}
+void ScopedSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitScopedSymbol(this);
+}
+
+// ----------------------------------------------------------------------------
+void ScopedSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -84,9 +113,19 @@ Symbol::Annotation ScopedAnnotatedSymbol::annotation() const
 }
 
 // ----------------------------------------------------------------------------
-void ScopedAnnotatedSymbol::accept(Visitor* visitor) const
+void ScopedAnnotatedSymbol::accept(Visitor* visitor)
 {
     visitor->visitScopedAnnotatedSymbol(this);
+}
+void ScopedAnnotatedSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitScopedAnnotatedSymbol(this);
+}
+
+// ----------------------------------------------------------------------------
+void ScopedAnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    assert(false);
 }
 
 }

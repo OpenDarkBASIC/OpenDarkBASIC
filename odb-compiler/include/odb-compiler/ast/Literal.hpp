@@ -20,7 +20,9 @@ public:
     LiteralTemplate(const T& value, SourceLocation* location) : Literal(location), value_(value) {}
     const T& value() const { return value_; }
 
-    void accept(Visitor* visitor) const override;
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     const T value_;

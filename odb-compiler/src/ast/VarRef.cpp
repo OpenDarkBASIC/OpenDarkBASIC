@@ -8,7 +8,7 @@ namespace ast {
 
 // ----------------------------------------------------------------------------
 VarRef::VarRef(AnnotatedSymbol* symbol, SourceLocation* location) :
-    Expression(location),
+    LValue(location),
     symbol_(symbol)
 {
     symbol->setParent(this);
@@ -21,10 +21,24 @@ AnnotatedSymbol* VarRef::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-void VarRef::accept(Visitor* visitor) const
+void VarRef::accept(Visitor* visitor)
 {
     visitor->visitVarRef(this);
     symbol_->accept(visitor);
+}
+void VarRef::accept(ConstVisitor* visitor) const
+{
+    visitor->visitVarRef(this);
+    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void VarRef::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else
+        assert(false);
 }
 
 }

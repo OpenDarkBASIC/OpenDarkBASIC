@@ -1,10 +1,9 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
-#define NAME db_goto
+#define NAME db_data
 
 using namespace testing;
 
@@ -16,9 +15,7 @@ public:
 using namespace odb;
 using namespace ast;
 
-TEST_F(NAME, simple_goto)
+TEST(F_NAME, todo)
 {
-    ast = driver->parseString("test",
-        "goto label\n");
-    ASSERT_THAT(ast, NotNull());
+    ASSERT_TRUE(false);
 }

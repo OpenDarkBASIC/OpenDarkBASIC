@@ -63,6 +63,60 @@ ODB_UNARY_OP_LIST
 class ODBCOMPILER_PUBLIC_API Visitor
 {
 public:
+    virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
+    virtual void visitArrayRef(ArrayRef* node)  = 0;
+    virtual void visitBlock(Block* node) = 0;
+    virtual void visitBreak(Break* node) = 0;
+    virtual void visitCommandExpr(CommandExpr* node) = 0;
+    virtual void visitCommandExprSymbol(CommandExprSymbol* node) = 0;
+    virtual void visitCommandStmnt(CommandStmnt* node) = 0;
+    virtual void visitCommandStmntSymbol(CommandStmntSymbol* node) = 0;
+    virtual void visitConditional(Conditional* node) = 0;
+    virtual void visitConstDecl(ConstDecl* node) = 0;
+    virtual void visitDecrementVar(DecrementVar* node) = 0;
+    virtual void visitExpressionList(ExpressionList* node) = 0;
+    virtual void visitForLoop(ForLoop* node) = 0;
+    virtual void visitFuncCallExpr(FuncCallExpr* node) = 0;
+    virtual void visitFuncCallExprOrArrayRef(FuncCallExprOrArrayRef* node)  = 0;
+    virtual void visitFuncCallStmnt(FuncCallStmnt* node) = 0;
+    virtual void visitFuncDecl(FuncDecl* node) = 0;
+    virtual void visitFuncExit(FuncExit* node) = 0;
+    virtual void visitGoto(Goto* node) = 0;
+    virtual void visitGotoSymbol(GotoSymbol* node) = 0;
+    virtual void visitIncrementVar(IncrementVar* node) = 0;
+    virtual void visitInfiniteLoop(InfiniteLoop* node) = 0;
+    virtual void visitLabel(Label* node) = 0;
+    virtual void visitScopedSymbol(ScopedSymbol* node) = 0;
+    virtual void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) = 0;
+    virtual void visitSubCallSymbol(SubCallSymbol* node) = 0;
+    virtual void visitSubCall(SubCall* node) = 0;
+    virtual void visitSubReturn(SubReturn* node) = 0;
+    virtual void visitSymbol(Symbol* node) = 0;
+    virtual void visitUntilLoop(UntilLoop* node) = 0;
+    virtual void visitVarAssignment(VarAssignment* node) = 0;
+    virtual void visitVarRef(VarRef* node) = 0;
+    virtual void visitWhileLoop(WhileLoop* node) = 0;
+
+#define X(dbname, cppname) \
+    virtual void visit##dbname##Literal(dbname##Literal* node) = 0; \
+    virtual void visit##dbname##VarDecl(dbname##VarDecl* node) = 0;
+    ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, str) \
+    virtual void visitBinaryOp##op(BinaryOp##op* node) = 0;
+    ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, str) \
+    virtual void visitUnaryOp##op(UnaryOp##op* node) = 0;
+    ODB_UNARY_OP_LIST
+#undef X
+};
+
+class ODBCOMPILER_PUBLIC_API ConstVisitor
+{
+public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitBlock(const Block* node) = 0;
@@ -115,6 +169,62 @@ public:
 };
 
 class ODBCOMPILER_PUBLIC_API GenericVisitor : public Visitor
+{
+public:
+    void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
+    void visitArrayRef(ArrayRef* node) override;
+    void visitBlock(Block* node) override;
+    void visitBreak(Break* node) override;
+    void visitCommandExpr(CommandExpr* node) override;
+    void visitCommandExprSymbol(CommandExprSymbol* node) override;
+    void visitCommandStmnt(CommandStmnt* node) override;
+    void visitCommandStmntSymbol(CommandStmntSymbol* node) override;
+    void visitConditional(Conditional* node) override;
+    void visitConstDecl(ConstDecl* node) override;
+    void visitDecrementVar(DecrementVar* node) override;
+    void visitExpressionList(ExpressionList* node) override;
+    void visitForLoop(ForLoop* node) override;
+    void visitFuncCallExpr(FuncCallExpr* node) override;
+    void visitFuncCallExprOrArrayRef(FuncCallExprOrArrayRef* node) override;
+    void visitFuncCallStmnt(FuncCallStmnt* node) override;
+    void visitFuncDecl(FuncDecl* node) override;
+    void visitFuncExit(FuncExit* node) override;
+    void visitGoto(Goto* node) override;
+    void visitGotoSymbol(GotoSymbol* node) override;
+    void visitIncrementVar(IncrementVar* node) override;
+    void visitInfiniteLoop(InfiniteLoop* node) override;
+    void visitLabel(Label* node) override;
+    void visitScopedSymbol(ScopedSymbol* node) override;
+    void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) override;
+    void visitSubCallSymbol(SubCallSymbol* node) override;
+    void visitSubCall(SubCall* node) override;
+    void visitSubReturn(SubReturn* node) override;
+    void visitSymbol(Symbol* node) override;
+    void visitUntilLoop(UntilLoop* node) override;
+    void visitVarAssignment(VarAssignment* node) override;
+    void visitVarRef(VarRef* node) override;
+    void visitWhileLoop(WhileLoop* node) override;
+
+#define X(dbname, cppname) \
+    void visit##dbname##Literal(dbname##Literal* node) override; \
+    void visit##dbname##VarDecl(dbname##VarDecl* node) override;
+    ODB_DATATYPE_LIST
+#undef X
+
+#define X(op, str) \
+    void visitBinaryOp##op(BinaryOp##op* node) override;
+    ODB_BINARY_OP_LIST
+#undef X
+
+#define X(op, str) \
+    void visitUnaryOp##op(UnaryOp##op* node) override;
+    ODB_UNARY_OP_LIST
+#undef X
+
+    virtual void visit(Node* node) = 0;
+};
+
+class ODBCOMPILER_PUBLIC_API GenericConstVisitor : public ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
