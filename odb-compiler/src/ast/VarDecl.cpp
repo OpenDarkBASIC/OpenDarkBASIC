@@ -81,6 +81,8 @@ VarDecl::VarDecl(SourceLocation* location) :
             initialValue_ = dynamic_cast<Expression*>(newNode);               \
         else                                                                  \
             assert(false);                                                    \
+                                                                              \
+    newNode->setParent(this);                                                 \
     }
 ODB_DATATYPE_LIST
 #undef X

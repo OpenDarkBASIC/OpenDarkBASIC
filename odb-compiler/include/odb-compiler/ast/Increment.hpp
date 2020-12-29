@@ -9,7 +9,7 @@ namespace ast {
 class Expression;
 class VarRef;
 
-class Increment : public Statement
+class ODBCOMPILER_PUBLIC_API Increment : public Statement
 {
 public:
     Increment(Expression* expr, SourceLocation* location);
@@ -21,7 +21,7 @@ protected:
     Reference<Expression> expr_;
 };
 
-class IncrementVar : public Increment
+class ODBCOMPILER_PUBLIC_API IncrementVar : public Increment
 {
 public:
     IncrementVar(VarRef* variable, Expression* expr, SourceLocation* location);

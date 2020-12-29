@@ -3,6 +3,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Parser.y.hpp"
+#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 
 namespace odb {
 namespace ast {
@@ -11,6 +12,7 @@ namespace ast {
 Node::Node(SourceLocation* location) :
     location_(location)
 {
+    db::printLocationHighlight(location);
 }
 
 // ----------------------------------------------------------------------------

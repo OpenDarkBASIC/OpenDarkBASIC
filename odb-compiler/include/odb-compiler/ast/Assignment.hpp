@@ -10,7 +10,7 @@ class Expression;
 class LValue;
 class VarRef;
 
-class Assignment : public Statement
+class ODBCOMPILER_PUBLIC_API Assignment : public Statement
 {
 public:
     Assignment(LValue* lvalue, SourceLocation* location);
@@ -21,7 +21,7 @@ protected:
     Reference<LValue> lvalue_;
 };
 
-class VarAssignment : public Assignment
+class ODBCOMPILER_PUBLIC_API VarAssignment : public Assignment
 {
 public:
     VarAssignment(VarRef* var, Expression* expr, SourceLocation* location);

@@ -41,6 +41,8 @@ void UnaryOp##op::swapChild(const Node* oldNode, Node* newNode)               \
         expr_ = dynamic_cast<Expression*>(newNode);                           \
     else                                                                      \
         assert(false);                                                        \
+                                                                              \
+    newNode->setParent(this);                                                 \
 }
 ODB_UNARY_OP_LIST
 #undef X

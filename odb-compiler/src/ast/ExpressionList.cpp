@@ -49,6 +49,7 @@ void ExpressionList::swapChild(const Node* oldNode, Node* newNode)
         if (expr == oldNode)
         {
             expr = dynamic_cast<Expression*>(newNode);
+            newNode->setParent(this);
             return;
         }
 

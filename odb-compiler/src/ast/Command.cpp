@@ -48,6 +48,8 @@ void CommandExprSymbol::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -91,6 +93,8 @@ void CommandStmntSymbol::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -134,6 +138,8 @@ void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -177,6 +183,8 @@ void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

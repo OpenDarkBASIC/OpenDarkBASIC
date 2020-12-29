@@ -12,13 +12,13 @@ class Block;
 class Expression;
 class VarAssignment;
 
-class Loop : public Statement
+class ODBCOMPILER_PUBLIC_API Loop : public Statement
 {
 public:
     Loop(SourceLocation* location);
 };
 
-class InfiniteLoop : public Loop
+class ODBCOMPILER_PUBLIC_API InfiniteLoop : public Loop
 {
 public:
     InfiniteLoop(Block* body, SourceLocation* location);
@@ -34,7 +34,7 @@ private:
     Reference<Block> body_;
 };
 
-class WhileLoop : public Loop
+class ODBCOMPILER_PUBLIC_API WhileLoop : public Loop
 {
 public:
     WhileLoop(Expression* continueCondition, Block* body, SourceLocation* location);
@@ -52,7 +52,7 @@ private:
     Reference<Block> body_;
 };
 
-class UntilLoop : public Loop
+class ODBCOMPILER_PUBLIC_API UntilLoop : public Loop
 {
 public:
     UntilLoop(Expression* exitCondition, Block* body, SourceLocation* location);
@@ -70,7 +70,7 @@ private:
     Reference<Block> body_;
 };
 
-class ForLoop : public Loop
+class ODBCOMPILER_PUBLIC_API ForLoop : public Loop
 {
 public:
     ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);

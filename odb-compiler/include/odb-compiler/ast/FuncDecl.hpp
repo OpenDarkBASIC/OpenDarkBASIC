@@ -12,7 +12,7 @@ class Block;
 class Expression;
 class ExpressionList;
 
-class FuncDecl : public Statement
+class ODBCOMPILER_PUBLIC_API FuncDecl : public Statement
 {
 public:
     FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, Expression* returnValue, SourceLocation* location);
@@ -40,7 +40,7 @@ private:
     Reference<Expression> returnValue_;
 };
 
-class FuncExit : public Statement
+class ODBCOMPILER_PUBLIC_API FuncExit : public Statement
 {
 public:
     FuncExit(Expression* returnValue, SourceLocation* location);

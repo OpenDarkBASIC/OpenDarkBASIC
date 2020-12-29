@@ -9,7 +9,7 @@ namespace ast {
 class Label;
 class Symbol;
 
-class SubCallSymbol : public Statement
+class ODBCOMPILER_PUBLIC_API SubCallSymbol : public Statement
 {
 public:
     SubCallSymbol(Symbol* label, SourceLocation* location);
@@ -24,7 +24,7 @@ private:
     Reference<Symbol> label_;
 };
 
-class SubCall : public Statement
+class ODBCOMPILER_PUBLIC_API SubCall : public Statement
 {
 public:
     SubCall(Label* label, SourceLocation* location);
@@ -39,7 +39,7 @@ private:
     Reference<Label> label_;
 };
 
-class SubReturn : public Statement
+class ODBCOMPILER_PUBLIC_API SubReturn : public Statement
 {
 public:
     SubReturn(SourceLocation* location);

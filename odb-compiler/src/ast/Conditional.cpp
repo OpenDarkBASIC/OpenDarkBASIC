@@ -69,6 +69,8 @@ void Conditional::swapChild(const Node* oldNode, Node* newNode)
         false_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

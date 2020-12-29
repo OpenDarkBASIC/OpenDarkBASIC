@@ -12,20 +12,20 @@ class Label;
 class LValue;
 class Symbol;
 
-class DataBlock : public Node
+class ODBCOMPILER_PUBLIC_API DataBlock : public Node
 {
 public:
     DataBlock(SourceLocation* location);
 
     void accept(Visitor* visitor) override;
-    void accept(ConstVisitor* visitor) const const override;
+    void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
     std::vector<Reference<Data>> dataStmnts_;
 };
 
-class Data : public Statement
+class ODBCOMPILER_PUBLIC_API Data : public Statement
 {
 public:
     Data(ExpressionList* values, SourceLocation* location);
@@ -50,7 +50,7 @@ private:
     Reference<Symbol> label_;
 };
 
-class Restore : public Statement
+class ODBCOMPILER_PUBLIC_API Restore : public Statement
 {
 public:
     Restore(Label* label, SourceLocation* location);
@@ -65,7 +65,7 @@ private:
     Reference<Label> label_;
 };
 
-class Read : public Statement
+class ODBCOMPILER_PUBLIC_API Read : public Statement
 {
 public:
     Read(LValue* lvalue, SourceLocation* location);

@@ -10,7 +10,7 @@ namespace ast {
 class Expression;
 class ScopedAnnotatedSymbol;
 
-class VarDecl : public Statement
+class ODBCOMPILER_PUBLIC_API VarDecl : public Statement
 {
 public:
     VarDecl(SourceLocation* location);

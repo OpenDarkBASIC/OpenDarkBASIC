@@ -60,7 +60,7 @@ ODB_BINARY_OP_LIST
 ODB_UNARY_OP_LIST
 #undef X
 
-class ODBCOMPILER_PUBLIC_API Visitor
+class Visitor
 {
 public:
     virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
@@ -114,7 +114,7 @@ public:
 #undef X
 };
 
-class ODBCOMPILER_PUBLIC_API ConstVisitor
+class ConstVisitor
 {
 public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
@@ -168,7 +168,7 @@ public:
 #undef X
 };
 
-class ODBCOMPILER_PUBLIC_API GenericVisitor : public Visitor
+class GenericVisitor : public Visitor
 {
 public:
     void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
@@ -224,7 +224,7 @@ public:
     virtual void visit(Node* node) = 0;
 };
 
-class ODBCOMPILER_PUBLIC_API GenericConstVisitor : public ConstVisitor
+class GenericConstVisitor : public ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;

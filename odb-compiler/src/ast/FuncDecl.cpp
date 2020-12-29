@@ -156,6 +156,8 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
         returnValue_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -199,6 +201,8 @@ void FuncExit::swapChild(const Node* oldNode, Node* newNode)
         returnValue_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

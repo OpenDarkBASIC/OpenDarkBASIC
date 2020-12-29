@@ -39,6 +39,8 @@ void VarRef::swapChild(const Node* oldNode, Node* newNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

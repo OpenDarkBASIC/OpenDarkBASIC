@@ -11,7 +11,7 @@ namespace ast {
 class AnnotatedSymbol;
 class ExpressionList;
 
-class FuncCallExpr : public Expression
+class ODBCOMPILER_PUBLIC_API FuncCallExpr : public Expression
 {
 public:
     FuncCallExpr(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
@@ -29,7 +29,7 @@ private:
     Reference<ExpressionList> args_;
 };
 
-class FuncCallStmnt : public Statement
+class ODBCOMPILER_PUBLIC_API FuncCallStmnt : public Statement
 {
 public:
     FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);

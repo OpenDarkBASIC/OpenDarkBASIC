@@ -52,6 +52,8 @@ void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
         literal_ = dynamic_cast<Literal*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

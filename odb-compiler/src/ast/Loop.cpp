@@ -57,6 +57,8 @@ void InfiniteLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -114,6 +116,8 @@ void WhileLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -171,6 +175,8 @@ void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -350,6 +356,8 @@ void ForLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

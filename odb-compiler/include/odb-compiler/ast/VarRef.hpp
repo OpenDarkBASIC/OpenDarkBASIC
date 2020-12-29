@@ -8,7 +8,7 @@ namespace ast {
 
 class AnnotatedSymbol;
 
-class VarRef : public LValue
+class ODBCOMPILER_PUBLIC_API VarRef : public LValue
 {
 public:
     VarRef(AnnotatedSymbol* symbol, SourceLocation* location);

@@ -339,8 +339,8 @@ void Driver::giveProgram(ast::Block* program)
 ast::SourceLocation* Driver::newLocation(const DBLTYPE* loc)
 {
     if (code_.length() > 0)
-        return new ast::InlineSourceLocation(sourceName_, code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column-1);
-    return new ast::FileSourceLocation(sourceName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column-1);
+        return new ast::InlineSourceLocation(sourceName_, code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column - 1);
+    return new ast::FileSourceLocation(sourceName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column - 1);
 }
 
 // ----------------------------------------------------------------------------

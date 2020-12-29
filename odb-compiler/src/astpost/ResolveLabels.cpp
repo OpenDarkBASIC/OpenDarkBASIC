@@ -50,7 +50,7 @@ void Gatherer::visitLabel(ast::Label* node)
     if (it.second == false)
     {
         log::dbParser(log::ERROR, "%s: Label `%s` redefined\n",
-                      node->location()->getFileLineColumn().c_str(), name);
+                      node->location()->getFileLineColumn().c_str(), name.c_str());
         log::dbParser(log::NOTICE, "Label previously defined here\n");
         db::printLocationHighlight(node->location());
 
@@ -59,10 +59,10 @@ void Gatherer::visitLabel(ast::Label* node)
 }
 
 // ----------------------------------------------------------------------------
-bool ResolveLabels::execute(ast::Node** node)
+bool ResolveLabels::execute(ast::Node* node)
 {
     Gatherer gatherer;
-    (*node)->accept(&gatherer);
+    node->accept(&gatherer);
     if (gatherer.errorOccurred)
         return false;
 
@@ -73,8 +73,8 @@ bool ResolveLabels::execute(ast::Node** node)
         if (it == gatherer.labels.end())
         {
             log::dbParser(log::ERROR, "%s: Label `%s` undefined\n",
-                          gotoNode->location()->getFileLineColumn().c_str(), name);
-            db::printLocationHighlight(gotoNode->location());
+                          gotoNode->location()->getFileLineColumn().c_str(), name.c_str());
+            db::printLocationHighlight(gotoNode->labelSymbol()->location());
             continue;
         }
 
@@ -90,8 +90,8 @@ bool ResolveLabels::execute(ast::Node** node)
         if (it == gatherer.labels.end())
         {
             log::dbParser(log::ERROR, "%s: Label `%s` undefined\n",
-                          subCallNode->location()->getFileLineColumn().c_str(), name);
-            db::printLocationHighlight(subCallNode->location());
+                          subCallNode->location()->getFileLineColumn().c_str(), name.c_str());
+            db::printLocationHighlight(subCallNode->labelSymbol()->location());
             continue;
         }
 

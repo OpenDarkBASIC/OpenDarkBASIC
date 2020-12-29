@@ -5,10 +5,10 @@
 namespace odb {
 namespace astpost {
 
-class ResolveLabels : public Process
+class ODBCOMPILER_PUBLIC_API ResolveLabels : public Process
 {
 public:
-    bool execute(ast::Node** root) override final;
+    bool execute(ast::Node* root) override final;
 };
 
 }

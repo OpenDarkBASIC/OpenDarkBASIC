@@ -56,6 +56,7 @@ void Block::swapChild(const Node* oldNode, Node* newNode)
         if (stmnt == oldNode)
         {
             stmnt = dynamic_cast<Statement*>(newNode);
+            newNode->setParent(this);
             return;
         }
 

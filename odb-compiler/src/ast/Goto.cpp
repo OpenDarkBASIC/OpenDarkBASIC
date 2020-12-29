@@ -13,6 +13,7 @@ GotoSymbol::GotoSymbol(Symbol* label, SourceLocation* location) :
     label_(label)
 {
     label->setParent(this);
+    fprintf(stderr, "GotoSymbol\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -75,6 +76,8 @@ void Goto::swapChild(const Node* oldNode, Node* newNode)
         label_ = dynamic_cast<Label*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

@@ -5,7 +5,7 @@
 
 namespace odb::ast {
 
-class LValue : public Expression
+class ODBCOMPILER_PUBLIC_API LValue : public Expression
 {
 public:
     LValue(SourceLocation* location);

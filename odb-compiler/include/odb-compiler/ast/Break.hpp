@@ -6,7 +6,7 @@
 namespace odb {
 namespace ast {
 
-class Break : public Statement
+class ODBCOMPILER_PUBLIC_API Break : public Statement
 {
 public:
     Break(SourceLocation* location);

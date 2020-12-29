@@ -62,6 +62,8 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -109,6 +111,8 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -166,6 +170,8 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

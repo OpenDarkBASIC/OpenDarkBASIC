@@ -11,10 +11,10 @@ class Node;
 }
 namespace astpost {
 
-class Process
+class ODBCOMPILER_PUBLIC_API Process
 {
 public:
-    virtual bool execute(ast::Node** root) = 0;
+    virtual bool execute(ast::Node* root) = 0;
 };
 
 }

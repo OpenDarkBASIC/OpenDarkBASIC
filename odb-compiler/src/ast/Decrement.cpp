@@ -74,6 +74,8 @@ void DecrementVar::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

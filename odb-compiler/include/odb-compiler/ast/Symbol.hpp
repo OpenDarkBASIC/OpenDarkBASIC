@@ -7,7 +7,7 @@
 namespace odb {
 namespace ast {
 
-class Symbol : public Node
+class ODBCOMPILER_PUBLIC_API Symbol : public Node
 {
 public:
     enum class Annotation : char {
@@ -32,7 +32,7 @@ private:
     const std::string name_;
 };
 
-class ScopedSymbol : public Symbol
+class ODBCOMPILER_PUBLIC_API ScopedSymbol : public Symbol
 {
 public:
     ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location);
@@ -46,7 +46,7 @@ private:
     Scope scope_;
 };
 
-class AnnotatedSymbol : public Symbol
+class ODBCOMPILER_PUBLIC_API AnnotatedSymbol : public Symbol
 {
 public:
 
@@ -61,7 +61,7 @@ private:
     Annotation annotation_;
 };
 
-class ScopedAnnotatedSymbol : public Symbol
+class ODBCOMPILER_PUBLIC_API ScopedAnnotatedSymbol : public Symbol
 {
 public:
     ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);

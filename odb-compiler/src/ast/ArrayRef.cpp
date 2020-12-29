@@ -52,6 +52,8 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

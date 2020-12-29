@@ -9,7 +9,7 @@ namespace odb::ast {
 class Block;
 class Expression;
 
-class Conditional : public Statement
+class ODBCOMPILER_PUBLIC_API Conditional : public Statement
 {
 public:
     Conditional(Expression* condition, Block* trueBranch, Block* falseBranch, SourceLocation* location);

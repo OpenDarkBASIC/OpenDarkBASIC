@@ -10,7 +10,7 @@ class AnnotatedSymbol;
 class Literal;
 
 /*! #constant x = 42 */
-class ConstDecl : public Statement
+class ODBCOMPILER_PUBLIC_API ConstDecl : public Statement
 {
 public:
     ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location);

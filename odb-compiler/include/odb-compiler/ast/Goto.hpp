@@ -24,7 +24,7 @@ private:
     Reference<Symbol> label_;
 };
 
-class Goto : public Statement
+class ODBCOMPILER_PUBLIC_API Goto : public Statement
 {
 public:
     Goto(Label* label, SourceLocation* location);

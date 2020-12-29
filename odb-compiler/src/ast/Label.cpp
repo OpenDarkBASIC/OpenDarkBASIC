@@ -39,6 +39,8 @@ void Label::swapChild(const Node* oldNode, Node* newNode)
         symbol_ = dynamic_cast<Symbol*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 }

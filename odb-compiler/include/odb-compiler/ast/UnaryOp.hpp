@@ -7,7 +7,7 @@
 namespace odb {
 namespace ast {
 
-class UnaryOp : public Expression
+class ODBCOMPILER_PUBLIC_API UnaryOp : public Expression
 {
 public:
     UnaryOp(Expression* expr, SourceLocation* location);
@@ -19,7 +19,7 @@ protected:
 };
 
 #define X(op, tok)                                                            \
-class UnaryOp##op : public UnaryOp                                            \
+class ODBCOMPILER_PUBLIC_API UnaryOp##op : public UnaryOp                     \
 {                                                                             \
 public:                                                                       \
     UnaryOp##op(Expression* expr, SourceLocation* location);                  \

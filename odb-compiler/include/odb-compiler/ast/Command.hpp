@@ -52,7 +52,7 @@ private:
     const std::string command_;
 };
 
-class CommandExpr : public Expression
+class ODBCOMPILER_PUBLIC_API CommandExpr : public Expression
 {
 public:
     CommandExpr(cmd::Command* command, ExpressionList* args, SourceLocation* location);
@@ -70,7 +70,7 @@ private:
     Reference<ExpressionList> args_;
 };
 
-class CommandStmnt : public Statement
+class ODBCOMPILER_PUBLIC_API CommandStmnt : public Statement
 {
 public:
     CommandStmnt(cmd::Command* command, ExpressionList* args, SourceLocation* location);

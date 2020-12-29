@@ -32,6 +32,7 @@ Expression* BinaryOp::rhs() const
 BinaryOp##op::BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location) : \
     BinaryOp(lhs, rhs, location)                                              \
 {                                                                             \
+    fprintf(stderr, "BinaryOp" #op "\n");                                     \
 }                                                                             \
 void BinaryOp##op::accept(Visitor* visitor)                                   \
 {                                                                             \
@@ -53,6 +54,8 @@ void BinaryOp##op::swapChild(const Node* oldNode, Node* newNode)              \
         rhs_ = dynamic_cast<Expression*>(newNode);                            \
     else                                                                      \
         assert(false);                                                        \
+                                                                              \
+    newNode->setParent(this);                                                 \
 }
 ODB_BINARY_OP_LIST
 #undef X

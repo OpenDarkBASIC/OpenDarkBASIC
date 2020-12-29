@@ -8,7 +8,7 @@ namespace ast {
 
 class Symbol;
 
-class Label : public Statement
+class ODBCOMPILER_PUBLIC_API Label : public Statement
 {
 public:
     Label(Symbol* symbol, SourceLocation* location);

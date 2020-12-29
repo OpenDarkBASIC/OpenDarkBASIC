@@ -40,6 +40,8 @@ void SubCallSymbol::swapChild(const Node* oldNode, Node* newNode)
         label_ = dynamic_cast<Symbol*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -75,6 +77,8 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
         label_ = dynamic_cast<Label*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

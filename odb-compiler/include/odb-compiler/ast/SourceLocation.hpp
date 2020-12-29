@@ -9,7 +9,7 @@
 namespace odb {
 namespace ast {
 
-class SourceLocation : public RefCounted
+class ODBCOMPILER_PUBLIC_API SourceLocation : public RefCounted
 {
 public:
     SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn);
@@ -32,7 +32,7 @@ protected:
     int lastColumn_;
 };
 
-class FileSourceLocation : public SourceLocation
+class ODBCOMPILER_PUBLIC_API FileSourceLocation : public SourceLocation
 {
 public:
     FileSourceLocation(const std::string& fileName,
@@ -45,7 +45,7 @@ private:
     std::string fileName_;
 };
 
-class InlineSourceLocation : public SourceLocation
+class ODBCOMPILER_PUBLIC_API InlineSourceLocation : public SourceLocation
 {
 public:
     InlineSourceLocation(const std::string& sourceName, const std::string& code,

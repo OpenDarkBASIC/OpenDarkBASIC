@@ -17,7 +17,7 @@ private:
 };
 
 // ----------------------------------------------------------------------------
-bool ResolveArrayFuncAmbiguity::execute(ast::Node** node)
+bool ResolveArrayFuncAmbiguity::execute(ast::Node* node)
 {
     return false;
 }
