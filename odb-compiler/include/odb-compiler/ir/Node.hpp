@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "odb-compiler/ast/Datatypes.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 
@@ -46,8 +46,8 @@ template <typename T> using Ptr = std::unique_ptr<T>;
 
 template <typename T> using PtrVector = std::vector<Ptr<T>>;
 
-struct UDTDefinition;
-struct FunctionDefinition;
+class UDTDefinition;
+class FunctionDefinition;
 
 using ast::SourceLocation;
 
@@ -58,7 +58,7 @@ enum class BuiltinType
 #undef X
 };
 
-class Type
+class ODBCOMPILER_PUBLIC_API Type
 {
 public:
     // Void constructor.
@@ -91,7 +91,7 @@ private:
     };
 };
 
-class Node
+class ODBCOMPILER_PUBLIC_API Node
 {
 public:
     Node(SourceLocation* location);
@@ -105,14 +105,14 @@ private:
 
 // Expressions.
 
-class Expression : public Node
+class ODBCOMPILER_PUBLIC_API Expression : public Node
 {
 public:
     Expression(SourceLocation* location);
     virtual Type getType() const = 0;
 };
 
-class UnaryExpression : public Expression
+class ODBCOMPILER_PUBLIC_API UnaryExpression : public Expression
 {
 public:
     UnaryExpression(SourceLocation* location, UnaryOp op, Ptr<Expression> expr);
@@ -127,7 +127,7 @@ private:
     Ptr<Expression> expr_;
 };
 
-class BinaryExpression : public Expression
+class ODBCOMPILER_PUBLIC_API BinaryExpression : public Expression
 {
 public:
     BinaryExpression(SourceLocation* location, BinaryOp op, Ptr<Expression> left, Ptr<Expression> right);
@@ -144,7 +144,7 @@ private:
     Ptr<Expression> right_;
 };
 
-class VariableExpression : public Expression
+class ODBCOMPILER_PUBLIC_API VariableExpression : public Expression
 {
 public:
     VariableExpression(SourceLocation* location, const std::string& name, Type type);
@@ -158,7 +158,7 @@ private:
     Type type_;
 };
 
-class LiteralExpression : public Expression
+class ODBCOMPILER_PUBLIC_API LiteralExpression : public Expression
 {
 public:
     enum class LiteralType
@@ -193,13 +193,17 @@ private:
     std::string string_;
 };
 
-class FunctionCallExpression : public Expression
+class ODBCOMPILER_PUBLIC_API FunctionCallExpression : public Expression
 {
 public:
     FunctionCallExpression(SourceLocation* location, const cmd::Command* command, PtrVector<Expression> arguments,
                            Type returnType);
     FunctionCallExpression(SourceLocation* location, FunctionDefinition* userFunction, PtrVector<Expression> arguments,
                            Type returnType);
+    FunctionCallExpression(FunctionCallExpression&&) = default;
+    FunctionCallExpression(const FunctionCallExpression&) = delete;
+    FunctionCallExpression& operator=(FunctionCallExpression&&) = default;
+    FunctionCallExpression& operator=(const FunctionCallExpression&) = delete;
 
     Type getType() const override;
 
@@ -218,7 +222,7 @@ private:
 
 // Statements.
 
-class Statement : public Node
+class ODBCOMPILER_PUBLIC_API Statement : public Node
 {
 public:
     Statement(SourceLocation* location, FunctionDefinition* containingFunction);
@@ -231,11 +235,15 @@ protected:
 
 using StatementBlock = PtrVector<Statement>;
 
-class BranchStatement : public Statement
+class ODBCOMPILER_PUBLIC_API BranchStatement : public Statement
 {
 public:
     BranchStatement(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
                     StatementBlock trueBranch, StatementBlock falseBranch);
+    BranchStatement(BranchStatement&&) = default;
+    BranchStatement(const BranchStatement&) = delete;
+    BranchStatement& operator=(BranchStatement&&) = default;
+    BranchStatement& operator=(const BranchStatement&) = delete;
 
     Expression* expression() const;
     const StatementBlock& trueBranch() const;
@@ -247,7 +255,7 @@ private:
     StatementBlock falseBranch_;
 };
 
-class SelectStatement : public Statement
+class ODBCOMPILER_PUBLIC_API SelectStatement : public Statement
 {
 public:
     struct Case
@@ -258,6 +266,10 @@ public:
 
     SelectStatement(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
                     std::vector<Case> cases);
+    SelectStatement(SelectStatement&&) = default;
+    SelectStatement(const SelectStatement&) = delete;
+    SelectStatement& operator=(SelectStatement&&) = default;
+    SelectStatement& operator=(const SelectStatement&) = delete;
 
     Expression* expression() const;
     const std::vector<Case>& cases() const;
@@ -267,11 +279,15 @@ private:
     std::vector<Case> cases_;
 };
 
-class ForNextStatement : public Statement
+class ODBCOMPILER_PUBLIC_API ForNextStatement : public Statement
 {
 public:
     ForNextStatement(SourceLocation* location, FunctionDefinition* containingFunction, VariableExpression variable,
                      StatementBlock block);
+    ForNextStatement(ForNextStatement&&) = default;
+    ForNextStatement(const ForNextStatement&) = delete;
+    ForNextStatement& operator=(ForNextStatement&&) = default;
+    ForNextStatement& operator=(const ForNextStatement&) = delete;
 
     const VariableExpression& variable() const;
     const StatementBlock& block() const;
@@ -281,11 +297,15 @@ private:
     StatementBlock block_;
 };
 
-class WhileStatement : public Statement
+class ODBCOMPILER_PUBLIC_API WhileStatement : public Statement
 {
 public:
     WhileStatement(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
                    StatementBlock block);
+    WhileStatement(WhileStatement&&) = default;
+    WhileStatement(const WhileStatement&) = delete;
+    WhileStatement& operator=(WhileStatement&&) = default;
+    WhileStatement& operator=(const WhileStatement&) = delete;
 
     Expression* expression() const;
     const StatementBlock& block() const;
@@ -295,11 +315,15 @@ private:
     StatementBlock block_;
 };
 
-class RepeatUntilStatement : public Statement
+class ODBCOMPILER_PUBLIC_API RepeatUntilStatement : public Statement
 {
 public:
     RepeatUntilStatement(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
                          StatementBlock block);
+    RepeatUntilStatement(RepeatUntilStatement&&) = default;
+    RepeatUntilStatement(const RepeatUntilStatement&) = delete;
+    RepeatUntilStatement& operator=(RepeatUntilStatement&&) = default;
+    RepeatUntilStatement& operator=(const RepeatUntilStatement&) = delete;
 
     Expression* expression() const;
     const StatementBlock& block() const;
@@ -309,10 +333,14 @@ private:
     StatementBlock block_;
 };
 
-class DoLoopStatement : public Statement
+class ODBCOMPILER_PUBLIC_API DoLoopStatement : public Statement
 {
 public:
     DoLoopStatement(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock block);
+    DoLoopStatement(DoLoopStatement&&) = default;
+    DoLoopStatement(const DoLoopStatement&) = delete;
+    DoLoopStatement& operator=(DoLoopStatement&&) = default;
+    DoLoopStatement& operator=(const DoLoopStatement&) = delete;
 
     const StatementBlock& block() const;
 
@@ -320,11 +348,15 @@ private:
     StatementBlock block_;
 };
 
-class AssignmentStatement : public Statement
+class ODBCOMPILER_PUBLIC_API AssignmentStatement : public Statement
 {
 public:
     AssignmentStatement(SourceLocation* location, FunctionDefinition* containingFunction, VariableExpression variable,
                         Ptr<Expression> expression);
+    AssignmentStatement(AssignmentStatement&&) = default;
+    AssignmentStatement(const AssignmentStatement&) = delete;
+    AssignmentStatement& operator=(AssignmentStatement&&) = default;
+    AssignmentStatement& operator=(const AssignmentStatement&) = delete;
 
     const VariableExpression& variable() const;
     Expression* expression() const;
@@ -334,7 +366,7 @@ private:
     Ptr<Expression> expression_;
 };
 
-class LabelStatement : public Statement
+class ODBCOMPILER_PUBLIC_API LabelStatement : public Statement
 {
 public:
     LabelStatement(SourceLocation* location, FunctionDefinition* containingFunction, std::string name);
@@ -345,7 +377,7 @@ private:
     std::string name_;
 };
 
-class GotoStatement : public Statement
+class ODBCOMPILER_PUBLIC_API GotoStatement : public Statement
 {
 public:
     GotoStatement(SourceLocation* location, FunctionDefinition* containingFunction, std::string label);
@@ -356,7 +388,7 @@ private:
     std::string label_;
 };
 
-class GosubStatement : public Statement
+class ODBCOMPILER_PUBLIC_API GosubStatement : public Statement
 {
 public:
     GosubStatement(SourceLocation* location, FunctionDefinition* containingFunction, std::string label);
@@ -367,11 +399,15 @@ private:
     std::string label_;
 };
 
-class IncStatement : public Statement
+class ODBCOMPILER_PUBLIC_API IncStatement : public Statement
 {
 public:
     IncStatement(SourceLocation* location, FunctionDefinition* containingFunction, VariableExpression variable,
                  Ptr<Expression> incExpession);
+    IncStatement(IncStatement&&) = default;
+    IncStatement(const IncStatement&) = delete;
+    IncStatement& operator=(IncStatement&&) = default;
+    IncStatement& operator=(const IncStatement&) = delete;
 
     const VariableExpression& variable() const;
     Expression* incExpession() const;
@@ -381,11 +417,15 @@ private:
     Ptr<Expression> incExpession_;
 };
 
-class DecStatement : public Statement
+class ODBCOMPILER_PUBLIC_API DecStatement : public Statement
 {
 public:
     DecStatement(SourceLocation* location, FunctionDefinition* containingFunction, VariableExpression variable,
                  Ptr<Expression> decExpession);
+    DecStatement(DecStatement&&) = default;
+    DecStatement(const DecStatement&) = delete;
+    DecStatement& operator=(DecStatement&&) = default;
+    DecStatement& operator=(const DecStatement&) = delete;
 
     const VariableExpression& variable() const;
     Expression* decExpession() const;
@@ -395,11 +435,15 @@ private:
     Ptr<Expression> decExpession_;
 };
 
-class FunctionCallStatement : public Statement
+class ODBCOMPILER_PUBLIC_API FunctionCallStatement : public Statement
 {
 public:
     FunctionCallStatement(SourceLocation* location, FunctionDefinition* containingFunction,
                           FunctionCallExpression call);
+    FunctionCallStatement(FunctionCallStatement&&) = default;
+    FunctionCallStatement(const FunctionCallStatement&) = delete;
+    FunctionCallStatement& operator=(FunctionCallStatement&&) = default;
+    FunctionCallStatement& operator=(const FunctionCallStatement&) = delete;
 
     const FunctionCallExpression& expression() const;
 
@@ -407,7 +451,7 @@ private:
     FunctionCallExpression expression_;
 };
 
-class ReturnStatement : public Statement
+class ODBCOMPILER_PUBLIC_API ReturnStatement : public Statement
 {
 public:
     ReturnStatement(SourceLocation* location, FunctionDefinition* containingFunction);
@@ -415,7 +459,7 @@ public:
 private:
 };
 
-class BreakStatement : public Statement
+class ODBCOMPILER_PUBLIC_API BreakStatement : public Statement
 {
 public:
     BreakStatement(SourceLocation* location, FunctionDefinition* containingFunction);
@@ -423,10 +467,14 @@ public:
 private:
 };
 
-class EndfunctionStatement : public Statement
+class ODBCOMPILER_PUBLIC_API EndfunctionStatement : public Statement
 {
 public:
     EndfunctionStatement(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression);
+    EndfunctionStatement(EndfunctionStatement&&) = default;
+    EndfunctionStatement(const EndfunctionStatement&) = delete;
+    EndfunctionStatement& operator=(EndfunctionStatement&&) = default;
+    EndfunctionStatement& operator=(const EndfunctionStatement&) = delete;
 
     Expression* expression() const;
 
@@ -436,7 +484,7 @@ private:
 
 // Program structure
 
-class FunctionDefinition : public Node
+class ODBCOMPILER_PUBLIC_API FunctionDefinition : public Node
 {
 public:
     struct Argument
@@ -445,33 +493,52 @@ public:
         std::string name;
     };
 
-    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments, Type returnType,
+    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments, Ptr<Expression> returnExpression,
                        StatementBlock statements);
+    FunctionDefinition(FunctionDefinition&&) = default;
+    FunctionDefinition(const FunctionDefinition&) = delete;
+    FunctionDefinition& operator=(FunctionDefinition&&) = default;
+    FunctionDefinition& operator=(const FunctionDefinition&) = delete;
 
     const std::string& name() const;
     const std::vector<Argument>& arguments() const;
-    const Type& returnType() const;
+    const Ptr<Expression>& returnExpression() const;
     const StatementBlock& statements() const;
 
 private:
     std::string name_;
     std::vector<Argument> arguments_;
-    Type returnType_;
+    Ptr<Expression> returnExpression_;
     StatementBlock statements_;
+
+    friend class Program;
 };
 
-class UDTDefinition : public Node
+class ODBCOMPILER_PUBLIC_API UDTDefinition : public Node
 {
 public:
     UDTDefinition(SourceLocation* location);
 };
 
-struct Program
+class ODBCOMPILER_PUBLIC_API Program
 {
-    StatementBlock mainStatements;
-    PtrVector<FunctionDefinition> functions;
-    std::unordered_map<std::string, std::string> constants;
+public:
+    static Program fromAst(ast::Block* root, const cmd::CommandIndex& cmdIndex);
 
-    static Program fromAst(ast::Node* root, const cmd::CommandIndex& cmdIndex);
+    Program(Program&&) = default;
+    Program(const Program&) = delete;
+    Program& operator=(Program&&) = default;
+    Program& operator=(const Program&) = delete;
+
+    const StatementBlock& mainStatements() const;
+    const PtrVector<FunctionDefinition>& functions() const;
+    const std::unordered_map<std::string, std::string>& constants() const;
+
+private:
+    Program() = default;
+
+    StatementBlock mainStatements_;
+    PtrVector<FunctionDefinition> functions_;
+    std::unordered_map<std::string, std::string> constants_;
 };
 } // namespace odb::ir

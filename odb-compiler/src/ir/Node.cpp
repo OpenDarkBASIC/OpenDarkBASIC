@@ -213,6 +213,8 @@ Type LiteralExpression::getType() const
         return Type{BuiltinType::DoubleFloat};
     case LiteralType::STRING:
         return Type{BuiltinType::String};
+    default:
+        std::terminate();
     }
 }
 
@@ -510,11 +512,11 @@ Expression* EndfunctionStatement::expression() const
 }
 
 FunctionDefinition::FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments,
-                                       Type returnType, StatementBlock statements)
+                                       Ptr<Expression> returnExpression, StatementBlock statements)
     : Node(location),
       name_(std::move(name)),
       arguments_(std::move(arguments)),
-      returnType_(std::move(returnType)),
+      returnExpression_(std::move(returnExpression)),
       statements_(std::move(statements))
 {
 }
@@ -529,9 +531,9 @@ const std::vector<FunctionDefinition::Argument>& FunctionDefinition::arguments()
     return arguments_;
 }
 
-const Type& FunctionDefinition::returnType() const
+const Ptr<Expression>& FunctionDefinition::returnExpression() const
 {
-    return returnType_;
+    return returnExpression_;
 }
 
 const StatementBlock& FunctionDefinition::statements() const

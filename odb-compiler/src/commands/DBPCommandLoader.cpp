@@ -1,5 +1,6 @@
 #include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/parsers/db/KeywordToken.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Log.hpp"
@@ -75,13 +76,6 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
 {
 #if defined(ODBCOMPILER_PLATFORM_WIN32)
-    static const std::unordered_set<std::string> builtInCommands = {
-        "constant",     "if",          "then",    "else",   "elseif", "endif",  "while",     "endwhile", "repeat",
-        "until",        "do",          "loop",    "break",  "for",    "to",     "step",      "next",     "function",
-        "exitfunction", "endfunction", "gosub",   "return", "goto",   "select", "endselect", "case",     "endcase",
-        "default",      "dim",         "global",  "local",  "as",     "type",   "endtype",   "boolean",  "dword",
-        "word",         "byte",        "integer", "float",  "double", "string", "increment", "decrement"};
-
     std::set<std::string> stringTable;
 
     // Load string table from library. We use a set here to deal with any duplicate entries in the library.
@@ -126,7 +120,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
                        [](char c) { return std::tolower(c); });
 
         // Skip built in commands.
-        if (builtInCommands.count(commandName))
+        if (db::KeywordToken::lookup(commandName))
         {
             continue;
         }
