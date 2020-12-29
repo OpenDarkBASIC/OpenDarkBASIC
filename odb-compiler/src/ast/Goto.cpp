@@ -13,7 +13,6 @@ GotoSymbol::GotoSymbol(Symbol* label, SourceLocation* location) :
     label_(label)
 {
     label->setParent(this);
-    fprintf(stderr, "GotoSymbol\n");
 }
 
 // ----------------------------------------------------------------------------

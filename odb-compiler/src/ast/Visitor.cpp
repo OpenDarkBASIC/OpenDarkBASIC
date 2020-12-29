@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
@@ -64,7 +65,8 @@ void GenericVisitor::visitWhileLoop(WhileLoop* node)                           {
 
 #define X(dbname, cppname) \
     void GenericVisitor::visit##dbname##Literal(dbname##Literal* node)         { visit(node); } \
-    void GenericVisitor::visit##dbname##VarDecl(dbname##VarDecl* node)         { visit(node); }
+    void GenericVisitor::visit##dbname##VarDecl(dbname##VarDecl* node)         { visit(node); } \
+    void GenericVisitor::visit##dbname##ArrayDecl(dbname##ArrayDecl* node)     { visit(node); }
 ODB_DATATYPE_LIST
 #undef X
 
@@ -115,7 +117,8 @@ void GenericConstVisitor::visitWhileLoop(const WhileLoop* node)                 
 
 #define X(dbname, cppname) \
     void GenericConstVisitor::visit##dbname##Literal(const dbname##Literal* node)         { visit(node); } \
-    void GenericConstVisitor::visit##dbname##VarDecl(const dbname##VarDecl* node)         { visit(node); }
+    void GenericConstVisitor::visit##dbname##VarDecl(const dbname##VarDecl* node)         { visit(node); } \
+    void GenericConstVisitor::visit##dbname##ArrayDecl(const dbname##ArrayDecl* node)     { visit(node); }
 ODB_DATATYPE_LIST
 #undef X
 

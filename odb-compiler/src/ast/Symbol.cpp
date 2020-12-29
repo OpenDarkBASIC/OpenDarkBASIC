@@ -10,7 +10,6 @@ Symbol::Symbol(const std::string& name, SourceLocation* location) :
     Node(location),
     name_(name)
 {
-    fprintf(stderr, "Symbol\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -40,7 +39,6 @@ AnnotatedSymbol::AnnotatedSymbol(Annotation annotation, const std::string& name,
     Symbol(name, location),
     annotation_(annotation)
 {
-    fprintf(stderr, "AnnotatedSymbol\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -70,7 +68,6 @@ ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation*
     Symbol(name, location),
     scope_(scope)
 {
-    fprintf(stderr, "ScopedSymbol\n");
 }
 
 // ----------------------------------------------------------------------------
@@ -101,7 +98,6 @@ ScopedAnnotatedSymbol::ScopedAnnotatedSymbol(Scope scope, Annotation annotation,
     scope_(scope),
     annotation_(annotation)
 {
-    fprintf(stderr, "ScopedAnnotatedSymbol\n");
 }
 
 // ----------------------------------------------------------------------------

@@ -41,7 +41,8 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(const odb::ast::dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(const odb::ast::dbname##VarDecl* node) override;
+    void visit##dbname##VarDecl(const odb::ast::dbname##VarDecl* node) override; \
+    void visit##dbname##ArrayDecl(const odb::ast::dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X
 

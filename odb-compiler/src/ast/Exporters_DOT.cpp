@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/Exporters.hpp"
-#include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Break.hpp"
@@ -232,6 +233,11 @@ private:
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
         writeNamedConnection(node, node->initialValue(), "initialValue");     \
+    }                                                                         \
+    void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
+    {                                                                         \
+        writeNamedConnection(node, node->symbol(), "symbol");                 \
+        writeNamedConnection(node, node->dims(), "dims");                     \
     }
     ODB_DATATYPE_LIST
 #undef X
@@ -400,19 +406,21 @@ private:
         { writeName(node, "String: " + node->value()); }
 
 #define X(dbname, cppname)                                                    \
-    void visit##dbname##VarDecl(const dbname##VarDecl* node) override               \
-        { writeName(node, #dbname "VarDecl"); }
+    void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
+        { writeName(node, #dbname "VarDecl"); }                               \
+    void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
+        { writeName(node, #dbname "ArrayDecl"); }
     ODB_DATATYPE_LIST
 #undef X
 
 #define X(op, tok)                                                            \
-    void visitBinaryOp##op(const BinaryOp##op* node) override                       \
+    void visitBinaryOp##op(const BinaryOp##op* node) override                 \
         { writeName(node, tok); }
     ODB_BINARY_OP_LIST
 #undef X
 
 #define X(op, tok)                                                            \
-    void visitUnaryOp##op(const UnaryOp##op* node) override                         \
+    void visitUnaryOp##op(const UnaryOp##op* node) override                   \
         { writeName(node, tok); }
     ODB_UNARY_OP_LIST
 #undef X

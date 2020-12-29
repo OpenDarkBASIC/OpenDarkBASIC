@@ -94,6 +94,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     ${Gperf_DarkBASICCommandToken_OUTPUTS}
     ${BISON_CommandsParser_OUTPUTS}
     ${FLEX_CommandsScanner_OUTPUTS}
+    "src/ast/ArrayDecl.cpp"
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
     "src/ast/BinaryOp.cpp"
@@ -168,6 +169,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/harness/ParserTestHarness.cpp"
         "tests/src/parser/test_db_parser_assignment.cpp"
         # "tests/src/test_db_arrays.cpp"
+        "tests/src/parser/test_db_parser_array_decl.cpp"
         "tests/src/parser/test_db_parser_command.cpp"
         "tests/src/parser/test_db_parser_conditional.cpp"
         "tests/src/parser/test_db_parser_constant.cpp"

@@ -42,7 +42,8 @@ public:
 
 #define X(dbname, cppname) \
     MOCK_METHOD(void, visit##dbname##Literal, (const odb::ast::dbname##Literal* node), (override)); \
-    MOCK_METHOD(void, visit##dbname##VarDecl, (const odb::ast::dbname##VarDecl* node), (override));
+    MOCK_METHOD(void, visit##dbname##VarDecl, (const odb::ast::dbname##VarDecl* node), (override)); \
+    MOCK_METHOD(void, visit##dbname##ArrayDecl, (const odb::ast::dbname##ArrayDecl* node), (override));
     ODB_DATATYPE_LIST
 #undef X
 

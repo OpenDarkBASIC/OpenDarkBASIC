@@ -45,10 +45,12 @@ class WhileLoop;
 
 template <typename T> class LiteralTemplate;
 template <typename T> class VarDeclTemplate;
+template <typename T> class ArrayDeclTemplate;
 
 #define X(dbname, cppname) \
     typedef LiteralTemplate<cppname> dbname##Literal; \
-    typedef VarDeclTemplate<cppname> dbname##VarDecl;
+    typedef VarDeclTemplate<cppname> dbname##VarDecl; \
+    typedef ArrayDeclTemplate<cppname> dbname##ArrayDecl;
 ODB_DATATYPE_LIST
 #undef X
 
@@ -99,7 +101,8 @@ public:
 
 #define X(dbname, cppname) \
     virtual void visit##dbname##Literal(dbname##Literal* node) = 0; \
-    virtual void visit##dbname##VarDecl(dbname##VarDecl* node) = 0;
+    virtual void visit##dbname##VarDecl(dbname##VarDecl* node) = 0; \
+    virtual void visit##dbname##ArrayDecl(dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
 
@@ -153,7 +156,8 @@ public:
 
 #define X(dbname, cppname) \
     virtual void visit##dbname##Literal(const dbname##Literal* node) = 0; \
-    virtual void visit##dbname##VarDecl(const dbname##VarDecl* node) = 0;
+    virtual void visit##dbname##VarDecl(const dbname##VarDecl* node) = 0; \
+    virtual void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
 
@@ -207,7 +211,8 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(dbname##VarDecl* node) override;
+    void visit##dbname##VarDecl(dbname##VarDecl* node) override; \
+    void visit##dbname##ArrayDecl(dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X
 
@@ -263,7 +268,8 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(const dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(const dbname##VarDecl* node) override;
+    void visit##dbname##VarDecl(const dbname##VarDecl* node) override; \
+    void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X
 

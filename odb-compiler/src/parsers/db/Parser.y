@@ -1,6 +1,7 @@
 %require "3.7"
 %code top
 {
+    #include "odb-compiler/ast/ArrayDecl.hpp"
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
@@ -54,6 +55,7 @@
         }
         namespace ast {
             class AnnotatedSymbol;
+            class ArrayDecl;
             class Assignment;
             class Block;
             class Break;
@@ -136,6 +138,7 @@
     char* string;
 
     odb::ast::AnnotatedSymbol* annotated_symbol;
+    odb::ast::ArrayDecl* array_decl;
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::Break* break_;
@@ -283,48 +286,52 @@
 %token<string> SYMBOL "symbol"
 %token<string> COMMAND "command"
 
-%type<var_assignment> var_assignment;
-%type<assignment> assignment;
-%type<block> program;
-%type<block> block;
-%type<stmnt> stmnt;
-%type<const_decl> constant_decl;
-%type<func_call_stmnt> func_call_stmnt;
-%type<expr> func_call_expr_or_array_ref;
-%type<expr> expr;
-%type<expr_list> expr_list;
-%type<command_expr> command_expr;
-%type<command_stmnt> command_stmnt;
-%type<var_decl> var_decl;
-%type<var_decl> var_decl_as_type;
-%type<var_decl> var_decl_scope;
-%type<literal> literal;
-%type<annotated_symbol> annotated_symbol;
-%type<annotated_symbol> loop_next_sym;
-%type<scoped_annotated_symbol> var_decl_int_sym;
-%type<scoped_annotated_symbol> var_decl_str_sym;
-%type<scoped_annotated_symbol> var_decl_float_sym;
-%type<var_ref> var_ref;
-%type<loop> loop;
-%type<infinite_loop> loop_do;
-%type<while_loop> loop_while;
-%type<until_loop> loop_until;
-%type<for_loop> loop_for;
-%type<break_> break;
-%type<func_decl> func_decl;
-%type<func_exit> func_exit;
-%type<stmnt> increment;
-%type<stmnt> decrement;
-%type<symbol> label_sym;
-%type<sub_call_symbol> sub_call;
-%type<sub_return> sub_return;
-%type<goto_symbol> goto_label;
-%type<label> label_decl;
-%type<conditional> conditional;
-%type<conditional> cond_oneline;
-%type<conditional> cond_begin;
-%type<block> cond_next;
-%type<lvalue> lvalue;
+%type<var_assignment> var_assignment
+%type<assignment> assignment
+%type<block> program
+%type<block> block
+%type<stmnt> stmnt
+%type<const_decl> constant_decl
+%type<func_call_stmnt> func_call_stmnt
+%type<expr> func_call_expr_or_array_ref
+%type<expr> expr
+%type<expr_list> expr_list
+%type<command_expr> command_expr
+%type<command_stmnt> command_stmnt
+%type<var_decl> var_decl
+%type<var_decl> var_decl_as_type
+%type<var_decl> var_decl_scope
+%type<literal> literal
+%type<annotated_symbol> annotated_symbol
+%type<annotated_symbol> loop_next_sym
+%type<scoped_annotated_symbol> var_decl_int_sym
+%type<scoped_annotated_symbol> var_decl_str_sym
+%type<scoped_annotated_symbol> var_decl_float_sym
+%type<var_ref> var_ref
+%type<loop> loop
+%type<infinite_loop> loop_do
+%type<while_loop> loop_while
+%type<until_loop> loop_until
+%type<for_loop> loop_for
+%type<break_> break
+%type<func_decl> func_decl
+%type<func_exit> func_exit
+%type<stmnt> increment
+%type<stmnt> decrement
+%type<symbol> label_sym
+%type<sub_call_symbol> sub_call
+%type<sub_return> sub_return
+%type<goto_symbol> goto_label
+%type<label> label_decl
+%type<conditional> conditional
+%type<conditional> cond_oneline
+%type<conditional> cond_begin
+%type<block> cond_next
+%type<lvalue> lvalue
+%type<array_decl> array_decl
+%type<scoped_annotated_symbol> array_decl_int_sym
+%type<scoped_annotated_symbol> array_decl_float_sym
+%type<scoped_annotated_symbol> array_decl_str_sym
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -391,6 +398,7 @@ stmnt
   | sub_return                                   { $$ = $1; }
   | goto_label                                   { $$ = $1; }
   | conditional                                  { $$ = $1; }
+  | array_decl                                   { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -535,55 +543,42 @@ var_decl_str_sym
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
   ;
-/*
+
 array_decl
-  : LOCAL array_decl_as_type                     { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
-  | GLOBAL array_decl_as_type                    { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
-  | LOCAL array_decl_name                        { $$ = $2; $$->sym.base.flag.scope = SS_LOCAL; }
-  | GLOBAL array_decl_name                       { $$ = $2; $$->sym.base.flag.scope = SS_GLOBAL; }
-  | array_decl_as_type                           { $$ = $1; }
-  | array_decl_name                              { $$ = $1; }
+  : array_decl_int_sym '(' expr_list ')' AS DOUBLE INTEGER  { $$ = new DoubleIntegerArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS INTEGER         { $$ = new IntegerArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS DWORD           { $$ = new DwordArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS WORD            { $$ = new WordArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS BYTE            { $$ = new ByteArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS BOOLEAN         { $$ = new BooleanArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS DOUBLE FLOAT    { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS FLOAT           { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS STRING          { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | array_decl_float_sym '(' expr_list ')' AS DOUBLE FLOAT  { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
+  | array_decl_float_sym '(' expr_list ')' AS FLOAT         { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | array_decl_str_sym '(' expr_list ')'AS STRING           { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')'                    { $$ = new IntegerArrayDecl($1, $3, newloc()); }
+  | array_decl_float_sym '(' expr_list ')'                  { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | array_decl_str_sym '(' expr_list ')'                    { $$ = new StringArrayDecl($1, $3, newloc()); }
   ;
-array_decl_as_type
-  : array_decl_name AS BOOLEAN                   { $$ = $1; $$->sym.base.flag.datatype = SDT_BOOLEAN; }
-  | array_decl_name AS INTEGER                   { $$ = $1; $$->sym.base.flag.datatype = SDT_INTEGER; }
-  | array_decl_name AS FLOAT                     { $$ = $1; $$->sym.base.flag.datatype = SDT_FLOAT; }
-  | array_decl_name AS STRING                    { $$ = $1; $$->sym.base.flag.datatype = SDT_STRING; }
-  | array_decl_name AS udt_name                  { $$ = $1; $$->sym.base.flag.datatype = SDT_UDT; $$->sym.array_decl.udt = $3; }
+array_decl_int_sym
+  : GLOBAL DIM SYMBOL %prec NO_HASH_OR_DOLLAR    { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $3, newloc()); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL %prec NO_HASH_OR_DOLLAR     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $3, newloc()); str::deleteCStr($3); }
+  | DIM SYMBOL %prec NO_HASH_OR_DOLLAR           { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, newloc()); str::deleteCStr($2); }
   ;
-array_decl_name
-  : DIM annotated_symbol LB arglist RB {
-        $$ = $2;
-        $$->info.type = NT_SYM_ARRAY_DECL;
-        $$->sym.array_decl.arglist = $4;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
-  | DIM annotated_symbol LB RB {
-        $$ = $2;
-        $$->info.type = NT_SYM_ARRAY_DECL;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
+array_decl_float_sym
+  : GLOBAL DIM SYMBOL '#'                        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $3, newloc()); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL '#'                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $3, newloc()); str::deleteCStr($3); }
+  | DIM SYMBOL '#'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, newloc()); str::deleteCStr($2); }
   ;
+array_decl_str_sym
+  : GLOBAL DIM SYMBOL '$'                        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $3, newloc()); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL '$'                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $3, newloc()); str::deleteCStr($3); }
+  | DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
+  ;
+/*
 array_ref
-  : annotated_symbol LB arglist RB {
-        $$ = $1;
-        $$->info.type = NT_SYM_ARRAY_REF;
-        $$->sym.array_ref.arglist = $3;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
-  | annotated_symbol LB RB {
-        $$ = $1;
-        $$->info.type = NT_SYM_ARRAY_REF;
-        // default type of a variable is integer
-        if ($$->sym.base.flag.datatype == SDT_NONE)
-            $$->sym.base.flag.datatype = SDT_INTEGER;
-    }
+  : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
   ;
 udt_decl
   : TYPE udt_name seps udt_body_decl seps ENDTYPE

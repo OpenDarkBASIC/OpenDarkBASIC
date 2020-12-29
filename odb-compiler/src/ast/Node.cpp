@@ -12,7 +12,6 @@ namespace ast {
 Node::Node(SourceLocation* location) :
     location_(location)
 {
-    db::printLocationHighlight(location);
 }
 
 // ----------------------------------------------------------------------------
