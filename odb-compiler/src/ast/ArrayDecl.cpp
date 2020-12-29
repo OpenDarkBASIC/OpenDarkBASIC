@@ -3,6 +3,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb {
@@ -69,6 +70,127 @@ ArrayDecl::ArrayDecl(SourceLocation* location) :
 ODB_DATATYPE_LIST
 #undef X
 
-}
+// ----------------------------------------------------------------------------
+UDTArrayDeclSymbol::UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location)
+    : ArrayDecl(location)
+    , symbol_(symbol)
+    , dims_(dims)
+    , udt_(udt)
+{
+    symbol->setParent(this);
+    dims->setParent(this);
+    udt->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+ScopedAnnotatedSymbol* UDTArrayDeclSymbol::symbol() const
+{
+    return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+ExpressionList* UDTArrayDeclSymbol::dims() const
+{
+    return dims_;
+}
+
+// ----------------------------------------------------------------------------
+Symbol* UDTArrayDeclSymbol::udtSymbol() const
+{
+    return udt_;
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDeclSymbol::accept(Visitor* visitor)
+{
+    visitor->visitUDTArrayDeclSymbol(this);
+    symbol_->accept(visitor);
+    dims_->accept(visitor);
+    udt_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDeclSymbol::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUDTArrayDeclSymbol(this);
+    symbol_->accept(visitor);
+    dims_->accept(visitor);
+    udt_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
+    else if (dims_ == oldNode)
+        dims_ = dynamic_cast<ExpressionList*>(newNode);
+    else if (udt_ == oldNode)
+        udt_ = dynamic_cast<Symbol*>(newNode);
+    else
+        assert(false);
+}
+
+// ----------------------------------------------------------------------------
+UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location)
+    : ArrayDecl(location)
+    , symbol_(symbol)
+    , dims_(dims)
+    , udt_(udt)
+{
+    symbol->setParent(this);
+    dims->setParent(this);
+    udt->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+ScopedAnnotatedSymbol* UDTArrayDecl::symbol() const
+{
+    return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+ExpressionList* UDTArrayDecl::dims() const
+{
+    return dims_;
+}
+
+// ----------------------------------------------------------------------------
+UDTRef* UDTArrayDecl::udt() const
+{
+    return udt_;
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDecl::accept(Visitor* visitor)
+{
+    visitor->visitUDTArrayDecl(this);
+    symbol_->accept(visitor);
+    dims_->accept(visitor);
+    udt_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDecl::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUDTArrayDecl(this);
+    symbol_->accept(visitor);
+    dims_->accept(visitor);
+    udt_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UDTArrayDecl::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
+    else if (dims_ == oldNode)
+        dims_ = dynamic_cast<ExpressionList*>(newNode);
+    else if (udt_ == oldNode)
+        udt_ = dynamic_cast<UDTRef*>(newNode);
+    else
+        assert(false);
+}
+
+}
+}

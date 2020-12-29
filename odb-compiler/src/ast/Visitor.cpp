@@ -20,8 +20,8 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/ast/UDTTypeDecl.hpp"
-#include "odb-compiler/ast/UDTTypeRef.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -61,10 +61,13 @@ void GenericVisitor::visitSubCall(SubCall* node)                               {
 void GenericVisitor::visitSubCallSymbol(SubCallSymbol* node)                   { visit(node); }
 void GenericVisitor::visitSubReturn(SubReturn* node)                           { visit(node); }
 void GenericVisitor::visitSymbol(Symbol* node)                                 { visit(node); }
-void GenericVisitor::visitUDTTypeDecl(UDTTypeDecl* node)                       { visit(node); }
-void GenericVisitor::visitUDTTypeDeclBody(UDTTypeDeclBody* node)               { visit(node); }
-void GenericVisitor::visitUDTTypeRef(UDTTypeRef* node)                         { visit(node); }
-void GenericVisitor::visitUDTTypeRefSymbol(UDTTypeRefSymbol* node)             { visit(node); }
+void GenericVisitor::visitUDTArrayDecl(UDTArrayDecl* node)                     { visit(node); }
+void GenericVisitor::visitUDTArrayDeclSymbol(UDTArrayDeclSymbol* node)         { visit(node); }
+void GenericVisitor::visitUDTDecl(UDTDecl* node)                               { visit(node); }
+void GenericVisitor::visitUDTDeclBody(UDTDeclBody* node)                       { visit(node); }
+void GenericVisitor::visitUDTRef(UDTRef* node)                                 { visit(node); }
+void GenericVisitor::visitUDTVarDecl(UDTVarDecl* node)                         { visit(node); }
+void GenericVisitor::visitUDTVarDeclSymbol(UDTVarDeclSymbol* node)             { visit(node); }
 void GenericVisitor::visitUntilLoop(UntilLoop* node)                           { visit(node); }
 void GenericVisitor::visitVarAssignment(VarAssignment* node)                   { visit(node); }
 void GenericVisitor::visitVarRef(VarRef* node)                                 { visit(node); }
@@ -118,10 +121,13 @@ void GenericConstVisitor::visitSubCall(const SubCall* node)                     
 void GenericConstVisitor::visitSubCallSymbol(const SubCallSymbol* node)                   { visit(node); }
 void GenericConstVisitor::visitSubReturn(const SubReturn* node)                           { visit(node); }
 void GenericConstVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }
-void GenericConstVisitor::visitUDTTypeDecl(const UDTTypeDecl* node)                       { visit(node); }
-void GenericConstVisitor::visitUDTTypeDeclBody(const UDTTypeDeclBody* node)               { visit(node); }
-void GenericConstVisitor::visitUDTTypeRef(const UDTTypeRef* node)                         { visit(node); }
-void GenericConstVisitor::visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node)             { visit(node); }
+void GenericConstVisitor::visitUDTArrayDecl(const UDTArrayDecl* node)                     { visit(node); }
+void GenericConstVisitor::visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node)         { visit(node); }
+void GenericConstVisitor::visitUDTDecl(const UDTDecl* node)                               { visit(node); }
+void GenericConstVisitor::visitUDTDeclBody(const UDTDeclBody* node)                       { visit(node); }
+void GenericConstVisitor::visitUDTRef(const UDTRef* node)                                 { visit(node); }
+void GenericConstVisitor::visitUDTVarDecl(const UDTVarDecl* node)                         { visit(node); }
+void GenericConstVisitor::visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node)             { visit(node); }
 void GenericConstVisitor::visitUntilLoop(const UntilLoop* node)                           { visit(node); }
 void GenericConstVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }
 void GenericConstVisitor::visitVarRef(const VarRef* node)                                 { visit(node); }

@@ -8,16 +8,16 @@ namespace odb::ast {
 
 class ArrayDecl;
 class Symbol;
-class UDTTypeDeclBody;
+class UDTDeclBody;
 class VarDecl;
 
-class UDTTypeDecl : public Statement
+class UDTDecl : public Statement
 {
 public:
-    UDTTypeDecl(Symbol* typeName, UDTTypeDeclBody* udtBody, SourceLocation* location);
+    UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location);
 
     Symbol* typeName() const;
-    UDTTypeDeclBody* body() const;
+    UDTDeclBody* body() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -25,16 +25,16 @@ public:
 
 private:
     Reference<Symbol> typeName_;
-    Reference<UDTTypeDeclBody> body_;
+    Reference<UDTDeclBody> body_;
 
 };
 
-class UDTTypeDeclBody : public Node
+class UDTDeclBody : public Node
 {
 public:
-    UDTTypeDeclBody(SourceLocation* location);
-    UDTTypeDeclBody(VarDecl* varDecl, SourceLocation* location);
-    UDTTypeDeclBody(ArrayDecl* arrayDecl, SourceLocation* location);
+    UDTDeclBody(SourceLocation* location);
+    UDTDeclBody(VarDecl* varDecl, SourceLocation* location);
+    UDTDeclBody(ArrayDecl* arrayDecl, SourceLocation* location);
 
     void appendVarDecl(VarDecl* varDecl);
     void appendArrayDecl(ArrayDecl* varDecl);

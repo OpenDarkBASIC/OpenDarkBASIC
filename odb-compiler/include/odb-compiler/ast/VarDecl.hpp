@@ -8,7 +8,9 @@ namespace odb {
 namespace ast {
 
 class Expression;
+class UDTRef;
 class ScopedAnnotatedSymbol;
+class Symbol;
 
 class ODBCOMPILER_PUBLIC_API VarDecl : public Statement
 {
@@ -24,10 +26,10 @@ public:
     VarDeclTemplate(ScopedAnnotatedSymbol* symbol, Expression* initalValue, SourceLocation* location);
     VarDeclTemplate(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
 
+    void setInitialValue(Expression* expression) override;
+
     ScopedAnnotatedSymbol* symbol() const;
     Expression* initialValue() const;
-
-    void setInitialValue(Expression* expression) override;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -43,6 +45,44 @@ private:
     typedef VarDeclTemplate<cppname> dbname##VarDecl;
 ODB_DATATYPE_LIST
 #undef X
+
+class UDTVarDeclSymbol : public VarDecl
+{
+public:
+    UDTVarDeclSymbol(ScopedAnnotatedSymbol* symbol, Symbol* udt, SourceLocation* location);
+
+    void setInitialValue(Expression* expression) override;
+
+    ScopedAnnotatedSymbol* symbol() const;
+    Symbol* udtSymbol() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<Symbol> udt_;
+};
+
+class UDTVarDecl : public VarDecl
+{
+public:
+    UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location);
+
+    void setInitialValue(Expression* expression) override;
+
+    ScopedAnnotatedSymbol* symbol() const;
+    UDTRef* udt() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<UDTRef> udt_;
+};
 
 }
 }

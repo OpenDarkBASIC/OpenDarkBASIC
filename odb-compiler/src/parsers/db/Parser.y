@@ -24,7 +24,8 @@
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
-    #include "odb-compiler/ast/UDTTypeDecl.hpp"
+    #include "odb-compiler/ast/UDTDecl.hpp"
+    #include "odb-compiler/ast/UDTRef.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
@@ -86,8 +87,9 @@
             class SubCallSymbol;
             class SubReturn;
             class Symbol;
-            class UDTTypeDecl;
-            class UDTTypeDeclBody;
+            class UDTDecl;
+            class UDTDeclBody;
+            class UDTRef;
             class UntilLoop;
             class VarAssignment;
             class VarDecl;
@@ -168,8 +170,9 @@
     odb::ast::SubCallSymbol* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
     odb::ast::Symbol* symbol;
-    odb::ast::UDTTypeDecl* udt_type_decl;
-    odb::ast::UDTTypeDeclBody* udt_type_decl_body;
+    odb::ast::UDTDecl* udt_type_decl;
+    odb::ast::UDTDeclBody* udt_type_decl_body;
+    odb::ast::UDTRef* udt_ref;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
@@ -199,6 +202,7 @@
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <udt_type_decl>
 %destructor { TouchRef($$); } <udt_type_decl_body>
+%destructor { TouchRef($$); } <udt_ref>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
@@ -350,6 +354,7 @@
 %type<scoped_annotated_symbol> udt_decl_array_int_sym
 %type<scoped_annotated_symbol> udt_decl_array_float_sym
 %type<scoped_annotated_symbol> udt_decl_array_str_sym
+%type<udt_ref> udt_ref
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -543,6 +548,7 @@ var_decl_as_type
   | var_decl_float_sym AS DOUBLE FLOAT           { $$ = new DoubleFloatVarDecl($1, newloc()); }
   | var_decl_float_sym AS FLOAT                  { $$ = new FloatVarDecl($1, newloc()); }
   | var_decl_str_sym AS STRING                   { $$ = new StringVarDecl($1, newloc()); }
+  | var_decl_int_sym AS udt_ref                  { $$ = new UDTVarDeclSymbol($1, $3, newloc()); }
   ;
 var_decl_int_sym
   : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, newloc()); str::deleteCStr($2); }
@@ -573,6 +579,7 @@ array_decl
   | array_decl_float_sym '(' expr_list ')' AS DOUBLE FLOAT  { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
   | array_decl_float_sym '(' expr_list ')' AS FLOAT         { $$ = new FloatArrayDecl($1, $3, newloc()); }
   | array_decl_str_sym '(' expr_list ')'AS STRING           { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | array_decl_int_sym '(' expr_list ')' AS udt_ref         { $$ = new UDTArrayDeclSymbol($1, $3, $6, newloc()); }
   | array_decl_int_sym '(' expr_list ')'                    { $$ = new IntegerArrayDecl($1, $3, newloc()); }
   | array_decl_float_sym '(' expr_list ')'                  { $$ = new FloatArrayDecl($1, $3, newloc()); }
   | array_decl_str_sym '(' expr_list ')'                    { $$ = new StringArrayDecl($1, $3, newloc()); }
@@ -594,13 +601,13 @@ array_decl_str_sym
   ;
 
 udt_type_decl
-  : TYPE symbol seps udt_body_decl seps ENDTYPE  { $$ = new UDTTypeDecl($2, $4, newloc()); }
+  : TYPE symbol seps udt_body_decl seps ENDTYPE  { $$ = new UDTDecl($2, $4, newloc()); }
   ;
 udt_body_decl
   : udt_body_decl seps udt_decl_var              { $$ = $1; $$->appendVarDecl($3); }
   | udt_body_decl seps udt_decl_array            { $$ = $1; $$->appendArrayDecl($3); }
-  | udt_decl_var                                 { $$ = new UDTTypeDeclBody($1, newloc()); }
-  | udt_decl_array                               { $$ = new UDTTypeDeclBody($1, newloc()); }
+  | udt_decl_var                                 { $$ = new UDTDeclBody($1, newloc()); }
+  | udt_decl_array                               { $$ = new UDTDeclBody($1, newloc()); }
   ;
 udt_decl_var
   : udt_decl_var_int_sym AS DOUBLE INTEGER       { $$ = new DoubleIntegerVarDecl($1, newloc()); }
@@ -615,6 +622,7 @@ udt_decl_var
   | udt_decl_var_float_sym AS DOUBLE FLOAT       { $$ = new DoubleFloatVarDecl($1, newloc()); }
   | udt_decl_var_float_sym AS FLOAT              { $$ = new FloatVarDecl($1, newloc()); }
   | udt_decl_var_str_sym AS STRING               { $$ = new StringVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS udt_ref              { $$ = new UDTVarDeclSymbol($1, $3, newloc()); }
   ;
 udt_decl_var_int_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
@@ -638,6 +646,7 @@ udt_decl_array
   | udt_decl_array_float_sym '(' expr_list ')' AS DOUBLE FLOAT  { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
   | udt_decl_array_float_sym '(' expr_list ')' AS FLOAT         { $$ = new FloatArrayDecl($1, $3, newloc()); }
   | udt_decl_array_str_sym '(' expr_list ')'AS STRING           { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS udt_ref         { $$ = new UDTArrayDeclSymbol($1, $3, $6, newloc()); }
   | udt_decl_array_int_sym '(' expr_list ')'                    { $$ = new IntegerArrayDecl($1, $3, newloc()); }
   | udt_decl_array_float_sym '(' expr_list ')'                  { $$ = new FloatArrayDecl($1, $3, newloc()); }
   | udt_decl_array_str_sym '(' expr_list ')'                    { $$ = new StringArrayDecl($1, $3, newloc()); }
@@ -651,6 +660,8 @@ udt_decl_array_float_sym
 udt_decl_array_str_sym
   : DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
   ;
+udt_ref
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new UDTRef($1, newloc()); str::deleteCStr($1); }
 /*
 udt_ref
   : udt_name PERIOD udt_refs                     { $$ = $1; $$->info.type = NT_SYM_VAR_REF; $$->sym.var_ref.udt = $3; }
@@ -738,17 +749,18 @@ cond_next
   ;
 /*
 select
-  : SELECT expr seps case_list seps ENDSELECT    { $$ = newSelectStatement($2, $4, &yylloc); }
-  | SELECT expr seps ENDSELECT                   { $$ = newSelectStatement($2, nullptr, &yylloc); }
+  : SELECT expr seps case_list seps ENDSELECT    { $$ = new Select($2, $4, newloc()); }
+  | SELECT expr seps ENDSELECT                   { $$ = new Select($2, newloc()); }
   ;
+/ NOTE: case can be null /
 case_list
-  : case_list seps case                          { $$ = appendCaseToList($1, $3, &yylloc); }
-  | case                                         { $$ = newCaseList($1, &yylloc); }
+  : case_list seps case                          { $$ = $1; if($3) $$->appendCase($3); }
+  | case                                         { $$ = new CaseList(newloc()); if ($1) $$->appendCase($1); }
   ;
 case
-  : CASE expr seps block seps ENDCASE            { $$ = newCase($2, $4, &yylloc); }
-  | CASE expr seps ENDCASE                       { $$ = newCase($2, nullptr, &yylloc); }
-  | CASE DEFAULT seps block seps ENDCASE         { $$ = newCase(nullptr, $4, &yylloc); }
+  : CASE expr seps block seps ENDCASE            { $$ = new Case($2, $4, &yylloc); }
+  | CASE expr seps ENDCASE                       { $$ = new Case($2, nullptr, &yylloc); }
+  | CASE DEFAULT seps block seps ENDCASE         { $$ = new Case(nullptr, $4, &yylloc); }
   | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
   ;*/
 loop

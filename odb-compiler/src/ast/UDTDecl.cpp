@@ -4,14 +4,14 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/ast/UDTTypeDecl.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UDTTypeDecl::UDTTypeDecl(Symbol* typeName, UDTTypeDeclBody* udtBody, SourceLocation* location) :
+UDTDecl::UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location) :
     Statement(location),
     typeName_(typeName),
     body_(udtBody)
@@ -21,94 +21,94 @@ UDTTypeDecl::UDTTypeDecl(Symbol* typeName, UDTTypeDeclBody* udtBody, SourceLocat
 }
 
 // ----------------------------------------------------------------------------
-Symbol* UDTTypeDecl::typeName() const
+Symbol* UDTDecl::typeName() const
 {
     return typeName_;
 }
 
 // ----------------------------------------------------------------------------
-UDTTypeDeclBody* UDTTypeDecl::body() const
+UDTDeclBody* UDTDecl::body() const
 {
     return body_;
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDecl::accept(Visitor* visitor)
+void UDTDecl::accept(Visitor* visitor)
 {
-    visitor->visitUDTTypeDecl(this);
+    visitor->visitUDTDecl(this);
     typeName_->accept(visitor);
     body_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDecl::accept(ConstVisitor* visitor) const
+void UDTDecl::accept(ConstVisitor* visitor) const
 {
-    visitor->visitUDTTypeDecl(this);
+    visitor->visitUDTDecl(this);
     typeName_->accept(visitor);
     body_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDecl::swapChild(const Node* oldNode, Node* newNode)
+void UDTDecl::swapChild(const Node* oldNode, Node* newNode)
 {
     if (typeName_ == oldNode)
         typeName_ = dynamic_cast<Symbol*>(newNode);
     else if (body_ == oldNode)
-        body_ = dynamic_cast<UDTTypeDeclBody*>(newNode);
+        body_ = dynamic_cast<UDTDeclBody*>(newNode);
     else
         assert(false);
 }
 
 // ----------------------------------------------------------------------------
-UDTTypeDeclBody::UDTTypeDeclBody(SourceLocation* location) :
+UDTDeclBody::UDTDeclBody(SourceLocation* location) :
     Node(location)
 {
 }
 
 // ----------------------------------------------------------------------------
-UDTTypeDeclBody::UDTTypeDeclBody(VarDecl* varDecl, SourceLocation* location) :
+UDTDeclBody::UDTDeclBody(VarDecl* varDecl, SourceLocation* location) :
     Node(location)
 {
     appendVarDecl(varDecl);
 }
 
 // ----------------------------------------------------------------------------
-UDTTypeDeclBody::UDTTypeDeclBody(ArrayDecl* arrayDecl, SourceLocation* location) :
+UDTDeclBody::UDTDeclBody(ArrayDecl* arrayDecl, SourceLocation* location) :
     Node(location)
 {
     appendArrayDecl(arrayDecl);
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDeclBody::appendVarDecl(VarDecl* varDecl)
+void UDTDeclBody::appendVarDecl(VarDecl* varDecl)
 {
     varDecl->setParent(this);
     varDecls_.push_back(varDecl);
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDeclBody::appendArrayDecl(ArrayDecl* arrayDecl)
+void UDTDeclBody::appendArrayDecl(ArrayDecl* arrayDecl)
 {
     arrayDecl->setParent(this);
     arrayDecls_.push_back(arrayDecl);
 }
 
 // ----------------------------------------------------------------------------
-const std::vector<Reference<VarDecl>>& UDTTypeDeclBody::varDeclarations() const
+const std::vector<Reference<VarDecl>>& UDTDeclBody::varDeclarations() const
 {
     return varDecls_;
 }
 
 // ----------------------------------------------------------------------------
-const std::vector<Reference<ArrayDecl>>& UDTTypeDeclBody::arrayDeclarations() const
+const std::vector<Reference<ArrayDecl>>& UDTDeclBody::arrayDeclarations() const
 {
     return arrayDecls_;
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDeclBody::accept(Visitor* visitor)
+void UDTDeclBody::accept(Visitor* visitor)
 {
-    visitor->visitUDTTypeDeclBody(this);
+    visitor->visitUDTDeclBody(this);
     for (auto& varDecl : varDecls_)
         varDecl->accept(visitor);
     for (auto& arrayDecl : arrayDecls_)
@@ -116,9 +116,9 @@ void UDTTypeDeclBody::accept(Visitor* visitor)
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDeclBody::accept(ConstVisitor* visitor) const
+void UDTDeclBody::accept(ConstVisitor* visitor) const
 {
-    visitor->visitUDTTypeDeclBody(this);
+    visitor->visitUDTDeclBody(this);
     for (const auto& varDecl : varDecls_)
         varDecl->accept(visitor);
     for (auto& arrayDecl : arrayDecls_)
@@ -126,7 +126,7 @@ void UDTTypeDeclBody::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
-void UDTTypeDeclBody::swapChild(const Node* oldNode, Node* newNode)
+void UDTDeclBody::swapChild(const Node* oldNode, Node* newNode)
 {
     for (auto& varDecl : varDecls_)
         if (varDecl == oldNode)

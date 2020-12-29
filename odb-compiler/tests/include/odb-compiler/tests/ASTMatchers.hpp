@@ -6,6 +6,7 @@
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 
 using namespace ::testing;
 using namespace odb;
@@ -135,6 +136,27 @@ private:
     const std::string expectedName_;
 };
 
+class UDTRefEqMatcher : public MatcherInterface<const ast::UDTRef*>
+{
+public:
+    explicit UDTRefEqMatcher(const std::string& name)
+        : expectedName_(name) {}
+    bool MatchAndExplain(const ast::UDTRef* node, MatchResultListener* listener) const override {
+        *listener
+            << "node->name() == " << node->name();
+        return node->name() == expectedName_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->name() equals " << expectedName_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->name() does not equal " << expectedName_;
+    }
+
+private:
+    const std::string expectedName_;
+};
+
 template <class T>
 class LiteralEqMatcher : public MatcherInterface<const ast::LiteralTemplate<T>*>
 {
@@ -210,6 +232,9 @@ inline Matcher<const ast::AnnotatedSymbol*> AnnotatedSymbolEq(ast::Symbol::Annot
 }
 inline Matcher<const ast::ScopedAnnotatedSymbol*> ScopedAnnotatedSymbolEq(ast::Symbol::Scope scope, ast::Symbol::Annotation annotation, const std::string& name) {
     return MakeMatcher(new ScopedAnnotatedSymbolEqMatcher(scope, annotation, name));
+}
+inline Matcher<const ast::UDTRef*> UDTRefEq(const std::string& name) {
+    return MakeMatcher(new UDTRefEqMatcher(name));
 }
 inline Matcher<const ast::CommandExprSymbol*> CommandExprSymbolEq(const std::string& name) {
     return MakeMatcher(new CommandExprSymbolEqMatcher(name));

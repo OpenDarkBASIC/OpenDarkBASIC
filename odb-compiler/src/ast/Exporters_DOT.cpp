@@ -22,8 +22,8 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
-#include "odb-compiler/ast/UDTTypeDecl.hpp"
-#include "odb-compiler/ast/UDTTypeRef.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -212,12 +212,24 @@ private:
     }
     void visitSubReturn(const SubReturn* node) override {}
     void visitSymbol(const Symbol* node) override {}
-    void visitUDTTypeDecl(const UDTTypeDecl* node) override
+    void visitUDTArrayDecl(const UDTArrayDecl* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->dims(), "dims");
+        writeNamedConnection(node, node->udt(), "udt");
+    }
+    void visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->dims(), "dims");
+        writeNamedConnection(node, node->udtSymbol(), "udtSymbol");
+    }
+    void visitUDTDecl(const UDTDecl* node) override
     {
         writeNamedConnection(node, node->typeName(), "typeName");
         writeNamedConnection(node, node->body(), "body");
     }
-    void visitUDTTypeDeclBody(const UDTTypeDeclBody* node) override
+    void visitUDTDeclBody(const UDTDeclBody* node) override
     {
         int i = 0;
         for (const auto& varDecl : node->varDeclarations())
@@ -227,13 +239,16 @@ private:
         for (const auto& arrayDecl : node->arrayDeclarations())
             writeNamedConnection(node, arrayDecl, "arrayDecl[" + std::to_string(i++) + "]");
     }
-    void visitUDTTypeRef(const UDTTypeRef* node) override
+    void visitUDTRef(const UDTRef* node) override {}
+    void visitUDTVarDecl(const UDTVarDecl* node) override
     {
-
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->udt(), "udt");
     }
-    void visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) override
+    void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override
     {
-
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->udtSymbol(), "udtSymbol");
     }
     void visitUntilLoop(const UntilLoop* node) override
     {
@@ -411,14 +426,20 @@ private:
 
         writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + "): " + node->name());
     }
-    void visitUDTTypeDecl(const UDTTypeDecl* node) override
-        { writeName(node, "UDTTypeDecl"); }
-    void visitUDTTypeDeclBody(const UDTTypeDeclBody* node) override
-        { writeName(node, "UDTTypeDeclBody"); }
-    void visitUDTTypeRef(const UDTTypeRef* node) override
-        { writeName(node, "UDTTypeRef"); }
-    void visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) override
-        { writeName(node, "UDTTypeRefSymbol"); }
+    void visitUDTArrayDecl(const UDTArrayDecl* node) override
+        { writeName(node, "UDTArrayDecl"); }
+    void visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node) override
+        { writeName(node, "UDTArrayDeclSymbol"); }
+    void visitUDTDecl(const UDTDecl* node) override
+        { writeName(node, "UDTDecl"); }
+    void visitUDTDeclBody(const UDTDeclBody* node) override
+        { writeName(node, "UDTDeclBody"); }
+    void visitUDTRef(const UDTRef* node) override
+        { writeName(node, "UDTRef: " + node->name()); }
+    void visitUDTVarDecl(const UDTVarDecl* node) override
+        { writeName(node, "UDTVarDecl"); }
+    void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override
+        { writeName(node, "UDTVarDeclSymbol"); }
     void visitVarAssignment(const VarAssignment* node) override
         { writeName(node, "VarAssignment"); }
     void visitVarRef(const VarRef* node) override

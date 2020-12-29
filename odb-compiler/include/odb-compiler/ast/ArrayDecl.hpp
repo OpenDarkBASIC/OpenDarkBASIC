@@ -9,6 +9,8 @@ namespace ast {
 
 class ExpressionList;
 class ScopedAnnotatedSymbol;
+class Symbol;
+class UDTRef;
 
 class ODBCOMPILER_PUBLIC_API ArrayDecl : public Statement
 {
@@ -39,6 +41,44 @@ private:
     typedef ArrayDeclTemplate<cppname> dbname##ArrayDecl;
 ODB_DATATYPE_LIST
 #undef X
+
+class UDTArrayDeclSymbol : public ArrayDecl
+{
+public:
+    UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location);
+
+    ScopedAnnotatedSymbol* symbol() const;
+    ExpressionList* dims() const;
+    Symbol* udtSymbol() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<ExpressionList> dims_;
+    Reference<Symbol> udt_;
+};
+
+class UDTArrayDecl : public ArrayDecl
+{
+public:
+    UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location);
+
+    ScopedAnnotatedSymbol* symbol() const;
+    ExpressionList* dims() const;
+    UDTRef* udt() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<ExpressionList> dims_;
+    Reference<UDTRef> udt_;
+};
 
 }
 }

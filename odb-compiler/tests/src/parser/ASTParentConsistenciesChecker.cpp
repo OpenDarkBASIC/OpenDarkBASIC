@@ -21,8 +21,8 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/ast/UDTTypeDecl.hpp"
-#include "odb-compiler/ast/UDTTypeRef.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -169,20 +169,41 @@ void ASTParentConsistenciesChecker::visitSubCallSymbol(const SubCallSymbol* node
 }
 void ASTParentConsistenciesChecker::visitSubReturn(const SubReturn* node) {}
 void ASTParentConsistenciesChecker::visitSymbol(const Symbol* node) {}
-void ASTParentConsistenciesChecker::visitUDTTypeDecl(const UDTTypeDecl* node)
+void ASTParentConsistenciesChecker::visitUDTArrayDecl(const UDTArrayDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->dims()->parent()));
+    EXPECT_THAT(node, Eq(node->udt()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->dims()->parent()));
+    EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTDecl(const UDTDecl* node)
 {
     EXPECT_THAT(node, Eq(node->typeName()->parent()));
     EXPECT_THAT(node, Eq(node->body()->parent()));
 }
-void ASTParentConsistenciesChecker::visitUDTTypeDeclBody(const UDTTypeDeclBody* node)
+void ASTParentConsistenciesChecker::visitUDTDeclBody(const UDTDeclBody* node)
 {
     for (const auto& decl : node->varDeclarations())
         EXPECT_THAT(node, Eq(decl->parent()));
     for (const auto& decl : node->arrayDeclarations())
         EXPECT_THAT(node, Eq(decl->parent()));
 }
-void ASTParentConsistenciesChecker::visitUDTTypeRef(const UDTTypeRef* node) {}
-void ASTParentConsistenciesChecker::visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) {}
+void ASTParentConsistenciesChecker::visitUDTRef(const UDTRef* node) {}
+void ASTParentConsistenciesChecker::visitUDTVarDecl(const UDTVarDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->udt()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
+}
 void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
 {
     EXPECT_THAT(node, Eq(node->exitCondition()->parent()));
