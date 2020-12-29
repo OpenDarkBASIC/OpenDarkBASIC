@@ -74,6 +74,11 @@ private:
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->args(), "args");
     }
+    void visitArrayAssignment(const ArrayAssignment* node) override
+    {
+        writeNamedConnection(node, node->array(), "array");
+        writeNamedConnection(node, node->expression(), "expr");
+    }
     void visitBlock(const Block* node) override
     {
         int i = 0;
@@ -294,6 +299,8 @@ private:
         fprintf(fp_, "\"];\n");
     }
 
+    void visitArrayAssignment(const ArrayAssignment* node) override
+        { writeName(node, "ArrayAssignment"); }
     void visitArrayRef(const ArrayRef* node) override
         { writeName(node, "ArrayRef"); }
     void visitBreak(const Break* node) override

@@ -1,4 +1,5 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -30,6 +31,11 @@ using namespace odb;
 using namespace ast;
 
 void ASTParentConsistenciesChecker::visitAnnotatedSymbol(const AnnotatedSymbol* node) {}
+void ASTParentConsistenciesChecker::visitArrayAssignment(const ArrayAssignment* node)
+{
+    EXPECT_THAT(node, Eq(node->array()->parent()));
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+}
 void ASTParentConsistenciesChecker::visitArrayRef(const ArrayRef* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));

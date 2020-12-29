@@ -6,6 +6,7 @@ class ASTParentConsistenciesChecker : public odb::ast::ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const odb::ast::AnnotatedSymbol* node) override;
+    void visitArrayAssignment(const odb::ast::ArrayAssignment* node) override;
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
     void visitBlock(const odb::ast::Block* node) override;
     void visitBreak(const odb::ast::Break* node) override;

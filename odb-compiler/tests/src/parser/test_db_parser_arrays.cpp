@@ -16,24 +16,6 @@ public:
 using namespace odb;
 using namespace ast;
 
-TEST_F(NAME, declare_one_dimension)
-{
-    ASSERT_THAT(driver->parseString("dim arr(10)\n"), IsTrue());
-
-    ASSERT_THAT(ast, NotNull());
-    ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));
-    ASSERT_THAT(ast->block.stmnt, NotNull());
-    ASSERT_THAT(ast->block.stmnt->info.type, Eq(NT_SYM_ARRAY_DECL));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.name, StrEq("arr"));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.flag.datatype, Eq(SDT_INTEGER));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.flag.scope, Eq(SS_LOCAL));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.udt, IsNull());
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.arglist, NotNull());
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.arglist->info.type, Eq(NT_LITERAL));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.arglist->literal.type, Eq(LT_INTEGER));
-    ASSERT_THAT(ast->block.stmnt->sym.array_decl.arglist->literal.value.i, Eq(10));
-}
-
 TEST_F(NAME, reading_from_array_is_function_call_if_array_was_not_declared)
 {
     ASSERT_THAT(driver->parseString("result = arr(2)\n"), IsTrue());
@@ -61,7 +43,7 @@ TEST_F(NAME, reading_from_array_is_function_call_if_array_was_not_declared)
 
 TEST_F(NAME, reading_from_array_is_array_if_it_was_declared)
 {
-    ASSERT_THAT(driver->parseString("dim arr(2)\nresult = arr(2)\n"), IsTrue());
+    ASSERT_THAT(driver->parseString("result = arr(2)\n"), IsTrue());
 
     ASSERT_THAT(ast, NotNull());
     ASSERT_THAT(ast->info.type, Eq(NT_BLOCK));

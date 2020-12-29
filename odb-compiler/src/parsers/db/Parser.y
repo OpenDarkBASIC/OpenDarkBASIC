@@ -2,6 +2,7 @@
 %code top
 {
     #include "odb-compiler/ast/ArrayDecl.hpp"
+    #include "odb-compiler/ast/ArrayRef.hpp"
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
@@ -56,6 +57,7 @@
         namespace ast {
             class AnnotatedSymbol;
             class ArrayDecl;
+            class ArrayRef;
             class Assignment;
             class Block;
             class Break;
@@ -139,6 +141,7 @@
 
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ArrayDecl* array_decl;
+    odb::ast::ArrayRef* array_ref;
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::Break* break_;
@@ -156,7 +159,6 @@
     odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::Label* label;
     odb::ast::Literal* literal;
-    odb::ast::LValue* lvalue;
     odb::ast::Loop* loop;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
@@ -164,7 +166,6 @@
     odb::ast::SubReturn* sub_return;
     odb::ast::Symbol* symbol;
     odb::ast::UntilLoop* until_loop;
-    odb::ast::VarAssignment* var_assignment;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
     odb::ast::WhileLoop* while_loop;
@@ -172,6 +173,8 @@
 
 %destructor { str::deleteCStr($$); } <string>
 %destructor { TouchRef($$); } <annotated_symbol>
+%destructor { TouchRef($$); } <array_decl>
+%destructor { TouchRef($$); } <array_ref>
 %destructor { TouchRef($$); } <assignment>
 %destructor { TouchRef($$); } <block>
 %destructor { TouchRef($$); } <break_>
@@ -190,7 +193,6 @@
 %destructor { TouchRef($$); } <scoped_annotated_symbol>
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <until_loop>
-%destructor { TouchRef($$); } <var_assignment>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
 %destructor { TouchRef($$); } <while_loop>
@@ -286,7 +288,6 @@
 %token<string> SYMBOL "symbol"
 %token<string> COMMAND "command"
 
-%type<var_assignment> var_assignment
 %type<assignment> assignment
 %type<block> program
 %type<block> block
@@ -327,11 +328,11 @@
 %type<conditional> cond_oneline
 %type<conditional> cond_begin
 %type<block> cond_next
-%type<lvalue> lvalue
 %type<array_decl> array_decl
 %type<scoped_annotated_symbol> array_decl_int_sym
 %type<scoped_annotated_symbol> array_decl_float_sym
 %type<scoped_annotated_symbol> array_decl_str_sym
+%type<array_ref> array_ref
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -432,7 +433,7 @@ expr
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
-  | lvalue                                       { $$ = $1; }
+  | var_ref                                      { $$ = $1; }
   ;
 
 /* Commands appearing as statements usually don't have arguments surrounded by
@@ -484,18 +485,18 @@ decrement
   ;
 /*
 lvalue
-  : udt_ref                                      { $$ = $1; }
-  | var_ref                                      { $$ = $1; }
+  : var_ref                                      { $$ = $1; }
   | array_ref                                    { $$ = $1; }
   ;*/
-lvalue
-  : var_ref                                      { $$ = $1; }
-  ;
 assignment
-  : var_assignment                               { $$ = $1; }
-  ;
-var_assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, newloc()); }
+  | array_ref '=' expr                           { $$ = new ArrayAssignment($1, $3, newloc()); }
+  ;
+var_ref
+  : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
+  ;
+array_ref
+  : annotated_symbol '(' expr_list ')'                            { $$ = new ArrayRef($1, $3, newloc()); }
   ;
 var_decl
   : var_decl_as_type                             { $$ = $1; }
@@ -540,9 +541,6 @@ var_decl_str_sym
   | LOCAL SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
   | SYMBOL '$'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, newloc()); str::deleteCStr($1); }
   ;
-var_ref
-  : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
-  ;
 
 array_decl
   : array_decl_int_sym '(' expr_list ')' AS DOUBLE INTEGER  { $$ = new DoubleIntegerArrayDecl($1, $3, newloc()); }
@@ -577,9 +575,6 @@ array_decl_str_sym
   | DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
   ;
 /*
-array_ref
-  : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
-  ;
 udt_decl
   : TYPE udt_name seps udt_body_decl seps ENDTYPE
     {
@@ -720,14 +715,14 @@ loop_until
   | REPEAT seps UNTIL expr                       { $$ = new UntilLoop($4, newloc()); }
   ;
 loop_for
-  : FOR var_assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, newloc()); }
-  | FOR var_assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, newloc()); }
-  | FOR var_assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, newloc()); }
-  | FOR var_assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, newloc()); }
-  | FOR var_assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, newloc()); }
-  | FOR var_assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, newloc()); }
-  | FOR var_assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, newloc()); }
-  | FOR var_assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, newloc()); }
+  : FOR assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, newloc()); }
+  | FOR assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, newloc()); }
+  | FOR assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, newloc()); }
+  | FOR assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, newloc()); }
+  | FOR assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, newloc()); }
+  | FOR assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, newloc()); }
+  | FOR assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, newloc()); }
+  | FOR assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, newloc()); }
   ;
 loop_next_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }

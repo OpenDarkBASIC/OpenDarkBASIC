@@ -10,7 +10,7 @@ namespace ast {
 class AnnotatedSymbol;
 class Block;
 class Expression;
-class VarAssignment;
+class Assignment;
 
 class ODBCOMPILER_PUBLIC_API Loop : public Statement
 {
@@ -73,16 +73,16 @@ private:
 class ODBCOMPILER_PUBLIC_API ForLoop : public Loop
 {
 public:
-    ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, Block* body, SourceLocation* location);
-    ForLoop(VarAssignment* counter, Expression* endValue, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location);
 
-    VarAssignment* counter() const;
+    Assignment* counter() const;
     Expression* endValue() const;
     MaybeNull<Expression> stepValue() const;
     MaybeNull<AnnotatedSymbol> nextSymbol() const;
@@ -93,7 +93,7 @@ public:
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
-    Reference<VarAssignment> counter_;
+    Reference<Assignment> counter_;
     Reference<Expression> endValue_;
     Reference<Expression> stepValue_;
     Reference<AnnotatedSymbol> nextSymbol_;

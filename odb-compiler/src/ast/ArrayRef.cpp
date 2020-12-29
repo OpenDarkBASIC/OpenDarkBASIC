@@ -9,7 +9,7 @@ namespace ast {
 
 // ----------------------------------------------------------------------------
 ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
-    Expression(location),
+    LValue(location),
     symbol_(symbol),
     args_(args)
 {

@@ -6,6 +6,7 @@
 namespace odb {
 namespace ast {
 
+class ArrayRef;
 class Expression;
 class LValue;
 class VarRef;
@@ -27,6 +28,22 @@ public:
     VarAssignment(VarRef* var, Expression* expr, SourceLocation* location);
 
     VarRef* variable() const;
+    Expression* expression() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<Expression> expr_;
+};
+
+class ODBCOMPILER_PUBLIC_API ArrayAssignment : public Assignment
+{
+public:
+    ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location);
+
+    ArrayRef* array() const;
     Expression* expression() const;
 
     void accept(Visitor* visitor) override;

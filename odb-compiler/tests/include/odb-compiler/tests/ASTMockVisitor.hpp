@@ -7,6 +7,7 @@ class ASTMockVisitor : public odb::ast::ConstVisitor
 {
 public:
     MOCK_METHOD(void, visitAnnotatedSymbol, (const odb::ast::AnnotatedSymbol* node), (override));
+    MOCK_METHOD(void, visitArrayAssignment, (const odb::ast::ArrayAssignment* node), (override));
     MOCK_METHOD(void, visitArrayRef, (const odb::ast::ArrayRef* node), (override));
     MOCK_METHOD(void, visitBlock, (const odb::ast::Block* node), (override));
     MOCK_METHOD(void, visitBreak, (const odb::ast::Break* node), (override));

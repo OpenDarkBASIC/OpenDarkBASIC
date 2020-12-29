@@ -30,6 +30,7 @@ namespace ast {
 
 // ----------------------------------------------------------------------------
 void GenericVisitor::visitAnnotatedSymbol(AnnotatedSymbol* node)               { visit(node); }
+void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               { visit(node); }
 void GenericVisitor::visitArrayRef(ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBlock(Block* node)                                   { visit(node); }
 void GenericVisitor::visitBreak(Break* node)                                   { visit(node); }
@@ -82,6 +83,7 @@ ODB_UNARY_OP_LIST
 
 // ----------------------------------------------------------------------------
 void GenericConstVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)               { visit(node); }
+void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)               { visit(node); }
 void GenericConstVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericConstVisitor::visitBlock(const Block* node)                                   { visit(node); }
 void GenericConstVisitor::visitBreak(const Break* node)                                   { visit(node); }

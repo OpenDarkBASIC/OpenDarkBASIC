@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/Expression.hpp"
+#include "odb-compiler/ast/LValue.hpp"
 
 namespace odb {
 namespace ast {
@@ -9,7 +9,7 @@ namespace ast {
 class AnnotatedSymbol;
 class ExpressionList;
 
-class ODBCOMPILER_PUBLIC_API ArrayRef : public Expression
+class ODBCOMPILER_PUBLIC_API ArrayRef : public LValue
 {
 public:
     ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);

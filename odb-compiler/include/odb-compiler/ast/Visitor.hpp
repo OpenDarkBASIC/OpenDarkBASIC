@@ -10,6 +10,7 @@ namespace ast {
 class Node;
 
 class AnnotatedSymbol;
+class ArrayAssignment;
 class ArrayRef;
 class Block;
 class Break;
@@ -66,6 +67,7 @@ class Visitor
 {
 public:
     virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
+    virtual void visitArrayAssignment(ArrayAssignment* node) = 0;
     virtual void visitArrayRef(ArrayRef* node)  = 0;
     virtual void visitBlock(Block* node) = 0;
     virtual void visitBreak(Break* node) = 0;
@@ -121,6 +123,7 @@ class ConstVisitor
 {
 public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
+    virtual void visitArrayAssignment(const ArrayAssignment* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitBlock(const Block* node) = 0;
     virtual void visitBreak(const Break* node) = 0;
@@ -176,6 +179,7 @@ class GenericVisitor : public Visitor
 {
 public:
     void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
+    void visitArrayAssignment(ArrayAssignment* node) override;
     void visitArrayRef(ArrayRef* node) override;
     void visitBlock(Block* node) override;
     void visitBreak(Break* node) override;
@@ -233,6 +237,7 @@ class GenericConstVisitor : public ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
+    void visitArrayAssignment(const ArrayAssignment* node) override;
     void visitArrayRef(const ArrayRef* node) override;
     void visitBlock(const Block* node) override;
     void visitBreak(const Break* node) override;

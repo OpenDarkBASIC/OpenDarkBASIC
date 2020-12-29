@@ -180,7 +180,7 @@ void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -196,7 +196,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepV
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -210,7 +210,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepV
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -224,7 +224,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepV
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -236,7 +236,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Expression* stepV
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -250,7 +250,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* 
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -262,7 +262,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, AnnotatedSymbol* 
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
@@ -274,7 +274,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, Block* body, Sour
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue)
@@ -284,7 +284,7 @@ ForLoop::ForLoop(VarAssignment* counter, Expression* endValue, SourceLocation* l
 }
 
 // ----------------------------------------------------------------------------
-VarAssignment* ForLoop::counter() const
+Assignment* ForLoop::counter() const
 {
     return counter_;
 }
@@ -345,7 +345,7 @@ void ForLoop::accept(ConstVisitor* visitor) const
 void ForLoop::swapChild(const Node* oldNode, Node* newNode)
 {
     if (counter_ == oldNode)
-        counter_ = dynamic_cast<VarAssignment*>(newNode);
+        counter_ = dynamic_cast<Assignment*>(newNode);
     else if (endValue_ == oldNode)
         endValue_ = dynamic_cast<Expression*>(newNode);
     else if (stepValue_ == oldNode)
