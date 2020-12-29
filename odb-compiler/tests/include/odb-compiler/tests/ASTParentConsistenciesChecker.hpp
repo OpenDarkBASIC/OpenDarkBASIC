@@ -35,6 +35,10 @@ public:
     void visitSubCallSymbol(const odb::ast::SubCallSymbol* node) override;
     void visitSubReturn(const odb::ast::SubReturn* node) override;
     void visitSymbol(const odb::ast::Symbol* node) override;
+    void visitUDTTypeDecl(const odb::ast::UDTTypeDecl* node) override;
+    void visitUDTTypeDeclBody(const odb::ast::UDTTypeDeclBody* node) override;
+    void visitUDTTypeRef(const odb::ast::UDTTypeRef* node) override;
+    void visitUDTTypeRefSymbol(const odb::ast::UDTTypeRefSymbol* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;
     void visitVarRef(const odb::ast::VarRef* node) override;

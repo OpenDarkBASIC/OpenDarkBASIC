@@ -13,6 +13,13 @@ ExpressionList::ExpressionList(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
+ExpressionList::ExpressionList(Expression* expr, SourceLocation* location) :
+    Node(location)
+{
+    appendExpression(expr);
+}
+
+// ----------------------------------------------------------------------------
 ExpressionList::~ExpressionList() = default;
 
 // ----------------------------------------------------------------------------

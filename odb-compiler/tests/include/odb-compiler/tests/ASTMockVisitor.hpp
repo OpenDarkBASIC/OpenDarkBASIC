@@ -36,6 +36,10 @@ public:
     MOCK_METHOD(void, visitSubCallSymbol, (const odb::ast::SubCallSymbol* node), (override));
     MOCK_METHOD(void, visitSubReturn, (const odb::ast::SubReturn* node), (override));
     MOCK_METHOD(void, visitSymbol, (const odb::ast::Symbol* node), (override));
+    MOCK_METHOD(void, visitUDTTypeDecl, (const odb::ast::UDTTypeDecl* node), (override));
+    MOCK_METHOD(void, visitUDTTypeDeclBody, (const odb::ast::UDTTypeDeclBody* node), (override));
+    MOCK_METHOD(void, visitUDTTypeRef, (const odb::ast::UDTTypeRef* node), (override));
+    MOCK_METHOD(void, visitUDTTypeRefSymbol, (const odb::ast::UDTTypeRefSymbol* node), (override));
     MOCK_METHOD(void, visitUntilLoop, (const odb::ast::UntilLoop* node), (override));
     MOCK_METHOD(void, visitVarAssignment, (const odb::ast::VarAssignment* node), (override));
     MOCK_METHOD(void, visitVarRef, (const odb::ast::VarRef* node), (override));

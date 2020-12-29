@@ -22,6 +22,8 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
+#include "odb-compiler/ast/UDTTypeDecl.hpp"
+#include "odb-compiler/ast/UDTTypeRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -210,6 +212,29 @@ private:
     }
     void visitSubReturn(const SubReturn* node) override {}
     void visitSymbol(const Symbol* node) override {}
+    void visitUDTTypeDecl(const UDTTypeDecl* node) override
+    {
+        writeNamedConnection(node, node->typeName(), "typeName");
+        writeNamedConnection(node, node->body(), "body");
+    }
+    void visitUDTTypeDeclBody(const UDTTypeDeclBody* node) override
+    {
+        int i = 0;
+        for (const auto& varDecl : node->varDeclarations())
+            writeNamedConnection(node, varDecl, "varDecl[" + std::to_string(i++) + "]");
+
+        i = 0;
+        for (const auto& arrayDecl : node->arrayDeclarations())
+            writeNamedConnection(node, arrayDecl, "arrayDecl[" + std::to_string(i++) + "]");
+    }
+    void visitUDTTypeRef(const UDTTypeRef* node) override
+    {
+
+    }
+    void visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) override
+    {
+
+    }
     void visitUntilLoop(const UntilLoop* node) override
     {
         writeNamedConnection(node, node->exitCondition(), "exitCondition");
@@ -386,6 +411,14 @@ private:
 
         writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + "): " + node->name());
     }
+    void visitUDTTypeDecl(const UDTTypeDecl* node) override
+        { writeName(node, "UDTTypeDecl"); }
+    void visitUDTTypeDeclBody(const UDTTypeDeclBody* node) override
+        { writeName(node, "UDTTypeDeclBody"); }
+    void visitUDTTypeRef(const UDTTypeRef* node) override
+        { writeName(node, "UDTTypeRef"); }
+    void visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) override
+        { writeName(node, "UDTTypeRefSymbol"); }
     void visitVarAssignment(const VarAssignment* node) override
         { writeName(node, "VarAssignment"); }
     void visitVarRef(const VarRef* node) override

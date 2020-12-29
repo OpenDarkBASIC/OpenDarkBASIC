@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
@@ -119,6 +118,55 @@ public:
  *     global dim var$(...) as boolean
  *     global dim var$(...) as double float
  *     global dim var$(...) as float
+ *
+ *     dim var()
+ *     dim var#()
+ *     dim var$()
+ *     local dim var()
+ *     local dim var#()
+ *     local dim var$()
+ *     global dim var()
+ *     global dim var#()
+ *     global dim var$()
+ *
+ *     dim var() as double integer
+ *     dim var() as integer
+ *     dim var() as dword
+ *     dim var() as word
+ *     dim var() as byte
+ *     dim var() as boolean
+ *     dim var() as double float
+ *     dim var() as float
+ *     dim var#() as double float
+ *     dim var#() as float
+ *     dim var() as string
+ *     dim var$() as string
+ *
+ *     local dim var() as double integer
+ *     local dim var() as integer
+ *     local dim var() as dword
+ *     local dim var() as word
+ *     local dim var() as byte
+ *     local dim var() as boolean
+ *     local dim var() as double float
+ *     local dim var() as float
+ *     local dim var#() as double float
+ *     local dim var#() as float
+ *     local dim var() as string
+ *     local dim var$() as string
+ *
+ *     global dim var() as double integer
+ *     global dim var() as integer
+ *     global dim var() as dword
+ *     global dim var() as word
+ *     global dim var() as byte
+ *     global dim var() as boolean
+ *     global dim var() as double float
+ *     global dim var() as float
+ *     global dim var#() as double float
+ *     global dim var#() as float
+ *     global dim var() as string
+ *     global dim var$() as string
  */
 
 TEST_F(NAME, float_var_cannot_be_declared_as_double_integer)

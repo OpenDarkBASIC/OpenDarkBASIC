@@ -24,6 +24,7 @@
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
+    #include "odb-compiler/ast/UDTTypeDecl.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
@@ -85,6 +86,8 @@
             class SubCallSymbol;
             class SubReturn;
             class Symbol;
+            class UDTTypeDecl;
+            class UDTTypeDeclBody;
             class UntilLoop;
             class VarAssignment;
             class VarDecl;
@@ -165,6 +168,8 @@
     odb::ast::SubCallSymbol* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
     odb::ast::Symbol* symbol;
+    odb::ast::UDTTypeDecl* udt_type_decl;
+    odb::ast::UDTTypeDeclBody* udt_type_decl_body;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
@@ -192,6 +197,8 @@
 %destructor { TouchRef($$); } <loop>
 %destructor { TouchRef($$); } <scoped_annotated_symbol>
 %destructor { TouchRef($$); } <stmnt>
+%destructor { TouchRef($$); } <udt_type_decl>
+%destructor { TouchRef($$); } <udt_type_decl_body>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
@@ -319,7 +326,7 @@
 %type<func_exit> func_exit
 %type<stmnt> increment
 %type<stmnt> decrement
-%type<symbol> label_sym
+%type<symbol> symbol
 %type<sub_call_symbol> sub_call
 %type<sub_return> sub_return
 %type<goto_symbol> goto_label
@@ -333,6 +340,16 @@
 %type<scoped_annotated_symbol> array_decl_float_sym
 %type<scoped_annotated_symbol> array_decl_str_sym
 %type<array_ref> array_ref
+%type<udt_type_decl> udt_type_decl
+%type<udt_type_decl_body> udt_body_decl
+%type<var_decl> udt_decl_var
+%type<scoped_annotated_symbol> udt_decl_var_int_sym
+%type<scoped_annotated_symbol> udt_decl_var_float_sym
+%type<scoped_annotated_symbol> udt_decl_var_str_sym
+%type<array_decl> udt_decl_array
+%type<scoped_annotated_symbol> udt_decl_array_int_sym
+%type<scoped_annotated_symbol> udt_decl_array_float_sym
+%type<scoped_annotated_symbol> udt_decl_array_str_sym
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -380,7 +397,7 @@ seps : seps sep | sep;
 seps_maybe : seps | ;
 block
   : block seps stmnt                             { $$ = $1; $$->appendStatement($3); }
-  | stmnt                                        { $$ = new Block(newloc()); $$->appendStatement($1); }
+  | stmnt                                        { $$ = new Block($1, newloc()); }
   ;
 stmnt
   : constant_decl                                { $$ = $1; }
@@ -400,10 +417,11 @@ stmnt
   | goto_label                                   { $$ = $1; }
   | conditional                                  { $$ = $1; }
   | array_decl                                   { $$ = $1; }
+  | udt_type_decl                                { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
-  | expr                                         { $$ = new ExpressionList(newloc()); $$->appendExpression($1); }
+  | expr                                         { $$ = new ExpressionList($1, newloc()); }
   ;
 expr
   : '(' expr ')'                                 { $$ = $2; }
@@ -574,29 +592,66 @@ array_decl_str_sym
   | LOCAL DIM SYMBOL '$'                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $3, newloc()); str::deleteCStr($3); }
   | DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
   ;
-/*
-udt_decl
-  : TYPE udt_name seps udt_body_decl seps ENDTYPE
-    {
-        $$ = $2;
-        $$->info.type = NT_SYM_UDT_DECL;
-        $$->sym.udt_decl.flag.datatype = SDT_UDT;
-        $$->sym.udt_decl.subtypes = $4;
-    }
+
+udt_type_decl
+  : TYPE symbol seps udt_body_decl seps ENDTYPE  { $$ = new UDTTypeDecl($2, $4, newloc()); }
   ;
 udt_body_decl
-  : udt_body_decl seps var_decl_as_type          { $$ = appendUDTSubtypeList($1, $3, &yylloc); }
-  | udt_body_decl seps array_decl                { $$ = appendUDTSubtypeList($1, $3, &yylloc); }
-  | var_decl_as_type                             { $$ = newUDTSubtypeList($1, &yylloc); }
-  | array_decl                                   { $$ = newUDTSubtypeList($1, &yylloc); }
+  : udt_body_decl seps udt_decl_var              { $$ = $1; $$->appendVarDecl($3); }
+  | udt_body_decl seps udt_decl_array            { $$ = $1; $$->appendArrayDecl($3); }
+  | udt_decl_var                                 { $$ = new UDTTypeDeclBody($1, newloc()); }
+  | udt_decl_array                               { $$ = new UDTTypeDeclBody($1, newloc()); }
   ;
-udt_name
-  : annotated_symbol_without_type {
-        $$ = $1;
-        $$->info.type = NT_SYM_UDT_TYPE_REF;
-        $$->sym.var_ref.flag.datatype = SDT_UDT;
-    }
+udt_decl_var
+  : udt_decl_var_int_sym AS DOUBLE INTEGER       { $$ = new DoubleIntegerVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS INTEGER              { $$ = new IntegerVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS DWORD                { $$ = new DwordVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS WORD                 { $$ = new WordVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS BYTE                 { $$ = new ByteVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS BOOLEAN              { $$ = new BooleanVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS DOUBLE FLOAT         { $$ = new DoubleFloatVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS FLOAT                { $$ = new FloatVarDecl($1, newloc()); }
+  | udt_decl_var_int_sym AS STRING               { $$ = new StringVarDecl($1, newloc()); }
+  | udt_decl_var_float_sym AS DOUBLE FLOAT       { $$ = new DoubleFloatVarDecl($1, newloc()); }
+  | udt_decl_var_float_sym AS FLOAT              { $$ = new FloatVarDecl($1, newloc()); }
+  | udt_decl_var_str_sym AS STRING               { $$ = new StringVarDecl($1, newloc()); }
   ;
+udt_decl_var_int_sym
+  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
+  ;
+udt_decl_var_float_sym
+  : SYMBOL '#'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, newloc()); str::deleteCStr($1); }
+  ;
+udt_decl_var_str_sym
+  : SYMBOL '$'                                   { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, newloc()); str::deleteCStr($1); }
+  ;
+udt_decl_array
+  : udt_decl_array_int_sym '(' expr_list ')' AS DOUBLE INTEGER  { $$ = new DoubleIntegerArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS INTEGER         { $$ = new IntegerArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS DWORD           { $$ = new DwordArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS WORD            { $$ = new WordArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS BYTE            { $$ = new ByteArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS BOOLEAN         { $$ = new BooleanArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS DOUBLE FLOAT    { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS FLOAT           { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS STRING          { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_float_sym '(' expr_list ')' AS DOUBLE FLOAT  { $$ = new DoubleFloatArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_float_sym '(' expr_list ')' AS FLOAT         { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_str_sym '(' expr_list ')'AS STRING           { $$ = new StringArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_int_sym '(' expr_list ')'                    { $$ = new IntegerArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_float_sym '(' expr_list ')'                  { $$ = new FloatArrayDecl($1, $3, newloc()); }
+  | udt_decl_array_str_sym '(' expr_list ')'                    { $$ = new StringArrayDecl($1, $3, newloc()); }
+  ;
+udt_decl_array_int_sym
+  : DIM SYMBOL %prec NO_HASH_OR_DOLLAR           { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, newloc()); str::deleteCStr($2); }
+  ;
+udt_decl_array_float_sym
+  : DIM SYMBOL '#'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, newloc()); str::deleteCStr($2); }
+  ;
+udt_decl_array_str_sym
+  : DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
+  ;
+/*
 udt_ref
   : udt_name PERIOD udt_refs                     { $$ = $1; $$->info.type = NT_SYM_VAR_REF; $$->sym.var_ref.udt = $3; }
   | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
@@ -630,19 +685,16 @@ func_call_stmnt
   | annotated_symbol '(' ')'                     { $$ = new FuncCallStmnt($1, newloc()); }
   ;
 sub_call
-  : GOSUB label_sym                              { $$ = new SubCallSymbol($2, newloc()); }
+  : GOSUB symbol                                 { $$ = new SubCallSymbol($2, newloc()); }
   ;
 sub_return
   : RETURN                                       { $$ = new SubReturn(newloc()); }
   ;
 label_decl
-  : label_sym ':'                                { $$ = new Label($1, newloc()); }
+  : symbol ':'                                   { $$ = new Label($1, newloc()); }
   ;
 goto_label
-  : GOTO label_sym                               { $$ = new GotoSymbol($2, newloc()); }
-  ;
-label_sym
-  : SYMBOL                                       { $$ = new Symbol($1, newloc()); str::deleteCStr($1); }
+  : GOTO symbol                                  { $$ = new GotoSymbol($2, newloc()); }
   ;
 literal
   : BOOLEAN_LITERAL                              { $$ = new BooleanLiteral(yylval.boolean_value, newloc()); }
@@ -660,6 +712,9 @@ annotated_symbol
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, newloc()); str::deleteCStr($1); }
   | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, newloc()); str::deleteCStr($1); }
   | SYMBOL '$'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::STRING, $1, newloc()); str::deleteCStr($1); }
+  ;
+symbol
+  : SYMBOL                                       { $$ = new Symbol($1, newloc()); str::deleteCStr($1); }
   ;
 conditional
   : cond_oneline                                 { $$ = $1; }

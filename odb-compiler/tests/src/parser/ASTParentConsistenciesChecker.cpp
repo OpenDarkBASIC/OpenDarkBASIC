@@ -21,6 +21,8 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTTypeDecl.hpp"
+#include "odb-compiler/ast/UDTTypeRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -167,6 +169,20 @@ void ASTParentConsistenciesChecker::visitSubCallSymbol(const SubCallSymbol* node
 }
 void ASTParentConsistenciesChecker::visitSubReturn(const SubReturn* node) {}
 void ASTParentConsistenciesChecker::visitSymbol(const Symbol* node) {}
+void ASTParentConsistenciesChecker::visitUDTTypeDecl(const UDTTypeDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->typeName()->parent()));
+    EXPECT_THAT(node, Eq(node->body()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTTypeDeclBody(const UDTTypeDeclBody* node)
+{
+    for (const auto& decl : node->varDeclarations())
+        EXPECT_THAT(node, Eq(decl->parent()));
+    for (const auto& decl : node->arrayDeclarations())
+        EXPECT_THAT(node, Eq(decl->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTTypeRef(const UDTTypeRef* node) {}
+void ASTParentConsistenciesChecker::visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node) {}
 void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
 {
     EXPECT_THAT(node, Eq(node->exitCondition()->parent()));

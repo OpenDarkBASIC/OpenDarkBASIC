@@ -20,6 +20,8 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTTypeDecl.hpp"
+#include "odb-compiler/ast/UDTTypeRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -59,6 +61,10 @@ void GenericVisitor::visitSubCall(SubCall* node)                               {
 void GenericVisitor::visitSubCallSymbol(SubCallSymbol* node)                   { visit(node); }
 void GenericVisitor::visitSubReturn(SubReturn* node)                           { visit(node); }
 void GenericVisitor::visitSymbol(Symbol* node)                                 { visit(node); }
+void GenericVisitor::visitUDTTypeDecl(UDTTypeDecl* node)                       { visit(node); }
+void GenericVisitor::visitUDTTypeDeclBody(UDTTypeDeclBody* node)               { visit(node); }
+void GenericVisitor::visitUDTTypeRef(UDTTypeRef* node)                         { visit(node); }
+void GenericVisitor::visitUDTTypeRefSymbol(UDTTypeRefSymbol* node)             { visit(node); }
 void GenericVisitor::visitUntilLoop(UntilLoop* node)                           { visit(node); }
 void GenericVisitor::visitVarAssignment(VarAssignment* node)                   { visit(node); }
 void GenericVisitor::visitVarRef(VarRef* node)                                 { visit(node); }
@@ -112,6 +118,10 @@ void GenericConstVisitor::visitSubCall(const SubCall* node)                     
 void GenericConstVisitor::visitSubCallSymbol(const SubCallSymbol* node)                   { visit(node); }
 void GenericConstVisitor::visitSubReturn(const SubReturn* node)                           { visit(node); }
 void GenericConstVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }
+void GenericConstVisitor::visitUDTTypeDecl(const UDTTypeDecl* node)                       { visit(node); }
+void GenericConstVisitor::visitUDTTypeDeclBody(const UDTTypeDeclBody* node)               { visit(node); }
+void GenericConstVisitor::visitUDTTypeRef(const UDTTypeRef* node)                         { visit(node); }
+void GenericConstVisitor::visitUDTTypeRefSymbol(const UDTTypeRefSymbol* node)             { visit(node); }
 void GenericConstVisitor::visitUntilLoop(const UntilLoop* node)                           { visit(node); }
 void GenericConstVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }
 void GenericConstVisitor::visitVarRef(const VarRef* node)                                 { visit(node); }
