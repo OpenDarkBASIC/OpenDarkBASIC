@@ -13,6 +13,8 @@ class ODBCOMPILER_PUBLIC_API ExpressionList : public Node
 {
 public:
     ExpressionList(SourceLocation* location);
+    ~ExpressionList();
+
     void appendExpression(Expression* expr);
 
     const std::vector<Reference<Expression>>& expressions() const;

@@ -13,6 +13,9 @@ ExpressionList::ExpressionList(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
+ExpressionList::~ExpressionList() = default;
+
+// ----------------------------------------------------------------------------
 void ExpressionList::appendExpression(Expression* expr)
 {
     expr->setParent(this);

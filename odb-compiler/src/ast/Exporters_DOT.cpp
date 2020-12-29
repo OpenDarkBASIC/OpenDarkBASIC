@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"

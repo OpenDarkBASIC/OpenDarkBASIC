@@ -1,4 +1,4 @@
-find_program(Gperf_EXECUTABLE NAMES gperf gperf DOC "path to the gperf executable")
+find_program(Gperf_EXECUTABLE NAMES gperf gperf DOC "path to the gperf executable" HINTS "C:/Program Files (x86)/GnuWin32/bin")
 mark_as_advanced(Gperf_EXECUTABLE)
 
 if(Gperf_EXECUTABLE)

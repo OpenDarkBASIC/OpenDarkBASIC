@@ -86,7 +86,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
             squiggles.back() += "   ";
     }
     squiggles.back() += "^";
-    if (lines[0][firstColumn_-1] == '\t')
+    if (firstColumn_ > 0 && lines[0][firstColumn_-1] == '\t')
             squiggles.back() += "~~~";
 
     if (lastLine_ != firstLine_)
@@ -136,7 +136,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
             if (i >= (int)lines[0].length())
                 return retError();
             squiggles.back() += "~";
-            if (lines[0][i-1] == '\t')
+            if (i > 0 && lines[0][i-1] == '\t')
                 squiggles.back() += "~~~";
         }
     }

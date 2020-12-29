@@ -1,21 +1,20 @@
 #include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/parsers/db/KeywordToken.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
-#include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
-#include <unordered_set>
 #include <set>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
-namespace odb {
-namespace cmd {
+namespace odb::cmd {
 
 // ----------------------------------------------------------------------------
-DBPCommandLoader::DBPCommandLoader(const std::string& sdkRoot,
-                                   const std::vector<std::string>& pluginDirs) :
-    CommandLoader(sdkRoot, pluginDirs)
+DBPCommandLoader::DBPCommandLoader(const std::string& sdkRoot, const std::vector<std::string>& pluginDirs)
+    : CommandLoader(sdkRoot, pluginDirs)
 {
 }
 
@@ -117,7 +116,14 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
             returnType = convertTypeChar(tokens[1][0]);
             functionTypes = functionTypes.substr(1);
         }
-        std::transform(commandName.begin(), commandName.end(), commandName.begin(), [](char c) { return std::tolower(c); });
+        std::transform(commandName.begin(), commandName.end(), commandName.begin(),
+                       [](char c) { return std::tolower(c); });
+
+        // Skip built in commands.
+        if (db::KeywordToken::lookup(commandName))
+        {
+            continue;
+        }
 
         // Extract arguments.
         std::vector<std::string> argumentNames;
@@ -150,5 +156,4 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
 #endif
 }
 
-}
-}
+} // namespace odb::cmd

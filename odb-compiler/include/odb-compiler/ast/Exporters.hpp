@@ -9,7 +9,7 @@ namespace ast {
 class Node;
 
 #if defined(ODBCOMPILER_DOT_EXPORT)
-void dumpToDOT(FILE* fp, const Node* root);
+ODBCOMPILER_PUBLIC_API void dumpToDOT(FILE* fp, const Node* root);
 #endif
 
 }

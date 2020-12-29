@@ -11,15 +11,24 @@ Block::Block(SourceLocation* location) :
     Node(location)
 {
 }
+
+// ----------------------------------------------------------------------------
+Block::~Block() = default;
+
+// ----------------------------------------------------------------------------
 void Block::appendStatement(Statement* stmnt)
 {
     stmnt->setParent(this);
     statements_.push_back(stmnt);
 }
+
+// ----------------------------------------------------------------------------
 const std::vector<Reference<Statement>>& Block::statements() const
 {
     return statements_;
 }
+
+// ----------------------------------------------------------------------------
 void Block::accept(Visitor* visitor) const
 {
     visitor->visitBlock(this);
