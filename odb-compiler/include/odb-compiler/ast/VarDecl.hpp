@@ -46,7 +46,7 @@ private:
 ODB_DATATYPE_LIST
 #undef X
 
-class UDTVarDeclSymbol : public VarDecl
+class ODBCOMPILER_PUBLIC_API UDTVarDeclSymbol : public VarDecl
 {
 public:
     UDTVarDeclSymbol(ScopedAnnotatedSymbol* symbol, Symbol* udt, SourceLocation* location);
@@ -65,7 +65,7 @@ private:
     Reference<Symbol> udt_;
 };
 
-class UDTVarDecl : public VarDecl
+class ODBCOMPILER_PUBLIC_API UDTVarDecl : public VarDecl
 {
 public:
     UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location);

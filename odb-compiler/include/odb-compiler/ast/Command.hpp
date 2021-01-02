@@ -16,7 +16,7 @@ namespace ast {
 
 class ExpressionList;
 
-class CommandExprSymbol : public Expression
+class ODBCOMPILER_PUBLIC_API CommandExprSymbol : public Expression
 {
 public:
     CommandExprSymbol(const std::string& command, ExpressionList* args, SourceLocation* location);
@@ -34,7 +34,7 @@ private:
     const std::string command_;
 };
 
-class CommandStmntSymbol : public Statement
+class ODBCOMPILER_PUBLIC_API CommandStmntSymbol : public Statement
 {
 public:
     CommandStmntSymbol(const std::string& command, ExpressionList* args, SourceLocation* location);

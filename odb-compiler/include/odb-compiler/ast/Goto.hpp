@@ -9,7 +9,7 @@ namespace ast {
 class Label;
 class Symbol;
 
-class GotoSymbol : public Statement
+class ODBCOMPILER_PUBLIC_API GotoSymbol : public Statement
 {
 public:
     GotoSymbol(Symbol* label, SourceLocation* location);

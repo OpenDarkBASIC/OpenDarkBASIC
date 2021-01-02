@@ -41,7 +41,7 @@ void CommandMatcher::updateFromIndex(const CommandIndex* db)
     auto longestCommand = std::max_element(commands_.begin(), commands_.end(),
             [](const std::string& a, const std::string& b) { return a.size() < b.size(); });
     if (longestCommand != commands_.end())
-        longestCommandLength_ = longestCommand->size();
+        longestCommandLength_ = (int)longestCommand->size();
 
     // Find the maximum number of words that appear in a command. This is not
     // necessarily the longest command. Counting the number of spaces should
@@ -54,7 +54,7 @@ void CommandMatcher::updateFromIndex(const CommandIndex* db)
                 return wordCount(a) < wordCount(b);
             });
     if (longestCommandWordCount != commands_.end())
-        longestCommandWordCount_ = wordCount(*longestCommandWordCount);
+        longestCommandWordCount_ = (int)wordCount(*longestCommandWordCount);
 }
 
 // ----------------------------------------------------------------------------

@@ -42,7 +42,7 @@ private:
 ODB_DATATYPE_LIST
 #undef X
 
-class UDTArrayDeclSymbol : public ArrayDecl
+class ODBCOMPILER_PUBLIC_API UDTArrayDeclSymbol : public ArrayDecl
 {
 public:
     UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location);
@@ -61,7 +61,7 @@ private:
     Reference<Symbol> udt_;
 };
 
-class UDTArrayDecl : public ArrayDecl
+class ODBCOMPILER_PUBLIC_API UDTArrayDecl : public ArrayDecl
 {
 public:
     UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location);

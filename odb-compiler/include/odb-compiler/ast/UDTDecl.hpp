@@ -11,7 +11,7 @@ class Symbol;
 class UDTDeclBody;
 class VarDecl;
 
-class UDTDecl : public Statement
+class ODBCOMPILER_PUBLIC_API UDTDecl : public Statement
 {
 public:
     UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location);
@@ -29,7 +29,7 @@ private:
 
 };
 
-class UDTDeclBody : public Node
+class ODBCOMPILER_PUBLIC_API UDTDeclBody : public Node
 {
 public:
     UDTDeclBody(SourceLocation* location);

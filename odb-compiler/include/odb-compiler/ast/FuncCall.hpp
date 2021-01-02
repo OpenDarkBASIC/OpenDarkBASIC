@@ -55,7 +55,7 @@ private:
  * is a function call or an array access. This class represents such an entity.
  * This is fixed in a second stage later.
  */
-class FuncCallExprOrArrayRef : public Expression
+class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef : public Expression
 {
 public:
     FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);

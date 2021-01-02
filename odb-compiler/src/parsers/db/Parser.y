@@ -33,6 +33,7 @@
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
     #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
+    #include "odb-compiler/commands/Command.hpp"
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
 

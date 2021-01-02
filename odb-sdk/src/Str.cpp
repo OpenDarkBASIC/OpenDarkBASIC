@@ -10,17 +10,21 @@ namespace str {
 // ----------------------------------------------------------------------------
 char* newCStr(const char* str)
 {
-    int len = strlen(str);
+    size_t len = strlen(str);
     char* newStr = (char*)malloc(len + 1);
+    if (newStr == nullptr)
+        return nullptr;
     memcpy(newStr, str, len);
     newStr[len] = '\0';
     return newStr;
 }
 
 // ----------------------------------------------------------------------------
-char* newCStrRange(const char* src, int beg, int end)
+char* newCStrRange(const char* src, size_t beg, size_t end)
 {
     char* result = (char*)malloc(end - beg + 1);
+    if (result == nullptr)
+        return nullptr;
     strncpy(result, src + beg, end - beg);
     result[end - beg] = '\0';
     return result;
@@ -33,7 +37,7 @@ void deleteCStr(char* str)
 }
 
 // ----------------------------------------------------------------------------
-int strncicmp(const char* a, const char* b, int n)
+int strncicmp(const char* a, const char* b, size_t n)
 {
     for (;n; n--, a++, b++)
     {

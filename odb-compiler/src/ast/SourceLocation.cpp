@@ -106,7 +106,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
                 pos = 0;
             for (int i = 0; i < (int)pos; ++i)
                 squiggles.back() += lines[l][i] == '\t' ? "    " : " ";
-            for (int i = pos; i < (int)lines[l].length(); ++i)
+            for (int i = (int)pos; i < (int)lines[l].length(); ++i)
             {
                 squiggles.back() += "~";
                 if (lines[l][i] == '\t')
@@ -120,7 +120,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
             pos = 0;
         for (int i = 0; i < (int)pos; ++i)
             squiggles.back() += lines.back()[i] == '\t' ? "    " : " ";
-        for (int i = pos; i < lastColumn_; ++i)
+        for (int i = (int)pos; i < lastColumn_; ++i)
         {
             if (i >= (int)lines.back().length())
                 return retError();

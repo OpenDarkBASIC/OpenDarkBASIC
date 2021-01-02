@@ -63,7 +63,7 @@ ast::Block* Driver::parseFile(const std::string& fileName)
 // ----------------------------------------------------------------------------
 ast::Block* Driver::parseString(const std::string& sourceName, const std::string& str)
 {
-    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), str.length(), scanner_);
+    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), (int)str.length(), scanner_);
     code_ = str;
     sourceName_ = sourceName;
     ast::Block* program = doParse();
@@ -349,14 +349,14 @@ ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocati
     if (value > std::numeric_limits<uint32_t>::max())
         return new ast::DoubleIntegerLiteral(value, location);
     if (value > std::numeric_limits<int32_t>::max())
-        return new ast::DwordLiteral(value, location);
+        return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
     if (value > std::numeric_limits<uint16_t>::max())
-        return new ast::IntegerLiteral(value, location);
+        return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
     if (value > std::numeric_limits<uint8_t>::max())
-        return new ast::WordLiteral(value, location);
+        return new ast::WordLiteral(static_cast<uint16_t>(value), location);
     if (value > 1)
-        return new ast::ByteLiteral(value, location);
-    return new ast::BooleanLiteral(value, location);
+        return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
+    return new ast::BooleanLiteral((value > 0), location);
 }
 
 // ----------------------------------------------------------------------------
@@ -364,7 +364,7 @@ ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocati
 {
     if (value < std::numeric_limits<int32_t>::min())
         return new ast::DoubleIntegerLiteral(value, location);
-    return new ast::IntegerLiteral(value, location);
+    return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
 }
 
 }

@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include <cstdio>
 
 namespace odb {

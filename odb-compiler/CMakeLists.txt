@@ -40,7 +40,6 @@ configure_file ("templates/config.hpp.in" "include/odb-compiler/config.hpp")
 
 find_package (FLEX REQUIRED )
 find_package (BISON REQUIRED 3.7)
-find_package (Gperf REQUIRED)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
@@ -149,11 +148,15 @@ target_include_directories (odb-compiler
 target_compile_definitions (odb-compiler
     PRIVATE
         ODBCOMPILER_BUILDING)
+# C4661: "no suitable definition provided for explicit template instantiation request"
+#        Implementations of explicitly instantiated template classes exist in .cpp files 
+#        instead of header files, so this warning can be ignored.
 target_compile_options (odb-compiler
     PRIVATE
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>
+		$<$<CXX_COMPILER_ID:MSVC>:/wd4661>)
 target_compile_features (odb-compiler
     PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
@@ -207,6 +210,9 @@ if (${ODBCOMPILER_TESTS})
     target_compile_features (odbc_tests
         PUBLIC
             cxx_std_17)
+	target_compile_options (odbc_tests
+		PRIVATE
+			$<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
     set_target_properties (odbc_tests
         PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})

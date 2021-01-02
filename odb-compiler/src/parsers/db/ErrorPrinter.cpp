@@ -22,7 +22,7 @@ void vprintParserMessage(log::Severity severity,
 
     va_list copy;
     va_copy(copy, args);
-    fmtMsg.resize(vsnprintf(nullptr, 0, fmt, copy) + 1);
+    fmtMsg.resize((size_t)vsnprintf(nullptr, 0, fmt, copy) + 1);
     va_end(copy);
     va_copy(copy, args);
     snprintf( fmtMsg.data(), fmtMsg.size(), fmt, args);
@@ -70,7 +70,7 @@ void printLocationHighlight(const DBLTYPE* loc, dbscan_t scanner)
 
 void printLocationHighlight(const ast::SourceLocation* location)
 {
-    int gutterWidth = std::to_string(location->getLastLine()).length();
+    size_t gutterWidth = std::to_string(location->getLastLine()).length();
     auto sourceHighlightLines = location->getSectionHighlight();
     for (int i = 0; i != (int)sourceHighlightLines.size(); ++i)
     {

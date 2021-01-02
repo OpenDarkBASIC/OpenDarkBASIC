@@ -77,6 +77,7 @@ if (WIN32)
 endif ()
 
 add_subdirectory ("thirdparty/googletest")
+add_subdirectory ("thirdparty/gperf-3.1")
 add_subdirectory ("odb-sdk")
 add_subdirectory ("odb-compiler")
 add_subdirectory ("odb-interpreter")

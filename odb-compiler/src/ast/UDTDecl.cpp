@@ -5,6 +5,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
