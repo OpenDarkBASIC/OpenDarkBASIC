@@ -15,8 +15,8 @@ class CommandIndex;
 class ODBCOMPILER_PUBLIC_API CommandLoader
 {
 public:
-    CommandLoader(const std::string& sdkRoot,
-                  const std::vector<std::string>& pluginDirs={});
+    CommandLoader(const std::filesystem::path& sdkRoot,
+                  const std::vector<std::filesystem::path>& pluginDirs={});
 
     virtual ~CommandLoader() {}
 

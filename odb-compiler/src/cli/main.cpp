@@ -1,15 +1,20 @@
-#include "odb-compiler/cli/Args.hpp"
-#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/cli/Actions.hpp"
 #include "odb-sdk/Log.hpp"
+
+class Log
+{
+public:
+    Log() { odb::log::init(); }
+    ~Log() { odb::log::deinit(); }
+};
 
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-    odb::log::init();
+    Log log;
 
-    Args args;
-    if (!args.parse(argc, argv))
-        return 1;
+    if (parseCommandLine(argc, argv) == false)
+        return -1;
 
     return 0;
 }

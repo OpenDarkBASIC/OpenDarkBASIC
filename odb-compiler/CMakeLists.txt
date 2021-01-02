@@ -205,7 +205,11 @@ endif ()
 ###############################################################################
 
 add_executable (odbc
-    "src/cli/Args.cpp"
+    "src/cli/Actions.cpp"
+    "src/cli/AST.cpp"
+    "src/cli/Banner.cpp"
+    "src/cli/Commands.cpp"
+    "src/cli/SDK.cpp"
     "src/cli/main.cpp")
 target_include_directories (odbc
     PUBLIC
