@@ -1,5 +1,5 @@
-#include "odb-compiler/cli/Commands.hpp"
-#include "odb-compiler/cli/SDK.hpp"
+#include "odb-cli/Commands.hpp"
+#include "odb-cli/SDK.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/commands/ODBCommandLoader.hpp"
 #include "odb-compiler/commands/DBPCommandLoader.hpp"

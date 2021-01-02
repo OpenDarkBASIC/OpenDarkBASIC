@@ -1,5 +1,5 @@
+#include "odb-cli/Banner.hpp"
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/cli/Banner.hpp"
 
 static bool printBanner_ = true;
 static const char* banner_ =

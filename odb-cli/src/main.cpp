@@ -1,4 +1,4 @@
-#include "odb-compiler/cli/Actions.hpp"
+#include "odb-cli/Actions.hpp"
 #include "odb-sdk/Log.hpp"
 
 class Log

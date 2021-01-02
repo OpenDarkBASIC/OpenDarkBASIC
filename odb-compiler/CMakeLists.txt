@@ -1,4 +1,3 @@
-
 project ("odb-compiler"
     LANGUAGES C CXX
     VERSION 0.0.1)
@@ -201,28 +200,6 @@ if (${ODBCOMPILER_TESTS})
 endif ()
 
 ###############################################################################
-# CLI Executable
-###############################################################################
-
-add_executable (odbc
-    "src/cli/Actions.cpp"
-    "src/cli/AST.cpp"
-    "src/cli/Banner.cpp"
-    "src/cli/Commands.cpp"
-    "src/cli/SDK.cpp"
-    "src/cli/main.cpp")
-target_include_directories (odbc
-    PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>)
-target_link_libraries (odbc
-    PRIVATE
-        odb-compiler)
-set_target_properties (odbc
-    PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
-
-###############################################################################
 # Installation
 ###############################################################################
 
@@ -241,7 +218,3 @@ install (
 install (
     EXPORT OpenDarkBASICConfig
     DESTINATION "share/odb/cmake")
-
-install (
-    TARGETS odbc
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

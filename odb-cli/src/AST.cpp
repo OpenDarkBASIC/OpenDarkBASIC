@@ -1,5 +1,5 @@
-#include "odb-compiler/cli/AST.hpp"
-#include "odb-compiler/cli/Commands.hpp"
+#include "odb-cli/AST.hpp"
+#include "odb-cli/Commands.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"

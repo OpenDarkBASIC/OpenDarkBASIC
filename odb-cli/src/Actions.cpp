@@ -1,8 +1,8 @@
-#include "odb-compiler/cli/Actions.hpp"
-#include "odb-compiler/cli/AST.hpp"
-#include "odb-compiler/cli/Banner.hpp"
-#include "odb-compiler/cli/Commands.hpp"
-#include "odb-compiler/cli/SDK.hpp"
+#include "odb-cli/Actions.hpp"
+#include "odb-cli/AST.hpp"
+#include "odb-cli/Banner.hpp"
+#include "odb-cli/Commands.hpp"
+#include "odb-cli/SDK.hpp"
 #include <cstring>
 #include <queue>
 

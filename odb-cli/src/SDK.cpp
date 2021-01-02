@@ -1,4 +1,4 @@
-#include "odb-compiler/cli/SDK.hpp"
+#include "odb-cli/SDK.hpp"
 #include "odb-sdk/Log.hpp"
 
 using namespace odb;
