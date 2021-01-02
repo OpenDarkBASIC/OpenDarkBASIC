@@ -21,6 +21,11 @@ void init()
 }
 
 // ----------------------------------------------------------------------------
+void deinit()
+{
+}
+
+// ----------------------------------------------------------------------------
 void setInfoLog(FILE* fp)
 {
     infofp = fp;
@@ -76,16 +81,16 @@ void vdbParser(Severity severity, const char* fmt, va_list ap)
 }
 
 // ----------------------------------------------------------------------------
-void cmdParser(Severity severity, const char* fmt, ...)
+void cmd(Severity severity, const char* fmt, ...)
 {
     assert(infofp);
 
     va_list ap;
     va_start(ap, fmt);
-    vcmdParser(severity, fmt, ap);
+    vcmd(severity, fmt, ap);
     va_end(ap);
 }
-void vcmdParser(Severity severity, const char* fmt, va_list ap)
+void vcmd(Severity severity, const char* fmt, va_list ap)
 {
     assert(infofp);
 
@@ -97,7 +102,7 @@ void vcmdParser(Severity severity, const char* fmt, va_list ap)
         case ERROR :
         case FATAL : fprintf(infofp, "%s", RED); break;
     }
-    fprintf(infofp, "[cmd Parser] ");
+    fprintf(infofp, "[cmd] ");
     vfprintf(infofp, fmt, ap);
     fprintf(infofp, "%s", RESET);
 }
@@ -136,7 +141,7 @@ void vsdk(Severity severity, const char* fmt, va_list ap)
         case ERROR :
         case FATAL : fprintf(infofp, "%s", RED); break;
     }
-    fprintf(infofp, "[SDK] ");
+    fprintf(infofp, "[sdk] ");
     vfprintf(infofp, fmt, ap);
     fprintf(infofp, "%s", RESET);
 }

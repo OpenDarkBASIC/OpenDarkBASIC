@@ -14,7 +14,7 @@ namespace odb {
 namespace cmd {
 
 // ----------------------------------------------------------------------------
-static bool typeExists (Command::Type t)
+static bool typeExists(Command::Type t)
 {
     using T = Command::Type;
     switch (t)
@@ -75,8 +75,8 @@ static bool parseTypeinfoString(Command::Type* retType, std::vector<Command::Arg
 }
 
 // ----------------------------------------------------------------------------
-ODBCommandLoader::ODBCommandLoader(const std::string& sdkRoot,
-                                   const std::vector<std::string>& pluginDirs) :
+ODBCommandLoader::ODBCommandLoader(const fs::path& sdkRoot,
+                                   const std::vector<fs::path>& pluginDirs) :
     CommandLoader(sdkRoot, pluginDirs)
 {
 }
@@ -84,35 +84,35 @@ ODBCommandLoader::ODBCommandLoader(const std::string& sdkRoot,
 // ----------------------------------------------------------------------------
 bool ODBCommandLoader::populateIndex(CommandIndex* index)
 {
-    std::unordered_set<std::string> pluginsToLoad;
+    std::vector<fs::path> pluginsToLoad;
 
     if (!fs::is_directory(sdkRoot_))
     {
-        log::sdk(log::ERROR, "SDK root directory `%s` does not exist", sdkRoot_.c_str());
+        log::sdk(log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
         return false;
     }
 
     fs::path sdkPluginsDir = sdkRoot_ / "plugins";
     if (!fs::is_directory(sdkPluginsDir))
-        log::sdk(log::WARNING, "`%s` does not exist. SDK Plugins will not be loaded", sdkPluginsDir.c_str());
+        log::sdk(log::WARNING, "`%s` does not exist. SDK Plugins will not be loaded\n", sdkPluginsDir.c_str());
     else
     {
         for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
             if (fileIsDynamicLib(p.path()))
-                pluginsToLoad.emplace(p.path().string());
+                pluginsToLoad.emplace_back(p.path());
     }
 
     for (const auto& path : pluginDirs_)
     {
         if (!fs::is_directory(path))
         {
-            log::sdk(log::WARNING, "`%s` does not exist. Skipping.", path.c_str());
+            log::sdk(log::WARNING, "`%s` does not exist. Skipping.\n", path.c_str());
             continue;
         }
 
         for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
             if (fileIsDynamicLib(p.path()))
-                pluginsToLoad.emplace(p.path().string());
+                pluginsToLoad.emplace_back(p.path());
     }
 
     for (const auto& path : pluginsToLoad)

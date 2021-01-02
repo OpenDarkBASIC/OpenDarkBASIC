@@ -9,8 +9,8 @@ namespace cmd {
 class ODBCOMPILER_PUBLIC_API DBPCommandLoader : public CommandLoader
 {
 public:
-    DBPCommandLoader(const std::string& sdkRoot,
-                     const std::vector<std::string>& pluginDirs);
+    DBPCommandLoader(const std::filesystem::path& sdkRoot,
+                     const std::vector<std::filesystem::path>& pluginDirs);
 
     bool populateIndex(CommandIndex* index) override;
     bool populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library) override;
