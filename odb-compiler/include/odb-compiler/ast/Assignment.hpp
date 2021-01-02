@@ -9,6 +9,8 @@ namespace ast {
 class ArrayRef;
 class Expression;
 class LValue;
+class UDTArrayRef;
+class UDTVarRef;
 class VarRef;
 
 class ODBCOMPILER_PUBLIC_API Assignment : public Statement
@@ -44,6 +46,38 @@ public:
     ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location);
 
     ArrayRef* array() const;
+    Expression* expression() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<Expression> expr_;
+};
+
+class ODBCOMPILER_PUBLIC_API UDTVarAssignment : public Assignment
+{
+public:
+    UDTVarAssignment(UDTVarRef* var, Expression* expr, SourceLocation* location);
+
+    UDTVarRef* variable() const;
+    Expression* expression() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+private:
+    Reference<Expression> expr_;
+};
+
+class ODBCOMPILER_PUBLIC_API UDTArrayAssignment : public Assignment
+{
+public:
+    UDTArrayAssignment(UDTArrayRef* var, Expression* expr, SourceLocation* location);
+
+    UDTArrayRef* array() const;
     Expression* expression() const;
 
     void accept(Visitor* visitor) override;

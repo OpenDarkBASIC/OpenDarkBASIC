@@ -120,8 +120,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Statement.cpp"
     "src/ast/Subroutine.cpp"
     "src/ast/Symbol.cpp"
+    "src/ast/UDTArrayRef.cpp"
     "src/ast/UDTDecl.cpp"
     "src/ast/UDTRef.cpp"
+    "src/ast/UDTVarRef.cpp"
     "src/ast/UnaryOp.cpp"
     "src/ast/VarDecl.cpp"
     "src/ast/VarRef.cpp"
@@ -149,7 +151,7 @@ target_compile_definitions (odb-compiler
     PRIVATE
         ODBCOMPILER_BUILDING)
 # C4661: "no suitable definition provided for explicit template instantiation request"
-#        Implementations of explicitly instantiated template classes exist in .cpp files 
+#        Implementations of explicitly instantiated template classes exist in .cpp files
 #        instead of header files, so this warning can be ignored.
 target_compile_options (odb-compiler
     PRIVATE

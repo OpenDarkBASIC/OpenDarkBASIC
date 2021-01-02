@@ -24,8 +24,10 @@
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
+    #include "odb-compiler/ast/UDTArrayRef.hpp"
     #include "odb-compiler/ast/UDTDecl.hpp"
     #include "odb-compiler/ast/UDTRef.hpp"
+    #include "odb-compiler/ast/UDTVarRef.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
@@ -88,9 +90,11 @@
             class SubCallSymbol;
             class SubReturn;
             class Symbol;
+            class UDTArrayRef;
             class UDTDecl;
             class UDTDeclBody;
             class UDTRef;
+            class UDTVarRef;
             class UntilLoop;
             class VarAssignment;
             class VarDecl;
@@ -166,14 +170,17 @@
     odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
+    odb::ast::LValue* lvalue;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
     odb::ast::SubCallSymbol* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
     odb::ast::Symbol* symbol;
+    odb::ast::UDTArrayRef* udt_array_ref;
     odb::ast::UDTDecl* udt_type_decl;
     odb::ast::UDTDeclBody* udt_type_decl_body;
     odb::ast::UDTRef* udt_ref;
+    odb::ast::UDTVarRef* udt_var_ref;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
@@ -199,11 +206,14 @@
 %destructor { TouchRef($$); } <command_stmnt>
 %destructor { TouchRef($$); } <literal>
 %destructor { TouchRef($$); } <loop>
+%destructor { TouchRef($$); } <lvalue>
 %destructor { TouchRef($$); } <scoped_annotated_symbol>
 %destructor { TouchRef($$); } <stmnt>
+%destructor { TouchRef($$); } <udt_array_ref>
 %destructor { TouchRef($$); } <udt_type_decl>
 %destructor { TouchRef($$); } <udt_type_decl_body>
 %destructor { TouchRef($$); } <udt_ref>
+%destructor { TouchRef($$); } <udt_var_ref>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
@@ -356,6 +366,10 @@
 %type<scoped_annotated_symbol> udt_decl_array_float_sym
 %type<scoped_annotated_symbol> udt_decl_array_str_sym
 %type<udt_ref> udt_ref
+%type<lvalue> udt_refs
+%type<udt_array_ref> udt_array_ref
+%type<udt_var_ref> udt_var_ref
+%type<symbol> udt_sym
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -507,20 +521,34 @@ decrement
   : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, newloc()); }
   | DEC var_ref                                  { $$ = new DecrementVar($2, newloc()); }
   ;
-/*
-lvalue
-  : var_ref                                      { $$ = $1; }
-  | array_ref                                    { $$ = $1; }
-  ;*/
 assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, newloc()); }
   | array_ref '=' expr                           { $$ = new ArrayAssignment($1, $3, newloc()); }
+  | udt_var_ref '=' expr                         { $$ = new UDTVarAssignment($1, $3, newloc()); }
+  | udt_array_ref '=' expr                       { $$ = new UDTArrayAssignment($1, $3, newloc()); }
   ;
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, newloc()); }
   ;
 array_ref
-  : annotated_symbol '(' expr_list ')'                            { $$ = new ArrayRef($1, $3, newloc()); }
+  : annotated_symbol '(' expr_list ')'           { $$ = new UDTArrayRefOrFuncCall($1, $3, newloc()); }
+  ;
+udt_var_ref
+  : udt_sym '.' udt_refs                         { $$ = new UDTVarRef($1, $3, newloc()); }
+  ;
+udt_array_ref
+  : udt_sym '(' expr_list ')' '.' udt_refs       { $$ = new UDTArrayRefOrFuncCall($1, $3, $6, newloc()); }
+  ;
+udt_refs
+  : udt_sym '.' udt_refs                         { $$ = new UDTVarRef($1, $3, newloc()); }
+  | udt_sym '(' expr_list ')' '.' udt_refs       { $$ = new UDTArrayRef($1, $3, $6, newloc()); }
+  | var_ref                                      { $$ = $1; }
+  | array_ref                                    { $$ = $1; }
+  ;
+/* Variables and arrays declared as UDTs cannot be annotated. udt_sym is used
+ * to cause a parser error if one were to try and type udt#.value or udt#(...).value */
+udt_sym
+  : symbol                                       { $$ = $1; }
   ;
 var_decl
   : var_decl_as_type                             { $$ = $1; }
@@ -661,19 +689,6 @@ udt_decl_array_float_sym
 udt_decl_array_str_sym
   : DIM SYMBOL '$'                               { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, newloc()); str::deleteCStr($2); }
   ;
-udt_ref
-  : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new UDTRef($1, newloc()); str::deleteCStr($1); }
-/*
-udt_ref
-  : udt_name PERIOD udt_refs                     { $$ = $1; $$->info.type = NT_SYM_VAR_REF; $$->sym.var_ref.udt = $3; }
-  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
-  ;
-udt_refs
-  : var_ref PERIOD udt_refs                      { $$ = $1; $$->sym.var_ref.udt = $3; }
-  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
-  | array_ref                                    { $$ = $1; }
-  | var_ref                                      { $$ = $1; }
-  ;*/
 func_decl
   : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, newloc()); }
   | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, newloc()); }
@@ -727,6 +742,9 @@ annotated_symbol
   ;
 symbol
   : SYMBOL                                       { $$ = new Symbol($1, newloc()); str::deleteCStr($1); }
+  ;
+udt_ref
+  : SYMBOL                                       { $$ = new UDTRef($1, newloc()); str::deleteCStr($1); }
   ;
 conditional
   : cond_oneline                                 { $$ = $1; }

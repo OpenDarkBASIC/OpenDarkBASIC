@@ -37,11 +37,13 @@ public:
     void visitSymbol(const odb::ast::Symbol* node) override;
     void visitUDTArrayDecl(const odb::ast::UDTArrayDecl* node) override;
     void visitUDTArrayDeclSymbol(const odb::ast::UDTArrayDeclSymbol* node) override;
+    void visitUDTArrayRef(const odb::ast::UDTArrayRef* node) override;
     void visitUDTDecl(const odb::ast::UDTDecl* node) override;
     void visitUDTDeclBody(const odb::ast::UDTDeclBody* node) override;
     void visitUDTRef(const odb::ast::UDTRef* node) override;
     void visitUDTVarDecl(const odb::ast::UDTVarDecl* node) override;
     void visitUDTVarDeclSymbol(const odb::ast::UDTVarDeclSymbol* node) override;
+    void visitUDTVarRef(const odb::ast::UDTVarRef* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;
     void visitVarRef(const odb::ast::VarRef* node) override;

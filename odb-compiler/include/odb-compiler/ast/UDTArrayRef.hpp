@@ -3,28 +3,28 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/LValue.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
-class AnnotatedSymbol;
 class ExpressionList;
+class Symbol;
 
-class ODBCOMPILER_PUBLIC_API ArrayRef : public LValue
+class ODBCOMPILER_PUBLIC_API UDTArrayRef : public LValue
 {
 public:
-    ArrayRef(AnnotatedSymbol* symbol, ExpressionList* dims, SourceLocation* location);
+    UDTArrayRef(Symbol* symbol, ExpressionList* dims, LValue* fieldRef, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Symbol* symbol() const;
     ExpressionList* dims() const;
+    LValue* fieldRef() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Symbol> symbol_;
     Reference<ExpressionList> dims_;
+    Reference<LValue> field_;
 };
 
-}
 }

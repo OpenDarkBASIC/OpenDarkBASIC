@@ -11,7 +11,7 @@ namespace ast {
 ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
     LValue(location),
     symbol_(symbol),
-    args_(args)
+    dims_(args)
 {
     symbol->setParent(this);
     args->setParent(this);
@@ -24,9 +24,9 @@ AnnotatedSymbol* ArrayRef::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList* ArrayRef::args() const
+ExpressionList* ArrayRef::dims() const
 {
-    return args_;
+    return dims_;
 }
 
 // ----------------------------------------------------------------------------
@@ -34,13 +34,13 @@ void ArrayRef::accept(Visitor* visitor)
 {
     visitor->visitArrayRef(this);
     symbol_->accept(visitor);
-    args_->accept(visitor);
+    dims_->accept(visitor);
 }
 void ArrayRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitArrayRef(this);
     symbol_->accept(visitor);
-    args_->accept(visitor);
+    dims_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -48,8 +48,8 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
 {
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
-    else if (args_ == oldNode)
-        args_ = dynamic_cast<ExpressionList*>(newNode);
+    else if (dims_ == oldNode)
+        dims_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
 

@@ -37,12 +37,14 @@ public:
     MOCK_METHOD(void, visitSubReturn, (const odb::ast::SubReturn* node), (override));
     MOCK_METHOD(void, visitSymbol, (const odb::ast::Symbol* node), (override));
     MOCK_METHOD(void, visitUDTArrayDecl, (const odb::ast::UDTArrayDecl* node), (override));
-    MOCK_METHOD(void, visitUDTArrayDeclSymbol, (const odb::ast::UDTArrayDeclSymbol* node), (override));
+    MOCK_METHOD(void, visitUDTArrayDeclSymbol, (const odb::ast::UDTArrayRef* node), (override));
+    MOCK_METHOD(void, visitUDTArrayRef, (const odb::ast::UDTArrayDeclSymbol* node), (override));
     MOCK_METHOD(void, visitUDTDecl, (const odb::ast::UDTDecl* node), (override));
     MOCK_METHOD(void, visitUDTDeclBody, (const odb::ast::UDTDeclBody* node), (override));
     MOCK_METHOD(void, visitUDTRef, (const odb::ast::UDTRef* node), (override));
     MOCK_METHOD(void, visitUDTVarDecl, (const odb::ast::UDTVarDecl* node), (override));
     MOCK_METHOD(void, visitUDTVarDeclSymbol, (const odb::ast::UDTVarDeclSymbol* node), (override));
+    MOCK_METHOD(void, visitUDTVarRef, (const odb::ast::UDTVarRef* node), (override));
     MOCK_METHOD(void, visitUntilLoop, (const odb::ast::UntilLoop* node), (override));
     MOCK_METHOD(void, visitVarAssignment, (const odb::ast::VarAssignment* node), (override));
     MOCK_METHOD(void, visitVarRef, (const odb::ast::VarRef* node), (override));

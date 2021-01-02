@@ -21,8 +21,10 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTArrayRef.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
+#include "odb-compiler/ast/UDTVarRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -41,7 +43,7 @@ void ASTParentConsistenciesChecker::visitArrayAssignment(const ArrayAssignment* 
 void ASTParentConsistenciesChecker::visitArrayRef(const ArrayRef* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    EXPECT_THAT(node, Eq(node->args()->parent()));
+    EXPECT_THAT(node, Eq(node->dims()->parent()));
 }
 void ASTParentConsistenciesChecker::visitBlock(const Block* node)
 {
@@ -181,6 +183,12 @@ void ASTParentConsistenciesChecker::visitUDTArrayDeclSymbol(const UDTArrayDeclSy
     EXPECT_THAT(node, Eq(node->dims()->parent()));
     EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
 }
+void ASTParentConsistenciesChecker::visitUDTArrayRef(const UDTArrayRef* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->dims()->parent()));
+    EXPECT_THAT(node, Eq(node->fieldRef()->parent()));
+}
 void ASTParentConsistenciesChecker::visitUDTDecl(const UDTDecl* node)
 {
     EXPECT_THAT(node, Eq(node->typeName()->parent()));
@@ -203,6 +211,11 @@ void ASTParentConsistenciesChecker::visitUDTVarDeclSymbol(const UDTVarDeclSymbol
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTVarRef(const UDTVarRef* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->fieldRef()->parent()));
 }
 void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
 {
