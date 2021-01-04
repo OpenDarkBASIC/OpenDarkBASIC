@@ -6,6 +6,7 @@
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 namespace odb {
 namespace cmd {
@@ -30,12 +31,18 @@ public:
      */
     bool findConflicts() const;
 
+    /*!
+     * @brief Performs a lookup by command name. Returns all matching overloads.
+     */
+    std::vector<Reference<Command>> lookup(const std::string& commandName) const;
+
     const std::vector<Reference<Command>>& commands() const;
     std::vector<std::string> commandNamesAsList() const;
     std::vector<std::string> librariesAsList() const;
 
 private:
     std::vector<Reference<Command>> commands_;
+    std::unordered_multimap<std::string, Reference<Command>> commandLookupTable_;
 };
 
 }

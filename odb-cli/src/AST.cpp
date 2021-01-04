@@ -27,7 +27,7 @@ bool parseDBA(const std::vector<std::string>& args)
     for (const auto& arg : args)
     {
         log::ast(log::INFO, "Parsing file `%s`\n", arg.c_str());
-        odb::ast::Block* block = driver.parseFile(arg.c_str());
+        odb::ast::Block* block = driver.parseFile(arg);
         if (block == nullptr)
             return false;
 
@@ -54,7 +54,7 @@ bool dumpASTDOT(const std::vector<std::string>& args)
     }
 
     FILE* outFile = stdout;
-    if (args.size())
+    if (!args.empty())
     {
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
@@ -69,7 +69,7 @@ bool dumpASTDOT(const std::vector<std::string>& args)
 
     ast::dumpToDOT(outFile, ast_);
 
-    if (args.size())
+    if (!args.empty())
         fclose(outFile);
 
     return true;
@@ -89,7 +89,7 @@ bool dumpASTJSON(const std::vector<std::string>& args)
     }
 
     FILE* outFile = stdout;
-    if (args.size())
+    if (!args.empty())
     {
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
@@ -104,8 +104,13 @@ bool dumpASTJSON(const std::vector<std::string>& args)
 
     // TODO odb::ast::dumpToJSON(outFile, ast_);
 
-    if (args.size())
+    if (!args.empty())
         fclose(outFile);
 
     return false;
+}
+
+// ----------------------------------------------------------------------------
+const odb::ast::Block* getAST() {
+    return ast_;
 }

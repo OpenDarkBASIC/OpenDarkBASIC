@@ -8,38 +8,22 @@
 #include "odb-compiler/ast/Datatypes.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 
 namespace odb::ir {
 enum class UnaryOp
 {
-    BinaryNot,
-    LogicalNot
+#define X(op, tok) op,
+    ODB_UNARY_OP_LIST
+#undef X
 };
 
 enum class BinaryOp
 {
-    Add,
-    Sub,
-    Mul,
-    Div,
-    Mod,
-    Pow,
-    LeftShift,
-    RightShift,
-    BinaryOr,
-    BinaryAnd,
-    BinaryXor,
-
-    LessThan,
-    LessThanOrEqual,
-    GreaterThan,
-    GreaterThanOrEqual,
-    Equal,
-    NotEqual,
-    LogicalOr,
-    LogicalAnd,
-    LogicalXor
+#define X(op, tok) op,
+    ODB_BINARY_OP_LIST
+#undef X
 };
 
 template <typename T> using Ptr = std::unique_ptr<T>;
@@ -57,6 +41,13 @@ enum class BuiltinType
     ODB_DATATYPE_LIST
 #undef X
 };
+
+// Type trait that maps a C++ type to the corresponding BuiltinType enum.
+template <typename T>
+struct LiteralType {};
+#define X(dbname, cppname) template <> struct LiteralType<cppname> { static constexpr BuiltinType type = BuiltinType::dbname; };
+ODB_DATATYPE_LIST
+#undef X
 
 class ODBCOMPILER_PUBLIC_API Type
 {
@@ -158,40 +149,68 @@ private:
     Type type_;
 };
 
-class ODBCOMPILER_PUBLIC_API LiteralExpression : public Expression
+// Base class for any literal value
+class ODBCOMPILER_PUBLIC_API Literal : public Expression
 {
 public:
-    enum class LiteralType
-    {
-        BOOLEAN,
-        INTEGRAL,
-        FLOATING_POINT,
-        STRING
-    };
+    Literal(SourceLocation* location);
+    virtual Type literalType() const = 0;
 
-    LiteralExpression(SourceLocation* location, bool b);
-    LiteralExpression(SourceLocation* location, int64_t intLiteral);
-    LiteralExpression(SourceLocation* location, double fpLiteral);
-    LiteralExpression(SourceLocation* location, std::string stringLiteral);
+    Type getType() const override { return literalType(); }
+};
 
-    Type getType() const override;
-
-    LiteralExpression::LiteralType literalType() const;
-    bool boolValue() const;
-    int64_t integralValue() const;
-    double fpValue() const;
-    const std::string& stringValue() const;
+template <typename T>
+class LiteralTemplate : public Literal
+{
+public:
+    LiteralTemplate(SourceLocation* location, const T& value) : Literal(location), value_(value) {}
+    const T& value() const { return value_; }
+    Type literalType() const override { return Type{LiteralType<T>::type}; }
 
 private:
-    LiteralType literalType_;
-    union
-    {
-        bool bool_;
-        int64_t integral_;
-        double fp_;
-    };
-    std::string string_;
+    const T value_;
 };
+
+#define X(dbname, cppname) \
+    template class ODBCOMPILER_PUBLIC_API LiteralTemplate<cppname>; \
+    typedef LiteralTemplate<cppname> dbname##Literal;
+ODB_DATATYPE_LIST
+#undef X
+
+//class ODBCOMPILER_PUBLIC_API LiteralExpression : public Expression
+//{
+//public:
+//    enum class LiteralType
+//    {
+//        BOOLEAN,
+//        INTEGRAL,
+//        FLOATING_POINT,
+//        STRING
+//    };
+//
+//    LiteralExpression(SourceLocation* location, bool b);
+//    LiteralExpression(SourceLocation* location, int64_t intLiteral);
+//    LiteralExpression(SourceLocation* location, double fpLiteral);
+//    LiteralExpression(SourceLocation* location, std::string stringLiteral);
+//
+//    Type getType() const override;
+//
+//    LiteralExpression::LiteralType literalType() const;
+//    bool boolValue() const;
+//    int64_t integralValue() const;
+//    double fpValue() const;
+//    const std::string& stringValue() const;
+//
+//private:
+//    LiteralType literalType_;
+//    union
+//    {
+//        bool bool_;
+//        int64_t integral_;
+//        double fp_;
+//    };
+//    std::string string_;
+//};
 
 class ODBCOMPILER_PUBLIC_API FunctionCallExpression : public Expression
 {
@@ -493,8 +512,8 @@ public:
         std::string name;
     };
 
-    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments, Ptr<Expression> returnExpression,
-                       StatementBlock statements);
+    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments, Ptr<Expression> returnExpression = nullptr,
+                       StatementBlock statements = {});
     FunctionDefinition(FunctionDefinition&&) = default;
     FunctionDefinition(const FunctionDefinition&) = delete;
     FunctionDefinition& operator=(FunctionDefinition&&) = default;
@@ -504,6 +523,9 @@ public:
     const std::vector<Argument>& arguments() const;
     const Ptr<Expression>& returnExpression() const;
     const StatementBlock& statements() const;
+
+    void setReturnExpression(Ptr<Expression> returnExpression);
+    void appendStatements(StatementBlock block);
 
 private:
     std::string name_;
@@ -523,7 +545,7 @@ public:
 class ODBCOMPILER_PUBLIC_API Program
 {
 public:
-    static Program fromAst(ast::Block* root, const cmd::CommandIndex& cmdIndex);
+    static Program fromAst(const ast::Block* root, const cmd::CommandIndex& cmdIndex);
 
     Program(Program&&) = default;
     Program(const Program&) = delete;

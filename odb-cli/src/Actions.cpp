@@ -2,6 +2,7 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
 #include "odb-cli/Commands.hpp"
+#include "odb-cli/Codegen.hpp"
 #include "odb-cli/SDK.hpp"
 #include <cstring>
 #include <queue>
@@ -24,24 +25,28 @@ typedef std::priority_queue<ActionHandler, std::vector<ActionHandler>, ActionCom
 
 static bool printHelp(const std::vector<std::string>& args);
 
+// clang-format off
 static const Action actions_[] = {
-    { "no-banner",     'n',"",                           {0,  0},  0, false, &disableBanner, "Don't print the cool ASCII art banner"},
-    { "",               0, "",                           {0,  0},  1, true,  &printBanner, ""},
-    { "help",          'h',"",                           {0,  0},  2, false, &printHelp, "Print this help text"},
-    { "sdkroot",        0, "<path>",                     {1,  1},  3, false, &setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
-    { "sdktype",        0, "<odb|dbpro>",                {1,  1},  3, false, &setSDKType, "Specify if the SDK is the original DBPro SDK, or if it is the ODB reimplementation"},
-    { "plugins",        0, "<path|file> [path|file...]", {1, -1},  3, false, &setAdditionalPluginsDir, "Add additional directories to scan for thirdparty plugins"},
-    { "print-sdkroot",  0, "",                           {0,  0},  4, false, &printSDKRootDir, "Prints the location of the SDK"},
-    { "",               0, "",                           {0,  0},  4, true,  &initSDK, ""},
-    { "",               0, "",                           {0,  0},  5, true,  &loadCommands, ""},
-    { "dump-cmd-json",  0, "[file]",                     {0,  1},  6, false, &dumpCommandsJSON, "Dump all commands (and their type/argument info) to JSON format. The default file is stdout."},
-    { "dump-cmd-ini",   0, "[file]",                     {0,  1},  6, false, &dumpCommandsINI, "Dump all commands (and their type/argument info) to INI format. The default file is stdout."},
-    { "dump-cmd-names", 0, "[file]",                     {0,  1},  6, false, &dumpCommandNames, "Dump all command names in alphabetical order. The default file is stdout."},
-    { "",               0, "",                           {0,  0},  6, true,  &initCommandMatcher, ""},
-    { "parse-dba",      0, "<file> [files...]",          {1, -1},  7, false, &parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
-    { "dump-ast-dot",   0, "[file]",                     {0,  1},  8, false, &dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
-    { "dump-ast-json",  0, "[file]",                     {0,  1},  9, false, &dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
+    { "no-banner",     'n',"",                           {0,  0},  0, false,  &disableBanner, "Don't print the cool ASCII art banner"},
+    { "",               0, "",                           {0,  0},  1, true,   &printBanner, ""},
+    { "help",          'h',"",                           {0,  0},  2, false,  &printHelp, "Print this help text"},
+    { "sdkroot",        0, "<path>",                     {1,  1},  3, false,  &setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
+    { "sdktype",        0, "<odb|dbpro>",                {1,  1},  3, false,  &setSDKType, "Specify if the SDK is the original DBPro SDK, or if it is the ODB reimplementation"},
+    { "plugins",        0, "<path|file> [path|file...]", {1, -1},  3, false,  &setAdditionalPluginsDir, "Add additional directories to scan for thirdparty plugins"},
+    { "print-sdkroot",  0, "",                           {0,  0},  4, false,  &printSDKRootDir, "Prints the location of the SDK"},
+    { "",               0, "",                           {0,  0},  4, true,   &initSDK, ""},
+    { "",               0, "",                           {0,  0},  5, true,   &loadCommands, ""},
+    { "dump-cmd-json",  0, "[file]",                     {0,  1},  6, false,  &dumpCommandsJSON, "Dump all commands (and their type/argument info) to JSON format. The default file is stdout."},
+    { "dump-cmd-ini",   0, "[file]",                     {0,  1},  6, false,  &dumpCommandsINI, "Dump all commands (and their type/argument info) to INI format. The default file is stdout."},
+    { "dump-cmd-names", 0, "[file]",                     {0,  1},  6, false,  &dumpCommandNames, "Dump all command names in alphabetical order. The default file is stdout."},
+    { "",               0, "",                           {0,  0},  6, true,   &initCommandMatcher, ""},
+    { "parse-dba",      0, "<file> [files...]",          {1, -1},  7, false,  &parseDBA, "Parse DBA source file(s). The first file listed will become the 'main' file, i.e. where execution starts."},
+    { "dump-ast-dot",   0, "[file]",                     {0,  1},  8, false,  &dumpASTDOT, "Dump AST to Graphviz DOT format. The default file is stdout."},
+    { "dump-ast-json",  0, "[file]",                     {0,  1},  9, false,  &dumpASTJSON, "Dump AST to JSON format. The default file is stdout"},
+    { "output-type",    0, "<obj|exe|llvm-ir|llvm-bc>",  {0,  1},  10, false, &setOutputType, "Specify the file type generated by the --output flag. Can be either an executable, object file, LLVM IR or LLVM bitcode. Defaults to 'object'."},
+    { "output",        'o',"[file]",                     {0,  1},  11, false, &output, "Output file."},
 };
+// clang-format on
 
 static ActionQueue actionQueue_;
 static std::string programName_;
