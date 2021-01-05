@@ -126,6 +126,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/VarDecl.cpp"
     "src/ast/VarRef.cpp"
     "src/ast/Visitor.cpp"
+    "src/astpost/EliminateBitwiseNotRHS.cpp"
     "src/astpost/Process.cpp"
     "src/astpost/ResolveArrayFuncAmbiguity.cpp"
     "src/astpost/ResolveLabels.cpp"
@@ -149,7 +150,7 @@ target_compile_definitions (odb-compiler
     PRIVATE
         ODBCOMPILER_BUILDING)
 # C4661: "no suitable definition provided for explicit template instantiation request"
-#        Implementations of explicitly instantiated template classes exist in .cpp files 
+#        Implementations of explicitly instantiated template classes exist in .cpp files
 #        instead of header files, so this warning can be ignored.
 target_compile_options (odb-compiler
     PRIVATE

@@ -11,8 +11,7 @@
 #include <vector>
 #include <string>
 
-namespace odb {
-namespace astpost {
+namespace odb::astpost {
 
 // ----------------------------------------------------------------------------
 class Gatherer : public ast::GenericVisitor
@@ -103,5 +102,4 @@ bool ResolveLabels::execute(ast::Node* node)
     return true;
 }
 
-}
 }

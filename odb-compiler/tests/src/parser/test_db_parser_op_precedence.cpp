@@ -206,3 +206,4 @@ TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Xor, Or, "xor", "or")
 // ============================================================================
 
 TEST_UOP1_UOP2_RIGHT_RECURSION(Not, Negate, "not", "-")
+TEST_UOP1_UOP2_RIGHT_RECURSION(Negate, BitwiseNot, "-", "..")
