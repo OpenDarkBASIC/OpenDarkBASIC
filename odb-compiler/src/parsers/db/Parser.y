@@ -390,6 +390,7 @@
 %left '^'
 %left '(' ')'
 %right UMINUS
+%right UNOT
 
 %start program
 
@@ -453,6 +454,7 @@ expr
   | expr LAND expr                               { $$ = new BinaryOpAnd($1, $3, newloc()); }
   | expr LXOR expr                               { $$ = new BinaryOpXor($1, $3, newloc()); }
   | LNOT expr                                    { $$ = new UnaryOpNot($2, newloc()); }
+  | BNOT expr %prec UNOT                         { $$ = new UnaryOpBitwiseNot($2, newloc()); }
   | '-' expr %prec UMINUS                        { $$ = new UnaryOpNegate($2, newloc()); }
   | literal                                      { $$ = $1; }
   | func_call_expr_or_array_ref                  { $$ = $1; }

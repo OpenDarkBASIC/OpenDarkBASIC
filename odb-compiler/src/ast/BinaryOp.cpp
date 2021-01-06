@@ -32,7 +32,6 @@ Expression* BinaryOp::rhs() const
 BinaryOp##op::BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location) : \
     BinaryOp(lhs, rhs, location)                                              \
 {                                                                             \
-    fprintf(stderr, "BinaryOp" #op "\n");                                     \
 }                                                                             \
 void BinaryOp##op::accept(Visitor* visitor)                                   \
 {                                                                             \

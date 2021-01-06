@@ -11,10 +11,10 @@
 #include <vector>
 #include <string>
 
-namespace odb {
-namespace astpost {
+namespace odb::astpost {
 
 // ----------------------------------------------------------------------------
+namespace {
 class Gatherer : public ast::GenericVisitor
 {
 public:
@@ -51,11 +51,13 @@ void Gatherer::visitLabel(ast::Label* node)
     {
         log::dbParser(log::ERROR, "%s: Label `%s` redefined\n",
                       node->location()->getFileLineColumn().c_str(), name.c_str());
-        log::dbParser(log::NOTICE, "Label previously defined here\n");
         db::printLocationHighlight(node->location());
+        log::dbParser(log::NOTICE, "Label previously defined here\n");
+        db::printLocationHighlight(it.first->second->location());
 
         errorOccurred = true;
     }
+}
 }
 
 // ----------------------------------------------------------------------------
@@ -103,5 +105,4 @@ bool ResolveLabels::execute(ast::Node* node)
     return true;
 }
 
-}
 }

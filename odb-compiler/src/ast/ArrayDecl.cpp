@@ -10,9 +10,25 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-ArrayDecl::ArrayDecl(SourceLocation* location) :
-    Statement(location)
+ArrayDecl::ArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, SourceLocation* location)
+    : Statement(location)
+    , symbol_(symbol)
+    , dims_(dims)
 {
+    symbol->setParent(this);
+    dims->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+ScopedAnnotatedSymbol* ArrayDecl::symbol() const
+{
+    return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+ExpressionList* ArrayDecl::dims() const
+{
+    return dims_;
 }
 
 // ----------------------------------------------------------------------------
@@ -20,25 +36,9 @@ ArrayDecl::ArrayDecl(SourceLocation* location) :
     template <>                                                               \
     ArrayDeclTemplate<cppname>::ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol,\
                                                   ExpressionList* dims,       \
-                                                  SourceLocation* location) : \
-        ArrayDecl(location),                                                  \
-        symbol_(symbol),                                                      \
-        dims_(dims)                                                           \
+                                                  SourceLocation* location)   \
+        : ArrayDecl(symbol, dims, location)                                   \
     {                                                                         \
-        symbol->setParent(this);                                              \
-        dims->setParent(this);                                                \
-    }                                                                         \
-                                                                              \
-    template <>                                                               \
-    ScopedAnnotatedSymbol* ArrayDeclTemplate<cppname>::symbol() const         \
-    {                                                                         \
-        return symbol_;                                                       \
-    }                                                                         \
-                                                                              \
-    template <>                                                               \
-    ExpressionList* ArrayDeclTemplate<cppname>::dims() const                  \
-    {                                                                         \
-        return dims_;                                                         \
     }                                                                         \
                                                                               \
     template<>                                                                \
@@ -72,26 +72,10 @@ ODB_DATATYPE_LIST
 
 // ----------------------------------------------------------------------------
 UDTArrayDeclSymbol::UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location)
-    : ArrayDecl(location)
-    , symbol_(symbol)
-    , dims_(dims)
+    : ArrayDecl(symbol, dims, location)
     , udt_(udt)
 {
-    symbol->setParent(this);
-    dims->setParent(this);
     udt->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-ScopedAnnotatedSymbol* UDTArrayDeclSymbol::symbol() const
-{
-    return symbol_;
-}
-
-// ----------------------------------------------------------------------------
-ExpressionList* UDTArrayDeclSymbol::dims() const
-{
-    return dims_;
 }
 
 // ----------------------------------------------------------------------------
@@ -133,26 +117,10 @@ void UDTArrayDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
 
 // ----------------------------------------------------------------------------
 UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location)
-    : ArrayDecl(location)
-    , symbol_(symbol)
-    , dims_(dims)
+    : ArrayDecl(symbol, dims, location)
     , udt_(udt)
 {
-    symbol->setParent(this);
-    dims->setParent(this);
     udt->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-ScopedAnnotatedSymbol* UDTArrayDecl::symbol() const
-{
-    return symbol_;
-}
-
-// ----------------------------------------------------------------------------
-ExpressionList* UDTArrayDecl::dims() const
-{
-    return dims_;
 }
 
 // ----------------------------------------------------------------------------

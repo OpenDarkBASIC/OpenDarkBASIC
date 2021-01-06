@@ -4,7 +4,7 @@
 
 namespace odb::astpost {
 
-class ODBCOMPILER_PUBLIC_API ResolveLabels : public Process
+class ODBCOMPILER_PUBLIC_API EliminateBitwiseNotRHS : public Process
 {
 public:
     bool execute(ast::Node* root) override final;

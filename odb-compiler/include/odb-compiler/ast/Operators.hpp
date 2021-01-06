@@ -30,4 +30,5 @@
 
 #define ODB_UNARY_OP_LIST    \
     X(Not,          "not")   \
-    X(Negate,       "-")
+    X(Negate,       "-")     \
+    X(BitwiseNot,   "..")
