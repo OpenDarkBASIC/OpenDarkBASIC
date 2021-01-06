@@ -57,7 +57,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<DynamicLibrary> lib = DynamicLibrary::open(path.c_str());
+        Reference<DynamicLibrary> lib = DynamicLibrary::open(path.string().c_str());
         if (lib == nullptr)
             continue;
 

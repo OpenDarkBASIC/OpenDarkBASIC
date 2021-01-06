@@ -12,6 +12,7 @@ add_executable (odbc
     "src/Actions.cpp"
     "src/AST.cpp"
     "src/Banner.cpp"
+    "src/Codegen.cpp"
     "src/Commands.cpp"
     "src/SDK.cpp"
     "src/main.cpp")

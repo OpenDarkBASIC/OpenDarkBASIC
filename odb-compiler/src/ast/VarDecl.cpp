@@ -154,6 +154,9 @@ UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocatio
 }
 
 // ----------------------------------------------------------------------------
+UDTVarDecl::~UDTVarDecl() = default;
+
+// ----------------------------------------------------------------------------
 void UDTVarDecl::setInitialValue(Expression* expr)
 {
     assert(false);

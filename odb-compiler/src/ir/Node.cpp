@@ -128,26 +128,24 @@ Type BinaryExpression::getType() const
     case BinaryOp::Div:
     case BinaryOp::Mod:
     case BinaryOp::Pow:
-    case BinaryOp::LeftShift:
-    case BinaryOp::RightShift:
-    case BinaryOp::BinaryAnd:
-    case BinaryOp::BinaryOr:
-    case BinaryOp::BinaryXor:
+    case BinaryOp::ShiftLeft:
+    case BinaryOp::ShiftRight:
+    case BinaryOp::BitwiseAnd:
+    case BinaryOp::BitwiseOr:
+    case BinaryOp::BitwiseXor:
+    case BinaryOp::BitwiseNot:
         return left_->getType();
-    case BinaryOp::LessThan:
-    case BinaryOp::LessThanOrEqual:
-    case BinaryOp::GreaterThan:
-    case BinaryOp::GreaterThanOrEqual:
+    case BinaryOp::Less:
+    case BinaryOp::LessEqual:
+    case BinaryOp::Greater:
+    case BinaryOp::GreaterEqual:
     case BinaryOp::Equal:
     case BinaryOp::NotEqual:
-    case BinaryOp::LogicalOr:
-    case BinaryOp::LogicalAnd:
-    case BinaryOp::LogicalXor:
-    {
+    case BinaryOp::Or:
+    case BinaryOp::And:
         return Type{BuiltinType::Boolean};
     default:
         fatalError("Unhandled binary expression.");
-    }
     }
 }
 
@@ -181,66 +179,8 @@ const std::string& VariableExpression::name() const
     return name_;
 }
 
-LiteralExpression::LiteralExpression(SourceLocation* location, bool b)
-    : Expression(location), literalType_(LiteralType::BOOLEAN), bool_(b)
+Literal::Literal(SourceLocation* location) : Expression(location)
 {
-}
-
-LiteralExpression::LiteralExpression(SourceLocation* location, int64_t intLiteral)
-    : Expression(location), literalType_(LiteralType::INTEGRAL), integral_(intLiteral)
-{
-}
-
-LiteralExpression::LiteralExpression(SourceLocation* location, double fpLiteral)
-    : Expression(location), literalType_(LiteralType::FLOATING_POINT), fp_(fpLiteral)
-{
-}
-
-LiteralExpression::LiteralExpression(SourceLocation* location, std::string stringLiteral)
-    : Expression(location), literalType_(LiteralType::STRING), string_(std::move(stringLiteral))
-{
-}
-
-Type LiteralExpression::getType() const
-{
-    switch (literalType_)
-    {
-    case LiteralType::BOOLEAN:
-        return Type{BuiltinType::Boolean};
-    case LiteralType::INTEGRAL:
-        return Type{BuiltinType::DoubleInteger};
-    case LiteralType::FLOATING_POINT:
-        return Type{BuiltinType::DoubleFloat};
-    case LiteralType::STRING:
-        return Type{BuiltinType::String};
-    default:
-        std::terminate();
-    }
-}
-
-LiteralExpression::LiteralType LiteralExpression::literalType() const
-{
-    return literalType_;
-}
-
-bool LiteralExpression::boolValue() const
-{
-    return bool_;
-}
-
-int64_t LiteralExpression::integralValue() const
-{
-    return integral_;
-}
-
-double LiteralExpression::fpValue() const
-{
-    return fp_;
-}
-
-const std::string& LiteralExpression::stringValue() const
-{
-    return string_;
 }
 
 FunctionCallExpression::FunctionCallExpression(SourceLocation* location, const cmd::Command* command,
@@ -539,6 +479,16 @@ const Ptr<Expression>& FunctionDefinition::returnExpression() const
 const StatementBlock& FunctionDefinition::statements() const
 {
     return statements_;
+}
+
+void FunctionDefinition::setReturnExpression(Ptr<Expression> returnExpression)
+{
+    returnExpression_ = std::move(returnExpression);
+}
+
+void FunctionDefinition::appendStatements(StatementBlock block)
+{
+    std::move(block.begin(), block.end(), std::back_inserter(statements_));
 }
 
 UDTDefinition::UDTDefinition(SourceLocation* location) : Node(location)

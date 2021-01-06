@@ -14,7 +14,8 @@ namespace cmd {
 // ----------------------------------------------------------------------------
 void CommandIndex::addCommand(Command* command)
 {
-    commands_.push_back(command);
+    commands_.emplace_back(command);
+    commandLookupTable_.emplace(command->dbSymbol(), command);
 }
 
 // ----------------------------------------------------------------------------
@@ -66,6 +67,17 @@ bool CommandIndex::findConflicts() const
     }
 
     return false;
+}
+
+// ----------------------------------------------------------------------------
+std::vector<Reference<Command>> CommandIndex::lookup(const std::string& commandName) const
+{
+    std::vector<Reference<Command>> matches;
+    auto overloadIteratorRange = commandLookupTable_.equal_range(commandName);
+    for (auto match = overloadIteratorRange.first; match != overloadIteratorRange.second; ++match) {
+        matches.emplace_back(match->second);
+    }
+    return matches;
 }
 
 // ----------------------------------------------------------------------------
