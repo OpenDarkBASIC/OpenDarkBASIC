@@ -171,6 +171,8 @@ set_target_properties (odb-compiler
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
+        "tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
+        "tests/src/astpost/test_astpost_resolve_array_func_ambiguity.cpp"
         "tests/src/astpost/test_astpost_resolve_labels.cpp"
         "tests/src/harness/ParserTestHarness.cpp"
         "tests/src/parser/test_db_parser_assignment.cpp"

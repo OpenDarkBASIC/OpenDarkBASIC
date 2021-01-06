@@ -16,6 +16,7 @@
 
 namespace odb::astpost {
 
+namespace {
 class Gatherer : public ast::GenericVisitor
 {
 public:
@@ -29,18 +30,28 @@ public:
     std::vector<Reference<ast::BinaryOpBitwiseNot>> ops;
 };
 
-class SideEffectAnalyzer : public ast::GenericVisitor
+class SideEffectFinder : public ast::GenericConstVisitor
 {
 public:
-#define X(name) void visit##name(ast::name* node) override final {}
+#define X(name) void visit##name(const ast::name* node) override final {}
     NO_SIDE_EFFECTS
 #undef X
+#define X(dbname, cppname) void visit##dbname##Literal(const ast::dbname##Literal* node) override final {}
+    ODB_DATATYPE_LIST
+#undef X
+#define X(op, str) void visitBinaryOp##op(const ast::BinaryOp##op* node) override final {}
+    ODB_BINARY_OP_LIST
+#undef X
+#define X(op, str) void visitUnaryOp##op(const ast::UnaryOp##op* node) override final {}
+    ODB_UNARY_OP_LIST
+#undef X
 
-    void visit(ast::Node* node) override final { hasSideEffects = true; }
+    void visit(const ast::Node* node) override final { hasSideEffects = true; }
 
 public:
     bool hasSideEffects = false;
 };
+}
 
 // ----------------------------------------------------------------------------
 bool EliminateBitwiseNotRHS::execute(ast::Node* node)
@@ -50,11 +61,11 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
 
     for (auto& op : gatherer.ops)
     {
-        SideEffectAnalyzer a;
-        op->rhs()->accept(&a);
-        if (a.hasSideEffects)
+        SideEffectFinder finder;
+        op->rhs()->accept(&finder);
+        if (finder.hasSideEffects)
         {
-            log::dbParser(log::ERROR, "Side effects of right operand of binary bitwise-not operator would be eliminated\n");
+            log::dbParser(log::ERROR, "RHS of binary bitwise-not operator causes side effects\n");
             db::printLocationHighlight(op->rhs()->location());
             return false;
         }
