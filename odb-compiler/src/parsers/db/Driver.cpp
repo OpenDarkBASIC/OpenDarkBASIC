@@ -98,6 +98,7 @@ ast::Block* Driver::doParse()
     {
         int pushedChar;
         DBSTYPE pushedValue;
+        DBLTYPE loc;
         std::string str;
     };
 
@@ -121,7 +122,7 @@ ast::Block* Driver::doParse()
     auto scanNextToken = [&](){
         DBSTYPE pushedValue;
         int pushedChar = dblex(&pushedValue, &loc, scanner_);
-        tokens.push_back({pushedChar, pushedValue, ""});
+        tokens.push_back({pushedChar, pushedValue, loc, ""});
     };
 
     // Scans ahead to get as many TOK_SYMBOL type tokens
@@ -304,7 +305,7 @@ ast::Block* Driver::doParse()
             default: break;
         }
 
-        parseResult = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &loc, scanner_);
+        parseResult = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &tokens[0].loc, scanner_);
         tokens.erase(tokens.begin());
     } while (parseResult == YYPUSH_MORE);
 

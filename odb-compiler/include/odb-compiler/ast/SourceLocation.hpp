@@ -14,6 +14,7 @@ class ODBCOMPILER_PUBLIC_API SourceLocation : public RefCounted
 public:
     SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn);
 
+    std::string getLineColumnExtents() const;
     virtual std::string getFileLineColumn() const = 0;
     virtual std::vector<std::string> getSectionHighlight() const = 0;
 

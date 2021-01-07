@@ -155,7 +155,7 @@ Type getTypeFromCommandType(cmd::Command::Type type)
     default:
       fatalError("Unknown keyword type %c", (char)type);
     }
-};
+}
 
 //std::vector<ast::Node*> getNodesFromBlockNode(ast::Node* block)
 //{
@@ -282,7 +282,7 @@ FunctionCallExpression convertFunctionCallExpression(SymbolTable& symbolTable, a
     }
 
     return FunctionCallExpression{location, functionEntry->second.functionDefinition, std::move(args), returnType};
-};
+}
 
 Ptr<Expression> convertExpression(SymbolTable& symbolTable, const ast::Expression* expression)
 {

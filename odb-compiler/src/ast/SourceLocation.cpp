@@ -151,6 +151,13 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
 }
 
 // ----------------------------------------------------------------------------
+std::string SourceLocation::getLineColumnExtents() const
+{
+    return std::to_string(firstLine_) + ":" + std::to_string(lastLine_) + ":"
+         + std::to_string(firstColumn_) + ":" + std::to_string(lastColumn_);
+}
+
+// ----------------------------------------------------------------------------
 FileSourceLocation::FileSourceLocation(const std::string& fileName,
         int firstLine, int lastLine, int firstColumn, int lastColumn) :
     SourceLocation(firstLine, lastLine, firstColumn, lastColumn),
