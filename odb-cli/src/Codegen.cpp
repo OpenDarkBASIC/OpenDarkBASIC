@@ -69,7 +69,11 @@ bool output(const std::vector<std::string>& args)
     auto* ast = getAST();
 
     auto program = odb::ir::Program::fromAst(ast, *cmdIndex);
-    odb::ir::generateCode(outputType_, outfile, "input.dba", program, *cmdIndex);
+    if (program)
+    {
+        odb::ir::generateCode(outputType_, outfile, "input.dba", *program, *cmdIndex);
+        return true;
+    }
 
-    return true;
+    return false;
 }

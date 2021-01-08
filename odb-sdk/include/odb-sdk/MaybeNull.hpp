@@ -14,7 +14,6 @@ public:
     bool isNull() const { return ptr_ == nullptr; }
     bool notNull() const { return ptr_ != nullptr; }
 
-
     T* operator->() const {
         assert(ptr_ != nullptr);
         return ptr_;
