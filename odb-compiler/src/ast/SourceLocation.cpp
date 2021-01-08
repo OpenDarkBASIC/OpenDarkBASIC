@@ -43,6 +43,19 @@ int SourceLocation::getLastColumn() const
 }
 
 // ----------------------------------------------------------------------------
+void SourceLocation::join(const SourceLocation* other)
+{
+    if (firstLine_ > other->getFirstLine())
+        firstLine_ = other->getFirstLine();
+    if (lastLine_ < other->getLastLine())
+        lastLine_ = other->getLastLine();
+    if (firstColumn_ > other->getFirstColumn())
+        firstColumn_ = other->getFirstColumn();
+    if (lastColumn_ < other->getLastColumn())
+        lastColumn_ = other->getLastColumn();
+}
+
+// ----------------------------------------------------------------------------
 std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code) const
 {
     auto retError = [this]() -> std::vector<std::string> {

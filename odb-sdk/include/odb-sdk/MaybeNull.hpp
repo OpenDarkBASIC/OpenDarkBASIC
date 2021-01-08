@@ -14,6 +14,10 @@ public:
     bool isNull() const { return ptr_ == nullptr; }
     bool notNull() const { return ptr_ != nullptr; }
 
+    T* get() const {
+        assert(ptr_ != nullptr);
+        return ptr_;
+    }
 
     T* operator->() const {
         assert(ptr_ != nullptr);

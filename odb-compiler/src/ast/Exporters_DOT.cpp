@@ -323,9 +323,8 @@ public:
 private:
     void writeName(const Node* node, const std::string& name)
     {
-        fprintf(fp_, "N%d [label=\"%s\\n%s\"];\n",
-                guids_->get(node), name.c_str(),
-                node->location()->getLineColumnExtents().c_str());
+        fprintf(fp_, "N%d [label=\"%s\"];\n",
+                guids_->get(node), name.c_str());
     }
 
     void visitBlock(const Block* node) override

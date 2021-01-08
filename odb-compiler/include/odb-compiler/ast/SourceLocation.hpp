@@ -23,6 +23,8 @@ public:
     int getFirstColumn() const;
     int getLastColumn() const;
 
+    void join(const SourceLocation* other);
+
 protected:
     std::vector<std::string> getSectionHighlight(std::istream& code) const;
 
