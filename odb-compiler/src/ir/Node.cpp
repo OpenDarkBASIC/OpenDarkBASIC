@@ -1,5 +1,4 @@
 #include "odb-compiler/ir/Node.hpp"
-#include "ASTConverter.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -10,13 +9,39 @@
 namespace odb::ir {
 namespace {
 // TODO: Move this elsewhere.
-template <typename... Args> [[noreturn]] void fatalError(const char* message, Args&&... args)
+template <typename... Args> [[noreturn]] void fatalError(const char* format, Args&&... args)
 {
     fprintf(stderr, "FATAL ERROR: ");
-    fprintf(stderr, message, args...);
+    fprintf(stderr, format, args...);
     std::terminate();
 }
 } // namespace
+
+bool isIntegralType(BuiltinType type)
+{
+    // TODO: Is Boolean an integral type?
+    return type == BuiltinType::DoubleInteger || type == BuiltinType::Integer || type == BuiltinType::Dword ||
+           type == BuiltinType::Word || type == BuiltinType::Byte;
+}
+
+bool isFloatingPointType(BuiltinType type)
+{
+    return type == BuiltinType::DoubleFloat || type == BuiltinType::Float;
+}
+
+const char* convertBuiltinTypeToString(BuiltinType type)
+{
+    switch (type)
+    {
+#define X(dbname, cppname)                                                                                             \
+    case BuiltinType::dbname:                                                                                          \
+        return #dbname;
+        ODB_DATATYPE_LIST
+#undef X
+    default:
+        return "";
+    }
+}
 
 Type::Type() : isVoid_(true), isUDT_(false), voidTag_()
 {
@@ -81,6 +106,22 @@ bool Type::operator!=(const Type& other) const
     return !(*this == other);
 }
 
+std::string Type::toString() const
+{
+    if (isBuiltinType())
+    {
+        return convertBuiltinTypeToString(builtin_);
+    }
+    else if (isUDT())
+    {
+        return "UNIMPLEMENTED UDT TYPE";
+    }
+    else
+    {
+        return "void";
+    }
+}
+
 Node::Node(SourceLocation* location) : location_(location)
 {
 }
@@ -90,14 +131,19 @@ SourceLocation* Node::location() const
     return location_;
 }
 
-Variable::Variable(SourceLocation* location, std::string name, Type type)
-    : Node(location), name_(std::move(name)), type_(type)
+Variable::Variable(SourceLocation* location, std::string name, Annotation annotation, Type type)
+    : Node(location), name_(std::move(name)), annotation_(annotation), type_(type)
 {
 }
 
 const std::string& Variable::name() const
 {
     return name_;
+}
+
+Variable::Annotation Variable::annotation() const
+{
+    return annotation_;
 }
 
 const Type& Variable::type() const
@@ -195,19 +241,19 @@ Expression* BinaryExpression::right() const
     return right_.get();
 }
 
-VarRefExpression::VarRefExpression(SourceLocation* location, const std::string& name, Type type)
-    : Expression(location), name_(name), type_(type)
+VarRefExpression::VarRefExpression(SourceLocation* location, Reference<Variable> variable)
+    : Expression(location), variable_(std::move(variable))
 {
 }
 
 Type VarRefExpression::getType() const
 {
-    return type_;
+    return variable_->type();
 }
 
-const std::string& VarRefExpression::name() const
+const Variable* VarRefExpression::variable() const
 {
-    return name_;
+    return variable_;
 }
 
 Literal::Literal(SourceLocation* location) : Expression(location)
@@ -372,13 +418,41 @@ const StatementBlock& InfiniteLoop::block() const
     return block_;
 }
 
+CreateVar::CreateVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
+                     Ptr<Expression> initialExpression)
+    : Statement(location, containingFunction)
+    , variable_(std::move(variable))
+    , initialExpression_(std::move(initialExpression))
+{
+}
+
+const Variable* CreateVar::variable() const
+{
+    return variable_;
+}
+
+Expression* CreateVar::initialExpression() const
+{
+    return initialExpression_.get();
+}
+
+DestroyVar::DestroyVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable)
+    : Statement(location, containingFunction), variable_(std::move(variable))
+{
+}
+
+const Variable* DestroyVar::variable() const
+{
+    return variable_;
+}
+
 VarAssignment::VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction,
-                             VarRefExpression variable, Ptr<Expression> expression)
+                             Reference<Variable> variable, Ptr<Expression> expression)
     : Statement(location, containingFunction), variable_(std::move(variable)), expression_(std::move(expression))
 {
 }
 
-const VarRefExpression& VarAssignment::variable() const
+const Variable* VarAssignment::variable() const
 {
     return variable_;
 }
@@ -418,13 +492,13 @@ const std::string& Gosub::label() const
     return label_;
 }
 
-IncrementVar::IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
-                           Ptr<Expression> incExpession)
+IncrementVar::IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction,
+                           Reference<Variable> variable, Ptr<Expression> incExpession)
     : Statement(location, containingFunction), variable_(std::move(variable)), incExpession_(std::move(incExpession))
 {
 }
 
-const VarRefExpression& IncrementVar::variable() const
+const Variable* IncrementVar::variable() const
 {
     return variable_;
 }
@@ -434,13 +508,13 @@ Expression* IncrementVar::incExpession() const
     return incExpession_.get();
 }
 
-DecrementVar::DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
-                           Ptr<Expression> decExpession)
+DecrementVar::DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction,
+                           Reference<Variable> variable, Ptr<Expression> decExpession)
     : Statement(location, containingFunction), variable_(std::move(variable)), decExpession_(std::move(decExpession))
 {
 }
 
-const VarRefExpression& DecrementVar::variable() const
+const Variable* DecrementVar::variable() const
 {
     return variable_;
 }
@@ -524,19 +598,14 @@ UDTDefinition::UDTDefinition(SourceLocation* location) : Node(location)
 {
 }
 
-Program::Program(StatementBlock mainStatements, PtrVector<FunctionDefinition> functions)
-    : mainStatements_(std::move(mainStatements)), functions_(std::move(functions))
+Program::Program(Ptr<FunctionDefinition> mainFunction, PtrVector<FunctionDefinition> functions)
+    : mainFunction_(std::move(mainFunction)), functions_(std::move(functions))
 {
 }
 
-std::unique_ptr<Program> Program::fromAst(const ast::Block* root, const cmd::CommandIndex& cmdIndex)
+const FunctionDefinition* Program::mainFunction() const
 {
-    return ASTConverter(cmdIndex).generateProgram(root);
-}
-
-const StatementBlock& Program::mainStatements() const
-{
-    return mainStatements_;
+    return mainFunction_.get();
 }
 
 const PtrVector<FunctionDefinition>& Program::functions() const

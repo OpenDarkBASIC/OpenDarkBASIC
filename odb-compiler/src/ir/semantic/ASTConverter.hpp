@@ -1,11 +1,12 @@
 #pragma once
 
-#include "odb-compiler/ir/Node.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ir/Node.hpp"
 
+#include <array>
 #include <memory>
 
 namespace odb::ir {
@@ -15,13 +16,13 @@ public:
     void push();
     void pop();
 
-    void addVariable(const Variable* variable);
-    const Variable* lookupVariable(const std::string& name) const;
+    void addVariable(Reference<Variable> variable);
+    Reference<Variable> lookupVariable(const std::string& name, Variable::Annotation annotation) const;
 
 private:
     struct Scope
     {
-        std::unordered_map<std::string, const Variable*> variables;
+        std::unordered_map<std::string, std::array<Reference<Variable>, 3>> variables;
     };
 
     std::vector<Scope> stack_;
@@ -47,34 +48,46 @@ private:
 
     bool errorOccurred_;
 
+    FunctionDefinition* currentFunction_;
+
 private:
-    template <typename... T>
-    void semanticError(SourceLocation* location, const char* format, T... args) {
+    template <typename... T> void semanticWarning(SourceLocation* location, const char* format, T... args)
+    {
+        // TODO: Use a consistent logging library.
+        // TODO: Use location properly.
+        (void)location;
+        fprintf(stderr, "SEMANTIC WARNING: ");
+        fprintf(stderr, format, args...);
+    }
+
+    template <typename... T> void semanticError(SourceLocation* location, const char* format, T... args)
+    {
         // TODO: Use a consistent logging library.
         // TODO: Use location properly.
         (void)location;
         fprintf(stderr, "SEMANTIC ERROR: ");
-        fprintf(stderr, message, args...);
+        fprintf(stderr, format, args...);
         errorOccurred_ = true;
     }
 
-    Type getTypeFromSym(ast::AnnotatedSymbol* annotatedSymbol);
+    Type getTypeFromAnnotation(Variable::Annotation annotation);
     Type getTypeFromCommandType(cmd::Command::Type type);
 
-    Ptr<Expression> addCast(Ptr<Expression> expression, Type targetType);
+    Type getBinaryOpCommonType(BinaryOp op, Expression* left, Expression* right);
 
-    VarRefExpression convertVariableRefExpression(const ast::VarRef* varRef);
+    Ptr<Expression> ensureType(Ptr<Expression> expression, Type targetType);
+    Reference<Variable> resolveVariableRef(const ast::VarRef* varRef);
+
     FunctionCallExpression convertCommandCallExpression(SourceLocation* location, const std::string& commandName,
                                                         const MaybeNull<ast::ExpressionList>& astArgs);
     FunctionCallExpression convertFunctionCallExpression(SourceLocation* location, ast::AnnotatedSymbol* symbol,
                                                          const MaybeNull<ast::ExpressionList>& astArgs);
     Ptr<Expression> convertExpression(const ast::Expression* expression);
 
-    std::unique_ptr<Statement> convertStatement(ast::Statement* statement, FunctionDefinition* containingFunction);
-    StatementBlock convertBlock(const MaybeNull<ast::Block>& ast, FunctionDefinition* containingFunction);
-    StatementBlock convertBlock(const std::vector<Reference<ast::Statement>>& ast,
-                                FunctionDefinition* containingFunction);
+    Ptr<Statement> convertStatement(ast::Statement* statement);
+    StatementBlock convertBlock(const MaybeNull<ast::Block>& ast);
+    StatementBlock convertBlock(const std::vector<Reference<ast::Statement>>& ast);
 
     std::unique_ptr<FunctionDefinition> convertFunctionWithoutBody(ast::FuncDecl* funcDecl);
 };
-}
+} // namespace odb::ir

@@ -136,9 +136,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/commands/Command.cpp"
     "src/commands/CommandIndex.cpp"
     "src/commands/CommandMatcher.cpp"
-    "src/ir/ASTConverter.cpp"
+    "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
+    "src/ir/SemanticChecker.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/db/ErrorPrinter.cpp")
 target_include_directories (odb-compiler

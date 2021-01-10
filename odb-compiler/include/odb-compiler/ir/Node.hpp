@@ -42,6 +42,10 @@ enum class BuiltinType
 #undef X
 };
 
+ODBCOMPILER_PUBLIC_API bool isIntegralType(BuiltinType type);
+ODBCOMPILER_PUBLIC_API bool isFloatingPointType(BuiltinType type);
+ODBCOMPILER_PUBLIC_API const char* convertBuiltinTypeToString(BuiltinType type);
+
 // Type trait that maps a C++ type to the corresponding BuiltinType enum.
 template <typename T> struct LiteralType
 {
@@ -71,6 +75,8 @@ public:
     std::optional<UDTDefinition*> getUDT() const;
     std::optional<BuiltinType> getBuiltinType() const;
 
+    std::string toString() const;
+
     bool operator==(const Type& other) const;
     bool operator!=(const Type& other) const;
 
@@ -99,16 +105,24 @@ private:
     Reference<SourceLocation> location_;
 };
 
-class ODBCOMPILER_PUBLIC_API Variable : public Node
+class ODBCOMPILER_PUBLIC_API Variable : public Node, public RefCounted
 {
 public:
-    Variable(SourceLocation* location, std::string name, Type type);
+    enum class Annotation: int {
+        None = 0,
+        String = 1,
+        Float = 2
+    };
+
+    Variable(SourceLocation* location, std::string name, Annotation annotation, Type type);
 
     const std::string& name() const;
+    Annotation annotation() const;
     const Type& type() const;
 
 private:
     std::string name_;
+    Annotation annotation_;
     Type type_;
 };
 
@@ -171,15 +185,14 @@ private:
 class ODBCOMPILER_PUBLIC_API VarRefExpression : public Expression
 {
 public:
-    VarRefExpression(SourceLocation* location, const std::string& name, Type type);
+    VarRefExpression(SourceLocation* location, Reference<Variable> variable);
 
     Type getType() const override;
 
-    const std::string& name() const;
+    const Variable* variable() const;
 
 private:
-    std::string name_;
-    Type type_;
+    Reference<Variable> variable_;
 };
 
 // Base class for any literal value
@@ -364,21 +377,55 @@ private:
     StatementBlock block_;
 };
 
+// Marks the beginning of the lifetime of a variable.
+class ODBCOMPILER_PUBLIC_API CreateVar : public Statement
+{
+public:
+    CreateVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
+                   Ptr<Expression> initialExpression);
+    CreateVar(CreateVar&&) = default;
+    CreateVar(const CreateVar&) = delete;
+    CreateVar& operator=(CreateVar&&) = default;
+    CreateVar& operator=(const CreateVar&) = delete;
+
+    const Variable* variable() const;
+    Expression* initialExpression() const;
+
+private:
+    Reference<Variable> variable_;
+    Ptr<Expression> initialExpression_;
+};
+
+class ODBCOMPILER_PUBLIC_API DestroyVar : public Statement
+{
+public:
+    DestroyVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable);
+    DestroyVar(DestroyVar&&) = default;
+    DestroyVar(const DestroyVar&) = delete;
+    DestroyVar& operator=(DestroyVar&&) = default;
+    DestroyVar& operator=(const DestroyVar&) = delete;
+
+    const Variable* variable() const;
+
+private:
+    Reference<Variable> variable_;
+};
+
 class ODBCOMPILER_PUBLIC_API VarAssignment : public Statement
 {
 public:
-    VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
+    VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
                   Ptr<Expression> expression);
     VarAssignment(VarAssignment&&) = default;
     VarAssignment(const VarAssignment&) = delete;
     VarAssignment& operator=(VarAssignment&&) = default;
     VarAssignment& operator=(const VarAssignment&) = delete;
 
-    const VarRefExpression& variable() const;
+    const Variable* variable() const;
     Expression* expression() const;
 
 private:
-    VarRefExpression variable_;
+    Reference<Variable> variable_;
     Ptr<Expression> expression_;
 };
 
@@ -418,36 +465,36 @@ private:
 class ODBCOMPILER_PUBLIC_API IncrementVar : public Statement
 {
 public:
-    IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
+    IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
                  Ptr<Expression> incExpession);
     IncrementVar(IncrementVar&&) = default;
     IncrementVar(const IncrementVar&) = delete;
     IncrementVar& operator=(IncrementVar&&) = default;
     IncrementVar& operator=(const IncrementVar&) = delete;
 
-    const VarRefExpression& variable() const;
+    const Variable* variable() const;
     Expression* incExpession() const;
 
 private:
-    VarRefExpression variable_;
+    Reference<Variable> variable_;
     Ptr<Expression> incExpession_;
 };
 
 class ODBCOMPILER_PUBLIC_API DecrementVar : public Statement
 {
 public:
-    DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
+    DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
                  Ptr<Expression> decExpession);
     DecrementVar(DecrementVar&&) = default;
     DecrementVar(const DecrementVar&) = delete;
     DecrementVar& operator=(DecrementVar&&) = default;
     DecrementVar& operator=(const DecrementVar&) = delete;
 
-    const VarRefExpression& variable() const;
+    const Variable* variable() const;
     Expression* decExpession() const;
 
 private:
-    VarRefExpression variable_;
+    Reference<Variable> variable_;
     Ptr<Expression> decExpession_;
 };
 
@@ -508,7 +555,7 @@ public:
         std::string name;
     };
 
-    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments,
+    FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments = {},
                        Ptr<Expression> returnExpression = nullptr, StatementBlock statements = {});
     FunctionDefinition(FunctionDefinition&&) = default;
     FunctionDefinition(const FunctionDefinition&) = delete;
@@ -541,7 +588,7 @@ public:
 class ODBCOMPILER_PUBLIC_API Program
 {
 public:
-    Program(StatementBlock mainStatements, PtrVector<FunctionDefinition> functions);
+    Program(Ptr<FunctionDefinition> mainFunction, PtrVector<FunctionDefinition> functions);
 
     static std::unique_ptr<Program> fromAst(const ast::Block* root, const cmd::CommandIndex& cmdIndex);
 
@@ -550,11 +597,11 @@ public:
     Program& operator=(Program&&) = default;
     Program& operator=(const Program&) = delete;
 
-    const StatementBlock& mainStatements() const;
+    const FunctionDefinition* mainFunction() const;
     const PtrVector<FunctionDefinition>& functions() const;
 
 private:
-    StatementBlock mainStatements_;
+    Ptr<FunctionDefinition> mainFunction_;
     PtrVector<FunctionDefinition> functions_;
 };
 } // namespace odb::ir

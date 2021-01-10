@@ -3,6 +3,7 @@
 #include "odb-cli/Commands.hpp"
 #include "odb-compiler/ir/Codegen.hpp"
 #include "odb-compiler/ir/Node.hpp"
+#include "odb-compiler/ir/SemanticChecker.hpp"
 
 #include <fstream>
 
@@ -68,7 +69,7 @@ bool output(const std::vector<std::string>& args)
     auto* cmdIndex = getCommandIndex();
     auto* ast = getAST();
 
-    auto program = odb::ir::Program::fromAst(ast, *cmdIndex);
+    auto program = odb::ir::runSemanticChecks(ast, *cmdIndex);
     if (program)
     {
         odb::ir::generateCode(outputType_, outfile, "input.dba", *program, *cmdIndex);

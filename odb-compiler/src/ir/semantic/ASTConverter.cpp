@@ -49,7 +49,7 @@ template <typename... Args> [[noreturn]] void fatalError(const char* message, Ar
     fprintf(stderr, message, args...);
     std::terminate();
 }
-}
+} // namespace
 
 void ScopeStack::push()
 {
@@ -61,32 +61,33 @@ void ScopeStack::pop()
     stack_.pop_back();
 }
 
-void ScopeStack::addVariable(const Variable* variable)
+void ScopeStack::addVariable(Reference<Variable> variable)
 {
-    stack_.back().variables.emplace(variable->name(), variable);
+    stack_.back().variables[variable->name()][int(variable->annotation())] = std::move(variable);
 }
 
-const Variable* ScopeStack::lookupVariable(const std::string& name) const
+Reference<Variable> ScopeStack::lookupVariable(const std::string& name, Variable::Annotation annotation) const
 {
     auto it = stack_.back().variables.find(name);
-    if (it != stack_.back().variables.end()) {
-        return it->second;
+    if (it != stack_.back().variables.end())
+    {
+        return it->second[int(annotation)];
     }
     return nullptr;
 }
 
-Type ASTConverter::getTypeFromSym(ast::AnnotatedSymbol* annotatedSymbol)
+Type ASTConverter::getTypeFromAnnotation(Variable::Annotation annotation)
 {
-    switch (annotatedSymbol->annotation())
+    switch (annotation)
     {
-    case ast::AnnotatedSymbol::Annotation::NONE:
+    case Variable::Annotation::None:
         return Type{BuiltinType::Integer};
-    case ast::AnnotatedSymbol::Annotation::FLOAT:
-        return Type{BuiltinType::Float};
-    case ast::AnnotatedSymbol::Annotation::STRING:
+    case Variable::Annotation::String:
         return Type{BuiltinType::String};
+    case Variable::Annotation::Float:
+        return Type{BuiltinType::Float};
     default:
-        fatalError("getTypeFromSym encountered unknown type.");
+        fatalError("getTypeFromAnnotation encountered unknown type.");
     }
 }
 
@@ -113,49 +114,91 @@ Type ASTConverter::getTypeFromCommandType(cmd::Command::Type type)
     }
 }
 
-//Type ASTConverter::deriveType(const Expression* expression)
-//{
-//    // TODO: Is deriveType even necessary? I feel this could all be done inside the IR nodes themselves tbh.
-//    if (auto* unaryOp = dynamic_cast<const UnaryExpression*>(expression))
-//    {
-//        return Type{};
-//    }
-//    else if (auto* binaryOp = dynamic_cast<const BinaryExpression*>(expression))
-//    {
-//        return Type{};
-//    }
-//    else if (auto* varRef = dynamic_cast<const VarRefExpression*>(expression))
-//    {
-//        // TODO: Lookup variable, and return its type.
-//        return Type{};
-//    }
-//    else if (auto* literal = dynamic_cast<const Literal*>(expression))
-//    {
-//#define X(dbname, cppname)                                                                                             \
-//    if (auto* ir##dbname##Literal = dynamic_cast<const dbname##Literal*>(literal))                               \
-//    {                                                                                                                  \
-//        return Type{};                  \
-//    }
-//        ODB_DATATYPE_LIST
-//#undef X
-//    }
-//    else if (auto* command = dynamic_cast<const FunctionCallExpression*>(expression))
-//    {
-//        return Type{};
-//    }
-//    fatalError("Unknown expression type");
-//}
-
-VarRefExpression ASTConverter::convertVariableRefExpression(const ast::VarRef* varRef)
+Variable::Annotation getAnnotation(ast::Symbol::Annotation astAnnotation)
 {
-    // TODO: Get real type from when the variable was declared.
-    // TODO: Mark type as "Unknown" here.
-    return VarRefExpression{varRef->location(), varRef->symbol()->name(), getTypeFromSym(varRef->symbol())};
+    switch (astAnnotation)
+    {
+    case ast::Symbol::Annotation::NONE:
+        return Variable::Annotation::None;
+    case ast::Symbol::Annotation::STRING:
+        return Variable::Annotation::String;
+    case ast::Symbol::Annotation::FLOAT:
+        return Variable::Annotation::Float;
+    }
 }
 
-Ptr<Expression> ASTConverter::addCast(Ptr<Expression> expression, Type targetType) {
-    // TODO: This function should attempt to cast the expression to the desired target type.
-    // if that cast would be invalid, then raise a semantic error, set the error flag to true, and return a stub expression.
+Type ASTConverter::getBinaryOpCommonType(BinaryOp op, Expression* left, Expression* right)
+{
+    // TODO: Implement this properly.
+    return left->getType();
+}
+
+Reference<Variable> ASTConverter::resolveVariableRef(const ast::VarRef* varRef)
+{
+    // TODO: Add a current "context", which stores the current function that we're generating. Use that here and in
+    // convertStatement.
+    auto annotation = getAnnotation(varRef->symbol()->annotation());
+    Reference<Variable> variable = scopeStack_.lookupVariable(varRef->symbol()->name(), annotation);
+    if (!variable)
+    {
+        // If the variable doesn't exist, it gets implicitly declared with the annotation type.
+        variable = new Variable(varRef->symbol()->location(), varRef->symbol()->name(), annotation,
+                                getTypeFromAnnotation(annotation));
+        scopeStack_.addVariable(variable);
+    }
+    // Emit create var statement.
+    // TODO
+    //    return std::make_unique<CreateVar>(varRef->location(), outputBlock->))
+    return variable;
+}
+
+Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type targetType)
+{
+    Type expressionType = expression->getType();
+
+    if (expressionType == targetType)
+    {
+        return expression;
+    }
+
+    // Handle builtin type conversions.
+    bool validCast = false;
+    if (expressionType.isBuiltinType() && targetType.isBuiltinType())
+    {
+        // int -> int casts.
+        if (isIntegralType(*expressionType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
+        {
+            validCast = true;
+        }
+
+        // fp -> fp casts.
+        if (isFloatingPointType(*expressionType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
+        {
+            validCast = true;
+        }
+
+        // int -> fp casts.
+        if (isIntegralType(*expressionType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
+        {
+            validCast = true;
+        }
+
+        // fp -> int casts.
+        if (isFloatingPointType(*expressionType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
+        {
+            validCast = true;
+        }
+    }
+
+    if (validCast)
+    {
+        auto* location = expression->location();
+        return std::make_unique<CastExpression>(location, std::move(expression), targetType);
+    }
+
+    // Unhandled cast. Runtime error.
+    semanticError(expression->location(), "Failed to convert %s to %s.", expressionType.toString().c_str(),
+                  targetType.toString().c_str());
     return expression;
 }
 
@@ -252,20 +295,19 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
 
 Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expression)
 {
+    auto* location = expression->location();
     if (auto* unaryOp = dynamic_cast<const ast::UnaryOp*>(expression))
     {
         UnaryOp unaryOpType = [](const ast::Expression* expression) -> UnaryOp
         {
 #define X(op, tok)                                                                                                     \
     if (dynamic_cast<const ast::UnaryOp##op*>(expression))                                                             \
-    {                                                                                                                  \
-        return UnaryOp::op;                                                                                            \
-    }
+        return UnaryOp::op;
             ODB_UNARY_OP_LIST
 #undef X
             fatalError("Unknown unary op.");
         }(expression);
-        return std::make_unique<UnaryExpression>(unaryOp->location(), unaryOpType, convertExpression(unaryOp->expr()));
+        return std::make_unique<UnaryExpression>(location, unaryOpType, convertExpression(unaryOp->expr()));
     }
     else if (auto* binaryOp = dynamic_cast<const ast::BinaryOp*>(expression))
     {
@@ -273,137 +315,154 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
         {
 #define X(op, tok)                                                                                                     \
     if (dynamic_cast<const ast::BinaryOp##op*>(expression))                                                            \
-    {                                                                                                                  \
-        return BinaryOp::op;                                                                                           \
-    }
+        return BinaryOp::op;
             ODB_BINARY_OP_LIST
 #undef X
             fatalError("Unknown binary op.");
         }(expression);
-        return std::make_unique<BinaryExpression>(
-            binaryOp->location(), binaryOpType, convertExpression(binaryOp->lhs()), convertExpression(binaryOp->rhs()));
+        auto lhs = convertExpression(binaryOp->lhs());
+        auto rhs = convertExpression(binaryOp->rhs());
+        auto commonType = getBinaryOpCommonType(binaryOpType, lhs.get(), rhs.get());
+        return std::make_unique<BinaryExpression>(location, binaryOpType, ensureType(std::move(lhs), commonType),
+                                                  ensureType(std::move(rhs), commonType));
     }
     else if (auto* varRef = dynamic_cast<const ast::VarRef*>(expression))
     {
-        // TODO: Look up Variable* from scope.
-        // TODO: Perform semantic checks here.
-        return std::make_unique<VarRefExpression>(convertVariableRefExpression(varRef));
+        return std::make_unique<VarRefExpression>(location, resolveVariableRef(varRef));
     }
     else if (auto* literal = dynamic_cast<const ast::Literal*>(expression))
     {
 #define X(dbname, cppname)                                                                                             \
     if (auto* ast##dbname##Literal = dynamic_cast<const ast::dbname##Literal*>(literal))                               \
-    {                                                                                                                  \
         return std::make_unique<dbname##Literal>(literal->location(), ast##dbname##Literal->value());                  \
-    }
-        ODB_DATATYPE_LIST
+    ODB_DATATYPE_LIST
 #undef X
     }
     else if (auto* command = dynamic_cast<const ast::CommandExprSymbol*>(expression))
     {
-        // TODO: Perform type checking of
+        // TODO: Perform type checking of arguments.
         return std::make_unique<FunctionCallExpression>(
-            convertCommandCallExpression(command->location(), command->command(), command->args()));
+            convertCommandCallExpression(location, command->command(), command->args()));
     }
     else if (auto* funcCall = dynamic_cast<const ast::FuncCallExpr*>(expression))
     {
         return std::make_unique<FunctionCallExpression>(
-            convertFunctionCallExpression(funcCall->location(), funcCall->symbol(), funcCall->args()));
+            convertFunctionCallExpression(location, funcCall->symbol(), funcCall->args()));
     }
     fatalError("Unknown expression type");
 }
 
-Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, FunctionDefinition* containingFunction)
+Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
 {
-    // TODO: Add semantic checks to all of these.
-    // TODO: Drop the word "Statement" from these classes.
-    if (auto* assignmentSt = dynamic_cast<ast::VarAssignment*>(statement))
-    {
-        return std::make_unique<VarAssignment>(
-            statement->location(), containingFunction,
-            VarRefExpression{assignmentSt->variable()->location(), assignmentSt->variable()->symbol()->name(),
-                               getTypeFromSym(assignmentSt->variable()->symbol())},
-            convertExpression(assignmentSt->expression()));
-    }
-    else if (auto* conditionalSt = dynamic_cast<ast::Conditional*>(statement))
-    {
-        return std::make_unique<Conditional>(statement->location(), containingFunction,
-                                                      convertExpression(conditionalSt->condition()),
-                                                      convertBlock(conditionalSt->trueBranch(), containingFunction),
-                                                      convertBlock(conditionalSt->falseBranch(), containingFunction));
-    }
-    else if (auto* subReturnSt = dynamic_cast<ast::SubReturn*>(statement))
-    {
-        // TODO: Find original label.
-        return std::make_unique<SubReturn>(statement->location(), containingFunction);
-    }
-    else if (auto* funcExitSt = dynamic_cast<ast::FuncExit*>(statement))
-    {
-        return std::make_unique<ExitFunction>(statement->location(), containingFunction,
-                                                       convertExpression(funcExitSt->returnValue()));
-    }
-    else if (auto* whileLoopStatement = dynamic_cast<ast::WhileLoop*>(statement))
-    {
-        return std::make_unique<WhileLoop>(statement->location(), containingFunction,
-                                                convertExpression(whileLoopStatement->continueCondition()),
-                                                convertBlock(whileLoopStatement->body(), containingFunction));
-    }
-    else if (auto* untilLoopStatement = dynamic_cast<ast::UntilLoop*>(statement))
-    {
-        return std::make_unique<UntilLoop>(statement->location(), containingFunction,
-                                                      convertExpression(untilLoopStatement->exitCondition()),
-                                                      convertBlock(untilLoopStatement->body(), containingFunction));
-    }
-    else if (auto* infiniteLoopStatement = dynamic_cast<ast::InfiniteLoop*>(statement))
-    {
-        return std::make_unique<InfiniteLoop>(statement->location(), containingFunction,
-                                                 convertBlock(infiniteLoopStatement->body(), containingFunction));
-    }
-    else if (auto* breakStatement = dynamic_cast<ast::Break*>(statement))
-    {
-        return std::make_unique<Break>(statement->location(), containingFunction);
-    }
-    else if (auto* constDeclStatement = dynamic_cast<ast::ConstDecl*>(statement))
+    auto* location = statement->location();
+    if (auto* constDeclStatement = dynamic_cast<ast::ConstDecl*>(statement))
     {
         // TODO
         return nullptr;
     }
+    else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
+    {
+        // Get var ref and type.
+        Type varType;
+#define X(dbname, cppname)                                                                                             \
+    if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))                                            \
+        varType = Type{BuiltinType::dbname};
+        ODB_DATATYPE_LIST
+#undef X
+        // TODO: Implement UDTs.
+
+        // If we're declaring a new variable, it must not exist already.
+        auto annotation = getAnnotation(varDeclSt->symbol()->annotation());
+        Reference<Variable> variable = scopeStack_.lookupVariable(varDeclSt->symbol()->name(), annotation);
+        if (variable)
+        {
+            semanticError(varDeclSt->symbol()->location(), "Variable %s has already been declared as type %s.",
+                          varDeclSt->symbol()->name().c_str(), variable->type().toString().c_str());
+            semanticError(variable->location(), "See last declaration.");
+            return nullptr;
+        }
+
+        // Declare new variable.
+        variable = new Variable(varDeclSt->symbol()->location(), varDeclSt->symbol()->name(), annotation, varType);
+        scopeStack_.addVariable(variable);
+
+        return std::make_unique<CreateVar>(location, currentFunction_, variable,
+                                           ensureType(convertExpression(varDeclSt->initialValue()), varType));
+    }
+    else if (auto* assignmentSt = dynamic_cast<ast::VarAssignment*>(statement))
+    {
+        auto variable = resolveVariableRef(assignmentSt->variable());
+        auto expression = ensureType(convertExpression(assignmentSt->expression()), variable->type());
+        return std::make_unique<VarAssignment>(location, currentFunction_, std::move(variable), std::move(expression));
+    }
+    else if (auto* conditionalSt = dynamic_cast<ast::Conditional*>(statement))
+    {
+        return std::make_unique<Conditional>(
+            location, currentFunction_,
+            ensureType(convertExpression(conditionalSt->condition()), Type{BuiltinType::Boolean}),
+            convertBlock(conditionalSt->trueBranch()), convertBlock(conditionalSt->falseBranch()));
+    }
+    else if (auto* subReturnSt = dynamic_cast<ast::SubReturn*>(statement))
+    {
+        // TODO: Find original label.
+        return std::make_unique<SubReturn>(location, currentFunction_);
+    }
+    else if (auto* funcExitSt = dynamic_cast<ast::FuncExit*>(statement))
+    {
+        return std::make_unique<ExitFunction>(location, currentFunction_, convertExpression(funcExitSt->returnValue()));
+    }
+    else if (auto* whileLoopSt = dynamic_cast<ast::WhileLoop*>(statement))
+    {
+        return std::make_unique<WhileLoop>(location, currentFunction_,
+                                           convertExpression(whileLoopSt->continueCondition()),
+                                           convertBlock(whileLoopSt->body()));
+    }
+    else if (auto* untilLoopSt = dynamic_cast<ast::UntilLoop*>(statement))
+    {
+        return std::make_unique<UntilLoop>(location, currentFunction_,
+                                           convertExpression(untilLoopSt->exitCondition()),
+                                           convertBlock(untilLoopSt->body()));
+    }
+    else if (auto* infiniteLoopSt = dynamic_cast<ast::InfiniteLoop*>(statement))
+    {
+        return std::make_unique<InfiniteLoop>(location, currentFunction_, convertBlock(infiniteLoopSt->body()));
+    }
+    else if (auto* breakSt = dynamic_cast<ast::Break*>(statement))
+    {
+        return std::make_unique<Break>(location, currentFunction_);
+    }
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {
-        return std::make_unique<Label>(statement->location(), containingFunction, labelSt->symbol()->name());
+        return std::make_unique<Label>(location, currentFunction_, labelSt->symbol()->name());
     }
     else if (auto* incVarSt = dynamic_cast<ast::IncrementVar*>(statement))
     {
-        return std::make_unique<IncrementVar>(statement->location(), containingFunction,
-                                              convertVariableRefExpression(incVarSt->variable()),
+        return std::make_unique<IncrementVar>(location, currentFunction_, resolveVariableRef(incVarSt->variable()),
                                               convertExpression(incVarSt->expression()));
     }
     else if (auto* decVarSt = dynamic_cast<ast::DecrementVar*>(statement))
     {
-        return std::make_unique<DecrementVar>(statement->location(), containingFunction,
-                                              convertVariableRefExpression(decVarSt->variable()),
+        return std::make_unique<DecrementVar>(location, currentFunction_, resolveVariableRef(decVarSt->variable()),
                                               convertExpression(decVarSt->expression()));
     }
     else if (auto* funcCallSt = dynamic_cast<ast::FuncCallStmnt*>(statement))
     {
         return std::make_unique<FunctionCall>(
-            statement->location(), containingFunction,
+            location, currentFunction_,
             convertFunctionCallExpression(funcCallSt->location(), funcCallSt->symbol(), funcCallSt->args()));
     }
     else if (auto* gotoSt = dynamic_cast<ast::GotoSymbol*>(statement))
     {
-        return std::make_unique<Goto>(statement->location(), containingFunction,
-                                               gotoSt->labelSymbol()->name());
+        return std::make_unique<Goto>(location, currentFunction_, gotoSt->labelSymbol()->name());
     }
     else if (auto* subCallSt = dynamic_cast<ast::SubCallSymbol*>(statement))
     {
-        return std::make_unique<Gosub>(statement->location(), containingFunction,
-                                                subCallSt->labelSymbol()->name());
+        return std::make_unique<Gosub>(location, currentFunction_, subCallSt->labelSymbol()->name());
     }
     else if (auto* commandSt = dynamic_cast<ast::CommandStmntSymbol*>(statement))
     {
         return std::make_unique<FunctionCall>(
-            statement->location(), containingFunction,
+            location, currentFunction_,
             convertCommandCallExpression(commandSt->location(), commandSt->command(), commandSt->args()));
     }
     else
@@ -412,26 +471,25 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Functio
     }
 }
 
-StatementBlock ASTConverter::convertBlock(const MaybeNull<ast::Block>& ast, FunctionDefinition* containingFunction)
+StatementBlock ASTConverter::convertBlock(const MaybeNull<ast::Block>& ast)
 {
     StatementBlock block;
     if (ast.notNull())
     {
         for (ast::Statement* node : ast->statements())
         {
-            block.emplace_back(convertStatement(node, containingFunction));
+            block.emplace_back(convertStatement(node));
         }
     }
     return block;
 }
 
-StatementBlock ASTConverter::convertBlock(const std::vector<Reference<ast::Statement>>& ast,
-                                          FunctionDefinition* containingFunction)
+StatementBlock ASTConverter::convertBlock(const std::vector<Reference<ast::Statement>>& ast)
 {
     StatementBlock block;
     for (ast::Statement* node : ast)
     {
-        block.emplace_back(convertStatement(node, containingFunction));
+        block.emplace_back(convertStatement(node));
     }
     return block;
 }
@@ -448,7 +506,7 @@ std::unique_ptr<FunctionDefinition> ASTConverter::convertFunctionWithoutBody(ast
             assert(varRef);
             FunctionDefinition::Argument arg;
             arg.name = varRef->symbol()->name();
-            arg.type = getTypeFromSym(varRef->symbol());
+            arg.type = getTypeFromAnnotation(getAnnotation(varRef->symbol()->annotation()));
             args.emplace_back(arg);
         }
     }
@@ -495,20 +553,24 @@ std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
     }
 
     // Generate functions bodies.
-    PtrVector<Statement> mainStatements = convertBlock(astMainStatements, nullptr);
+    Ptr<FunctionDefinition> mainFunction =
+        std::make_unique<FunctionDefinition>(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "");
+    currentFunction_ = mainFunction.get();
+    mainFunction->appendStatements(convertBlock(astMainStatements));
     for (auto& [_, funcDetails] : functionMap_)
     {
-        funcDetails.functionDefinition->appendStatements(
-            convertBlock(funcDetails.ast->body()->statements(), funcDetails.functionDefinition));
+        currentFunction_ = funcDetails.functionDefinition;
+        funcDetails.functionDefinition->appendStatements(convertBlock(funcDetails.ast->body()->statements()));
         if (funcDetails.ast->returnValue().notNull())
         {
             funcDetails.functionDefinition->setReturnExpression(convertExpression(funcDetails.ast->returnValue()));
         }
     }
 
-    if (errorOccurred_) {
+    if (errorOccurred_)
+    {
         return nullptr;
     }
-    return std::make_unique<Program>(std::move(mainStatements), std::move(functionDefinitions));
+    return std::make_unique<Program>(std::move(mainFunction), std::move(functionDefinitions));
 }
 } // namespace odb::ir
