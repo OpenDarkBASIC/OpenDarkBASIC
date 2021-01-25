@@ -69,9 +69,13 @@ set (CMAKE_INSTALL_ODBSDK_INCLUDEDIR "${CMAKE_INSTALL_ODBSDKDIR}/include")
 set (INSTALL_GTEST OFF CACHE BOOL "")
 
 if (WIN32)
-    # Disable warning class 'foo' needs to have dll-interface to be used by clients of class 'bar'. We will get linker
-    # errors if this turns out to be a real problem.
-    add_compile_options(/wd4251)
+    add_compile_options(
+        # Disable warning class 'foo' needs to have dll-interface to be used by clients of class 'bar'. We will get linker
+        # errors if this turns out to be a real problem.
+        /wd4251
+        # Disable 'std::iterator class template is deprecated in C++17' warning triggered by LLVM.
+        /wd4996
+    )
     # Disable 'This function or variable may be unsafe. Consider using * instead.'
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
 endif ()
