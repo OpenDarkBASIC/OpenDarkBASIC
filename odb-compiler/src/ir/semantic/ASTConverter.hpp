@@ -10,24 +10,6 @@
 #include <memory>
 
 namespace odb::ir {
-class ScopeStack
-{
-public:
-    void push();
-    void pop();
-
-    void addVariable(Reference<Variable> variable);
-    Reference<Variable> lookupVariable(const std::string& name, Variable::Annotation annotation) const;
-
-private:
-    struct Scope
-    {
-        std::unordered_map<std::string, std::array<Reference<Variable>, 3>> variables;
-    };
-
-    std::vector<Scope> stack_;
-};
-
 class ASTConverter
 {
 public:
@@ -44,7 +26,6 @@ public:
 private:
     const cmd::CommandIndex& cmdIndex_;
     std::unordered_map<std::string, Function> functionMap_;
-    ScopeStack scopeStack_;
 
     bool errorOccurred_;
 
@@ -75,6 +56,7 @@ private:
 
     Type getBinaryOpCommonType(BinaryOp op, Expression* left, Expression* right);
 
+    bool isTypeConvertible(Type sourceType, Type targetType) const;
     Ptr<Expression> ensureType(Ptr<Expression> expression, Type targetType);
     Reference<Variable> resolveVariableRef(const ast::VarRef* varRef);
 

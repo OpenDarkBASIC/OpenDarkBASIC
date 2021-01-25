@@ -18,7 +18,6 @@ public:
     VarDecl(SourceLocation* location);
     virtual void setInitialValue(Expression* expression) = 0;
     virtual ScopedAnnotatedSymbol* symbol() const = 0;
-    virtual Expression* initialValue() const = 0;
 };
 
 template <typename T>
@@ -31,7 +30,7 @@ public:
     void setInitialValue(Expression* expression) override;
 
     ScopedAnnotatedSymbol* symbol() const override;
-    Expression* initialValue() const override;
+    Expression* initialValue() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -55,7 +54,7 @@ public:
 
     void setInitialValue(Expression* expression) override;
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedAnnotatedSymbol* symbol() const override;
     Symbol* udtSymbol() const;
 
     void accept(Visitor* visitor) override;
@@ -75,7 +74,7 @@ public:
 
     void setInitialValue(Expression* expression) override;
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedAnnotatedSymbol* symbol() const override;
     UDTRef* udt() const;
 
     void accept(Visitor* visitor) override;

@@ -51,31 +51,6 @@ template <typename... Args> [[noreturn]] void fatalError(const char* message, Ar
 }
 } // namespace
 
-void ScopeStack::push()
-{
-    stack_.emplace_back();
-}
-
-void ScopeStack::pop()
-{
-    stack_.pop_back();
-}
-
-void ScopeStack::addVariable(Reference<Variable> variable)
-{
-    stack_.back().variables[variable->name()][int(variable->annotation())] = std::move(variable);
-}
-
-Reference<Variable> ScopeStack::lookupVariable(const std::string& name, Variable::Annotation annotation) const
-{
-    auto it = stack_.back().variables.find(name);
-    if (it != stack_.back().variables.end())
-    {
-        return it->second[int(annotation)];
-    }
-    return nullptr;
-}
-
 Type ASTConverter::getTypeFromAnnotation(Variable::Annotation annotation)
 {
     switch (annotation)
@@ -135,21 +110,51 @@ Type ASTConverter::getBinaryOpCommonType(BinaryOp op, Expression* left, Expressi
 
 Reference<Variable> ASTConverter::resolveVariableRef(const ast::VarRef* varRef)
 {
-    // TODO: Add a current "context", which stores the current function that we're generating. Use that here and in
-    // convertStatement.
     auto annotation = getAnnotation(varRef->symbol()->annotation());
-    Reference<Variable> variable = scopeStack_.lookupVariable(varRef->symbol()->name(), annotation);
+    // TODO: This should take arguments into account as well.
+    Reference<Variable> variable = currentFunction_->variables().lookup(varRef->symbol()->name(), annotation);
     if (!variable)
     {
         // If the variable doesn't exist, it gets implicitly declared with the annotation type.
         variable = new Variable(varRef->symbol()->location(), varRef->symbol()->name(), annotation,
                                 getTypeFromAnnotation(annotation));
-        scopeStack_.addVariable(variable);
+        currentFunction_->variables().add(variable);
     }
-    // Emit create var statement.
-    // TODO
-    //    return std::make_unique<CreateVar>(varRef->location(), outputBlock->))
     return variable;
+}
+
+bool ASTConverter::isTypeConvertible(Type sourceType, Type targetType) const
+{
+    if (sourceType == targetType) {
+        return true;
+    }
+    if (sourceType.isBuiltinType() && targetType.isBuiltinType())
+    {
+        // int -> int casts.
+        if (isIntegralType(*sourceType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // fp -> fp casts.
+        if (isFloatingPointType(*sourceType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // int -> fp casts.
+        if (isIntegralType(*sourceType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // fp -> int casts.
+        if (isFloatingPointType(*sourceType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type targetType)
@@ -162,35 +167,7 @@ Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type target
     }
 
     // Handle builtin type conversions.
-    bool validCast = false;
-    if (expressionType.isBuiltinType() && targetType.isBuiltinType())
-    {
-        // int -> int casts.
-        if (isIntegralType(*expressionType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
-        {
-            validCast = true;
-        }
-
-        // fp -> fp casts.
-        if (isFloatingPointType(*expressionType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
-        {
-            validCast = true;
-        }
-
-        // int -> fp casts.
-        if (isIntegralType(*expressionType.getBuiltinType()) && isFloatingPointType(*targetType.getBuiltinType()))
-        {
-            validCast = true;
-        }
-
-        // fp -> int casts.
-        if (isFloatingPointType(*expressionType.getBuiltinType()) && isIntegralType(*targetType.getBuiltinType()))
-        {
-            validCast = true;
-        }
-    }
-
-    if (validCast)
+    if (isTypeConvertible(expressionType, targetType))
     {
         auto* location = expression->location();
         return std::make_unique<CastExpression>(location, std::move(expression), targetType);
@@ -227,37 +204,87 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
                                         [&](const Reference<cmd::Command>& candidate)
                                         { return candidate->args().size() != args.size(); }),
                          candidates.end());
+
+        // Remove candidates where arguments can not be converted.
+        auto convertArgumentsNotPossiblePrecondition = [&](const Reference<cmd::Command>& candidate) -> bool
+        {
+            for (std::size_t i = 0; i < candidate->args().size(); ++i)
+            {
+                auto candidateArgCommandType = candidate->args()[i].type;
+                if (candidateArgCommandType == cmd::Command::Type{'X'} ||
+                    candidateArgCommandType == cmd::Command::Type{'A'})
+                {
+                    return true;
+                }
+                if (!isTypeConvertible(args[i]->getType(), getTypeFromCommandType(candidateArgCommandType)))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+        candidates.erase(std::remove_if(candidates.begin(), candidates.end(), convertArgumentsNotPossiblePrecondition),
+                         candidates.end());
+
         if (candidates.empty())
         {
             fatalError("Unable to find matching overload for keyword %s.", commandName.c_str());
         }
 
-        // Sort candidates in ascending order by number of matching arguments. The candidate at
-        // the end of the sorted list is the best match.
-        std::sort(candidates.begin(), candidates.end(),
-                  [&](const Reference<cmd::Command>& candidateA, const Reference<cmd::Command>& candidateB) -> bool
-                  {
-                      auto countMatchingArgs = [&](const Reference<cmd::Command>& overload) -> int
-                      {
-                          int matchingArgs = 0;
-                          for (std::size_t i = 0; i < overload->args().size(); ++i)
-                          {
-                              if (overload->args()[i].type == cmd::Command::Type{88} ||
-                                  overload->args()[i].type == cmd::Command::Type{65})
-                              {
-                                  continue;
-                              }
-                              if (getTypeFromCommandType(overload->args()[i].type) == args[i]->getType())
-                              {
-                                  matchingArgs++;
-                              }
-                          }
-                          return matchingArgs;
-                      };
-                      return countMatchingArgs(candidateA) < countMatchingArgs(candidateB);
-                  });
-
+        // Sort candidates in ascending order by how suitable they are. The candidate at the end of the sorted list is
+        // the best match.
+        auto candidateRankFunction = [&](const Reference<cmd::Command>& candidateA,
+                                         const Reference<cmd::Command>& candidateB) -> bool
+        {
+            // The candidate scoring function generates a score for a particular overload.
+            // The goal should be that the best matching function should have the highest score.
+            // The algorithm works as follows:
+            // * Each argument contributes to the score. Various attributes add a certain score:
+            //   * Exact match: +10
+            //   * Same "archetype" (i.e. integers, floats): +1
+            //
+            // The result should be: We should prefer the overload with exactly the same argument. If it's not
+            // exactly the same, then we should prefer the one with the same archetype. This means, if we have
+            // a function "foo" with a int32 and double overload, and we call it with an int64 parameter,
+            // the int32 overload should be preferred over the double. However, if we call it with a float
+            // parameter, the double overload should be preferred.
+            auto scoreCandidate = [&](const Reference<cmd::Command>& overload) -> int
+            {
+                int score = 0;
+                for (std::size_t i = 0; i < overload->args().size(); ++i)
+                {
+                    auto overloadType = getTypeFromCommandType(overload->args()[i].type);
+                    auto argType = args[i]->getType();
+                    if (overloadType == argType)
+                    {
+                        score += 10;
+                    }
+                    else if (overloadType.isBuiltinType() && argType.isBuiltinType())
+                    {
+                        if (isIntegralType(*overloadType.getBuiltinType()) && isIntegralType(*argType.getBuiltinType()))
+                        {
+                            score += 1;
+                        }
+                        if (isFloatingPointType(*overloadType.getBuiltinType()) &&
+                            isFloatingPointType(*argType.getBuiltinType()))
+                        {
+                            score += 1;
+                        }
+                    }
+                }
+                return score;
+            };
+            return scoreCandidate(candidateA) < scoreCandidate(candidateB);
+        };
+        std::sort(candidates.begin(), candidates.end(), candidateRankFunction);
         command = candidates.back();
+    }
+
+    // Now we have selected an overload, we may need to insert cast operations when passing arguments (in case the
+    // overload is not perfect). Do that now.
+    for (std::size_t i = 0; i < args.size(); ++i)
+    {
+        args[i] = ensureType(std::move(args[i]), getTypeFromCommandType(command->args()[i].type));
     }
 
     return FunctionCallExpression{location, command, std::move(args), getTypeFromCommandType(command->returnType())};
@@ -272,22 +299,40 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     auto functionEntry = functionMap_.find(functionName);
     if (functionEntry == functionMap_.end())
     {
-        fatalError("Function %s is not defined.", functionName);
+        semanticError(location, "Function %s is not defined.", functionName.c_str());
+        std::terminate();
+    }
+    auto* functionDefinition = functionEntry->second.functionDefinition;
+
+    // Verify argument list.
+    if (!functionDefinition->arguments().empty() && astArgs.isNull())
+    {
+        semanticError(location, "Function '%s' requires %d arguments, but 0 were provided.", functionName.c_str(),
+                      functionDefinition->arguments().size());
+        std::terminate();
+    }
+    if (functionDefinition->arguments().size() != astArgs->expressions().size())
+    {
+        semanticError(location, "Function '%s' requires %d arguments, but 0 were provided.", functionName.c_str(),
+                      functionDefinition->arguments().size(), astArgs->expressions().size());
+        std::terminate();
     }
 
     PtrVector<Expression> args;
     if (astArgs.notNull())
     {
-        for (ast::Expression* argExpr : astArgs->expressions())
+        const auto& functionDefArgs = functionDefinition->arguments();
+        const auto& providedArgs = astArgs->expressions();
+        for (int i = 0; i < providedArgs.size(); ++i)
         {
-            args.emplace_back(convertExpression(argExpr));
+            args.emplace_back(ensureType(convertExpression(providedArgs[i]), functionDefArgs[i].type));
         }
     }
 
     Type returnType;
-    if (functionEntry->second.functionDefinition->returnExpression())
+    if (functionDefinition->returnExpression())
     {
-        returnType = functionEntry->second.functionDefinition->returnExpression()->getType();
+        returnType = functionDefinition->returnExpression()->getType();
     }
 
     return FunctionCallExpression{location, functionEntry->second.functionDefinition, std::move(args), returnType};
@@ -334,8 +379,8 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     {
 #define X(dbname, cppname)                                                                                             \
     if (auto* ast##dbname##Literal = dynamic_cast<const ast::dbname##Literal*>(literal))                               \
-        return std::make_unique<dbname##Literal>(literal->location(), ast##dbname##Literal->value());                  \
-    ODB_DATATYPE_LIST
+        return std::make_unique<dbname##Literal>(literal->location(), ast##dbname##Literal->value());
+        ODB_DATATYPE_LIST
 #undef X
     }
     else if (auto* command = dynamic_cast<const ast::CommandExprSymbol*>(expression))
@@ -357,23 +402,26 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     auto* location = statement->location();
     if (auto* constDeclStatement = dynamic_cast<ast::ConstDecl*>(statement))
     {
-        // TODO
-        return nullptr;
+        fatalError("Unimplemented ast::ConstDecl");
     }
     else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
     {
         // Get var ref and type.
         Type varType;
+        ast::Expression* initialValue = nullptr;
 #define X(dbname, cppname)                                                                                             \
     if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))                                            \
-        varType = Type{BuiltinType::dbname};
+    {                                                                                                                  \
+        varType = Type{BuiltinType::dbname};                                                                           \
+        initialValue = dbname##Ref->initialValue();                                                                    \
+    }
         ODB_DATATYPE_LIST
 #undef X
         // TODO: Implement UDTs.
 
         // If we're declaring a new variable, it must not exist already.
         auto annotation = getAnnotation(varDeclSt->symbol()->annotation());
-        Reference<Variable> variable = scopeStack_.lookupVariable(varDeclSt->symbol()->name(), annotation);
+        Reference<Variable> variable = currentFunction_->variables().lookup(varDeclSt->symbol()->name(), annotation);
         if (variable)
         {
             semanticError(varDeclSt->symbol()->location(), "Variable %s has already been declared as type %s.",
@@ -384,10 +432,10 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
 
         // Declare new variable.
         variable = new Variable(varDeclSt->symbol()->location(), varDeclSt->symbol()->name(), annotation, varType);
-        scopeStack_.addVariable(variable);
+        currentFunction_->variables().add(variable);
 
-        return std::make_unique<CreateVar>(location, currentFunction_, variable,
-                                           ensureType(convertExpression(varDeclSt->initialValue()), varType));
+        return std::make_unique<VarAssignment>(location, currentFunction_, variable,
+                                               ensureType(convertExpression(initialValue), varType));
     }
     else if (auto* assignmentSt = dynamic_cast<ast::VarAssignment*>(statement))
     {
@@ -419,8 +467,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     }
     else if (auto* untilLoopSt = dynamic_cast<ast::UntilLoop*>(statement))
     {
-        return std::make_unique<UntilLoop>(location, currentFunction_,
-                                           convertExpression(untilLoopSt->exitCondition()),
+        return std::make_unique<UntilLoop>(location, currentFunction_, convertExpression(untilLoopSt->exitCondition()),
                                            convertBlock(untilLoopSt->body()));
     }
     else if (auto* infiniteLoopSt = dynamic_cast<ast::InfiniteLoop*>(statement))
@@ -553,10 +600,9 @@ std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
     }
 
     // Generate functions bodies.
-    Ptr<FunctionDefinition> mainFunction =
-        std::make_unique<FunctionDefinition>(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "");
-    currentFunction_ = mainFunction.get();
-    mainFunction->appendStatements(convertBlock(astMainStatements));
+    FunctionDefinition mainFunction(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "__DBMain");
+    currentFunction_ = &mainFunction;
+    mainFunction.appendStatements(convertBlock(astMainStatements));
     for (auto& [_, funcDetails] : functionMap_)
     {
         currentFunction_ = funcDetails.functionDefinition;

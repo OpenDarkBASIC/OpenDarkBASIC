@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace odb {
 namespace cmd {
@@ -70,8 +71,10 @@ bool CommandIndex::findConflicts() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<Reference<Command>> CommandIndex::lookup(const std::string& commandName) const
+std::vector<Reference<Command>> CommandIndex::lookup(std::string commandName) const
 {
+    std::transform(commandName.begin(), commandName.end(), commandName.begin(),
+                   [](char c) { return std::tolower(c); });
     std::vector<Reference<Command>> matches;
     auto overloadIteratorRange = commandLookupTable_.equal_range(commandName);
     for (auto match = overloadIteratorRange.first; match != overloadIteratorRange.second; ++match) {
@@ -97,13 +100,13 @@ std::vector<std::string> CommandIndex::commandNamesAsList() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> CommandIndex::librariesAsList() const
+std::vector<DynamicLibrary*> CommandIndex::librariesAsList() const
 {
-    std::vector<std::string> list;
-    list.reserve(commands_.size());
+    std::unordered_set<DynamicLibrary*> librarySet;
+    librarySet.reserve(commands_.size());
     for (const auto& cmd : commands_)
-        list.push_back(cmd->library()->getFilename());
-    return list;
+        librarySet.emplace(cmd->library());
+    return std::vector<DynamicLibrary*>(librarySet.begin(), librarySet.end());
 }
 
 }

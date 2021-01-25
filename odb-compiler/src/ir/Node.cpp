@@ -19,9 +19,8 @@ template <typename... Args> [[noreturn]] void fatalError(const char* format, Arg
 
 bool isIntegralType(BuiltinType type)
 {
-    // TODO: Is Boolean an integral type?
     return type == BuiltinType::DoubleInteger || type == BuiltinType::Integer || type == BuiltinType::Dword ||
-           type == BuiltinType::Word || type == BuiltinType::Byte;
+           type == BuiltinType::Word || type == BuiltinType::Byte || type == BuiltinType::Boolean;
 }
 
 bool isFloatingPointType(BuiltinType type)
@@ -554,6 +553,28 @@ Expression* ExitFunction::expression() const
     return expression_.get();
 }
 
+void FunctionDefinition::VariableScope::add(Reference<Variable> variable)
+{
+    variables_as_list_.emplace_back(variable.get());
+    variables_[variable->name()][int(variable->annotation())] = std::move(variable);
+}
+
+Reference<Variable> FunctionDefinition::VariableScope::lookup(const std::string& name,
+                                                              Variable::Annotation annotation) const
+{
+    auto it = variables_.find(name);
+    if (it != variables_.end())
+    {
+        return it->second[int(annotation)];
+    }
+    return nullptr;
+}
+
+const std::vector<Variable*>& FunctionDefinition::VariableScope::list() const
+{
+    return variables_as_list_;
+}
+
 FunctionDefinition::FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments,
                                        Ptr<Expression> returnExpression, StatementBlock statements)
     : Node(location)
@@ -594,18 +615,28 @@ void FunctionDefinition::appendStatements(StatementBlock block)
     std::move(block.begin(), block.end(), std::back_inserter(statements_));
 }
 
+FunctionDefinition::VariableScope& FunctionDefinition::variables()
+{
+    return variables_;
+}
+
+const FunctionDefinition::VariableScope& FunctionDefinition::variables() const
+{
+    return variables_;
+}
+
 UDTDefinition::UDTDefinition(SourceLocation* location) : Node(location)
 {
 }
 
-Program::Program(Ptr<FunctionDefinition> mainFunction, PtrVector<FunctionDefinition> functions)
+Program::Program(FunctionDefinition mainFunction, PtrVector<FunctionDefinition> functions)
     : mainFunction_(std::move(mainFunction)), functions_(std::move(functions))
 {
 }
 
-const FunctionDefinition* Program::mainFunction() const
+const FunctionDefinition& Program::mainFunction() const
 {
-    return mainFunction_.get();
+    return mainFunction_;
 }
 
 const PtrVector<FunctionDefinition>& Program::functions() const

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <unordered_map>
@@ -10,6 +11,7 @@
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-sdk/Reference.hpp"
 
 namespace odb::ir {
 enum class UnaryOp
@@ -108,7 +110,8 @@ private:
 class ODBCOMPILER_PUBLIC_API Variable : public Node, public RefCounted
 {
 public:
-    enum class Annotation: int {
+    enum class Annotation : int
+    {
         None = 0,
         String = 1,
         Float = 2
@@ -382,7 +385,7 @@ class ODBCOMPILER_PUBLIC_API CreateVar : public Statement
 {
 public:
     CreateVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-                   Ptr<Expression> initialExpression);
+              Ptr<Expression> initialExpression);
     CreateVar(CreateVar&&) = default;
     CreateVar(const CreateVar&) = delete;
     CreateVar& operator=(CreateVar&&) = default;
@@ -555,6 +558,19 @@ public:
         std::string name;
     };
 
+    class VariableScope
+    {
+    public:
+        void add(Reference<Variable> variable);
+        Reference<Variable> lookup(const std::string& name, Variable::Annotation annotation) const;
+
+        const std::vector<Variable*>& list() const;
+
+    private:
+        std::unordered_map<std::string, std::array<Reference<Variable>, 3>> variables_;
+        std::vector<Variable*> variables_as_list_;
+    };
+
     FunctionDefinition(SourceLocation* location, std::string name, std::vector<Argument> arguments = {},
                        Ptr<Expression> returnExpression = nullptr, StatementBlock statements = {});
     FunctionDefinition(FunctionDefinition&&) = default;
@@ -570,11 +586,15 @@ public:
     void setReturnExpression(Ptr<Expression> returnExpression);
     void appendStatements(StatementBlock block);
 
+    VariableScope& variables();
+    const VariableScope& variables() const;
+
 private:
     std::string name_;
     std::vector<Argument> arguments_;
     Ptr<Expression> returnExpression_;
     StatementBlock statements_;
+    VariableScope variables_;
 
     friend class Program;
 };
@@ -588,7 +608,7 @@ public:
 class ODBCOMPILER_PUBLIC_API Program
 {
 public:
-    Program(Ptr<FunctionDefinition> mainFunction, PtrVector<FunctionDefinition> functions);
+    Program(FunctionDefinition mainFunction, PtrVector<FunctionDefinition> functions);
 
     static std::unique_ptr<Program> fromAst(const ast::Block* root, const cmd::CommandIndex& cmdIndex);
 
@@ -597,11 +617,11 @@ public:
     Program& operator=(Program&&) = default;
     Program& operator=(const Program&) = delete;
 
-    const FunctionDefinition* mainFunction() const;
+    const FunctionDefinition& mainFunction() const;
     const PtrVector<FunctionDefinition>& functions() const;
 
 private:
-    Ptr<FunctionDefinition> mainFunction_;
+    FunctionDefinition mainFunction_;
     PtrVector<FunctionDefinition> functions_;
 };
 } // namespace odb::ir

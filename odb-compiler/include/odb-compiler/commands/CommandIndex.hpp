@@ -34,11 +34,11 @@ public:
     /*!
      * @brief Performs a lookup by command name. Returns all matching overloads.
      */
-    std::vector<Reference<Command>> lookup(const std::string& commandName) const;
+    std::vector<Reference<Command>> lookup(std::string commandName) const;
 
     const std::vector<Reference<Command>>& commands() const;
     std::vector<std::string> commandNamesAsList() const;
-    std::vector<std::string> librariesAsList() const;
+    std::vector<DynamicLibrary*> librariesAsList() const;
 
 private:
     std::vector<Reference<Command>> commands_;
