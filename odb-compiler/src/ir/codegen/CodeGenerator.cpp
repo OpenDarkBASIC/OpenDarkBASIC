@@ -245,7 +245,6 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             else
             {
                 std::cerr << "Invalid inner type in negate unary op." << std::endl;
-                inner->getType()->dump();
                 std::terminate();
             }
         default:
@@ -708,7 +707,9 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
     // point.
     engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
 
+#ifndef NDEBUG
     module.dump();
+#endif
 
     // Verify module.
     bool brokenDebugInfo;
