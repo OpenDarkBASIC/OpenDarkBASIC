@@ -708,7 +708,7 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
     engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
 
 #ifndef NDEBUG
-    module.dump();
+    module.print(llvm::errs(), nullptr);
 #endif
 
     // Verify module.

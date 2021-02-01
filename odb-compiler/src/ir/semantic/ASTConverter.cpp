@@ -100,6 +100,8 @@ Variable::Annotation getAnnotation(ast::Symbol::Annotation astAnnotation)
     case ast::Symbol::Annotation::FLOAT:
         return Variable::Annotation::Float;
     }
+
+    assert(false);
 }
 
 Type ASTConverter::getBinaryOpCommonType(BinaryOp op, Expression* left, Expression* right)
@@ -336,7 +338,7 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     }
 
     return FunctionCallExpression{location, functionEntry->second.functionDefinition, std::move(args), returnType};
-};
+}
 
 Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expression)
 {

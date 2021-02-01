@@ -57,7 +57,7 @@ public:
     };
 
     CodeGenerator(llvm::Module& module, EngineInterface& engineInterface)
-        : module(module), ctx(module.getContext()), engineInterface(engineInterface)
+        : ctx(module.getContext()), module(module), engineInterface(engineInterface)
     {
     }
 
