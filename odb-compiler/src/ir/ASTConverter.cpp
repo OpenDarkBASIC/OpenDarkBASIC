@@ -131,10 +131,10 @@ Type ASTConverter::getTypeFromCommandType(cmd::Command::Type type)
 //    }
 //    else if (auto* literal = dynamic_cast<const Literal*>(expression))
 //    {
-//#define X(dbname, cppname)                                                                                             \
-//    if (auto* ir##dbname##Literal = dynamic_cast<const dbname##Literal*>(literal))                               \
-//    {                                                                                                                  \
-//        return Type{};                  \
+//#define X(dbname, cppname)                                                                \
+//    if (auto* ir##dbname##Literal = dynamic_cast<const dbname##Literal*>(literal))        \
+//    {                                                                                     \
+//        return Type{};                                                                    \
 //    }
 //        ODB_DATATYPE_LIST
 //#undef X
@@ -248,7 +248,7 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     }
 
     return FunctionCallExpression{location, functionEntry->second.functionDefinition, std::move(args), returnType};
-};
+}
 
 Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expression)
 {

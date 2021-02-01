@@ -54,7 +54,7 @@ private:
         // TODO: Use location properly.
         (void)location;
         fprintf(stderr, "SEMANTIC ERROR: ");
-        fprintf(stderr, message, args...);
+        fprintf(stderr, format, args...);
         errorOccurred_ = true;
     }
 
