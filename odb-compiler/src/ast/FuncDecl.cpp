@@ -98,6 +98,9 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
+FuncDecl::~FuncDecl() = default;
+
+// ----------------------------------------------------------------------------
 AnnotatedSymbol* FuncDecl::symbol() const
 {
     return symbol_;

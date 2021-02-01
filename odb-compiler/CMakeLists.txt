@@ -6,6 +6,8 @@ include (GNUInstallDirs)
 include (TestVisibilityMacros)
 include (CheckIncludeFile)
 
+find_package(LLVM REQUIRED CONFIG)
+
 ###############################################################################
 # Configuration
 ###############################################################################
@@ -136,9 +138,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/commands/Command.cpp"
     "src/commands/CommandIndex.cpp"
     "src/commands/CommandMatcher.cpp"
+    "src/ir/codegen/CodeGenerator.cpp"
+    "src/ir/codegen/TGCEngineInterface.cpp"
+    "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
-    "src/ir/CreateFromAST.cpp"
     "src/ir/Node.cpp"
+    "src/ir/SemanticChecker.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/db/ErrorPrinter.cpp")
 target_include_directories (odb-compiler
@@ -170,6 +175,19 @@ set_target_properties (odb-compiler
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
+target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
+target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+
+# This is apparently deprecated since 4 years
+# https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
+#
+#llvm_map_components_to_libnames (llvm_libs core bitwriter x86codegen)
+#target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
+#target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
+
+# This is how you're supposed to do it by reading LLVM-Config.cmake
+# https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
+llvm_config (odb-compiler USE_SHARED)
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests

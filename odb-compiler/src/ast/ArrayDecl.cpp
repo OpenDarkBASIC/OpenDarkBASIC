@@ -124,6 +124,9 @@ UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, 
 }
 
 // ----------------------------------------------------------------------------
+UDTArrayDecl::~UDTArrayDecl() = default;
+
+// ----------------------------------------------------------------------------
 UDTRef* UDTArrayDecl::udt() const
 {
     return udt_;

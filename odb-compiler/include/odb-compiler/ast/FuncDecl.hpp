@@ -23,6 +23,7 @@ public:
     FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, Block* body, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location);
+    ~FuncDecl();
 
     AnnotatedSymbol* symbol() const;
     MaybeNull<ExpressionList> args() const;

@@ -21,6 +21,12 @@ public:
 class ODBCOMPILER_PUBLIC_API ProcessGroup
 {
 public:
+    ProcessGroup() = default;
+    ProcessGroup(const ProcessGroup&) = delete;
+    ProcessGroup(ProcessGroup&&) = default;
+    ProcessGroup& operator=(const ProcessGroup&) = delete;
+    ProcessGroup& operator=(ProcessGroup&&) = default;
+
     void addProcess(std::unique_ptr<Process> process);
     bool execute(ast::Node* root);
 

@@ -17,18 +17,19 @@ class ODBCOMPILER_PUBLIC_API VarDecl : public Statement
 public:
     VarDecl(SourceLocation* location);
     virtual void setInitialValue(Expression* expression) = 0;
+    virtual ScopedAnnotatedSymbol* symbol() const = 0;
 };
 
 template <typename T>
 class VarDeclTemplate : public VarDecl
 {
 public:
-    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, Expression* initalValue, SourceLocation* location);
+    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, Expression* initialValue, SourceLocation* location);
     VarDeclTemplate(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
 
     void setInitialValue(Expression* expression) override;
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedAnnotatedSymbol* symbol() const override;
     Expression* initialValue() const;
 
     void accept(Visitor* visitor) override;
@@ -53,7 +54,7 @@ public:
 
     void setInitialValue(Expression* expression) override;
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedAnnotatedSymbol* symbol() const override;
     Symbol* udtSymbol() const;
 
     void accept(Visitor* visitor) override;
@@ -73,7 +74,7 @@ public:
 
     void setInitialValue(Expression* expression) override;
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedAnnotatedSymbol* symbol() const override;
     UDTRef* udt() const;
 
     void accept(Visitor* visitor) override;
