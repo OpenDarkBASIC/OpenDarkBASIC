@@ -25,7 +25,7 @@ jobs:
       run: wget http://ftp.gnu.org/gnu/bison/bison-3.7.tar.gz && tar -zxvf bison-3.7.tar.gz && pushd bison-3.7/ && ./configure && sudo make install && popd
 
     - name: Install packages
-      run: sudo apt update && sudo apt install gperf valgrind
+      run: sudo apt update && sudo apt install gperf valgrind llvm-dev
 
     - name: Update packages
       run: sudo apt update && sudo apt --only-upgrade install flex
