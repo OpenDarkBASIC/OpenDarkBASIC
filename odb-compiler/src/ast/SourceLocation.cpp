@@ -56,7 +56,7 @@ void SourceLocation::join(const SourceLocation* other)
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code) const
+std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code) const
 {
     auto retError = [this]() -> std::vector<std::string> {
         return {"(Invalid location " + std::to_string(firstLine_) + ","
@@ -166,8 +166,8 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
 // ----------------------------------------------------------------------------
 std::string SourceLocation::getLineColumnExtents() const
 {
-    return std::to_string(firstLine_) + ":" + std::to_string(lastLine_) + ":"
-         + std::to_string(firstColumn_) + ":" + std::to_string(lastColumn_);
+    return std::to_string(firstLine_) + "-" + std::to_string(lastLine_) + ":"
+         + std::to_string(firstColumn_) + "-" + std::to_string(lastColumn_);
 }
 
 // ----------------------------------------------------------------------------
@@ -185,12 +185,12 @@ std::string FileSourceLocation::getFileLineColumn() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> FileSourceLocation::getSectionHighlight() const
+std::vector<std::string> FileSourceLocation::getUnderlinedSection() const
 {
     std::ifstream code(fileName_);
     if (!code.is_open())
         return {"(source file was removed)"};
-    return SourceLocation::getSectionHighlight(code);
+    return SourceLocation::getUnderlinedSection(code);
 }
 
 // ----------------------------------------------------------------------------
@@ -209,10 +209,10 @@ std::string InlineSourceLocation::getFileLineColumn() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> InlineSourceLocation::getSectionHighlight() const
+std::vector<std::string> InlineSourceLocation::getUnderlinedSection() const
 {
     std::stringstream ss(code_);
-    return SourceLocation::getSectionHighlight(ss);
+    return SourceLocation::getUnderlinedSection(ss);
 }
 
 }

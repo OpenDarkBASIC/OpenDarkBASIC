@@ -521,7 +521,7 @@ var_ref
   : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&@$)); }
   ;
 array_ref
-  : annotated_symbol '(' expr_list ')'                            { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
+  : annotated_symbol '(' expr_list ')'           { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
   ;
 var_decl
   : var_decl_as_type                             { $$ = $1; }
