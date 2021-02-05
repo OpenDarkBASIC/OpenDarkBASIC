@@ -60,8 +60,8 @@ bool CommandIndex::findConflicts() const
                     typeinfo.push_back(static_cast<char>(arg.type));
                 typeinfo.push_back(')');
 
-                log::sdk(log::ERROR, "Command `%s %s` redefined in library `%s`", cmd->dbSymbol().c_str(), typeinfo.c_str(), cmd->library()->getFilename());
-                log::sdk(log::NOTICE, "Command was first declared in library `%s`", overload->library()->getFilename());
+                Log::sdk(Log::ERROR, "Command `%s %s` redefined in library `%s`", cmd->dbSymbol().c_str(), typeinfo.c_str(), cmd->library()->getFilename());
+                Log::sdk(Log::NOTICE, "Command was first declared in library `%s`", overload->library()->getFilename());
                 return true;
             }
         }

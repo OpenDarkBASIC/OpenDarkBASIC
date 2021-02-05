@@ -3,53 +3,81 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-
-#include <iostream>
+#include <cassert>
 
 namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn) :
+SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color) :
     firstLine_(firstLine),
     lastLine_(lastLine),
     firstColumn_(firstColumn),
-    lastColumn_(lastColumn)
+    lastColumn_(lastColumn),
+    color_(color)
 {
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getFirstLine() const
+int SourceLocation::firstLine() const
 {
     return firstLine_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getLastLine() const
+int SourceLocation::lastLine() const
 {
     return lastLine_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getFirstColumn() const
+int SourceLocation::firstColumn() const
 {
     return firstColumn_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getLastColumn() const
+int SourceLocation::lastColumn() const
 {
     return lastColumn_;
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code) const
+Log::Color SourceLocation::color() const
+{
+    return color_;
+}
+
+// ----------------------------------------------------------------------------
+void SourceLocation::unionize(const SourceLocation* other)
+{
+    if (firstLine_ > other->firstLine())
+        firstColumn_ = other->firstColumn();
+    else if (firstLine_ == other->firstLine())
+        if (firstColumn_ > other->firstColumn())
+            firstColumn_ = other->firstColumn_;
+
+    if (lastLine_ < other->lastLine())
+        lastColumn_ = other->lastColumn();
+    else if (lastLine_ == other->lastLine())
+        if (lastColumn_ < other->lastColumn())
+            lastColumn_ = other->lastColumn();
+
+    if (firstLine_ > other->firstLine())
+        firstLine_ = other->firstLine();
+    if (lastLine_ < other->lastLine())
+        lastLine_ = other->lastLine();
+}
+
+// ----------------------------------------------------------------------------
+std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code) const
 {
     auto retError = [this]() -> std::vector<std::string> {
         return {"(Invalid location " + std::to_string(firstLine_) + ","
                                      + std::to_string(lastLine_) + ","
                                      + std::to_string(firstColumn_) + ","
-                                     + std::to_string(lastColumn_) + ")"};
+                                     + std::to_string(lastColumn_) + ")",
+                ""};
     };
     // Seek to first line
     int currentLine = 0;
@@ -120,7 +148,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
             pos = 0;
         for (int i = 0; i < (int)pos; ++i)
             squiggles.back() += lines.back()[i] == '\t' ? "    " : " ";
-        for (int i = (int)pos; i < lastColumn_; ++i)
+        for (int i = (int)pos; i < lastColumn_-1; ++i)
         {
             if (i >= (int)lines.back().length())
                 return retError();
@@ -131,7 +159,7 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
     }
     else
     {
-        for (int i = firstColumn_; i < lastColumn_; ++i)
+        for (int i = firstColumn_; i < lastColumn_-1; ++i)
         {
             if (i >= (int)lines[0].length())
                 return retError();
@@ -151,6 +179,40 @@ std::vector<std::string> SourceLocation::getSectionHighlight(std::istream& code)
 }
 
 // ----------------------------------------------------------------------------
+void SourceLocation::printUnderlinedSection(Log& log) const
+{
+    int gutterWidth = (int)std::to_string(lastLine()).length();
+    auto sourceHighlightLines = getUnderlinedSection();
+    for (int i = 0; i < (int)sourceHighlightLines.size(); i += 2)
+    {
+        // Lines are return in groups of 2. The first line is a line from the
+        // affected source code. The second line is the error highlight
+        // (squiggly lines). We only want to associate a line number with each
+        // source code line
+        log.log("%*d | ", gutterWidth, firstLine_ + i/2);
+        for (size_t j = 0; j < sourceHighlightLines[i].length(); ++j)
+        {
+            char c1 = sourceHighlightLines[i][j];
+            char c2 = j < sourceHighlightLines[i+1].length() ? sourceHighlightLines[i+1][j] : '\0';
+            if (c2 == '~' || c2 == '^')
+                log.log(Log::FG_BRIGHT_RED, "%c", c1);
+            else
+                log.log("%c", c1);
+        }
+        log.log("\n");
+        log.log("%*s | ", gutterWidth, "");
+        log.log(Log::FG_BRIGHT_RED, "%s\n", sourceHighlightLines[i+1].c_str());
+    }
+}
+
+// ----------------------------------------------------------------------------
+std::string SourceLocation::getLineColumnExtents() const
+{
+    return std::to_string(firstLine_) + "-" + std::to_string(lastLine_) + ":"
+         + std::to_string(firstColumn_) + "-" + std::to_string(lastColumn_);
+}
+
+// ----------------------------------------------------------------------------
 FileSourceLocation::FileSourceLocation(const std::string& fileName,
         int firstLine, int lastLine, int firstColumn, int lastColumn) :
     SourceLocation(firstLine, lastLine, firstColumn, lastColumn),
@@ -165,12 +227,12 @@ std::string FileSourceLocation::getFileLineColumn() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> FileSourceLocation::getSectionHighlight() const
+std::vector<std::string> FileSourceLocation::getUnderlinedSection() const
 {
     std::ifstream code(fileName_);
     if (!code.is_open())
         return {"(source file was removed)"};
-    return SourceLocation::getSectionHighlight(code);
+    return SourceLocation::getUnderlinedSection(code);
 }
 
 // ----------------------------------------------------------------------------
@@ -189,10 +251,10 @@ std::string InlineSourceLocation::getFileLineColumn() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<std::string> InlineSourceLocation::getSectionHighlight() const
+std::vector<std::string> InlineSourceLocation::getUnderlinedSection() const
 {
     std::stringstream ss(code_);
-    return SourceLocation::getSectionHighlight(ss);
+    return SourceLocation::getUnderlinedSection(ss);
 }
 
 }

@@ -39,14 +39,14 @@ static bool parseTypeinfoString(Command::Type* retType, std::vector<Command::Arg
     *retType = static_cast<Command::Type>(*t);
     if (!typeExists(*retType))
     {
-        log::sdk(log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
+        Log::sdk(Log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
         return false;
     }
 
     t++;
     if (*t != '(')
     {
-        log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `(`", *t, typeinfo);
+        Log::sdk(Log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `(`", *t, typeinfo);
         return false;
     }
 
@@ -57,7 +57,7 @@ static bool parseTypeinfoString(Command::Type* retType, std::vector<Command::Arg
         args->back().type = static_cast<Command::Type>(*t);
         if (!typeExists(args->back().type))
         {
-            log::sdk(log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
+            Log::sdk(Log::ERROR, "Unknown type '%c' found in typeinfo string `%s`", *t, typeinfo);
             return false;
         }
     }
@@ -65,9 +65,9 @@ static bool parseTypeinfoString(Command::Type* retType, std::vector<Command::Arg
     if (*t != ')')
     {
         if (*t)
-            log::sdk(log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `)`", *t, typeinfo);
+            Log::sdk(Log::ERROR, "Unexpected `%c` while parsing typeinfo string `%s`. Expected `)`", *t, typeinfo);
         else
-            log::sdk(log::ERROR, "Missing `)` while parsing typeinfo string `%s`.", typeinfo);
+            Log::sdk(Log::ERROR, "Missing `)` while parsing typeinfo string `%s`.", typeinfo);
         return false;
     }
 
@@ -88,13 +88,13 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 
     if (!fs::is_directory(sdkRoot_))
     {
-        log::sdk(log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
+        Log::sdk(Log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
         return false;
     }
 
     fs::path sdkPluginsDir = sdkRoot_ / "plugins";
     if (!fs::is_directory(sdkPluginsDir))
-        log::sdk(log::WARNING, "`%s` does not exist. SDK Plugins will not be loaded\n", sdkPluginsDir.c_str());
+        Log::sdk(Log::WARNING, "`%s` does not exist. SDK Plugins will not be loaded\n", sdkPluginsDir.c_str());
     else
     {
         for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
@@ -106,7 +106,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
     {
         if (!fs::is_directory(path))
         {
-            log::sdk(log::WARNING, "`%s` does not exist. Skipping.\n", path.c_str());
+            Log::sdk(Log::WARNING, "`%s` does not exist. Skipping.\n", path.c_str());
             continue;
         }
 
@@ -153,7 +153,7 @@ bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
         std::vector<Command::Arg> args;
         if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            log::sdk(log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
+            Log::sdk(Log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
             return false;
         }
 

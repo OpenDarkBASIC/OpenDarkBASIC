@@ -27,6 +27,8 @@ void Block::appendStatement(Statement* stmnt)
 {
     stmnt->setParent(this);
     statements_.push_back(stmnt);
+
+    location()->unionize(stmnt->location());
 }
 
 // ----------------------------------------------------------------------------

@@ -14,7 +14,7 @@ static Reference<ast::Block> ast_;
 // ----------------------------------------------------------------------------
 bool initCommandMatcher(const std::vector<std::string>& args)
 {
-    log::ast(log::INFO, "Updating command matcher\n");
+    Log::ast(Log::INFO, "Updating command matcher\n");
     cmdMatcher_.updateFromIndex(getCommandIndex());
 
     return true;
@@ -26,7 +26,7 @@ bool parseDBA(const std::vector<std::string>& args)
     db::Driver driver(&cmdMatcher_);
     for (const auto& arg : args)
     {
-        log::ast(log::INFO, "Parsing file `%s`\n", arg.c_str());
+        Log::ast(Log::INFO, "Parsing file `%s`\n", arg.c_str());
         odb::ast::Block* block = driver.parseFile(arg);
         if (block == nullptr)
             return false;
@@ -49,7 +49,7 @@ bool dumpASTDOT(const std::vector<std::string>& args)
 #if defined(ODBCOMPILER_DOT_EXPORT)
     if (ast_.isNull())
     {
-        log::ast(log::ERROR, "Error: AST is empty, nothing to dump\n");
+        Log::ast(Log::ERROR, "Error: AST is empty, nothing to dump\n");
         return false;
     }
 
@@ -59,13 +59,13 @@ bool dumpASTDOT(const std::vector<std::string>& args)
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
         {
-            log::ast(log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
+            Log::ast(Log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
             return false;
         }
-        log::ast(log::INFO, "Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
+        Log::ast(Log::INFO, "Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
     }
     else
-        log::ast(log::INFO, "Dumping AST to Graphviz DOT format\n");
+        Log::ast(Log::INFO, "Dumping AST to Graphviz DOT format\n");
 
     ast::dumpToDOT(outFile, ast_);
 
@@ -74,7 +74,7 @@ bool dumpASTDOT(const std::vector<std::string>& args)
 
     return true;
 #else
-    log::ast(log::ERROR, "Error: odb-compiler was built without DOT export support. Recompile with -DODBCOMPILER_DOT_EXPORT=ON.\n");
+    Log::ast(Log::ERROR, "Error: odb-compiler was built without DOT export support. Recompile with -DODBCOMPILER_DOT_EXPORT=ON.\n");
     return false;
 #endif
 }
@@ -84,7 +84,7 @@ bool dumpASTJSON(const std::vector<std::string>& args)
 {
     if (ast_ == nullptr)
     {
-        log::ast(log::ERROR, "Error: AST is empty, nothing to dump\n");
+        Log::ast(Log::ERROR, "Error: AST is empty, nothing to dump\n");
         return false;
     }
 
@@ -94,13 +94,13 @@ bool dumpASTJSON(const std::vector<std::string>& args)
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
         {
-            log::ast(log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
+            Log::ast(Log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
             return false;
         }
-        log::ast(log::INFO, "Dumping AST to JSON: `%s`\n", args[0].c_str());
+        Log::ast(Log::INFO, "Dumping AST to JSON: `%s`\n", args[0].c_str());
     }
     else
-        log::ast(log::INFO, "Dumping AST to JSON\n");
+        Log::ast(Log::INFO, "Dumping AST to JSON\n");
 
     // TODO odb::ast::dumpToJSON(outFile, ast_);
 

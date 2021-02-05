@@ -9,7 +9,7 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-void vprintParserMessage(log::Severity severity,
+void vprintParserMessage(Log::Severity severity,
                          const DBLTYPE *locp,
                          dbscan_t scanner,
                          const char* fmt,
@@ -29,61 +29,54 @@ void vprintParserMessage(log::Severity severity,
     va_end(args);
 
     std::string msg = fileLocInfo + ": " + fmtMsg;
-    odb::log::dbParser(severity, "%s", msg.c_str());
-    for (const auto& line : location->getSectionHighlight())
-        odb::log::info("%s\n", line.c_str());
+    Log::dbParser(severity, "%s", msg.c_str());
+    for (const auto& line : location->getUnderlinedSection())
+        Log::info.log("%s\n", line.c_str());
 
 }
 
 // ----------------------------------------------------------------------------
-void printSyntaxMessage(log::Severity severity,
+void printSyntaxMessage(Log::Severity severity,
                         const DBLTYPE* loc,
                         dbscan_t scanner,
                         std::pair<dbtokentype, std::string> unexpectedToken,
-                        const std::vector<std::pair<dbtokentype, std::string>> expectedTokens)
+                        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens)
 {
-    std::stringstream ss;
+    ColorState state(Log::info, Log::FG_WHITE);
+
     odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
     Reference<ast::SourceLocation> location = driver->newLocation(loc);
 
-    ss << location->getFileLineColumn() << (severity >= log::ERROR ? ": syntax error" : ": syntax warning");
+    Log::info.log((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), "[db parser] ");
+    Log::info.log(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
+    Log::info.log((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), (severity >= Log::ERROR ? "syntax error: " : "syntax warning: "));
+
     if (unexpectedToken.first != TOK_DBEMPTY)
-        ss << ", unexpected " << unexpectedToken.second;
+    {
+        Log::info.log("unexpected ");
+        Log::info.log(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
+    }
     if (expectedTokens.size() > 0)
     {
-        ss << ", expected ";
+        Log::info.log(", expected ");
         for (int i = 0; i != (int)expectedTokens.size(); ++i)
-            ss << (i != 0 ? " or " : "") << expectedTokens[i].second;
+        {
+            if (i != 0)
+                Log::info.log(" or ");
+            Log::info.log(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
+        }
+        Log::info.log("\n");
     }
-    log::dbParser(severity, "%s\n", ss.str().c_str());
 
-    printLocationHighlight(location);
+    location->printUnderlinedSection(Log::info);
 }
 
 // ----------------------------------------------------------------------------
-void printLocationHighlight(const DBLTYPE* loc, dbscan_t scanner)
+void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner)
 {
     odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
     Reference<ast::SourceLocation> location = driver->newLocation(loc);
-    printLocationHighlight(location);
-}
-
-void printLocationHighlight(const ast::SourceLocation* location)
-{
-    size_t gutterWidth = std::to_string(location->getLastLine()).length();
-    auto sourceHighlightLines = location->getSectionHighlight();
-    for (int i = 0; i != (int)sourceHighlightLines.size(); ++i)
-    {
-        // Lines are return in groups of 2. The first line is a line from the
-        // affected source code. The second line is the error highlight
-        // (squiggly lines). We only want to associate a line number with each
-        // source code line
-        if (i%2 == 0)
-            log::info("%*d | ", gutterWidth, location->getFirstLine() + i/2);
-        else
-            log::info("%*s | ", gutterWidth, "");
-        log::info("%s\n", sourceHighlightLines[i].c_str());
-    }
+    location->printUnderlinedSection(Log::info);
 }
 
 }

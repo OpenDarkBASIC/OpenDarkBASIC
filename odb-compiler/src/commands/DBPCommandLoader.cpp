@@ -46,7 +46,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
     {
         if (!fs::is_directory(path))
         {
-            log::sdk(log::WARNING, "`%s` does not exist. Skipping.\n", path.c_str());
+            Log::sdk(Log::WARNING, "`%s` does not exist. Skipping.\n", path.c_str());
             continue;
         }
 
@@ -68,7 +68,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
     return true;
 #else
     // Not implemented on other platforms... yet.
-    log::sdk(log::ERROR, "DBP command loading not implemented on this platform\n");
+    Log::sdk(Log::ERROR, "DBP command loading not implemented on this platform\n");
     return false;
 #endif
 }
@@ -153,7 +153,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
     return true;
 #else
     // Not implemented on other platforms... yet.
-    log::sdk(log::ERROR, "DBP command loading not implemented on this platform\n");
+    Log::sdk(Log::ERROR, "DBP command loading not implemented on this platform\n");
     return false;
 #endif
 }

@@ -7,7 +7,6 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-sdk/Log.hpp"
 #include <unordered_map>
 #include <string>
@@ -44,11 +43,11 @@ void Gatherer::visitFuncDecl(ast::FuncDecl* node)
     const auto ins = funcDecls.insert({name, node});
     if (ins.second == false)
     {
-        log::dbParser(log::ERROR, "%s: Function `%s` redefined\n",
+        Log::dbParser(Log::ERROR, "%s: Function `%s` redefined\n",
                       node->location()->getFileLineColumn().c_str(), name.c_str());
-        db::printLocationHighlight(node->location());
-        log::dbParser(log::NOTICE, "Function previously defined here\n");
-        db::printLocationHighlight(ins.first->second->location());
+        node->location()->printUnderlinedSection(Log::info);
+        Log::dbParser(Log::NOTICE, "Function previously defined here\n");
+        ins.first->second->location()->printUnderlinedSection(Log::info);
 
         errorOccurred = true;
     }
@@ -57,10 +56,10 @@ void Gatherer::visitFuncDecl(ast::FuncDecl* node)
         const auto it = arrayDecls.find(ins.first->first);
         if (it != arrayDecls.end())
         {
-            log::dbParser(log::ERROR, "%s: Function `%s` has same name as array\n",
+            Log::dbParser(Log::ERROR, "%s: Function `%s` has same name as array\n",
                           node->location()->getFileLineColumn().c_str(), name.c_str());
-            db::printLocationHighlight(node->location());
-            db::printLocationHighlight(it->second->location());
+            node->location()->printUnderlinedSection(Log::info);
+            it->second->location()->printUnderlinedSection(Log::info);
 
             errorOccurred = true;
         }
@@ -73,11 +72,11 @@ void Gatherer::visitArrayDecl(ast::ArrayDecl* node)
     const auto ins = arrayDecls.insert({name, node});
     if (ins.second == false)
     {
-        log::dbParser(log::ERROR, "%s: Array `%s` redefined\n",
+        Log::dbParser(Log::ERROR, "%s: Array `%s` redefined\n",
                       node->location()->getFileLineColumn().c_str(), name.c_str());
-        db::printLocationHighlight(node->location());
-        log::dbParser(log::NOTICE, "Array previously defined here\n");
-        db::printLocationHighlight(ins.first->second->location());
+        node->location()->printUnderlinedSection(Log::info);
+        Log::dbParser(Log::NOTICE, "Array previously defined here\n");
+        ins.first->second->location()->printUnderlinedSection(Log::info);
 
         errorOccurred = true;
     }
@@ -86,10 +85,10 @@ void Gatherer::visitArrayDecl(ast::ArrayDecl* node)
         const auto it = funcDecls.find(ins.first->first);
         if (it != funcDecls.end())
         {
-            log::dbParser(log::ERROR, "%s: Array `%s` has same name as function\n",
+            Log::dbParser(Log::ERROR, "%s: Array `%s` has same name as function\n",
                           node->location()->getFileLineColumn().c_str(), name.c_str());
-            db::printLocationHighlight(node->location());
-            db::printLocationHighlight(it->second->location());
+            node->location()->printUnderlinedSection(Log::info);
+            it->second->location()->printUnderlinedSection(Log::info);
 
             errorOccurred = true;
         }
@@ -139,9 +138,9 @@ bool ResolveArrayFuncAmbiguity::execute(ast::Node* node)
             continue;
         }
 
-        log::dbParser(log::ERROR, "%s: Undefined array or function call `%s`\n",
+        Log::dbParser(Log::ERROR, "%s: Undefined array or function call `%s`\n",
                       amb->location()->getFileLineColumn().c_str(), name.c_str());
-        db::printLocationHighlight(amb->location());
+        amb->location()->printUnderlinedSection(Log::info);
         return false;
     }
 

@@ -47,7 +47,7 @@ TEST_F(NAME, command_with_spaces)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("make object sphere"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
     ast->accept(&v);
@@ -222,7 +222,7 @@ TEST_F(NAME, command_starting_with_builtin)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("loop sound"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
     ast->accept(&v);
 }

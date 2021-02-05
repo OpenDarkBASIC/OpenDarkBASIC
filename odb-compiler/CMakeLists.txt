@@ -205,6 +205,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/parser/test_db_parser_func_decl.cpp"
         "tests/src/parser/test_db_parser_goto.cpp"
         "tests/src/parser/test_db_parser_inc_dec.cpp"
+        "tests/src/parser/test_db_parser_location_info.cpp"
         "tests/src/parser/test_db_parser_loop_do.cpp"
         "tests/src/parser/test_db_parser_loop_for.cpp"
         "tests/src/parser/test_db_parser_loop_repeat.cpp"

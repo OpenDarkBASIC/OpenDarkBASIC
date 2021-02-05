@@ -5,7 +5,6 @@
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
-#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-sdk/Log.hpp"
 #include <unordered_map>
 #include <vector>
@@ -49,11 +48,11 @@ void Gatherer::visitLabel(ast::Label* node)
     const auto it = labels.insert({name, node});
     if (it.second == false)
     {
-        log::dbParser(log::ERROR, "%s: Label `%s` redefined\n",
+        Log::dbParser(Log::ERROR, "%s: Label `%s` redefined\n",
                       node->location()->getFileLineColumn().c_str(), name.c_str());
-        db::printLocationHighlight(node->location());
-        log::dbParser(log::NOTICE, "Label previously defined here\n");
-        db::printLocationHighlight(it.first->second->location());
+        node->location()->printUnderlinedSection(Log::info);
+        Log::dbParser(Log::NOTICE, "Label previously defined here\n");
+        it.first->second->location()->printUnderlinedSection(Log::info);
 
         errorOccurred = true;
     }
@@ -74,9 +73,9 @@ bool ResolveLabels::execute(ast::Node* node)
         auto it = gatherer.labels.find(name);
         if (it == gatherer.labels.end())
         {
-            log::dbParser(log::ERROR, "%s: Label `%s` undefined\n",
+            Log::dbParser(Log::ERROR, "%s: Label `%s` undefined\n",
                           gotoNode->location()->getFileLineColumn().c_str(), name.c_str());
-            db::printLocationHighlight(gotoNode->labelSymbol()->location());
+            gotoNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
             continue;
         }
 
@@ -91,9 +90,9 @@ bool ResolveLabels::execute(ast::Node* node)
         auto it = gatherer.labels.find(name);
         if (it == gatherer.labels.end())
         {
-            log::dbParser(log::ERROR, "%s: Label `%s` undefined\n",
+            Log::dbParser(Log::ERROR, "%s: Label `%s` undefined\n",
                           subCallNode->location()->getFileLineColumn().c_str(), name.c_str());
-            db::printLocationHighlight(subCallNode->labelSymbol()->location());
+            subCallNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
             continue;
         }
 

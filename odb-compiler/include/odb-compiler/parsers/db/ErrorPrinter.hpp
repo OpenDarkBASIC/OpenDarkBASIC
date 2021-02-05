@@ -20,7 +20,7 @@ namespace db {
  * error, or something just as catastrophic).
  */
 ODBCOMPILER_PRIVATE_API
-void vprintParserMessage(log::Severity severity,
+void vprintParserMessage(Log::Severity severity,
                          const DBLTYPE *locp,
                          dbscan_t scanner,
                          const char* fmt,
@@ -31,16 +31,14 @@ void vprintParserMessage(log::Severity severity,
  * the BISON parser.
  */
 ODBCOMPILER_PRIVATE_API
-void printSyntaxMessage(log::Severity severity,
+void printSyntaxMessage(Log::Severity severity,
                         const DBLTYPE* loc,
                         dbscan_t scanner,
                         std::pair<dbtokentype, std::string> unexpectedToken,
-                        const std::vector<std::pair<dbtokentype, std::string>> expectedTokens);
+                        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens);
 
 ODBCOMPILER_PRIVATE_API
-void printLocationHighlight(const DBLTYPE* loc, dbscan_t scanner);
-ODBCOMPILER_PRIVATE_API
-void printLocationHighlight(const ast::SourceLocation* location);
+void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner);
 
 }
 }
