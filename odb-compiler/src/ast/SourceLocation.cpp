@@ -3,56 +3,62 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
-
-#include <iostream>
+#include <cassert>
 
 namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn) :
+SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color) :
     firstLine_(firstLine),
     lastLine_(lastLine),
     firstColumn_(firstColumn),
-    lastColumn_(lastColumn)
+    lastColumn_(lastColumn),
+    color_(color)
 {
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getFirstLine() const
+int SourceLocation::firstLine() const
 {
     return firstLine_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getLastLine() const
+int SourceLocation::lastLine() const
 {
     return lastLine_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getFirstColumn() const
+int SourceLocation::firstColumn() const
 {
     return firstColumn_;
 }
 
 // ----------------------------------------------------------------------------
-int SourceLocation::getLastColumn() const
+int SourceLocation::lastColumn() const
 {
     return lastColumn_;
 }
 
 // ----------------------------------------------------------------------------
+Log::Color SourceLocation::color() const
+{
+    return color_;
+}
+
+// ----------------------------------------------------------------------------
 void SourceLocation::join(const SourceLocation* other)
 {
-    if (firstLine_ > other->getFirstLine())
-        firstLine_ = other->getFirstLine();
-    if (lastLine_ < other->getLastLine())
-        lastLine_ = other->getLastLine();
-    if (firstColumn_ > other->getFirstColumn())
-        firstColumn_ = other->getFirstColumn();
-    if (lastColumn_ < other->getLastColumn())
-        lastColumn_ = other->getLastColumn();
+    if (firstLine_ > other->firstLine())
+        firstLine_ = other->firstLine();
+    if (lastLine_ < other->lastLine())
+        lastLine_ = other->lastLine();
+    if (firstColumn_ > other->firstColumn())
+        firstColumn_ = other->firstColumn();
+    if (lastColumn_ < other->lastColumn())
+        lastColumn_ = other->lastColumn();
 }
 
 // ----------------------------------------------------------------------------
@@ -161,6 +167,34 @@ std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code
         lines.insert(lines.begin() + i*2 + 1, squiggles[i]);
 
     return lines;
+}
+
+// ----------------------------------------------------------------------------
+void SourceLocation::printUnderlinedSection(Log& log) const
+{
+    int gutterWidth = (int)std::to_string(lastLine()).length();
+    auto sourceHighlightLines = getUnderlinedSection();
+    assert(sourceHighlightLines.size() % 2 == 0);
+    for (int i = 0; i < (int)sourceHighlightLines.size(); i += 2)
+    {
+        // Lines are return in groups of 2. The first line is a line from the
+        // affected source code. The second line is the error highlight
+        // (squiggly lines). We only want to associate a line number with each
+        // source code line
+        log.log("%*d | ", gutterWidth, firstLine_ + i/2);
+        for (size_t j = 0; j < sourceHighlightLines[i].length(); ++j)
+        {
+            char c1 = sourceHighlightLines[i][j];
+            char c2 = j < sourceHighlightLines[i+1].length() ? sourceHighlightLines[i+1][j] : '\0';
+            if (c2 == '~' || c2 == '^')
+                log.log(Log::FG_BRIGHT_RED, "%c", c1);
+            else
+                log.log("%c", c1);
+        }
+        log.log("\n");
+        log.log("%*s | ", gutterWidth, "");
+        log.log(Log::FG_BRIGHT_RED, "%s\n", sourceHighlightLines[i+1].c_str());
+    }
 }
 
 // ----------------------------------------------------------------------------

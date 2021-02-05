@@ -40,35 +40,35 @@ TEST_F(NAME, oneline_function_call)
     ast::AnnotatedSymbol* fooSym = dynamic_cast<ast::AnnotatedSymbol*>(foo->symbol());
     ASSERT_THAT(fooSym, NotNull());
 
-    EXPECT_THAT(ast->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(ast->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(ast->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(ast->location()->getLastColumn(), Eq(14));
+    EXPECT_THAT(ast->location()->firstLine(), Eq(1));
+    EXPECT_THAT(ast->location()->lastLine(), Eq(1));
+    EXPECT_THAT(ast->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(ast->location()->lastColumn(), Eq(14));
 
-    EXPECT_THAT(ass->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(ass->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(ass->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(ass->location()->getLastColumn(), Eq(14));
+    EXPECT_THAT(ass->location()->firstLine(), Eq(1));
+    EXPECT_THAT(ass->location()->lastLine(), Eq(1));
+    EXPECT_THAT(ass->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(ass->location()->lastColumn(), Eq(14));
 
-    EXPECT_THAT(result->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(result->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(result->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(result->location()->getLastColumn(), Eq(6));
+    EXPECT_THAT(result->location()->firstLine(), Eq(1));
+    EXPECT_THAT(result->location()->lastLine(), Eq(1));
+    EXPECT_THAT(result->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(result->location()->lastColumn(), Eq(6));
 
-    EXPECT_THAT(resultSym->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(resultSym->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(resultSym->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(resultSym->location()->getLastColumn(), Eq(6));
+    EXPECT_THAT(resultSym->location()->firstLine(), Eq(1));
+    EXPECT_THAT(resultSym->location()->lastLine(), Eq(1));
+    EXPECT_THAT(resultSym->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(resultSym->location()->lastColumn(), Eq(6));
 
-    EXPECT_THAT(foo->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(foo->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(foo->location()->getFirstColumn(), Eq(10));
-    EXPECT_THAT(foo->location()->getLastColumn(), Eq(14));
+    EXPECT_THAT(foo->location()->firstLine(), Eq(1));
+    EXPECT_THAT(foo->location()->lastLine(), Eq(1));
+    EXPECT_THAT(foo->location()->firstColumn(), Eq(10));
+    EXPECT_THAT(foo->location()->lastColumn(), Eq(14));
 
-    EXPECT_THAT(fooSym->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(fooSym->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(fooSym->location()->getFirstColumn(), Eq(10));
-    EXPECT_THAT(fooSym->location()->getLastColumn(), Eq(12));
+    EXPECT_THAT(fooSym->location()->firstLine(), Eq(1));
+    EXPECT_THAT(fooSym->location()->lastLine(), Eq(1));
+    EXPECT_THAT(fooSym->location()->firstColumn(), Eq(10));
+    EXPECT_THAT(fooSym->location()->lastColumn(), Eq(12));
 }
 
 TEST_F(NAME, print_command)
@@ -101,48 +101,48 @@ TEST_F(NAME, print_command)
     ast::AnnotatedSymbol* barSym = dynamic_cast<ast::AnnotatedSymbol*>(bar->symbol());
     ASSERT_THAT(barSym, NotNull());
 
-    EXPECT_THAT(ast->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(ast->location()->getLastLine(), Eq(4));
-    EXPECT_THAT(ast->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(ast->location()->getLastColumn(), Eq(5));
+    EXPECT_THAT(ast->location()->firstLine(), Eq(1));
+    EXPECT_THAT(ast->location()->lastLine(), Eq(4));
+    EXPECT_THAT(ast->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(ast->location()->lastColumn(), Eq(5));
 
-    EXPECT_THAT(cond->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(cond->location()->getLastLine(), Eq(4));
-    EXPECT_THAT(cond->location()->getFirstColumn(), Eq(1));
-    EXPECT_THAT(cond->location()->getLastColumn(), Eq(5));
+    EXPECT_THAT(cond->location()->firstLine(), Eq(1));
+    EXPECT_THAT(cond->location()->lastLine(), Eq(4));
+    EXPECT_THAT(cond->location()->firstColumn(), Eq(1));
+    EXPECT_THAT(cond->location()->lastColumn(), Eq(5));
 
-    EXPECT_THAT(x->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(x->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(x->location()->getFirstColumn(), Eq(4));
-    EXPECT_THAT(x->location()->getLastColumn(), Eq(4));
+    EXPECT_THAT(x->location()->firstLine(), Eq(1));
+    EXPECT_THAT(x->location()->lastLine(), Eq(1));
+    EXPECT_THAT(x->location()->firstColumn(), Eq(4));
+    EXPECT_THAT(x->location()->lastColumn(), Eq(4));
 
-    EXPECT_THAT(xSym->location()->getFirstLine(), Eq(1));
-    EXPECT_THAT(xSym->location()->getLastLine(), Eq(1));
-    EXPECT_THAT(xSym->location()->getFirstColumn(), Eq(4));
-    EXPECT_THAT(xSym->location()->getLastColumn(), Eq(4));
+    EXPECT_THAT(xSym->location()->firstLine(), Eq(1));
+    EXPECT_THAT(xSym->location()->lastLine(), Eq(1));
+    EXPECT_THAT(xSym->location()->firstColumn(), Eq(4));
+    EXPECT_THAT(xSym->location()->lastColumn(), Eq(4));
 
-    EXPECT_THAT(trueBranch->location()->getFirstLine(), Eq(2));
-    EXPECT_THAT(trueBranch->location()->getLastLine(), Eq(3));
-    EXPECT_THAT(trueBranch->location()->getFirstColumn(), Eq(5));
-    EXPECT_THAT(trueBranch->location()->getLastColumn(), Eq(9));
+    EXPECT_THAT(trueBranch->location()->firstLine(), Eq(2));
+    EXPECT_THAT(trueBranch->location()->lastLine(), Eq(3));
+    EXPECT_THAT(trueBranch->location()->firstColumn(), Eq(5));
+    EXPECT_THAT(trueBranch->location()->lastColumn(), Eq(9));
 
-    EXPECT_THAT(foo->location()->getFirstLine(), Eq(2));
-    EXPECT_THAT(foo->location()->getLastLine(), Eq(2));
-    EXPECT_THAT(foo->location()->getFirstColumn(), Eq(5));
-    EXPECT_THAT(foo->location()->getLastColumn(), Eq(9));
+    EXPECT_THAT(foo->location()->firstLine(), Eq(2));
+    EXPECT_THAT(foo->location()->lastLine(), Eq(2));
+    EXPECT_THAT(foo->location()->firstColumn(), Eq(5));
+    EXPECT_THAT(foo->location()->lastColumn(), Eq(9));
 
-    EXPECT_THAT(fooSym->location()->getFirstLine(), Eq(2));
-    EXPECT_THAT(fooSym->location()->getLastLine(), Eq(2));
-    EXPECT_THAT(fooSym->location()->getFirstColumn(), Eq(5));
-    EXPECT_THAT(fooSym->location()->getLastColumn(), Eq(7));
+    EXPECT_THAT(fooSym->location()->firstLine(), Eq(2));
+    EXPECT_THAT(fooSym->location()->lastLine(), Eq(2));
+    EXPECT_THAT(fooSym->location()->firstColumn(), Eq(5));
+    EXPECT_THAT(fooSym->location()->lastColumn(), Eq(7));
 
-    EXPECT_THAT(bar->location()->getFirstLine(), Eq(3));
-    EXPECT_THAT(bar->location()->getLastLine(), Eq(3));
-    EXPECT_THAT(bar->location()->getFirstColumn(), Eq(5));
-    EXPECT_THAT(bar->location()->getLastColumn(), Eq(9));
+    EXPECT_THAT(bar->location()->firstLine(), Eq(3));
+    EXPECT_THAT(bar->location()->lastLine(), Eq(3));
+    EXPECT_THAT(bar->location()->firstColumn(), Eq(5));
+    EXPECT_THAT(bar->location()->lastColumn(), Eq(9));
 
-    EXPECT_THAT(barSym->location()->getFirstLine(), Eq(3));
-    EXPECT_THAT(barSym->location()->getLastLine(), Eq(3));
-    EXPECT_THAT(barSym->location()->getFirstColumn(), Eq(5));
-    EXPECT_THAT(barSym->location()->getLastColumn(), Eq(7));
+    EXPECT_THAT(barSym->location()->firstLine(), Eq(3));
+    EXPECT_THAT(barSym->location()->lastLine(), Eq(3));
+    EXPECT_THAT(barSym->location()->firstColumn(), Eq(5));
+    EXPECT_THAT(barSym->location()->lastColumn(), Eq(7));
 }

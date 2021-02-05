@@ -4,7 +4,6 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
-#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-compiler/parsers/db/KeywordToken.hpp"
 #include "odb-compiler/commands/CommandMatcher.hpp"
 #include "odb-sdk/Log.hpp"
@@ -48,7 +47,7 @@ ast::Block* Driver::parseFile(const std::string& fileName)
     FILE* fp = fopen(fileName.c_str(), "r");
     if (fp == nullptr)
     {
-        log::dbParser(log::ERROR, "Failed to open file `%s`\n", fileName.c_str());
+        Log::dbParser(Log::ERROR, "Failed to open file `%s`\n", fileName.c_str());
         return nullptr;
     }
 
@@ -291,11 +290,11 @@ ast::Block* Driver::doParse()
 
                 // Print out a warning
                 Reference<ast::SourceLocation> location = newLocation(&loc);
-                log::dbParser(log::WARNING,
+                Log::dbParser(Log::WARNING,
                     "%s: Command `%s` has same name as a built-in keyword. Command will be ignored.\n",
                     location->getFileLineColumn().c_str(), tokens[0].pushedValue.string);
-                printLocationHighlight(location);
-                log::dbParser(log::NOTICE, "This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
+                location->printUnderlinedSection(Log::info);
+                Log::dbParser(Log::NOTICE, "This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
 
                 // Change token type and don't forget to free the symbol string
                 tokens[0].pushedChar = result->token;
@@ -329,7 +328,7 @@ void Driver::giveProgram(ast::Block* program)
 {
     if (program_.notNull())
     {
-        log::dbParser(log::ERROR, "BUG! giveProgram() was called more than once in a single run. This should never happen!");
+        Log::dbParser(Log::ERROR, "BUG! giveProgram() was called more than once in a single run. This should never happen!");
         assert(program_.isNull());
     }
 

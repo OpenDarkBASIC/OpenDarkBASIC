@@ -4,32 +4,100 @@
 #include <cstdio>
 
 namespace odb {
-namespace log {
 
-enum Severity
+class ODBSDK_PUBLIC_API Log
 {
-    INFO,
-    NOTICE,
-    WARNING,
-    ERROR,
-    FATAL
+public:
+    enum Severity
+    {
+        INFO,
+        NOTICE,
+        WARNING,
+        ERROR,
+        FATAL
+    };
+
+    enum Color
+    {
+        RESET,
+
+        FG_BLACK,
+        FG_RED,
+        FG_GREEN,
+        FG_YELLOW,
+        FG_BLUE,
+        FG_MAGENTA,
+        FG_CYAN,
+        FG_WHITE,
+
+        BG_BLACK,
+        BG_RED,
+        BG_GREEN,
+        BG_YELLOW,
+        BG_BLUE,
+        BG_MAGENTA,
+        BG_CYAN,
+        BG_WHITE,
+
+        FG_BRIGHT_BLACK,
+        FG_BRIGHT_RED,
+        FG_BRIGHT_GREEN,
+        FG_BRIGHT_YELLOW,
+        FG_BRIGHT_BLUE,
+        FG_BRIGHT_MAGENTA,
+        FG_BRIGHT_CYAN,
+        FG_BRIGHT_WHITE,
+
+        BG_BRIGHT_BLACK,
+        BG_BRIGHT_RED,
+        BG_BRIGHT_GREEN,
+        BG_BRIGHT_YELLOW,
+        BG_BRIGHT_BLUE,
+        BG_BRIGHT_MAGENTA,
+        BG_BRIGHT_CYAN,
+        BG_BRIGHT_WHITE,
+    };
+
+    Log(FILE* fp);
+    ~Log();
+
+    FILE* getStream() const;
+    void log(const char* fmt, ...);
+    void log(Color color, const char* fmt, ...);
+    void vlog(const char* fmt, va_list ap);
+    void vlog(Color color, const char* fmt, va_list ap);
+
+    static void dbParser(Log::Severity severity, const char* fmt, ...);
+    static void vdbParser(Log::Severity severity, const char* fmt, va_list ap);
+    static void cmd(Log::Severity severity, const char* fmt, ...);
+    static void vcmd(Log::Severity severity, const char* fmt, va_list ap);
+    static void ast(Log::Severity severity, const char* fmt, ...);
+    static void sdk(Log::Severity severity, const char* fmt, ...);
+    static void vsdk(Log::Severity severity, const char* fmt, va_list ap);
+    static void vlogPrefixSeverity(const char* prefix, Log::Severity severity, const char* fmt, va_list ap);
+
+    static Log info;
+    static Log data;
+
+private:
+    friend class ColorState;
+
+    FILE* stream_;
+    Color color_;
 };
 
-ODBSDK_PUBLIC_API void init();
-ODBSDK_PUBLIC_API void deinit();
-ODBSDK_PUBLIC_API void setInfoLog(FILE* fp);
-ODBSDK_PUBLIC_API void setDataLog(FILE* fp);
+class ODBSDK_PUBLIC_API ColorState
+{
+public:
+    ColorState(Log& log, Log::Color color);
+    ~ColorState();
 
-ODBSDK_PUBLIC_API void info(const char* fmt, ...);
-ODBSDK_PUBLIC_API void data(const char* fmt, ...);
+private:
+    void apply(Log& log, Log::Color color);
 
-ODBSDK_PUBLIC_API void dbParser(Severity severity, const char* fmt, ...);
-ODBSDK_PUBLIC_API void vdbParser(Severity severity, const char* fmt, va_list ap);
-ODBSDK_PUBLIC_API void cmd(Severity severity, const char* fmt, ...);
-ODBSDK_PUBLIC_API void vcmd(Severity severity, const char* fmt, va_list ap);
-ODBSDK_PUBLIC_API void ast(Severity severity, const char* fmt, ...);
-ODBSDK_PUBLIC_API void sdk(Severity severity, const char* fmt, ...);
-ODBSDK_PUBLIC_API void vsdk(Severity severity, const char* fmt, va_list ap);
+private:
+    Log& log_;
+    Log::Color saveColor_;
+};
 
-}
 }

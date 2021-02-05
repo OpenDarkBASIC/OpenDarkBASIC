@@ -807,7 +807,7 @@ void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    odb::db::vprintParserMessage(odb::log::ERROR, locp, scanner, fmt, args);
+    odb::db::vprintParserMessage(odb::Log::ERROR, locp, scanner, fmt, args);
     va_end(args);
 }
 
@@ -839,7 +839,7 @@ yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
         for (int i = 0; i < n; ++i)
             expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
 
-    odb::db::printSyntaxMessage(odb::log::ERROR, loc, scanner, unexpectedToken, expectedTokens);
+    odb::db::printSyntaxMessage(odb::Log::ERROR, loc, scanner, unexpectedToken, expectedTokens);
 
     return ret;
 }

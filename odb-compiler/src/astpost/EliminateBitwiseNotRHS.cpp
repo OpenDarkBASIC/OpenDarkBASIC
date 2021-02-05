@@ -1,7 +1,8 @@
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
-#include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-sdk/Log.hpp"
 
 #define NO_SIDE_EFFECTS       \
     X(AnnotatedSymbol)        \
@@ -65,8 +66,8 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
         op->rhs()->accept(&finder);
         if (finder.hasSideEffects)
         {
-            log::dbParser(log::ERROR, "RHS of binary bitwise-not operator causes side effects\n");
-            db::printLocationHighlight(op->rhs()->location());
+            Log::dbParser(Log::ERROR, "RHS of binary bitwise-not operator causes side effects\n");
+            op->rhs()->location()->printUnderlinedSection(Log::info);
             return false;
         }
 

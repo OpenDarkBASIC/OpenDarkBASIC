@@ -10,8 +10,6 @@
 
 int main(int argc, char** argv)
 {
-    odb::log::init();
-
     std::cout << "Loading plugin..." << std::endl;
     auto p = odb::DynamicLibrary::open("odb-sdk/plugins/test-plugin/test-plugin.so");
     if (p == nullptr)
