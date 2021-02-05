@@ -13,11 +13,11 @@ find_package(LLVM REQUIRED CONFIG)
 ###############################################################################
 
 set (ODBCOMPILER_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
-option (ODBCOMPILER_TESTS "Build unit tests" ON)
+option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
 option (ODBCOMPILER_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
-option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
+option (ODBCOMPILER_TESTS "Build unit tests" ON)
 
 test_visibility_macros (
     ODBCOMPILER_API_EXPORT
