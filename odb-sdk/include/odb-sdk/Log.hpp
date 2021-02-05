@@ -62,19 +62,22 @@ public:
     ~Log();
 
     FILE* getStream() const;
-    void log(const char* fmt, ...);
-    void log(Color color, const char* fmt, ...);
-    void vlog(const char* fmt, va_list ap);
-    void vlog(Color color, const char* fmt, va_list ap);
+    int putc(char c);
+    int print(const char* fmt, ...);
+    int print(Color color, const char* fmt, ...);
+    int vprint(const char* fmt, va_list ap);
+    int vprint(Color color, const char* fmt, va_list ap);
 
-    static void dbParser(Log::Severity severity, const char* fmt, ...);
-    static void vdbParser(Log::Severity severity, const char* fmt, va_list ap);
-    static void cmd(Log::Severity severity, const char* fmt, ...);
-    static void vcmd(Log::Severity severity, const char* fmt, va_list ap);
-    static void ast(Log::Severity severity, const char* fmt, ...);
-    static void sdk(Log::Severity severity, const char* fmt, ...);
-    static void vsdk(Log::Severity severity, const char* fmt, va_list ap);
-    static void vlogPrefixSeverity(const char* prefix, Log::Severity severity, const char* fmt, va_list ap);
+    static int dbParser(Log::Severity severity, const char* fmt, ...);
+    static int vdbParser(Log::Severity severity, const char* fmt, va_list ap);
+    static int cmd(Log::Severity severity, const char* fmt, ...);
+    static int vcmd(Log::Severity severity, const char* fmt, va_list ap);
+    static int ast(Log::Severity severity, const char* fmt, ...);
+    static int sdk(Log::Severity severity, const char* fmt, ...);
+    static int vsdk(Log::Severity severity, const char* fmt, va_list ap);
+    static int vlogPrefixSeverity(const char* prefix, Log::Severity severity, const char* fmt, va_list ap);
+    static int codegen(Log::Severity severity, const char* fmt, ...);
+    static int vcodegen(Log::Severity severity, const char* fmt, va_list ap);
 
     static Log info;
     static Log data;

@@ -31,7 +31,7 @@ void vprintParserMessage(Log::Severity severity,
     std::string msg = fileLocInfo + ": " + fmtMsg;
     Log::dbParser(severity, "%s", msg.c_str());
     for (const auto& line : location->getUnderlinedSection())
-        Log::info.log("%s\n", line.c_str());
+        Log::info.print("%s\n", line.c_str());
 
 }
 
@@ -47,25 +47,25 @@ void printSyntaxMessage(Log::Severity severity,
     odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
     Reference<ast::SourceLocation> location = driver->newLocation(loc);
 
-    Log::info.log((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), "[db parser] ");
-    Log::info.log(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
-    Log::info.log((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), (severity >= Log::ERROR ? "syntax error: " : "syntax warning: "));
+    Log::info.print((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
+    Log::info.print((severity >= Log::ERROR ? Log::FG_BRIGHT_RED : Log::FG_BRIGHT_YELLOW), (severity >= Log::ERROR ? "syntax error: " : "syntax warning: "));
 
     if (unexpectedToken.first != TOK_DBEMPTY)
     {
-        Log::info.log("unexpected ");
-        Log::info.log(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
+        Log::info.print("unexpected ");
+        Log::info.print(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
     }
     if (expectedTokens.size() > 0)
     {
-        Log::info.log(", expected ");
+        Log::info.print(", expected ");
         for (int i = 0; i != (int)expectedTokens.size(); ++i)
         {
             if (i != 0)
-                Log::info.log(" or ");
-            Log::info.log(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
+                Log::info.print(" or ");
+            Log::info.print(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
         }
-        Log::info.log("\n");
+        Log::info.print("\n");
     }
 
     location->printUnderlinedSection(Log::info);

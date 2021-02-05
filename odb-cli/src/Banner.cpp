@@ -1,5 +1,6 @@
 #include "odb-cli/Banner.hpp"
 #include "odb-compiler/config.hpp"
+#include "odb-sdk/Log.hpp"
 
 static bool printBanner_ = true;
 static const char* banner_ =
@@ -24,12 +25,12 @@ bool printBanner(const std::vector<std::string>& args)
     {
 #define UP "\u001b[%dA"
 #define RIGHT "\u001b[%dC"
-        fprintf(stderr, "%s", banner_);
-        fprintf(stderr, UP, 2);
-        fprintf(stderr, RIGHT, 37);
-        fprintf(stderr, "github.com/OpenDarkBASIC/OpenDarkBASIC\n");
-        fprintf(stderr, RIGHT, 37);
-        fprintf(stderr, "Version " ODBCOMPILER_VERSION_STR "\n\n");
+        odb::Log::info.print("%s", banner_);
+        odb::Log::info.print(UP, 2);
+        odb::Log::info.print(RIGHT, 37);
+        odb::Log::info.print("github.com/OpenDarkBASIC/OpenDarkBASIC\n");
+        odb::Log::info.print(RIGHT, 37);
+        odb::Log::info.print("Version " ODBCOMPILER_VERSION_STR "\n\n");
     }
 
     return true;

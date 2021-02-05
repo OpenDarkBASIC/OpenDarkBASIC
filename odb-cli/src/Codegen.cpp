@@ -4,6 +4,7 @@
 #include "odb-compiler/ir/Codegen.hpp"
 #include "odb-compiler/ir/Node.hpp"
 #include "odb-compiler/ir/SemanticChecker.hpp"
+#include "odb-sdk/Log.hpp"
 
 #include <fstream>
 
@@ -42,7 +43,7 @@ bool output(const std::vector<std::string>& args)
 {
     if (args.empty())
     {
-        fprintf(stderr, "[codegen] An argument must be specified when generating an output file.\n");
+        odb::Log::codegen(odb::Log::ERROR, "An argument must be specified when generating an output file.\n");
         return false;
     }
 
@@ -60,11 +61,11 @@ bool output(const std::vector<std::string>& args)
     std::ofstream outfile(outputName, std::ios::binary);
     if (!outfile.is_open())
     {
-        fprintf(stderr, "[codegen] Error: Failed to open file `%s`\n", outputName.c_str());
+        odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", outputName.c_str());
         return false;
     }
 
-    fprintf(stderr, "[codegen] Creating output file: `%s`\n", outputName.c_str());
+    odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", outputName.c_str());
 
     auto* cmdIndex = getCommandIndex();
     auto* ast = getAST();

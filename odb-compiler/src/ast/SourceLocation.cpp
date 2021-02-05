@@ -189,19 +189,19 @@ void SourceLocation::printUnderlinedSection(Log& log) const
         // affected source code. The second line is the error highlight
         // (squiggly lines). We only want to associate a line number with each
         // source code line
-        log.log("%*d | ", gutterWidth, firstLine_ + i/2);
+        log.print("%*d | ", gutterWidth, firstLine_ + i/2);
         for (size_t j = 0; j < sourceHighlightLines[i].length(); ++j)
         {
             char c1 = sourceHighlightLines[i][j];
             char c2 = j < sourceHighlightLines[i+1].length() ? sourceHighlightLines[i+1][j] : '\0';
             if (c2 == '~' || c2 == '^')
-                log.log(Log::FG_BRIGHT_RED, "%c", c1);
+                log.print(Log::FG_BRIGHT_RED, "%c", c1);
             else
-                log.log("%c", c1);
+                log.print("%c", c1);
         }
-        log.log("\n");
-        log.log("%*s | ", gutterWidth, "");
-        log.log(Log::FG_BRIGHT_RED, "%s\n", sourceHighlightLines[i+1].c_str());
+        log.print("\n");
+        log.print("%*s | ", gutterWidth, "");
+        log.print(Log::FG_BRIGHT_RED, "%s\n", sourceHighlightLines[i+1].c_str());
     }
 }
 

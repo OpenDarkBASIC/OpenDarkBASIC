@@ -4,6 +4,7 @@
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-sdk/Log.hpp"
 #include <cstring>
 #include <queue>
 
@@ -56,8 +57,8 @@ static std::string programName_;
 // ----------------------------------------------------------------------------
 static bool printHelp(const std::vector<std::string>& args)
 {
-    fprintf(stderr, "Usage: %s [options]\n", programName_.c_str());
-    fprintf(stderr, "Available options:\n");
+    odb::Log::info.print("Usage: %s [options]\n", programName_.c_str());
+    odb::Log::info.print("Available options:\n");
 
     for (int i = 0; i != N_ACTIONS; ++i)
     {
@@ -67,19 +68,19 @@ static bool printHelp(const std::vector<std::string>& args)
             continue;
 
         if (actions_[i].shortOption)
-            padding -= fprintf(stderr, "  -%c, ", actions_[i].shortOption);
+            padding -= odb::Log::info.print("  -%c, ", actions_[i].shortOption);
         else
-            padding -= fprintf(stderr, "      ");
+            padding -= odb::Log::info.print("      ");
 
-        padding -= fprintf(stderr, "--%s", actions_[i].fullOption);
+        padding -= odb::Log::info.print("--%s", actions_[i].fullOption);
 
         if (actions_[i].argDoc)
-            padding -= fprintf(stderr, " %s", actions_[i].argDoc);
+            padding -= odb::Log::info.print(" %s", actions_[i].argDoc);
 
         while (padding-- > 0)
-            putc(' ', stderr);
+            odb::Log::info.putc(' ');
 
-        fprintf(stderr, "%s\n", actions_[i].doc);
+        odb::Log::info.print("%s\n", actions_[i].doc);
     }
 
     return false;
@@ -96,7 +97,7 @@ static int parseFullOption(int argc, char** argv, ActionQueue* queue)
             {
                 if (argc <= actions_[i].argRange.l)
                 {
-                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
+                    odb::Log::info.print("Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
                     return -1;
                 }
 
@@ -120,7 +121,7 @@ static int parseFullOption(int argc, char** argv, ActionQueue* queue)
             break;
 
         if (argsProcessed == 0)
-            fprintf(stderr, "Error: Unrecognized command line option `%s`\n", argv[0]);
+            odb::Log::info.print("Error: Unrecognized command line option `%s`\n", argv[0]);
 
         break;
     }
@@ -138,12 +139,12 @@ static int parseShortOptions(int argc, char** argv, ActionQueue* queue)
             {
                 if (actions_[i].argRange.l > 0 && str[1] != '\0')
                 {
-                    fprintf(stderr, "Option `-%c` must be at end of short option list (before `-%c`)\n", *str, str[1]);
+                    odb::Log::info.print("Option `-%c` must be at end of short option list (before `-%c`)\n", *str, str[1]);
                     return -1;
                 }
                 if (argc <= actions_[i].argRange.l)
                 {
-                    fprintf(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
+                    odb::Log::info.print("Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
                     return -1;
                 }
 
@@ -171,7 +172,7 @@ static int parseShortOptions(int argc, char** argv, ActionQueue* queue)
             continue;
 
         if (argsProcessed == 0)
-            fprintf(stderr, "Error: Unrecognized command line option `-%c`\n", *str);
+            odb::Log::info.print("Error: Unrecognized command line option `-%c`\n", *str);
         return 0;
     }
 
@@ -189,7 +190,7 @@ static int parseOption(int argc, char** argv, ActionQueue* queue)
             return parseShortOptions(argc, argv, queue);
     }
 
-    fprintf(stderr, "Error: Unrecognized command line option `%s`\n", argv[0]);
+    odb::Log::info.print("Error: Unrecognized command line option `%s`\n", argv[0]);
     return 0;
 }
 
