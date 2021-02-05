@@ -28,7 +28,7 @@ void ExpressionList::appendExpression(Expression* expr)
     expr->setParent(this);
     expressions_.push_back(expr);
 
-    location()->join(expr->location());
+    location()->unionize(expr->location());
 }
 
 // ----------------------------------------------------------------------------

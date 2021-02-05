@@ -49,16 +49,24 @@ Log::Color SourceLocation::color() const
 }
 
 // ----------------------------------------------------------------------------
-void SourceLocation::join(const SourceLocation* other)
+void SourceLocation::unionize(const SourceLocation* other)
 {
+    if (firstLine_ > other->firstLine())
+        firstColumn_ = other->firstColumn();
+    else if (firstLine_ == other->firstLine())
+        if (firstColumn_ > other->firstColumn())
+            firstColumn_ = other->firstColumn_;
+
+    if (lastLine_ < other->lastLine())
+        lastColumn_ = other->lastColumn();
+    else if (lastLine_ == other->lastLine())
+        if (lastColumn_ < other->lastColumn())
+            lastColumn_ = other->lastColumn();
+
     if (firstLine_ > other->firstLine())
         firstLine_ = other->firstLine();
     if (lastLine_ < other->lastLine())
         lastLine_ = other->lastLine();
-    if (firstColumn_ > other->firstColumn())
-        firstColumn_ = other->firstColumn();
-    if (lastColumn_ < other->lastColumn())
-        lastColumn_ = other->lastColumn();
 }
 
 // ----------------------------------------------------------------------------
@@ -68,7 +76,8 @@ std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code
         return {"(Invalid location " + std::to_string(firstLine_) + ","
                                      + std::to_string(lastLine_) + ","
                                      + std::to_string(firstColumn_) + ","
-                                     + std::to_string(lastColumn_) + ")"};
+                                     + std::to_string(lastColumn_) + ")",
+                ""};
     };
     // Seek to first line
     int currentLine = 0;
@@ -139,7 +148,7 @@ std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code
             pos = 0;
         for (int i = 0; i < (int)pos; ++i)
             squiggles.back() += lines.back()[i] == '\t' ? "    " : " ";
-        for (int i = (int)pos; i < lastColumn_; ++i)
+        for (int i = (int)pos; i < lastColumn_-1; ++i)
         {
             if (i >= (int)lines.back().length())
                 return retError();
@@ -150,7 +159,7 @@ std::vector<std::string> SourceLocation::getUnderlinedSection(std::istream& code
     }
     else
     {
-        for (int i = firstColumn_; i < lastColumn_; ++i)
+        for (int i = firstColumn_; i < lastColumn_-1; ++i)
         {
             if (i >= (int)lines[0].length())
                 return retError();
@@ -174,7 +183,6 @@ void SourceLocation::printUnderlinedSection(Log& log) const
 {
     int gutterWidth = (int)std::to_string(lastLine()).length();
     auto sourceHighlightLines = getUnderlinedSection();
-    assert(sourceHighlightLines.size() % 2 == 0);
     for (int i = 0; i < (int)sourceHighlightLines.size(); i += 2)
     {
         // Lines are return in groups of 2. The first line is a line from the

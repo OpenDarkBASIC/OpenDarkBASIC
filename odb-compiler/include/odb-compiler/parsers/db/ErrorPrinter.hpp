@@ -35,7 +35,7 @@ void printSyntaxMessage(Log::Severity severity,
                         const DBLTYPE* loc,
                         dbscan_t scanner,
                         std::pair<dbtokentype, std::string> unexpectedToken,
-                        const std::vector<std::pair<dbtokentype, std::string>> expectedTokens);
+                        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens);
 
 ODBCOMPILER_PRIVATE_API
 void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner);

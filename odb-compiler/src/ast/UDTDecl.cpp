@@ -86,7 +86,7 @@ void UDTDeclBody::appendVarDecl(VarDecl* varDecl)
     varDecl->setParent(this);
     varDecls_.push_back(varDecl);
 
-    location()->join(varDecl->location());
+    location()->unionize(varDecl->location());
 }
 
 // ----------------------------------------------------------------------------
@@ -95,7 +95,7 @@ void UDTDeclBody::appendArrayDecl(ArrayDecl* arrayDecl)
     arrayDecl->setParent(this);
     arrayDecls_.push_back(arrayDecl);
 
-    location()->join(arrayDecl->location());
+    location()->unionize(arrayDecl->location());
 }
 
 // ----------------------------------------------------------------------------

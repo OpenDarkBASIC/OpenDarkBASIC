@@ -52,7 +52,7 @@ public:
     int lastColumn() const;
     Log::Color color() const;
 
-    void join(const SourceLocation* other);
+    void unionize(const SourceLocation* other);
 
 protected:
     std::vector<std::string> getUnderlinedSection(std::istream& code) const;
