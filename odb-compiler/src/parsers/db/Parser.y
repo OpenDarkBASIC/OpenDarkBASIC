@@ -25,6 +25,7 @@
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
     #include "odb-compiler/ast/UDTDecl.hpp"
+    #include "odb-compiler/ast/UDTField.hpp"
     #include "odb-compiler/ast/UDTRef.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
@@ -89,6 +90,9 @@
             class Symbol;
             class UDTDecl;
             class UDTDeclBody;
+            class UDTFieldOuter;
+            class UDTFieldInner;
+            class UDTFieldAssignment;
             class UDTRef;
             class UntilLoop;
             class VarAssignment;
@@ -165,6 +169,7 @@
     odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
+    odb::ast::LValue* lvalue;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
     odb::ast::Statement* stmnt;
     odb::ast::SubCallSymbol* sub_call_symbol;
@@ -172,6 +177,8 @@
     odb::ast::Symbol* symbol;
     odb::ast::UDTDecl* udt_type_decl;
     odb::ast::UDTDeclBody* udt_type_decl_body;
+    odb::ast::UDTFieldOuter* udt_field_outer;
+    odb::ast::UDTFieldInner* udt_field_inner;
     odb::ast::UDTRef* udt_ref;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
@@ -198,10 +205,13 @@
 %destructor { TouchRef($$); } <command_stmnt>
 %destructor { TouchRef($$); } <literal>
 %destructor { TouchRef($$); } <loop>
+%destructor { TouchRef($$); } <lvalue>
 %destructor { TouchRef($$); } <scoped_annotated_symbol>
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <udt_type_decl>
 %destructor { TouchRef($$); } <udt_type_decl_body>
+%destructor { TouchRef($$); } <udt_field_outer>
+%destructor { TouchRef($$); } <udt_field_inner>
 %destructor { TouchRef($$); } <udt_ref>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
@@ -346,6 +356,8 @@
 %type<array_ref> array_ref
 %type<udt_type_decl> udt_type_decl
 %type<udt_type_decl_body> udt_body_decl
+%type<udt_field_outer> udt_field_outer
+%type<lvalue> udt_field_inner
 %type<var_decl> udt_decl_var
 %type<scoped_annotated_symbol> udt_decl_var_int_sym
 %type<scoped_annotated_symbol> udt_decl_var_float_sym
@@ -459,6 +471,7 @@ expr
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
   | var_ref                                      { $$ = $1; }
+  | udt_field_outer                              { $$ = $1; }
   ;
 
 /* Commands appearing as statements usually don't have arguments surrounded by
@@ -476,27 +489,6 @@ command_expr
   : COMMAND '(' ')'                              { $$ = new CommandExprSymbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   | COMMAND '(' expr_list ')'                    { $$ = new CommandExprSymbol($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-/*
-stmnt
-  : var_assignment                               { $$ = $1; }
-  | constant_decl                                { $$ = $1; }
-  | dec_or_inc                                   { $$ = $1; }
-  | var_decl                                     { $$ = $1; }
-  | array_decl                                   { $$ = $1; }
-  | udt_decl                                     { $$ = $1; }
-  | func_decl                                    { $$ = $1; }
-  | func_call                                    { $$ = $1; }
-  | func_exit                                    { $$ = $1; }
-  | sub_call                                     { $$ = $1; }
-  | sub_return                                   { $$ = $1; }
-  | goto_label                                   { $$ = $1; }
-  | label_decl                                   { $$ = $1; }
-  | command                                      { $$ = $1; }
-  | conditional                                  { $$ = $1; }
-  | select                                       { $$ = $1; }
-  | loop                                         { $$ = $1; }
-  | break                                        { $$ = $1; }
-  ;*/
 constant_decl
   : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, driver->newLocation(&@$)); }
   ;
@@ -516,6 +508,7 @@ lvalue
 assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }
   | array_ref '=' expr                           { $$ = new ArrayAssignment($1, $3, driver->newLocation(&@$)); }
+  | udt_field_outer '=' expr                     { $$ = new UDTFieldAssignment($1, $3, driver->newLocation(&@$)); }
   ;
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&@$)); }
@@ -665,17 +658,17 @@ udt_decl_array_str_sym
 udt_ref
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new UDTRef($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-/*
-udt_ref
-  : udt_name PERIOD udt_refs                     { $$ = $1; $$->info.type = NT_SYM_VAR_REF; $$->sym.var_ref.udt = $3; }
-  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
+udt_field_outer
+  : var_ref '.' udt_field_inner                  { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  | array_ref '.' udt_field_inner                { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
   ;
-udt_refs
-  : var_ref PERIOD udt_refs                      { $$ = $1; $$->sym.var_ref.udt = $3; }
-  | array_ref PERIOD udt_refs                    { $$ = $1; $$->sym.array_ref.udt = $3; }
-  | array_ref                                    { $$ = $1; }
+udt_field_inner
+  : var_ref '.' udt_field_inner                  { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
+  | array_ref '.' udt_field_inner                { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
   | var_ref                                      { $$ = $1; }
-  ;*/
+  | array_ref                                    { $$ = $1; }
+  ;
+
 func_decl
   : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
   | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }

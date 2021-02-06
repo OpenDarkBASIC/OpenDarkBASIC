@@ -123,6 +123,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Subroutine.cpp"
     "src/ast/Symbol.cpp"
     "src/ast/UDTDecl.cpp"
+    "src/ast/UDTField.cpp"
     "src/ast/UDTRef.cpp"
     "src/ast/UnaryOp.cpp"
     "src/ast/VarDecl.cpp"

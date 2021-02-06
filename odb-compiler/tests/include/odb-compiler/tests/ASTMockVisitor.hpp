@@ -40,6 +40,9 @@ public:
     MOCK_METHOD(void, visitUDTArrayDeclSymbol, (const odb::ast::UDTArrayDeclSymbol* node), (override));
     MOCK_METHOD(void, visitUDTDecl, (const odb::ast::UDTDecl* node), (override));
     MOCK_METHOD(void, visitUDTDeclBody, (const odb::ast::UDTDeclBody* node), (override));
+    MOCK_METHOD(void, visitUDTFieldAssignment, (const odb::ast::UDTFieldAssignment* node), (override));
+    MOCK_METHOD(void, visitUDTFieldOuter, (const odb::ast::UDTFieldOuter* node), (override));
+    MOCK_METHOD(void, visitUDTFieldInner, (const odb::ast::UDTFieldInner* node), (override));
     MOCK_METHOD(void, visitUDTRef, (const odb::ast::UDTRef* node), (override));
     MOCK_METHOD(void, visitUDTVarDecl, (const odb::ast::UDTVarDecl* node), (override));
     MOCK_METHOD(void, visitUDTVarDeclSymbol, (const odb::ast::UDTVarDeclSymbol* node), (override));

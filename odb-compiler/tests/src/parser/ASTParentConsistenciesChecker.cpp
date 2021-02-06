@@ -22,6 +22,7 @@
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
@@ -192,6 +193,21 @@ void ASTParentConsistenciesChecker::visitUDTDeclBody(const UDTDeclBody* node)
         EXPECT_THAT(node, Eq(decl->parent()));
     for (const auto& decl : node->arrayDeclarations())
         EXPECT_THAT(node, Eq(decl->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTFieldAssignment(const UDTFieldAssignment* node)
+{
+    EXPECT_THAT(node, Eq(node->field()->parent()));
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTFieldOuter(const UDTFieldOuter* node)
+{
+    EXPECT_THAT(node, Eq(node->left()->parent()));
+    EXPECT_THAT(node, Eq(node->right()->parent()));
+}
+void ASTParentConsistenciesChecker::visitUDTFieldInner(const UDTFieldInner* node)
+{
+    EXPECT_THAT(node, Eq(node->left()->parent()));
+    EXPECT_THAT(node, Eq(node->right()->parent()));
 }
 void ASTParentConsistenciesChecker::visitUDTRef(const UDTRef* node) {}
 void ASTParentConsistenciesChecker::visitUDTVarDecl(const UDTVarDecl* node)

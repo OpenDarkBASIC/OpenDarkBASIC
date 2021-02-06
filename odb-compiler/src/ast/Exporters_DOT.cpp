@@ -23,6 +23,7 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
@@ -239,6 +240,21 @@ private:
         for (const auto& arrayDecl : node->arrayDeclarations())
             writeNamedConnection(node, arrayDecl, "arrayDecl[" + std::to_string(i++) + "]");
     }
+    void visitUDTFieldOuter(const UDTFieldOuter* node) override
+    {
+        writeNamedConnection(node, node->left(), "left");
+        writeNamedConnection(node, node->right(), "right");
+    }
+    void visitUDTFieldInner(const UDTFieldInner* node) override
+    {
+        writeNamedConnection(node, node->left(), "left");
+        writeNamedConnection(node, node->right(), "right");
+    }
+    void visitUDTFieldAssignment(const UDTFieldAssignment* node) override
+    {
+        writeNamedConnection(node, node->field(), "field");
+        writeNamedConnection(node, node->expression(), "expr");
+    }
     void visitUDTRef(const UDTRef* node) override {}
     void visitUDTVarDecl(const UDTVarDecl* node) override
     {
@@ -435,6 +451,12 @@ private:
         { writeName(node, "UDTDecl"); }
     void visitUDTDeclBody(const UDTDeclBody* node) override
         { writeName(node, "UDTDeclBody"); }
+    void visitUDTFieldOuter(const UDTFieldOuter* node) override
+        { writeName(node, "UDTFieldOuter"); }
+    void visitUDTFieldInner(const UDTFieldInner* node) override
+        { writeName(node, "UDTFieldInner"); }
+    void visitUDTFieldAssignment(const UDTFieldAssignment* node) override
+        { writeName(node, "UDTFieldAssignment"); }
     void visitUDTRef(const UDTRef* node) override
         { writeName(node, "UDTRef: " + node->name()); }
     void visitUDTVarDecl(const UDTVarDecl* node) override

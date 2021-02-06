@@ -21,6 +21,7 @@
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
@@ -66,6 +67,9 @@ void GenericVisitor::visitUDTArrayDecl(UDTArrayDecl* node)                     {
 void GenericVisitor::visitUDTArrayDeclSymbol(UDTArrayDeclSymbol* node)         { visit(node); }
 void GenericVisitor::visitUDTDecl(UDTDecl* node)                               { visit(node); }
 void GenericVisitor::visitUDTDeclBody(UDTDeclBody* node)                       { visit(node); }
+void GenericVisitor::visitUDTFieldOuter(UDTFieldOuter* node)                   { visit(node); }
+void GenericVisitor::visitUDTFieldInner(UDTFieldInner* node)                   { visit(node); }
+void GenericVisitor::visitUDTFieldAssignment(UDTFieldAssignment* node)         { visit(node); }
 void GenericVisitor::visitUDTRef(UDTRef* node)                                 { visit(node); }
 void GenericVisitor::visitUDTVarDecl(UDTVarDecl* node)                         { visit(node); }
 void GenericVisitor::visitUDTVarDeclSymbol(UDTVarDeclSymbol* node)             { visit(node); }
@@ -126,6 +130,9 @@ void GenericConstVisitor::visitUDTArrayDecl(const UDTArrayDecl* node)           
 void GenericConstVisitor::visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node)         { visit(node); }
 void GenericConstVisitor::visitUDTDecl(const UDTDecl* node)                               { visit(node); }
 void GenericConstVisitor::visitUDTDeclBody(const UDTDeclBody* node)                       { visit(node); }
+void GenericConstVisitor::visitUDTFieldOuter(const UDTFieldOuter* node)                   { visit(node); }
+void GenericConstVisitor::visitUDTFieldInner(const UDTFieldInner* node)                   { visit(node); }
+void GenericConstVisitor::visitUDTFieldAssignment(const UDTFieldAssignment* node)         { visit(node); }
 void GenericConstVisitor::visitUDTRef(const UDTRef* node)                                 { visit(node); }
 void GenericConstVisitor::visitUDTVarDecl(const UDTVarDecl* node)                         { visit(node); }
 void GenericConstVisitor::visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node)             { visit(node); }

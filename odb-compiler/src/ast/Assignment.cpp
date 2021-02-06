@@ -3,37 +3,44 @@
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Assignment::Assignment(LValue* lvalue, SourceLocation* location) :
-    Statement(location),
-    lvalue_(lvalue)
+Assignment::Assignment(LValue* lvalue, Expression* expr, SourceLocation* location)
+    : Statement(location)
+    , lvalue_(lvalue)
+    , expr_(expr)
 {
     lvalue->setParent(this);
+    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
-VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* location) :
-    Assignment(var, location),
-    expr_(expr)
+LValue* Assignment::lvalue() const
 {
-    expr->setParent(this);
+    return lvalue_;
+}
+
+// ----------------------------------------------------------------------------
+Expression* Assignment::expression() const
+{
+    return expr_;
+}
+
+// ----------------------------------------------------------------------------
+VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* location)
+    : Assignment(var, expr, location)
+{
 }
 
 // ----------------------------------------------------------------------------
 VarRef* VarAssignment::variable() const
 {
     return static_cast<VarRef*>(lvalue_.get());
-}
-
-// ----------------------------------------------------------------------------
-Expression* VarAssignment::expression() const
-{
-    return expr_;
 }
 
 // ----------------------------------------------------------------------------
@@ -54,7 +61,7 @@ void VarAssignment::accept(ConstVisitor* visitor) const
 void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
 {
     if (lvalue_ == oldNode)
-        lvalue_ = dynamic_cast<LValue*>(newNode);
+        lvalue_ = dynamic_cast<VarRef*>(newNode);
     else if (expr_ == oldNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
@@ -64,23 +71,15 @@ void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-ArrayAssignment::ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location) :
-    Assignment(var, location),
-    expr_(expr)
+ArrayAssignment::ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location)
+    : Assignment(var, expr, location)
 {
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
 ArrayRef* ArrayAssignment::array() const
 {
     return static_cast<ArrayRef*>(lvalue_.get());
-}
-
-// ----------------------------------------------------------------------------
-Expression* ArrayAssignment::expression() const
-{
-    return expr_;
 }
 
 // ----------------------------------------------------------------------------
@@ -101,7 +100,46 @@ void ArrayAssignment::accept(ConstVisitor* visitor) const
 void ArrayAssignment::swapChild(const Node* oldNode, Node* newNode)
 {
     if (lvalue_ == oldNode)
-        lvalue_ = dynamic_cast<LValue*>(newNode);
+        lvalue_ = dynamic_cast<ArrayRef*>(newNode);
+    else if (expr_ == oldNode)
+        expr_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
+
+    newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+UDTFieldAssignment::UDTFieldAssignment(UDTFieldOuter* field, Expression* expr, SourceLocation* location)
+    : Assignment(field, expr, location)
+{
+}
+
+// ----------------------------------------------------------------------------
+UDTFieldOuter* UDTFieldAssignment::field() const
+{
+    return static_cast<UDTFieldOuter*>(lvalue_.get());
+}
+
+// ----------------------------------------------------------------------------
+void UDTFieldAssignment::accept(Visitor* visitor)
+{
+    visitor->visitUDTFieldAssignment(this);
+    lvalue_->accept(visitor);
+    expr_->accept(visitor);
+}
+void UDTFieldAssignment::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUDTFieldAssignment(this);
+    lvalue_->accept(visitor);
+    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (lvalue_ == oldNode)
+        lvalue_ = dynamic_cast<UDTFieldOuter*>(newNode);
     else if (expr_ == oldNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
