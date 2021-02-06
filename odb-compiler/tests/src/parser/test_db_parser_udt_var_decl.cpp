@@ -4,7 +4,7 @@
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
-#define NAME db_parser_udt_type_decl
+#define NAME db_parser_udt_var_decl
 
 using namespace testing;
 using namespace odb;
@@ -50,6 +50,7 @@ public:
  * All possible valid udt type declarations:
  *
  *     type udt
+ *         ...
  *     endtype
  *
  * Invalid udt body declarations:
@@ -171,9 +172,11 @@ public:
  * Invalid udt declarations:
  *
  *     type udt#
+ *         ...
  *     endtype
  *
  *     type udt$
+ *         ...
  *     endtype
  */
 

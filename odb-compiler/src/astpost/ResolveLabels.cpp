@@ -14,7 +14,7 @@ namespace odb::astpost {
 
 // ----------------------------------------------------------------------------
 namespace {
-class Gatherer : public ast::GenericVisitor
+class Visitor : public ast::GenericVisitor
 {
 public:
     void visitGotoSymbol(ast::GotoSymbol* node) override;
@@ -32,17 +32,17 @@ public:
     bool errorOccurred = false;
 };
 
-void Gatherer::visitGotoSymbol(ast::GotoSymbol* node)
+void Visitor::visitGotoSymbol(ast::GotoSymbol* node)
 {
     gotos.push_back(node);
 }
 
-void Gatherer::visitSubCallSymbol(ast::SubCallSymbol* node)
+void Visitor::visitSubCallSymbol(ast::SubCallSymbol* node)
 {
     subcalls.push_back(node);
 }
 
-void Gatherer::visitLabel(ast::Label* node)
+void Visitor::visitLabel(ast::Label* node)
 {
     const std::string& name = node->symbol()->name();
     const auto it = labels.insert({name, node});
@@ -62,7 +62,7 @@ void Gatherer::visitLabel(ast::Label* node)
 // ----------------------------------------------------------------------------
 bool ResolveLabels::execute(ast::Node* node)
 {
-    Gatherer gatherer;
+    Visitor gatherer;
     node->accept(&gatherer);
     if (gatherer.errorOccurred)
         return false;

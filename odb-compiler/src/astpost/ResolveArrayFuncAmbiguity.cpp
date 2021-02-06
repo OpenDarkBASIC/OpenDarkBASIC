@@ -11,8 +11,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace odb {
-namespace astpost {
+namespace odb::astpost {
 
 // ----------------------------------------------------------------------------
 namespace {
@@ -147,5 +146,4 @@ bool ResolveArrayFuncAmbiguity::execute(ast::Node* node)
     return true;
 }
 
-}
 }

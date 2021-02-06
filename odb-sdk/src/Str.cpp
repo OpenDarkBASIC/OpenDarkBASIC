@@ -60,6 +60,20 @@ void replaceAll(std::string& subject, const std::string& search, const std::stri
 }
 
 // ----------------------------------------------------------------------------
+std::string escapeBackslashes(const std::string& s)
+{
+    std::string copy(s);
+    size_t off = 0;
+    for (size_t i = 0; i < s.length(); ++i)
+        if (s[i] == '\\')
+        {
+            copy.insert(copy.begin() + i + off, '\\');
+            off++;
+        }
+    return copy;
+}
+
+// ----------------------------------------------------------------------------
 void toLowerInplace(std::string& str)
 {
     std::transform(str.begin(), str.end(), str.begin(), [](char c){ return std::tolower(c); });

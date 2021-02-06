@@ -211,7 +211,6 @@
 %destructor { TouchRef($$); } <udt_type_decl>
 %destructor { TouchRef($$); } <udt_type_decl_body>
 %destructor { TouchRef($$); } <udt_field_outer>
-%destructor { TouchRef($$); } <udt_field_inner>
 %destructor { TouchRef($$); } <udt_ref>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
@@ -500,11 +499,6 @@ decrement
   : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, driver->newLocation(&@$)); }
   | DEC var_ref                                  { $$ = new DecrementVar($2, driver->newLocation(&@$)); }
   ;
-/*
-lvalue
-  : var_ref                                      { $$ = $1; }
-  | array_ref                                    { $$ = $1; }
-  ;*/
 assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }
   | array_ref '=' expr                           { $$ = new ArrayAssignment($1, $3, driver->newLocation(&@$)); }
@@ -709,12 +703,6 @@ literal
   | FLOAT_LITERAL                                { $$ = new DoubleFloatLiteral($1, driver->newLocation(&@$)); }
   | STRING_LITERAL                               { $$ = new StringLiteral($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-/*
-scoped_symbol
-  : LOCAL symbol                                 { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $2->name(), driver->newLocation(&@$)); TouchRef($2); }
-  | GLOBAL symbol                                { $$ = new ScopedSymbol(ScopedSymbol::Scope::GLOBAL, $2->name(), driver->newLocation(&@$)); TouchRef($2); }
-  | symbol             / default local /       { $$ = new ScopedSymbol(ScopedSymbol::Scope::LOCAL, $1->name(), driver->newLocation(&@$)); TouchRef($1); }
-  ;*/
 annotated_symbol
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }

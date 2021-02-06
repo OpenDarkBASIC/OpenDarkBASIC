@@ -30,6 +30,7 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
+#include "odb-sdk/Str.hpp"
 #include <unordered_map>
 
 namespace odb::ast {
@@ -487,7 +488,7 @@ private:
     void visitFloatLiteral(const FloatLiteral* node) override
         { writeName(node, "Float: " + std::to_string(node->value())); }
     void visitStringLiteral(const StringLiteral* node) override
-        { writeName(node, "String: " + node->value()); }
+        { writeName(node, "String: " + str::escapeBackslashes(node->value())); }
 
 #define X(dbname, cppname)                                                    \
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \

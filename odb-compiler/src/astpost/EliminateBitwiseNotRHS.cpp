@@ -18,7 +18,7 @@
 namespace odb::astpost {
 
 namespace {
-class Gatherer : public ast::GenericVisitor
+class Visitor : public ast::GenericVisitor
 {
 public:
     void visitBinaryOpBitwiseNot(ast::BinaryOpBitwiseNot* node) override final {
@@ -57,7 +57,7 @@ public:
 // ----------------------------------------------------------------------------
 bool EliminateBitwiseNotRHS::execute(ast::Node* node)
 {
-    Gatherer gatherer;
+    Visitor gatherer;
     node->accept(&gatherer);
 
     for (auto& op : gatherer.ops)

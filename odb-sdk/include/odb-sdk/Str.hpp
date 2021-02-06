@@ -3,8 +3,7 @@
 #include "odb-sdk/config.hpp"
 #include <string>
 
-namespace odb {
-namespace str {
+namespace odb::str {
 
 ODBSDK_PUBLIC_API char* newCStr(const char* str);
 ODBSDK_PUBLIC_API char* newCStrRange(const char* src, size_t beg, size_t end);
@@ -15,6 +14,8 @@ ODBSDK_PUBLIC_API int strncicmp(const char* a, const char* b, size_t n);
 ODBSDK_PUBLIC_API void replaceAll(std::string& subject,
                                   const std::string& search,
                                   const std::string& replace);
+
+ODBSDK_PUBLIC_API std::string escapeBackslashes(const std::string& s);
 
 ODBSDK_PUBLIC_API void toLowerInplace(std::string& str);
 ODBSDK_PUBLIC_API std::string toLower(const std::string& str);
@@ -34,5 +35,4 @@ void split(const std::string &str, Container &cont,
     cont.push_back(str.substr(previous, current - previous));
 }
 
-}
 }
