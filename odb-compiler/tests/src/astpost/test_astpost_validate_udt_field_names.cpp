@@ -15,32 +15,9 @@ class NAME : public ParserTestHarness
 public:
 };
 
-TEST_F(NAME, invalid_1)
-{
-    ast = driver->parseString("test",
-        "result = foo#.bar.baz");
-    ASSERT_THAT(ast, NotNull());
-
-    astpost::ValidateUDTFieldNames post;
-    ASSERT_THAT(post.execute(ast), IsFalse());
-}
-
-TEST_F(NAME, invalid_2)
-{
-    ast = driver->parseString("test",
-        "result = foo.bar#.baz");
-    ASSERT_THAT(ast, NotNull());
-
-    astpost::ValidateUDTFieldNames post;
-    ASSERT_THAT(post.execute(ast), IsFalse());
-}
-
-TEST_F(NAME, valid_1)
-{
-    ast = driver->parseString("test",
-        "result = foo.bar.baz#");
-    ASSERT_THAT(ast, NotNull());
-
-    astpost::ValidateUDTFieldNames post;
-    ASSERT_THAT(post.execute(ast), IsTrue());
-}
+/*
+ * NOTE: Most of the field name validations are already covered in test_db_parser_udt_fields.cpp
+ * Missing tests are
+ * CommandExpr/CommandStmnt
+ * FuncCallExpr/FuncCallStmnt
+ */

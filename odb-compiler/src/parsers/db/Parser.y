@@ -355,7 +355,8 @@
 %type<array_ref> array_ref
 %type<udt_type_decl> udt_type_decl
 %type<udt_type_decl_body> udt_body_decl
-%type<udt_field_outer> udt_field_outer
+%type<udt_field_outer> udt_field_lvalue
+%type<udt_field_outer> udt_field_rvalue
 %type<lvalue> udt_field_inner
 %type<var_decl> udt_decl_var
 %type<scoped_annotated_symbol> udt_decl_var_int_sym
@@ -470,7 +471,7 @@ expr
   | func_call_expr_or_array_ref                  { $$ = $1; }
   | command_expr                                 { $$ = $1; }
   | var_ref                                      { $$ = $1; }
-  | udt_field_outer                              { $$ = $1; }
+  | udt_field_rvalue                             { $$ = $1; }
   ;
 
 /* Commands appearing as statements usually don't have arguments surrounded by
@@ -502,7 +503,7 @@ decrement
 assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }
   | array_ref '=' expr                           { $$ = new ArrayAssignment($1, $3, driver->newLocation(&@$)); }
-  | udt_field_outer '=' expr                     { $$ = new UDTFieldAssignment($1, $3, driver->newLocation(&@$)); }
+  | udt_field_lvalue '=' expr                    { $$ = new UDTFieldAssignment($1, $3, driver->newLocation(&@$)); }
   ;
 var_ref
   : annotated_symbol                             { $$ = new VarRef($1, driver->newLocation(&@$)); }
@@ -652,9 +653,14 @@ udt_decl_array_str_sym
 udt_ref
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new UDTRef($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-udt_field_outer
+udt_field_lvalue
   : var_ref '.' udt_field_inner                  { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
   | array_ref '.' udt_field_inner                { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  ;
+udt_field_rvalue
+  : var_ref '.' udt_field_inner                  { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  | func_call_expr_or_array_ref '.' udt_field_inner { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  | command_expr '.' udt_field_inner             { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
   ;
 udt_field_inner
   : var_ref '.' udt_field_inner                  { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }

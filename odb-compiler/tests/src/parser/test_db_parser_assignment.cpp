@@ -71,3 +71,5 @@ TEST_F(NAME, string_variable_with_assignment_has_type_string)
 
     ast->accept(&v);
 }
+
+/* NOTE: All UDT assignment cases are covered in test_db_parser_udt_fields.cpp */

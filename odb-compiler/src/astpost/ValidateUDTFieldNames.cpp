@@ -1,4 +1,6 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -22,6 +24,12 @@ public:
     bool check(const ast::ArrayRef* arrayRef);
     bool check(const ast::FuncCallExpr* func);
     bool check(const ast::FuncCallStmnt* func);
+    bool check(const ast::FuncCallExprOrArrayRef* func);
+    bool check(const ast::CommandExpr* cmd);
+    bool check(const ast::CommandStmnt* cmd);
+    bool check(const ast::CommandExprSymbol* cmd);
+    bool check(const ast::CommandStmntSymbol* cmd);
+
     void checkExpr(const ast::Expression* node);
     void checkAnnotation(const ast::AnnotatedSymbol* sym);
 
@@ -49,9 +57,61 @@ bool Visitor::check(const ast::FuncCallExpr* func)
 }
 bool Visitor::check(const ast::FuncCallStmnt* func)
 {
-    if (func == nullptr)
+    if (func)
         return checkAnnotation(func->symbol()), true;
     return false;
+}
+bool Visitor::check(const ast::FuncCallExprOrArrayRef* func)
+{
+    if (func)
+        return checkAnnotation(func->symbol()), true;
+    return false;
+}
+bool Visitor::check(const ast::CommandExpr* cmd)
+{
+    /* TODO probably makes sense to add a UDT return type to commands
+    if (cmd->command()->returnType() != ...);*/
+
+    return cmd != nullptr;
+}
+bool Visitor::check(const ast::CommandStmnt* cmd)
+{
+    /* TODO probably makes sense to add a UDT return type to commands
+    if (cmd->command()->returnType() != ...);*/
+
+    return cmd != nullptr;
+}
+bool Visitor::check(const ast::CommandExprSymbol* cmd)
+{
+    if (cmd == nullptr)
+        return false;
+
+    char c = cmd->command().back();
+    if (c == '#' || c == '$')
+    {
+        Log::dbParser(Log::ERROR, "%s: Misleading command annotation: UDTs cannot be annotated\n",
+                      cmd->location()->getFileLineColumn().c_str());
+        cmd->location()->printUnderlinedSection(Log::info);
+        success = false;
+    }
+
+    return true;
+}
+bool Visitor::check(const ast::CommandStmntSymbol* cmd)
+{
+    if (cmd == nullptr)
+        return false;
+
+    char c = cmd->command().back();
+    if (c == '#' || c == '$')
+    {
+        Log::dbParser(Log::ERROR, "%s: Misleading command annotation: UDTs cannot be annotated\n",
+                      cmd->location()->getFileLineColumn().c_str());
+        cmd->location()->printUnderlinedSection(Log::info);
+        success = false;
+    }
+
+    return true;
 }
 
 // ----------------------------------------------------------------------------
@@ -61,6 +121,11 @@ void Visitor::checkExpr(const ast::Expression* node)
     if (check(dynamic_cast<const ast::ArrayRef*>(node))) return;
     if (check(dynamic_cast<const ast::FuncCallExpr*>(node))) return;
     if (check(dynamic_cast<const ast::FuncCallStmnt*>(node))) return;
+    if (check(dynamic_cast<const ast::FuncCallExprOrArrayRef*>(node))) return;
+    if (check(dynamic_cast<const ast::CommandExpr*>(node))) return;
+    if (check(dynamic_cast<const ast::CommandStmnt*>(node))) return;
+    if (check(dynamic_cast<const ast::CommandExprSymbol*>(node))) return;
+    if (check(dynamic_cast<const ast::CommandStmntSymbol*>(node))) return;
 }
 
 // ----------------------------------------------------------------------------

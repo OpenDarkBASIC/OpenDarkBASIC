@@ -129,6 +129,5 @@ TEST_F(NAME, dec_var_by_expr)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
 
-
     ast->accept(&v);
 }
