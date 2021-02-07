@@ -488,10 +488,10 @@ public:
 private:
 };
 
-class ODBCOMPILER_PUBLIC_API Break : public Statement
+class ODBCOMPILER_PUBLIC_API Exit : public Statement
 {
 public:
-    Break(SourceLocation* location, FunctionDefinition* containingFunction);
+    Exit(SourceLocation* location, FunctionDefinition* containingFunction);
 
 private:
 };

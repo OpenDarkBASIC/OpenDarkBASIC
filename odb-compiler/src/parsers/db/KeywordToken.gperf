@@ -24,7 +24,6 @@ struct KeywordsHashResult { const char* name; dbtokentype value; };
 and,              TOK_LAND
 as,               TOK_AS
 boolean,          TOK_BOOLEAN
-break,            TOK_BREAK
 byte,             TOK_BYTE
 case,             TOK_CASE
 dec,              TOK_DEC
@@ -41,6 +40,7 @@ endif,            TOK_ENDIF
 endselect,        TOK_ENDSELECT
 endtype,          TOK_ENDTYPE
 endwhile,         TOK_ENDWHILE
+exit,             TOK_EXIT
 exitfunction,     TOK_EXITFUNCTION
 float,            TOK_FLOAT
 for,              TOK_FOR

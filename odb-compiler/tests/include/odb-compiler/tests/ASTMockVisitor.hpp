@@ -10,7 +10,6 @@ public:
     MOCK_METHOD(void, visitArrayAssignment, (const odb::ast::ArrayAssignment* node), (override));
     MOCK_METHOD(void, visitArrayRef, (const odb::ast::ArrayRef* node), (override));
     MOCK_METHOD(void, visitBlock, (const odb::ast::Block* node), (override));
-    MOCK_METHOD(void, visitBreak, (const odb::ast::Break* node), (override));
     MOCK_METHOD(void, visitCase, (const odb::ast::Case* node), (override));
     MOCK_METHOD(void, visitCaseList, (const odb::ast::CaseList* node), (override));
     MOCK_METHOD(void, visitCommandStmntSymbol, (const odb::ast::CommandStmntSymbol* node), (override));
@@ -20,6 +19,7 @@ public:
     MOCK_METHOD(void, visitConditional, (const odb::ast::Conditional* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const odb::ast::ConstDecl* node), (override));
     MOCK_METHOD(void, visitDefaultCase, (const odb::ast::DefaultCase* node), (override));
+    MOCK_METHOD(void, visitExit, (const odb::ast::Exit* node), (override));
     MOCK_METHOD(void, visitExpressionList, (const odb::ast::ExpressionList* node), (override));
     MOCK_METHOD(void, visitForLoop, (const odb::ast::ForLoop* node), (override));
     MOCK_METHOD(void, visitFuncCallExprOrArrayRef, (const odb::ast::FuncCallExprOrArrayRef* node), (override));

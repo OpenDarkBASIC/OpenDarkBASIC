@@ -6,10 +6,10 @@
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
-    #include "odb-compiler/ast/Break.hpp"
     #include "odb-compiler/ast/Command.hpp"
     #include "odb-compiler/ast/Conditional.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
+    #include "odb-compiler/ast/Exit.hpp"
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
@@ -62,7 +62,6 @@
             class ArrayRef;
             class Assignment;
             class Block;
-            class Break;
             class Case;
             class CaseList;
             class CommandExprSymbol;
@@ -70,6 +69,7 @@
             class Conditional;
             class ConstDecl;
             class DefaultCase;
+            class Exit;
             class ForLoop;
             class FuncCallExpr;
             class FuncCallStmnt;
@@ -156,7 +156,6 @@
     odb::ast::ArrayRef* array_ref;
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
-    odb::ast::Break* break_;
     odb::ast::Case* case_;
     odb::ast::CaseList* case_list;
     odb::ast::CommandExprSymbol* command_expr;
@@ -164,6 +163,7 @@
     odb::ast::Conditional* conditional;
     odb::ast::ConstDecl* const_decl;
     odb::ast::DefaultCase* default_case;
+    odb::ast::Exit* exit;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
     odb::ast::ForLoop* for_loop;
@@ -199,9 +199,9 @@
 %destructor { TouchRef($$); } <array_ref>
 %destructor { TouchRef($$); } <assignment>
 %destructor { TouchRef($$); } <block>
-%destructor { TouchRef($$); } <break_>
 %destructor { TouchRef($$); } <case_>
 %destructor { TouchRef($$); } <case_list>
+%destructor { TouchRef($$); } <exit>
 %destructor { TouchRef($$); } <const_decl>
 %destructor { TouchRef($$); } <default_case>
 %destructor { TouchRef($$); } <expr>
@@ -251,7 +251,7 @@
 %token UNTIL "until"
 %token DO "do"
 %token LOOP "loop"
-%token BREAK "break"
+%token EXIT "exit"
 %token FOR "for"
 %token TO "to"
 %token STEP "step"
@@ -348,7 +348,7 @@
 %type<while_loop> loop_while
 %type<until_loop> loop_until
 %type<for_loop> loop_for
-%type<break_> break
+%type<exit> exit
 %type<func_decl> func_decl
 %type<func_exit> func_exit
 %type<select> select
@@ -438,7 +438,7 @@ stmnt
   | var_decl                                     { $$ = $1; }
   | assignment                                   { $$ = $1; }
   | loop                                         { $$ = $1; }
-  | break                                        { $$ = $1; }
+  | exit                                         { $$ = $1; }
   | func_decl                                    { $$ = $1; }
   | func_exit                                    { $$ = $1; }
   | incdec                                       { $$ = $1; }
@@ -813,8 +813,8 @@ loop_next_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR               { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-break
-  : BREAK                                        { $$ = new Break(driver->newLocation(&@$)); }
+exit
+  : EXIT                                         { $$ = new Exit(newloc()); }
   ;
 %%
 

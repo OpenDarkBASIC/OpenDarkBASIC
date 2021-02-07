@@ -1,15 +1,13 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
-#include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
@@ -48,7 +46,6 @@ void ASTParentConsistenciesChecker::visitBlock(const Block* node)
     for (const auto& stmnt : node->statements())
         EXPECT_THAT(node, Eq(stmnt->parent()));
 }
-void ASTParentConsistenciesChecker::visitBreak(const Break* node) {}
 void ASTParentConsistenciesChecker::visitCase(const Case* node)
 {
     EXPECT_THAT(node, Eq(node->expression()->parent()));
@@ -100,6 +97,7 @@ void ASTParentConsistenciesChecker::visitDefaultCase(const DefaultCase* node)
     if (node->body().notNull())
         EXPECT_THAT(node, Eq(node->body()->parent()));
 }
+void ASTParentConsistenciesChecker::visitExit(const Exit* node) {}
 void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* node)
 {
     for (const auto& expr : node->expressions())

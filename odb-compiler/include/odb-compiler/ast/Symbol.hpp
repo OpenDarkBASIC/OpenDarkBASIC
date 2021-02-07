@@ -55,7 +55,6 @@ private:
 class ODBCOMPILER_PUBLIC_API AnnotatedSymbol : public Symbol
 {
 public:
-
     AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
     Annotation annotation() const;
 

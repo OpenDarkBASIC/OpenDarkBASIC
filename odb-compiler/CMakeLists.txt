@@ -100,10 +100,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Assignment.cpp"
     "src/ast/BinaryOp.cpp"
     "src/ast/Block.cpp"
-    "src/ast/Break.cpp"
     "src/ast/Command.cpp"
     "src/ast/Conditional.cpp"
     "src/ast/ConstDecl.cpp"
+    "src/ast/Exit.cpp"
     "src/ast/Exporters_DOT.cpp"
     "src/ast/Exporters_JSON.cpp"
     "src/ast/Expression.cpp"
@@ -182,13 +182,17 @@ target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 # This is apparently deprecated since 4 years
 # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
 #
-#llvm_map_components_to_libnames (llvm_libs core bitwriter x86codegen)
+#llvm_map_components_to_libnames (llvm_libs <list of LLVM libs>)
 #target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
 #target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
 
 # This is how you're supposed to do it by reading LLVM-Config.cmake
 # https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-llvm_config (odb-compiler USE_SHARED)
+option (ODBC_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
+if (${ODBC_LLVM_ENABLE_SHARED_LIBS})
+    set (llvm_use_shared USE_SHARED)
+endif()
+llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen)
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests

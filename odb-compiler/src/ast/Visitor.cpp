@@ -1,12 +1,13 @@
+#include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
@@ -25,7 +26,6 @@
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
-#include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
 namespace odb {
@@ -36,7 +36,6 @@ void GenericVisitor::visitAnnotatedSymbol(AnnotatedSymbol* node)               {
 void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               { visit(node); }
 void GenericVisitor::visitArrayRef(ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBlock(Block* node)                                   { visit(node); }
-void GenericVisitor::visitBreak(Break* node)                                   { visit(node); }
 void GenericVisitor::visitCase(Case* node)                                     { visit(node); }
 void GenericVisitor::visitCaseList(CaseList* node)                             { visit(node); }
 void GenericVisitor::visitCommandExpr(CommandExpr* node)                       { visit(node); }
@@ -46,6 +45,7 @@ void GenericVisitor::visitCommandStmnt(CommandStmnt* node)                     {
 void GenericVisitor::visitConditional(Conditional* node)                       { visit(node); }
 void GenericVisitor::visitConstDecl(ConstDecl* node)                           { visit(node); }
 void GenericVisitor::visitDefaultCase(DefaultCase* node)                       { visit(node); }
+void GenericVisitor::visitExit(Exit* node)                                     { visit(node); }
 void GenericVisitor::visitExpressionList(ExpressionList* node)                 { visit(node); }
 void GenericVisitor::visitForLoop(ForLoop* node)                               { visit(node); }
 void GenericVisitor::visitFuncCallExpr(FuncCallExpr* node)                     { visit(node); }
@@ -101,7 +101,6 @@ void GenericConstVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)     
 void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)               { visit(node); }
 void GenericConstVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericConstVisitor::visitBlock(const Block* node)                                   { visit(node); }
-void GenericConstVisitor::visitBreak(const Break* node)                                   { visit(node); }
 void GenericConstVisitor::visitCase(const Case* node)                                     { visit(node); }
 void GenericConstVisitor::visitCaseList(const CaseList* node)                             { visit(node); }
 void GenericConstVisitor::visitCommandExpr(const CommandExpr* node)                       { visit(node); }
@@ -111,6 +110,7 @@ void GenericConstVisitor::visitCommandStmnt(const CommandStmnt* node)           
 void GenericConstVisitor::visitConditional(const Conditional* node)                       { visit(node); }
 void GenericConstVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
 void GenericConstVisitor::visitDefaultCase(const DefaultCase* node)                       { visit(node); }
+void GenericConstVisitor::visitExit(const Exit* node)                                     { visit(node); }
 void GenericConstVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }
 void GenericConstVisitor::visitForLoop(const ForLoop* node)                               { visit(node); }
 void GenericConstVisitor::visitFuncCallExpr(const FuncCallExpr* node)                     { visit(node); }

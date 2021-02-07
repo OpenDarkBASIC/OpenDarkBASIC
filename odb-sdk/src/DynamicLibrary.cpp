@@ -1,13 +1,13 @@
 #include "odb-sdk/DynamicLibrary.hpp"
-#include <cstring>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <iostream>
 
 #if defined(ODBSDK_PLATFORM_LINUX)
 #include <dlfcn.h>
-#include <link.h>
 #include <elf.h>
+#include <link.h>
 #else
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -19,7 +19,7 @@ struct DynLibPlatformData
 {
 #if defined(ODBSDK_PLATFORM_LINUX)
     void* handle;
-    const ElfW(Sym)* symtab = nullptr;
+    const ElfW(Sym) * symtab = nullptr;
     const uint32_t* hashtab = nullptr;
     const uint32_t* gnuhashtab = nullptr;
     const char* strtab = nullptr;
@@ -48,7 +48,7 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
 
     // Find dynamic symbol table and symbol hash table
     int entries_found = 0;
-    for(const ElfW(Dyn)* dyn = lm->l_ld; dyn->d_tag != DT_NULL; ++dyn)
+    for (const ElfW(Dyn)* dyn = lm->l_ld; dyn->d_tag != DT_NULL; ++dyn)
     {
         switch (dyn->d_tag)
         {
@@ -73,7 +73,7 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
             entries_found++;
             break;
         }
-        if (entries_found == 4)  // either gnu hash table or normal hash table
+        if (entries_found == 4) // either gnu hash table or normal hash table
             break;
     }
     if (!data->symtab || !(data->hashtab || data->gnuhashtab) || !data->symsize || !data->strtab)
@@ -95,9 +95,8 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary::DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename) :
-    data_(std::move(data)),
-    filename_(filename)
+DynamicLibrary::DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename)
+    : data_(std::move(data)), filename_(filename)
 {
 }
 
@@ -137,13 +136,13 @@ static int getSymbolCountInHashTable(const uint32_t* hashtab)
 }
 static int getSymbolCountInGNUHashTable(const uint32_t* hashtab)
 {
-    const uint32_t nbuckets    = hashtab[0];
-    const uint32_t symoffset   = hashtab[1];
-    const uint32_t bloom_size  = hashtab[2];
+    const uint32_t nbuckets = hashtab[0];
+    const uint32_t symoffset = hashtab[1];
+    const uint32_t bloom_size = hashtab[2];
     /*const uint32_t bloom_shift = hashtab[3];*/
-    const void** bloom     = (const void**)&hashtab[4];
-    const uint32_t* buckets    = (const uint32_t*)&bloom[bloom_size];
-    const uint32_t* chain      = &buckets[nbuckets];
+    const void** bloom = (const void**)&hashtab[4];
+    const uint32_t* buckets = (const uint32_t*)&bloom[bloom_size];
+    const uint32_t* chain = &buckets[nbuckets];
 
     // Find largest bucket
     uint32_t last_symbol = 0;
@@ -161,9 +160,8 @@ static int getSymbolCountInGNUHashTable(const uint32_t* hashtab)
 int DynamicLibrary::getSymbolCount() const
 {
 #if defined(ODBSDK_PLATFORM_LINUX)
-    return data_->gnuhashtab ?
-        getSymbolCountInGNUHashTable(data_->gnuhashtab) :
-        getSymbolCountInHashTable(data_->hashtab);
+    return data_->gnuhashtab ? getSymbolCountInGNUHashTable(data_->gnuhashtab)
+                             : getSymbolCountInHashTable(data_->hashtab);
 #else
     return 0;
 #endif
@@ -173,8 +171,8 @@ int DynamicLibrary::getSymbolCount() const
 const char* DynamicLibrary::getSymbolAt(int idx) const
 {
 #if defined(ODBSDK_PLATFORM_LINUX)
-    const ElfW(Sym)* sym = reinterpret_cast<const ElfW(Sym)*>(
-        reinterpret_cast<const char*>(data_->symtab) + data_->symsize * (idx+1));
+    const ElfW(Sym)* sym =
+        reinterpret_cast<const ElfW(Sym)*>(reinterpret_cast<const char*>(data_->symtab) + data_->symsize * (idx + 1));
 
     return data_->strtab + sym->st_name;
 #else
@@ -184,27 +182,34 @@ const char* DynamicLibrary::getSymbolAt(int idx) const
 
 // ----------------------------------------------------------------------------
 #if defined(ODBSDK_PLATFORM_WIN32)
-int DynamicLibrary::getStringTableSize() const
+std::vector<std::string> DynamicLibrary::getStringTable() const
 {
-    char buffer[512];
-    int stringTableSize = 0;
-    while (LoadStringA(data_->handle, stringTableSize + 1, buffer, 512) > 0)
+    std::vector<std::string> stringTable;
+
+    auto resourceCallback = [](HMODULE hModule, LPCSTR lpType, LPSTR lpName, LONG_PTR lParam) -> BOOL
     {
-        stringTableSize++;
-    }
-    return stringTableSize;
+        if (IS_INTRESOURCE(lpName))
+        {
+            auto& stringTable = *reinterpret_cast<std::vector<std::string>*>(lParam);
+
+            // Each string table resource always contain 16 strings.
+            char buffer[4096];
+            std::size_t stringTableOffset = (reinterpret_cast<std::size_t>(lpName) - 1) * 16;
+            for (int i = 1; i <= 16; ++i)
+            {
+                int size = LoadStringA(hModule, stringTableOffset + i, buffer, sizeof(buffer));
+                if (size == 0)
+                {
+                    continue;
+                }
+                stringTable.emplace_back(std::string(buffer, size));
+            }
+        }
+        return TRUE;
+    };
+    EnumResourceNamesA(data_->handle, RT_STRING, resourceCallback, reinterpret_cast<LONG_PTR>(&stringTable));
+    return stringTable;
 }
 #endif
 
-// ----------------------------------------------------------------------------
-#if defined(ODBSDK_PLATFORM_WIN32)
-std::string DynamicLibrary::getStringTableEntryAt(int idx) const
-{
-    char buffer[512];
-    // String table entries are indexed from 1.
-    int size = LoadStringA(data_->handle, idx + 1, buffer, 512);
-    return std::string(buffer, size);
-}
-#endif
-
-}
+} // namespace odb
