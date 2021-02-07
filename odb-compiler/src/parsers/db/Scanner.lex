@@ -131,6 +131,6 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     ":"                 { RETURN_TOKEN(':'); }
     ";"                 { RETURN_TOKEN(';'); }
     [ \t]
-    .                   { RETURN_TOKEN(yytext[0]); }
+    .
 }
 %%
