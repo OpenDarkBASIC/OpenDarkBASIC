@@ -19,6 +19,7 @@
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/LValue.hpp"
+    #include "odb-compiler/ast/SelectCase.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
     #include "odb-compiler/ast/Symbol.hpp"
@@ -62,10 +63,13 @@
             class Assignment;
             class Block;
             class Break;
+            class Case;
+            class CaseList;
             class CommandExprSymbol;
             class CommandStmntSymbol;
             class Conditional;
             class ConstDecl;
+            class DefaultCase;
             class ForLoop;
             class FuncCallExpr;
             class FuncCallStmnt;
@@ -82,6 +86,7 @@
             class Node;
             class ScopedSymbol;
             class ScopedAnnotatedSymbol;
+            class Select;
             class Statement;
             class SubCallSymbol;
             class SubReturn;
@@ -152,10 +157,13 @@
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::Break* break_;
+    odb::ast::Case* case_;
+    odb::ast::CaseList* case_list;
     odb::ast::CommandExprSymbol* command_expr;
     odb::ast::CommandStmntSymbol* command_stmnt;
     odb::ast::Conditional* conditional;
     odb::ast::ConstDecl* const_decl;
+    odb::ast::DefaultCase* default_case;
     odb::ast::Expression* expr;
     odb::ast::ExpressionList* expr_list;
     odb::ast::ForLoop* for_loop;
@@ -169,6 +177,7 @@
     odb::ast::Loop* loop;
     odb::ast::LValue* lvalue;
     odb::ast::ScopedAnnotatedSymbol* scoped_annotated_symbol;
+    odb::ast::Select* select;
     odb::ast::Statement* stmnt;
     odb::ast::SubCallSymbol* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
@@ -191,7 +200,10 @@
 %destructor { TouchRef($$); } <assignment>
 %destructor { TouchRef($$); } <block>
 %destructor { TouchRef($$); } <break_>
+%destructor { TouchRef($$); } <case_>
+%destructor { TouchRef($$); } <case_list>
 %destructor { TouchRef($$); } <const_decl>
+%destructor { TouchRef($$); } <default_case>
 %destructor { TouchRef($$); } <expr>
 %destructor { TouchRef($$); } <expr_list>
 %destructor { TouchRef($$); } <for_loop>
@@ -205,6 +217,7 @@
 %destructor { TouchRef($$); } <loop>
 %destructor { TouchRef($$); } <lvalue>
 %destructor { TouchRef($$); } <scoped_annotated_symbol>
+%destructor { TouchRef($$); } <select>
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <udt_type_decl>
 %destructor { TouchRef($$); } <udt_type_decl_body>
@@ -310,6 +323,9 @@
 %type<block> program
 %type<block> block
 %type<stmnt> stmnt
+%type<case_> case
+%type<case_list> case_list
+%type<default_case> default_case
 %type<const_decl> constant_decl
 %type<func_call_stmnt> func_call_stmnt
 %type<expr> func_call_expr_or_array_ref
@@ -335,6 +351,7 @@
 %type<break_> break
 %type<func_decl> func_decl
 %type<func_exit> func_exit
+%type<select> select
 %type<stmnt> incdec
 %type<symbol> symbol
 %type<sub_call_symbol> sub_call
@@ -432,6 +449,7 @@ stmnt
   | conditional                                  { $$ = $1; }
   | array_decl                                   { $$ = $1; }
   | udt_type_decl                                { $$ = $1; }
+  | select                                       { $$ = $1; }
   ;
 expr_list
   : expr_list ',' expr                           { $$ = $1; $$->appendExpression($3); }
@@ -739,22 +757,30 @@ cond_next
   | ELSE seps ENDIF                              { $$ = nullptr; }
   | ENDIF                                        { $$ = nullptr; }
   ;
-/*
 select
   : SELECT expr seps case_list seps ENDSELECT    { $$ = new Select($2, $4, driver->newLocation(&@$)); }
   | SELECT expr seps ENDSELECT                   { $$ = new Select($2, driver->newLocation(&@$)); }
   ;
-/ NOTE: case can be null /
 case_list
-  : case_list seps case                          { $$ = $1; if($3) $$->appendCase($3); }
-  | case                                         { $$ = new CaseList(driver->newLocation(&@$)); if ($1) $$->appendCase($1); }
+  : case_list seps case                          { $$ = $1; $$->appendCase($3); }
+  | case_list seps default_case                  { $$ = $1;
+                                                   if ($$->defaultCase().isNull()) {
+                                                       $$->setDefaultCase($3);
+                                                   } else {
+                                                       dberror(&yylloc, scanner, "Multiple default cases were found in select statement\n");
+                                                       YYABORT;
+                                                   }
+                                                 }
+  | case                                         { $$ = new CaseList($1, driver->newLocation(&@$)); }
   ;
 case
-  : CASE expr seps block seps ENDCASE            { $$ = new Case($2, $4, &yylloc); }
-  | CASE expr seps ENDCASE                       { $$ = new Case($2, nullptr, &yylloc); }
-  | CASE DEFAULT seps block seps ENDCASE         { $$ = new Case(nullptr, $4, &yylloc); }
-  | CASE DEFAULT seps ENDCASE                    { $$ = nullptr; }
-  ;*/
+  : CASE expr seps block seps ENDCASE            { $$ = new Case($2, $4, driver->newLocation(&@$)); }
+  | CASE expr seps ENDCASE                       { $$ = new Case($2, driver->newLocation(&@$)); }
+  ;
+default_case
+  : CASE DEFAULT seps block seps ENDCASE         { $$ = new DefaultCase($4, driver->newLocation(&@$)); }
+  | CASE DEFAULT seps ENDCASE                    { $$ = new DefaultCase(driver->newLocation(&@$)); }
+  ;
 loop
   : loop_do                                      { $$ = $1; }
   | loop_while                                   { $$ = $1; }

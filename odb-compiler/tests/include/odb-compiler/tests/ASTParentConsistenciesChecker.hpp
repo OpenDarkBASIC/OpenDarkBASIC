@@ -10,12 +10,15 @@ public:
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
     void visitBlock(const odb::ast::Block* node) override;
     void visitBreak(const odb::ast::Break* node) override;
+    void visitCase(const odb::ast::Case* node) override;
+    void visitCaseList(const odb::ast::CaseList* node) override;
     void visitCommandExpr(const odb::ast::CommandExpr* node) override;
     void visitCommandExprSymbol(const odb::ast::CommandExprSymbol* node) override;
     void visitCommandStmnt(const odb::ast::CommandStmnt* node) override;
     void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitConditional(const odb::ast::Conditional* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
+    void visitDefaultCase(const odb::ast::DefaultCase* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
     void visitForLoop(const odb::ast::ForLoop* node) override;
     void visitFuncCallExpr(const odb::ast::FuncCallExpr* node) override;
@@ -29,6 +32,7 @@ public:
     void visitLabel(const odb::ast::Label* node) override;
     void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const odb::ast::ScopedAnnotatedSymbol* node) override;
+    void visitSelect(const odb::ast::Select* node) override;
     void visitSubCall(const odb::ast::SubCall* node) override;
     void visitSubCallSymbol(const odb::ast::SubCallSymbol* node) override;
     void visitSubReturn(const odb::ast::SubReturn* node) override;

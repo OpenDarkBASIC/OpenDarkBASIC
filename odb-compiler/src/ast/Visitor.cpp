@@ -15,6 +15,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -36,12 +37,15 @@ void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               {
 void GenericVisitor::visitArrayRef(ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBlock(Block* node)                                   { visit(node); }
 void GenericVisitor::visitBreak(Break* node)                                   { visit(node); }
+void GenericVisitor::visitCase(Case* node)                                     { visit(node); }
+void GenericVisitor::visitCaseList(CaseList* node)                             { visit(node); }
 void GenericVisitor::visitCommandExpr(CommandExpr* node)                       { visit(node); }
 void GenericVisitor::visitCommandExprSymbol(CommandExprSymbol* node)           { visit(node); }
 void GenericVisitor::visitCommandStmntSymbol(CommandStmntSymbol* node)         { visit(node); }
 void GenericVisitor::visitCommandStmnt(CommandStmnt* node)                     { visit(node); }
 void GenericVisitor::visitConditional(Conditional* node)                       { visit(node); }
 void GenericVisitor::visitConstDecl(ConstDecl* node)                           { visit(node); }
+void GenericVisitor::visitDefaultCase(DefaultCase* node)                       { visit(node); }
 void GenericVisitor::visitExpressionList(ExpressionList* node)                 { visit(node); }
 void GenericVisitor::visitForLoop(ForLoop* node)                               { visit(node); }
 void GenericVisitor::visitFuncCallExpr(FuncCallExpr* node)                     { visit(node); }
@@ -55,6 +59,7 @@ void GenericVisitor::visitInfiniteLoop(InfiniteLoop* node)                     {
 void GenericVisitor::visitLabel(Label* node)                                   { visit(node); }
 void GenericVisitor::visitScopedSymbol(ScopedSymbol* node)                     { visit(node); }
 void GenericVisitor::visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node)   { visit(node); }
+void GenericVisitor::visitSelect(Select* node)                                 { visit(node); }
 void GenericVisitor::visitSubCall(SubCall* node)                               { visit(node); }
 void GenericVisitor::visitSubCallSymbol(SubCallSymbol* node)                   { visit(node); }
 void GenericVisitor::visitSubReturn(SubReturn* node)                           { visit(node); }
@@ -97,12 +102,15 @@ void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)     
 void GenericConstVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericConstVisitor::visitBlock(const Block* node)                                   { visit(node); }
 void GenericConstVisitor::visitBreak(const Break* node)                                   { visit(node); }
+void GenericConstVisitor::visitCase(const Case* node)                                     { visit(node); }
+void GenericConstVisitor::visitCaseList(const CaseList* node)                             { visit(node); }
 void GenericConstVisitor::visitCommandExpr(const CommandExpr* node)                       { visit(node); }
 void GenericConstVisitor::visitCommandExprSymbol(const CommandExprSymbol* node)           { visit(node); }
 void GenericConstVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node)         { visit(node); }
 void GenericConstVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
 void GenericConstVisitor::visitConditional(const Conditional* node)                       { visit(node); }
 void GenericConstVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
+void GenericConstVisitor::visitDefaultCase(const DefaultCase* node)                       { visit(node); }
 void GenericConstVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }
 void GenericConstVisitor::visitForLoop(const ForLoop* node)                               { visit(node); }
 void GenericConstVisitor::visitFuncCallExpr(const FuncCallExpr* node)                     { visit(node); }
@@ -116,6 +124,7 @@ void GenericConstVisitor::visitInfiniteLoop(const InfiniteLoop* node)           
 void GenericConstVisitor::visitLabel(const Label* node)                                   { visit(node); }
 void GenericConstVisitor::visitScopedSymbol(const ScopedSymbol* node)                     { visit(node); }
 void GenericConstVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
+void GenericConstVisitor::visitSelect(const Select* node)                                 { visit(node); }
 void GenericConstVisitor::visitSubCall(const SubCall* node)                               { visit(node); }
 void GenericConstVisitor::visitSubCallSymbol(const SubCallSymbol* node)                   { visit(node); }
 void GenericConstVisitor::visitSubReturn(const SubReturn* node)                           { visit(node); }

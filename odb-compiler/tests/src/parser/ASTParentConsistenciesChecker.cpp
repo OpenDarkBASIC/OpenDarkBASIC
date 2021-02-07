@@ -16,6 +16,7 @@
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -48,6 +49,19 @@ void ASTParentConsistenciesChecker::visitBlock(const Block* node)
         EXPECT_THAT(node, Eq(stmnt->parent()));
 }
 void ASTParentConsistenciesChecker::visitBreak(const Break* node) {}
+void ASTParentConsistenciesChecker::visitCase(const Case* node)
+{
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
+}
+void ASTParentConsistenciesChecker::visitCaseList(const CaseList* node)
+{
+    for (const auto& case_ : node->cases())
+        EXPECT_THAT(node, Eq(case_->parent()));
+    if (node->defaultCase().notNull())
+        EXPECT_THAT(node, Eq(node->defaultCase()->parent()));
+}
 void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
 {
     if (node->args().notNull())
@@ -80,6 +94,11 @@ void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->literal()->parent()));
+}
+void ASTParentConsistenciesChecker::visitDefaultCase(const DefaultCase* node)
+{
+    if (node->body().notNull())
+        EXPECT_THAT(node, Eq(node->body()->parent()));
 }
 void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* node)
 {
@@ -148,6 +167,12 @@ void ASTParentConsistenciesChecker::visitLabel(const Label* node)
 }
 void ASTParentConsistenciesChecker::visitScopedSymbol(const ScopedSymbol* node) {}
 void ASTParentConsistenciesChecker::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) {}
+void ASTParentConsistenciesChecker::visitSelect(const Select* node)
+{
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+    if (node->cases().notNull())
+        EXPECT_THAT(node, Eq(node->cases()->parent()));
+}
 void ASTParentConsistenciesChecker::visitSubCall(const SubCall* node)
 {
     EXPECT_THAT(node, Eq(node->label()->parent()));

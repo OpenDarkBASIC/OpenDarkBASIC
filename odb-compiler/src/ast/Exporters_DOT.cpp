@@ -16,6 +16,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
@@ -88,6 +89,20 @@ private:
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
     }
     void visitBreak(const Break* node) override {}
+    void visitCase(const Case* node) override
+    {
+        writeNamedConnection(node, node->expression(), "expr");
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
+    }
+    void visitCaseList(const CaseList* node) override
+    {
+        int i = 0;
+        for (const auto& case_ : node->cases())
+            writeNamedConnection(node, case_, "case[" + std::to_string(i++) + "]");
+        if (node->defaultCase().notNull())
+            writeNamedConnection(node, node->defaultCase(), "default");
+    }
     void visitCommandExpr(const CommandExpr* node) override
     {
         if (node->args().notNull())
@@ -120,6 +135,11 @@ private:
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
+    }
+    void visitDefaultCase(const DefaultCase* node) override
+    {
+        if (node->body().notNull())
+            writeNamedConnection(node, node->body(), "body");
     }
     void visitExpressionList(const ExpressionList* node) override
     {
@@ -192,6 +212,12 @@ private:
     }
     void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
+    void visitSelect(const Select* node) override
+    {
+        writeNamedConnection(node, node->expression(), "expr");
+        if (node->cases().notNull())
+            writeNamedConnection(node, node->cases(), "cases");
+    }
     void visitSubCall(const SubCall* node) override
     {
         writeNamedConnection(node, node->label(), "label");
@@ -351,6 +377,10 @@ private:
         { writeName(node, "ArrayRef"); }
     void visitBreak(const Break* node) override
         { writeName(node, "Break"); }
+    void visitCase(const Case* node) override
+        { writeName(node, "Case"); }
+    void visitCaseList(const CaseList* node) override
+        { writeName(node, "CaseList"); }
     void visitCommandExpr(const CommandExpr* node) override
         { writeName(node, "CommandExpr: " + node->command()->dbSymbol()); }
     void visitCommandExprSymbol(const CommandExprSymbol* node) override
@@ -363,6 +393,8 @@ private:
         { writeName(node, "Conditional"); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
+    void visitDefaultCase(const DefaultCase* node) override
+        { writeName(node, "DefaultCase"); }
     void visitExpressionList(const ExpressionList* node) override
         { writeName(node, "ExpressionList"); }
     void visitForLoop(const ForLoop* node) override
@@ -385,8 +417,8 @@ private:
         { writeName(node, "InfiniteLoop"); }
     void visitLabel(const Label* node) override
         { writeName(node, "Label"); }
-    void visitUntilLoop(const UntilLoop* node) override
-        { writeName(node, "UntilLoop"); }
+    void visitSelect(const Select* node) override
+        { writeName(node, "Select"); }
     void visitSubCall(const SubCall* node) override
         { writeName(node, "SubCall"); }
     void visitSubCallSymbol(const SubCallSymbol* node) override
@@ -448,6 +480,8 @@ private:
         { writeName(node, "UDTVarDecl"); }
     void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override
         { writeName(node, "UDTVarDeclSymbol"); }
+    void visitUntilLoop(const UntilLoop* node) override
+        { writeName(node, "UntilLoop"); }
     void visitVarAssignment(const VarAssignment* node) override
         { writeName(node, "VarAssignment"); }
     void visitVarRef(const VarRef* node) override
