@@ -16,7 +16,6 @@ public:
     void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitConditional(const odb::ast::Conditional* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
-    void visitDecrementVar(const odb::ast::DecrementVar* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
     void visitForLoop(const odb::ast::ForLoop* node) override;
     void visitFuncCallExpr(const odb::ast::FuncCallExpr* node) override;
@@ -26,7 +25,6 @@ public:
     void visitFuncExit(const odb::ast::FuncExit* node) override;
     void visitGoto(const odb::ast::Goto* node) override;
     void visitGotoSymbol(const odb::ast::GotoSymbol* node) override;
-    void visitIncrementVar(const odb::ast::IncrementVar* node) override;
     void visitInfiniteLoop(const odb::ast::InfiniteLoop* node) override;
     void visitLabel(const odb::ast::Label* node) override;
     void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;

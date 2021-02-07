@@ -24,6 +24,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     std::vector<Reference<Expression>> expressions_;
 };

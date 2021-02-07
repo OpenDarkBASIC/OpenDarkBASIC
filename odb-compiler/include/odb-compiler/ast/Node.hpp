@@ -31,6 +31,13 @@ public:
      */
     virtual void swapChild(const Node* oldNode, Node* newNode) = 0;
 
+
+    template <typename T>
+    T* duplicate() const { return static_cast<T*>(duplicateImpl()); }
+
+protected:
+    virtual Node* duplicateImpl() const = 0;
+
 private:
     Node* parent_;
     Reference<SourceLocation> location_;

@@ -56,5 +56,14 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* ArrayRef::duplicateImpl() const
+{
+    return new ArrayRef(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        args_->duplicate<ExpressionList>(),
+        location());
+}
+
 }
 }

@@ -465,42 +465,6 @@ private:
     std::string label_;
 };
 
-class ODBCOMPILER_PUBLIC_API IncrementVar : public Statement
-{
-public:
-    IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-                 Ptr<Expression> incExpession);
-    IncrementVar(IncrementVar&&) = default;
-    IncrementVar(const IncrementVar&) = delete;
-    IncrementVar& operator=(IncrementVar&&) = default;
-    IncrementVar& operator=(const IncrementVar&) = delete;
-
-    const Variable* variable() const;
-    Expression* incExpession() const;
-
-private:
-    Reference<Variable> variable_;
-    Ptr<Expression> incExpession_;
-};
-
-class ODBCOMPILER_PUBLIC_API DecrementVar : public Statement
-{
-public:
-    DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-                 Ptr<Expression> decExpession);
-    DecrementVar(DecrementVar&&) = default;
-    DecrementVar(const DecrementVar&) = delete;
-    DecrementVar& operator=(DecrementVar&&) = default;
-    DecrementVar& operator=(const DecrementVar&) = delete;
-
-    const Variable* variable() const;
-    Expression* decExpession() const;
-
-private:
-    Reference<Variable> variable_;
-    Ptr<Expression> decExpession_;
-};
-
 class ODBCOMPILER_PUBLIC_API FunctionCall : public Statement
 {
 public:

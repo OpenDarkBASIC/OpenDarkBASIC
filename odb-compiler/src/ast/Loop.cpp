@@ -16,6 +16,9 @@ Loop::Loop(SourceLocation* location) :
 {
 }
 
+// ============================================================================
+// ============================================================================
+
 // ----------------------------------------------------------------------------
 InfiniteLoop::InfiniteLoop(Block* body, SourceLocation* location) :
     Loop(location),
@@ -60,6 +63,17 @@ void InfiniteLoop::swapChild(const Node* oldNode, Node* newNode)
 
     newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* InfiniteLoop::duplicateImpl() const
+{
+    return new InfiniteLoop(
+        body_ ? body_->duplicate<Block>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 WhileLoop::WhileLoop(Expression* continueCondition, Block* body, SourceLocation* location) :
@@ -121,6 +135,18 @@ void WhileLoop::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* WhileLoop::duplicateImpl() const
+{
+    return new WhileLoop(
+        continueCondition_->duplicate<Expression>(),
+        body_ ? body_->duplicate<Block>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 UntilLoop::UntilLoop(Expression* exitCondition, Block* body, SourceLocation* location) :
     Loop(location),
     exitCondition_(exitCondition),
@@ -178,6 +204,18 @@ void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
 
     newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* UntilLoop::duplicateImpl() const
+{
+    return new UntilLoop(
+        exitCondition_->duplicate<Expression>(),
+        body_ ? body_->duplicate<Block>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
@@ -358,6 +396,18 @@ void ForLoop::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* ForLoop::duplicateImpl() const
+{
+    return new ForLoop(
+        counter_->duplicate<Assignment>(),
+        endValue_->duplicate<Expression>(),
+        stepValue_ ? stepValue_->duplicate<Expression>() : nullptr,
+        nextSymbol_ ? nextSymbol_->duplicate<AnnotatedSymbol>() : nullptr,
+        body_ ? body_->duplicate<Block>() : nullptr,
+        location());
 }
 
 }

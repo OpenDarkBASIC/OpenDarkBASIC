@@ -56,5 +56,14 @@ void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* ConstDecl::duplicateImpl() const
+{
+    return new ConstDecl(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        literal_->duplicate<Literal>(),
+        location());
+}
+
 }
 }

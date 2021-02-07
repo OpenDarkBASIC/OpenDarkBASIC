@@ -20,4 +20,10 @@ void UDTRef::accept(ConstVisitor* visitor) const
     visitor->visitUDTRef(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* UDTRef::duplicateImpl() const
+{
+    return new UDTRef(name_, location());
+}
+
 }

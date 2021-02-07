@@ -1,6 +1,12 @@
+#include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
+#include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
@@ -363,6 +369,74 @@ ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocati
     if (value < std::numeric_limits<int32_t>::min())
         return new ast::DoubleIntegerLiteral(value, location);
     return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+}
+
+// ----------------------------------------------------------------------------
+static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, int dir)
+{
+    switch (dir) {
+        case 1  : return new ast::BinaryOpAdd(value, expr, expr->location());
+        case -1 : return new ast::BinaryOpSub(value, expr, expr->location());
+    }
+
+    return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+{
+    return new ast::VarAssignment(
+        value->duplicate<ast::VarRef>(),
+        newIncDecOp(value, expr, dir),
+        newLocation(loc));
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+{
+    return new ast::ArrayAssignment(
+        value->duplicate<ast::ArrayRef>(),
+        newIncDecOp(value, expr, dir),
+        newLocation(loc));
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+{
+    return new ast::UDTFieldAssignment(
+        value->duplicate<ast::UDTFieldOuter>(),
+        newIncDecOp(value, expr, dir),
+        newLocation(loc));
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, int dir, const DBLTYPE* loc)
+{
+    return newIncDecVar(
+        value,
+        new ast::ByteLiteral(1, value->location()),
+        dir,
+        loc);
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, int dir, const DBLTYPE* loc)
+{
+    return newIncDecArray(
+        value,
+        new ast::ByteLiteral(1, value->location()),
+        dir,
+        loc);
+}
+
+// ----------------------------------------------------------------------------
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, int dir, const DBLTYPE* loc)
+{
+    return newIncDecUDTField(
+        value,
+        new ast::ByteLiteral(1, value->location()),
+        dir,
+        loc);
 }
 
 }

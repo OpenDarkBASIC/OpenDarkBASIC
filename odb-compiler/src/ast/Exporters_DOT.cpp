@@ -8,12 +8,10 @@
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
-#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
-#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -123,11 +121,6 @@ private:
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
     }
-    void visitDecrementVar(const DecrementVar* node) override
-    {
-        writeNamedConnection(node, node->variable(), "var");
-        writeNamedConnection(node, node->expression(), "expr");
-    }
     void visitExpressionList(const ExpressionList* node) override
     {
         int i = 0;
@@ -187,11 +180,6 @@ private:
     void visitGotoSymbol(const GotoSymbol* node) override
     {
         writeNamedConnection(node, node->labelSymbol(), "label");
-    }
-    void visitIncrementVar(const IncrementVar* node) override
-    {
-        writeNamedConnection(node, node->variable(), "var");
-        writeNamedConnection(node, node->expression(), "expr");
     }
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
@@ -375,8 +363,6 @@ private:
         { writeName(node, "Conditional"); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
-    void visitDecrementVar(const DecrementVar* node) override
-        { writeName(node, "DecrementVar"); }
     void visitExpressionList(const ExpressionList* node) override
         { writeName(node, "ExpressionList"); }
     void visitForLoop(const ForLoop* node) override
@@ -395,8 +381,6 @@ private:
         { writeName(node, "Goto"); }
     void visitGotoSymbol(const GotoSymbol* node) override
         { writeName(node, "GotoSymbol"); }
-    void visitIncrementVar(const IncrementVar* node) override
-        { writeName(node, "IncrementVar"); }
     void visitInfiniteLoop(const InfiniteLoop* node) override
         { writeName(node, "InfiniteLoop"); }
     void visitLabel(const Label* node) override

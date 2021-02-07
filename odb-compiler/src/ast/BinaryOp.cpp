@@ -55,6 +55,13 @@ void BinaryOp##op::swapChild(const Node* oldNode, Node* newNode)              \
         assert(false);                                                        \
                                                                               \
     newNode->setParent(this);                                                 \
+}                                                                             \
+Node* BinaryOp##op::duplicateImpl() const                                     \
+{                                                                             \
+    return new BinaryOp##op(                                                  \
+        lhs_->duplicate<Expression>(),                                        \
+        rhs_->duplicate<Expression>(),                                        \
+        location());                                                          \
 }
 ODB_BINARY_OP_LIST
 #undef X

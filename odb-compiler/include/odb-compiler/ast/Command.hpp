@@ -29,6 +29,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     Reference<ExpressionList> args_;
     const std::string command_;
@@ -46,6 +49,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 
 private:
     Reference<ExpressionList> args_;
@@ -65,6 +71,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     Reference<cmd::Command> command_;
     Reference<ExpressionList> args_;
@@ -82,6 +91,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 
 private:
     Reference<cmd::Command> command_;

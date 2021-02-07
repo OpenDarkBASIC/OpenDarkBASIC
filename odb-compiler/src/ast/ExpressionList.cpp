@@ -65,5 +65,14 @@ void ExpressionList::swapChild(const Node* oldNode, Node* newNode)
     assert(false);
 }
 
+// ----------------------------------------------------------------------------
+Node* ExpressionList::duplicateImpl() const
+{
+    ExpressionList* el = new ExpressionList(location());
+    for (const auto& expr : expressions_)
+        el->appendExpression(expr->duplicate<Expression>());
+    return el;
+}
+
 }
 }

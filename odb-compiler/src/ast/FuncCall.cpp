@@ -67,6 +67,18 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* FuncCallExpr::duplicateImpl() const
+{
+    return new FuncCallExpr(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
     Expression(location),
     symbol_(symbol),
@@ -93,13 +105,15 @@ void FuncCallExprOrArrayRef::accept(Visitor* visitor)
 {
     visitor->visitFuncCallExprOrArrayRef(this);
     symbol_->accept(visitor);
-    args_->accept(visitor);
+    if (args_)
+        args_->accept(visitor);
 }
 void FuncCallExprOrArrayRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncCallExprOrArrayRef(this);
     symbol_->accept(visitor);
-    args_->accept(visitor);
+    if (args_)
+        args_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -114,6 +128,18 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
 
     newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* FuncCallExprOrArrayRef::duplicateImpl() const
+{
+    return new FuncCallExprOrArrayRef(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
@@ -172,6 +198,15 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* FuncCallStmnt::duplicateImpl() const
+{
+    return new FuncCallStmnt(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
 }
 
 }

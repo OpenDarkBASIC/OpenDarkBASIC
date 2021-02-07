@@ -491,38 +491,6 @@ const std::string& Gosub::label() const
     return label_;
 }
 
-IncrementVar::IncrementVar(SourceLocation* location, FunctionDefinition* containingFunction,
-                           Reference<Variable> variable, Ptr<Expression> incExpession)
-    : Statement(location, containingFunction), variable_(std::move(variable)), incExpession_(std::move(incExpession))
-{
-}
-
-const Variable* IncrementVar::variable() const
-{
-    return variable_;
-}
-
-Expression* IncrementVar::incExpession() const
-{
-    return incExpession_.get();
-}
-
-DecrementVar::DecrementVar(SourceLocation* location, FunctionDefinition* containingFunction,
-                           Reference<Variable> variable, Ptr<Expression> decExpession)
-    : Statement(location, containingFunction), variable_(std::move(variable)), decExpession_(std::move(decExpession))
-{
-}
-
-const Variable* DecrementVar::variable() const
-{
-    return variable_;
-}
-
-Expression* DecrementVar::decExpession() const
-{
-    return decExpession_.get();
-}
-
 FunctionCall::FunctionCall(SourceLocation* location, FunctionDefinition* containingFunction,
                            FunctionCallExpression call)
     : Statement(location, containingFunction), expression_(std::move(call))

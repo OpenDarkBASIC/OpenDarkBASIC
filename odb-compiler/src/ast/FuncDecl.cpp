@@ -164,6 +164,20 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* FuncDecl::duplicateImpl() const
+{
+    return new FuncDecl(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        body_ ? body_->duplicate<Block>() : nullptr,
+        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 FuncExit::FuncExit(Expression* returnValue, SourceLocation* location) :
     Statement(location),
     returnValue_(returnValue)
@@ -206,6 +220,14 @@ void FuncExit::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* FuncExit::duplicateImpl() const
+{
+    return new FuncExit(
+        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
+        location());
 }
 
 }

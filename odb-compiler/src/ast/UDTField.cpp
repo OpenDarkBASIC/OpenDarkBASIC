@@ -52,6 +52,15 @@ void UDTFieldOuter::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* UDTFieldOuter::duplicateImpl() const
+{
+    return new UDTFieldOuter(
+        left_->duplicate<Expression>(),
+        right_->duplicate<LValue>(),
+        location());
+}
+
 // ============================================================================
 // ============================================================================
 
@@ -102,6 +111,15 @@ void UDTFieldInner::swapChild(const Node* oldNode, Node* newNode)
         assert(false),
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* UDTFieldInner::duplicateImpl() const
+{
+    return new UDTFieldInner(
+        left_->duplicate<LValue>(),
+        right_->duplicate<LValue>(),
+        location());
 }
 
 }

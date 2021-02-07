@@ -22,6 +22,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     Reference<Expression> cond_;
     Reference<Block> true_;

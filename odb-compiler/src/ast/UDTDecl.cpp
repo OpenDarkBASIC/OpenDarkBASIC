@@ -61,6 +61,18 @@ void UDTDecl::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* UDTDecl::duplicateImpl() const
+{
+    return new UDTDecl(
+        typeName_->duplicate<Symbol>(),
+        body_->duplicate<UDTDeclBody>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 UDTDeclBody::UDTDeclBody(SourceLocation* location) :
     Node(location)
 {
@@ -148,6 +160,17 @@ void UDTDeclBody::swapChild(const Node* oldNode, Node* newNode)
         }
 
     assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* UDTDeclBody::duplicateImpl() const
+{
+    UDTDeclBody* body = new UDTDeclBody(location());
+    for (const auto& varDecl : varDecls_)
+        body->appendVarDecl(varDecl->duplicate<VarDecl>());
+    for (const auto& arrDecl : arrayDecls_)
+        body->appendArrayDecl(arrDecl->duplicate<ArrayDecl>());
+    return body;
 }
 
 }

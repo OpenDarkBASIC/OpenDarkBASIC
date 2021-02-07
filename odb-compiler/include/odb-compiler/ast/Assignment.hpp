@@ -35,6 +35,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 };
 
 class ODBCOMPILER_PUBLIC_API ArrayAssignment : public Assignment
@@ -47,6 +50,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 };
 
 class ODBCOMPILER_PUBLIC_API UDTFieldAssignment : public Assignment
@@ -59,6 +65,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 };
 
 }

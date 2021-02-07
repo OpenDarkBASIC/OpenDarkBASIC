@@ -71,6 +71,18 @@ void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* VarAssignment::duplicateImpl() const
+{
+    return new VarAssignment(
+        lvalue_->duplicate<VarRef>(),
+        expr_->duplicate<Expression>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 ArrayAssignment::ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location)
     : Assignment(var, expr, location)
 {
@@ -110,6 +122,18 @@ void ArrayAssignment::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* ArrayAssignment::duplicateImpl() const
+{
+    return new ArrayAssignment(
+        lvalue_->duplicate<ArrayRef>(),
+        expr_->duplicate<Expression>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 UDTFieldAssignment::UDTFieldAssignment(UDTFieldOuter* field, Expression* expr, SourceLocation* location)
     : Assignment(field, expr, location)
 {
@@ -146,6 +170,15 @@ void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* UDTFieldAssignment::duplicateImpl() const
+{
+    return new UDTFieldAssignment(
+        lvalue_->duplicate<UDTFieldOuter>(),
+        expr_->duplicate<Expression>(),
+        location());
 }
 
 }

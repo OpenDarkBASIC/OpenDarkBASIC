@@ -13,14 +13,12 @@
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Data.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
-#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
-#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -483,16 +481,6 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {
         return std::make_unique<Label>(location, currentFunction_, labelSt->symbol()->name());
-    }
-    else if (auto* incVarSt = dynamic_cast<ast::IncrementVar*>(statement))
-    {
-        return std::make_unique<IncrementVar>(location, currentFunction_, resolveVariableRef(incVarSt->variable()),
-                                              convertExpression(incVarSt->expression()));
-    }
-    else if (auto* decVarSt = dynamic_cast<ast::DecrementVar*>(statement))
-    {
-        return std::make_unique<DecrementVar>(location, currentFunction_, resolveVariableRef(decVarSt->variable()),
-                                              convertExpression(decVarSt->expression()));
     }
     else if (auto* funcCallSt = dynamic_cast<ast::FuncCallStmnt*>(statement))
     {

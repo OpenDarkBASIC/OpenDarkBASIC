@@ -45,6 +45,17 @@ void SubCallSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* SubCallSymbol::duplicateImpl() const
+{
+    return new SubCallSymbol(
+        label_->duplicate<Symbol>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 SubCall::SubCall(Label* label, SourceLocation* location) :
     Statement(location),
     label_(label)
@@ -82,6 +93,17 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* SubCall::duplicateImpl() const
+{
+    return new SubCall(
+        label_->duplicate<Label>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 SubReturn::SubReturn(SourceLocation* location) :
     Statement(location)
 {
@@ -101,6 +123,12 @@ void SubReturn::accept(ConstVisitor* visitor) const
 void SubReturn::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* SubReturn::duplicateImpl() const
+{
+    return new SubReturn(location());
 }
 
 }

@@ -9,12 +9,10 @@
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
-#include "odb-compiler/ast/Decrement.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
-#include "odb-compiler/ast/Increment.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -83,11 +81,6 @@ void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->literal()->parent()));
 }
-void ASTParentConsistenciesChecker::visitDecrementVar(const DecrementVar* node)
-{
-    EXPECT_THAT(node, Eq(node->variable()->parent()));
-    EXPECT_THAT(node, Eq(node->expression()->parent()));
-}
 void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* node)
 {
     for (const auto& expr : node->expressions())
@@ -143,11 +136,6 @@ void ASTParentConsistenciesChecker::visitGoto(const Goto* node)
 void ASTParentConsistenciesChecker::visitGotoSymbol(const GotoSymbol* node)
 {
     EXPECT_THAT(node, Eq(node->labelSymbol()->parent()));
-}
-void ASTParentConsistenciesChecker::visitIncrementVar(const IncrementVar* node)
-{
-    EXPECT_THAT(node, Eq(node->variable()->parent()));
-    EXPECT_THAT(node, Eq(node->expression()->parent()));
 }
 void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
 {

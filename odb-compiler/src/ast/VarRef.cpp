@@ -43,5 +43,13 @@ void VarRef::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* VarRef::duplicateImpl() const
+{
+    return new VarRef(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        location());
+}
+
 }
 }

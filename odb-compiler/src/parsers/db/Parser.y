@@ -10,13 +10,11 @@
     #include "odb-compiler/ast/Command.hpp"
     #include "odb-compiler/ast/Conditional.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
-    #include "odb-compiler/ast/Decrement.hpp"
     #include "odb-compiler/ast/Expression.hpp"
     #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
     #include "odb-compiler/ast/Goto.hpp"
-    #include "odb-compiler/ast/Increment.hpp"
     #include "odb-compiler/ast/Label.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
@@ -337,8 +335,7 @@
 %type<break_> break
 %type<func_decl> func_decl
 %type<func_exit> func_exit
-%type<stmnt> increment
-%type<stmnt> decrement
+%type<stmnt> incdec
 %type<symbol> symbol
 %type<sub_call_symbol> sub_call
 %type<sub_return> sub_return
@@ -427,8 +424,7 @@ stmnt
   | break                                        { $$ = $1; }
   | func_decl                                    { $$ = $1; }
   | func_exit                                    { $$ = $1; }
-  | increment                                    { $$ = $1; }
-  | decrement                                    { $$ = $1; }
+  | incdec                                       { $$ = $1; }
   | label_decl                                   { $$ = $1; }
   | sub_call                                     { $$ = $1; }
   | sub_return                                   { $$ = $1; }
@@ -492,13 +488,19 @@ command_expr
 constant_decl
   : CONSTANT annotated_symbol literal            { $$ = new ConstDecl($2, $3, driver->newLocation(&@$)); }
   ;
-increment
-  : INC var_ref ',' expr                         { $$ = new IncrementVar($2, $4, driver->newLocation(&@$)); }
-  | INC var_ref                                  { $$ = new IncrementVar($2, driver->newLocation(&@$)); }
-  ;
-decrement
-  : DEC var_ref ',' expr                         { $$ = new DecrementVar($2, $4, driver->newLocation(&@$)); }
-  | DEC var_ref                                  { $$ = new DecrementVar($2, driver->newLocation(&@$)); }
+incdec
+  : INC var_ref ',' expr                         { $$ = driver->newIncDecVar($2, $4, 1, &@$); }
+  | INC array_ref ',' expr                       { $$ = driver->newIncDecArray($2, $4, 1, &@$); }
+  | INC udt_field_lvalue ',' expr                { $$ = driver->newIncDecUDTField($2, $4, 1, &@$); }
+  | INC var_ref                                  { $$ = driver->newIncDecVar($2, 1, &@$); }
+  | INC array_ref                                { $$ = driver->newIncDecArray($2, 1, &@$); }
+  | INC udt_field_lvalue                         { $$ = driver->newIncDecUDTField($2, 1, &@$); }
+  | DEC var_ref ',' expr                         { $$ = driver->newIncDecVar($2, $4, -1, &@$); }
+  | DEC array_ref ',' expr                       { $$ = driver->newIncDecArray($2, $4, -1, &@$); }
+  | DEC udt_field_lvalue ',' expr                { $$ = driver->newIncDecUDTField($2, $4, -1, &@$); }
+  | DEC var_ref                                  { $$ = driver->newIncDecVar($2, -1, &@$); }
+  | DEC array_ref                                { $$ = driver->newIncDecArray($2, -1, &@$); }
+  | DEC udt_field_lvalue                         { $$ = driver->newIncDecUDTField($2, -1, &@$); }
   ;
 assignment
   : var_ref '=' expr                             { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }

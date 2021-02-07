@@ -43,6 +43,17 @@ void GotoSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* GotoSymbol::duplicateImpl() const
+{
+    return new GotoSymbol(
+        label_->duplicate<Symbol>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 Goto::Goto(Label* label, SourceLocation* location) :
     Statement(location),
     label_(label)
@@ -77,6 +88,14 @@ void Goto::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 
     newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* Goto::duplicateImpl() const
+{
+    return new Goto(
+        label_->duplicate<Label>(),
+        location());
 }
 
 }

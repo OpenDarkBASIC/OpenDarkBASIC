@@ -12,6 +12,9 @@ public:
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+
+protected:
+    Node* duplicateImpl() const override;
 };
 
 }

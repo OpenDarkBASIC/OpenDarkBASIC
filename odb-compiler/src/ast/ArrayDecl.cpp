@@ -65,7 +65,15 @@ ExpressionList* ArrayDecl::dims() const
         else                                                                  \
             assert(false);                                                    \
                                                                               \
-    newNode->setParent(this);                                                 \
+        newNode->setParent(this);                                             \
+    }                                                                         \
+    template <>                                                               \
+    Node* ArrayDeclTemplate<cppname>::duplicateImpl() const                   \
+    {                                                                         \
+        return new ArrayDeclTemplate<cppname>(                                \
+            symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
+            dims_->duplicate<ExpressionList>(),                               \
+            location());                                                      \
     }
 ODB_DATATYPE_LIST
 #undef X
@@ -116,6 +124,16 @@ void UDTArrayDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* UDTArrayDeclSymbol::duplicateImpl() const
+{
+    return new UDTArrayDeclSymbol(
+        symbol_->duplicate<ScopedAnnotatedSymbol>(),
+        dims_->duplicate<ExpressionList>(),
+        udt_->duplicate<Symbol>(),
+        location());
+}
+
+// ----------------------------------------------------------------------------
 UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location)
     : ArrayDecl(symbol, dims, location)
     , udt_(udt)
@@ -161,6 +179,16 @@ void UDTArrayDecl::swapChild(const Node* oldNode, Node* newNode)
         udt_ = dynamic_cast<UDTRef*>(newNode);
     else
         assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* UDTArrayDecl::duplicateImpl() const
+{
+    return new UDTArrayDecl(
+        symbol_->duplicate<ScopedAnnotatedSymbol>(),
+        dims_->duplicate<ExpressionList>(),
+        udt_->duplicate<UDTRef>(),
+        location());
 }
 
 }

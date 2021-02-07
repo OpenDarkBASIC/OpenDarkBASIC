@@ -28,7 +28,10 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
-private:
+protected:
+    Node* duplicateImpl() const override;
+
+protected:
     const std::string name_;
 };
 
@@ -41,6 +44,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 
 private:
     Scope scope_;
@@ -57,6 +63,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     Annotation annotation_;
 };
@@ -71,6 +80,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 
 private:
     Scope scope_;

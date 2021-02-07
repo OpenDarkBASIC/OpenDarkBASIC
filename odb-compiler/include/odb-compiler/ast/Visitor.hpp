@@ -20,7 +20,6 @@ class CommandStmnt;
 class CommandStmntSymbol;
 class Conditional;
 class ConstDecl;
-class DecrementVar;
 class ExpressionList;
 class ForLoop;
 class FuncCallExpr;
@@ -31,7 +30,6 @@ class FuncExit;
 class Goto;
 class GotoSymbol;
 class InfiniteLoop;
-class IncrementVar;
 class Label;
 class ScopedSymbol;
 class ScopedAnnotatedSymbol;
@@ -87,7 +85,6 @@ public:
     virtual void visitCommandStmntSymbol(CommandStmntSymbol* node) = 0;
     virtual void visitConditional(Conditional* node) = 0;
     virtual void visitConstDecl(ConstDecl* node) = 0;
-    virtual void visitDecrementVar(DecrementVar* node) = 0;
     virtual void visitExpressionList(ExpressionList* node) = 0;
     virtual void visitForLoop(ForLoop* node) = 0;
     virtual void visitFuncCallExpr(FuncCallExpr* node) = 0;
@@ -97,7 +94,6 @@ public:
     virtual void visitFuncExit(FuncExit* node) = 0;
     virtual void visitGoto(Goto* node) = 0;
     virtual void visitGotoSymbol(GotoSymbol* node) = 0;
-    virtual void visitIncrementVar(IncrementVar* node) = 0;
     virtual void visitInfiniteLoop(InfiniteLoop* node) = 0;
     virtual void visitLabel(Label* node) = 0;
     virtual void visitScopedSymbol(ScopedSymbol* node) = 0;
@@ -153,7 +149,6 @@ public:
     virtual void visitCommandStmntSymbol(const CommandStmntSymbol* node) = 0;
     virtual void visitConditional(const Conditional* node) = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
-    virtual void visitDecrementVar(const DecrementVar* node) = 0;
     virtual void visitExpressionList(const ExpressionList* node) = 0;
     virtual void visitForLoop(const ForLoop* node) = 0;
     virtual void visitFuncCallExpr(const FuncCallExpr* node) = 0;
@@ -163,7 +158,6 @@ public:
     virtual void visitFuncExit(const FuncExit* node) = 0;
     virtual void visitGoto(const Goto* node) = 0;
     virtual void visitGotoSymbol(const GotoSymbol* node) = 0;
-    virtual void visitIncrementVar(const IncrementVar* node) = 0;
     virtual void visitInfiniteLoop(const InfiniteLoop* node) = 0;
     virtual void visitLabel(const Label* node) = 0;
     virtual void visitScopedSymbol(const ScopedSymbol* node) = 0;
@@ -219,7 +213,6 @@ public:
     void visitCommandStmntSymbol(CommandStmntSymbol* node) override;
     void visitConditional(Conditional* node) override;
     void visitConstDecl(ConstDecl* node) override;
-    void visitDecrementVar(DecrementVar* node) override;
     void visitExpressionList(ExpressionList* node) override;
     void visitForLoop(ForLoop* node) override;
     void visitFuncCallExpr(FuncCallExpr* node) override;
@@ -229,7 +222,6 @@ public:
     void visitFuncExit(FuncExit* node) override;
     void visitGoto(Goto* node) override;
     void visitGotoSymbol(GotoSymbol* node) override;
-    void visitIncrementVar(IncrementVar* node) override;
     void visitInfiniteLoop(InfiniteLoop* node) override;
     void visitLabel(Label* node) override;
     void visitScopedSymbol(ScopedSymbol* node) override;
@@ -287,7 +279,6 @@ public:
     void visitCommandStmntSymbol(const CommandStmntSymbol* node) override;
     void visitConditional(const Conditional* node) override;
     void visitConstDecl(const ConstDecl* node) override;
-    void visitDecrementVar(const DecrementVar* node) override;
     void visitExpressionList(const ExpressionList* node) override;
     void visitForLoop(const ForLoop* node) override;
     void visitFuncCallExpr(const FuncCallExpr* node) override;
@@ -297,7 +288,6 @@ public:
     void visitFuncExit(const FuncExit* node) override;
     void visitGoto(const Goto* node) override;
     void visitGotoSymbol(const GotoSymbol* node) override;
-    void visitIncrementVar(const IncrementVar* node) override;
     void visitInfiniteLoop(const InfiniteLoop* node) override;
     void visitLabel(const Label* node) override;
     void visitScopedSymbol(const ScopedSymbol* node) override;

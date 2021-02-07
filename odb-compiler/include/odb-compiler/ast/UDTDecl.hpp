@@ -23,6 +23,9 @@ public:
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
+protected:
+    Node* duplicateImpl() const override;
+
 private:
     Reference<Symbol> typeName_;
     Reference<UDTDeclBody> body_;
@@ -45,6 +48,9 @@ public:
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
 
 private:
     std::vector<Reference<VarDecl>> varDecls_;

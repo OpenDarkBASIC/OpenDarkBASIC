@@ -2,8 +2,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Symbol::Symbol(const std::string& name, SourceLocation* location) :
@@ -35,6 +34,15 @@ void Symbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* Symbol::duplicateImpl() const
+{
+    return new Symbol(name_, location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 AnnotatedSymbol::AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location) :
     Symbol(name, location),
     annotation_(annotation)
@@ -64,6 +72,15 @@ void AnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* AnnotatedSymbol::duplicateImpl() const
+{
+    return new AnnotatedSymbol(annotation_, name_, location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location) :
     Symbol(name, location),
     scope_(scope)
@@ -91,6 +108,15 @@ void ScopedSymbol::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);
 }
+
+// ----------------------------------------------------------------------------
+Node* ScopedSymbol::duplicateImpl() const
+{
+    return new ScopedSymbol(scope_, name_, location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 ScopedAnnotatedSymbol::ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location) :
@@ -128,5 +154,10 @@ void ScopedAnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
     assert(false);
 }
 
+// ----------------------------------------------------------------------------
+Node* ScopedAnnotatedSymbol::duplicateImpl() const
+{
+    return new ScopedAnnotatedSymbol(scope_, annotation_, name_, location());
 }
+
 }

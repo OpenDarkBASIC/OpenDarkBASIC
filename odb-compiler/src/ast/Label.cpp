@@ -43,5 +43,13 @@ void Label::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* Label::duplicateImpl() const
+{
+    return new Label(
+        symbol_->duplicate<Symbol>(),
+        location());
+}
+
 }
 }

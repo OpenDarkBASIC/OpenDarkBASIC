@@ -2,8 +2,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Literal::Literal(SourceLocation* location) :
@@ -27,9 +26,13 @@ Literal::Literal(SourceLocation* location) :
     void LiteralTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
     {                                                                         \
         assert(false);                                                        \
+    }                                                                         \
+    template <>                                                               \
+    Node* LiteralTemplate<cppname>::duplicateImpl() const                     \
+    {                                                                         \
+        return new LiteralTemplate<cppname>(value_, location());              \
     }
 ODB_DATATYPE_LIST
 #undef X
 
-}
 }

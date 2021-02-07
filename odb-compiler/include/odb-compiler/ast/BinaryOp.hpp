@@ -29,6 +29,9 @@ public:                                                                       \
     void accept(Visitor* visitor) override;                                   \
     void accept(ConstVisitor* visitor) const override;                        \
     void swapChild(const Node* oldNode, Node* newNode) override;              \
+                                                                              \
+protected:                                                                    \
+    Node* duplicateImpl() const override;                                     \
 };
 ODB_BINARY_OP_LIST
 #undef X

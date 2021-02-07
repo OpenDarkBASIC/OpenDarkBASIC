@@ -10,12 +10,14 @@ typedef struct DBLTYPE DBLTYPE;
 namespace odb {
 
 namespace ast {
-    class AnnotatedSymbol;
+    class ArrayRef;
+    class Assignment;
     class Block;
     class Expression;
-    class ExprList;
     class Literal;
     class SourceLocation;
+    class UDTFieldOuter;
+    class VarRef;
 }
 
 namespace cmd {
@@ -38,6 +40,12 @@ public:
     ODBCOMPILER_PRIVATE_API ast::SourceLocation* newLocation(const DBLTYPE* loc);
     ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location);
     ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* value, int dir, const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* value, int dir, const DBLTYPE* loc);
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* value, int dir, const DBLTYPE* loc);
 
 private:
     ast::Block* doParseOld();

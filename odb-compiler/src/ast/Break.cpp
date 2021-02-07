@@ -2,8 +2,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Break::Break(SourceLocation* location) :
@@ -27,5 +26,10 @@ void Break::swapChild(const Node* oldNode, Node* newNode)
     assert(false);
 }
 
+// ----------------------------------------------------------------------------
+Node* Break::duplicateImpl() const
+{
+    return new Break(location());
 }
+
 }

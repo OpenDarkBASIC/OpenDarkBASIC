@@ -41,13 +41,13 @@ const std::vector<Reference<Statement>>& Block::statements() const
 void Block::accept(Visitor* visitor)
 {
     visitor->visitBlock(this);
-    for (const auto& stmnt : statements())
+    for (const auto& stmnt : statements_)
         stmnt->accept(visitor);
 }
 void Block::accept(ConstVisitor* visitor) const
 {
     visitor->visitBlock(this);
-    for (const auto& stmnt : statements())
+    for (const auto& stmnt : statements_)
         stmnt->accept(visitor);
 }
 
@@ -63,6 +63,15 @@ void Block::swapChild(const Node* oldNode, Node* newNode)
         }
 
     assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* Block::duplicateImpl() const
+{
+    Block* block = new Block(location());
+    for (const auto& stmnt : statements_)
+        block->appendStatement(stmnt->duplicate<Statement>());
+    return block;
 }
 
 }

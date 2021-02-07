@@ -17,7 +17,6 @@ public:
     MOCK_METHOD(void, visitCommandExprSymbol, (const odb::ast::CommandExprSymbol* node), (override));
     MOCK_METHOD(void, visitConditional, (const odb::ast::Conditional* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const odb::ast::ConstDecl* node), (override));
-    MOCK_METHOD(void, visitDecrementVar, (const odb::ast::DecrementVar* node), (override));
     MOCK_METHOD(void, visitExpressionList, (const odb::ast::ExpressionList* node), (override));
     MOCK_METHOD(void, visitForLoop, (const odb::ast::ForLoop* node), (override));
     MOCK_METHOD(void, visitFuncCallExprOrArrayRef, (const odb::ast::FuncCallExprOrArrayRef* node), (override));
@@ -25,7 +24,6 @@ public:
     MOCK_METHOD(void, visitFuncCallStmnt, (const odb::ast::FuncCallStmnt* node), (override));
     MOCK_METHOD(void, visitFuncDecl, (const odb::ast::FuncDecl* node), (override));
     MOCK_METHOD(void, visitFuncExit, (const odb::ast::FuncExit* node), (override));
-    MOCK_METHOD(void, visitIncrementVar, (const odb::ast::IncrementVar* node), (override));
     MOCK_METHOD(void, visitGoto, (const odb::ast::Goto* node), (override));
     MOCK_METHOD(void, visitGotoSymbol, (const odb::ast::GotoSymbol* node), (override));
     MOCK_METHOD(void, visitInfiniteLoop, (const odb::ast::InfiniteLoop* node), (override));

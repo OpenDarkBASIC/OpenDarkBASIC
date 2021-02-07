@@ -6,14 +6,16 @@
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 VarDecl::VarDecl(SourceLocation* location) :
     Statement(location)
 {
 }
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
@@ -84,9 +86,20 @@ VarDecl::VarDecl(SourceLocation* location) :
             assert(false);                                                    \
                                                                               \
     newNode->setParent(this);                                                 \
+    }                                                                         \
+    template <>                                                               \
+    Node* VarDeclTemplate<cppname>::duplicateImpl() const                     \
+    {                                                                         \
+        return new VarDeclTemplate<cppname>(                                  \
+            symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
+            initialValue_->duplicate<Expression>(),                           \
+            location());                                                      \
     }
 ODB_DATATYPE_LIST
 #undef X
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 UDTVarDeclSymbol::UDTVarDeclSymbol(ScopedAnnotatedSymbol* symbol, Symbol* udt, SourceLocation* location)
@@ -142,6 +155,18 @@ void UDTVarDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
     else
         assert(false);
 }
+
+// ----------------------------------------------------------------------------
+Node* UDTVarDeclSymbol::duplicateImpl() const
+{
+    return new UDTVarDeclSymbol(
+        symbol_->duplicate<ScopedAnnotatedSymbol>(),
+        udt_->duplicate<Symbol>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location)
@@ -201,5 +226,13 @@ void UDTVarDecl::swapChild(const Node* oldNode, Node* newNode)
         assert(false);
 }
 
+// ----------------------------------------------------------------------------
+Node* UDTVarDecl::duplicateImpl() const
+{
+    return new UDTVarDeclSymbol(
+        symbol_->duplicate<ScopedAnnotatedSymbol>(),
+        udt_->duplicate<UDTRef>(),
+        location());
 }
+
 }

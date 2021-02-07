@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 CommandExprSymbol::CommandExprSymbol(const std::string& command, ExpressionList* args, SourceLocation* location) :
@@ -53,6 +52,18 @@ void CommandExprSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* CommandExprSymbol::duplicateImpl() const
+{
+    return new CommandExprSymbol(
+        command_,
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 CommandStmntSymbol::CommandStmntSymbol(const std::string& command, ExpressionList* args, SourceLocation* location) :
     Statement(location),
     args_(args),
@@ -96,6 +107,18 @@ void CommandStmntSymbol::swapChild(const Node* oldNode, Node* newNode)
 
     newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* CommandStmntSymbol::duplicateImpl() const
+{
+    return new CommandStmntSymbol(
+        command_,
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 CommandExpr::CommandExpr(cmd::Command* command, ExpressionList* args, SourceLocation* location) :
@@ -143,6 +166,18 @@ void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
+Node* CommandExpr::duplicateImpl() const
+{
+    return new CommandExpr(
+        command_,
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
 CommandStmnt::CommandStmnt(cmd::Command* command, ExpressionList* args, SourceLocation* location) :
     Statement(location),
     command_(command),
@@ -187,5 +222,13 @@ void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* CommandStmnt::duplicateImpl() const
+{
+    return new CommandStmnt(
+        command_,
+        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        location());
 }
+
 }

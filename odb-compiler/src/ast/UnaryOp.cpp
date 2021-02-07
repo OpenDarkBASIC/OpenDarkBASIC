@@ -43,6 +43,12 @@ void UnaryOp##op::swapChild(const Node* oldNode, Node* newNode)               \
         assert(false);                                                        \
                                                                               \
     newNode->setParent(this);                                                 \
+}                                                                             \
+Node* UnaryOp##op::duplicateImpl() const                                      \
+{                                                                             \
+    return new UnaryOp##op(                                                   \
+        expr_->duplicate<Expression>(),                                       \
+        location());                                                          \
 }
 ODB_UNARY_OP_LIST
 #undef X

@@ -73,4 +73,14 @@ void Conditional::swapChild(const Node* oldNode, Node* newNode)
     newNode->setParent(this);
 }
 
+// ----------------------------------------------------------------------------
+Node* Conditional::duplicateImpl() const
+{
+    return new Conditional(
+        cond_->duplicate<Expression>(),
+        true_ ? true_->duplicate<Block>() : nullptr,
+        false_ ? false_->duplicate<Block>() : nullptr,
+        location());
+}
+
 }
