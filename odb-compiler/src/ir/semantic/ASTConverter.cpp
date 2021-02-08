@@ -7,12 +7,12 @@
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Data.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
@@ -474,9 +474,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     {
         return std::make_unique<InfiniteLoop>(location, currentFunction_, convertBlock(infiniteLoopSt->body()));
     }
-    else if (auto* breakSt = dynamic_cast<ast::Break*>(statement))
+    else if (auto* exitSt = dynamic_cast<ast::Exit*>(statement))
     {
-        return std::make_unique<Break>(location, currentFunction_);
+        return std::make_unique<Exit>(location, currentFunction_);
     }
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {

@@ -4,10 +4,10 @@
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Break.hpp"
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
@@ -18,9 +18,9 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
+#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
@@ -88,7 +88,6 @@ private:
         for (const auto& stmnt : node->statements())
             writeNamedConnection(node, stmnt, "stmnt[" + std::to_string(i++) + "]");
     }
-    void visitBreak(const Break* node) override {}
     void visitCase(const Case* node) override
     {
         writeNamedConnection(node, node->expression(), "expr");
@@ -103,6 +102,7 @@ private:
         if (node->defaultCase().notNull())
             writeNamedConnection(node, node->defaultCase(), "default");
     }
+    void visitExit(const Exit* node) override {}
     void visitCommandExpr(const CommandExpr* node) override
     {
         if (node->args().notNull())
@@ -375,8 +375,8 @@ private:
         { writeName(node, "ArrayAssignment"); }
     void visitArrayRef(const ArrayRef* node) override
         { writeName(node, "ArrayRef"); }
-    void visitBreak(const Break* node) override
-        { writeName(node, "Break"); }
+    void visitExit(const Exit* node) override
+        { writeName(node, "Exit"); }
     void visitCase(const Case* node) override
         { writeName(node, "Case"); }
     void visitCaseList(const CaseList* node) override

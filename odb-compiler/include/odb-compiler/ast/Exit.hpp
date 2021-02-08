@@ -6,10 +6,10 @@
 namespace odb {
 namespace ast {
 
-class ODBCOMPILER_PUBLIC_API Break : public Statement
+class ODBCOMPILER_PUBLIC_API Exit : public Statement
 {
 public:
-    Break(SourceLocation* location);
+    Exit(SourceLocation* location);
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

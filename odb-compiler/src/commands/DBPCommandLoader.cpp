@@ -26,20 +26,18 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 
     if (!fs::is_directory(sdkRoot_))
     {
-        log::sdk(log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
+        Log::sdk(Log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
         return false;
     }
 
-    fs::path sdkPluginsDir = sdkRoot_ / "plugins";
-    if (!fs::is_directory(sdkPluginsDir))
+    for (const auto& path : {sdkRoot_ / "plugins", sdkRoot_ / "plugins-licensed", sdkRoot_ / "plugins-user"})
     {
-        log::sdk(log::WARNING, "`%s` does not exist. SDK Plugins will not be loaded\n", sdkPluginsDir.c_str());
-    }
-    else
-    {
-        for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
-            if (fileIsDynamicLib(p.path()))
-                pluginsToLoad.emplace_back(p.path());
+        if (fs::is_directory(path))
+        {
+            for (const auto& p : fs::recursive_directory_iterator(path))
+                if (fileIsDynamicLib(p.path()))
+                    pluginsToLoad.emplace_back(p.path());
+        }
     }
 
     for (const auto& path : pluginDirs_)
@@ -50,7 +48,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
             continue;
         }
 
-        for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
+        for (const auto& p : fs::recursive_directory_iterator(path))
             if (fileIsDynamicLib(p.path()))
                 pluginsToLoad.emplace_back(p.path());
     }
@@ -80,10 +78,9 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
     std::set<std::string> stringTable;
 
     // Load string table from library. We use a set here to deal with any duplicate entries in the library.
-    int stringTableSize = library->getStringTableSize();
-    for (int i = 0; i < stringTableSize; ++i)
+    for (auto& string : library->getStringTable())
     {
-        stringTable.emplace(library->getStringTableEntryAt(i));
+        stringTable.emplace(std::move(string));
     }
 
     // Parse string table.

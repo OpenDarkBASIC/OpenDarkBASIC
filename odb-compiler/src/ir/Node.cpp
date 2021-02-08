@@ -507,7 +507,7 @@ SubReturn::SubReturn(SourceLocation* location, FunctionDefinition* containingFun
 {
 }
 
-Break::Break(SourceLocation* location, FunctionDefinition* containingFunction) : Statement(location, containingFunction)
+Exit::Exit(SourceLocation* location, FunctionDefinition* containingFunction) : Statement(location, containingFunction)
 {
 }
 

@@ -4,6 +4,7 @@
 #include "odb-sdk/RefCounted.hpp"
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace odb {
 
@@ -42,17 +43,10 @@ public:
     const char* getSymbolAt(int idx) const;
 
     /*!
-     * @brief Returns the total number of strings present in the string table.
+     * @brief Returns a copy of all strings in the string table.
      */
 #if defined(ODBSDK_PLATFORM_WIN32)
-    int getStringTableSize() const;
-#endif
-
-    /*!
-     * @brief Returns a string at the specified index in the string table.
-     */
-#if defined(ODBSDK_PLATFORM_WIN32)
-    std::string getStringTableEntryAt(int idx) const;
+    std::vector<std::string> getStringTable() const;
 #endif
 
 private:

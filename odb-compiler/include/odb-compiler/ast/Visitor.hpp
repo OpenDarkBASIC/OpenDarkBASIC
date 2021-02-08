@@ -13,9 +13,9 @@ class AnnotatedSymbol;
 class ArrayAssignment;
 class ArrayRef;
 class Block;
-class Break;
 class Case;
 class CaseList;
+class Exit;
 class CommandExpr;
 class CommandExprSymbol;
 class CommandStmnt;
@@ -82,7 +82,6 @@ public:
     virtual void visitArrayAssignment(ArrayAssignment* node) = 0;
     virtual void visitArrayRef(ArrayRef* node)  = 0;
     virtual void visitBlock(Block* node) = 0;
-    virtual void visitBreak(Break* node) = 0;
     virtual void visitCase(Case* node) = 0;
     virtual void visitCaseList(CaseList* node) = 0;
     virtual void visitCommandExpr(CommandExpr* node) = 0;
@@ -92,6 +91,7 @@ public:
     virtual void visitConditional(Conditional* node) = 0;
     virtual void visitConstDecl(ConstDecl* node) = 0;
     virtual void visitDefaultCase(DefaultCase* node) = 0;
+    virtual void visitExit(Exit* node) = 0;
     virtual void visitExpressionList(ExpressionList* node) = 0;
     virtual void visitForLoop(ForLoop* node) = 0;
     virtual void visitFuncCallExpr(FuncCallExpr* node) = 0;
@@ -150,7 +150,6 @@ public:
     virtual void visitArrayAssignment(const ArrayAssignment* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
     virtual void visitBlock(const Block* node) = 0;
-    virtual void visitBreak(const Break* node) = 0;
     virtual void visitCase(const Case* node) = 0;
     virtual void visitCaseList(const CaseList* node) = 0;
     virtual void visitCommandExpr(const CommandExpr* node) = 0;
@@ -160,6 +159,7 @@ public:
     virtual void visitConditional(const Conditional* node) = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
     virtual void visitDefaultCase(const DefaultCase* node) = 0;
+    virtual void visitExit(const Exit* node) = 0;
     virtual void visitExpressionList(const ExpressionList* node) = 0;
     virtual void visitForLoop(const ForLoop* node) = 0;
     virtual void visitFuncCallExpr(const FuncCallExpr* node) = 0;
@@ -218,7 +218,6 @@ public:
     void visitArrayAssignment(ArrayAssignment* node) override;
     void visitArrayRef(ArrayRef* node) override;
     void visitBlock(Block* node) override;
-    void visitBreak(Break* node) override;
     void visitCase(Case* node) override;
     void visitCaseList(CaseList* node) override;
     void visitCommandExpr(CommandExpr* node) override;
@@ -228,6 +227,7 @@ public:
     void visitConditional(Conditional* node) override;
     void visitConstDecl(ConstDecl* node) override;
     void visitDefaultCase(DefaultCase* node) override;
+    void visitExit(Exit* node) override;
     void visitExpressionList(ExpressionList* node) override;
     void visitForLoop(ForLoop* node) override;
     void visitFuncCallExpr(FuncCallExpr* node) override;
@@ -288,7 +288,6 @@ public:
     void visitArrayAssignment(const ArrayAssignment* node) override;
     void visitArrayRef(const ArrayRef* node) override;
     void visitBlock(const Block* node) override;
-    void visitBreak(const Break* node) override;
     void visitCase(const Case* node) override;
     void visitCaseList(const CaseList* node) override;
     void visitCommandExpr(const CommandExpr* node) override;
@@ -298,6 +297,7 @@ public:
     void visitConditional(const Conditional* node) override;
     void visitConstDecl(const ConstDecl* node) override;
     void visitDefaultCase(const DefaultCase* node) override;
+    void visitExit(const Exit* node) override;
     void visitExpressionList(const ExpressionList* node) override;
     void visitForLoop(const ForLoop* node) override;
     void visitFuncCallExpr(const FuncCallExpr* node) override;

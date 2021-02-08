@@ -13,6 +13,7 @@ class ODBCOMPILER_PUBLIC_API ArrayRef : public LValue
 {
 public:
     ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    ~ArrayRef();
 
     AnnotatedSymbol* symbol() const;
     ExpressionList* args() const;

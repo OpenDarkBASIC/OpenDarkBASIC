@@ -9,7 +9,6 @@ public:
     void visitArrayAssignment(const odb::ast::ArrayAssignment* node) override;
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
     void visitBlock(const odb::ast::Block* node) override;
-    void visitBreak(const odb::ast::Break* node) override;
     void visitCase(const odb::ast::Case* node) override;
     void visitCaseList(const odb::ast::CaseList* node) override;
     void visitCommandExpr(const odb::ast::CommandExpr* node) override;
@@ -19,6 +18,7 @@ public:
     void visitConditional(const odb::ast::Conditional* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
     void visitDefaultCase(const odb::ast::DefaultCase* node) override;
+    void visitExit(const odb::ast::Exit* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
     void visitForLoop(const odb::ast::ForLoop* node) override;
     void visitFuncCallExpr(const odb::ast::FuncCallExpr* node) override;

@@ -3,6 +3,7 @@
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"

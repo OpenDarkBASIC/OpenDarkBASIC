@@ -1,35 +1,35 @@
-#include "odb-compiler/ast/Break.hpp"
+#include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Break::Break(SourceLocation* location) :
+Exit::Exit(SourceLocation* location) :
     Statement(location)
 {
 }
 
 // ----------------------------------------------------------------------------
-void Break::accept(Visitor* visitor)
+void Exit::accept(Visitor* visitor)
 {
-    visitor->visitBreak(this);
+    visitor->visitExit(this);
 }
-void Break::accept(ConstVisitor* visitor) const
+void Exit::accept(ConstVisitor* visitor) const
 {
-    visitor->visitBreak(this);
+    visitor->visitExit(this);
 }
 
 // ----------------------------------------------------------------------------
-void Break::swapChild(const Node* oldNode, Node* newNode)
+void Exit::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);
 }
 
 // ----------------------------------------------------------------------------
-Node* Break::duplicateImpl() const
+Node* Exit::duplicateImpl() const
 {
-    return new Break(location());
+    return new Exit(location());
 }
 
 }
