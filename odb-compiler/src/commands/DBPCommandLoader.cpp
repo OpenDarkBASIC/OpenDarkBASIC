@@ -26,7 +26,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 
     if (!fs::is_directory(sdkRoot_))
     {
-        log::sdk(log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
+        Log::sdk(Log::ERROR, "SDK root directory `%s` does not exist\n", sdkRoot_.c_str());
         return false;
     }
 

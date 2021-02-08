@@ -814,7 +814,7 @@ loop_next_sym
   | SYMBOL '#'                                   { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 exit
-  : EXIT                                         { $$ = new Exit(newloc()); }
+  : EXIT                                         { $$ = new Exit(driver->newLocation(&@$)); }
   ;
 %%
 

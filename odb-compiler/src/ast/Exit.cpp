@@ -13,7 +13,7 @@ Exit::Exit(SourceLocation* location) :
 // ----------------------------------------------------------------------------
 void Exit::accept(Visitor* visitor)
 {
-    visitor->visitBreak(this);
+    visitor->visitExit(this);
 }
 void Exit::accept(ConstVisitor* visitor) const
 {
@@ -27,9 +27,9 @@ void Exit::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-Node* Break::duplicateImpl() const
+Node* Exit::duplicateImpl() const
 {
-    return new Break(location());
+    return new Exit(location());
 }
 
 }
