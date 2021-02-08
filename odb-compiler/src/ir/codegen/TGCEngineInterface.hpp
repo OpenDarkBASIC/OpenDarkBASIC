@@ -19,6 +19,7 @@ private:
     llvm::Type* dwordTy;
     llvm::StructType* globStructTy;
 
+    llvm::Function* getTempPathFunc;
     llvm::Function* loadLibraryFunc;
     llvm::Function* getLastErrorFunc;
     llvm::Function* getProcAddrFunc;

@@ -188,8 +188,8 @@ target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 # This is how you're supposed to do it by reading LLVM-Config.cmake
 # https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-option (ODBC_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
-if (${ODBC_LLVM_ENABLE_SHARED_LIBS})
+option (ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
+if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
     set (llvm_use_shared USE_SHARED)
 endif()
 llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen)

@@ -267,6 +267,24 @@ protected:
 
 using StatementBlock = PtrVector<Statement>;
 
+class ODBCOMPILER_PUBLIC_API VarAssignment : public Statement
+{
+public:
+    VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
+                  Ptr<Expression> expression);
+    VarAssignment(VarAssignment&&) = default;
+    VarAssignment(const VarAssignment&) = delete;
+    VarAssignment& operator=(VarAssignment&&) = default;
+    VarAssignment& operator=(const VarAssignment&) = delete;
+
+    const Variable* variable() const;
+    Expression* expression() const;
+
+private:
+    Reference<Variable> variable_;
+    Ptr<Expression> expression_;
+};
+
 class ODBCOMPILER_PUBLIC_API Conditional : public Statement
 {
 public:
@@ -311,125 +329,86 @@ private:
     std::vector<Case> cases_;
 };
 
-class ODBCOMPILER_PUBLIC_API ForLoop : public Statement
+class ODBCOMPILER_PUBLIC_API Loop : public Statement
 {
 public:
-    ForLoop(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
-            StatementBlock block);
+    Loop(Loop&&) = default;
+    Loop(const Loop&) = delete;
+    Loop& operator=(Loop&&) = default;
+    Loop& operator=(const Loop&) = delete;
+
+    void appendStatements(StatementBlock block);
+
+    const StatementBlock& statements() const;
+
+protected:
+    // Protected constructor to avoid instantiation.
+    Loop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock block);
+
+private:
+    StatementBlock statements_;
+};
+
+class ODBCOMPILER_PUBLIC_API ForLoop : public Loop
+{
+public:
+    ForLoop(SourceLocation* location, FunctionDefinition* containingFunction, VarAssignment assignment, Ptr<Expression> endValue, Ptr<Expression> stepValue,
+            StatementBlock statements = {});
     ForLoop(ForLoop&&) = default;
     ForLoop(const ForLoop&) = delete;
     ForLoop& operator=(ForLoop&&) = default;
     ForLoop& operator=(const ForLoop&) = delete;
 
-    const VarRefExpression& variable() const;
-    const StatementBlock& block() const;
+    const VarAssignment& assignment() const;
+    Expression* endValue() const;
+    Expression* stepValue() const;
 
 private:
-    VarRefExpression variable_;
-    StatementBlock block_;
+    VarAssignment assignment_;
+    Ptr<Expression> endValue_;
+    Ptr<Expression> stepValue_;
 };
 
-class ODBCOMPILER_PUBLIC_API WhileLoop : public Statement
+class ODBCOMPILER_PUBLIC_API WhileLoop : public Loop
 {
 public:
     WhileLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
-              StatementBlock block);
+              StatementBlock statements = {});
     WhileLoop(WhileLoop&&) = default;
     WhileLoop(const WhileLoop&) = delete;
     WhileLoop& operator=(WhileLoop&&) = default;
     WhileLoop& operator=(const WhileLoop&) = delete;
 
     Expression* expression() const;
-    const StatementBlock& block() const;
 
 private:
     Ptr<Expression> expression_;
-    StatementBlock block_;
 };
 
-class ODBCOMPILER_PUBLIC_API UntilLoop : public Statement
+class ODBCOMPILER_PUBLIC_API UntilLoop : public Loop
 {
 public:
     UntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
-              StatementBlock block);
+              StatementBlock statements = {});
     UntilLoop(UntilLoop&&) = default;
     UntilLoop(const UntilLoop&) = delete;
     UntilLoop& operator=(UntilLoop&&) = default;
     UntilLoop& operator=(const UntilLoop&) = delete;
 
     Expression* expression() const;
-    const StatementBlock& block() const;
 
 private:
     Ptr<Expression> expression_;
-    StatementBlock block_;
 };
 
-class ODBCOMPILER_PUBLIC_API InfiniteLoop : public Statement
+class ODBCOMPILER_PUBLIC_API InfiniteLoop : public Loop
 {
 public:
-    InfiniteLoop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock block);
+    InfiniteLoop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock statements = {});
     InfiniteLoop(InfiniteLoop&&) = default;
     InfiniteLoop(const InfiniteLoop&) = delete;
     InfiniteLoop& operator=(InfiniteLoop&&) = default;
     InfiniteLoop& operator=(const InfiniteLoop&) = delete;
-
-    const StatementBlock& block() const;
-
-private:
-    StatementBlock block_;
-};
-
-// Marks the beginning of the lifetime of a variable.
-class ODBCOMPILER_PUBLIC_API CreateVar : public Statement
-{
-public:
-    CreateVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-              Ptr<Expression> initialExpression);
-    CreateVar(CreateVar&&) = default;
-    CreateVar(const CreateVar&) = delete;
-    CreateVar& operator=(CreateVar&&) = default;
-    CreateVar& operator=(const CreateVar&) = delete;
-
-    const Variable* variable() const;
-    Expression* initialExpression() const;
-
-private:
-    Reference<Variable> variable_;
-    Ptr<Expression> initialExpression_;
-};
-
-class ODBCOMPILER_PUBLIC_API DestroyVar : public Statement
-{
-public:
-    DestroyVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable);
-    DestroyVar(DestroyVar&&) = default;
-    DestroyVar(const DestroyVar&) = delete;
-    DestroyVar& operator=(DestroyVar&&) = default;
-    DestroyVar& operator=(const DestroyVar&) = delete;
-
-    const Variable* variable() const;
-
-private:
-    Reference<Variable> variable_;
-};
-
-class ODBCOMPILER_PUBLIC_API VarAssignment : public Statement
-{
-public:
-    VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-                  Ptr<Expression> expression);
-    VarAssignment(VarAssignment&&) = default;
-    VarAssignment(const VarAssignment&) = delete;
-    VarAssignment& operator=(VarAssignment&&) = default;
-    VarAssignment& operator=(const VarAssignment&) = delete;
-
-    const Variable* variable() const;
-    Expression* expression() const;
-
-private:
-    Reference<Variable> variable_;
-    Ptr<Expression> expression_;
 };
 
 class ODBCOMPILER_PUBLIC_API Label : public Statement
@@ -446,23 +425,27 @@ private:
 class ODBCOMPILER_PUBLIC_API Goto : public Statement
 {
 public:
-    Goto(SourceLocation* location, FunctionDefinition* containingFunction, std::string label);
+    Goto(SourceLocation* location, FunctionDefinition* containingFunction, Label* label);
 
-    const std::string& label() const;
+    Label* label() const;
+
+    void setLabel(Label* label);
 
 private:
-    std::string label_;
+    Label* label_;
 };
 
 class ODBCOMPILER_PUBLIC_API Gosub : public Statement
 {
 public:
-    Gosub(SourceLocation* location, FunctionDefinition* containingFunction, std::string label);
+    Gosub(SourceLocation* location, FunctionDefinition* containingFunction, Label* label);
 
-    const std::string& label() const;
+    Label* label() const;
+
+    void setLabel(Label* label);
 
 private:
-    std::string label_;
+    Label* label_;
 };
 
 class ODBCOMPILER_PUBLIC_API FunctionCall : public Statement
@@ -491,9 +474,12 @@ private:
 class ODBCOMPILER_PUBLIC_API Exit : public Statement
 {
 public:
-    Exit(SourceLocation* location, FunctionDefinition* containingFunction);
+    Exit(SourceLocation* location, FunctionDefinition* containingFunction, Loop* loopToBreak);
+
+    Loop* loopToBreak() const;
 
 private:
+    Loop* loopToBreak_;
 };
 
 class ODBCOMPILER_PUBLIC_API ExitFunction : public Statement

@@ -126,17 +126,12 @@ void CodeGenerator::GlobalSymbolTable::addFunctionToTable(const FunctionDefiniti
     functionDefinitions.emplace(&definition, function);
 }
 
-void CodeGenerator::SymbolTable::populateVariableTable(llvm::IRBuilder<>& builder,
-                                                       const std::vector<Variable*>& variables)
+void CodeGenerator::SymbolTable::addVar(const Variable* variable, llvm::Value* location)
 {
-    for (Variable* var : variables)
-    {
-        llvm::Type* type = getLLVMType(parent->getContext(), var->type());
-        variableTable.emplace(var, builder.CreateAlloca(type, nullptr, var->name()));
-    }
+    variableTable.emplace(variable, location);
 }
 
-llvm::AllocaInst* CodeGenerator::SymbolTable::getVar(const Variable* variable)
+llvm::Value* CodeGenerator::SymbolTable::getVar(const Variable* variable)
 {
     auto entry = variableTable.find(variable);
     if (entry != variableTable.end())
@@ -160,21 +155,39 @@ llvm::Value* CodeGenerator::SymbolTable::getOrAddStrLiteral(const std::string& l
     return literalStorage;
 }
 
-llvm::BasicBlock* CodeGenerator::SymbolTable::addLabelBlock(const std::string& name)
+llvm::BasicBlock* CodeGenerator::SymbolTable::getOrAddLabelBlock(const Label* label)
 {
-    llvm::BasicBlock* block = llvm::BasicBlock::Create(parent->getContext(), "label_" + name, parent);
-    labelBlocks.emplace(name, block);
-    return block;
-}
-
-llvm::BasicBlock* CodeGenerator::SymbolTable::getLabelBlock(const std::string& name)
-{
-    auto entry = labelBlocks.find(name);
+    auto entry = labelBlocks.find(label);
     if (entry != labelBlocks.end())
     {
         return entry->second;
     }
-    return nullptr;
+
+    llvm::BasicBlock* block = llvm::BasicBlock::Create(parent->getContext(), "label_" + label->name());
+    labelBlocks.emplace(label, block);
+    return block;
+}
+
+void CodeGenerator::SymbolTable::addGosubReturnPoint(llvm::BasicBlock* block)
+{
+    gosubReturnPoints.emplace_back(block);
+
+    // Add this return point to all gosub return instructions.
+    for (llvm::IndirectBrInst* gosubReturnBr : gosubReturnInstructions)
+    {
+        gosubReturnBr->addDestination(block);
+    }
+}
+
+void CodeGenerator::SymbolTable::addGosubIndirectBr(llvm::IndirectBrInst* indirectBrInst)
+{
+    gosubReturnInstructions.emplace_back(indirectBrInst);
+
+    // Add all known destinations to this new indirectBr.
+    for (llvm::BasicBlock* block : gosubReturnPoints)
+    {
+        indirectBrInst->addDestination(block);
+    }
 }
 
 llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
@@ -216,7 +229,10 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         }
 
         // fp -> int casts.
-        // TODO.
+        if (expressionType->isFloatingPointTy() && targetType->isIntegerTy())
+        {
+            return builder.CreateFPToSI(innerExpression, targetType);
+        }
 
         // Unhandled cast. Runtime error.
         std::string sourceTypeStr;
@@ -432,7 +448,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             {
                 // TODO: compare strings.
                 std::cerr << "Unimplemented string compare." << std::endl;
-                std::terminate();
+                std::abort();
             }
             std::cerr << "Unimplemented compare operator." << std::endl;
         }
@@ -447,7 +463,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
     }
     else if (auto* varRef = dynamic_cast<const VarRefExpression*>(e))
     {
-        llvm::AllocaInst* variableInst = symtab.getVar(varRef->variable());
+        llvm::Value* variableInst = symtab.getVar(varRef->variable());
         return builder.CreateLoad(variableInst, "");
     }
     else if (auto* doubleIntegerLiteral = dynamic_cast<const DoubleIntegerLiteral*>(e))
@@ -515,7 +531,9 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock,
                                                const StatementBlock& statements)
 {
-    // Create initial block.
+    llvm::Function* parent = initialBlock->getParent();
+
+    // Create builder.
     llvm::IRBuilder<> builder(ctx);
     builder.SetInsertPoint(initialBlock);
 
@@ -524,83 +542,182 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         Statement* s = statementPtr.get();
         if (auto* label = dynamic_cast<const Label*>(s))
         {
-            if (symtab.getLabelBlock(label->name()))
-            {
-                // TODO: ERROR: Duplicate label.
-                assert(false && "Duplicate label.");
-                std::terminate();
-            }
-            auto* labelBlock = symtab.addLabelBlock(label->name());
+            auto* labelBlock = symtab.getOrAddLabelBlock(label);
+
+            // Insert the label block into the function.
+            labelBlock->insertInto(parent);
+
+            // Create a branch, then continue in the label block.
             builder.CreateBr(labelBlock);
             builder.SetInsertPoint(labelBlock);
         }
         else if (auto* goto_ = dynamic_cast<const Goto*>(s))
         {
-            auto* labelBlock = symtab.getLabelBlock(goto_->label());
-            if (!labelBlock)
-            {
-                // TODO: ERROR: destination label missing.
-                assert(false && "Destination label missing.");
-                std::terminate();
-            }
+            printString(builder, builder.CreateGlobalStringPtr("Jumping to " + goto_->label()->name()));
+            builder.CreateBr(symtab.getOrAddLabelBlock(goto_->label()));
+            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterGoto", parent));
+        }
+        else if (auto* gosub_ = dynamic_cast<const Gosub*>(s))
+        {
+            auto* labelBlock = symtab.getOrAddLabelBlock(gosub_->label());
+            auto* continuationBlock = llvm::BasicBlock::Create(ctx, "return_gosub_" + gosub_->label()->name(), parent);
+
+            symtab.addGosubReturnPoint(continuationBlock);
+            builder.CreateCall(gosubPushAddress, {symtab.gosubStack, symtab.gosubStackPointer,
+                                                  llvm::BlockAddress::get(continuationBlock)});
+            printString(builder,
+                        builder.CreateGlobalStringPtr("Pushed address. Jumping to " + gosub_->label()->name()));
             builder.CreateBr(labelBlock);
+            builder.SetInsertPoint(continuationBlock);
         }
         else if (auto* branch = dynamic_cast<const Conditional*>(s))
         {
             // Generate true and false branches.
-            llvm::BasicBlock* trueBlock = generateBlock(
-                symtab, llvm::BasicBlock::Create(ctx, "if", initialBlock->getParent()), branch->trueBranch());
-            llvm::BasicBlock* falseBlock = generateBlock(
-                symtab, llvm::BasicBlock::Create(ctx, "else", initialBlock->getParent()), branch->falseBranch());
-            llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(ctx, "endif", initialBlock->getParent());
+            llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(ctx, "if", parent);
+            llvm::BasicBlock* trueBlockEnd = generateBlock(symtab, trueBlock, branch->trueBranch());
+            llvm::BasicBlock* falseBlock = llvm::BasicBlock::Create(ctx, "else", parent);
+            llvm::BasicBlock* falseBlockEnd = generateBlock(symtab, falseBlock, branch->falseBranch());
+            llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(ctx, "endif", parent);
 
             // Add conditional branch.
             builder.CreateCondBr(generateExpression(symtab, builder, branch->expression()), trueBlock, falseBlock);
 
             // Add branches to the continue section.
-            builder.SetInsertPoint(trueBlock);
+            builder.SetInsertPoint(trueBlockEnd);
             builder.CreateBr(continueBlock);
-            builder.SetInsertPoint(falseBlock);
+            builder.SetInsertPoint(falseBlockEnd);
             builder.CreateBr(continueBlock);
 
-            // Set continue branch as the insertion point for future
-            // instructions.
+            // Set continue branch as the insertion point for future instructions.
             builder.SetInsertPoint(continueBlock);
         }
-        else if (auto* select = dynamic_cast<const Select*>(s))
+        //        else if (auto* select = dynamic_cast<const Select*>(s))
+        //        {
+        //        }
+        else if (auto* exit = dynamic_cast<const Exit*>(s))
         {
+            auto loopExitBlockIt = symtab.loopExitBlocks.find(exit->loopToBreak());
+            if (loopExitBlockIt == symtab.loopExitBlocks.end())
+            {
+                fprintf(stderr, "INTERNAL COMPILER ERROR: 'exit' statement matched with unknown loop.");
+                std::abort();
+            }
+
+            // Branch to the loops exit block.
+            builder.CreateBr(loopExitBlockIt->second);
+            // Add a dead block for any statements inserted after this point in this block.
+            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterEnd", parent));
         }
-        else if (auto* doLoop = dynamic_cast<const InfiniteLoop*>(s))
+        else if (auto* infiniteLoop = dynamic_cast<const InfiniteLoop*>(s))
         {
+            // Create blocks.
+            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
+            symtab.loopExitBlocks[infiniteLoop] = endBlock;
+
             // Generate loop body.
-            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", initialBlock->getParent());
-            llvm::BasicBlock* endBlock = generateBlock(symtab, loopBlock, doLoop->block());
-            llvm::BasicBlock* breakBlock = llvm::BasicBlock::Create(ctx, "loopBreak", initialBlock->getParent());
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBlock, infiniteLoop->statements());
+            endBlock->moveAfter(statementsEndBlock);
 
             // Jump into initial loop entry.
             builder.CreateBr(loopBlock);
 
             // Add a branch back to the beginning of the loop.
-            builder.SetInsertPoint(endBlock);
+            builder.SetInsertPoint(statementsEndBlock);
             builder.CreateBr(loopBlock);
 
-            // Set continue branch as the insertion point for future instructions.
-            builder.SetInsertPoint(breakBlock);
+            // Set loop end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
+        }
+        else if (auto* forLoop = dynamic_cast<const ForLoop*>(s))
+        {
+            // Generate initialisation.
+            llvm::Value* variableStorage = symtab.getVar(forLoop->assignment().variable());
+            builder.CreateStore(generateExpression(symtab, builder, forLoop->assignment().expression()),
+                                variableStorage);
+
+            // Create blocks.
+            llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(ctx, "forLoopCond", parent);
+            llvm::BasicBlock* conditionPositiveStepBlock = llvm::BasicBlock::Create(ctx, "forLoopCondPosStep", parent);
+            llvm::BasicBlock* conditionCheckNegativeStepBlock =
+                llvm::BasicBlock::Create(ctx, "forLoopCondCheckNegStep", parent);
+            llvm::BasicBlock* conditionNegativeStepBlock = llvm::BasicBlock::Create(ctx, "forLoopCondNegStep", parent);
+            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "forLoopBody", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "forLoopEnd", parent);
+            symtab.loopExitBlocks[forLoop] = endBlock;
+
+            // Generate condition block.
+            builder.CreateBr(conditionBlock);
+            builder.SetInsertPoint(conditionBlock);
+            llvm::Value* valueOnCondition = builder.CreateLoad(variableStorage);
+            llvm::Value* endValueOnCondition = generateExpression(symtab, builder, forLoop->endValue());
+            llvm::Value* stepValueOnCondition = generateExpression(symtab, builder, forLoop->stepValue());
+            llvm::Value* stepValueConstantZero = llvm::ConstantInt::get(stepValueOnCondition->getType(), 0);
+            // if step > 0
+            builder.CreateCondBr(builder.CreateICmpSGT(stepValueOnCondition, stepValueConstantZero),
+                                 conditionPositiveStepBlock, conditionCheckNegativeStepBlock);
+            // if step < 0
+            builder.SetInsertPoint(conditionCheckNegativeStepBlock);
+            builder.CreateCondBr(builder.CreateICmpSLT(stepValueOnCondition, stepValueConstantZero),
+                                 conditionNegativeStepBlock, endBlock);
+            // Generate condition if step is positive.
+            builder.SetInsertPoint(conditionPositiveStepBlock);
+            builder.CreateCondBr(builder.CreateICmpSLE(valueOnCondition, endValueOnCondition), loopBlock, endBlock);
+            // Generate condition if step is negative.
+            builder.SetInsertPoint(conditionNegativeStepBlock);
+            builder.CreateCondBr(builder.CreateICmpSGE(valueOnCondition, endValueOnCondition), loopBlock, endBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* loopEndBlock = generateBlock(symtab, loopBlock, forLoop->statements());
+            builder.SetInsertPoint(loopEndBlock);
+
+            // Generate increment block.
+            llvm::BasicBlock* incrementBlock = llvm::BasicBlock::Create(ctx, "forLoopIncrement", parent);
+            builder.CreateBr(incrementBlock); // branch from end of loop body to increment block.
+            builder.SetInsertPoint(incrementBlock);
+            builder.CreateStore(builder.CreateAdd(builder.CreateLoad(variableStorage),
+                                                  generateExpression(symtab, builder, forLoop->stepValue())),
+                                variableStorage);
+            builder.CreateBr(conditionBlock); // jump back to condition block after increment.
+
+            // Set end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
         }
         else if (auto* assignment = dynamic_cast<const VarAssignment*>(s))
         {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression());
-            llvm::AllocaInst* storeTarget = symtab.getVar(assignment->variable());
+            llvm::Value* storeTarget = symtab.getVar(assignment->variable());
             builder.CreateStore(expression, storeTarget);
         }
         else if (auto* call = dynamic_cast<const FunctionCall*>(s))
         {
-            // Generate the expression, but discard the result.
-            generateExpression(symtab, builder, &call->expression());
+            if (!call->expression().isUserFunction() && call->expression().command()->dbSymbol() == "end" &&
+                parent->getName() == "__DBmain")
+            {
+                builder.CreateRetVoid();
+                builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterEnd", parent));
+            }
+            else
+            {
+                // Generate the expression, but discard the result.
+                generateExpression(symtab, builder, &call->expression());
+            }
         }
         else if (auto* endfunction = dynamic_cast<const ExitFunction*>(s))
         {
             builder.CreateRet(generateExpression(symtab, builder, endfunction->expression()));
+        }
+        else if (auto* subReturn = dynamic_cast<const SubReturn*>(s))
+        {
+            auto* returnAddr = builder.CreateCall(gosubPopAddress, {symtab.gosubStack, symtab.gosubStackPointer});
+            printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
+            symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
+            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
+        }
+        else
+        {
+            fprintf(stderr, "Unhandled statement.");
+            std::exit(1);
         }
     }
 
@@ -609,7 +726,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
 
 llvm::Function* CodeGenerator::generateFunctionPrototype(const FunctionDefinition& irFunction)
 {
-    std::string functionName = irFunction.name();
+    std::string functionName = "__DB" + irFunction.name();
     llvm::Type* returnTy = llvm::Type::getVoidTy(ctx);
     //        returnTy = getLLVMType(ctx, irFunction.returnType());
 
@@ -652,34 +769,65 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     llvm::IRBuilder<> builder(ctx);
     builder.SetInsertPoint(initialBlock);
 
+    // Gosub stack.
+    // TODO: Only generate this if the function contains gosubs.
+    symtab.gosubStack = builder.CreateAlloca(gosubStackType, nullptr, "gosubStack");
+    symtab.gosubStackPointer = builder.CreateAlloca(llvm::Type::getInt64Ty(ctx), nullptr, "gosubSP");
+    builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), symtab.gosubStackPointer);
+
     // Variables.
-    symtab.populateVariableTable(builder, irFunction.variables().list());
+    for (Variable* var : irFunction.variables().list())
+    {
+        auto type = var->type();
+        auto* llvmType = getLLVMType(ctx, type);
+        auto* variableStorage = builder.CreateAlloca(llvmType, nullptr, var->name());
+
+        // Create initialiser depending on the type.
+        llvm::Value* initialiser;
+        if (type.isBuiltinType())
+        {
+            if (isIntegralType(*type.getBuiltinType()))
+            {
+                initialiser = llvm::ConstantInt::get(llvmType, 0);
+            }
+            else if (isFloatingPointType(*type.getBuiltinType()))
+            {
+                initialiser = llvm::ConstantFP::get(llvmType, 0.0);
+            }
+            else if (*type.getBuiltinType() == BuiltinType::String)
+            {
+                initialiser = builder.CreateGlobalStringPtr("");
+            }
+            else
+            { // FATAL ERROR
+            }
+        }
+        else
+        {
+            // FATAL ERROR.
+        }
+        builder.CreateStore(initialiser, variableStorage);
+
+        symtab.addVar(var, variableStorage);
+    }
 
     // Statements.
     auto* lastBlock = generateBlock(symtab, initialBlock, irFunction.statements());
 
-    // Insert a return to the main function.
-    if (isMainFunction)
+    // Insert a return to the function if the last block does not have a terminator.
+    if (lastBlock->getTerminator() == nullptr)
     {
         builder.SetInsertPoint(lastBlock);
         builder.CreateRetVoid();
     }
-
-    //    // If this variable was created from, initialise it from that.
-    //    bool initialisedFromArg = false;
-    //    for (llvm::Argument& arg : parent->args())
-    //    {
-    //        if (arg.getName() == name)
-    //        {
-    //            builder.CreateStore(&arg, allocaInst);
-    //            initialisedFromArg = true;
-    //        }
-    //    }
 }
 
 void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLibrary*> pluginsToLoad)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
+
+    gosubStackType = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(ctx), 32);
+    generateGosubHelperFunctions();
 
     // Generate main function.
     llvm::Function* gameEntryPointFunc = generateFunctionPrototype(program.mainFunction());
@@ -700,16 +848,13 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
         generateFunctionBody(globalSymbolTable.getFunction(*function), *function, false);
     }
 
-    //    module.dump();
-    //    std::exit(1);
+#ifndef NDEBUG
+    module.print(llvm::errs(), nullptr);
+#endif
 
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.
     engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
-
-#ifndef NDEBUG
-    module.print(llvm::errs(), nullptr);
-#endif
 
     // Verify module.
     bool brokenDebugInfo;
@@ -722,5 +867,66 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
         std::cerr << verifyResultBuffer << std::endl;
         std::exit(1);
     }
+}
+
+void CodeGenerator::generateGosubHelperFunctions()
+{
+    llvm::IRBuilder<> builder{ctx};
+
+    // Generate gosub push address function.
+    gosubPushAddress = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::Type::getVoidTy(ctx),
+            {gosubStackType->getPointerTo(), llvm::Type::getInt64PtrTy(ctx), llvm::Type::getInt8PtrTy(ctx)}, false),
+        llvm::Function::InternalLinkage, "gosubPushAddress", module);
+    gosubPushAddress->getArg(0)->setName("stack");
+    gosubPushAddress->getArg(1)->setName("sp");
+    gosubPushAddress->getArg(2)->setName("val");
+    {
+        builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "", gosubPushAddress));
+        auto* stack = gosubPushAddress->getArg(0);
+        auto* sp = gosubPushAddress->getArg(1);
+        auto* val = gosubPushAddress->getArg(2);
+        auto* index = builder.CreateLoad(sp, "index");
+        auto* addr = builder.CreateGEP(stack, {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), index}, "addr");
+        builder.CreateStore(val, addr);
+        auto* newIndex = builder.CreateAdd(index, llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1), "newIndex");
+        builder.CreateStore(newIndex, sp);
+        builder.CreateRetVoid();
+    }
+
+    // Generate gosub pop address function.
+    gosubPopAddress = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getInt8PtrTy(ctx),
+                                {gosubStackType->getPointerTo(), llvm::Type::getInt64PtrTy(ctx)}, false),
+        llvm::Function::InternalLinkage, "gosubPopAddress", module);
+    gosubPopAddress->getArg(0)->setName("stack");
+    gosubPopAddress->getArg(1)->setName("sp");
+    {
+        builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "", gosubPopAddress));
+        auto* stack = gosubPopAddress->getArg(0);
+        auto* sp = gosubPopAddress->getArg(1);
+        auto* index = builder.CreateLoad(sp, "index");
+        auto* topIndex = builder.CreateSub(index, llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 1), "topIndex");
+        auto* addr =
+            builder.CreateGEP(stack, {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), topIndex}, "addr");
+        auto* val = builder.CreateLoad(addr, "val");
+        builder.CreateStore(topIndex, sp);
+        builder.CreateRet(val);
+    }
+}
+
+void CodeGenerator::printString(llvm::IRBuilder<>& builder, llvm::Value* string)
+{
+    llvm::Function* putsFunc = module.getFunction("puts");
+    if (!putsFunc)
+    {
+        putsFunc = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {llvm::Type::getInt8PtrTy(ctx)}, false),
+            llvm::Function::ExternalLinkage, "puts", module);
+        putsFunc->setCallingConv(llvm::CallingConv::C);
+        putsFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    }
+    builder.CreateCall(putsFunc, {string});
 }
 } // namespace odb::ir

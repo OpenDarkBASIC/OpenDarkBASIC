@@ -40,20 +40,29 @@ public:
 
         GlobalSymbolTable& getGlobalTable() { return globals; }
 
-        void populateVariableTable(llvm::IRBuilder<>& builder, const std::vector<Variable*>& variables);
-
-        llvm::AllocaInst* getVar(const Variable* variable);
+        void addVar(const Variable* variable, llvm::Value* allocation);
+        llvm::Value* getVar(const Variable* variable);
         llvm::Value* getOrAddStrLiteral(const std::string& literal);
-        llvm::BasicBlock* addLabelBlock(const std::string& name);
-        llvm::BasicBlock* getLabelBlock(const std::string& name);
+        llvm::BasicBlock* getOrAddLabelBlock(const Label* label);
+
+        llvm::Value* gosubStack;
+        llvm::Value* gosubStackPointer;
+
+        void addGosubReturnPoint(llvm::BasicBlock* returnPoint);
+        void addGosubIndirectBr(llvm::IndirectBrInst* indirectBrInst);
+
+        std::unordered_map<const Loop*, llvm::BasicBlock*> loopExitBlocks;
 
     private:
         llvm::Function* parent;
         GlobalSymbolTable& globals;
 
-        std::unordered_map<const Variable*, llvm::AllocaInst*> variableTable;
+        std::unordered_map<const Variable*, llvm::Value*> variableTable;
         std::unordered_map<std::string, llvm::Value*> stringLiteralTable;
-        std::unordered_map<std::string, llvm::BasicBlock*> labelBlocks;
+        std::unordered_map<const Label*, llvm::BasicBlock*> labelBlocks;
+
+        std::vector<llvm::BasicBlock*> gosubReturnPoints;
+        std::vector<llvm::IndirectBrInst*> gosubReturnInstructions;
     };
 
     CodeGenerator(llvm::Module& module, EngineInterface& engineInterface)
@@ -80,5 +89,12 @@ private:
 
     // Variable symbol table.
     std::unordered_map<llvm::Function*, std::unique_ptr<SymbolTable>> symbolTables;
+
+    llvm::ArrayType* gosubStackType;
+    llvm::Function* gosubPushAddress;
+    llvm::Function* gosubPopAddress;
+
+    void generateGosubHelperFunctions();
+    void printString(llvm::IRBuilder<>& builder, llvm::Value* string);
 };
 } // namespace odb::ir
