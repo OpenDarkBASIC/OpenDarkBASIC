@@ -19,14 +19,29 @@ using namespace ast;
 TEST_F(NAME, empty_select_endselect)
 {
     ast = driver->parseString("test",
-        "select var\nendselect\n");
+        "select var\n"
+        "endselect\n");
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_one_empty_case)
 {
     ast = driver->parseString("test",
-        "select var1\ncase var2\nendcase\nendselect\n");
+        "select var1\n"
+        "    case var2\n"
+        "    endcase\n"
+        "endselect\n");
+    ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, select_with_one_empty_default_case)
+{
+    ast = driver->parseString("test",
+        "select var1\n"
+        "    case default\n"
+        "    endcase\n"
+        "endselect\n");
+    ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_two_empty_cases)
@@ -68,4 +83,16 @@ TEST_F(NAME, select_case_with_body)
         "    endcase\n"
         "endselect\n");
     ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, multiple_default_cases)
+{
+    ast = driver->parseString("test",
+        "select var\n"
+        "    case default\n"
+        "    endcase\n"
+        "    case default\n"
+        "    endcase\n"
+        "endselect\n");
+    ASSERT_THAT(ast, IsNull());
 }

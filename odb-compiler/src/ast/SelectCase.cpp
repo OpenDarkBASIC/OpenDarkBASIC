@@ -85,6 +85,14 @@ CaseList::CaseList(Case* case_, SourceLocation* location)
 }
 
 // ----------------------------------------------------------------------------
+CaseList::CaseList(DefaultCase* case_, SourceLocation* location)
+    : Node(location)
+    , default_(case_)
+{
+    case_->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
 CaseList::CaseList(SourceLocation* location)
     : Node(location)
 {

@@ -38,6 +38,7 @@ class CaseList : public Node
 {
 public:
     CaseList(Case* case_, SourceLocation* location);
+    CaseList(DefaultCase* case_, SourceLocation* location);
     CaseList(SourceLocation* location);
 
     void appendCase(Case* case_);
