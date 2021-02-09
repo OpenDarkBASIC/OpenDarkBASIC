@@ -359,25 +359,44 @@ const std::vector<Select::Case>& Select::cases() const
     return cases_;
 }
 
-ForLoop::ForLoop(SourceLocation* location, FunctionDefinition* containingFunction, VarRefExpression variable,
-                 StatementBlock block)
-    : Statement(location, containingFunction), variable_(std::move(variable)), block_(std::move(block))
+void Loop::appendStatements(StatementBlock block)
+{
+    std::move(block.begin(), block.end(), std::back_inserter(statements_));
+}
+
+const StatementBlock& Loop::statements() const
+{
+    return statements_;
+}
+
+Loop::Loop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock block) : Statement(location, containingFunction), statements_(std::move(block))
 {
 }
 
-const VarRefExpression& ForLoop::variable() const
+ForLoop::ForLoop(SourceLocation* location, FunctionDefinition* containingFunction, VarAssignment assignment, Ptr<Expression> endValue, Ptr<Expression> stepValue,
+                 StatementBlock statements)
+    : Loop(location, containingFunction, std::move(statements)), assignment_(std::move(assignment)), endValue_(std::move(endValue)), stepValue_(std::move(stepValue))
 {
-    return variable_;
 }
 
-const StatementBlock& ForLoop::block() const
+const VarAssignment& ForLoop::assignment() const
 {
-    return block_;
+    return assignment_;
+}
+
+Expression* ForLoop::endValue() const
+{
+    return endValue_.get();
+}
+
+Expression* ForLoop::stepValue() const
+{
+    return stepValue_.get();
 }
 
 WhileLoop::WhileLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
-                     StatementBlock block)
-    : Statement(location, containingFunction), expression_(std::move(expression)), block_(std::move(block))
+                     StatementBlock statements)
+    : Loop(location, containingFunction, std::move(statements)), expression_(std::move(expression))
 {
 }
 
@@ -386,14 +405,9 @@ Expression* WhileLoop::expression() const
     return expression_.get();
 }
 
-const StatementBlock& WhileLoop::block() const
-{
-    return block_;
-}
-
 UntilLoop::UntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
-                     StatementBlock block)
-    : Statement(location, containingFunction), expression_(std::move(expression)), block_(std::move(block))
+                     StatementBlock statements)
+    : Loop(location, containingFunction, std::move(statements)), expression_(std::move(expression))
 {
 }
 
@@ -402,47 +416,9 @@ Expression* UntilLoop::expression() const
     return expression_.get();
 }
 
-const StatementBlock& UntilLoop::block() const
+InfiniteLoop::InfiniteLoop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock statements)
+    : Loop(location, containingFunction, std::move(statements))
 {
-    return block_;
-}
-
-InfiniteLoop::InfiniteLoop(SourceLocation* location, FunctionDefinition* containingFunction, StatementBlock block)
-    : Statement(location, containingFunction), block_(std::move(block))
-{
-}
-
-const StatementBlock& InfiniteLoop::block() const
-{
-    return block_;
-}
-
-CreateVar::CreateVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable,
-                     Ptr<Expression> initialExpression)
-    : Statement(location, containingFunction)
-    , variable_(std::move(variable))
-    , initialExpression_(std::move(initialExpression))
-{
-}
-
-const Variable* CreateVar::variable() const
-{
-    return variable_;
-}
-
-Expression* CreateVar::initialExpression() const
-{
-    return initialExpression_.get();
-}
-
-DestroyVar::DestroyVar(SourceLocation* location, FunctionDefinition* containingFunction, Reference<Variable> variable)
-    : Statement(location, containingFunction), variable_(std::move(variable))
-{
-}
-
-const Variable* DestroyVar::variable() const
-{
-    return variable_;
 }
 
 VarAssignment::VarAssignment(SourceLocation* location, FunctionDefinition* containingFunction,
@@ -471,24 +447,34 @@ const std::string& Label::name() const
     return name_;
 }
 
-Goto::Goto(SourceLocation* location, FunctionDefinition* containingFunction, std::string label)
-    : Statement(location, containingFunction), label_(std::move(label))
+Goto::Goto(SourceLocation* location, FunctionDefinition* containingFunction, Label* label)
+    : Statement(location, containingFunction), label_(label)
 {
 }
 
-const std::string& Goto::label() const
+Label* Goto::label() const
 {
     return label_;
 }
 
-Gosub::Gosub(SourceLocation* location, FunctionDefinition* containingFunction, std::string label)
-    : Statement(location, containingFunction), label_(std::move(label))
+void Goto::setLabel(Label* label)
+{
+    label_ = label;
+}
+
+Gosub::Gosub(SourceLocation* location, FunctionDefinition* containingFunction, Label* label)
+    : Statement(location, containingFunction), label_(label)
 {
 }
 
-const std::string& Gosub::label() const
+Label* Gosub::label() const
 {
     return label_;
+}
+
+void Gosub::setLabel(Label* label)
+{
+    label_ = label;
 }
 
 FunctionCall::FunctionCall(SourceLocation* location, FunctionDefinition* containingFunction,
@@ -507,8 +493,13 @@ SubReturn::SubReturn(SourceLocation* location, FunctionDefinition* containingFun
 {
 }
 
-Exit::Exit(SourceLocation* location, FunctionDefinition* containingFunction) : Statement(location, containingFunction)
+Exit::Exit(SourceLocation* location, FunctionDefinition* containingFunction, Loop* loopToBreak) : Statement(location, containingFunction), loopToBreak_(loopToBreak)
 {
+}
+
+Loop* Exit::loopToBreak() const
+{
+    return loopToBreak_;
 }
 
 ExitFunction::ExitFunction(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression)

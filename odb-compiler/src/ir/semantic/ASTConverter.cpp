@@ -41,9 +41,16 @@
 namespace odb::ir {
 namespace {
 // TODO: Move this elsewhere.
-template <typename... Args> [[noreturn]] void fatalError(const char* message, Args&&... args)
+template <typename... Args> [[noreturn]] void fatalError(ast::SourceLocation* location, char* message, Args&&... args)
 {
-    fprintf(stderr, "FATAL ERROR:");
+    fprintf(stderr, "%s: FATAL ERROR: ", location->getFileLineColumn().c_str());
+    fprintf(stderr, message, args...);
+    std::terminate();
+}
+
+template <typename... Args> [[noreturn]] void fatalError(char* message, Args&&... args)
+{
+    fprintf(stderr, "<unknown>: FATAL ERROR: ");
     fprintf(stderr, message, args...);
     std::terminate();
 }
@@ -125,7 +132,8 @@ Reference<Variable> ASTConverter::resolveVariableRef(const ast::VarRef* varRef)
 
 bool ASTConverter::isTypeConvertible(Type sourceType, Type targetType) const
 {
-    if (sourceType == targetType) {
+    if (sourceType == targetType)
+    {
         return true;
     }
     if (sourceType.isBuiltinType() && targetType.isBuiltinType())
@@ -228,7 +236,7 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
 
         if (candidates.empty())
         {
-            fatalError("Unable to find matching overload for keyword %s.", commandName.c_str());
+            fatalError(location, "Unable to find matching overload for command '%s'.", commandName.c_str());
         }
 
         // Sort candidates in ascending order by how suitable they are. The candidate at the end of the sorted list is
@@ -305,15 +313,14 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     auto* functionDefinition = functionEntry->second.functionDefinition;
 
     // Verify argument list.
-    if (!functionDefinition->arguments().empty() && astArgs.isNull())
+    int astArgCount = 0;
+    if (astArgs.notNull())
     {
-        semanticError(location, "Function '%s' requires %d arguments, but 0 were provided.", functionName.c_str(),
-                      functionDefinition->arguments().size());
-        std::terminate();
+        astArgCount = astArgs->expressions().size();
     }
-    if (functionDefinition->arguments().size() != astArgs->expressions().size())
+    if (functionDefinition->arguments().size() != astArgCount)
     {
-        semanticError(location, "Function '%s' requires %d arguments, but 0 were provided.", functionName.c_str(),
+        semanticError(location, "Function '%s' requires %d arguments, but %d were provided.", functionName.c_str(),
                       functionDefinition->arguments().size(), astArgs->expressions().size());
         std::terminate();
     }
@@ -397,7 +404,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     fatalError("Unknown expression type");
 }
 
-Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
+Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* currentLoop)
 {
     auto* location = statement->location();
     if (auto* constDeclStatement = dynamic_cast<ast::ConstDecl*>(statement))
@@ -448,39 +455,88 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
         return std::make_unique<Conditional>(
             location, currentFunction_,
             ensureType(convertExpression(conditionalSt->condition()), Type{BuiltinType::Boolean}),
-            convertBlock(conditionalSt->trueBranch()), convertBlock(conditionalSt->falseBranch()));
+            convertBlock(conditionalSt->trueBranch(), currentLoop),
+            convertBlock(conditionalSt->falseBranch(), currentLoop));
     }
     else if (auto* subReturnSt = dynamic_cast<ast::SubReturn*>(statement))
     {
-        // TODO: Find original label.
         return std::make_unique<SubReturn>(location, currentFunction_);
     }
     else if (auto* funcExitSt = dynamic_cast<ast::FuncExit*>(statement))
     {
         return std::make_unique<ExitFunction>(location, currentFunction_, convertExpression(funcExitSt->returnValue()));
     }
+    else if (auto* forLoopSt = dynamic_cast<ast::ForLoop*>(statement))
+    {
+        auto* astVarAssignment = static_cast<ast::VarAssignment*>(forLoopSt->counter());
+        auto variable = resolveVariableRef(astVarAssignment->variable());
+        // TODO: Ensure variable is a valid for loop counter.
+
+        auto initExpression = ensureType(convertExpression(astVarAssignment->expression()), variable->type());
+        auto endExpression = ensureType(convertExpression(forLoopSt->endValue()), variable->type());
+        Ptr<Expression> stepExpression;
+        if (forLoopSt->stepValue().notNull())
+        {
+            stepExpression = ensureType(convertExpression(forLoopSt->stepValue()), variable->type());
+        }
+        else
+        {
+            stepExpression = ensureType(std::make_unique<IntegerLiteral>(forLoopSt->location(), 1), variable->type());
+        }
+        auto forLoop = std::make_unique<ForLoop>(
+            location, currentFunction_,
+            VarAssignment{location, currentFunction_, std::move(variable), std::move(initExpression)},
+            std::move(endExpression), std::move(stepExpression));
+        forLoop->appendStatements(convertBlock(forLoopSt->body(), forLoop.get()));
+        return forLoop;
+    }
     else if (auto* whileLoopSt = dynamic_cast<ast::WhileLoop*>(statement))
     {
-        return std::make_unique<WhileLoop>(location, currentFunction_,
-                                           convertExpression(whileLoopSt->continueCondition()),
-                                           convertBlock(whileLoopSt->body()));
+        auto whileLoop = std::make_unique<WhileLoop>(location, currentFunction_,
+                                                     convertExpression(whileLoopSt->continueCondition()));
+        whileLoop->appendStatements(convertBlock(whileLoopSt->body(), whileLoop.get()));
+        return whileLoop;
     }
     else if (auto* untilLoopSt = dynamic_cast<ast::UntilLoop*>(statement))
     {
-        return std::make_unique<UntilLoop>(location, currentFunction_, convertExpression(untilLoopSt->exitCondition()),
-                                           convertBlock(untilLoopSt->body()));
+        auto untilLoop =
+            std::make_unique<UntilLoop>(location, currentFunction_, convertExpression(untilLoopSt->exitCondition()));
+        untilLoop->appendStatements(convertBlock(untilLoopSt->body(), untilLoop.get()));
+        return untilLoop;
     }
     else if (auto* infiniteLoopSt = dynamic_cast<ast::InfiniteLoop*>(statement))
     {
-        return std::make_unique<InfiniteLoop>(location, currentFunction_, convertBlock(infiniteLoopSt->body()));
+        auto infiniteLoop = std::make_unique<InfiniteLoop>(location, currentFunction_);
+        infiniteLoop->appendStatements(convertBlock(infiniteLoopSt->body(), infiniteLoop.get()));
+        return infiniteLoop;
     }
     else if (auto* exitSt = dynamic_cast<ast::Exit*>(statement))
     {
-        return std::make_unique<Exit>(location, currentFunction_);
+        if (!currentLoop)
+        {
+            semanticError(exitSt->location(), "Encountered 'exit' statement outside a loop body.");
+            return nullptr;
+        }
+        return std::make_unique<Exit>(location, currentFunction_, currentLoop);
     }
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {
-        return std::make_unique<Label>(location, currentFunction_, labelSt->symbol()->name());
+        auto labelName = labelSt->symbol()->name();
+        auto irLabel = std::make_unique<Label>(location, currentFunction_, labelName);
+        auto pendingGotoStatements = pendingGotoStatements_.equal_range(labelName);
+        auto pendingGosubStatements = pendingGosubStatements_.equal_range(labelName);
+        for (auto it = pendingGotoStatements.first; it != pendingGotoStatements.second; ++it)
+        {
+            (*it).second->setLabel(irLabel.get());
+        }
+        for (auto it = pendingGosubStatements.first; it != pendingGosubStatements.second; ++it)
+        {
+            (*it).second->setLabel(irLabel.get());
+        }
+        pendingGotoStatements_.erase(labelName);
+        pendingGosubStatements_.erase(labelName);
+        labels_.emplace(labelName, irLabel.get());
+        return irLabel;
     }
     else if (auto* funcCallSt = dynamic_cast<ast::FuncCallStmnt*>(statement))
     {
@@ -490,11 +546,27 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     }
     else if (auto* gotoSt = dynamic_cast<ast::GotoSymbol*>(statement))
     {
-        return std::make_unique<Goto>(location, currentFunction_, gotoSt->labelSymbol()->name());
+        std::string labelName = gotoSt->labelSymbol()->name();
+        auto labelIt = labels_.find(labelName);
+        Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;
+        auto irGotoSt = std::make_unique<Goto>(location, currentFunction_, label);
+        if (!label)
+        {
+            pendingGotoStatements_.emplace(labelName, irGotoSt.get());
+        }
+        return irGotoSt;
     }
     else if (auto* subCallSt = dynamic_cast<ast::SubCallSymbol*>(statement))
     {
-        return std::make_unique<Gosub>(location, currentFunction_, subCallSt->labelSymbol()->name());
+        std::string labelName = subCallSt->labelSymbol()->name();
+        auto labelIt = labels_.find(labelName);
+        Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;
+        auto irGosubSt = std::make_unique<Gosub>(location, currentFunction_, label);
+        if (!label)
+        {
+            pendingGosubStatements_.emplace(labelName, irGosubSt.get());
+        }
+        return irGosubSt;
     }
     else if (auto* commandSt = dynamic_cast<ast::CommandStmntSymbol*>(statement))
     {
@@ -508,25 +580,25 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement)
     }
 }
 
-StatementBlock ASTConverter::convertBlock(const MaybeNull<ast::Block>& ast)
+StatementBlock ASTConverter::convertBlock(const MaybeNull<ast::Block>& ast, Loop* currentLoop)
 {
     StatementBlock block;
     if (ast.notNull())
     {
         for (ast::Statement* node : ast->statements())
         {
-            block.emplace_back(convertStatement(node));
+            block.emplace_back(convertStatement(node, currentLoop));
         }
     }
     return block;
 }
 
-StatementBlock ASTConverter::convertBlock(const std::vector<Reference<ast::Statement>>& ast)
+StatementBlock ASTConverter::convertBlock(const std::vector<Reference<ast::Statement>>& ast, Loop* currentLoop)
 {
     StatementBlock block;
     for (ast::Statement* node : ast)
     {
-        block.emplace_back(convertStatement(node));
+        block.emplace_back(convertStatement(node, currentLoop));
     }
     return block;
 }
@@ -590,13 +662,13 @@ std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
     }
 
     // Generate functions bodies.
-    FunctionDefinition mainFunction(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "__DBMain");
+    FunctionDefinition mainFunction(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "main");
     currentFunction_ = &mainFunction;
-    mainFunction.appendStatements(convertBlock(astMainStatements));
+    mainFunction.appendStatements(convertBlock(astMainStatements, nullptr));
     for (auto& [_, funcDetails] : functionMap_)
     {
         currentFunction_ = funcDetails.functionDefinition;
-        funcDetails.functionDefinition->appendStatements(convertBlock(funcDetails.ast->body()->statements()));
+        funcDetails.functionDefinition->appendStatements(convertBlock(funcDetails.ast->body()->statements(), nullptr));
         if (funcDetails.ast->returnValue().notNull())
         {
             funcDetails.functionDefinition->setReturnExpression(convertExpression(funcDetails.ast->returnValue()));

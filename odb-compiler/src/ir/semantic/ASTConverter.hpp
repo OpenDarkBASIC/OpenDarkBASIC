@@ -8,6 +8,7 @@
 
 #include <array>
 #include <memory>
+#include <unordered_map>
 
 namespace odb::ir {
 class ASTConverter
@@ -30,6 +31,9 @@ private:
     bool errorOccurred_;
 
     FunctionDefinition* currentFunction_;
+    std::unordered_multimap<std::string, Goto*> pendingGotoStatements_;
+    std::unordered_multimap<std::string, Gosub*> pendingGosubStatements_;
+    std::unordered_map<std::string, Label*> labels_;
 
 private:
     template <typename... T> void semanticWarning(SourceLocation* location, const char* format, T... args)
@@ -37,8 +41,9 @@ private:
         // TODO: Use a consistent logging library.
         // TODO: Use location properly.
         (void)location;
-        fprintf(stderr, "SEMANTIC WARNING: ");
+        fprintf(stderr, "%s: SEMANTIC WARNING: ", location->getFileLineColumn().c_str());
         fprintf(stderr, format, args...);
+        fprintf(stderr, "\n");
     }
 
     template <typename... T> void semanticError(SourceLocation* location, const char* format, T... args)
@@ -46,8 +51,9 @@ private:
         // TODO: Use a consistent logging library.
         // TODO: Use location properly.
         (void)location;
-        fprintf(stderr, "SEMANTIC ERROR: ");
+        fprintf(stderr, "%s: SEMANTIC ERROR: ", location->getFileLineColumn().c_str());
         fprintf(stderr, format, args...);
+        fprintf(stderr, "\n");
         errorOccurred_ = true;
     }
 
@@ -66,9 +72,9 @@ private:
                                                          const MaybeNull<ast::ExpressionList>& astArgs);
     Ptr<Expression> convertExpression(const ast::Expression* expression);
 
-    Ptr<Statement> convertStatement(ast::Statement* statement);
-    StatementBlock convertBlock(const MaybeNull<ast::Block>& ast);
-    StatementBlock convertBlock(const std::vector<Reference<ast::Statement>>& ast);
+    Ptr<Statement> convertStatement(ast::Statement* statement, Loop* currentLoop);
+    StatementBlock convertBlock(const MaybeNull<ast::Block>& ast, Loop* currentLoop);
+    StatementBlock convertBlock(const std::vector<Reference<ast::Statement>>& ast, Loop* currentLoop);
 
     std::unique_ptr<FunctionDefinition> convertFunctionWithoutBody(ast::FuncDecl* funcDecl);
 };

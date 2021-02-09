@@ -17,7 +17,9 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
     // Declare required WinAPI functions.
     /*
          using FuncPtr = int (__stdcall *)();
+        __declspec(dllimport) DWORD GetTempPathA(DWORD nBufferLength, LPSTR lpBuffer);
         __declspec(dllimport) void* __stdcall LoadLibraryA(const char* lpLibFileName);
+        __declspec(dllimport) DWORD __stdcall GetLastError();
         __declspec(dllimport) FuncPtr GetProcAddress(void* hModule, const char* lpProcName);
      */
 
@@ -25,6 +27,12 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
     stringTy = llvm::Type::getInt8PtrTy(ctx);
     procAddrTy = llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), false)->getPointerTo();
     dwordTy = llvm::Type::getInt32Ty(ctx);
+
+    // Declare GetTempPathA from Kernel32.lib
+    getTempPathFunc = llvm::Function::Create(llvm::FunctionType::get(dwordTy, {dwordTy, stringTy}, false),
+                                             llvm::Function::ExternalLinkage, "GetTempPathA", module);
+    getTempPathFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    getTempPathFunc->setCallingConv(llvm::CallingConv::X86_StdCall);
 
     // Declare LoadLibraryA from Kernel32.lib
     loadLibraryFunc = llvm::Function::Create(llvm::FunctionType::get(hInstanceTy, {stringTy}, false),
@@ -54,43 +62,44 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
     /*
         struct GlobStruct {
             char Padding[48];
-        0   HINSTANCE GFX;
-        1   HINSTANCE Text;
-        2   HINSTANCE Basic2D;
-        3   HINSTANCE Sprites;
-        4   HINSTANCE Image;
-        5   HINSTANCE Input;
-        6   HINSTANCE System;
-        7   HINSTANCE File;
-        8   HINSTANCE FTP;
-        9   HINSTANCE Memblocks;
-        10  HINSTANCE Bitmap;
-        11  HINSTANCE Animation;
-        12  HINSTANCE Multiplayer;
-        13  HINSTANCE Basic3D;
-        14  HINSTANCE Camera3D;
-        15  HINSTANCE Matrix3D;
-        16  HINSTANCE Light3D;
-        17  HINSTANCE World3D;
-        18  HINSTANCE Particles;
-        19  HINSTANCE PrimObject;
-        20  HINSTANCE Vectors;
-        21  HINSTANCE XObject;
-        22  HINSTANCE 3DSObject;
-        23  HINSTANCE MDLObject;
-        24  HINSTANCE MD2Object;
-        25  HINSTANCE MD3Object;
-        26  HINSTANCE Sound;
-        27  HINSTANCE Music;
-        28  HINSTANCE LODTerrain;
-        29  HINSTANCE Q2BSP;
-        30  HINSTANCE OwnBSP;
-        31  HINSTANCE BSPCompiler;
-        32  HINSTANCE CSG;
-        33  HINSTANCE igLoader;
-        34  HINSTANCE GameFX;
-        35  HINSTANCE Transforms;
-            char padding2[49];
+     0      HINSTANCE GFX;
+     1      HINSTANCE Text;
+     2      HINSTANCE Basic2D;
+     3      HINSTANCE Sprites;
+     4      HINSTANCE Image;
+     5      HINSTANCE Input;
+     6      HINSTANCE System;
+     7      HINSTANCE File;
+     8      HINSTANCE FTP;
+     9      HINSTANCE Memblocks;
+     10     HINSTANCE Bitmap;
+     11     HINSTANCE Animation;
+     12     HINSTANCE Multiplayer;
+     13     HINSTANCE Basic3D;
+     14     HINSTANCE Camera3D;
+     15     HINSTANCE Matrix3D;
+     16     HINSTANCE Light3D;
+     17     HINSTANCE World3D;
+     18     HINSTANCE Particles;
+     19     HINSTANCE PrimObject;
+     20     HINSTANCE Vectors;
+     21     HINSTANCE XObject;
+     22     HINSTANCE 3DSObject;
+     23     HINSTANCE MDLObject;
+     24     HINSTANCE MD2Object;
+     25     HINSTANCE MD3Object;
+     26     HINSTANCE Sound;
+     27     HINSTANCE Music;
+     28     HINSTANCE LODTerrain;
+     29     HINSTANCE Q2BSP;
+     30     HINSTANCE OwnBSP;
+     31     HINSTANCE BSPCompiler;
+     32     HINSTANCE CSG;
+     33     HINSTANCE igLoader;
+     34     HINSTANCE GameFX;
+     35     HINSTANCE Transforms;
+     36-52  HINSTANCE Spare04-20;
+            bool PluginMade[53]; // a boolean for each plugin which indicates whether it's loaded or not.
             char pEXEUnpackDirectory[_MAX_PATH]; // _MAX_PATH = 260
             DWORD dwEncryptionUniqueKey;
             DWORD ppEXEAbsFilename;
@@ -100,10 +109,12 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
     std::vector<llvm::Type*> globStructElements;
     // padding.
     globStructElements.emplace_back(llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 48));
-    // 36 HINSTANCE's for each plugin.
-    globStructElements.emplace_back(llvm::ArrayType::get(hInstanceTy, 36));
-    // padding.
-    globStructElements.emplace_back(llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 30));
+    // 53 HINSTANCE's for each plugin.
+    globStructElements.emplace_back(llvm::ArrayType::get(hInstanceTy, 53));
+    // 53 bool's (represented as a byte) for each plugin.
+    globStructElements.emplace_back(llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 53));
+    // EXE unpack directory (represented as 260 bytes).
+    globStructElements.emplace_back(llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx), 260));
     globStructTy = llvm::StructType::get(ctx, globStructElements);
 
     // GlobStruct consists of 36 HINSTANCE's which we need to associate with different plugins.
@@ -285,11 +296,10 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     {
         auto pluginHModuleEntry = pluginHModulePtrs.find(plugin);
         // Index the array in GlobStruct.
-        std::vector<llvm::Value*> gepIndices;
-        gepIndices.emplace_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
-        gepIndices.emplace_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 1));
-        gepIndices.emplace_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), globStructIndex));
-        llvm::Value* hModuleElement = builder.CreateGEP(globStructPtr, gepIndices);
+        llvm::Value* hModuleElement = builder.CreateGEP(globStructPtr, {
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0),
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 1),
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), globStructIndex)});
         if (pluginHModuleEntry == pluginHModulePtrs.end())
         {
             builder.CreateStore(llvm::ConstantPointerNull::get(hInstanceTy), hModuleElement);
@@ -299,6 +309,22 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
             builder.CreateStore(builder.CreateLoad(pluginHModuleEntry->second), hModuleElement);
         }
     }
+
+    // Set EXE unpack directory. If this is left unset, then a bug occurs where the engine deletes a file after loading it.
+    llvm::Value* exeUnpackDirectoryArray = builder.CreateGEP(globStructPtr, {
+                           llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0),
+                           llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 3)
+                                                                   });
+    auto* tempPathLength = builder.CreateCall(
+        getTempPathFunc, {llvm::ConstantInt::get(dwordTy, 260), builder.CreatePointerCast(exeUnpackDirectoryArray, llvm::Type::getInt8PtrTy(ctx))});
+    tempPathLength->setCallingConv(llvm::CallingConv::X86_StdCall);
+    char odbcUnpackStr[] = "odbc-unpack";
+    builder.CreateMemCpy(
+        builder.CreateGEP(exeUnpackDirectoryArray, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0), tempPathLength}),
+        llvm::None,
+        builder.CreateGlobalStringPtr(odbcUnpackStr),
+        llvm::None,
+        sizeof(odbcUnpackStr));
 
     // Initialise engine.
     auto passErrorPtrFunc = getPluginFunction(
