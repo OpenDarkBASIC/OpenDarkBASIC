@@ -1,39 +1,12 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <cstdio>
 #include <sstream>
 
-namespace odb {
-namespace db {
-
-// ----------------------------------------------------------------------------
-void vprintParserMessage(Log::Severity severity,
-                         const DBLTYPE *locp,
-                         dbscan_t scanner,
-                         const char* fmt,
-                         va_list args)
-{
-    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
-    odb::Reference<odb::ast::SourceLocation> location = driver->newLocation(locp);
-    std::string fileLocInfo = location->getFileLineColumn();
-    std::string fmtMsg;
-
-    va_list copy;
-    va_copy(copy, args);
-    fmtMsg.resize((size_t)vsnprintf(nullptr, 0, fmt, copy) + 1);
-    va_end(copy);
-    va_copy(copy, args);
-    snprintf( fmtMsg.data(), fmtMsg.size(), fmt, args);
-    va_end(args);
-
-    std::string msg = fileLocInfo + ": " + fmtMsg;
-    Log::dbParser(severity, "%s", msg.c_str());
-    for (const auto& line : location->getUnderlinedSection())
-        Log::info.print("%s\n", line.c_str());
-
-}
+namespace odb::db {
 
 // ----------------------------------------------------------------------------
 void printSyntaxMessage(Log::Severity severity,
@@ -79,5 +52,4 @@ void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner)
     location->printUnderlinedSection(Log::info);
 }
 
-}
 }

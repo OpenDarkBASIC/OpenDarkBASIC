@@ -48,10 +48,15 @@ void Visitor::visitLabel(ast::Label* node)
     const auto it = labels.insert({name, node});
     if (it.second == false)
     {
-        Log::dbParser(Log::ERROR, "%s: Label `%s` redefined\n",
-                      node->location()->getFileLineColumn().c_str(), name.c_str());
+        Log::dbParserSyntaxError(
+            node->location()->getFileLineColumn().c_str(), "Label ");
+        Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", name.c_str());
+        Log::info.print(" redefined\n");
         node->location()->printUnderlinedSection(Log::info);
-        Log::dbParser(Log::NOTICE, "Label previously defined here\n");
+
+        Log::dbParserLocationNote(
+            it.first->second->location()->getFileLineColumn().c_str(),
+            "Label previously defined here\n");
         it.first->second->location()->printUnderlinedSection(Log::info);
 
         errorOccurred = true;
@@ -73,8 +78,11 @@ bool ResolveLabels::execute(ast::Node* node)
         auto it = gatherer.labels.find(name);
         if (it == gatherer.labels.end())
         {
-            Log::dbParser(Log::ERROR, "%s: Label `%s` undefined\n",
-                          gotoNode->location()->getFileLineColumn().c_str(), name.c_str());
+            Log::dbParserSyntaxError(
+                gotoNode->location()->getFileLineColumn().c_str(),
+                "Label ");
+            Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", name.c_str());
+            Log::info.print(" undefined\n");
             gotoNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
             continue;
         }
@@ -90,8 +98,11 @@ bool ResolveLabels::execute(ast::Node* node)
         auto it = gatherer.labels.find(name);
         if (it == gatherer.labels.end())
         {
-            Log::dbParser(Log::ERROR, "%s: Label `%s` undefined\n",
-                          subCallNode->location()->getFileLineColumn().c_str(), name.c_str());
+            Log::dbParserSyntaxError(
+                subCallNode->location()->getFileLineColumn().c_str(),
+                "Label ");
+            Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", name.c_str());
+            Log::info.print(" undefined\n");
             subCallNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
             continue;
         }

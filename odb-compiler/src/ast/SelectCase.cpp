@@ -7,19 +7,23 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Select::Select(Expression* expr, CaseList* cases, SourceLocation* location)
+Select::Select(Expression* expr, CaseList* cases, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect)
     : Statement(location)
     , expr_(expr)
     , cases_(cases)
+    , beginLoc_(beginSelect)
+    , endLoc_(endSelect)
 {
     expr->setParent(this);
     cases->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
-Select::Select(Expression* expr, SourceLocation* location)
+Select::Select(Expression* expr, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect)
     : Statement(location)
     , expr_(expr)
+    , beginLoc_(beginSelect)
+    , endLoc_(endSelect)
 {
     expr->setParent(this);
 }
@@ -34,6 +38,18 @@ Expression* Select::expression() const
 MaybeNull<CaseList> Select::cases() const
 {
     return cases_.get();
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* Select::beginSelectLocation() const
+{
+    return beginLoc_;
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* Select::endSelectLocation() const
+{
+    return endLoc_;
 }
 
 // ----------------------------------------------------------------------------
@@ -71,7 +87,9 @@ Node* Select::duplicateImpl() const
     return new Select(
         expr_->duplicate<Expression>(),
         cases_ ? cases_->duplicate<CaseList>() : nullptr,
-        location());
+        location(),
+        beginSelectLocation(),
+        endSelectLocation());
 }
 
 // ============================================================================
@@ -87,9 +105,8 @@ CaseList::CaseList(Case* case_, SourceLocation* location)
 // ----------------------------------------------------------------------------
 CaseList::CaseList(DefaultCase* case_, SourceLocation* location)
     : Node(location)
-    , default_(case_)
 {
-    case_->setParent(this);
+    appendDefaultCase(case_);
 }
 
 // ----------------------------------------------------------------------------
@@ -108,10 +125,12 @@ void CaseList::appendCase(Case* case_)
 }
 
 // ----------------------------------------------------------------------------
-void CaseList::setDefaultCase(DefaultCase* case_)
+void CaseList::appendDefaultCase(DefaultCase* case_)
 {
-    default_ = case_;
+    defaults_.push_back(case_);
     case_->setParent(this);
+
+    location()->unionize(case_->location());
 }
 
 // ----------------------------------------------------------------------------
@@ -121,9 +140,15 @@ const std::vector<Reference<Case>>& CaseList::cases() const
 }
 
 // ----------------------------------------------------------------------------
+const std::vector<Reference<DefaultCase>>& CaseList::defaultCases() const
+{
+    return defaults_;
+}
+
+// ----------------------------------------------------------------------------
 MaybeNull<DefaultCase> CaseList::defaultCase() const
 {
-    return default_.get();
+    return defaults_.size() > 0 ? defaults_.back().get() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
@@ -132,7 +157,7 @@ void CaseList::accept(Visitor* visitor)
     visitor->visitCaseList(this);
     for (const auto& case_ : cases_)
         case_->accept(visitor);
-    if (default_)
+    for (const auto& default_ : defaults_)
         default_->accept(visitor);
 }
 void CaseList::accept(ConstVisitor* visitor) const
@@ -140,7 +165,7 @@ void CaseList::accept(ConstVisitor* visitor) const
     visitor->visitCaseList(this);
     for (const auto& case_ : cases_)
         case_->accept(visitor);
-    if (default_)
+    for (const auto& default_ : defaults_)
         default_->accept(visitor);
 }
 
@@ -154,6 +179,13 @@ void CaseList::swapChild(const Node* oldNode, Node* newNode)
             newNode->setParent(this);
             return;
         }
+    for (auto& default_ : defaults_)
+        if (default_ == oldNode)
+        {
+            default_ = dynamic_cast<DefaultCase*>(newNode);
+            newNode->setParent(this);
+            return;
+        }
 
     assert(false);
 }
@@ -164,6 +196,8 @@ Node* CaseList::duplicateImpl() const
     CaseList* cl = new CaseList(location());
     for (const auto& case_ : cases_)
         cl->appendCase(case_->duplicate<Case>());
+    for (const auto& default_ : defaults_)
+        cl->appendDefaultCase(default_);
     return cl;
 }
 
@@ -242,16 +276,20 @@ Node* Case::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-DefaultCase::DefaultCase(Block* body, SourceLocation* location)
+DefaultCase::DefaultCase(Block* body, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
     : Node(location)
     , body_(body)
+    , beginLoc_(beginCaseLoc)
+    , endLoc_(endCaseLoc)
 {
     body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
-DefaultCase::DefaultCase(SourceLocation* location)
+DefaultCase::DefaultCase(SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
     : Node(location)
+    , beginLoc_(beginCaseLoc)
+    , endLoc_(endCaseLoc)
 {
 }
 
@@ -259,6 +297,18 @@ DefaultCase::DefaultCase(SourceLocation* location)
 MaybeNull<Block> DefaultCase::body() const
 {
     return body_.get();
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* DefaultCase::beginCaseLocation() const
+{
+    return beginLoc_;
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* DefaultCase::endCaseLocation() const
+{
+    return endLoc_;
 }
 
 // ----------------------------------------------------------------------------
@@ -291,7 +341,9 @@ Node* DefaultCase::duplicateImpl() const
 {
     return new DefaultCase(
         body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        location(),
+        beginCaseLocation(),
+        endCaseLocation());
 }
 
 }

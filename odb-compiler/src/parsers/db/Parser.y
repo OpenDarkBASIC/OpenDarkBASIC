@@ -758,29 +758,40 @@ cond_next
   | ENDIF                                                     { $$ = nullptr; }
   ;
 select
-  : SELECT expr seps case_list seps ENDSELECT                 { $$ = new Select($2, $4, driver->newLocation(&@$)); }
-  | SELECT expr seps ENDSELECT                                { $$ = new Select($2, driver->newLocation(&@$)); }
+  : SELECT expr seps case_list seps ENDSELECT                 { SourceLocation* beg = driver->newLocation(&@1);
+                                                                SourceLocation* end = driver->newLocation(&@6);
+                                                                $$ = new Select($2, $4, driver->newLocation(&@$), beg, end);
+                                                              }
+  | SELECT expr seps ENDSELECT                                { SourceLocation* beg = driver->newLocation(&@1);
+                                                                SourceLocation* end = driver->newLocation(&@4);
+                                                                $$ = new Select($2, driver->newLocation(&@$), beg, end);
+                                                              }
   ;
 case_list
   : case                                                      { $$ = new CaseList($1, driver->newLocation(&@$)); }
   | default_case                                              { $$ = new CaseList($1, driver->newLocation(&@$)); }
   | case_list seps case                                       { $$ = $1; $$->appendCase($3); }
-  | case_list seps default_case                               { $$ = $1;
-                                                                if ($$->defaultCase().isNull()) {
-                                                                    $$->setDefaultCase($3);
-                                                                } else {
-                                                                    dberror(&yylloc, scanner, "Multiple default cases were found in select statement\n");
-                                                                    YYABORT;
-                                                                }
-                                                              }
+  | case_list seps default_case                               { $$ = $1; $$->appendDefaultCase($3); }
   ;
 case
   : CASE expr seps block seps ENDCASE                         { $$ = new Case($2, $4, driver->newLocation(&@$)); }
   | CASE expr seps ENDCASE                                    { $$ = new Case($2, driver->newLocation(&@$)); }
   ;
 default_case
-  : CASE DEFAULT seps block seps ENDCASE                      { $$ = new DefaultCase($4, driver->newLocation(&@$)); }
-  | CASE DEFAULT seps ENDCASE                                 { $$ = new DefaultCase(driver->newLocation(&@$)); }
+  : CASE DEFAULT seps block seps ENDCASE                      { SourceLocation* beg1 = driver->newLocation(&@1);
+                                                                SourceLocation* beg2 = driver->newLocation(&@2);
+                                                                SourceLocation* end = driver->newLocation(&@6);
+                                                                beg1->unionize(beg2);
+                                                                $$ = new DefaultCase($4, driver->newLocation(&@$), beg1, end);
+                                                                TouchRef(beg2);
+                                                              }
+  | CASE DEFAULT seps ENDCASE                                 { SourceLocation* beg1 = driver->newLocation(&@1);
+                                                                SourceLocation* beg2 = driver->newLocation(&@2);
+                                                                SourceLocation* end = driver->newLocation(&@4);
+                                                                beg1->unionize(beg2);
+                                                                $$ = new DefaultCase(driver->newLocation(&@$), beg1, end);
+                                                                TouchRef(beg2);
+                                                              }
   ;
 loop
   : loop_do                                                   { $$ = $1; }
@@ -821,9 +832,12 @@ exit
 
 void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
+    odb::Reference<odb::ast::SourceLocation> location = driver->newLocation(locp);
+
     va_list args;
     va_start(args, fmt);
-    odb::db::vprintParserMessage(odb::Log::ERROR, locp, scanner, fmt, args);
+    odb::Log::vdbParserFatalError(location->getFileLineColumn().c_str(), fmt, args);
+    location->printUnderlinedSection(Log::info);
     va_end(args);
 }
 

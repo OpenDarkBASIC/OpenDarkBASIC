@@ -68,8 +68,15 @@ public:
     int vprint(const char* fmt, va_list ap);
     int vprint(Color color, const char* fmt, va_list ap);
 
-    static int dbParser(Log::Severity severity, const char* fmt, ...);
-    static int vdbParser(Log::Severity severity, const char* fmt, va_list ap);
+    static void dbParserFailedToOpenFile(const char* fileName);
+    static void dbParserNotice(const char* fmt, ...);
+    static void dbParserError(const char* fmt, ...);
+    static void dbParserSyntaxWarning(const char* fileLineColumn, const char* fmt, ...);
+    static void dbParserSyntaxError(const char* fileLineColumn, const char* fmt, ...);
+    static void dbParserSemanticError(const char* fileLineColumn, const char* fmt, ...);
+    static void dbParserLocationNote(const char* fileLineColumn, const char* fmt, ...);
+    static void vdbParserFatalError(const char* fileLineColumn, const char* fmt, va_list ap);
+
     static int cmd(Log::Severity severity, const char* fmt, ...);
     static int vcmd(Log::Severity severity, const char* fmt, va_list ap);
     static int ast(Log::Severity severity, const char* fmt, ...);

@@ -1,4 +1,5 @@
 #include "gmock/gmock.h"
+#include "odb-compiler/astpost/EnforceSingleDefaultCase.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"
@@ -90,9 +91,23 @@ TEST_F(NAME, multiple_default_cases)
     ast = driver->parseString("test",
         "select var\n"
         "    case default\n"
+        "        foo()\n"
         "    endcase\n"
         "    case default\n"
+        "        bar()\n"
+        "    endcase\n"
+        "    case default\n"
+        "        bar()\n"
+        "    endcase\n"
+        "    case default\n"
+        "        bar()\n"
+        "    endcase\n"
+        "    case default\n"
+        "        bar()\n"
         "    endcase\n"
         "endselect\n");
-    ASSERT_THAT(ast, IsNull());
+    ASSERT_THAT(ast, IsTrue());
+
+    astpost::EnforceSingleDefaultCase post;
+    ASSERT_THAT(post.execute(ast), IsFalse());
 }

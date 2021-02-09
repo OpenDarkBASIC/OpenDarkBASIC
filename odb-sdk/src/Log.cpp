@@ -66,20 +66,91 @@ int Log::vprint(Color color, const char* fmt, va_list ap)
 }
 
 // ----------------------------------------------------------------------------
-int Log::dbParser(Severity severity, const char* fmt, ...)
+void Log::dbParserFailedToOpenFile(const char* fileName)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    int result = vdbParser(severity, fmt, ap);
-    va_end(ap);
-
-    return result;
+    Log::dbParserError("failed to open file ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`\n", fileName);
 }
 
 // ----------------------------------------------------------------------------
-int Log::vdbParser(Severity severity, const char* fmt, va_list ap)
+void Log::dbParserNotice(const char* fmt, ...)
 {
-    return vlogPrefixSeverity("[db parser] ", severity, fmt, ap);
+    Log::info.print(Log::FG_BRIGHT_CYAN, "[db parser] note: ");
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::dbParserError(const char* fmt, ...)
+{
+    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] error: ");
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::dbParserSyntaxWarning(const char* fileLineColumn, const char* fmt, ...)
+{
+    Log::info.print(Log::FG_BRIGHT_YELLOW, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", fileLineColumn);
+    Log::info.print(Log::FG_BRIGHT_YELLOW, "syntax warning: ");
+
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::dbParserSyntaxError(const char* fileLineColumn, const char* fmt, ...)
+{
+    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", fileLineColumn);
+    Log::info.print(Log::FG_BRIGHT_RED, "syntax error: ");
+
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::dbParserSemanticError(const char* fileLineColumn, const char* fmt, ...)
+{
+    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", fileLineColumn);
+    Log::info.print(Log::FG_BRIGHT_RED, "semantic error: ");
+
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::dbParserLocationNote(const char* fileLineColumn, const char* fmt, ...)
+{
+    Log::info.print(Log::FG_BRIGHT_CYAN, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", fileLineColumn);
+    Log::info.print(Log::FG_BRIGHT_CYAN, "note: ");
+
+    va_list va;
+    va_start(va, fmt);
+    Log::info.vprint(fmt, va);
+    va_end(va);
+}
+
+// ----------------------------------------------------------------------------
+void Log::vdbParserFatalError(const char* fileLineColumn, const char* fmt, va_list ap)
+{
+    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", fileLineColumn);
+    Log::info.print(Log::FG_BRIGHT_RED, "fatal: ");
+    Log::info.vprint(fmt, ap);
 }
 
 // ----------------------------------------------------------------------------

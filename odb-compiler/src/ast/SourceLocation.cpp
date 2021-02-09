@@ -236,6 +236,17 @@ std::vector<std::string> FileSourceLocation::getUnderlinedSection() const
 }
 
 // ----------------------------------------------------------------------------
+SourceLocation* FileSourceLocation::duplicate() const
+{
+    return new FileSourceLocation(
+        fileName_,
+        firstLine_,
+        lastLine_,
+        firstColumn_,
+        lastColumn_);
+}
+
+// ----------------------------------------------------------------------------
 InlineSourceLocation::InlineSourceLocation(const std::string& sourceName, const std::string& code,
         int firstLine, int lastLine, int firstColumn, int lastColumn) :
     SourceLocation(firstLine, lastLine, firstColumn, lastColumn),
@@ -255,6 +266,18 @@ std::vector<std::string> InlineSourceLocation::getUnderlinedSection() const
 {
     std::stringstream ss(code_);
     return SourceLocation::getUnderlinedSection(ss);
+}
+
+// ----------------------------------------------------------------------------
+SourceLocation* InlineSourceLocation::duplicate() const
+{
+    return new InlineSourceLocation(
+        sourceName_,
+        code_,
+        firstLine_,
+        lastLine_,
+        firstColumn_,
+        lastColumn_);
 }
 
 }

@@ -66,7 +66,9 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
         op->rhs()->accept(&finder);
         if (finder.hasSideEffects)
         {
-            Log::dbParser(Log::ERROR, "RHS of binary bitwise-not operator causes side effects\n");
+            Log::dbParserSemanticError(
+                op->rhs()->location()->getFileLineColumn().c_str(),
+                "RHS of bitwise-not operator causes side effects\n");
             op->rhs()->location()->printUnderlinedSection(Log::info);
             return false;
         }

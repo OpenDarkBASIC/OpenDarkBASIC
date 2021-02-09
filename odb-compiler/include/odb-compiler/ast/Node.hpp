@@ -18,7 +18,9 @@ public:
     Node(SourceLocation* location);
     ~Node();
 
-    Node* parent() const;
+    template <typename T=Node>
+    T* parent() const { return dynamic_cast<T*>(parent_); }
+
     void setParent(Node* node);
     SourceLocation* location() const;
 

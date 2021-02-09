@@ -53,7 +53,7 @@ ast::Block* Driver::parseFile(const std::string& fileName)
     FILE* fp = fopen(fileName.c_str(), "r");
     if (fp == nullptr)
     {
-        Log::dbParser(Log::ERROR, "Failed to open file `%s`\n", fileName.c_str());
+        Log::dbParserFailedToOpenFile(fileName.c_str());
         return nullptr;
     }
 
@@ -296,11 +296,12 @@ ast::Block* Driver::doParse()
 
                 // Print out a warning
                 Reference<ast::SourceLocation> location = newLocation(&loc);
-                Log::dbParser(Log::WARNING,
-                    "%s: Command `%s` has same name as a built-in keyword. Command will be ignored.\n",
-                    location->getFileLineColumn().c_str(), tokens[0].pushedValue.string);
+                Log::dbParserSyntaxWarning(location->getFileLineColumn().c_str(),
+                    "Command ");
+                Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", tokens[0].pushedValue.string);
+                Log::info.print(" has same name as a built-in keyword. Command will be ignored.\n");
                 location->printUnderlinedSection(Log::info);
-                Log::dbParser(Log::NOTICE, "This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
+                Log::dbParserNotice("This is normal behavior for DBP plugins, but should not be ignored if using the ODB SDK.\n");
 
                 // Change token type and don't forget to free the symbol string
                 tokens[0].pushedChar = result->token;
@@ -334,7 +335,7 @@ void Driver::giveProgram(ast::Block* program)
 {
     if (program_.notNull())
     {
-        Log::dbParser(Log::ERROR, "BUG! giveProgram() was called more than once in a single run. This should never happen!");
+        Log::dbParserError("BUG! giveProgram() was called more than once in a single run. This should never happen!\n");
         assert(program_.isNull());
     }
 

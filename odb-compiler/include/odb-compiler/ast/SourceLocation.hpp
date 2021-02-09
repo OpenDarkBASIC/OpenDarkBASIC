@@ -44,6 +44,8 @@ public:
      */
     virtual std::vector<std::string> getUnderlinedSection() const = 0;
 
+    virtual SourceLocation* duplicate() const = 0;
+
     void printUnderlinedSection(Log& log) const;
 
     int firstLine() const;
@@ -74,6 +76,8 @@ public:
     std::string getFileLineColumn() const override;
     std::vector<std::string> getUnderlinedSection() const override;
 
+    SourceLocation* duplicate() const override;
+
 private:
     std::string fileName_;
 };
@@ -86,6 +90,8 @@ public:
 
     std::string getFileLineColumn() const override;
     std::vector<std::string> getUnderlinedSection() const override;
+
+    SourceLocation* duplicate() const override;
 
 private:
     std::string sourceName_;

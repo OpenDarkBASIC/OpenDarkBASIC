@@ -129,6 +129,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/VarRef.cpp"
     "src/ast/Visitor.cpp"
     "src/astpost/EliminateBitwiseNotRHS.cpp"
+    "src/astpost/EnforceSingleDefaultCase.cpp"
     "src/astpost/Process.cpp"
     "src/astpost/ResolveArrayFuncAmbiguity.cpp"
     "src/astpost/ResolveLabels.cpp"

@@ -16,11 +16,13 @@ class Expression;
 class Select : public Statement
 {
 public:
-    Select(Expression* expr, CaseList* cases, SourceLocation* location);
-    Select(Expression* expr, SourceLocation* location);
+    Select(Expression* expr, CaseList* cases, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect);
+    Select(Expression* expr, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect);
 
     Expression* expression() const;
     MaybeNull<CaseList> cases() const;
+    SourceLocation* beginSelectLocation() const;
+    SourceLocation* endSelectLocation() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -32,6 +34,8 @@ protected:
 private:
     Reference<Expression> expr_;
     Reference<CaseList> cases_;
+    Reference<SourceLocation> beginLoc_;
+    Reference<SourceLocation> endLoc_;
 };
 
 class CaseList : public Node
@@ -42,9 +46,10 @@ public:
     CaseList(SourceLocation* location);
 
     void appendCase(Case* case_);
-    void setDefaultCase(DefaultCase* case_);
+    void appendDefaultCase(DefaultCase* case_);
 
     const std::vector<Reference<Case>>& cases() const;
+    const std::vector<Reference<DefaultCase>>& defaultCases() const;
     MaybeNull<DefaultCase> defaultCase() const;
 
     void accept(Visitor* visitor) override;
@@ -56,7 +61,7 @@ protected:
 
 private:
     std::vector<Reference<Case>> cases_;
-    Reference<DefaultCase> default_;
+    std::vector<Reference<DefaultCase>> defaults_;
 };
 
 class Case : public Node
@@ -83,10 +88,12 @@ private:
 class DefaultCase : public Node
 {
 public:
-    DefaultCase(Block* body, SourceLocation* location);
-    DefaultCase(SourceLocation* location);
+    DefaultCase(Block* body, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
+    DefaultCase(SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
 
     MaybeNull<Block> body() const;
+    SourceLocation* beginCaseLocation() const;
+    SourceLocation* endCaseLocation() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -97,6 +104,8 @@ protected:
 
 private:
     Reference<Block> body_;
+    Reference<SourceLocation> beginLoc_;
+    Reference<SourceLocation> endLoc_;
 };
 
 }

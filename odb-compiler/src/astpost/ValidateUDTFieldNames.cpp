@@ -1,6 +1,5 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Command.hpp"
-#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
@@ -8,6 +7,7 @@
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/Log.hpp"
 
 namespace odb::astpost {
@@ -90,8 +90,9 @@ bool Visitor::check(const ast::CommandExprSymbol* cmd)
     char c = cmd->command().back();
     if (c == '#' || c == '$')
     {
-        Log::dbParser(Log::ERROR, "%s: Misleading command annotation: UDTs cannot be annotated\n",
-                      cmd->location()->getFileLineColumn().c_str());
+        Log::dbParserSemanticError(
+            cmd->location()->getFileLineColumn().c_str(),
+            "Misleading command annotation: Command returns a UDT, but UDTs cannot be annotated\n");
         cmd->location()->printUnderlinedSection(Log::info);
         success = false;
     }
@@ -106,8 +107,9 @@ bool Visitor::check(const ast::CommandStmntSymbol* cmd)
     char c = cmd->command().back();
     if (c == '#' || c == '$')
     {
-        Log::dbParser(Log::ERROR, "%s: Misleading command annotation: UDTs cannot be annotated\n",
-                      cmd->location()->getFileLineColumn().c_str());
+        Log::dbParserSemanticError(
+            cmd->location()->getFileLineColumn().c_str(),
+            "Misleading command annotation: Command returns a UDT, but UDTs cannot be annotated\n");
         cmd->location()->printUnderlinedSection(Log::info);
         success = false;
     }
@@ -134,8 +136,8 @@ void Visitor::checkAnnotation(const ast::AnnotatedSymbol* sym)
 {
     if (sym->annotation() != ast::Symbol::Annotation::NONE)
     {
-        Log::dbParser(Log::ERROR, "%s: UDTs cannot be annotated\n",
-                        sym->location()->getFileLineColumn().c_str());
+        Log::dbParserSyntaxError(sym->location()->getFileLineColumn().c_str(),
+            "UDTs cannot be annotated\n");
         sym->location()->printUnderlinedSection(Log::info);
         success = false;
     }
