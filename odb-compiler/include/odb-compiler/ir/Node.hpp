@@ -385,15 +385,15 @@ private:
     Ptr<Expression> expression_;
 };
 
-class ODBCOMPILER_PUBLIC_API UntilLoop : public Loop
+class ODBCOMPILER_PUBLIC_API RepeatUntilLoop : public Loop
 {
 public:
-    UntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
+    RepeatUntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
               StatementBlock statements = {});
-    UntilLoop(UntilLoop&&) = default;
-    UntilLoop(const UntilLoop&) = delete;
-    UntilLoop& operator=(UntilLoop&&) = default;
-    UntilLoop& operator=(const UntilLoop&) = delete;
+    RepeatUntilLoop(RepeatUntilLoop&&) = default;
+    RepeatUntilLoop(const RepeatUntilLoop&) = delete;
+    RepeatUntilLoop& operator=(RepeatUntilLoop&&) = default;
+    RepeatUntilLoop& operator=(const RepeatUntilLoop&) = delete;
 
     Expression* expression() const;
 

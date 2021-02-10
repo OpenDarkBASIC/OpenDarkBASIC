@@ -189,7 +189,8 @@ Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type target
 
 FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLocation* location,
                                                                   const std::string& commandName,
-                                                                  const MaybeNull<ast::ExpressionList>& astArgs)
+                                                                  const MaybeNull<ast::ExpressionList>& astArgs,
+                                                                  bool isFunctionTypeCommand)
 {
     // Extract arguments.
     PtrVector<Expression> args;
@@ -233,6 +234,18 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
         };
         candidates.erase(std::remove_if(candidates.begin(), candidates.end(), convertArgumentsNotPossiblePrecondition),
                          candidates.end());
+
+        // If we're looking for function style commands (that return a non-void value), filter out any commands
+        // returning void.
+        if (isFunctionTypeCommand)
+        {
+            auto functionsReturningVoidPrecondition = [](const Reference<cmd::Command>& candidate) -> bool
+            {
+                return candidate->returnType() == cmd::Command::Type::Void;
+            };
+            candidates.erase(std::remove_if(candidates.begin(), candidates.end(), functionsReturningVoidPrecondition),
+                             candidates.end());
+        }
 
         if (candidates.empty())
         {
@@ -392,9 +405,8 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     }
     else if (auto* command = dynamic_cast<const ast::CommandExprSymbol*>(expression))
     {
-        // TODO: Perform type checking of arguments.
-        return std::make_unique<FunctionCallExpression>(
-            convertCommandCallExpression(location, command->command(), command->args()));
+        return std::make_unique<FunctionCallExpression>(convertCommandCallExpression(
+            location, command->command(), command->args(), /* isFunctionTypeCommand */ true));
     }
     else if (auto* funcCall = dynamic_cast<const ast::FuncCallExpr*>(expression))
     {
@@ -500,7 +512,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     else if (auto* untilLoopSt = dynamic_cast<ast::UntilLoop*>(statement))
     {
         auto untilLoop =
-            std::make_unique<UntilLoop>(location, currentFunction_, convertExpression(untilLoopSt->exitCondition()));
+            std::make_unique<RepeatUntilLoop>(location, currentFunction_, convertExpression(untilLoopSt->exitCondition()));
         untilLoop->appendStatements(convertBlock(untilLoopSt->body(), untilLoop.get()));
         return untilLoop;
     }
@@ -570,9 +582,10 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* commandSt = dynamic_cast<ast::CommandStmntSymbol*>(statement))
     {
-        return std::make_unique<FunctionCall>(
-            location, currentFunction_,
-            convertCommandCallExpression(commandSt->location(), commandSt->command(), commandSt->args()));
+        return std::make_unique<FunctionCall>(location, currentFunction_,
+                                              convertCommandCallExpression(commandSt->location(), commandSt->command(),
+                                                                           commandSt->args(),
+                                                                           /* isFunctionTypeCommand */ false));
     }
     else
     {

@@ -405,13 +405,13 @@ Expression* WhileLoop::expression() const
     return expression_.get();
 }
 
-UntilLoop::UntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
+RepeatUntilLoop::RepeatUntilLoop(SourceLocation* location, FunctionDefinition* containingFunction, Ptr<Expression> expression,
                      StatementBlock statements)
     : Loop(location, containingFunction, std::move(statements)), expression_(std::move(expression))
 {
 }
 
-Expression* UntilLoop::expression() const
+Expression* RepeatUntilLoop::expression() const
 {
     return expression_.get();
 }

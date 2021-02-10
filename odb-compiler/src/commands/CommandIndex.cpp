@@ -62,7 +62,7 @@ bool CommandIndex::findConflicts() const
 
                 Log::sdk(Log::ERROR, "Command `%s %s` redefined in library `%s`\n", cmd->dbSymbol().c_str(), typeinfo.c_str(), cmd->library()->getFilename());
                 Log::sdk(Log::NOTICE, "Command was first declared in library `%s`\n", overload->library()->getFilename());
-                return true;
+                //return true;
             }
         }
     }

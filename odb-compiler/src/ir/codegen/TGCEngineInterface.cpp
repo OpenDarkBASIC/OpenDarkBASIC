@@ -1,5 +1,6 @@
 #include "TGCEngineInterface.hpp"
 #include "odb-sdk/DynamicLibrary.hpp"
+#include "odb-sdk/Str.hpp"
 
 #include <filesystem>
 #include <iostream>
@@ -8,7 +9,7 @@ namespace odb::ir {
 namespace {
 std::string getPluginName(const DynamicLibrary* library)
 {
-    return std::filesystem::path{library->getFilename()}.stem().string();
+    return str::toLower(std::filesystem::path{library->getFilename()}.stem().string());
 }
 
 } // namespace
@@ -119,86 +120,119 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
 
     // GlobStruct consists of 36 HINSTANCE's which we need to associate with different plugins.
     // Indexes are taken from the block comment above.
-    pluginGlobStructIndices["DBProSetupDebug"] = 0;
-    pluginGlobStructIndices["DBProBasic2DDebug"] = 2;
-    pluginGlobStructIndices["DBProTextDebug"] = 1;
-    pluginGlobStructIndices["DBProTransformsDebug"] = 35;
-    pluginGlobStructIndices["DBProSpritesDebug"] = 3;
-    pluginGlobStructIndices["DBProImageDebug"] = 4;
-    pluginGlobStructIndices["DBProInputDebug"] = 5;
-    pluginGlobStructIndices["DBProSystemDebug"] = 6;
-    pluginGlobStructIndices["DBProSoundDebug"] = 26;
-    pluginGlobStructIndices["DBProMusicDebug"] = 27;
-    pluginGlobStructIndices["DBProFileDebug"] = 7;
-    pluginGlobStructIndices["DBProFTPDebug"] = 8;
-    pluginGlobStructIndices["DBProMemblocksDebug"] = 9;
-    pluginGlobStructIndices["DBProAnimationDebug"] = 11;
-    pluginGlobStructIndices["DBProBitmapDebug"] = 10;
-    pluginGlobStructIndices["DBProMultiplayerDebug"] = 12;
-    pluginGlobStructIndices["DBProCameraDebug"] = 14;
-    pluginGlobStructIndices["DBProLightDebug"] = 16;
-    pluginGlobStructIndices["DBProMatrixDebug"] = 15;
-    pluginGlobStructIndices["DBProBasic3DDebug"] = 13;
-    pluginGlobStructIndices["DBProWorld3DDebug"] = 17;
-    pluginGlobStructIndices["DBProQ2BSPDebug"] = 29;
-    pluginGlobStructIndices["DBProOwnBSPDebug"] = 30;
-    pluginGlobStructIndices["DBProBSPCompilerDebug"] = 31;
-    pluginGlobStructIndices["DBProParticlesDebug"] = 18;
-    pluginGlobStructIndices["DBProPrimObjectDebug"] = 19;
-    pluginGlobStructIndices["DBProVectorsDebug"] = 20;
-    pluginGlobStructIndices["DBProLODTerrainDebug"] = 28;
-    pluginGlobStructIndices["DBProCSGDebug"] = 32;
+    pluginGlobStructIndices["dbprosetupdebug"] = 0;
+    pluginGlobStructIndices["dbprobasic2ddebug"] = 2;
+    pluginGlobStructIndices["dbprotextdebug"] = 1;
+    pluginGlobStructIndices["dbprotransformsdebug"] = 35;
+    pluginGlobStructIndices["dbprospritesdebug"] = 3;
+    pluginGlobStructIndices["dbproimagedebug"] = 4;
+    pluginGlobStructIndices["dbproinputdebug"] = 5;
+    pluginGlobStructIndices["dbprosystemdebug"] = 6;
+    pluginGlobStructIndices["dbprosounddebug"] = 26;
+    pluginGlobStructIndices["dbpromusicdebug"] = 27;
+    pluginGlobStructIndices["dbprofiledebug"] = 7;
+    pluginGlobStructIndices["dbproftpdebug"] = 8;
+    pluginGlobStructIndices["dbpromemblocksdebug"] = 9;
+    pluginGlobStructIndices["dbproanimationdebug"] = 11;
+    pluginGlobStructIndices["dbprobitmapdebug"] = 10;
+    pluginGlobStructIndices["dbpromultiplayerdebug"] = 12;
+    pluginGlobStructIndices["dbprocameradebug"] = 14;
+    pluginGlobStructIndices["dbprolightdebug"] = 16;
+    pluginGlobStructIndices["dbpromatrixdebug"] = 15;
+    pluginGlobStructIndices["dbprobasic3ddebug"] = 13;
+    pluginGlobStructIndices["dbproworld3ddebug"] = 17;
+    pluginGlobStructIndices["dbproq2bspdebug"] = 29;
+    pluginGlobStructIndices["dbproownbspdebug"] = 30;
+    pluginGlobStructIndices["dbprobspcompilerdebug"] = 31;
+    pluginGlobStructIndices["dbproparticlesdebug"] = 18;
+    pluginGlobStructIndices["dbproprimobjectdebug"] = 19;
+    pluginGlobStructIndices["dbprovectorsdebug"] = 20;
+    pluginGlobStructIndices["dbprolodterraindebug"] = 28;
+    pluginGlobStructIndices["dbprocsgdebug"] = 32;
+
+    // Get string functions.
+    llvm::FunctionType* stringCompareFuncTy = llvm::FunctionType::get(dwordTy, {stringTy, stringTy}, false);
+    stringCompareFunctions[BinaryOp::Equal] = generateDLLThunk("dbprocore", "?EqualLSS@@YAKKK@Z", "DBStringEqual", stringCompareFuncTy);
+    stringCompareFunctions[BinaryOp::NotEqual] = generateDLLThunk("dbprocore", "?NotEqualLSS@@YAKKK@Z", "DBStringNotEqual", stringCompareFuncTy);
+    stringCompareFunctions[BinaryOp::Greater] = generateDLLThunk("dbprocore", "?GreaterLSS@@YAKKK@Z", "DBStringGreater", stringCompareFuncTy);
+    stringCompareFunctions[BinaryOp::Less] = generateDLLThunk("dbprocore", "?LessLSS@@YAKKK@Z", "DBStringLess", stringCompareFuncTy);
+    stringCompareFunctions[BinaryOp::GreaterEqual] = generateDLLThunk("dbprocore", "?GreaterEqualLSS@@YAKKK@Z", "DBStringGreaterEqual", stringCompareFuncTy);
+    stringCompareFunctions[BinaryOp::LessEqual] = generateDLLThunk("dbprocore", "?LessEqualLSS@@YAKKK@Z", "DBStringLessEqual", stringCompareFuncTy);
+    stringAssignmentFunction = generateDLLThunk("dbprocore", "?EquateSS@@YAKKK@Z", "DBStringAssign", llvm::FunctionType::get(stringTy, {stringTy, stringTy}, false));
+    stringFreeFunction = generateDLLThunk("dbprocore", "?FreeSS@@YAKK@Z", "DBStringFree", llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {stringTy, stringTy}, false));
+    stringAddFunction = generateDLLThunk("dbprocore", "?AddSSS@@YAKKKK@Z", "DBStringAdd", llvm::FunctionType::get(stringTy, {stringTy, stringTy, stringTy}, false));
 }
 
-llvm::Function* TGCEngineInterface::generateCommandCall(const cmd::Command& command, const std::string& functionName,
+void TGCEngineInterface::generateStringAssignment(llvm::Value* destination, llvm::Value* value)
+{
+    /*
+     THE WAY STRING FUNCTIONS WORK IN DBP IS THAT THE STRING STORAGE IS moved into the first argument of the plugin function
+     i.e. x$ = toupper(y$) will call a function "char* ToUpper(char* currentState, char* param)". The idea is that x$
+     is passed as the currentState, and ToUpper would be responsible for deleting it and returning a newly allocated string
+     (or just returning currentState directly).
+
+     In the case where:
+
+     print toupper(y$)
+
+     this would expand into:
+
+     char* temp = ToUpper(nullptr, y);
+     Print(temp);
+     StringFree(temp);
+
+     In the case where:
+
+     x$ = toupper(toupper(y$) + "hello")
+
+     this would expand to:
+
+     temp$ = toupper(y$)
+     temp2$ = temp$ + "hello"
+     x$ = toupper(temp2$)
+
+     this would expand to:
+
+     char* temp = ToUpper(nullptr, y);
+     char* temp2 = StringAdd(temp2, temp, "hello");
+     x = ToUpper(x, temp2);
+     // at the end of the function
+     StringFree(x);
+
+     IDEA: Pass nullptr as the string to free in each string function, so no memory management happens in DBP. String
+     functions that return strings will allocate them with new, so the code generator needs to learn to insert free's in
+     the right places (when a string var or temporary goes out of scope).
+
+     This might break if you have something like "x = toupper(x, x)" and the implementation tries to reuse the storage,
+     but according to IanM's plugin guide, this is not allowed anyway.
+
+     Additionally, generateStringAssignment
+     should assume that the current variable is getting _replaced_, so it can either choose to free it and allocate a
+     copy, or re-use it.
+
+     TODO: Codify semantics of generateSTring* functions in the engine interface header (what memory mgmt is expected).
+
+     */
+}
+
+void TGCEngineInterface::generateStringFree(llvm::Value* destination)
+{
+}
+
+llvm::Value* TGCEngineInterface::generateStringAdd(llvm::Value* left, llvm::Value* right)
+{
+    return nullptr;
+}
+
+llvm::Value* TGCEngineInterface::generateStringCompare(llvm::Value* left, llvm::Value* right, BinaryOp op)
+{
+    return nullptr;
+}
+
+llvm::Function* TGCEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                                         llvm::FunctionType* functionType)
 {
-    llvm::Function* function =
-        llvm::Function::Create(functionType, llvm::Function::InternalLinkage, functionName, module);
-
-    llvm::IRBuilder<> builder(module.getContext());
-    llvm::BasicBlock* basicBlock = llvm::BasicBlock::Create(module.getContext(), "", function);
-    builder.SetInsertPoint(basicBlock);
-
-    llvm::Type* pluginReturnType = functionType->getReturnType();
-    if (functionType->getReturnType()->isFloatTy())
-    {
-        pluginReturnType = dwordTy;
-    }
-    llvm::FunctionType* pluginFunctionType =
-        llvm::FunctionType::get(pluginReturnType, functionType->params(), functionType->isVarArg());
-
-    // Obtain function ptr from the relevant plugin.
-    // TODO: Call this once at the beginning of the application.
-    auto commandFunction =
-        getPluginFunction(builder, pluginFunctionType, command.library(), command.cppSymbol(), functionName + "Symbol");
-
-    //    printString(builder, builder.CreateGlobalStringPtr("Calling " + functionName));
-
-    // Call it.
-    std::vector<llvm::Value*> forwardedArgs;
-    for (llvm::Argument& arg : function->args())
-    {
-        forwardedArgs.emplace_back(&arg);
-    }
-    llvm::CallInst* commandResult = builder.CreateCall(commandFunction, forwardedArgs);
-    //    printString(builder, builder.CreateGlobalStringPtr("Finished calling " + functionName));
-    if (functionType->getReturnType()->isVoidTy())
-    {
-        builder.CreateRetVoid();
-    }
-    else if (functionType->getReturnType()->isFloatTy())
-    {
-        llvm::Value* dwordStoragePtr = builder.CreateAlloca(dwordTy);
-        builder.CreateStore(commandResult, dwordStoragePtr);
-        llvm::Value* dwordAsFloatStorage = builder.CreateBitCast(dwordStoragePtr, llvm::Type::getFloatPtrTy(ctx));
-        builder.CreateRet(builder.CreateLoad(dwordAsFloatStorage));
-    }
-    else
-    {
-        builder.CreateRet(commandResult);
-    }
-    return function;
+    return generateDLLThunk(getPluginName(command.library()), command.cppSymbol(), functionName, functionType);
 }
 
 void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad)
@@ -231,7 +265,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         std::terminate();
     }
 
-    DynamicLibrary* corePlugin = pluginsToLoad[0];
+    std::string corePlugin = "dbprocore";
 
     // Remove plugins that we haven't used.
     //    pluginsToLoad.erase(std::remove_if(pluginsToLoad.begin(), pluginsToLoad.end(),
@@ -266,7 +300,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         auto* libraryHModule = builder.CreateCall(
             loadLibraryFunc, {builder.CreateBitCast(pluginNameConstant, llvm::Type::getInt8PtrTy(ctx))});
         libraryHModule->setCallingConv(llvm::CallingConv::X86_StdCall);
-        builder.CreateStore(libraryHModule, getOrAddPluginHModule(plugin));
+        builder.CreateStore(libraryHModule, getOrAddPluginHModule(pluginName));
 
         // Print that we've trying to load that plugin.
         printString(builder, builder.CreateGlobalStringPtr("Loading plugin " + pluginName));
@@ -371,10 +405,59 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
 }
 
-llvm::Value* TGCEngineInterface::getOrAddPluginHModule(const DynamicLibrary* library)
+llvm::Function* TGCEngineInterface::generateDLLThunk(const std::string& pluginName, const std::string& cppSymbol, const std::string& functionName,
+                                                     llvm::FunctionType* functionType)
 {
-    auto pluginName = getPluginName(library);
+    llvm::Function* function =
+        llvm::Function::Create(functionType, llvm::Function::InternalLinkage, functionName, module);
 
+    llvm::IRBuilder<> builder(module.getContext());
+    llvm::BasicBlock* basicBlock = llvm::BasicBlock::Create(module.getContext(), "", function);
+    builder.SetInsertPoint(basicBlock);
+
+    llvm::Type* pluginReturnType = functionType->getReturnType();
+    if (functionType->getReturnType()->isFloatTy())
+    {
+        pluginReturnType = dwordTy;
+    }
+    llvm::FunctionType* pluginFunctionType =
+        llvm::FunctionType::get(pluginReturnType, functionType->params(), functionType->isVarArg());
+
+    // Obtain function ptr from the relevant plugin.
+    // TODO: Call this once at the beginning of the application.
+    auto commandFunction =
+        getPluginFunction(builder, pluginFunctionType, pluginName, cppSymbol, functionName + "Symbol");
+
+    //    printString(builder, builder.CreateGlobalStringPtr("Calling " + functionName));
+
+    // Call it.
+    std::vector<llvm::Value*> forwardedArgs;
+    for (llvm::Argument& arg : function->args())
+    {
+        forwardedArgs.emplace_back(&arg);
+    }
+    llvm::CallInst* commandResult = builder.CreateCall(commandFunction, forwardedArgs);
+    //    printString(builder, builder.CreateGlobalStringPtr("Finished calling " + functionName));
+    if (functionType->getReturnType()->isVoidTy())
+    {
+        builder.CreateRetVoid();
+    }
+    else if (functionType->getReturnType()->isFloatTy())
+    {
+        llvm::Value* dwordStoragePtr = builder.CreateAlloca(dwordTy);
+        builder.CreateStore(commandResult, dwordStoragePtr);
+        llvm::Value* dwordAsFloatStorage = builder.CreateBitCast(dwordStoragePtr, llvm::Type::getFloatPtrTy(ctx));
+        builder.CreateRet(builder.CreateLoad(dwordAsFloatStorage));
+    }
+    else
+    {
+        builder.CreateRet(commandResult);
+    }
+    return function;
+}
+
+llvm::Value* TGCEngineInterface::getOrAddPluginHModule(const std::string& pluginName)
+{
     auto pluginHModuleIt = pluginHModulePtrs.find(pluginName);
     if (pluginHModuleIt != pluginHModulePtrs.end())
     {
@@ -388,10 +471,10 @@ llvm::Value* TGCEngineInterface::getOrAddPluginHModule(const DynamicLibrary* lib
 }
 
 llvm::FunctionCallee TGCEngineInterface::getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
-                                                           const DynamicLibrary* library, const std::string& symbol,
+                                                           const std::string& pluginName, const std::string& symbol,
                                                            const std::string& symbolStringName)
 {
-    llvm::Value* pluginHModule = builder.CreateLoad(getOrAddPluginHModule(library));
+    llvm::Value* pluginHModule = builder.CreateLoad(getOrAddPluginHModule(pluginName));
     llvm::CallInst* procAddress =
         builder.CreateCall(getProcAddrFunc, {pluginHModule, builder.CreateGlobalStringPtr(symbol, symbolStringName)});
     procAddress->setCallingConv(llvm::CallingConv::X86_StdCall);

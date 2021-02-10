@@ -1,0 +1,756 @@
+rem Project: Starscape (Star Conflict)
+rem Created: 10/09/2006 11:58:08
+
+rem ***** Start of Game Source File *****
+rem Standard Setup Code
+sync on : autocam off : version$="0.1 BETA"
+backdrop on : color backdrop rgb(0,0,0) :set camera range 0.001,100000000
+set text font "arial" : textsize#=36 : set text size textsize# : set text transparent : textheight#=text height("A")
+
+rem load all music
+load music "ss1.wav",1
+load sound "gun.wav",1
+
+rem set the shooting variable
+bulletcheck#=29
+
+rem Virtual Games Display Code
+load image "logo.bmp",9999,1
+color backdrop 0
+`fade in
+for a=1 to 255 step 5
+   if returnkey()=1 then sleep 500:goto menuloop2
+   paste image 9999,screen width()/2-(300/2),screen height()/2-(104/2)
+   set gamma a,a,a
+   sync
+next a
+`show image
+set text size 20
+for b=1 to 300 step 6
+   if returnkey()=1 then sleep 500:goto menuloop2
+   paste image 9999,screen width()/2-(300/2),screen height()/2-(104/2)
+   if b<256 then ink rgb(b,b,b), 0
+   center text screen width()/2,screen height()/1.7,"Presents"
+   sync
+next b
+`fade out
+for c=255 to 1 step -5
+   if returnkey()=1 then sleep 500:goto menuloop2
+   paste image 9999,screen width()/2-(300/2),screen height()/2-(104/2)
+   center text screen width()/2,screen height()/1.7,"Presents"
+   set gamma c,c,c
+   sync
+next c
+sync
+`set settings back to normal
+menuloop2:
+set text size textsize#
+set gamma 0,0,0
+color backdrop 0
+set gamma 255,255,255
+cls rgb(0,0,0)
+flush video memory
+hide light 0
+make light 1
+set point light 1,-1000,0,53
+set light range 1,1000000000
+
+`build the starfield -----------------
+if object exist(1000)=0
+make object sphere 1000,100000
+load image "starfield.bmp",1000,1
+texture object 1000,1000
+scale object texture 1000,10,10
+set object light 1000,0
+set object cull 1000,0
+set object fog 1000,0
+set object transparency 1000,1
+endif
+`-------------------------------------
+
+`load some data
+load image "starc.bmp",1,1
+load image "nebula.bmp",3,1
+load image "gun1.png",20000,1
+
+`make the logo
+make object plain 1,450,48
+position object 1,0,200,512
+texture object 1,1
+set object transparency 1,1
+disable object zdepth 1
+set object light 1,0
+set object fog 1,0
+
+`make a random planet
+make object sphere 2,20,50,50
+position object 2,12,-3,43
+roll object left 2,23.5
+load image "planet12.bmp",2,1
+texture object 2,2
+set object fog 2,0
+
+make object plain 3,100,100
+position object 3,0,0,56
+texture object 3,3
+ghost object on 3
+disable object zwrite 3
+set object light 3,0
+
+make object plain 5,15,10
+load image "flare.jpg",5
+position object 5,-1.1,0.6,4
+texture object 5,5
+ghost object on 5
+disable object zwrite 5
+set object light 5,0
+
+make object plain 4,20*3.1,20*3.1
+position object 4,12,-3,43
+load image "rings2.bmp",4,1
+texture object 4,4
+ghost object on 4
+disable object zwrite 4
+roll object right 4,23.5
+pitch object down 4,90
+set object light 4,0
+
+`menu loop
+menuloop1:
+set ambient light 3
+for a=1 to 255 step 5
+   `text
+   shadowed_text_center(screen width()/2,screen width()/2.3,"New Game",rgb(255,255,255),rgb(0,0,0),1)
+   shadowed_text_center(screen width()/2,screen width()/2.3+(textheight#+6),"Load Game",rgb(255,255,255),rgb(0,0,0),2)
+   shadowed_text_center(screen width()/2,screen width()/2.3+((textheight#+6)*2),"Options",rgb(255,255,255),rgb(0,0,0),3)
+   shadowed_text_center(screen width()/2,screen width()/2.3+((textheight#+6)*3),"Return to OS",rgb(255,255,255),rgb(0,0,0),4)
+   set text size 14
+   shadowed_text(0,0,"V"+version$,rgb(255,255,255))
+   set text size textsize#
+   `turn planet right
+   turn object left 2,0.025
+   `end of loop
+   set gamma a,a,a
+   sync
+next a
+global done#
+loop music 1
+while done#=0
+
+   `text
+   shadowed_text_center(screen width()/2,screen width()/2.3,"New Game",rgb(255,255,255),rgb(0,0,0),1)
+   shadowed_text_center(screen width()/2,screen width()/2.3+(textheight#+6),"Load Game",rgb(255,255,255),rgb(0,0,0),2)
+   shadowed_text_center(screen width()/2,screen width()/2.3+((textheight#+6)*2),"Options",rgb(255,255,255),rgb(0,0,0),3)
+   shadowed_text_center(screen width()/2,screen width()/2.3+((textheight#+6)*3),"Return to OS",rgb(255,255,255),rgb(0,0,0),4)
+   set text size 14
+   shadowed_text(0,0,"V"+version$,rgb(255,255,255))
+   set text size textsize#
+
+   `turn planet right
+   turn object left 2,0.025
+
+   `refresh screen
+   sync
+
+   `end of loop
+endwhile
+
+delete object 5
+if done#=1 then goto battle
+`if done#=2 then goto load_game
+if done#=3 then goto options
+if done#=4 then goto end_game
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         Battle / Action Mode
+rem -----------------------------------------------------------------------------------------
+battle:
+set point light 1,-100000,0,0
+set ambient light 12.5
+delete object 1
+delete object 2
+delete object 3
+delete object 4
+delete image 1
+delete image 2
+if image exist(4)=1 then delete image 4
+`gosub select_ship
+daedalus#=1
+load object "daedalus.x",10
+position camera 0,0,0,0
+position object 10,0,0,3
+set object cull 10,0
+set object filter 10,0
+set object light 10,1
+yrotate object 10,180
+fix object pivot 10
+`hide object 10
+
+rem bullets variables
+`global bullet
+`global bulletlife
+`dim bullet(100)
+`dim bulletlife(100)
+
+`make necessary stuff
+make_random_environment()
+`make_inertia()
+make_hud()
+gosub make_vortex
+
+load object "station.x",11
+position object 11,6,2,20
+set object filter 11,0
+set object light 11,1
+set object specular power 11,90
+
+load object "hypergate.x",12
+position object 12,object position x(1),object position y(1),object position z(1)
+point object 12,0,0,0
+move object 12,1098
+set object filter 12,0
+set object light 12,1
+set object specular power 12,90
+
+`set necessary stuff
+obj1#=100
+obj2#=10
+speed#=0
+t1=20000
+tic=20050
+maxbullets#=100
+spd#=1
+global topspeed#=1130.00
+global setspeed#=0
+global boostspeed#=2000.00
+`dim bulletnumber(100)
+gosub make_boost
+doneviewer#=1
+wait#=0
+b#=0
+
+do
+
+
+`   for a=1 to 100
+`   if bulletnumber(a)<>0 then bulletnumber(a)=find free object()
+`   if object exist(bulletnumber(a)) and distance(object position x(bulletnumber(a)),object position y(bulletnumber(a)),object position z(bulletnumber(a)),object position x(bulletnumber(a)),object position y(bulletnumber(a)),object position z(bulletnumber(a)))>100 then delete object bulletnumber(a)
+`   next a
+
+   `input for ship movement
+   turn_object_around_using_arrowkeys(10,2)
+
+   `control object necessary for inertia effect
+   `control_inertia(10)
+   `gosub turn_object_to_object_orientation
+
+   `control the speed
+   gosub control_speed
+
+   `move the ship
+   move object 10,speed#/5
+
+   `position stars and nebula objects to the relative position to the ship
+   position object 1000,camera position x(),camera position y(),camera position z()
+   if object exist(1001)=1 then position object 1001,camera position x(),camera position y(),camera position z()
+
+   `update hud
+`   gosub hud
+
+   `update hyperdrive
+   gosub handle_vortex_input
+
+   `position camera
+    thirdpersoncamera(10,0,3.5,0.8)
+
+   `update boost
+   gosub boost
+
+   `update bullets
+   gosub shootbullets
+
+   `update sun
+   point object 1002,camera position x(),camera position y(),camera position z()
+   position object 1002,camera position x()-8000,camera position y(),camera position z()
+   `refresh screen
+   sync
+
+loop
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         Options - Menu
+rem -----------------------------------------------------------------------------------------
+options:
+hide object 1
+
+`set text variables
+set text size 22
+th#=text height("A")
+sw#=screen width()
+
+`load box image
+load image "box.png",10,1
+
+`make box object
+make object plain 10,1024,768
+position object 10,0,0,650
+texture object 10,10
+set object transparency 10,1
+lock object on 10
+disable object zdepth 10
+set object fog 10,0
+
+`set some variables
+done#=0
+global detail#
+detail#=1
+res#=1
+bit#=1
+while backmenu#=0
+
+   `text
+   ink rgb(255,255,255), 0:center text sw#/2,90,"-- OPTIONS --"
+   option_detail(sw#/2,90+(th#*3),rgb(255,255,255),rgb(0,0,0))
+   option_resolution(sw#/2,90+(th#*4.5),rgb(255,255,255),rgb(0,0,0))
+   option_depth(sw#/2,90+(th#*6),rgb(255,255,255),rgb(0,0,0))
+
+   `return to menu input
+   if returnkey()=1 then backmenu#=1
+
+   `turn planet right
+   turn object left 2,0.025
+
+   `refresh screen
+   sync
+
+endwhile
+
+delete object 10
+delete image 10
+show object 2
+
+`go back to the main menu
+goto menuloop1
+
+
+
+
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         Load a Game
+rem -----------------------------------------------------------------------------------------
+load_game:
+return
+
+
+
+
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         End of Game
+rem -----------------------------------------------------------------------------------------
+end_game:
+return
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         Subroutines
+rem -----------------------------------------------------------------------------------------
+subs:
+turn_object_to_object_orientation:
+`yangles
+   `Wrap angle values, so angles do not exceed 360+
+   yrotate object obj1#,wrapvalue(object angle y(obj1#))
+   yrotate object obj2#,wrapvalue(object angle y(obj2#))
+
+   `If angle between obj1 and obj2 is greater than 180, rotate right +1 degree else, rotate left -1 degree
+   `you may change the +1 and -1 to the desired speed of rotation
+   if wrapvalue(object angle y(obj1#)-object angle y(obj2#)) > 180
+      yrotate object obj1#,object angle y(obj1#)+speed#
+   else
+      yrotate object obj1#,object angle y(obj1#)-speed#
+   endif
+
+   `If angle between obj1 and obj2 is less than 2, then set obj1 angle to obj2 angle
+   `This is to prevent the obj1 object from 'vibrating' back and forth if it cannot achive the
+   `exact angle of the obj2
+   `. Remove this line to observe what I mean.
+   `The Value here must be greater than the speed of rotation.
+   if ABS(object angle y(obj1#)-object angle y(obj2#)) < speed#*2 then yrotate object obj1#,object angle y(obj2#)
+   shadowed_text(10,10,str$(angleX#)+" "+str$(angleY#),rgb(255,255,255))
+   shadowed_text(10,50,str$(destangleX#)+" "+str$(destangleY#),rgb(255,255,255))
+
+`xangles
+   `Wrap angle values, so angles do not exceed 360+
+   xrotate object obj1#,wrapvalue(object angle y(obj1#))
+   xrotate object obj2#,wrapvalue(object angle y(obj2#))
+
+   `If angle between obj1 and obj2 is greater than 180, rotate right +1 degree else, rotate left -1 degree
+   `you may change the +1 and -1 to the desired speed of rotation
+   if wrapvalue(object angle x(obj1#)-object angle x(obj2#)) > 180
+      xrotate object obj1#,object angle x(obj1#)+speed#
+   else
+      xrotate object obj1#,object angle x(obj1#)-speed#
+   endif
+
+   `If angle between obj1 and obj2 is less than 2, then set obj1 angle to obj2 angle
+   `This is to prevent the obj1 object from 'vibrating' back and forth if it cannot achive the
+   `exact angle of the obj2
+   `. Remove this line to observe what I mean.
+   `The Value here must be greater than the speed of rotation.
+   if ABS(object angle x(obj1#)-object angle x(obj2#)) < speed#*2 then xrotate object obj1#,object angle y(obj2#)
+return
+
+viewer:
+doneviewer#=0
+if doneviewer#=0
+   position camera object position x(10),object position y(10),object position z(10)
+   set camera to object orientation 10
+   move camera 20
+   move camera up 1
+   move camera left 1
+doneviewer=1
+endif
+point camera object position x(10),object position y(10),object position z(10)
+return
+
+control_speed:
+   if inkey$()="1" then setspeed#=topspeed#/10000
+   if inkey$()="2" then setspeed#=topspeed#/10000+topspeed#/10000
+   if inkey$()="3" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="4" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="5" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="6" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="7" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="8" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="9" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if inkey$()="0" then setspeed#=topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000+topspeed#/10000
+   if setspeed#<>speed# and keystate(15)=0
+      if setspeed#>speed# then inc speed#,topspeed#/10/10/10/10/10/5
+      if setspeed#<speed# then dec speed#,topspeed#/10/10/10/10/10/5
+      if speed#=setspeed#-3 or speed#=setspeed#-2 or speed#=setspeed#-1 then speed#=setspeed#
+   endif
+   if keystate(15)=1
+      if speed#<boostspeed# then inc speed#,topspeed#/10/10/10/10/10/5
+      if speed#>boostspeed# then speed#=boostspeed#
+   endif
+return
+
+hud:
+   set text size 16
+   shadowed_text(110,screen height()/1.26,"Set: "+str$(setspeed#*1000,0)+ "mps",rgb(255,255,255))
+   if speed#>2000 then shadowed_text(110,screen height()/1.26-18,"Vel: >2000mps",rgb(255,255,255)) else shadowed_text(110,screen height()/1.26-18,"Vel: "+str$(speed#*1000,0)+"mps",rgb(255,255,255))
+return
+
+
+make_boost:
+load image "boost.bmp",700
+if daedalus#=1
+for a=700 to 705 step 1
+   make object plain a,0.7,0.7
+   texture object a,700
+   ghost object on a
+   disable object zwrite a
+   set object light a,0
+   set object cull a,0
+next a
+else
+for a=700 to 703 step 1
+   make object plain a,0.7,0.7
+   texture object a,700
+   ghost object on a
+   disable object zwrite a
+   set object light a,0
+   set object cull a,0
+next a
+endif
+a=700
+xrotate object a,90
+fix object pivot a
+a=702
+xrotate object a,90
+fix object pivot a
+if daedalus#=1
+a=704
+xrotate object a,90
+fix object pivot a
+endif
+return
+
+boost:
+bk#=1.07
+wobble#=rnd(speed#)
+position object 700,object position x(10),object position y(10),object position z(10)
+set object to object orientation 700,10
+move object 700,-bk#
+move object left 700,-0.205
+position object 701,object position x(10),object position y(10),object position z(10)
+set object to object orientation 701,10
+move object 701,-bk#
+move object left 701,-0.205
+position object 702,object position x(10),object position y(10),object position z(10)
+set object to object orientation 702,10
+move object 702,-bk#
+move object left 702,0.205
+position object 703,object position x(10),object position y(10),object position z(10)
+set object to object orientation 703,10
+move object 703,-bk#
+move object left 703,0.205
+if daedalus#=1
+position object 704,object position x(10),object position y(10),object position z(10)
+set object to object orientation 704,10
+move object 704,-bk#
+move object up 704,0.205
+position object 705,object position x(10),object position y(10),object position z(10)
+set object to object orientation 705,10
+move object 705,-bk#
+move object up 705,0.205
+endif
+return
+
+make_vortex:
+make object cylinder 10000,40
+scale object 10000,object size x(10000),4000,object size z(10000)
+load image "vortex texture.bmp",10000
+xrotate object 10000,90
+set object ambient 10000,0
+fix object pivot 10000
+texture object 10000,10000
+set object transparency 10000,1
+ghost object on 10000
+disable object zwrite 10000
+set object cull 10000,0
+position object 10000,object position x(10),object position y(10),object position z(10)
+return
+
+handle_vortex_input:
+fade object 10000,fadevalue#
+if fadevalue#>99 then fadevalue#=99
+if fadevalue#<1 then fadevalue#=1
+if lower$(inkey$())="j"
+fadevalue#=fadevalue#+1
+else
+fadevalue#=fadevalue#-1
+endif
+move object 10,fadevalue#/25
+scroll object texture 10000,0,-fadevalue#/6000
+position object 10000,object position x(10),object position y(10),object position z(10)
+set object to object orientation 10000,10
+return
+
+shootbullets:
+inc t1,1
+if t1>20050 then t1=20000
+t1b=t1-20000
+t1c=t1+50
+`if user presses the bullet shoot button (bulletcheck#) shoot bullets with the t1,t1b and t1c
+
+`control the waiting (reload) so it doesnt shoot every frame
+if shootwait#=1 then inc shootwaiting#,1
+if shootwaiting#>10 then shootwait#=0:shootwaiting#=0
+
+`control and update the already shot bullets
+
+return
+
+
+
+
+
+
+rem -----------------------------------------------------------------------------------------
+rem         Functions
+rem -----------------------------------------------------------------------------------------
+functions:
+function objx(obj#)
+   result#=object position x(obj#)
+endfunction result#
+function objy(obj#)
+   result#=object position y(obj#)
+endfunction result#
+function objz(obj#)
+   result#=object position z(obj#)
+endfunction result#
+function shadowed_text_center(x#,y#,string$,color#,color2#,d#)
+   th#=text height("A")
+   ink RGB(0,0,255), 0
+   center text x#+1,y#+1,string$
+   if mousey()>y# and mousey()<y#+th#
+      ink color2#, 0
+      if mouseclick()=1 then done#=d#
+   else
+      ink color#, 0
+   endif
+   center text x#,y#,string$
+endfunction
+function option_detail(x#,y#,color#,color2#)
+   th#=text height("A")
+   if mousey()>y# and mousey()<y#+(th#)
+      ink color2#, 0
+      if mouseclick()=1 and detail#=0 then detail#=1:sleep 100
+      if mouseclick()=1 and detail#=1 then detail#=0:sleep 100
+   else
+      ink color#, 0
+   endif
+   if detail#=1 then center text x#,y#,"Texture Detail: High"
+   if detail#=0 then center text x#,y#,"Texture Detail: Low"
+endfunction
+function option_resolution(x#,y#,color#,color2#)
+   th#=text height("A")
+   if mousey()>y# and mousey()<y#+(th#)
+      ink color2#, 0
+      if mouseclick()=1 and newres#=0 then newres#=1:sleep 100
+      if mouseclick()=1 and newres#=1 then newres#=0:sleep 100
+   else
+      ink color#, 0
+   endif
+   if newres#=1 then center text x#,y#,"Screen Resolution: 1024x768"
+   if newres#=0 then center text x#,y#,"Screen Resolution: 800x600"
+endfunction
+function option_depth(x#,y#,color#,color2#)
+   th#=text height("A")
+   if mousey()>y# and mousey()<y#+(th#)
+      ink color2#, 0
+      if mouseclick()=1 and newbit#=0 then newbit#=1:sleep 100
+      if mouseclick()=1 and newbit#=1 then newbit#=0:sleep 100
+   else
+      ink color#, 0
+   endif
+   if newbit#=1 then center text x#,y#,"Colour Depth: 32 bit"
+   if newbit#=0 then center text x#,y#,"Colour Depth: 16 bit"
+endfunction
+function shadowed_text(x#,y#,string$,color#)
+   ink RGB(0,0,255), 0
+   text x#+1,y#+1,string$
+   ink color#, 0
+   text x#,y#,string$
+endfunction
+function turn_object_around_using_arrowkeys(object#,speed#)
+   if leftkey()=1 then turn object left object#,speed#
+   if rightkey()=1 then turn object right object#,speed#
+   if upkey()=1 then pitch object up object#,speed#
+   if downkey()=1 then pitch object down object#,speed#
+endfunction
+function thirdpersoncamera(obj#,cam#,distance#,height#)
+   position camera cam#,object position x(obj#),object position y(obj#),object position z(obj#)
+   `set camera to object orientation cam#,obj#
+   if inkey$()="a" then turn camera left 1
+   if inkey$()="d" then turn camera right 1
+   if inkey$()="w" then pitch camera up 1
+   if inkey$()="s" then pitch camera down 1
+   move camera cam#,-distance#
+   `move camera up cam#,height#
+endfunction
+function make_random_environment()
+   seed#=1
+   make object sphere 1,1000,50,50
+   position object 1,1000,-200,2300
+   load image "planet"+str$(seed#)+".bmp",1,1
+   if file exist("planet"+str$(seed#)+"night.bmp")=1 then load image "planet"+str$(seed#)+"night.bmp",24,1:night=1
+   texture object 1,1
+   if night=1
+   Set Blend Mapping On 1, 1, 23, 3, 6
+   Set Blend Mapping On 1, 2, 22, 3, 7
+   Set Blend Mapping On 1, 3, 24, 3, 7
+   endif
+
+   `if seed#>2
+   `   load image "nebula2.jpg",3
+   `   make object plain 2,1000*2.6,1000*2.6
+   `   load image "rings2.bmp",2,1
+   `   texture object 2,2
+   `   position object 2,object position x(1),object position y(1),object position z(1)
+   `   ghost object on 2
+   `   pitch object down 2,90
+   `   disable object zwrite 2
+   `   set object light 2,0
+   `   set object cull 2,0
+   `endif
+
+   if seed#>2
+      make object sphere 1001,12000
+      texture object 1001,3
+      ghost object on 1001
+      set object cull 1001,0
+      set object light 1001,0
+   endif
+
+   make object sphere 37,400,50,50
+   load image "moon.jpg",37,1
+   texture object 37,37
+   position object 37,1000,-200,2300
+   turn object left 37,76
+   move object 37,-3700
+
+   make object plain 1002,3000,3000
+   position object 1002,-8000,0,0
+   load image "flare.jpg",1002
+   texture object 1002,1002
+   ghost object on 1002
+   disable object zwrite 1002
+   set object light 1002,0
+endfunction
+function position_object_on_object(obj1#,obj2#)
+   position object obj1#,object position x(obj2#),object position y(obj2#),object position z(obj2#)
+endfunction
+function make_inertia()
+   make object sphere 100,1
+   hide object 100
+   set object to object orientation 100,10
+   set object rotation zyx 100
+endfunction
+function control_inertia(obj#)
+   position_object_on_object(obj#,100)
+endfunction
+function distance(x1#, x2#, y1#, y2#, z1#, z2#)
+   temp = 1
+   null = make vector3(temp)
+   set vector3 temp, x1# - x2#, y1# - y2#, z1# - z2#
+   length_vector = abs(length vector3(temp))
+   null = delete vector3(temp)
+endfunction length_vector
+function make_hud()
+   load image "hud.bmp",350
+   make object plain 350,1024,768
+   position object 350,0,0,660
+   texture object 350,350
+   lock object on 350
+   set object light 350,0
+   set object transparency 350,1
+   load image "hudblue.bmp",351
+   make object plain 351,1024,768
+   position object 351,0,0,660
+   texture object 351,351
+   lock object on 351
+   ghost object on 351
+   disable object zwrite 351
+   set object light 351,0
+endfunction
+
+
+
+
+
+
+
+
+
+
+
+
+
+

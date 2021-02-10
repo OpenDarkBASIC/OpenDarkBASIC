@@ -65,6 +65,11 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type)
         return llvm::Type::getVoidTy(ctx);
     }
 }
+
+bool isStringType(llvm::Type* type)
+{
+    return type->isPointerTy() && type->getPointerElementType()->isIntegerTy(8);
+}
 } // namespace
 
 llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const cmd::Command* command)
@@ -108,7 +113,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
 
     // Generate command call.
     llvm::FunctionType* functionTy = llvm::FunctionType::get(returnTy, argTypes, false);
-    llvm::Function* function = engineInterface.generateCommandCall(*command, "DBCommand" + commandName, functionTy);
+    llvm::Function* function = engineInterface.generateCommandFunction(*command, "DBCommand" + commandName, functionTy);
     commandThunks.emplace(command->cppSymbol(), function);
     return function;
 }
@@ -285,11 +290,10 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             {
                 return builder.CreateFAdd(left, right);
             }
-            else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
+            else if (isStringType(left->getType()))
             {
-                // TODO: add string.
-                std::cerr << "Unimplemented string concatenation." << std::endl;
-                std::terminate();
+                // TODO: String variable allocated here. Need to free at the end of its lifetime.
+                return engineInterface.generateStringAdd(left, right);
             }
             else
             {
@@ -444,11 +448,9 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 }
                 return builder.CreateFCmp(cmpPredicate, left, right);
             }
-            else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
+            else if (isStringType(left->getType()) && isStringType(right->getType()))
             {
-                // TODO: compare strings.
-                std::cerr << "Unimplemented string compare." << std::endl;
-                std::abort();
+                return engineInterface.generateStringCompare(left, right, binary->op());
             }
             std::cerr << "Unimplemented compare operator." << std::endl;
         }
@@ -580,6 +582,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(ctx, "endif", parent);
 
             // Add conditional branch.
+            assert(branch->expression()->getType() == Type(BuiltinType::Boolean));
             builder.CreateCondBr(generateExpression(symtab, builder, branch->expression()), trueBlock, falseBlock);
 
             // Add branches to the continue section.
@@ -611,20 +614,79 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         else if (auto* infiniteLoop = dynamic_cast<const InfiniteLoop*>(s))
         {
             // Create blocks.
-            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
-            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
+            llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(ctx, "doLoopBody", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "doLoopEnd", parent);
             symtab.loopExitBlocks[infiniteLoop] = endBlock;
 
             // Generate loop body.
-            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBlock, infiniteLoop->statements());
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, bodyBlock, infiniteLoop->statements());
             endBlock->moveAfter(statementsEndBlock);
 
             // Jump into initial loop entry.
-            builder.CreateBr(loopBlock);
+            builder.CreateBr(bodyBlock);
 
             // Add a branch back to the beginning of the loop.
             builder.SetInsertPoint(statementsEndBlock);
-            builder.CreateBr(loopBlock);
+            builder.CreateBr(bodyBlock);
+
+            // Set loop end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
+        }
+        else if (auto* whileLoop = dynamic_cast<const WhileLoop*>(s))
+        {
+            // Create blocks.
+            llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(ctx, "whileLoopCond", parent);
+            llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(ctx, "whileLoopBody", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "whileLoopEnd", parent);
+            symtab.loopExitBlocks[whileLoop] = endBlock;
+
+            // Jump into loop condition block.
+            builder.CreateBr(conditionBlock);
+
+            // Generate loop condition.
+            assert(whileLoop->expression()->getType() == Type(BuiltinType::Boolean));
+            builder.SetInsertPoint(conditionBlock);
+            builder.CreateCondBr(generateExpression(symtab, builder, whileLoop->expression()), bodyBlock, endBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, bodyBlock, whileLoop->statements());
+
+            // Add a branch back to the condition of the loop.
+            builder.SetInsertPoint(statementsEndBlock);
+            builder.CreateBr(conditionBlock);
+
+            // Move blocks to the right location.
+            endBlock->moveAfter(statementsEndBlock);
+
+            // Set loop end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
+        }
+        else if (auto* repeatUntilLoop = dynamic_cast<const RepeatUntilLoop*>(s))
+        {
+            // Create blocks.
+            llvm::BasicBlock* bodyBlock = llvm::BasicBlock::Create(ctx, "repeatUntilLoopBody", parent);
+            llvm::BasicBlock* conditionBlock = llvm::BasicBlock::Create(ctx, "repeatUntilLoopCond", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "repeatUntilLoopEnd", parent);
+            symtab.loopExitBlocks[whileLoop] = endBlock;
+
+            // Jump into loop body block.
+            builder.CreateBr(bodyBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, bodyBlock, whileLoop->statements());
+
+            // Add a branch to the condition of the loop.
+            builder.SetInsertPoint(statementsEndBlock);
+            builder.CreateBr(conditionBlock);
+
+            // Generate loop condition.
+            assert(whileLoop->expression()->getType() == Type(BuiltinType::Boolean));
+            builder.SetInsertPoint(conditionBlock);
+            builder.CreateCondBr(generateExpression(symtab, builder, whileLoop->expression()), bodyBlock, endBlock);
+
+            // Move blocks to the right location.
+            conditionBlock->moveAfter(statementsEndBlock);
+            endBlock->moveAfter(conditionBlock);
 
             // Set loop end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
@@ -687,7 +749,15 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression());
             llvm::Value* storeTarget = symtab.getVar(assignment->variable());
-            builder.CreateStore(expression, storeTarget);
+            if (assignment->variable()->type().isBuiltinType() && *assignment->variable()->type().getBuiltinType() == BuiltinType::String)
+            {
+                // TODO: Handle string lifetime properly and insert free calls.
+                engineInterface.generateStringAssignment(storeTarget, expression);
+            }
+            else
+            {
+                builder.CreateStore(expression, storeTarget);
+            }
         }
         else if (auto* call = dynamic_cast<const FunctionCall*>(s))
         {
@@ -717,7 +787,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         else
         {
             fprintf(stderr, "Unhandled statement.");
-            std::exit(1);
+            std::abort();
         }
     }
 

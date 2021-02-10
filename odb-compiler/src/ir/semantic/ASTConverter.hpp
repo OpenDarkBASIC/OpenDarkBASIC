@@ -67,7 +67,7 @@ private:
     Reference<Variable> resolveVariableRef(const ast::VarRef* varRef);
 
     FunctionCallExpression convertCommandCallExpression(SourceLocation* location, const std::string& commandName,
-                                                        const MaybeNull<ast::ExpressionList>& astArgs);
+                                                        const MaybeNull<ast::ExpressionList>& astArgs, bool isFunctionTypeCommand);
     FunctionCallExpression convertFunctionCallExpression(SourceLocation* location, ast::AnnotatedSymbol* symbol,
                                                          const MaybeNull<ast::ExpressionList>& astArgs);
     Ptr<Expression> convertExpression(const ast::Expression* expression);
