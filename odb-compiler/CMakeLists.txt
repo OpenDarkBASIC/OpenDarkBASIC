@@ -6,15 +6,22 @@ include (GNUInstallDirs)
 include (TestVisibilityMacros)
 include (CheckIncludeFile)
 
-find_package(LLVM REQUIRED CONFIG)
-
 ###############################################################################
 # Configuration
 ###############################################################################
 
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+    set (DEBUG_FEATURE ON)
+else ()
+    set (RELEASE_FEATURE ON)
+endif ()
+
 set (ODBCOMPILER_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
 option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
+option (ODBCOMPILER_UPDATE_BUILDINFO "If true the updated build number is written to a header, which causes the library to recompile BuildInfo.c. This can get annoying for developers, so disable this if you are annoyed." ${RELEASE_FEATURE})
 option (ODBCOMPILER_DOT_EXPORT "Enable functions for dumping AST to DOT format" ON)
+option (ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
+option (ODBCOMPILER_PIC "Enable building with -fPIC (position independent code)" ON)
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
 option (ODBCOMPILER_TESTS "Build unit tests" ON)
@@ -35,6 +42,63 @@ elseif (UNIX)
 endif ()
 
 configure_file ("templates/config.hpp.in" "include/odb-compiler/config.hpp")
+
+###############################################################################
+# Build info
+###############################################################################
+
+set (ODBCOMPILER_HOST_COMPUTER ${CMAKE_HOST_SYSTEM})
+set (ODBCOMPILER_COMPILER ${CMAKE_C_COMPILER_ID})
+find_program (UNAME_PROGRAM uname)
+if (UNAME_PROGRAM)
+    execute_process (
+        COMMAND ${UNAME_PROGRAM} -ormpi
+        OUTPUT_VARIABLE ODBCOMPILER_HOST_COMPUTER)
+    string (REPLACE "\n" "" ODBCOMPILER_HOST_COMPUTER ${ODBCOMPILER_HOST_COMPUTER})
+else ()
+    set (ODBCOMPILER_HOST_COMPUTER ${CMAKE_HOST_SYSTEM_NAME})
+endif ()
+
+# Required for build info
+find_package (Git)
+if (GIT_FOUND)
+    execute_process (COMMAND ${GIT_EXECUTABLE} describe --tags RESULT_VARIABLE RESULT OUTPUT_VARIABLE ODBCOMPILER_COMMIT_TAG)
+    if (RESULT)
+        set (ODBCOMPILER_COMMIT_TAG "(unknown tag)")
+    else ()
+        string (REPLACE "\n" "" ODBCOMPILER_COMMIT_TAG ${ODBCOMPILER_COMMIT_TAG})
+    endif ()
+    execute_process (COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD RESULT_VARIABLE RESULT OUTPUT_VARIABLE ODBCOMPILER_COMMIT_HASH)
+    if (RESULT)
+        set (ODBCOMPILER_COMMIT_HASH "(commit hash unknown)")
+    else ()
+        string (REPLACE "\n" "" ODBCOMPILER_COMMIT_HASH ${ODBCOMPILER_COMMIT_HASH})
+    endif ()
+    set (ODBCOMPILER_COMMIT_INFO "${ODBCOMPILER_COMMIT_TAG} (${ODBCOMPILER_COMMIT_HASH})")
+else ()
+    set (ODBCOMPILER_COMMIT_INFO "unknown (git not found!)")
+    message (WARNING "Git not found. Build will not contain git revision info.")
+endif ()
+
+# Update build info every time the project is compiled
+set (BULIDINFOGENERATED_HEADER "${PROJECT_BINARY_DIR}/include/odb-compiler/BuildInfoGenerated.hpp")
+add_custom_target (odbcompiler_build_info_generated
+    COMMAND ${CMAKE_COMMAND}
+            -DOUTPUT_FILE=${BULIDINFOGENERATED_HEADER}
+            -DODBCOMPILER_UPDATE_BUILDINFO=${ODBCOMPILER_UPDATE_BUILDINFO}
+            -P "${PROJECT_SOURCE_DIR}/cmake/UpdateBuildInfoHeader.cmake"
+    COMMENT "Updating build information"
+    VERBATIM)
+add_custom_command (
+    OUTPUT ${BULIDINFOGENERATED_HEADER}
+    COMMAND ${CMAKE_COMMAND}
+            -P "${PROJECT_SOURCE_DIR}/cmake/nop.cmake"
+    DEPENDS "cmake/UpdateBuildInfoHeader.cmake"
+            "templates/BuildInfo.cpp.in"
+            odbcompiler_build_info_generated
+    VERBATIM)
+
+configure_file ("templates/BuildInfo.cpp.in" "src/BuildInfo.cpp")
 
 ###############################################################################
 # Parsers
@@ -90,11 +154,13 @@ add_gperf_bison_dependency (DarkBASICCommandToken DarkBASICParser)
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
-    ${BISON_DarkBASICParser_OUTPUTS}
-    ${FLEX_DarkBASICScanner_OUTPUTS}
-    ${Gperf_DarkBASICCommandToken_OUTPUTS}
-    ${BISON_CommandsParser_OUTPUTS}
-    ${FLEX_CommandsScanner_OUTPUTS}
+    "${BULIDINFOGENERATED_HEADER}"
+    "${PROJECT_BINARY_DIR}/src/BuildInfo.cpp"
+    "${BISON_DarkBASICParser_OUTPUTS}"
+    "${FLEX_DarkBASICScanner_OUTPUTS}"
+    "${Gperf_DarkBASICCommandToken_OUTPUTS}"
+    "${BISON_CommandsParser_OUTPUTS}"
+    "${FLEX_CommandsScanner_OUTPUTS}"
     "src/ast/ArrayDecl.cpp"
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
@@ -176,9 +242,14 @@ set_target_properties (odb-compiler
     PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
-target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
-target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR}
+        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
+
+###############################################################################
+# LLVM stuff
+###############################################################################
+
+find_package(LLVM REQUIRED CONFIG)
 
 # This is apparently deprecated since 4 years
 # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
@@ -189,11 +260,17 @@ target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 # This is how you're supposed to do it by reading LLVM-Config.cmake
 # https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-option (ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of LLVM" OFF)
 if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
     set (llvm_use_shared USE_SHARED)
 endif()
 llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen)
+
+target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
+target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+
+###############################################################################
+# Unit tests
+###############################################################################
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests

@@ -1,0 +1,100 @@
+#include "odb-compiler/BuildInfo.hpp"
+#include "odb-compiler/BuildInfoGenerated.hpp"
+
+#define QUOTE(str) #str
+#define EXPAND_AND_QUOTE(str) QUOTE(str)
+
+#define ODBCOMPILER_CMAKE_CONFIG \
+    "    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \\\n" \
+    "    -DCMAKE_INSTALL_PREFIX=\"${CMAKE_INSTALL_PREFIX}\" \\\n" \
+    "    -DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\" \\\n" \
+    "    -DODBCOMPILER_BISON_COUNTER_EXAMPLES=${ODBCOMPILER_BISON_COUNTER_EXAMPLES} \\\n" \
+    "    -DODBCOMPILER_UPDATE_BUILDINFO=${ODBCOMPILER_UPDATE_BUILDINFO} \\\n" \
+    "    -DODBCOMPILER_DOT_EXPORT=${ODBCOMPILER_DOT_EXPORT} \\\n" \
+    "    -DODBCOMPILER_LIB_TYPE=${ODBCOMPILER_LIB_TYPE} \\\n" \
+    "    -DODBCOMPILER_LLVM_ENABLE_SHARED_LIBS=${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS} \\\n" \
+    "    -DODBCOMPILER_PIC=${ODBCOMPILER_PIC} \\\n" \
+    "    -DODBCOMPILER_VERBOSE_BISON=${ODBCOMPILER_VERBOSE_BISON} \\\n" \
+    "    -DODBCOMPILER_VERBOSE_FLEX=${ODBCOMPILER_VERBOSE_FLEX} \\\n" \
+    "    -DODBCOMPILER_TESTS=${ODBCOMPILER_TESTS}"
+#define ODBCOMPILER_AUTHORS \
+    "TheComet <alex.murray@gmx.ch> \\\n" \
+    "David Avedissian <git@dga.dev>"
+
+namespace odb {
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::authors()
+{
+    return ODBCOMPILER_AUTHORS;
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::version()
+{
+    return ODBCOMPILER_VERSION_STR;
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::url()
+{
+    return "github.com/OpenDarkBASIC/OpenDarkBASIC";
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::host()
+{
+    return "${ODBCOMPILER_HOST_COMPUTER}";
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::time()
+{
+    return ODBCOMPILER_BUILD_TIME;
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::commitInfo()
+{
+    return "${ODBCOMPILER_COMMIT_INFO}";
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::commitHash()
+{
+    return "${ODBCOMPILER_COMMIT_HASH}";
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::compiler()
+{
+    return "${ODBCOMPILER_COMPILER}";
+}
+
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::cmake()
+{
+    return ODBCOMPILER_CMAKE_CONFIG;
+}
+
+// ----------------------------------------------------------------------------
+const char* BuildInfo::all()
+{
+    return
+    "This is odbc " ODBCOMPILER_VERSION_STR " (major,minor,patch)\n"
+    "Created by\n" ODBCOMPILER_AUTHORS
+    "Build host: ${ODBCOMPILER_HOST_COMPUTER}\n"
+    "Time compiled: " ODBCOMPILER_BUILD_TIME "\n"
+    "Commit: ${ODBCOMPILER_COMMIT_INFO}\n"
+    "Compiler: ${ODBCOMPILER_COMPILER}\n"
+    "CMake configuration:\n"
+    ODBCOMPILER_CMAKE_CONFIG "\n"
+    "Other interesting variables:\n"
+    "    HAVE_UNISTD_H=${HAVE_UNISTD_H}\n"
+    "    ODBCOMPILER_PUBLIC_API=" EXPAND_AND_QUOTE(ODBCOMPILER_PUBLIC_API) "\n"
+    "    ODBCOMPILER_PRIVATE_API=" EXPAND_AND_QUOTE(ODBCOMPILER_PRIVATE_API)
+    ;
+}
+
+}

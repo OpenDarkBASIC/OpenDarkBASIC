@@ -1,5 +1,5 @@
 #include "odb-cli/Banner.hpp"
-#include "odb-compiler/config.hpp"
+#include "odb-compiler/BuildInfo.hpp"
 #include "odb-sdk/Log.hpp"
 
 static bool printBanner_ = true;
@@ -28,9 +28,9 @@ bool printBanner(const std::vector<std::string>& args)
         odb::Log::info.print("%s", banner_);
         odb::Log::info.print(UP, 2);
         odb::Log::info.print(RIGHT, 37);
-        odb::Log::info.print("github.com/OpenDarkBASIC/OpenDarkBASIC\n");
+        odb::Log::info.print("%s\n", odb::BuildInfo::url());
         odb::Log::info.print(RIGHT, 37);
-        odb::Log::info.print("Version " ODBCOMPILER_VERSION_STR "\n\n");
+        odb::Log::info.print("Version %s\n\n", odb::BuildInfo::version());
     }
 
     return true;

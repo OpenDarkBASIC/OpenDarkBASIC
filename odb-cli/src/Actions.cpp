@@ -1,6 +1,7 @@
 #include "odb-cli/Actions.hpp"
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
+#include "odb-cli/BuildInfo.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/SDK.hpp"
@@ -30,6 +31,7 @@ static bool printHelp(const std::vector<std::string>& args);
 static const Action actions_[] = {
     { "no-banner",     'n',"",                           {0,  0},  0, false,  &disableBanner, "Don't print the cool ASCII art banner"},
     { "",               0, "",                           {0,  0},  1, true,   &printBanner, ""},
+    { "commit-hash",    0, "",                           {0,  0},  2, false,  &printCommitHash, "Prints the git commit hash"},
     { "help",          'h',"",                           {0,  0},  2, false,  &printHelp, "Print this help text"},
     { "sdkroot",        0, "<path>",                     {1,  1},  3, false,  &setSDKRootDir, "Tell the compiler where to find the SDK (plugins and DB runtime)"},
     { "sdktype",        0, "<odb|dbpro>",                {1,  1},  3, false,  &setSDKType, "Specify if the SDK is the original DBPro SDK, or if it is the ODB reimplementation"},
