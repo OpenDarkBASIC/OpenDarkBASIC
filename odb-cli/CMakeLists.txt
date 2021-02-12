@@ -25,7 +25,8 @@ target_link_libraries (odbc
         odb-compiler)
 set_target_properties (odbc
     PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR})
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR}
+        INSTALL_RPATH "lib")
 
 ###############################################################################
 # Installation
