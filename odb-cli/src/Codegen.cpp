@@ -41,12 +41,6 @@ bool setOutputType(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool output(const std::vector<std::string>& args)
 {
-    if (args.empty())
-    {
-        odb::Log::codegen(odb::Log::ERROR, "An argument must be specified when generating an output file.\n");
-        return false;
-    }
-
     std::string outputName = args[0];
 #ifdef _WIN32
     if (outputType_ == odb::ir::OutputType::Executable)
