@@ -15,6 +15,7 @@ add_executable (odbc
     "src/BuildInfo.cpp"
     "src/Codegen.cpp"
     "src/Commands.cpp"
+    "src/Log.cpp"
     "src/SDK.cpp"
     "src/main.cpp")
 target_include_directories (odbc

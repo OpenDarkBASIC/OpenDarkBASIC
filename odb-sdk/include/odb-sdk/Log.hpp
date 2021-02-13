@@ -68,6 +68,17 @@ public:
     int vprint(const char* fmt, va_list ap);
     int vprint(Color color, const char* fmt, va_list ap);
 
+    /*!
+     * Returns the current color enabled state (true if enabled, false if disabled)
+     * and enables colors.
+     */
+    bool enableColor();
+    /*!
+     * Returns the current color enabled state (true if enabled, false if disabled)
+     * and disables colors.
+     */
+    bool disableColor();
+
     static void dbParserFailedToOpenFile(const char* fileName);
     static void dbParserNotice(const char* fmt, ...);
     static void dbParserError(const char* fmt, ...);
@@ -92,8 +103,9 @@ public:
 private:
     friend class ColorState;
 
-    FILE* stream_;
-    Color color_;
+    FILE* stream_ = nullptr;
+    Color color_ = RESET;
+    bool enableColor_ = true;
 };
 
 class ODBSDK_PUBLIC_API ColorState

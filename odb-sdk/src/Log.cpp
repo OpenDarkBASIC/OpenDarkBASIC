@@ -6,8 +6,7 @@ namespace odb {
 
 // ----------------------------------------------------------------------------
 Log::Log(FILE* stream) :
-    stream_(stream),
-    color_(RESET)
+    stream_(stream)
 {
 }
 
@@ -63,6 +62,22 @@ int Log::vprint(Color color, const char* fmt, va_list ap)
     assert(stream_);
     ColorState state(*this, color);
     return vfprintf(stream_, fmt, ap);
+}
+
+// ----------------------------------------------------------------------------
+bool Log::enableColor()
+{
+    bool oldState = enableColor_;
+    enableColor_ = true;
+    return oldState;
+}
+
+// ----------------------------------------------------------------------------
+bool Log::disableColor()
+{
+    bool oldState = enableColor_;
+    enableColor_ = false;
+    return oldState;
 }
 
 // ----------------------------------------------------------------------------
@@ -266,6 +281,10 @@ ColorState::~ColorState()
 void ColorState::apply(Log& log, Log::Color color)
 {
     log.color_ = color;
+
+    if (log.enableColor_ == false)
+        return;
+
     switch (color)
     {
         case Log::RESET              : log.print("\u001b[0m"); break;
