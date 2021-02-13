@@ -98,7 +98,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
     else
     {
         for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
-            if (fileIsDynamicLib(p.path()))
+            if (FileSystem::isDynamicLib(p.path()))
                 pluginsToLoad.emplace_back(p.path());
     }
 
@@ -111,7 +111,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
         }
 
         for (const auto& p : fs::recursive_directory_iterator(sdkPluginsDir))
-            if (fileIsDynamicLib(p.path()))
+            if (FileSystem::isDynamicLib(p.path()))
                 pluginsToLoad.emplace_back(p.path());
     }
 

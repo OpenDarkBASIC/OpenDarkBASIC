@@ -6,8 +6,14 @@
 
 namespace odb {
 
-ODBSDK_PUBLIC_API FILE* dupFilePointer(FILE* file);
+class ODBSDK_PUBLIC_API FileSystem
+{
+public:
+    static FILE* dupFilePointer(FILE* file);
 
-ODBSDK_PUBLIC_API bool fileIsDynamicLib(const std::filesystem::path& filename);
+    static bool isDynamicLib(const std::filesystem::path& filename);
+
+    static std::filesystem::path getPathToSelf();
+};
 
 }

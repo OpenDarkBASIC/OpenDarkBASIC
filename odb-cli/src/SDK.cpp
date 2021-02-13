@@ -1,4 +1,5 @@
 #include "odb-cli/SDK.hpp"
+#include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Log.hpp"
 
 using namespace odb;
@@ -61,12 +62,17 @@ bool initSDK(const std::vector<std::string>& args)
     // Default SDK root dir
     if (sdkRootDir_ == "")
     {
-        if (sdkType_ == SDKType::ODB)
-            sdkRootDir_ = "odb-sdk";  // Should be here if odbc is executed from build/bin/
-        else
+        switch (sdkType_)
         {
-            Log::sdk(Log::ERROR, "There is no default path configured for the DarkBASIC Pro SDK root directory. Please specify it with --sdkroot or set the SDK type to `odb` with --sdktype\n");
-            return false;
+            case SDKType::ODB : {
+                // Should in the same directory as the odbc executable
+                sdkRootDir_ = FileSystem::getPathToSelf().replace_filename("odb-sdk");
+            } break;
+
+            case SDKType::DarkBASIC: {
+                Log::sdk(Log::ERROR, "There is no default path configured for the DarkBASIC Pro SDK root directory. Please specify it with --sdkroot or set the SDK type to `odb` with --sdktype\n");
+                return false;
+            }
         }
     }
 
