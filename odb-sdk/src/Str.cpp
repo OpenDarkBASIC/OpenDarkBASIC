@@ -3,6 +3,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>
+#include <cassert>
 
 namespace odb {
 namespace str {
@@ -22,6 +23,8 @@ char* newCStr(const char* str)
 // ----------------------------------------------------------------------------
 char* newCStrRange(const char* src, size_t beg, size_t end)
 {
+    assert(beg <= end);
+
     char* result = (char*)malloc(end - beg + 1);
     if (result == nullptr)
         return nullptr;

@@ -92,7 +92,8 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string = odb::str::newCStrRange(yytext, 1, strlen(yytext) - 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {STRING_LITERAL}    { size_t len = strlen(yytext);
+                          yylval->string = odb::str::newCStrRange(yytext, 1, len > 1 ? len : 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
     {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
@@ -131,6 +132,6 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     ":"                 { RETURN_TOKEN(':'); }
     ";"                 { RETURN_TOKEN(';'); }
     [ \t]
-    .
+    .                   { RETURN_TOKEN(yytext[0]); }
 }
 %%

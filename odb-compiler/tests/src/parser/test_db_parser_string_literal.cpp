@@ -1,3 +1,4 @@
+#include "gmock/gmock.h"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
@@ -42,4 +43,23 @@ TEST_F(NAME, string_append_filename_with_backslash)
     ast = driver->parseString("test",
         "if foo(\"maps\\\" + LevelEditor.name$) then bar(\"maps\\\" + LevelEditor.name$)");
     ASSERT_THAT(ast, NotNull());
+}
+
+TEST_F(NAME, empty_string)
+{
+    using Annotation = ast::Symbol::Annotation;
+
+    ast = driver->parseString("test",
+        "x = \"\"");
+    ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
+
+    ast->accept(&v);
 }
