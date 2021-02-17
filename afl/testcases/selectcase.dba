@@ -1,0 +1,6 @@
+select x
+    case 4+5
+    endcase
+    case default
+    endcase
+endselect

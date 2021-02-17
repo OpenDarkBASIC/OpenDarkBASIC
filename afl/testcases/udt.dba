@@ -1,0 +1,5 @@
+type foo
+    x# as float
+    dim a(5) as integer
+endtype
+

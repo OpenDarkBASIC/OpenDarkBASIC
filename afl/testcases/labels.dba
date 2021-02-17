@@ -1,0 +1,6 @@
+gosub label1
+label1:
+goto label2
+label2:
+return
+

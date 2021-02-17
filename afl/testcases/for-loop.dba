@@ -1,0 +1,3 @@
+for n = a to b step c
+next n
+

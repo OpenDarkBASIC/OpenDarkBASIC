@@ -1,0 +1,3 @@
+function foo(x as integer)
+    exitfunction x*2
+endfunction result

@@ -1,0 +1,2 @@
+global x as integer = 42
+local z# as float = 4.6
