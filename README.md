@@ -107,3 +107,18 @@ cd build/bin
 ```
 
 Now you can open ```out.pdf``` with your favorite PDF viewer and see a visual representation of the program's structure.
+
+Fuzzing
+=======
+
+```sh
+mkdir build-afl
+sudo mount -t tmpfs -o size=16384m afl-ramdisk build-afl
+cd build-afl
+CC=afl-gcc CXX=afl-g++ AS=afl-as cmake -DCMAKE_BUILD_TYPE=Release -DODBCOMPILER_TESTS=OFF -DODBCOMPILER_LLVM_ENABLE_SHARED_LIBS=ON ../
+make -j$(nproc)
+cd bin
+cp ../../scripts/fuzz_odbc.sh .
+./fuzz_odbc.sh
+```
+
