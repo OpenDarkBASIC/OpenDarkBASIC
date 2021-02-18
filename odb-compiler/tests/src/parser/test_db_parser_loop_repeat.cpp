@@ -32,6 +32,6 @@ TEST_F(NAME, empty_loop)
 
 TEST_F(NAME, break_from_loop)
 {
-    ast = driver->parseString("test", "repeat\nbreak\nuntil cond\n");
+    ast = driver->parseString("test", "repeat\nexit\nuntil cond\n");
     ASSERT_THAT(ast, NotNull());
 }

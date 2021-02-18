@@ -32,6 +32,6 @@ TEST_F(NAME, empty_loop)
 
 TEST_F(NAME, break_from_loop)
 {
-    ast = driver->parseString("test", "while cond\nbreak\nendwhile\n");
+    ast = driver->parseString("test", "while cond\nexit\nendwhile\n");
     ASSERT_THAT(ast, NotNull());
 }

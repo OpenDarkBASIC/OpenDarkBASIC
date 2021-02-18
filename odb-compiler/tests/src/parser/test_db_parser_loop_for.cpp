@@ -30,8 +30,8 @@ TEST_F(NAME, empty_loop)
     ASSERT_THAT(ast, NotNull());
 }
 
-TEST_F(NAME, break_from_loop)
+TEST_F(NAME, exit_from_loop)
 {
-    ast = driver->parseString("test", "for n=1 to 5\nbreak\nnext n\n");
+    ast = driver->parseString("test", "for n=1 to 5\nexit\nnext n\n");
     ASSERT_THAT(ast, NotNull());
 }
