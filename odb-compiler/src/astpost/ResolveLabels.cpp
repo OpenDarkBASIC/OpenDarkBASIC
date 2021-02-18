@@ -84,7 +84,7 @@ bool ResolveLabels::execute(ast::Node* node)
             Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", name.c_str());
             Log::info.print(" undefined\n");
             gotoNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
-            continue;
+            return false;
         }
 
         gotoNode->parent()->swapChild(gotoNode, new ast::Goto(
@@ -104,7 +104,7 @@ bool ResolveLabels::execute(ast::Node* node)
             Log::info.print(Log::FG_BRIGHT_WHITE, "`%s`", name.c_str());
             Log::info.print(" undefined\n");
             subCallNode->labelSymbol()->location()->printUnderlinedSection(Log::info);
-            continue;
+            return false;
         }
 
         subCallNode->parent()->swapChild(subCallNode, new ast::SubCall(

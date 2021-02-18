@@ -32,7 +32,7 @@ class ODBCOMPILER_PUBLIC_API Goto : public Statement
 public:
     Goto(Label* label, SourceLocation* location);
 
-    Label* label() const;
+    WeakReference<Label> label() const;
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -42,7 +42,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<Label> label_;
+    WeakReference<Label> label_;
 };
 
 }

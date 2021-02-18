@@ -147,10 +147,7 @@ void ASTParentConsistenciesChecker::visitFuncExit(const FuncExit* node)
     if (node->returnValue().notNull())
         EXPECT_THAT(node, Eq(node->returnValue()->parent()));
 }
-void ASTParentConsistenciesChecker::visitGoto(const Goto* node)
-{
-    EXPECT_THAT(node, Eq(node->label()->parent()));
-}
+void ASTParentConsistenciesChecker::visitGoto(const Goto* node) {}
 void ASTParentConsistenciesChecker::visitGotoSymbol(const GotoSymbol* node)
 {
     EXPECT_THAT(node, Eq(node->labelSymbol()->parent()));

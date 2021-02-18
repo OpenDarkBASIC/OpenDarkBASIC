@@ -4,6 +4,8 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
@@ -218,6 +220,26 @@ private:
     const std::string expectedCommand_;
 };
 
+class GotoEqMatcher : public MatcherInterface<const ast::Goto*>
+{
+public:
+    explicit GotoEqMatcher(const std::string& labelName)
+        : expectedLabel_(labelName) {}
+    bool MatchAndExplain(const ast::Goto* node, MatchResultListener* listener) const override {
+        *listener << "node->label()->symbol()->name() == " << node->label()->symbol()->name();
+        return node->label()->symbol()->name() == expectedLabel_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->label()->symbol()->name() equals " << expectedLabel_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->label()->symbol()->name() does not equal " << expectedLabel_;
+    }
+
+private:
+    const std::string expectedLabel_;
+};
+
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
 }
@@ -241,6 +263,9 @@ inline Matcher<const ast::CommandExprSymbol*> CommandExprSymbolEq(const std::str
 }
 inline Matcher<const ast::CommandStmntSymbol*> CommandStmntSymbolEq(const std::string& name) {
     return MakeMatcher(new CommandStmntSymbolEqMatcher(name));
+}
+inline Matcher<const ast::Goto*> GotoEq(const std::string& labelName) {
+    return MakeMatcher(new GotoEqMatcher(labelName));
 }
 #define X(dbname, cppname) \
 inline Matcher<const ast::dbname##Literal*> dbname##LiteralEq(const cppname& value) { \

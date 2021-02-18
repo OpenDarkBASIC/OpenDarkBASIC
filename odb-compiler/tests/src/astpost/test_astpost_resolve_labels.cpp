@@ -37,9 +37,7 @@ TEST_F(NAME, single_goto_label)
     ASSERT_THAT(rl.execute(ast), IsTrue());
 
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitGoto(_)).After(exp);
-    exp = EXPECT_CALL(v, visitLabel(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("l1"))).After(exp);
+    exp = EXPECT_CALL(v, visitGoto(GotoEq("l1"))).After(exp);
     exp = EXPECT_CALL(v, visitLabel(_)).After(exp);
     exp = EXPECT_CALL(v, visitSymbol(SymbolEq("l1"))).After(exp);
     ast->accept(&v);
@@ -62,7 +60,7 @@ TEST_F(NAME, single_goto_label_doesnt_match)
     ast->accept(&v);
 
     astpost::ResolveLabels rl;
-    EXPECT_THAT(rl.execute(ast), IsFalse());
+    ASSERT_THAT(rl.execute(ast), IsFalse());
 }
 
 TEST_F(NAME, label_redefinition)
@@ -75,12 +73,12 @@ TEST_F(NAME, label_redefinition)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitGotoSymbol(_)).After(exp);
+    exp = EXPECT_CALL(v, visitLabel(_)).After(exp);
     exp = EXPECT_CALL(v, visitSymbol(SymbolEq("l1"))).After(exp);
-    exp = EXPECT_CALL(v, visitGotoSymbol(_)).After(exp);
+    exp = EXPECT_CALL(v, visitLabel(_)).After(exp);
     exp = EXPECT_CALL(v, visitSymbol(SymbolEq("l1"))).After(exp);
     ast->accept(&v);
 
     astpost::ResolveLabels rl;
-    EXPECT_THAT(rl.execute(ast), IsFalse());
+    ASSERT_THAT(rl.execute(ast), IsFalse());
 }

@@ -34,7 +34,7 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitBinaryOpBitwiseNot(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(0))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
     ast->accept(&v);
 
     astpost::ProcessGroup post;

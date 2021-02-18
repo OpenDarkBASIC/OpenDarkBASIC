@@ -58,11 +58,11 @@ Goto::Goto(Label* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
-    label->setParent(this);
+    // DON'T set parent. We're only holding a weak reference
 }
 
 // ----------------------------------------------------------------------------
-Label* Goto::label() const
+WeakReference<Label> Goto::label() const
 {
     return label_;
 }
@@ -71,12 +71,10 @@ Label* Goto::label() const
 void Goto::accept(Visitor* visitor)
 {
     visitor->visitGoto(this);
-    label_->accept(visitor);
 }
 void Goto::accept(ConstVisitor* visitor) const
 {
     visitor->visitGoto(this);
-    label_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -93,9 +91,10 @@ void Goto::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Goto::duplicateImpl() const
 {
-    return new Goto(
-        label_->duplicate<Label>(),
-        location());
+    // Goto node can't be duplicated because it references another node in the
+    // old tree
+    assert(false);
+    return nullptr;
 }
 
 }
