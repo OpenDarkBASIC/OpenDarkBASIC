@@ -21,8 +21,9 @@ TEST_F(NAME, no_side_effects_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "result = x .. 0");
+    ast = driver->parse("test",
+        "result = x .. 0",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -55,8 +56,9 @@ TEST_F(NAME, no_side_effects_2)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "result = x .. y");
+    ast = driver->parse("test",
+        "result = x .. y",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -90,8 +92,9 @@ TEST_F(NAME, no_side_effects_3)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "result = foo() .. y");
+    ast = driver->parse("test",
+        "result = foo() .. y",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -124,9 +127,10 @@ TEST_F(NAME, no_side_effects_3)
 #define TEST_NO_SIDE_EFFECT(testname, expr)                                   \
 TEST_F(NAME, testname##_no_side_effect)                                       \
 {                                                                             \
-    ast = driver->parseString("test",                                         \
+    ast = driver->parse("test",                                               \
         "dim arr(5)\n"                                                        \
-        "result = x .. " expr);                                               \
+        "result = x .. " expr,                                                \
+        matcher);                                                             \
     ASSERT_THAT(ast, NotNull());                                              \
                                                                               \
     astpost::ProcessGroup post;                                               \
@@ -140,18 +144,19 @@ TEST_F(NAME, testname##_side_effect)                                          \
 {                                                                             \
     cmdIndex.addCommand(new cmd::Command(nullptr, "str$", "", cmd::Command::Type::Void, {})); \
     matcher.updateFromIndex(&cmdIndex);                                       \
-    ast = driver->parseString("test",                                         \
-        "result = x .. " expr);                                               \
+    ast = driver->parse("test",                                               \
+        "result = x .. " expr,                                                \
+        matcher);                                                             \
     ASSERT_THAT(ast, NotNull());                                              \
                                                                               \
     astpost::EliminateBitwiseNotRHS post;                                     \
     ASSERT_THAT(post.execute(ast), IsFalse());                                \
 }
 
-TEST_NO_SIDE_EFFECT(array_ref, "arr(y)");
-TEST_NO_SIDE_EFFECT(literal, "5");
-TEST_NO_SIDE_EFFECT(var_ref, "y");
-TEST_NO_SIDE_EFFECT(const_expr, "(y + z * 34 - arr(y))");
+TEST_NO_SIDE_EFFECT(array_ref, "arr(y)")
+TEST_NO_SIDE_EFFECT(literal, "5")
+TEST_NO_SIDE_EFFECT(var_ref, "y")
+TEST_NO_SIDE_EFFECT(const_expr, "(y + z * 34 - arr(y))")
 
 TEST_SIDE_EFFECT(func_call, "foo()")
 TEST_SIDE_EFFECT(command, "str$(y)")

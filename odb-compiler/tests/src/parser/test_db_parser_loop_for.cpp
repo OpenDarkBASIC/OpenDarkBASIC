@@ -20,18 +20,18 @@ using namespace odb;
 
 TEST_F(NAME, count_to_5)
 {
-    ast = driver->parseString("test", "for n=1 to 5\nfoo(n)\nnext n\n");
+    ast = driver->parse("test", "for n=1 to 5\nfoo(n)\nnext n\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_loop)
 {
-    ast = driver->parseString("test", "for n=1 to 5\nnext n\n");
+    ast = driver->parse("test", "for n=1 to 5\nnext n\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, exit_from_loop)
 {
-    ast = driver->parseString("test", "for n=1 to 5\nexit\nnext n\n");
+    ast = driver->parse("test", "for n=1 to 5\nexit\nnext n\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }

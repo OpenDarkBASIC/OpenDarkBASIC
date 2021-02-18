@@ -21,7 +21,7 @@ TEST_F(NAME, function_call_no_args)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo()\n");
+    ast = driver->parse("test", "foo()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -37,7 +37,7 @@ TEST_F(NAME, function_call_no_args_string_return_type)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo$()\n");
+    ast = driver->parse("test", "foo$()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -56,7 +56,7 @@ TEST_F(NAME, function_call_no_args_float_return_type)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo#()\n");
+    ast = driver->parse("test", "foo#()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -72,7 +72,7 @@ TEST_F(NAME, function_call_one_arg)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo(3)\n");
+    ast = driver->parse("test", "foo(3)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -90,7 +90,7 @@ TEST_F(NAME, function_call_multiple_args)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo(3, 4.5, true)\n");
+    ast = driver->parse("test", "foo(3, 4.5, true)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -110,7 +110,7 @@ TEST_F(NAME, nested_function_calls)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "foo(bar#(lil(), lel$()), baz$(lol(), lul(false)), 2)\n");
+    ast = driver->parse("test", "foo(bar#(lil(), lel$()), baz$(lol(), lul(false)), 2)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

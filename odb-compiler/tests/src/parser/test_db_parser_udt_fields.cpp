@@ -77,7 +77,7 @@ TEST_F(NAME, udt_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c = value");
+    ast = driver->parse("test", "a.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -104,7 +104,7 @@ TEST_F(NAME, udt_float_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c# = value");
+    ast = driver->parse("test", "a.b.c# = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -131,7 +131,7 @@ TEST_F(NAME, udt_string_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c$ = value");
+    ast = driver->parse("test", "a.b.c$ = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -158,7 +158,7 @@ TEST_F(NAME, udt_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c(x) = value");
+    ast = driver->parse("test", "a.b.c(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -188,7 +188,7 @@ TEST_F(NAME, udt_arr_float_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c#(x) = value");
+    ast = driver->parse("test", "a.b.c#(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -218,7 +218,7 @@ TEST_F(NAME, udt_arr_string_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b.c$(x) = value");
+    ast = driver->parse("test", "a.b.c$(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -248,7 +248,7 @@ TEST_F(NAME, udt_inner_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b(x).c = value");
+    ast = driver->parse("test", "a.b(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -278,7 +278,7 @@ TEST_F(NAME, udt_outer_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a(x).b.c = value");
+    ast = driver->parse("test", "a(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -308,7 +308,7 @@ TEST_F(NAME, value_ass_udt)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c");
+    ast = driver->parse("test", "value = a.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -335,7 +335,7 @@ TEST_F(NAME, value_ass_udt_float)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c#");
+    ast = driver->parse("test", "value = a.b.c#", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -362,7 +362,7 @@ TEST_F(NAME, value_ass_udt_string)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c$");
+    ast = driver->parse("test", "value = a.b.c$", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -389,7 +389,7 @@ TEST_F(NAME, value_ass_udt_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c(x)");
+    ast = driver->parse("test", "value = a.b.c(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -419,7 +419,7 @@ TEST_F(NAME, value_ass_udt_arr_float)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c#(x)");
+    ast = driver->parse("test", "value = a.b.c#(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -449,7 +449,7 @@ TEST_F(NAME, value_ass_udt_arr_string)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b.c$(x)");
+    ast = driver->parse("test", "value = a.b.c$(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -479,7 +479,7 @@ TEST_F(NAME, value_ass_udt_inner_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b(x).c");
+    ast = driver->parse("test", "value = a.b(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -509,7 +509,7 @@ TEST_F(NAME, value_ass_udt_outer_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a(x).b.c");
+    ast = driver->parse("test", "value = a(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -539,7 +539,7 @@ TEST_F(NAME, value_ass_func_returning_udt)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = func_expr().b.c");
+    ast = driver->parse("test", "value = func_expr().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -568,7 +568,7 @@ TEST_F(NAME, value_ass_command_returning_udt)
 
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "value = cmd expr().b.c");
+    ast = driver->parse("test", "value = cmd expr().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -594,7 +594,7 @@ TEST_F(NAME, udt_inner_float_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b#.c = value");
+    ast = driver->parse("test", "a.b#.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -621,7 +621,7 @@ TEST_F(NAME, udt_inner_string_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b$.c = value");
+    ast = driver->parse("test", "a.b$.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -648,7 +648,7 @@ TEST_F(NAME, udt_outer_float_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a#.b.c = value");
+    ast = driver->parse("test", "a#.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -675,7 +675,7 @@ TEST_F(NAME, udt_outer_string_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a$.b.c = value");
+    ast = driver->parse("test", "a$.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -702,7 +702,7 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b#(x).c = value");
+    ast = driver->parse("test", "a.b#(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -732,7 +732,7 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a.b$(x).c = value");
+    ast = driver->parse("test", "a.b$(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -762,7 +762,7 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a#(x).b.c = value");
+    ast = driver->parse("test", "a#(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -792,7 +792,7 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "a$(x).b.c = value");
+    ast = driver->parse("test", "a$(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -822,7 +822,7 @@ TEST_F(NAME, func_returning_udt_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "func_stmnt().b.c = value");
+    ast = driver->parse("test", "func_stmnt().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -830,7 +830,7 @@ TEST_F(NAME, command_returning_udt_ass_value)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd stmnt", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "cmd stmnt().b.c = value");
+    ast = driver->parse("test", "cmd stmnt().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -838,7 +838,7 @@ TEST_F(NAME, float_func_returning_udt_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "func_stmnt#().b.c = value");
+    ast = driver->parse("test", "func_stmnt#().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -846,7 +846,7 @@ TEST_F(NAME, float_command_returning_udt_ass_value)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd stmnt#", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "cmd stmnt#().b.c = value");
+    ast = driver->parse("test", "cmd stmnt#().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -854,7 +854,7 @@ TEST_F(NAME, string_func_returning_udt_ass_value)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "func_stmnt$().b.c = value");
+    ast = driver->parse("test", "func_stmnt$().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -862,7 +862,7 @@ TEST_F(NAME, string_command_returning_udt_ass_value)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd stmnt$", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "cmd stmnt$().b.c = value");
+    ast = driver->parse("test", "cmd stmnt$().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -870,7 +870,7 @@ TEST_F(NAME, value_ass_udt_inner_float)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b#.c");
+    ast = driver->parse("test", "value = a.b#.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -897,7 +897,7 @@ TEST_F(NAME, value_ass_udt_outer_float)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a#.b.c");
+    ast = driver->parse("test", "value = a#.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -924,7 +924,7 @@ TEST_F(NAME, value_ass_udt_inner_string)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b$.c");
+    ast = driver->parse("test", "value = a.b$.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -951,7 +951,7 @@ TEST_F(NAME, value_ass_udt_outer_string)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a$.b.c");
+    ast = driver->parse("test", "value = a$.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -978,7 +978,7 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b#(x).c");
+    ast = driver->parse("test", "value = a.b#(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1008,7 +1008,7 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a.b$(x).c");
+    ast = driver->parse("test", "value = a.b$(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1038,7 +1038,7 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a#(x).b.c");
+    ast = driver->parse("test", "value = a#(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1068,7 +1068,7 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = a$(x).b.c");
+    ast = driver->parse("test", "value = a$(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1098,7 +1098,7 @@ TEST_F(NAME, value_ass_float_func_returning_udt)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = func_expr#().b.c");
+    ast = driver->parse("test", "value = func_expr#().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1127,7 +1127,7 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
 
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr#", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "value = cmd expr#().b.c");
+    ast = driver->parse("test", "value = cmd expr#().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1153,7 +1153,7 @@ TEST_F(NAME, value_ass_string_func_returning_udt)
 {
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "value = func_expr$().b.c");
+    ast = driver->parse("test", "value = func_expr$().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1182,7 +1182,7 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
 
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr$", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "value = cmd expr$().b.c");
+    ast = driver->parse("test", "value = cmd expr$().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1206,19 +1206,19 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
 
 TEST_F(NAME, udt_cant_be_a_statement)
 {
-    ast = driver->parseString("test", "a.b.c");
+    ast = driver->parse("test", "a.b.c", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, udt_outer_arr_cant_be_a_statement)
 {
-    ast = driver->parseString("test", "a(x).b.c");
+    ast = driver->parse("test", "a(x).b.c", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, func_returning_udt_cant_be_a_statement)
 {
-    ast = driver->parseString("test", "func_stmnt().b.c");
+    ast = driver->parse("test", "func_stmnt().b.c", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -1226,6 +1226,6 @@ TEST_F(NAME, command_returning_udt_cant_be_a_statement)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd stmnt", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parseString("test", "cmd stmnt().b.c");
+    ast = driver->parse("test", "cmd stmnt().b.c", matcher);
     ASSERT_THAT(ast, IsNull());
 }

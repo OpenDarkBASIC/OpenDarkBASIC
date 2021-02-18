@@ -23,8 +23,9 @@ public:
 
 TEST_F(NAME, oneline_function_call)
 {
-    ast = driver->parseString("test",
-        "result = foo()");
+    ast = driver->parse("test",
+        "result = foo()",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     const auto& stmnts = ast->statements();
@@ -73,11 +74,12 @@ TEST_F(NAME, oneline_function_call)
 
 TEST_F(NAME, print_command)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "if x\n"
         "    foo()\n"
         "    bar()\n"
-        "endif\n");
+        "endif\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     const auto& stmnts = ast->statements();

@@ -18,7 +18,8 @@ using namespace ast;
 
 TEST_F(NAME, simple_goto)
 {
-    ast = driver->parseString("test",
-        "goto label\n");
+    ast = driver->parse("test",
+        "goto label\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }

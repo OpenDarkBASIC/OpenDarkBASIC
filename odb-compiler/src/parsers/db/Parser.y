@@ -32,7 +32,6 @@
     #include "odb-compiler/parsers/db/Parser.y.hpp"
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
-    #include "odb-compiler/parsers/db/ErrorPrinter.hpp"
     #include "odb-compiler/commands/Command.hpp"
     #include "odb-sdk/Str.hpp"
     #include <cstdarg>
@@ -42,7 +41,7 @@
     using namespace odb;
     using namespace ast;
 
-    void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
+    static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* msg, ...);
 }
 
 %code requires
@@ -507,18 +506,18 @@ constant_decl
   : CONSTANT annotated_symbol literal                         { $$ = new ConstDecl($2, $3, driver->newLocation(&@$)); }
   ;
 incdec
-  : INC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, 1, &@$); }
-  | INC array_ref ',' expr                                    { $$ = driver->newIncDecArray($2, $4, 1, &@$); }
-  | INC udt_field_lvalue ',' expr                             { $$ = driver->newIncDecUDTField($2, $4, 1, &@$); }
-  | INC var_ref                                               { $$ = driver->newIncDecVar($2, 1, &@$); }
-  | INC array_ref                                             { $$ = driver->newIncDecArray($2, 1, &@$); }
-  | INC udt_field_lvalue                                      { $$ = driver->newIncDecUDTField($2, 1, &@$); }
-  | DEC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, -1, &@$); }
-  | DEC array_ref ',' expr                                    { $$ = driver->newIncDecArray($2, $4, -1, &@$); }
-  | DEC udt_field_lvalue ',' expr                             { $$ = driver->newIncDecUDTField($2, $4, -1, &@$); }
-  | DEC var_ref                                               { $$ = driver->newIncDecVar($2, -1, &@$); }
-  | DEC array_ref                                             { $$ = driver->newIncDecArray($2, -1, &@$); }
-  | DEC udt_field_lvalue                                      { $$ = driver->newIncDecUDTField($2, -1, &@$); }
+  : INC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, odb::db::Driver::INC, &@$); }
+  | INC array_ref ',' expr                                    { $$ = driver->newIncDecArray($2, $4, odb::db::Driver::INC, &@$); }
+  | INC udt_field_lvalue ',' expr                             { $$ = driver->newIncDecUDTField($2, $4, odb::db::Driver::INC, &@$); }
+  | INC var_ref                                               { $$ = driver->newIncDecVar($2, odb::db::Driver::INC, &@$); }
+  | INC array_ref                                             { $$ = driver->newIncDecArray($2, odb::db::Driver::INC, &@$); }
+  | INC udt_field_lvalue                                      { $$ = driver->newIncDecUDTField($2, odb::db::Driver::INC, &@$); }
+  | DEC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, odb::db::Driver::DEC, &@$); }
+  | DEC array_ref ',' expr                                    { $$ = driver->newIncDecArray($2, $4, odb::db::Driver::DEC, &@$); }
+  | DEC udt_field_lvalue ',' expr                             { $$ = driver->newIncDecUDTField($2, $4, odb::db::Driver::DEC, &@$); }
+  | DEC var_ref                                               { $$ = driver->newIncDecVar($2, odb::db::Driver::DEC, &@$); }
+  | DEC array_ref                                             { $$ = driver->newIncDecArray($2, odb::db::Driver::DEC, &@$); }
+  | DEC udt_field_lvalue                                      { $$ = driver->newIncDecUDTField($2, odb::db::Driver::DEC, &@$); }
   ;
 assignment
   : var_ref '=' expr                                          { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }
@@ -830,7 +829,7 @@ exit
   ;
 %%
 
-void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
+static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     odb::Reference<odb::ast::SourceLocation> location = driver->newLocation(locp);
 
@@ -841,8 +840,7 @@ void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
     va_end(args);
 }
 
-static int
-yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
+static int yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
 {
     /*
      * NOTE: dbtokentype and yysymbol_kind_t are different enums, but contain
@@ -869,7 +867,7 @@ yyreport_syntax_error(const yypcontext_t *ctx, dbscan_t scanner)
         for (int i = 0; i < n; ++i)
             expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
 
-    odb::db::printSyntaxMessage(odb::Log::ERROR, loc, scanner, unexpectedToken, expectedTokens);
+    driver->printSyntaxError(loc, scanner, unexpectedToken, expectedTokens);
 
     return ret;
 }

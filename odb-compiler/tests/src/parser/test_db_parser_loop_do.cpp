@@ -20,18 +20,18 @@ using namespace odb;
 
 TEST_F(NAME, infinite_loop)
 {
-    ast = driver->parseString("test", "do\nfoo()\nloop\n");
+    ast = driver->parse("test", "do\nfoo()\nloop\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_infinite_loop)
 {
-    ast = driver->parseString("test", "do\nloop\n");
+    ast = driver->parse("test", "do\nloop\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, exit_from_loop)
 {
-    ast = driver->parseString("test", "do\nexit\nloop\n");
+    ast = driver->parse("test", "do\nexit\nloop\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }

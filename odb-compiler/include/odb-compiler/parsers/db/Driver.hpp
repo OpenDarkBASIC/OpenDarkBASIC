@@ -2,10 +2,10 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
+#include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <string>
-
-typedef struct DBLTYPE DBLTYPE;
+#include <vector>
 
 namespace odb {
 
@@ -29,35 +29,103 @@ namespace db {
 class Driver
 {
 public:
-    ODBCOMPILER_PUBLIC_API Driver(const cmd::CommandMatcher* commandMatcher);
-    ODBCOMPILER_PUBLIC_API ~Driver();
+    enum IncDecDir
+    {
+        INC = 1,
+        DEC = -1
+    };
 
-    ODBCOMPILER_PUBLIC_API ast::Block* parseFile(const std::string& fileName);
-    ODBCOMPILER_PUBLIC_API ast::Block* parseString(const std::string& sourceName, const std::string& str);
+    // ------------------------------------------------------------------------
+    // Functions below are used by BISON only
+    // ------------------------------------------------------------------------
 
-    // Functions called by BISON
+    /*!
+     * It's not possible to retrieve the root node from the dbpush_parse() so
+     * we instead have bison pass in the root node to the driver
+     */
     ODBCOMPILER_PRIVATE_API void giveProgram(ast::Block* program);
-    ODBCOMPILER_PRIVATE_API ast::SourceLocation* newLocation(const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location);
-    ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, int dir, const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* value, int dir, const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* value, int dir, const DBLTYPE* loc);
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* value, int dir, const DBLTYPE* loc);
+
+    /*!
+     * Attempts to create the smallest possible literal type based on the value
+     * of the literal.
+     *
+     * @note Values of 0 and 1 will still be ByteLiteral and not BooleanLiteral.
+     * @param[in] value Must be a positive value (including 0).
+     */
+    ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
+
+    /*!
+     * Attempts to create the smallest possible signed integer type based on
+     * the value of the literal.
+     *
+     * @param[in] value Must be a negative integer value (excluding 0).
+     */
+    ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
+
+    /*!
+     * Helpers for converting DarkBASIC increment and decrement statements into
+     * the form "x = x + y"
+     *
+     * @param[in] lvalue The lvalue that is being incremented or decremented
+     * @param[in] expr The operand by which to increment or decrement the lvalue
+     * If this parameter is ommitted then a value of 1 is assumed.
+     * @param[in] dir @see IncDecDir
+     */
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
+
+    ODBCOMPILER_PRIVATE_API void printSyntaxError(
+        const DBLTYPE* loc,
+        dbscan_t scanner,
+        std::pair<dbtokentype, std::string> unexpectedToken,
+        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens);
+    ODBCOMPILER_PRIVATE_API void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner);
+
+    /*!
+     * Factory method for converting a BISON location into a SourceLocation.
+     * Depending on whether a file is being parsed or a string is being parsed,
+     * this will return a different instance (handled by derived Driver classes)
+     */
+    ODBCOMPILER_PRIVATE_API virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const = 0;
+
+    // ------------------------------------------------------------------------
+    // Functions above used by BISON only
+    // ------------------------------------------------------------------------
+
+protected:
+    ast::Block* doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher);
 
 private:
-    ast::Block* doParseOld();
-    ast::Block* doParse();
-
-    std::string sourceName_;
-    std::string code_;
-
-    dbscan_t scanner_ = nullptr;
-    dbpstate* parser_ = nullptr;
-    const cmd::CommandMatcher* commandMatcher_;
     odb::Reference<ast::Block> program_;
+};
+
+class ODBCOMPILER_PUBLIC_API FileParserDriver : public Driver
+{
+public:
+    ast::Block* parse(const std::string& fileName, const cmd::CommandMatcher& commandMatcher);
+
+protected:
+    virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const override;
+
+private:
+    const std::string* fileName_;
+};
+
+class ODBCOMPILER_PUBLIC_API StringParserDriver : public Driver
+{
+public:
+    ast::Block* parse(const std::string& sourceName, const std::string& str, const cmd::CommandMatcher& commandMatcher);
+
+protected:
+    virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const override;
+
+private:
+    const std::string* sourceName_;
+    const std::string* code_;
 };
 
 }

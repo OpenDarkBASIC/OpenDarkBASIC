@@ -19,59 +19,64 @@ using namespace ast;
 
 TEST_F(NAME, empty_select_endselect)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_one_empty_case)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var1\n"
         "    case var2\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_one_empty_default_case)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var1\n"
         "    case default\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_two_empty_cases)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var1\n"
         "    case var2\n"
         "    endcase\n"
         "    case var3\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_with_empty_case_and_default_case)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var1\n"
         "    case var2\n"
         "    endcase\n"
         "    case default\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, select_case_with_body)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var1\n"
         "    case 1\n"
         "        foo()\n"
@@ -82,13 +87,14 @@ TEST_F(NAME, select_case_with_body)
         "    case default\n"
         "        baz()\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, multiple_default_cases)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "select var\n"
         "    case default\n"
         "        foo()\n"
@@ -105,7 +111,8 @@ TEST_F(NAME, multiple_default_cases)
         "    case default\n"
         "        bar()\n"
         "    endcase\n"
-        "endselect\n");
+        "endselect\n",
+        matcher);
     ASSERT_THAT(ast, IsTrue());
 
     astpost::EnforceSingleDefaultCase post;

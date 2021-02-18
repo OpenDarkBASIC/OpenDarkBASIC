@@ -19,10 +19,11 @@ TEST_F(NAME, resolve_func_call)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "result = foo(5)\n"
         "function foo(x)\n"
-        "endfunction\n");
+        "endfunction\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -36,9 +37,10 @@ TEST_F(NAME, resolve_array_ref)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "dim foo(6)\n"
-        "result = foo(5)\n");
+        "result = foo(5)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -52,11 +54,12 @@ TEST_F(NAME, array_and_function_with_same_name)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "dim foo(6)\n"
         "result = foo(5)\n"
         "function foo(x)\n"
-        "endfunction\n");
+        "endfunction\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

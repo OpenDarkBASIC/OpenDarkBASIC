@@ -182,954 +182,1060 @@ public:
 
 TEST_F(NAME, local_var_decl_invalid_double_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_dword)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_word)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_byte)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_boolean)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var# as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var# as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var$ as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_var_decl_invalid_nested_udt)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local var as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_double_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_dword)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_word)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_byte)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_boolean)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_array_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr#(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_array_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr#(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_array_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr$(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_array_decl_invalid_nested_udt)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    local dim arr(2, 3) as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_double_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_dword)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_word)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_byte)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_boolean)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var# as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var# as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var$ as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_var_decl_invalid_nested_udt)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global var as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_double_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_dword)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_word)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_byte)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_boolean)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_array_decl_invalid_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr#(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_array_decl_invalid_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr#(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_array_decl_invalid_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr$(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_array_decl_invalid_nested_udt)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    global dim arr(2, 3) as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_double_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_dword_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_word_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_byte_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_boolean_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_string_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_decl_as_nested_udt_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, udt_type_with_float_annotation_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as nestedudt#\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_double_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_dword_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_word_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_byte_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_boolean_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_double_float_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_float_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_decl_as_nested_udt_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, udt_type_with_string_annotation_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as nestedudt$\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_double_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_dword_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_word_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_byte_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_boolean_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_string_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_array_decl_as_nested_udt_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, array_udt_type_with_float_annotation_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as nestedudt#\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_double_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_integer_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_dword_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_word_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_byte_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_boolean_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_double_float_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_float_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_array_decl_as_nested_udt_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_udt_type_with_string_annotation_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as nestedudt$\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_double_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_integer)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_dword)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_word)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_byte)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_boolean)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_array_decl_as_double_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#() as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_array_decl_as_float)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#() as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_string_array_decl_as_string)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$() as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_as_nested_udt)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr() as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, udt_type_annotated_float_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt#\n"
         "    x as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, udt_type_annotated_string_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt$\n"
         "    x as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_udt_is_invalid)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -1138,10 +1244,11 @@ TEST_F(NAME, var_decl_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1162,10 +1269,11 @@ TEST_F(NAME, var_decl_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1186,10 +1294,11 @@ TEST_F(NAME, var_decl_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1210,10 +1319,11 @@ TEST_F(NAME, var_decl_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1234,10 +1344,11 @@ TEST_F(NAME, var_decl_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1258,10 +1369,11 @@ TEST_F(NAME, var_decl_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1282,10 +1394,11 @@ TEST_F(NAME, var_decl_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1306,10 +1419,11 @@ TEST_F(NAME, var_decl_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1330,10 +1444,11 @@ TEST_F(NAME, float_var_decl_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1354,10 +1469,11 @@ TEST_F(NAME, float_var_decl_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var# as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1378,10 +1494,11 @@ TEST_F(NAME, var_decl_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1402,10 +1519,11 @@ TEST_F(NAME, string_var_decl_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var$ as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1426,10 +1544,11 @@ TEST_F(NAME, var_decl_as_nested_udt)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    var as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1450,10 +1569,11 @@ TEST_F(NAME, arr_decl_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as double integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1476,10 +1596,11 @@ TEST_F(NAME, arr_decl_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as integer\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1502,10 +1623,11 @@ TEST_F(NAME, arr_decl_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as dword\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1528,10 +1650,11 @@ TEST_F(NAME, arr_decl_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as word\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1554,10 +1677,11 @@ TEST_F(NAME, arr_decl_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as byte\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1580,10 +1704,11 @@ TEST_F(NAME, arr_decl_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as boolean\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1606,10 +1731,11 @@ TEST_F(NAME, arr_decl_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1632,10 +1758,11 @@ TEST_F(NAME, arr_decl_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1658,10 +1785,11 @@ TEST_F(NAME, float_arr_decl_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as double float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1684,10 +1812,11 @@ TEST_F(NAME, float_arr_decl_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as float\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1710,10 +1839,11 @@ TEST_F(NAME, arr_decl_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1736,10 +1866,11 @@ TEST_F(NAME, string_arr_decl_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as string\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1762,10 +1893,11 @@ TEST_F(NAME, arr_decl_as_nested_udt)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as nestedudt\n"
-        "endtype\n");
+        "endtype\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

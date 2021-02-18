@@ -20,18 +20,18 @@ using namespace odb;
 
 TEST_F(NAME, infinite_loop)
 {
-    ast = driver->parseString("test", "while cond\nfoo()\nendwhile\n");
+    ast = driver->parse("test", "while cond\nfoo()\nendwhile\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_loop)
 {
-    ast = driver->parseString("test", "while cond\nendwhile\n");
+    ast = driver->parse("test", "while cond\nendwhile\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, break_from_loop)
 {
-    ast = driver->parseString("test", "while cond\nexit\nendwhile\n");
+    ast = driver->parse("test", "while cond\nexit\nendwhile\n", matcher);
     ASSERT_THAT(ast, NotNull());
 }

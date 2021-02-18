@@ -171,541 +171,541 @@ public:
 
 TEST_F(NAME, float_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as double integer");
+    ast = driver->parse("test", "dim arr#(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as integer");
+    ast = driver->parse("test", "dim arr#(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as dword");
+    ast = driver->parse("test", "dim arr#(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as word");
+    ast = driver->parse("test", "dim arr#(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as byte");
+    ast = driver->parse("test", "dim arr#(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as boolean");
+    ast = driver->parse("test", "dim arr#(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_var_cannot_be_declared_as_string)
 {
-    ast = driver->parseString("test", "dim arr#(2, 3) as string");
+    ast = driver->parse("test", "dim arr#(2, 3) as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as double integer");
+    ast = driver->parse("test", "dim arr$(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as integer");
+    ast = driver->parse("test", "dim arr$(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as dword");
+    ast = driver->parse("test", "dim arr$(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as word");
+    ast = driver->parse("test", "dim arr$(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as byte");
+    ast = driver->parse("test", "dim arr$(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as boolean");
+    ast = driver->parse("test", "dim arr$(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_double_float)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as double float");
+    ast = driver->parse("test", "dim arr$(2, 3) as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_var_cannot_be_declared_as_float)
 {
-    ast = driver->parseString("test", "dim arr$(2, 3) as float");
+    ast = driver->parse("test", "dim arr$(2, 3) as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as double integer");
+    ast = driver->parse("test", "local dim arr#(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as integer");
+    ast = driver->parse("test", "local dim arr#(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as dword");
+    ast = driver->parse("test", "local dim arr#(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as word");
+    ast = driver->parse("test", "local dim arr#(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as byte");
+    ast = driver->parse("test", "local dim arr#(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as boolean");
+    ast = driver->parse("test", "local dim arr#(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_var_cannot_be_declared_as_string)
 {
-    ast = driver->parseString("test", "local dim arr#(2, 3) as string");
+    ast = driver->parse("test", "local dim arr#(2, 3) as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as double integer");
+    ast = driver->parse("test", "local dim arr$(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as integer");
+    ast = driver->parse("test", "local dim arr$(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as dword");
+    ast = driver->parse("test", "local dim arr$(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as word");
+    ast = driver->parse("test", "local dim arr$(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as byte");
+    ast = driver->parse("test", "local dim arr$(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as boolean");
+    ast = driver->parse("test", "local dim arr$(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_double_float)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as double float");
+    ast = driver->parse("test", "local dim arr$(2, 3) as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_var_cannot_be_declared_as_float)
 {
-    ast = driver->parseString("test", "local dim arr$(2, 3) as float");
+    ast = driver->parse("test", "local dim arr$(2, 3) as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as double integer");
+    ast = driver->parse("test", "global dim arr#(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as integer");
+    ast = driver->parse("test", "global dim arr#(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as dword");
+    ast = driver->parse("test", "global dim arr#(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as word");
+    ast = driver->parse("test", "global dim arr#(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as byte");
+    ast = driver->parse("test", "global dim arr#(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as boolean");
+    ast = driver->parse("test", "global dim arr#(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_var_cannot_be_declared_as_string)
 {
-    ast = driver->parseString("test", "global dim arr#(2, 3) as string");
+    ast = driver->parse("test", "global dim arr#(2, 3) as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_double_integer)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as double integer");
+    ast = driver->parse("test", "global dim arr$(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_integer)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as integer");
+    ast = driver->parse("test", "global dim arr$(2, 3) as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_dword)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as dword");
+    ast = driver->parse("test", "global dim arr$(2, 3) as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_word)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as word");
+    ast = driver->parse("test", "global dim arr$(2, 3) as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_byte)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as byte");
+    ast = driver->parse("test", "global dim arr$(2, 3) as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_boolean)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as boolean");
+    ast = driver->parse("test", "global dim arr$(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_double_float)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as double float");
+    ast = driver->parse("test", "global dim arr$(2, 3) as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_var_cannot_be_declared_as_float)
 {
-    ast = driver->parseString("test", "global dim arr$(2, 3) as float");
+    ast = driver->parse("test", "global dim arr$(2, 3) as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_decl_defaults_to_local_and_integer)
 {
-    ast = driver->parseString("test", "dim arr()");
+    ast = driver->parse("test", "dim arr()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_float_decl_defaults_to_local_and_float)
 {
-    ast = driver->parseString("test", "dim arr#()");
+    ast = driver->parse("test", "dim arr#()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_string_decl_defaults_to_local_and_string)
 {
-    ast = driver->parseString("test", "dim arr$()");
+    ast = driver->parse("test", "dim arr$()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_decl_defaults_to_integer)
 {
-    ast = driver->parseString("test", "local dim arr()");
+    ast = driver->parse("test", "local dim arr()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_float_decl_defaults_to_float)
 {
-    ast = driver->parseString("test", "local dim arr#()");
+    ast = driver->parse("test", "local dim arr#()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_string_decl_defaults_to_string)
 {
-    ast = driver->parseString("test", "local dim arr$()");
+    ast = driver->parse("test", "local dim arr$()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_decl_defaults_to_integer)
 {
-    ast = driver->parseString("test", "global dim arr()");
+    ast = driver->parse("test", "global dim arr()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_float_decl_defaults_to_float)
 {
-    ast = driver->parseString("test", "global dim arr#()");
+    ast = driver->parse("test", "global dim arr#()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_string_decl_defaults_to_string)
 {
-    ast = driver->parseString("test", "global dim arr$()");
+    ast = driver->parse("test", "global dim arr$()", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_double_integer)
 {
-    ast = driver->parseString("test", "dim arr() as double integer");
+    ast = driver->parse("test", "dim arr() as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_integer)
 {
-    ast = driver->parseString("test", "dim arr() as integer");
+    ast = driver->parse("test", "dim arr() as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_dword)
 {
-    ast = driver->parseString("test", "dim arr() as dword");
+    ast = driver->parse("test", "dim arr() as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_word)
 {
-    ast = driver->parseString("test", "dim arr() as word");
+    ast = driver->parse("test", "dim arr() as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_byte)
 {
-    ast = driver->parseString("test", "dim arr() as byte");
+    ast = driver->parse("test", "dim arr() as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_boolean)
 {
-    ast = driver->parseString("test", "dim arr() as boolean");
+    ast = driver->parse("test", "dim arr() as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_double_float)
 {
-    ast = driver->parseString("test", "dim arr() as double float");
+    ast = driver->parse("test", "dim arr() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_float)
 {
-    ast = driver->parseString("test", "dim arr() as float");
+    ast = driver->parse("test", "dim arr() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_array_as_double_float)
 {
-    ast = driver->parseString("test", "dim arr#() as double float");
+    ast = driver->parse("test", "dim arr#() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_array_as_float)
 {
-    ast = driver->parseString("test", "dim arr#() as float");
+    ast = driver->parse("test", "dim arr#() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_array_as_string)
 {
-    ast = driver->parseString("test", "dim arr() as string");
+    ast = driver->parse("test", "dim arr() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_string_array_as_string)
 {
-    ast = driver->parseString("test", "dim arr$() as string");
+    ast = driver->parse("test", "dim arr$() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_double_integer)
 {
-    ast = driver->parseString("test", "local dim arr() as double integer");
+    ast = driver->parse("test", "local dim arr() as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_integer)
 {
-    ast = driver->parseString("test", "local dim arr() as integer");
+    ast = driver->parse("test", "local dim arr() as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_dword)
 {
-    ast = driver->parseString("test", "local dim arr() as dword");
+    ast = driver->parse("test", "local dim arr() as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_word)
 {
-    ast = driver->parseString("test", "local dim arr() as word");
+    ast = driver->parse("test", "local dim arr() as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_byte)
 {
-    ast = driver->parseString("test", "local dim arr() as byte");
+    ast = driver->parse("test", "local dim arr() as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_boolean)
 {
-    ast = driver->parseString("test", "local dim arr() as boolean");
+    ast = driver->parse("test", "local dim arr() as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_double_float)
 {
-    ast = driver->parseString("test", "local dim arr() as double float");
+    ast = driver->parse("test", "local dim arr() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_float)
 {
-    ast = driver->parseString("test", "local dim arr() as float");
+    ast = driver->parse("test", "local dim arr() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_local_array_as_double_float)
 {
-    ast = driver->parseString("test", "local dim arr#() as double float");
+    ast = driver->parse("test", "local dim arr#() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_local_array_as_float)
 {
-    ast = driver->parseString("test", "local dim arr#() as float");
+    ast = driver->parse("test", "local dim arr#() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_local_array_as_string)
 {
-    ast = driver->parseString("test", "local dim arr() as string");
+    ast = driver->parse("test", "local dim arr() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_string_local_array_as_string)
 {
-    ast = driver->parseString("test", "local dim arr$() as string");
+    ast = driver->parse("test", "local dim arr$() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_double_integer)
 {
-    ast = driver->parseString("test", "global dim arr() as double integer");
+    ast = driver->parse("test", "global dim arr() as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_integer)
 {
-    ast = driver->parseString("test", "global dim arr() as integer");
+    ast = driver->parse("test", "global dim arr() as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_dword)
 {
-    ast = driver->parseString("test", "global dim arr() as dword");
+    ast = driver->parse("test", "global dim arr() as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_word)
 {
-    ast = driver->parseString("test", "global dim arr() as word");
+    ast = driver->parse("test", "global dim arr() as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_byte)
 {
-    ast = driver->parseString("test", "global dim arr() as byte");
+    ast = driver->parse("test", "global dim arr() as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_boolean)
 {
-    ast = driver->parseString("test", "global dim arr() as boolean");
+    ast = driver->parse("test", "global dim arr() as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_double_float)
 {
-    ast = driver->parseString("test", "global dim arr() as double float");
+    ast = driver->parse("test", "global dim arr() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_float)
 {
-    ast = driver->parseString("test", "global dim arr() as float");
+    ast = driver->parse("test", "global dim arr() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_global_array_as_double_float)
 {
-    ast = driver->parseString("test", "global dim arr#() as double float");
+    ast = driver->parse("test", "global dim arr#() as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_float_global_array_as_float)
 {
-    ast = driver->parseString("test", "global dim arr#() as float");
+    ast = driver->parse("test", "global dim arr#() as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_global_array_as_string)
 {
-    ast = driver->parseString("test", "global dim arr() as string");
+    ast = driver->parse("test", "global dim arr() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, empty_string_global_array_as_string)
 {
-    ast = driver->parseString("test", "global dim arr$() as string");
+    ast = driver->parse("test", "global dim arr$() as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -714,7 +714,7 @@ TEST_F(NAME, array_decl_defaults_to_local_and_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3)");
+    ast = driver->parse("test", "dim arr(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -734,7 +734,7 @@ TEST_F(NAME, array_float_decl_defaults_to_local_and_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr#(2, 3)");
+    ast = driver->parse("test", "dim arr#(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -754,7 +754,7 @@ TEST_F(NAME, array_string_decl_defaults_to_local_and_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr$(2, 3)");
+    ast = driver->parse("test", "dim arr$(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -774,7 +774,7 @@ TEST_F(NAME, local_array_decl_defaults_to_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3)");
+    ast = driver->parse("test", "local dim arr(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -794,7 +794,7 @@ TEST_F(NAME, local_array_float_decl_defaults_to_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr#(2, 3)");
+    ast = driver->parse("test", "local dim arr#(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -814,7 +814,7 @@ TEST_F(NAME, local_array_string_decl_defaults_to_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr$(2, 3)");
+    ast = driver->parse("test", "local dim arr$(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -834,7 +834,7 @@ TEST_F(NAME, global_array_decl_defaults_to_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3)");
+    ast = driver->parse("test", "global dim arr(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -854,7 +854,7 @@ TEST_F(NAME, global_array_float_decl_defaults_to_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr#(2, 3)");
+    ast = driver->parse("test", "global dim arr#(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -874,7 +874,7 @@ TEST_F(NAME, global_array_string_decl_defaults_to_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr$(2, 3)");
+    ast = driver->parse("test", "global dim arr$(2, 3)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -894,7 +894,7 @@ TEST_F(NAME, array_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as double integer");
+    ast = driver->parse("test", "dim arr(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -914,7 +914,7 @@ TEST_F(NAME, array_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as integer");
+    ast = driver->parse("test", "dim arr(2, 3) as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -934,7 +934,7 @@ TEST_F(NAME, array_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as dword");
+    ast = driver->parse("test", "dim arr(2, 3) as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -954,7 +954,7 @@ TEST_F(NAME, array_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as word");
+    ast = driver->parse("test", "dim arr(2, 3) as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -974,7 +974,7 @@ TEST_F(NAME, array_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as byte");
+    ast = driver->parse("test", "dim arr(2, 3) as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -994,7 +994,7 @@ TEST_F(NAME, array_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as boolean");
+    ast = driver->parse("test", "dim arr(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1014,7 +1014,7 @@ TEST_F(NAME, array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as double float");
+    ast = driver->parse("test", "dim arr(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1034,7 +1034,7 @@ TEST_F(NAME, array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as float");
+    ast = driver->parse("test", "dim arr(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1054,7 +1054,7 @@ TEST_F(NAME, float_array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr#(2, 3) as double float");
+    ast = driver->parse("test", "dim arr#(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1074,7 +1074,7 @@ TEST_F(NAME, float_array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr#(2, 3) as float");
+    ast = driver->parse("test", "dim arr#(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1094,7 +1094,7 @@ TEST_F(NAME, array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr(2, 3) as string");
+    ast = driver->parse("test", "dim arr(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1114,7 +1114,7 @@ TEST_F(NAME, string_array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "dim arr$(2, 3) as string");
+    ast = driver->parse("test", "dim arr$(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1134,7 +1134,7 @@ TEST_F(NAME, local_array_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as double integer");
+    ast = driver->parse("test", "local dim arr(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1154,7 +1154,7 @@ TEST_F(NAME, local_array_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as integer");
+    ast = driver->parse("test", "local dim arr(2, 3) as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1174,7 +1174,7 @@ TEST_F(NAME, local_array_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as dword");
+    ast = driver->parse("test", "local dim arr(2, 3) as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1194,7 +1194,7 @@ TEST_F(NAME, local_array_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as word");
+    ast = driver->parse("test", "local dim arr(2, 3) as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1214,7 +1214,7 @@ TEST_F(NAME, local_array_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as byte");
+    ast = driver->parse("test", "local dim arr(2, 3) as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1234,7 +1234,7 @@ TEST_F(NAME, local_array_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as boolean");
+    ast = driver->parse("test", "local dim arr(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1254,7 +1254,7 @@ TEST_F(NAME, local_array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as double float");
+    ast = driver->parse("test", "local dim arr(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1274,7 +1274,7 @@ TEST_F(NAME, local_array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as float");
+    ast = driver->parse("test", "local dim arr(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1294,7 +1294,7 @@ TEST_F(NAME, float_local_array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr#(2, 3) as double float");
+    ast = driver->parse("test", "local dim arr#(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1314,7 +1314,7 @@ TEST_F(NAME, float_local_array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr#(2, 3) as float");
+    ast = driver->parse("test", "local dim arr#(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1334,7 +1334,7 @@ TEST_F(NAME, local_array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr(2, 3) as string");
+    ast = driver->parse("test", "local dim arr(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1354,7 +1354,7 @@ TEST_F(NAME, string_local_array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local dim arr$(2, 3) as string");
+    ast = driver->parse("test", "local dim arr$(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1374,7 +1374,7 @@ TEST_F(NAME, global_array_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as double integer");
+    ast = driver->parse("test", "global dim arr(2, 3) as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1394,7 +1394,7 @@ TEST_F(NAME, global_array_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as integer");
+    ast = driver->parse("test", "global dim arr(2, 3) as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1414,7 +1414,7 @@ TEST_F(NAME, global_array_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as dword");
+    ast = driver->parse("test", "global dim arr(2, 3) as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1434,7 +1434,7 @@ TEST_F(NAME, global_array_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as word");
+    ast = driver->parse("test", "global dim arr(2, 3) as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1454,7 +1454,7 @@ TEST_F(NAME, global_array_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as byte");
+    ast = driver->parse("test", "global dim arr(2, 3) as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1474,7 +1474,7 @@ TEST_F(NAME, global_array_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as boolean");
+    ast = driver->parse("test", "global dim arr(2, 3) as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1494,7 +1494,7 @@ TEST_F(NAME, global_array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as double float");
+    ast = driver->parse("test", "global dim arr(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1514,7 +1514,7 @@ TEST_F(NAME, global_array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as float");
+    ast = driver->parse("test", "global dim arr(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1534,7 +1534,7 @@ TEST_F(NAME, float_global_array_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr#(2, 3) as double float");
+    ast = driver->parse("test", "global dim arr#(2, 3) as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1554,7 +1554,7 @@ TEST_F(NAME, float_global_array_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr#(2, 3) as float");
+    ast = driver->parse("test", "global dim arr#(2, 3) as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1574,7 +1574,7 @@ TEST_F(NAME, global_array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr(2, 3) as string");
+    ast = driver->parse("test", "global dim arr(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1594,7 +1594,7 @@ TEST_F(NAME, string_global_array_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global dim arr$(2, 3) as string");
+    ast = driver->parse("test", "global dim arr$(2, 3) as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

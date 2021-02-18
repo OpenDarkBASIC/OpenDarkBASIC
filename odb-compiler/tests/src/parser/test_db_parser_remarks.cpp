@@ -36,8 +36,9 @@ public:
 
         for (int i = 0; i != 3; ++i)
         {
-            ast = driver->parseString("test",
-                (variants[i] + "\nfoo()\n").c_str());
+            ast = driver->parse("test",
+                (variants[i] + "\nfoo()\n").c_str(),
+                matcher);
             ASSERT_THAT(ast, NotNull());
 
             StrictMock<ASTMockVisitor> v;
@@ -114,14 +115,14 @@ TEST_F(NAME, remstart_remend_indentation)
 
 TEST_F(NAME, different_start_end_tokens_1)
 {
-    ast = driver->parseString("test",
-        "remstart this is a comment\nlol\n*/\nfoo()\n");
+    ast = driver->parse("test",
+        "remstart this is a comment\nlol\n*/\nfoo()\n", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, different_start_end_tokens_2)
 {
-    ast = driver->parseString("test",
-        "/* this is a comment\nlol\nremend\nfoo()\n");
+    ast = driver->parse("test",
+        "/* this is a comment\nlol\nremend\nfoo()\n", matcher);
     ASSERT_THAT(ast, IsNull());
 }

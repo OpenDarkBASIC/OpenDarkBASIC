@@ -20,18 +20,29 @@ using namespace odb;
 
 TEST_F(NAME, infinite_loop)
 {
-    ast = driver->parseString("test", "repeat\nfoo()\nuntil cond\n");
+    ast = driver->parse("test",
+        "repeat\n"
+        "    foo()\n"
+        "until cond\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, empty_loop)
 {
-    ast = driver->parseString("test", "repeat\nuntil cond\n");
+    ast = driver->parse("test",
+        "repeat\n"
+        "until cond\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, break_from_loop)
 {
-    ast = driver->parseString("test", "repeat\nexit\nuntil cond\n");
+    ast = driver->parse("test",
+        "repeat\n"
+        "    exit\n"
+        "until cond\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }

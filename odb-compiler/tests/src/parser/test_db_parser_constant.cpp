@@ -21,9 +21,10 @@ TEST_F(NAME, bool_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "#constant mybool1 true\n"
-        "#constant mybool2 false\n");
+        "#constant mybool2 false\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -43,8 +44,9 @@ TEST_F(NAME, byte_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant myint 20\n");
+    ast = driver->parse("test",
+        "#constant myint 20\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -61,8 +63,9 @@ TEST_F(NAME, word_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant myint 2000\n");
+    ast = driver->parse("test",
+        "#constant myint 2000\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -79,8 +82,9 @@ TEST_F(NAME, integer_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant myint 2147483647\n");
+    ast = driver->parse("test",
+        "#constant myint 2147483647\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -97,8 +101,9 @@ TEST_F(NAME, dword_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant myint 4294967295\n");
+    ast = driver->parse("test",
+        "#constant myint 4294967295\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -115,8 +120,9 @@ TEST_F(NAME, double_integer_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant myint 4294967296\n");
+    ast = driver->parse("test",
+        "#constant myint 4294967296\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -133,8 +139,9 @@ TEST_F(NAME, double_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 5.2\n");
+    ast = driver->parse("test",
+        "#constant mydouble 5.2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -151,8 +158,9 @@ TEST_F(NAME, double_constant_annotated)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble# 5.2\n");
+    ast = driver->parse("test",
+        "#constant mydouble# 5.2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -169,8 +177,9 @@ TEST_F(NAME, string_constant)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mystring \"hello world!\"\n");
+    ast = driver->parse("test",
+        "#constant mystring \"hello world!\"\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -187,8 +196,9 @@ TEST_F(NAME, string_constant_annotated)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mystring$ \"hello world!\"\n");
+    ast = driver->parse("test",
+        "#constant mystring$ \"hello world!\"\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -203,12 +213,14 @@ TEST_F(NAME, string_constant_annotated)
 
 TEST_F(NAME, more_than_one_value_fails)
 {
-    ast = driver->parseString("test",
-        "#constant fail1 true false\n");
+    ast = driver->parse("test",
+        "#constant fail1 true false\n",
+        matcher);
     EXPECT_THAT(ast, IsNull());
 
-    ast = driver->parseString("test",
-        "#constant fail2 23 3.4\n");
+    ast = driver->parse("test",
+        "#constant fail2 23 3.4\n",
+        matcher);
     EXPECT_THAT(ast, IsNull());
 }
 
@@ -216,8 +228,9 @@ TEST_F(NAME, double_1_notation)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 53.\n");
+    ast = driver->parse("test",
+        "#constant mydouble 53.\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -234,8 +247,9 @@ TEST_F(NAME, double_2_notation)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble .53\n");
+    ast = driver->parse("test",
+        "#constant mydouble .53\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -252,8 +266,9 @@ TEST_F(NAME, double_3_notation)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 53.f\n");
+    ast = driver->parse("test",
+        "#constant mydouble 53.f\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -270,8 +285,9 @@ TEST_F(NAME, double_4_notation)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble .53f\n");
+    ast = driver->parse("test",
+        "#constant mydouble .53f\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -288,8 +304,9 @@ TEST_F(NAME, double_exponential_notation_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 12e2\n");
+    ast = driver->parse("test",
+        "#constant mydouble 12e2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -306,8 +323,9 @@ TEST_F(NAME, double_exponential_notation_2)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 12.4e2\n");
+    ast = driver->parse("test",
+        "#constant mydouble 12.4e2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -324,8 +342,9 @@ TEST_F(NAME, double_exponential_notation_3)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble .4e2\n");
+    ast = driver->parse("test",
+        "#constant mydouble .4e2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -342,8 +361,9 @@ TEST_F(NAME, double_exponential_notation_4)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "#constant mydouble 43.e2\n");
+    ast = driver->parse("test",
+        "#constant mydouble 43.e2\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

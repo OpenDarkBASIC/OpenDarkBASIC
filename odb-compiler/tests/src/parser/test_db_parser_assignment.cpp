@@ -22,7 +22,7 @@ TEST_F(NAME, variable_with_assignment_has_default_type_integer)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "var = 5.4");
+    ast = driver->parse("test", "var = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -40,7 +40,7 @@ TEST_F(NAME, float_variable_with_assignment_has_type_float)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "var# = 5.4");
+    ast = driver->parse("test", "var# = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -58,7 +58,7 @@ TEST_F(NAME, string_variable_with_assignment_has_type_string)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "var$ = \"string\"");
+    ast = driver->parse("test", "var$ = \"string\"", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

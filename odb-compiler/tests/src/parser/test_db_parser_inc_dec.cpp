@@ -17,7 +17,7 @@ TEST_F(NAME, inc_var_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a");
+    ast = driver->parse("test", "inc a", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -38,7 +38,7 @@ TEST_F(NAME, inc_var_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a, 10");
+    ast = driver->parse("test", "inc a, 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -59,7 +59,7 @@ TEST_F(NAME, inc_var_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a, b+c");
+    ast = driver->parse("test", "inc a, b+c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -84,7 +84,7 @@ TEST_F(NAME, dec_var_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a");
+    ast = driver->parse("test", "dec a", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -105,7 +105,7 @@ TEST_F(NAME, dec_var_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a, 10");
+    ast = driver->parse("test", "dec a, 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -126,7 +126,7 @@ TEST_F(NAME, dec_var_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a, b+c");
+    ast = driver->parse("test", "dec a, b+c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -151,7 +151,7 @@ TEST_F(NAME, inc_arr_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a(x)");
+    ast = driver->parse("test", "inc a(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -178,7 +178,7 @@ TEST_F(NAME, inc_arr_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a(x), 10");
+    ast = driver->parse("test", "inc a(x), 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -205,7 +205,7 @@ TEST_F(NAME, inc_arr_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a(x), b+c");
+    ast = driver->parse("test", "inc a(x), b+c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -236,7 +236,7 @@ TEST_F(NAME, dec_arr_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a(x)");
+    ast = driver->parse("test", "dec a(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -263,7 +263,7 @@ TEST_F(NAME, dec_arr_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a(x), 10");
+    ast = driver->parse("test", "dec a(x), 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -290,7 +290,7 @@ TEST_F(NAME, dec_arr_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a(x), b+c");
+    ast = driver->parse("test", "dec a(x), b+c", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -321,7 +321,7 @@ TEST_F(NAME, inc_udt_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a.b");
+    ast = driver->parse("test", "inc a.b", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -348,7 +348,7 @@ TEST_F(NAME, inc_udt_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a.b, 10");
+    ast = driver->parse("test", "inc a.b, 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -375,7 +375,7 @@ TEST_F(NAME, inc_udt_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "inc a.b, c+d");
+    ast = driver->parse("test", "inc a.b, c+d", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -406,7 +406,7 @@ TEST_F(NAME, dec_udt_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a.b");
+    ast = driver->parse("test", "dec a.b", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -433,7 +433,7 @@ TEST_F(NAME, dec_udt_by_10)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a.b, 10");
+    ast = driver->parse("test", "dec a.b, 10", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -460,7 +460,7 @@ TEST_F(NAME, dec_udt_by_expr)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "dec a.b, c+d");
+    ast = driver->parse("test", "dec a.b, c+d", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

@@ -15,7 +15,7 @@ void ParserTestHarness::checkParentConnectionConsistencies(const odb::ast::Block
 void ParserTestHarness::SetUp()
 {
     ast = nullptr;
-    driver = new odb::db::Driver(&matcher);
+    driver = new odb::db::StringParserDriver;
 }
 
 void ParserTestHarness::TearDown()

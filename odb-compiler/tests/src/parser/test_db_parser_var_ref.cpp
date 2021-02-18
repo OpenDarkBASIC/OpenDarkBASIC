@@ -20,7 +20,7 @@ TEST_F(NAME, variable_with_assignment_has_default_type_integer)
 {
     /*using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test", "");
+    ast = driver->parse("test", "");
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

@@ -18,10 +18,11 @@ using namespace ast;
 
 TEST_F(NAME, declare_sub)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "mysub:\n"
         "    foo()\n"
-        "return\n");
+        "return\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     /*
@@ -53,12 +54,13 @@ TEST_F(NAME, declare_sub)
 
 TEST_F(NAME, declare_two_label_sub)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "label1:\n"
         "    foo()\n"
         "label2:\n"
         "    bar()\n"
-        "return\n");
+        "return\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 /*
     Node* block = ast;
@@ -108,10 +110,11 @@ TEST_F(NAME, declare_two_label_sub)
 
 TEST_F(NAME, conditional_return_sub)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "label:\n"
         "    if x then return\n"
-        "return\n");
+        "return\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 /*
     Node* block = ast;
@@ -147,9 +150,10 @@ TEST_F(NAME, conditional_return_sub)
 
 TEST_F(NAME, empty_sub)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "label:\n"
-        "return\n");
+        "return\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 /*
     Node* block = ast;
@@ -170,8 +174,9 @@ TEST_F(NAME, empty_sub)
 
 TEST_F(NAME, call_sub)
 {
-    ast = driver->parseString("test",
-        "gosub label\n");
+    ast = driver->parse("test",
+        "gosub label\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 /*
     Node* block = ast;
@@ -186,28 +191,32 @@ TEST_F(NAME, call_sub)
 
 TEST_F(NAME, call_sub_multiple_labels_fails)
 {
-    ast = driver->parseString("test",
-        "gosub label1 label2\n");
+    ast = driver->parse("test",
+        "gosub label1 label2\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, call_sub_string_fails)
 {
-    ast = driver->parseString("test",
-        "gosub \"label\"\n");
+    ast = driver->parse("test",
+        "gosub \"label\"\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, call_annotated_label_fails_1)
 {
-    ast = driver->parseString("test",
-        "gosub label#\n");
+    ast = driver->parse("test",
+        "gosub label#\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, call_annotated_label_fails_2)
 {
-    ast = driver->parseString("test",
-        "gosub label$\n");
+    ast = driver->parse("test",
+        "gosub label$\n",
+        matcher);
     ASSERT_THAT(ast, IsNull());
 }

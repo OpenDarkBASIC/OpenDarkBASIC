@@ -10,7 +10,7 @@ namespace ast {
     class Block;
 }
 namespace db {
-    class Driver;
+    class FileParserDriver;
 }
 }
 
@@ -23,6 +23,6 @@ public:
 
     odb::cmd::CommandIndex cmdIndex;
     odb::cmd::CommandMatcher matcher;
-    odb::db::Driver* driver;
+    odb::db::StringParserDriver* driver;
     odb::Reference<odb::ast::Block> ast;
 };

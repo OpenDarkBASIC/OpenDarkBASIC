@@ -29,56 +29,6 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
-Driver::Driver(const cmd::CommandMatcher* commandMatcher) :
-    commandMatcher_(commandMatcher)
-{
-    dblex_init_extra(this, &scanner_);
-    parser_ = dbpstate_new();
-
-#if defined(ODBCOMPILER_VERBOSE_BISON)
-    dbdebug = 1;
-#endif
-}
-
-// ----------------------------------------------------------------------------
-Driver::~Driver()
-{
-    dbpstate_delete(parser_);
-    dblex_destroy(scanner_);
-}
-
-// ----------------------------------------------------------------------------
-ast::Block* Driver::parseFile(const std::string& fileName)
-{
-    FILE* fp = fopen(fileName.c_str(), "r");
-    if (fp == nullptr)
-    {
-        Log::dbParserFailedToOpenFile(fileName.c_str());
-        return nullptr;
-    }
-
-    sourceName_ = fileName;
-    dbset_in(fp, scanner_);
-    ast::Block* program = doParse();
-    sourceName_.clear();
-    fclose(fp);
-    return program;
-}
-
-// ----------------------------------------------------------------------------
-ast::Block* Driver::parseString(const std::string& sourceName, const std::string& str)
-{
-    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), (int)str.length(), scanner_);
-    code_ = str;
-    sourceName_ = sourceName;
-    ast::Block* program = doParse();
-    sourceName_ = "";
-    code_.clear();
-    db_delete_buffer(buf, scanner_);
-    return program;
-}
-
-// ----------------------------------------------------------------------------
 static bool tokenHasFreeableString(int pushedChar)
 {
     switch (pushedChar)
@@ -94,7 +44,7 @@ static bool tokenHasFreeableString(int pushedChar)
 }
 
 // ----------------------------------------------------------------------------
-ast::Block* Driver::doParse()
+ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher)
 {
     int parseResult;
     DBLTYPE loc = {1, 1, 1, 1};
@@ -113,20 +63,24 @@ ast::Block* Driver::doParse()
         int cmdlen;
     };
 
+#if defined(ODBCOMPILER_VERBOSE_BISON)
+    dbdebug = 1;
+#endif
+
     // This is used as a buffer to assemble a command out of multiple tokens
     // and check it against the command matcher.
     std::string possibleCommand;
-    possibleCommand.reserve(commandMatcher_->longestCommandLength());
+    possibleCommand.reserve(commandMatcher.longestCommandLength());
 
     // This is used to store all tokens that haven't been push parsed yet, which
     // will be more than 1 when doing a command match.
     std::vector<Token> tokens;
-    tokens.reserve(commandMatcher_->longestCommandWordCount());
+    tokens.reserve(commandMatcher.longestCommandWordCount());
 
     // Scans the next token and stores it in "tokens"
     auto scanNextToken = [&](){
         DBSTYPE pushedValue;
-        int pushedChar = dblex(&pushedValue, &loc, scanner_);
+        int pushedChar = dblex(&pushedValue, &loc, scanner);
         tokens.push_back({pushedChar, pushedValue, loc, ""});
     };
 
@@ -147,16 +101,16 @@ ast::Block* Driver::doParse()
         // we have to store more than one token, it's necessary to store the
         // string too.
         if (tokens.back().str.empty())
-            tokens.back().str = dbget_text(scanner_);
+            tokens.back().str = dbget_text(scanner);
 
         possibleCommand = tokens[0].str;
         bool lastSymbolWasInteger = false;
-        for (int i = 1; (int)possibleCommand.length() <= commandMatcher_->longestCommandLength(); ++i)
+        for (int i = 1; (int)possibleCommand.length() <= commandMatcher.longestCommandLength(); ++i)
         {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
             fprintf(stderr, "findLongestCommandMatching(\"%s\")\n", possibleCommand.c_str());
 #endif
-            auto match = commandMatcher_->findLongestCommandMatching(possibleCommand);
+            auto match = commandMatcher.findLongestCommandMatching(possibleCommand);
             if (match.found && match.matchedLength == (int)possibleCommand.size())
                 result = {match, i};
 
@@ -169,7 +123,7 @@ ast::Block* Driver::doParse()
             if (i == (int)tokens.size())
             {
                 scanNextToken();
-                tokens.back().str = dbget_text(scanner_);
+                tokens.back().str = dbget_text(scanner);
             }
 
             // EOF or error
@@ -311,7 +265,7 @@ ast::Block* Driver::doParse()
             default: break;
         }
 
-        parseResult = dbpush_parse(parser_, tokens[0].pushedChar, &tokens[0].pushedValue, &tokens[0].loc, scanner_);
+        parseResult = dbpush_parse(parser, tokens[0].pushedChar, &tokens[0].pushedValue, &tokens[0].loc, scanner);
         tokens.erase(tokens.begin());
     } while (parseResult == YYPUSH_MORE);
 
@@ -343,16 +297,10 @@ void Driver::giveProgram(ast::Block* program)
 }
 
 // ----------------------------------------------------------------------------
-ast::SourceLocation* Driver::newLocation(const DBLTYPE* loc)
+ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
 {
-    if (code_.length() > 0)
-        return new ast::InlineSourceLocation(sourceName_, code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
-    return new ast::FileSourceLocation(sourceName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
-}
+    assert(value >= 0);
 
-// ----------------------------------------------------------------------------
-ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location)
-{
     if (value > std::numeric_limits<uint32_t>::max())
         return new ast::DoubleIntegerLiteral(value, location);
     if (value > std::numeric_limits<int32_t>::max())
@@ -365,26 +313,28 @@ ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocati
 }
 
 // ----------------------------------------------------------------------------
-ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location)
+ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
 {
+    assert(value < 0);
+
     if (value < std::numeric_limits<int32_t>::min())
         return new ast::DoubleIntegerLiteral(value, location);
     return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
 }
 
 // ----------------------------------------------------------------------------
-static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, int dir)
+static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
 {
     switch (dir) {
-        case 1  : return new ast::BinaryOpAdd(value, expr, expr->location());
-        case -1 : return new ast::BinaryOpSub(value, expr, expr->location());
+        case Driver::INC : return new ast::BinaryOpAdd(value, expr, expr->location());
+        case Driver::DEC : return new ast::BinaryOpSub(value, expr, expr->location());
     }
 
     return nullptr;
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
     return new ast::VarAssignment(
         value->duplicate<ast::VarRef>(),
@@ -393,7 +343,7 @@ ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, ast::Expression* expr,
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
     return new ast::ArrayAssignment(
         value->duplicate<ast::ArrayRef>(),
@@ -402,7 +352,7 @@ ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* e
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
     return new ast::UDTFieldAssignment(
         value->duplicate<ast::UDTFieldOuter>(),
@@ -411,7 +361,7 @@ ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expre
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, IncDecDir dir, const DBLTYPE* loc) const
 {
     return newIncDecVar(
         value,
@@ -421,7 +371,7 @@ ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, int dir, const DBLTYPE
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, IncDecDir dir, const DBLTYPE* loc) const
 {
     return newIncDecArray(
         value,
@@ -431,13 +381,126 @@ ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, int dir, const DBL
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, int dir, const DBLTYPE* loc)
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir dir, const DBLTYPE* loc) const
 {
     return newIncDecUDTField(
         value,
         new ast::ByteLiteral(1, value->location()),
         dir,
         loc);
+}
+
+// ----------------------------------------------------------------------------
+void Driver::printSyntaxError(const DBLTYPE* loc,
+                              dbscan_t scanner,
+                              std::pair<dbtokentype, std::string> unexpectedToken,
+                              const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens)
+{
+    ColorState state(Log::info, Log::FG_WHITE);
+
+    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
+    Reference<ast::SourceLocation> location = driver->newLocation(loc);
+
+    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
+    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
+    Log::info.print(Log::FG_BRIGHT_RED, "syntax error: ");
+
+    if (unexpectedToken.first != TOK_DBEMPTY)
+    {
+        Log::info.print("unexpected ");
+        Log::info.print(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
+    }
+    if (expectedTokens.size() > 0)
+    {
+        Log::info.print(", expected ");
+        for (int i = 0; i != (int)expectedTokens.size(); ++i)
+        {
+            if (i != 0)
+                Log::info.print(" or ");
+            Log::info.print(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
+        }
+        Log::info.print("\n");
+    }
+
+    location->printUnderlinedSection(Log::info);
+}
+
+// ----------------------------------------------------------------------------
+void Driver::printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner)
+{
+    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
+    Reference<ast::SourceLocation> location = driver->newLocation(loc);
+    location->printUnderlinedSection(Log::info);
+}
+
+// ----------------------------------------------------------------------------
+ast::Block* FileParserDriver::parse(const std::string& fileName,
+                                    const cmd::CommandMatcher& commandMatcher)
+{
+    FILE* fp = fopen(fileName.c_str(), "r");
+    if (fp == nullptr)
+    {
+        Log::dbParserFailedToOpenFile(fileName.c_str());
+        return nullptr;
+    }
+
+    // Create new parser and lexer instances and initialize lexer to point at
+    // file
+    dbscan_t scanner;
+    dbpstate* parser = dbpstate_new();
+    dblex_init_extra(this, &scanner);
+    dbset_in(fp, scanner);
+
+    fileName_ = &fileName;
+    ast::Block* program = doParse(scanner, parser, commandMatcher);
+    fileName_ = nullptr;
+
+    // Destroy parser and lexer
+    dbpstate_delete(parser);
+    dblex_destroy(scanner);
+    fclose(fp);
+
+    return program;
+}
+
+// ----------------------------------------------------------------------------
+ast::Block* StringParserDriver::parse(const std::string& sourceName,
+                                      const std::string& str,
+                                      const cmd::CommandMatcher& commandMatcher)
+{
+    // Create new parser and lexer instances and initialize buffer to point at
+    // input string
+    dbscan_t scanner;
+    dbpstate* parser = dbpstate_new();
+    dblex_init_extra(this, &scanner);
+    YY_BUFFER_STATE buf = db_scan_bytes(str.data(), (int)str.length(), scanner);
+
+    code_ = &str;
+    sourceName_ = &sourceName;
+    ast::Block* program = doParse(scanner, parser, commandMatcher);
+    sourceName_ = nullptr;
+    code_ = nullptr;
+
+    db_delete_buffer(buf, scanner);
+    dbpstate_delete(parser);
+    dblex_destroy(scanner);
+
+    return program;
+}
+
+// ----------------------------------------------------------------------------
+ast::SourceLocation* FileParserDriver::newLocation(const DBLTYPE* loc) const
+{
+    assert(fileName_);
+    return new ast::FileSourceLocation(*fileName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+}
+
+// ----------------------------------------------------------------------------
+ast::SourceLocation* StringParserDriver::newLocation(const DBLTYPE* loc) const
+{
+    assert(sourceName_);
+    assert(code_);
+    return new ast::InlineSourceLocation(*sourceName_, *code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
 }
 
 }

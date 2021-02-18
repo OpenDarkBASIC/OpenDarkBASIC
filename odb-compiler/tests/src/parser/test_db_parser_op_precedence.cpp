@@ -22,7 +22,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = a " tok " b " tok " c");  \
+        ast = driver->parse("test", "result = a " tok " b " tok " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
@@ -46,7 +46,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = a " tok " (b " tok " c)");\
+        ast = driver->parse("test", "result = a " tok " (b " tok " c)", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
@@ -72,7 +72,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = a " tok1 " b " tok2 " c");\
+        ast = driver->parse("test", "result = a " tok1 " b " tok2 " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
@@ -96,7 +96,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = a " tok2 " b " tok1 " c");\
+        ast = driver->parse("test", "result = a " tok2 " b " tok1 " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
@@ -122,7 +122,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = " tok1 tok2 " a");        \
+        ast = driver->parse("test", "result = " tok1 tok2 " a", matcher);     \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
@@ -142,7 +142,7 @@ using namespace ast;
     {                                                                         \
         using Annotation = ast::Symbol::Annotation;                           \
                                                                               \
-        ast = driver->parseString("test", "result = " tok2 tok1 " a");        \
+        ast = driver->parse("test", "result = " tok2 tok1 " a", matcher);     \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \

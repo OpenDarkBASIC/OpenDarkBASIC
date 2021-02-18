@@ -19,9 +19,10 @@ public:
 
 TEST_F(NAME, single_goto_label)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "goto l1\n"
-        "l1:\n");
+        "l1:\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -45,9 +46,10 @@ TEST_F(NAME, single_goto_label)
 
 TEST_F(NAME, single_goto_label_doesnt_match)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "goto l1\n"
-        "l2:\n");
+        "l2:\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -65,9 +67,10 @@ TEST_F(NAME, single_goto_label_doesnt_match)
 
 TEST_F(NAME, label_redefinition)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "l1:\n"
-        "l1:\n");
+        "l1:\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

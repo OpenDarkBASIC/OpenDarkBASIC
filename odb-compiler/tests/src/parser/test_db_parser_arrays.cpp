@@ -19,51 +19,58 @@ using namespace ast;
 
 TEST_F(NAME, reading_from_array_is_function_call_if_array_was_not_declared)
 {
-    ast = driver->parseString("test",
-        "result = arr(2)\n");
+    ast = driver->parse("test",
+        "result = arr(2)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, reading_from_array_is_array_if_it_was_declared)
 {
-    ast = driver->parseString("test",
-        "result = arr(2)\n");
+    ast = driver->parse("test",
+        "result = arr(2)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, write_one_dimension_fails_without_dim)
 {
-    ast = driver->parseString("test",
-        "arr(2) = value\n");
+    ast = driver->parse("test",
+        "arr(2) = value\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, write_one_dimension)
 {
-    ast = driver->parseString("test",
-        "dim arr(2)\narr(2) = value\n");
+    ast = driver->parse("test",
+        "dim arr(2)\narr(2) = value\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, declare_three_dimensions)
 {
-    ast = driver->parseString("test",
-        "dim arr(10, 20, 30)\n");
+    ast = driver->parse("test",
+        "dim arr(10, 20, 30)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, assign_arr_to_arr)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "dim arr1(2, 3, 4)\ndim arr2(1, 2, 1)\n"
-        "arr1(2, 3, 4) = arr2(1, 2, 1)\n");
+        "arr1(2, 3, 4) = arr2(1, 2, 1)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, add_arr_to_arr)
 {
-    ast = driver->parseString("test",
+    ast = driver->parse("test",
         "dim arr1(2, 3, 4)\ndim arr2(1, 2, 1)\n"
-        "result = arr1(2, 3, 4) + arr2(1, 2, 1)\n");
+        "result = arr1(2, 3, 4) + arr2(1, 2, 1)\n",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }

@@ -23,11 +23,11 @@ bool initCommandMatcher(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 bool parseDBA(const std::vector<std::string>& args)
 {
-    db::Driver driver(&cmdMatcher_);
+    db::FileParserDriver driver;
     for (const auto& arg : args)
     {
         Log::ast(Log::INFO, "Parsing file `%s`\n", arg.c_str());
-        odb::ast::Block* block = driver.parseFile(arg);
+        odb::ast::Block* block = driver.parse(arg, cmdMatcher_);
         if (block == nullptr)
             return false;
 

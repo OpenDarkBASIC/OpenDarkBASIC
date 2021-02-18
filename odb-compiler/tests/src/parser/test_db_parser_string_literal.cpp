@@ -19,29 +19,33 @@ using namespace ast;
 
 TEST_F(NAME, simple_string_assignment)
 {
-    ast = driver->parseString("test",
-        "a = \"test\"");
+    ast = driver->parse("test",
+        "a = \"test\"",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_with_backslash)
 {
-    ast = driver->parseString("test",
-        "a = \"test\\\"");
+    ast = driver->parse("test",
+        "a = \"test\\\"",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_with_path_backslashes)
 {
-    ast = driver->parseString("test",
-        "a = \"path\\to\\file\"");
+    ast = driver->parse("test",
+        "a = \"path\\to\\file\"",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
 TEST_F(NAME, string_append_filename_with_backslash)
 {
-    ast = driver->parseString("test",
-        "if foo(\"maps\\\" + LevelEditor.name$) then bar(\"maps\\\" + LevelEditor.name$)");
+    ast = driver->parse("test",
+        "if foo(\"maps\\\" + LevelEditor.name$) then bar(\"maps\\\" + LevelEditor.name$)",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 }
 
@@ -49,8 +53,9 @@ TEST_F(NAME, empty_string)
 {
     using Annotation = ast::Symbol::Annotation;
 
-    ast = driver->parseString("test",
-        "x = \"\"");
+    ast = driver->parse("test",
+        "x = \"\"",
+        matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;

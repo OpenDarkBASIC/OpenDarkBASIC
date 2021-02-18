@@ -170,307 +170,307 @@ public:
 
 TEST_F(NAME, variable_alone_is_not_a_valid_statement)
 {
-    ast = driver->parseString("test", "var");
+    ast = driver->parse("test", "var", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_alone_is_not_a_valid_statement)
 {
-    ast = driver->parseString("test", "var#");
+    ast = driver->parse("test", "var#", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_alone_is_not_a_valid_statement)
 {
-    ast = driver->parseString("test", "var$");
+    ast = driver->parse("test", "var$", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "var# as double integer");
+    ast = driver->parse("test", "var# as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "var# as integer");
+    ast = driver->parse("test", "var# as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "var# as dword");
+    ast = driver->parse("test", "var# as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "var# as word");
+    ast = driver->parse("test", "var# as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "var# as byte");
+    ast = driver->parse("test", "var# as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "var# as boolean");
+    ast = driver->parse("test", "var# as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, float_variable_cannot_be_string)
 {
-    ast = driver->parseString("test", "var# as string");
+    ast = driver->parse("test", "var# as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "var$ as double integer");
+    ast = driver->parse("test", "var$ as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "var$ as integer");
+    ast = driver->parse("test", "var$ as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "var$ as dword");
+    ast = driver->parse("test", "var$ as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "var$ as word");
+    ast = driver->parse("test", "var$ as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "var$ as byte");
+    ast = driver->parse("test", "var$ as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "var$ as boolean");
+    ast = driver->parse("test", "var$ as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_double_float)
 {
-    ast = driver->parseString("test", "var$ as double float");
+    ast = driver->parse("test", "var$ as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, string_variable_cannot_be_float)
 {
-    ast = driver->parseString("test", "var$ as float");
+    ast = driver->parse("test", "var$ as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "local var# as double integer");
+    ast = driver->parse("test", "local var# as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "local var# as integer");
+    ast = driver->parse("test", "local var# as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "local var# as dword");
+    ast = driver->parse("test", "local var# as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "local var# as word");
+    ast = driver->parse("test", "local var# as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "local var# as byte");
+    ast = driver->parse("test", "local var# as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "local var# as boolean");
+    ast = driver->parse("test", "local var# as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_float_variable_cannot_be_string)
 {
-    ast = driver->parseString("test", "local var# as string");
+    ast = driver->parse("test", "local var# as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "local var$ as double integer");
+    ast = driver->parse("test", "local var$ as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "local var$ as integer");
+    ast = driver->parse("test", "local var$ as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "local var$ as dword");
+    ast = driver->parse("test", "local var$ as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "local var$ as word");
+    ast = driver->parse("test", "local var$ as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "local var$ as byte");
+    ast = driver->parse("test", "local var$ as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "local var$ as boolean");
+    ast = driver->parse("test", "local var$ as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_double_float)
 {
-    ast = driver->parseString("test", "local var$ as double float");
+    ast = driver->parse("test", "local var$ as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, local_string_variable_cannot_be_float)
 {
-    ast = driver->parseString("test", "local var$ as float");
+    ast = driver->parse("test", "local var$ as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "global var# as double integer");
+    ast = driver->parse("test", "global var# as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "global var# as integer");
+    ast = driver->parse("test", "global var# as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "global var# as dword");
+    ast = driver->parse("test", "global var# as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "global var# as word");
+    ast = driver->parse("test", "global var# as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "global var# as byte");
+    ast = driver->parse("test", "global var# as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "global var# as boolean");
+    ast = driver->parse("test", "global var# as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_float_variable_cannot_be_string)
 {
-    ast = driver->parseString("test", "global var# as string");
+    ast = driver->parse("test", "global var# as string", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_double_integer)
 {
-    ast = driver->parseString("test", "global var$ as double integer");
+    ast = driver->parse("test", "global var$ as double integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_integer)
 {
-    ast = driver->parseString("test", "global var$ as integer");
+    ast = driver->parse("test", "global var$ as integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_dword)
 {
-    ast = driver->parseString("test", "global var$ as dword");
+    ast = driver->parse("test", "global var$ as dword", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_word)
 {
-    ast = driver->parseString("test", "global var$ as word");
+    ast = driver->parse("test", "global var$ as word", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_byte)
 {
-    ast = driver->parseString("test", "global var$ as byte");
+    ast = driver->parse("test", "global var$ as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_boolean)
 {
-    ast = driver->parseString("test", "global var$ as boolean");
+    ast = driver->parse("test", "global var$ as boolean", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_double_float)
 {
-    ast = driver->parseString("test", "global var$ as double float");
+    ast = driver->parse("test", "global var$ as double float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, global_string_variable_cannot_be_float)
 {
-    ast = driver->parseString("test", "global var$ as float");
+    ast = driver->parse("test", "global var$ as float", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_1)
 {
-    ast = driver->parseString("test", "global byte as byte");
+    ast = driver->parse("test", "global byte as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_2)
 {
-    ast = driver->parseString("test", "byte as byte");
+    ast = driver->parse("test", "byte as byte", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
 TEST_F(NAME, disallow_variable_decl_that_is_a_keyword_3)
 {
-    ast = driver->parseString("test", "local integer");
+    ast = driver->parse("test", "local integer", matcher);
     ASSERT_THAT(ast, IsNull());
 }
 
@@ -479,7 +479,7 @@ TEST_F(NAME, local_var_decl_defaults_to_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var");
+    ast = driver->parse("test", "local var", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -498,7 +498,7 @@ TEST_F(NAME, global_var_decl_defaults_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var");
+    ast = driver->parse("test", "global var", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -517,7 +517,7 @@ TEST_F(NAME, local_float_var_decl_has_type_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var#");
+    ast = driver->parse("test", "local var#", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -536,7 +536,7 @@ TEST_F(NAME, global_float_var_decl_has_type_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var#");
+    ast = driver->parse("test", "global var#", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -555,7 +555,7 @@ TEST_F(NAME, local_string_var_decl_has_type_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var$");
+    ast = driver->parse("test", "local var$", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -574,7 +574,7 @@ TEST_F(NAME, global_string_var_decl_has_type_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var$");
+    ast = driver->parse("test", "global var$", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -593,7 +593,7 @@ TEST_F(NAME, local_var_with_assignment_defaults_to_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var = 5.4");
+    ast = driver->parse("test", "local var = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -612,7 +612,7 @@ TEST_F(NAME, global_var_with_assignment_defaults_to_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var = 5.4");
+    ast = driver->parse("test", "global var = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -631,7 +631,7 @@ TEST_F(NAME, local_float_var_with_assignment_has_type_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var# = 5.4");
+    ast = driver->parse("test", "local var# = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -650,7 +650,7 @@ TEST_F(NAME, global_float_var_with_assignment_has_type_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var# = 5.4");
+    ast = driver->parse("test", "global var# = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -669,7 +669,7 @@ TEST_F(NAME, local_string_var_with_assignment_has_type_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var$ = 5.4");
+    ast = driver->parse("test", "local var$ = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -688,7 +688,7 @@ TEST_F(NAME, global_string_var_with_assignment_has_type_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var$ = 5.4");
+    ast = driver->parse("test", "global var$ = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -707,7 +707,7 @@ TEST_F(NAME, var_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as double integer");
+    ast = driver->parse("test", "var as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -726,7 +726,7 @@ TEST_F(NAME, var_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as integer");
+    ast = driver->parse("test", "var as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -745,7 +745,7 @@ TEST_F(NAME, var_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as dword");
+    ast = driver->parse("test", "var as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -764,7 +764,7 @@ TEST_F(NAME, var_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as word");
+    ast = driver->parse("test", "var as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -783,7 +783,7 @@ TEST_F(NAME, var_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte");
+    ast = driver->parse("test", "var as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -802,7 +802,7 @@ TEST_F(NAME, var_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as boolean");
+    ast = driver->parse("test", "var as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -821,7 +821,7 @@ TEST_F(NAME, var_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as double float");
+    ast = driver->parse("test", "var as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -840,7 +840,7 @@ TEST_F(NAME, var_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as float");
+    ast = driver->parse("test", "var as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -859,7 +859,7 @@ TEST_F(NAME, var_as_double_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var# as double float");
+    ast = driver->parse("test", "var# as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -878,7 +878,7 @@ TEST_F(NAME, var_as_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var# as float");
+    ast = driver->parse("test", "var# as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -897,7 +897,7 @@ TEST_F(NAME, var_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as string");
+    ast = driver->parse("test", "var as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -916,7 +916,7 @@ TEST_F(NAME, var_as_string_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var$ as string");
+    ast = driver->parse("test", "var$ as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -935,7 +935,7 @@ TEST_F(NAME, local_var_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as double integer");
+    ast = driver->parse("test", "local var as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -954,7 +954,7 @@ TEST_F(NAME, local_var_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as integer");
+    ast = driver->parse("test", "local var as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -973,7 +973,7 @@ TEST_F(NAME, local_var_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as dword");
+    ast = driver->parse("test", "local var as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -992,7 +992,7 @@ TEST_F(NAME, local_var_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as word");
+    ast = driver->parse("test", "local var as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1011,7 +1011,7 @@ TEST_F(NAME, local_var_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte");
+    ast = driver->parse("test", "var as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1030,7 +1030,7 @@ TEST_F(NAME, local_var_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as boolean");
+    ast = driver->parse("test", "local var as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1049,7 +1049,7 @@ TEST_F(NAME, local_var_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as double float");
+    ast = driver->parse("test", "local var as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1068,7 +1068,7 @@ TEST_F(NAME, local_var_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as float");
+    ast = driver->parse("test", "local var as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1087,7 +1087,7 @@ TEST_F(NAME, local_var_as_double_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var# as double float");
+    ast = driver->parse("test", "local var# as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1106,7 +1106,7 @@ TEST_F(NAME, local_var_as_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var# as float");
+    ast = driver->parse("test", "local var# as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1125,7 +1125,7 @@ TEST_F(NAME, local_var_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as string");
+    ast = driver->parse("test", "local var as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1144,7 +1144,7 @@ TEST_F(NAME, local_var_as_string_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var$ as string");
+    ast = driver->parse("test", "local var$ as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1163,7 +1163,7 @@ TEST_F(NAME, global_var_as_double_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as double integer");
+    ast = driver->parse("test", "global var as double integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1182,7 +1182,7 @@ TEST_F(NAME, global_var_as_integer)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as integer");
+    ast = driver->parse("test", "global var as integer", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1201,7 +1201,7 @@ TEST_F(NAME, global_var_as_dword)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as dword");
+    ast = driver->parse("test", "global var as dword", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1220,7 +1220,7 @@ TEST_F(NAME, global_var_as_word)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as word");
+    ast = driver->parse("test", "global var as word", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1239,7 +1239,7 @@ TEST_F(NAME, global_var_as_byte)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte");
+    ast = driver->parse("test", "var as byte", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1258,7 +1258,7 @@ TEST_F(NAME, global_var_as_boolean)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as boolean");
+    ast = driver->parse("test", "global var as boolean", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1277,7 +1277,7 @@ TEST_F(NAME, global_var_as_double_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as double float");
+    ast = driver->parse("test", "global var as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1296,7 +1296,7 @@ TEST_F(NAME, global_var_as_float)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as float");
+    ast = driver->parse("test", "global var as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1315,7 +1315,7 @@ TEST_F(NAME, global_var_as_double_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var# as double float");
+    ast = driver->parse("test", "global var# as double float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1334,7 +1334,7 @@ TEST_F(NAME, global_var_as_float_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var# as float");
+    ast = driver->parse("test", "global var# as float", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1353,7 +1353,7 @@ TEST_F(NAME, global_var_as_string)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as string");
+    ast = driver->parse("test", "global var as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1372,7 +1372,7 @@ TEST_F(NAME, global_var_as_string_annotated)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var$ as string");
+    ast = driver->parse("test", "global var$ as string", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1391,7 +1391,7 @@ TEST_F(NAME, var_as_double_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as double integer = 5.4");
+    ast = driver->parse("test", "var as double integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1410,7 +1410,7 @@ TEST_F(NAME, var_as_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as integer = 5.4");
+    ast = driver->parse("test", "var as integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1429,7 +1429,7 @@ TEST_F(NAME, var_as_dword_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as dword = 5.4");
+    ast = driver->parse("test", "var as dword = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1448,7 +1448,7 @@ TEST_F(NAME, var_as_word_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as word = 5.4");
+    ast = driver->parse("test", "var as word = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1467,7 +1467,7 @@ TEST_F(NAME, var_as_byte_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte = 5.4");
+    ast = driver->parse("test", "var as byte = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1486,7 +1486,7 @@ TEST_F(NAME, var_as_boolean_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as boolean = 5.4");
+    ast = driver->parse("test", "var as boolean = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1505,7 +1505,7 @@ TEST_F(NAME, var_as_double_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as double float = 5.4");
+    ast = driver->parse("test", "var as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1524,7 +1524,7 @@ TEST_F(NAME, var_as_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as float = 5.4");
+    ast = driver->parse("test", "var as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1543,7 +1543,7 @@ TEST_F(NAME, var_as_double_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var# as double float = 5.4");
+    ast = driver->parse("test", "var# as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1562,7 +1562,7 @@ TEST_F(NAME, var_as_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var# as float = 5.4");
+    ast = driver->parse("test", "var# as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1581,7 +1581,7 @@ TEST_F(NAME, var_as_string_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as string = 5.4");
+    ast = driver->parse("test", "var as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1600,7 +1600,7 @@ TEST_F(NAME, var_as_string_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var$ as string = 5.4");
+    ast = driver->parse("test", "var$ as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1619,7 +1619,7 @@ TEST_F(NAME, local_var_as_double_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as double integer = 5.4");
+    ast = driver->parse("test", "local var as double integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1638,7 +1638,7 @@ TEST_F(NAME, local_var_as_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as integer = 5.4");
+    ast = driver->parse("test", "local var as integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1657,7 +1657,7 @@ TEST_F(NAME, local_var_as_dword_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as dword = 5.4");
+    ast = driver->parse("test", "local var as dword = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1676,7 +1676,7 @@ TEST_F(NAME, local_var_as_word_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as word = 5.4");
+    ast = driver->parse("test", "local var as word = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1695,7 +1695,7 @@ TEST_F(NAME, local_var_as_byte_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte = 5.4");
+    ast = driver->parse("test", "var as byte = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1714,7 +1714,7 @@ TEST_F(NAME, local_var_as_boolean_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as boolean = 5.4");
+    ast = driver->parse("test", "local var as boolean = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1733,7 +1733,7 @@ TEST_F(NAME, local_var_as_double_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as double float = 5.4");
+    ast = driver->parse("test", "local var as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1752,7 +1752,7 @@ TEST_F(NAME, local_var_as_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as float = 5.4");
+    ast = driver->parse("test", "local var as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1771,7 +1771,7 @@ TEST_F(NAME, local_var_as_double_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var# as double float = 5.4");
+    ast = driver->parse("test", "local var# as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1790,7 +1790,7 @@ TEST_F(NAME, local_var_as_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var# as float = 5.4");
+    ast = driver->parse("test", "local var# as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1809,7 +1809,7 @@ TEST_F(NAME, local_var_as_string_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var as string = 5.4");
+    ast = driver->parse("test", "local var as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1828,7 +1828,7 @@ TEST_F(NAME, local_var_as_string_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "local var$ as string = 5.4");
+    ast = driver->parse("test", "local var$ as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1847,7 +1847,7 @@ TEST_F(NAME, global_var_as_double_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as double integer = 5.4");
+    ast = driver->parse("test", "global var as double integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1866,7 +1866,7 @@ TEST_F(NAME, global_var_as_integer_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as integer = 5.4");
+    ast = driver->parse("test", "global var as integer = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1885,7 +1885,7 @@ TEST_F(NAME, global_var_as_dword_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as dword = 5.4");
+    ast = driver->parse("test", "global var as dword = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1904,7 +1904,7 @@ TEST_F(NAME, global_var_as_word_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as word = 5.4");
+    ast = driver->parse("test", "global var as word = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1923,7 +1923,7 @@ TEST_F(NAME, global_var_as_byte_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "var as byte = 5.4");
+    ast = driver->parse("test", "var as byte = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1942,7 +1942,7 @@ TEST_F(NAME, global_var_as_boolean_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as boolean = 5.4");
+    ast = driver->parse("test", "global var as boolean = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1961,7 +1961,7 @@ TEST_F(NAME, global_var_as_double_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as double float = 5.4");
+    ast = driver->parse("test", "global var as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1980,7 +1980,7 @@ TEST_F(NAME, global_var_as_float_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as float = 5.4");
+    ast = driver->parse("test", "global var as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -1999,7 +1999,7 @@ TEST_F(NAME, global_var_as_double_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var# as double float = 5.4");
+    ast = driver->parse("test", "global var# as double float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -2018,7 +2018,7 @@ TEST_F(NAME, global_var_as_float_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var# as float = 5.4");
+    ast = driver->parse("test", "global var# as float = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -2037,7 +2037,7 @@ TEST_F(NAME, global_var_as_string_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var as string = 5.4");
+    ast = driver->parse("test", "global var as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -2056,7 +2056,7 @@ TEST_F(NAME, global_var_as_string_annotated_with_initial_value)
     using Annotation = ast::Symbol::Annotation;
     using Scope = ast::Symbol::Scope;
 
-    ast = driver->parseString("test", "global var$ as string = 5.4");
+    ast = driver->parse("test", "global var$ as string = 5.4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
