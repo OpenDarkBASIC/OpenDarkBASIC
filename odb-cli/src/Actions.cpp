@@ -203,9 +203,29 @@ static int parseOption(int argc, char** argv, ActionQueue* queue)
 // ----------------------------------------------------------------------------
 static void addImplicitActions(ActionQueue* queue)
 {
+    if (queue->empty())
+        return;
+
+    // Find the priority of the action that will be executed last
+    ActionQueue copy(*queue);
+    int lastPriority = copy.top().priority;
+    copy.pop();
+    while (!copy.empty())
+    {
+        if (lastPriority < copy.top().priority)
+            lastPriority = copy.top().priority;
+        copy.pop();
+    }
+
     for (int i = 0; i != N_ACTIONS; ++i)
     {
         if (actions_[i].implicit == false)
+            continue;
+
+        // Only add an implicit action if there is an action in the queue that
+        // depends on it. These would be actions that strictly have a lower
+        // value
+        if (actions_[i].priority >= lastPriority)
             continue;
 
         ActionHandler handler;
@@ -235,10 +255,6 @@ bool parseCommandLine(int argc, char** argv)
     ActionQueue queue;
     programName_ = argv[0];
 
-    // Go through all command line arguments and split them up into the "global"
-    // list and the "sequential" list. One group of commands only toggle some
-    // flags (such as --no-banner) whereas the other group of commands needs to
-    // be executed in the order they appear in.
     for (int i = 1; i < argc; )
     {
         int processed = parseOption(argc - i, &argv[i], &queue);
