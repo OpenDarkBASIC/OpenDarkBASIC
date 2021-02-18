@@ -13,11 +13,6 @@ static odb::ir::OutputType outputType_ = odb::ir::OutputType::ObjectFile;
 // ----------------------------------------------------------------------------
 bool setOutputType(const std::vector<std::string>& args)
 {
-    if (args.empty())
-    {
-        return false;
-    }
-
     if (args[0] == "llvm-ir")
     {
         outputType_ = odb::ir::OutputType::LLVMIR;
