@@ -18,6 +18,8 @@ public:
     ~Block();
 
     void appendStatement(Statement* stmnt);
+    void clearStatements();
+    void merge(Block* other);
     const std::vector<Reference<Statement>>& statements() const;
 
     void accept(Visitor* visitor) override;

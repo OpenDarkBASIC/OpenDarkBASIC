@@ -27,17 +27,14 @@ bool parseDBA(const std::vector<std::string>& args)
     for (const auto& arg : args)
     {
         Log::ast(Log::INFO, "Parsing file `%s`\n", arg.c_str());
-        odb::ast::Block* block = driver.parse(arg, cmdMatcher_);
+        Reference<ast::Block> block = driver.parse(arg, cmdMatcher_);
         if (block == nullptr)
             return false;
 
         if (ast_.isNull())
             ast_ = block;
         else
-        {
-            for (auto& stmnt : block->statements())
-                ast_->appendStatement(stmnt);
-        }
+            ast_->merge(block);
     }
 
     return true;

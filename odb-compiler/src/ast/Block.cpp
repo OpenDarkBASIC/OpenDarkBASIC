@@ -32,6 +32,20 @@ void Block::appendStatement(Statement* stmnt)
 }
 
 // ----------------------------------------------------------------------------
+void Block::clearStatements()
+{
+    statements_.clear();
+}
+
+// ----------------------------------------------------------------------------
+void Block::merge(Block* block)
+{
+    for (auto& stmnt : block->statements())
+        appendStatement(stmnt);
+    block->clearStatements();
+}
+
+// ----------------------------------------------------------------------------
 const std::vector<Reference<Statement>>& Block::statements() const
 {
     return statements_;
