@@ -10,22 +10,32 @@ Building
 
 You will need to install following dependencies:
   + CMake 3.13 or later
-  + FLEX
+  + FLEX 2.6 or later
   + BISON 3.7 or later
   + A C++17 compliant compiler
   + LLVM 10.0 or later
 
 For the Windows peeps out there, you can get up to date FLEX and BISON binaries from [here](https://github.com/lexxmark/winflexbison). You can unzip the release anywhere you want (I put it under ```C:\Program Files (x86)```). To get CMake to find them, you have to add the path to the executables to your PATH.
 
+Mac OS users will want to get up to date versions of cmake, llvm, bison and flex using homebrew:
+```sh
+brew install cmake llvm bison flex
+```
+
+And then add the paths to llvm, bison and flex to ```CMAKE_PREFIX_PATH``` when calling cmake:
+```sh
+cmake -DCMAKE_PREFIX_PATH="/opt/homebrew/opt/llvm/bin:/opt/homebrew/opt/bison/bin:/opt/homebrew/opt/flex/bin" ../
+```
+
 By default the project is built in release mode. If you want to develop on it, you will want to set it to debug mode.
 
 ```sh
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Debug ../
-cmake --build .
+cmake --build . -- -j $(nproc)
 ```
 
-The Windows peeps can specify the arch using the ```-A``` option to CMake if they're using VS2019 or later:
+On Windows you can specify the arch using the ```-A``` option to CMake if they're using VS2019 or later:
 ```sh
 cmake -A x64 ../
 ```

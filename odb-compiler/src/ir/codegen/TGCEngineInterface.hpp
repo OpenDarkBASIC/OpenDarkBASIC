@@ -1,6 +1,7 @@
 #pragma once
 
 #include "EngineInterface.hpp"
+#include <unordered_map>
 
 namespace odb::ir {
 class TGCEngineInterface : public EngineInterface

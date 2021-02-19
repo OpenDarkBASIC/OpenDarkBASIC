@@ -170,6 +170,8 @@ function(cxx_library_with_type name type cxx_flags)
     PDB_NAME_DEBUG "${name}${pdb_debug_postfix}"
     COMPILE_PDB_NAME "${name}"
     COMPILE_PDB_NAME_DEBUG "${name}${pdb_debug_postfix}")
+  target_compile_features (${name}
+      PUBLIC cxx_std_17)
 
   if (BUILD_SHARED_LIBS OR type STREQUAL "SHARED")
     set_target_properties(${name}

@@ -52,7 +52,7 @@ set (ODBCOMPILER_COMPILER ${CMAKE_C_COMPILER_ID})
 find_program (UNAME_PROGRAM uname)
 if (UNAME_PROGRAM)
     execute_process (
-        COMMAND ${UNAME_PROGRAM} -ormpi
+        COMMAND ${UNAME_PROGRAM} -a
         OUTPUT_VARIABLE ODBCOMPILER_HOST_COMPUTER)
     string (REPLACE "\n" "" ODBCOMPILER_HOST_COMPUTER ${ODBCOMPILER_HOST_COMPUTER})
 else ()
@@ -104,7 +104,7 @@ configure_file ("templates/BuildInfo.cpp.in" "src/BuildInfo.cpp")
 # Parsers
 ###############################################################################
 
-find_package (FLEX REQUIRED )
+find_package (FLEX REQUIRED 2.6)
 find_package (BISON REQUIRED 3.7)
 
 # These may not exist
