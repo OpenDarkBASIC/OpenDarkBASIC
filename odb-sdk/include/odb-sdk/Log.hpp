@@ -79,6 +79,8 @@ public:
      */
     bool disableColor();
 
+    bool colorEnabled() const;
+
     static void dbParserFailedToOpenFile(const char* fileName);
     static void dbParserNotice(const char* fmt, ...);
     static void dbParserError(const char* fmt, ...);

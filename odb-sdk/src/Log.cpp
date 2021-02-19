@@ -81,6 +81,12 @@ bool Log::disableColor()
 }
 
 // ----------------------------------------------------------------------------
+bool Log::colorEnabled() const
+{
+    return enableColor_;
+}
+
+// ----------------------------------------------------------------------------
 void Log::dbParserFailedToOpenFile(const char* fileName)
 {
     Log::dbParserError("failed to open file ");
