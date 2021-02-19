@@ -32,8 +32,8 @@ static bool printHelp(const std::vector<std::string>& args);
 // clang-format off
 static const Action actions_[] = {
     { "help",          'h',"",                           {0,  0},  2, false, &printHelp, "Print this help text"},
-    { "no-banner",     'n',"",                           {0,  0},  0, false, &disableBanner, "Don't print the cool ASCII art banner"},
-    { "no-color",       0, "",                           {0,  0},  0, false, &disableColor, "Disables color escape sequences for all messages"},
+    { "no-banner",     'b',"",                           {0,  0},  0, false, &disableBanner, "Don't print the cool ASCII art banner"},
+    { "no-color",      'c',"",                           {0,  0},  0, false, &disableColor, "Disables color escape sequences for all messages"},
     { "",               0, "",                           {0,  0},  1, true,  &printBanner, ""},
     { "commit-hash",    0, "",                           {0,  0},  3, false, &printCommitHash, "Prints the git commit hash"},
     { "version",        0, "",                           {0,  0},  3, false, &printVersion, "Prints the version"},
@@ -66,13 +66,61 @@ static bool printHelp(const std::vector<std::string>& args)
     const int WRAP = 80;
     const int DOC_INDENT = 8;
 
+    auto& log = odb::Log::info;
     using C = odb::Log::Color;
-    odb::Log::info.print(C::FG_BRIGHT_WHITE, "Usage: ");
-    odb::Log::info.print(C::FG_BRIGHT_YELLOW, "%s ", programName_.c_str());
-    odb::Log::info.print("[");
-    odb::Log::info.print(C::FG_BRIGHT_GREEN, "options");
-    odb::Log::info.print("]\n");
-    odb::Log::info.print(C::FG_BRIGHT_WHITE, "Available options:\n");
+
+    // ------------------------------------------------------------------------
+    // Usage
+    // ------------------------------------------------------------------------
+
+    log.print(C::FG_BRIGHT_WHITE, "Usage:\n");
+    log.print(C::FG_BRIGHT_YELLOW, "  %s ", programName_.c_str());
+    log.print("[");
+    log.print(C::FG_BRIGHT_GREEN, "options");
+    log.print("]\n\n");
+
+    // ------------------------------------------------------------------------
+    // Examples
+    // ------------------------------------------------------------------------
+
+    log.print(C::FG_BRIGHT_WHITE, "Examples:\n");
+
+    // Compile dba to exe
+    log.print(C::FG_BRIGHT_YELLOW, "  Compiling a .dba file to an executable\n");
+    log.print("    %s ", programName_.c_str());
+    log.print(C::FG_BRIGHT_GREEN, "--dba");
+    log.print(" source.dba ");
+    log.print(C::FG_BRIGHT_GREEN, "--output");
+    log.print(" program.exe\n");
+    log.print("    %s ", programName_.c_str());
+    log.print(C::FG_BRIGHT_GREEN, "--dba");
+    log.print(" source1.dba source2.dba ");
+    log.print(C::FG_BRIGHT_GREEN, "--output");
+    log.print(" program.exe\n\n");
+
+    // Using the DBPro SDK
+    log.print(C::FG_BRIGHT_YELLOW, "  Using the DBPro SDK instead of ODB\n");
+    log.print("    %s ", programName_.c_str());
+    log.print(C::FG_BRIGHT_GREEN, "--sdktype");
+    log.print(" dbpro ");
+    log.print(C::FG_BRIGHT_GREEN, "--sdkroot");
+    log.print(" <");
+    log.print(C::FG_BRIGHT_YELLOW, "path/to/dbp/installation");
+    log.print("> ");
+    log.print(C::FG_BRIGHT_GREEN, "--dba");
+    log.print(" source.dba ");
+    log.print(C::FG_BRIGHT_GREEN, "--output");
+    log.print(" program.exe\n\n");
+
+    // Rendering
+    log.print(C::FG_BRIGHT_YELLOW, "  Converting your program into a graph\n");
+    log.print("    %s ", programName_.c_str());
+    log.print(C::FG_BRIGHT_GREEN, "--dba");
+    log.print(" source.dba ");
+    log.print(C::FG_BRIGHT_GREEN, "--dump-ast-dot");
+    log.print(" | dot -Tpdf > out.pdf\n\n");
+
+    log.print(C::FG_BRIGHT_WHITE, "Available options:\n");
 
     for (int i = 0; i != N_ACTIONS; ++i)
     {
@@ -83,14 +131,14 @@ static bool printHelp(const std::vector<std::string>& args)
         // Print short option, if it exists
         if (actions_[i].shortOption)
         {
-            odb::Log::info.print(C::FG_BRIGHT_BLUE, "  -%c", actions_[i].shortOption);
-            odb::Log::info.print(", ");
+            log.print(C::FG_BRIGHT_YELLOW, "  -%c", actions_[i].shortOption);
+            log.print(", ");
         }
         else
-            odb::Log::info.print("      ");
+            log.print("      ");
 
         // Print full option
-        odb::Log::info.print(C::FG_BRIGHT_GREEN, "--%s ", actions_[i].fullOption);
+        log.print(C::FG_BRIGHT_GREEN, "--%s ", actions_[i].fullOption);
 
         // Format argument documentation, if any
         {
@@ -98,31 +146,23 @@ static bool printHelp(const std::vector<std::string>& args)
             for (const char* p = actions_[i].argDoc; *p; ++p)
             {
                 if (*p == '<' || *p == '>' || *p == '[' || *p == ']' || *p == '|' || *p == '.')
-                    odb::Log::info.putc(C::FG_WHITE, *p);
+                    log.putc(C::FG_WHITE, *p);
                 else
-                    odb::Log::info.putc(*p);
+                    log.putc(*p);
             }
         }
-
-        odb::Log::info.putc('\n');
-        for (int j = 0; j != DOC_INDENT; ++j)
-            odb::Log::info.putc(' ');
 
         std::vector<std::string> lines;
         odb::str::justifyWrap(&lines, std::string(actions_[i].doc), WRAP - DOC_INDENT);
         for (auto line = lines.begin(); line != lines.end(); ++line)
         {
-            odb::Log::info.print("%s", line->c_str());
-
-            if (line+1 != lines.end())
-            {
-                odb::Log::info.putc('\n');
-                for (int j = 0; j != DOC_INDENT; ++j)
-                    odb::Log::info.putc(' ');
-            }
+            log.putc('\n');
+            for (int j = 0; j != DOC_INDENT; ++j)
+                log.putc(' ');
+            log.print("%s", line->c_str());
         }
-        odb::Log::info.putc('\n');
-        odb::Log::info.putc('\n');
+        log.putc('\n');
+        log.putc('\n');
     }
 
     return false;
