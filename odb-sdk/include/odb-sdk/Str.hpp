@@ -2,6 +2,7 @@
 
 #include "odb-sdk/config.hpp"
 #include <string>
+#include <vector>
 
 namespace odb::str {
 
@@ -20,19 +21,13 @@ ODBSDK_PUBLIC_API std::string escapeBackslashes(const std::string& s);
 ODBSDK_PUBLIC_API void toLowerInplace(std::string& str);
 ODBSDK_PUBLIC_API std::string toLower(const std::string& str);
 
-template <class Container>
-void split(const std::string &str, Container &cont,
-           char delim = ' ')
-{
-    std::size_t current, previous = 0;
-    current = str.find(delim);
-    while (current != std::string::npos)
-    {
-        cont.push_back(str.substr(previous, current - previous));
-        previous = current + 1;
-        current = str.find(delim, previous);
-    }
-    cont.push_back(str.substr(previous, current - previous));
-}
+ODBSDK_PUBLIC_API void split(std::vector<std::string>* cont,
+                             const std::string& str,
+                             char delim = ' ');
+
+ODBSDK_PUBLIC_API void justifyWrap(std::vector<std::string>* lines,
+                                   const std::string& str,
+                                   int width,
+                                   char delim = ' ');
 
 }

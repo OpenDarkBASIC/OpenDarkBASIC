@@ -63,6 +63,7 @@ public:
 
     FILE* getStream() const;
     int putc(char c);
+    int putc(Color color, char c);
     int print(const char* fmt, ...);
     int print(Color color, const char* fmt, ...);
     int vprint(const char* fmt, va_list ap);

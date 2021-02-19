@@ -20,11 +20,12 @@
 #define N_WHITE   "\u001b[22;37m"
 #define RESET     "\u001b[0m"
 
-#define PYRAMID_LEFT  N_YELLOW
-#define PYRAMID_RIGHT B_YELLOW
-#define TEXT          B_CYAN
-#define URL           B_CYAN
-#define VERSION       B_CYAN
+#define PYRAMID_LEFT   N_YELLOW
+#define PYRAMID_RIGHT  B_YELLOW
+#define TEXT           B_CYAN
+#define URL            B_WHITE
+#define VERSION_TEXT   B_WHITE
+#define VERSION_NUMBER B_CYAN
 
 static bool printBanner_ = true;
 static const char* bannerNoEscapeSequences_ =
@@ -39,35 +40,35 @@ R"(              ▄▀▀█
 ▐█▄  ~░─╚░*U⌐Å▒▒█████▀████████████,        | |
   `██▄─ %.='╦╢╫▌█████▌▄▐██████████▌
      ▀██░⌂r3▄▒▓█████████▀▀└          %s
-        ▀█▀▀▀▀`                      %s
+        ▀█▀▀▀▀`                      Version %s (%s)
 
 )";
 static const char* banner_ =
    PYRAMID_LEFT R"(              ▄▀)" PYRAMID_RIGHT R"(▀█
 )" PYRAMID_LEFT R"(            ▄▀`╫)" PYRAMID_RIGHT R"(╫╠▀█
-)" PYRAMID_LEFT R"(          ▄▀░"/)" PYRAMID_RIGHT R"(╠╢╟▓▒▀█,             )" TEXT    R"(  ____                   _____             _    ____           _____ _____ _____
-)" PYRAMID_LEFT R"(        ▄█▓▒░░╨)" PYRAMID_RIGHT R"(╢R▒▓▓▌▒▀█,           )" TEXT    R"( / __ \                 |  __ \           | |  |  _ \   /\    / ____|_   _/ ____|
-)" PYRAMID_LEFT R"(      ▄▀Å▀▓╬░])" PYRAMID_RIGHT R"(╗φ╫▀T▀▀▀██▀█,         )" TEXT    R"(| |  | |_ __   ___ _ __ | |  | | __ _ _ __| | _| |_) | /  \  | (___   | || |
-)" PYRAMID_LEFT R"(    ▄▀.┤D╠╬7┴j)" PYRAMID_RIGHT R"(╟å J▒─▀█▄▀████,       )" TEXT    R"(| |  | | '_ \ / _ | '_ \| |  | |/ _` | '__| |/ |  _ < / /\ \  \___ \  | || |
-)" PYRAMID_LEFT R"(  ▄▀ ^j]╚DD░÷)" PYRAMID_RIGHT R"(╠╠╣~`╓▄▄▌▄▄██████,     )" TEXT    R"(| |__| | |_) |  __| | | | |__| | (_| | |  |   <| |_) / ____ \ ____) |_| || |____
-)" PYRAMID_LEFT R"(╓▀   ^░░░ß░Ü<)" PYRAMID_RIGHT R"(║╫▓▓███████████████,   )" TEXT    R"( \____/| .__/ \___|_| |_|_____/ \__,_|_|  |_|\_|____/_/    \_|_____/|_____\_____|
-)" PYRAMID_LEFT R"(▐█▄  ~░─╚░*U)" PYRAMID_RIGHT R"(⌐Å▒▒█████▀████████████, )" TEXT    R"(       | |
+)" PYRAMID_LEFT R"(          ▄▀░"/)" PYRAMID_RIGHT R"(╠╢╟▓▒▀█,             )" TEXT       R"(  ____                   _____             _    ____           _____ _____ _____
+)" PYRAMID_LEFT R"(        ▄█▓▒░░╨)" PYRAMID_RIGHT R"(╢R▒▓▓▌▒▀█,           )" TEXT       R"( / __ \                 |  __ \           | |  |  _ \   /\    / ____|_   _/ ____|
+)" PYRAMID_LEFT R"(      ▄▀Å▀▓╬░])" PYRAMID_RIGHT R"(╗φ╫▀T▀▀▀██▀█,         )" TEXT       R"(| |  | |_ __   ___ _ __ | |  | | __ _ _ __| | _| |_) | /  \  | (___   | || |
+)" PYRAMID_LEFT R"(    ▄▀.┤D╠╬7┴j)" PYRAMID_RIGHT R"(╟å J▒─▀█▄▀████,       )" TEXT       R"(| |  | | '_ \ / _ | '_ \| |  | |/ _` | '__| |/ |  _ < / /\ \  \___ \  | || |
+)" PYRAMID_LEFT R"(  ▄▀ ^j]╚DD░÷)" PYRAMID_RIGHT R"(╠╠╣~`╓▄▄▌▄▄██████,     )" TEXT       R"(| |__| | |_) |  __| | | | |__| | (_| | |  |   <| |_) / ____ \ ____) |_| || |____
+)" PYRAMID_LEFT R"(╓▀   ^░░░ß░Ü<)" PYRAMID_RIGHT R"(║╫▓▓███████████████,   )" TEXT       R"( \____/| .__/ \___|_| |_|_____/ \__,_|_|  |_|\_|____/_/    \_|_____/|_____\_____|
+)" PYRAMID_LEFT R"(▐█▄  ~░─╚░*U)" PYRAMID_RIGHT R"(⌐Å▒▒█████▀████████████, )" TEXT       R"(       | |
 )" PYRAMID_LEFT R"(  `██▄─ %.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
-)" PYRAMID_LEFT R"(     ▀██░⌂r)" PYRAMID_RIGHT R"(3▄▒▓█████████▀▀└         )" URL     R"( %s
-)" PYRAMID_LEFT R"(        ▀█▀)" PYRAMID_RIGHT R"(▀▀▀`                     )" VERSION R"( %s
+)" PYRAMID_LEFT R"(     ▀██░⌂r)" PYRAMID_RIGHT R"(3▄▒▓█████████▀▀└         )" URL        R"( %s
+)" PYRAMID_LEFT R"(        ▀█▀)" PYRAMID_RIGHT R"(▀▀▀`                     )" VERSION_TEXT " Version " VERSION_NUMBER "%s " VERSION_TEXT "(" VERSION_NUMBER "%s" VERSION_TEXT R"()
 )" RESET        R"(
 )";
 
 // ----------------------------------------------------------------------------
 static void printBannerNormal()
 {
-    odb::Log::info.print(banner_, odb::BuildInfo::url(), odb::BuildInfo::version());
+    odb::Log::info.print(banner_, odb::BuildInfo::url(), odb::BuildInfo::version(), odb::BuildInfo::commitHash());
 }
 
 // ----------------------------------------------------------------------------
 static void printBannerNoEscapeSequences()
 {
-    odb::Log::info.print(bannerNoEscapeSequences_, odb::BuildInfo::url(), odb::BuildInfo::version());
+    odb::Log::info.print(bannerNoEscapeSequences_, odb::BuildInfo::url(), odb::BuildInfo::version(), odb::BuildInfo::commitHash());
 }
 
 // ----------------------------------------------------------------------------

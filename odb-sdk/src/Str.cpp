@@ -5,8 +5,7 @@
 #include <cstdlib>
 #include <cassert>
 
-namespace odb {
-namespace str {
+namespace odb::str {
 
 // ----------------------------------------------------------------------------
 char* newCStr(const char* str)
@@ -90,5 +89,62 @@ std::string toLower(const std::string& str)
     return s;
 }
 
+// ----------------------------------------------------------------------------
+void split(std::vector<std::string>* strlist,
+           const std::string& str,
+           char delim)
+{
+    std::size_t current, previous = 0;
+    current = str.find(delim);
+    while (current != std::string::npos)
+    {
+        strlist->push_back(str.substr(previous, current - previous));
+        previous = current + 1;
+        current = str.find(delim, previous);
+    }
+    strlist->push_back(str.substr(previous, current - previous));
 }
+
+// ----------------------------------------------------------------------------
+void justifyWrap(std::vector<std::string>* lines,
+                 const std::string& str,
+                 int width,
+                 char delim)
+{
+    std::vector<std::string> wordList;
+    split(&wordList, str);
+    std::vector<std::string>::const_iterator lineStart = wordList.begin();
+    std::vector<std::string>::const_iterator lineEnd = wordList.begin();
+
+    auto appendAndJustify = [&lines, &lineStart, &lineEnd]() {
+        lines->push_back("");
+        for (std::vector<std::string>::const_iterator it = lineStart; it != lineEnd; ++it)
+        {
+            if (it != lineStart)
+                lines->back().append(" ");
+            lines->back().append(*it);
+        }
+    };
+
+    int len = 0;
+    while (lineEnd != wordList.end())
+    {
+        // No space left for another word
+        if (len + (int)lineEnd->length() > width)
+        {
+            appendAndJustify();
+            lineStart = lineEnd;
+            len = 0;
+        }
+        else
+        {
+            len += lineEnd->length() + 1;  // +1 = space
+            lineEnd++;
+        }
+    }
+
+    if (lineStart != lineEnd)
+        appendAndJustify();
+}
+
 }

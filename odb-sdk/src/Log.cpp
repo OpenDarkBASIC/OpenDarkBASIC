@@ -28,6 +28,13 @@ int Log::putc(char c)
 }
 
 // ----------------------------------------------------------------------------
+int Log::putc(Color color, char c)
+{
+    ColorState state(*this, color);
+    return ::putc(c, stream_);
+}
+
+// ----------------------------------------------------------------------------
 int Log::print(const char* fmt, ...)
 {
     va_list ap;
