@@ -9,7 +9,6 @@
     X(ArrayRef)               \
     X(Conditional)            \
     X(ExpressionList)         \
-    X(ScopedSymbol)           \
     X(ScopedAnnotatedSymbol)  \
     X(Symbol)                 \
     X(UDTRef)                 \

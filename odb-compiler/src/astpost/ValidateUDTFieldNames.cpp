@@ -88,7 +88,7 @@ bool Visitor::check(const ast::CommandExprSymbol* cmd)
         return false;
 
     char c = cmd->command().back();
-    if (c == '#' || c == '$')
+    if (ast::isTypeAnnotation(c))
     {
         Log::dbParserSemanticError(
             cmd->location()->getFileLineColumn().c_str(),
@@ -105,7 +105,7 @@ bool Visitor::check(const ast::CommandStmntSymbol* cmd)
         return false;
 
     char c = cmd->command().back();
-    if (c == '#' || c == '$')
+    if (ast::isTypeAnnotation(c))
     {
         Log::dbParserSemanticError(
             cmd->location()->getFileLineColumn().c_str(),

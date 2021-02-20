@@ -133,11 +133,11 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
             // Commands unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
             // in between integers and following symbols. Additionally, commands
-            // can end in $ or #, in which case we also do not want to append
-            // a space.
-            if (!lastSymbolWasInteger && tokens[i].pushedChar != '$' && tokens[i].pushedChar != '#')
+            // can end in type annotation characters such as $ or #, in which
+            // case we also do not want to append a space.
+            if (!lastSymbolWasInteger && !ast::isTypeAnnotation(tokens[i].pushedChar))
                 possibleCommand += " ";
-            else if (result.tokenIdx == i && (tokens[i].pushedChar == '$' || tokens[i].pushedChar == '#'))
+            else if (result.tokenIdx == i && ast::isTypeAnnotation(tokens[i].pushedChar))
                 result.match.found = false;
             possibleCommand += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
@@ -220,10 +220,11 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 //    string$ as string
                 //
                 // In order to parse this properly, we must avoid changing a
-                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a '$' or '#'
+                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a type
+                // annotation character
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                if (ast::isTypeAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
@@ -241,7 +242,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 // See above comment for why this is here
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                if (ast::isTypeAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);

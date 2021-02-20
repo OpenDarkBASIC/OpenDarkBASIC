@@ -57,7 +57,6 @@ void GenericVisitor::visitGotoSymbol(GotoSymbol* node)                         {
 void GenericVisitor::visitGoto(Goto* node)                                     { visit(node); }
 void GenericVisitor::visitInfiniteLoop(InfiniteLoop* node)                     { visit(node); }
 void GenericVisitor::visitLabel(Label* node)                                   { visit(node); }
-void GenericVisitor::visitScopedSymbol(ScopedSymbol* node)                     { visit(node); }
 void GenericVisitor::visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node)   { visit(node); }
 void GenericVisitor::visitSelect(Select* node)                                 { visit(node); }
 void GenericVisitor::visitSubCall(SubCall* node)                               { visit(node); }
@@ -122,7 +121,6 @@ void GenericConstVisitor::visitGotoSymbol(const GotoSymbol* node)               
 void GenericConstVisitor::visitGoto(const Goto* node)                                     { visit(node); }
 void GenericConstVisitor::visitInfiniteLoop(const InfiniteLoop* node)                     { visit(node); }
 void GenericConstVisitor::visitLabel(const Label* node)                                   { visit(node); }
-void GenericConstVisitor::visitScopedSymbol(const ScopedSymbol* node)                     { visit(node); }
 void GenericConstVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
 void GenericConstVisitor::visitSelect(const Select* node)                                 { visit(node); }
 void GenericConstVisitor::visitSubCall(const SubCall* node)                               { visit(node); }

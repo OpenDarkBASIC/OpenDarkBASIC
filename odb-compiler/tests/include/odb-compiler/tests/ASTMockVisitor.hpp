@@ -31,7 +31,6 @@ public:
     MOCK_METHOD(void, visitGotoSymbol, (const odb::ast::GotoSymbol* node), (override));
     MOCK_METHOD(void, visitInfiniteLoop, (const odb::ast::InfiniteLoop* node), (override));
     MOCK_METHOD(void, visitLabel, (const odb::ast::Label* node), (override));
-    MOCK_METHOD(void, visitScopedSymbol, (const odb::ast::ScopedSymbol* node), (override));
     MOCK_METHOD(void, visitScopedAnnotatedSymbol, (const odb::ast::ScopedAnnotatedSymbol* node), (override));
     MOCK_METHOD(void, visitSelect, (const odb::ast::Select* node), (override));
     MOCK_METHOD(void, visitSubCall, (const odb::ast::SubCall* node), (override));

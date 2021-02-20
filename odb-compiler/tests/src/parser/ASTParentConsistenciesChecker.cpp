@@ -161,7 +161,6 @@ void ASTParentConsistenciesChecker::visitLabel(const Label* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
 }
-void ASTParentConsistenciesChecker::visitScopedSymbol(const ScopedSymbol* node) {}
 void ASTParentConsistenciesChecker::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) {}
 void ASTParentConsistenciesChecker::visitSelect(const Select* node)
 {

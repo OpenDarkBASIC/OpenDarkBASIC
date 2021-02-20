@@ -28,15 +28,15 @@ public:
 // Anotations
 #define amp_str "&"
 #define percent_str "%"
-#define hash_str "#"
 #define excl_str "!"
+#define hash_str "#"
 #define dollar_str "$"
 
 // Annotation enums
 #define amp_ann ast::Symbol::Annotation::DOUBLE_INTEGER
 #define percent_ann ast::Symbol::Annotation::WORD
-#define hash_ann ast::Symbol::Annotation::DOUBLE_FLOAT
-#define excl_ann ast::Symbol::Annotation::FLOAT
+#define hash_ann ast::Symbol::Annotation::FLOAT
+#define excl_ann ast::Symbol::Annotation::DOUBLE_FLOAT
 #define dollar_ann ast::Symbol::Annotation::STRING
 #define none_ann ast::Symbol::Annotation::NONE
 
@@ -198,27 +198,27 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_is_invalid)                   \
  *     local var
  *     local var&
  *     local var%
- *     local var#
  *     local var!
+ *     local var#
  *     local var$
  *     global var
  *     global var&
  *     global var%
- *     global var#
  *     global var!
+ *     global var#
  *     global var$
  */
 VALID(local, none, integer)
 VALID(local, amp, double_integer)
 VALID(local, percent, word)
-VALID(local, hash, double_float)
-VALID(local, excl, float)
+VALID(local, excl, double_float)
+VALID(local, hash, float)
 VALID(local, dollar, string)
 VALID(global, none, integer)
 VALID(global, amp, double_integer)
 VALID(global, percent, word)
-VALID(global, hash, double_float)
-VALID(global, excl, float)
+VALID(global, excl, double_float)
+VALID(global, hash, float)
 VALID(global, dollar, string)
 /*
  *     local var = x
@@ -230,21 +230,21 @@ VALID(global, dollar, string)
  *     global var = x
  *     global var& = x
  *     global var% = x
- *     global var# = x
  *     global var! = x
+ *     global var# = x
  *     global var$ = x
  */
 VALID_INITIAL(local, none, integer)
 VALID_INITIAL(local, amp, double_integer)
 VALID_INITIAL(local, percent, word)
-VALID_INITIAL(local, hash, double_float)
-VALID_INITIAL(local, excl, float)
+VALID_INITIAL(local, excl, double_float)
+VALID_INITIAL(local, hash, float)
 VALID_INITIAL(local, dollar, string)
 VALID_INITIAL(global, none, integer)
 VALID_INITIAL(global, amp, double_integer)
 VALID_INITIAL(global, percent, word)
-VALID_INITIAL(global, hash, double_float)
-VALID_INITIAL(global, excl, float)
+VALID_INITIAL(global, excl, double_float)
+VALID_INITIAL(global, hash, float)
 VALID_INITIAL(global, dollar, string)
 /*
  *     var as double integer
@@ -258,9 +258,8 @@ VALID_INITIAL(global, dollar, string)
  *     var as string
  *     var& as double integer
  *     var% as word
- *     var# as double float
- *     var# as float  // DBP compatibility, parser will accept it
- *     var! as float
+ *     var! as double float
+ *     var# as float
  *     var$ as string
  *
  *     local var as double integer
@@ -274,9 +273,8 @@ VALID_INITIAL(global, dollar, string)
  *     local var as string
  *     local var& as double integer
  *     local var% as word
- *     local var# as double float
- *     local var# as float  // DBP compatibility, parser will accept it
- *     local var! as float
+ *     local var! as double float
+ *     local var# as float
  *     local var$ as string
  *
  *     global var as double integer
@@ -290,9 +288,8 @@ VALID_INITIAL(global, dollar, string)
  *     global var as string
  *     global var& as double integer
  *     global var% as word
- *     global var# as double float
- *     global var# as float  // DBP compatibility, parser will accept it
- *     global var! as float
+ *     global var! as double float
+ *     global var# as float
  *     global var$ as string
  */
 VALID_AS_TYPE_ALL_SCOPES(none, double_integer)
@@ -306,9 +303,8 @@ VALID_AS_TYPE_ALL_SCOPES(none, float)
 VALID_AS_TYPE_ALL_SCOPES(none, string)
 VALID_AS_TYPE_ALL_SCOPES(amp, double_integer)
 VALID_AS_TYPE_ALL_SCOPES(percent, word)
-VALID_AS_TYPE_ALL_SCOPES(hash, double_float)
-VALID_AS_TYPE_ALL_SCOPES(hash, float)  // DBP compatibility, parser will accept it
-VALID_AS_TYPE_ALL_SCOPES(excl, float)
+VALID_AS_TYPE_ALL_SCOPES(excl, double_float)
+VALID_AS_TYPE_ALL_SCOPES(hash, float)
 VALID_AS_TYPE_ALL_SCOPES(dollar, string)
 /*
  *     var as double integer = x
@@ -322,9 +318,8 @@ VALID_AS_TYPE_ALL_SCOPES(dollar, string)
  *     var as string = x
  *     var& as double integer = x
  *     var% as word = x
- *     var# as double float = x
- *     var# as float = x  // DBP compatibility, parser will accept it
- *     var! as float = x
+ *     var! as double float = x
+ *     var# as float = x
  *     var$ as string = x
  *
  *     local var as double integer = x
@@ -338,9 +333,8 @@ VALID_AS_TYPE_ALL_SCOPES(dollar, string)
  *     local var as string = x
  *     local var& as double integer = x
  *     local var% as word = x
- *     local var# as double float = x
- *     local var# as float = x  // DBP compatibility, parser will accept it
- *     local var! as float = x
+ *     local var! as double float = x
+ *     local var# as float = x
  *     local var$ as string = x
  *
  *     global var as double integer = x
@@ -354,9 +348,8 @@ VALID_AS_TYPE_ALL_SCOPES(dollar, string)
  *     global var as string = x
  *     global var& as double integer = x
  *     global var% as word = x
- *     global var# as double float = x
- *     global var# as float = x  // DBP compatibility, parser will accept it
- *     global var! as float = x
+ *     global var! as double float = x
+ *     global var# as float = x
  *     global var$ as string = x
  */
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, double_integer)
@@ -370,9 +363,8 @@ VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, float)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, string)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(amp, double_integer)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(percent, word)
-VALID_AS_TYPE_INITIAL_ALL_SCOPES(hash, double_float)
-VALID_AS_TYPE_INITIAL_ALL_SCOPES(hash, float)  // DBP compatibility, parser will accept it
-VALID_AS_TYPE_INITIAL_ALL_SCOPES(excl, float)
+VALID_AS_TYPE_INITIAL_ALL_SCOPES(excl, double_float)
+VALID_AS_TYPE_INITIAL_ALL_SCOPES(hash, float)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(dollar, string)
 
 /*
@@ -470,7 +462,7 @@ INVALID_AS_TYPE_ALL_SCOPES(percent, string)
  *     var# as word
  *     var# as byte
  *     var# as boolean
- *     var# as float  // With EnforceStrictFloatTypes
+ *     var# as double float
  *     var# as string
  *
  *     local var# as double integer
@@ -479,7 +471,7 @@ INVALID_AS_TYPE_ALL_SCOPES(percent, string)
  *     local var# as word
  *     local var# as byte
  *     local var# as boolean
- *     local var# as float  // With EnforceStrictFloatTypes
+ *     local var# as double float
  *     local var# as string
  *
  *     global var# as double integer
@@ -488,7 +480,7 @@ INVALID_AS_TYPE_ALL_SCOPES(percent, string)
  *     global var# as word
  *     global var# as byte
  *     global var# as boolean
- *     global var# as float  // With EnforceStrictFloatTypes
+ *     global var# as double float
  *     global var# as string
  */
 INVALID_AS_TYPE_ALL_SCOPES(hash, double_integer)
@@ -497,7 +489,7 @@ INVALID_AS_TYPE_ALL_SCOPES(hash, dword)
 INVALID_AS_TYPE_ALL_SCOPES(hash, word)
 INVALID_AS_TYPE_ALL_SCOPES(hash, byte)
 INVALID_AS_TYPE_ALL_SCOPES(hash, boolean)
-/*INVALID_AS_TYPE_ALL_SCOPES(hash, float)*/  // DBP compat
+INVALID_AS_TYPE_ALL_SCOPES(hash, double_float)
 INVALID_AS_TYPE_ALL_SCOPES(hash, string)
 /*
  *     var! as double integer
@@ -506,7 +498,7 @@ INVALID_AS_TYPE_ALL_SCOPES(hash, string)
  *     var! as word
  *     var! as byte
  *     var! as boolean
- *     var! as double float
+ *     var! as float
  *     var! as string
  *
  *     local var! as double integer
@@ -515,7 +507,7 @@ INVALID_AS_TYPE_ALL_SCOPES(hash, string)
  *     local var! as word
  *     local var! as byte
  *     local var! as boolean
- *     local var! as double float
+ *     local var! as float
  *     local var! as string
  *
  *     global var! as double integer
@@ -524,7 +516,7 @@ INVALID_AS_TYPE_ALL_SCOPES(hash, string)
  *     global var! as word
  *     global var! as byte
  *     global var! as boolean
- *     global var! as double float
+ *     global var! as float
  *     global var! as string
  */
 INVALID_AS_TYPE_ALL_SCOPES(excl, double_integer)
@@ -533,7 +525,7 @@ INVALID_AS_TYPE_ALL_SCOPES(excl, dword)
 INVALID_AS_TYPE_ALL_SCOPES(excl, word)
 INVALID_AS_TYPE_ALL_SCOPES(excl, byte)
 INVALID_AS_TYPE_ALL_SCOPES(excl, boolean)
-INVALID_AS_TYPE_ALL_SCOPES(excl, double_float)
+INVALID_AS_TYPE_ALL_SCOPES(excl, float)
 INVALID_AS_TYPE_ALL_SCOPES(excl, string)
 /*
  *     var$ as double integer

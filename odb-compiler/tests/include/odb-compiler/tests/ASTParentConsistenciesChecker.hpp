@@ -30,7 +30,6 @@ public:
     void visitGotoSymbol(const odb::ast::GotoSymbol* node) override;
     void visitInfiniteLoop(const odb::ast::InfiniteLoop* node) override;
     void visitLabel(const odb::ast::Label* node) override;
-    void visitScopedSymbol(const odb::ast::ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const odb::ast::ScopedAnnotatedSymbol* node) override;
     void visitSelect(const odb::ast::Select* node) override;
     void visitSubCall(const odb::ast::SubCall* node) override;

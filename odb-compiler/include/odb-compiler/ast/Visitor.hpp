@@ -34,7 +34,6 @@ class Goto;
 class GotoSymbol;
 class InfiniteLoop;
 class Label;
-class ScopedSymbol;
 class ScopedAnnotatedSymbol;
 class Select;
 class SubCallSymbol;
@@ -103,7 +102,6 @@ public:
     virtual void visitGotoSymbol(GotoSymbol* node) = 0;
     virtual void visitInfiniteLoop(InfiniteLoop* node) = 0;
     virtual void visitLabel(Label* node) = 0;
-    virtual void visitScopedSymbol(ScopedSymbol* node) = 0;
     virtual void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) = 0;
     virtual void visitSelect(Select* node) = 0;
     virtual void visitSubCallSymbol(SubCallSymbol* node) = 0;
@@ -171,7 +169,6 @@ public:
     virtual void visitGotoSymbol(const GotoSymbol* node) = 0;
     virtual void visitInfiniteLoop(const InfiniteLoop* node) = 0;
     virtual void visitLabel(const Label* node) = 0;
-    virtual void visitScopedSymbol(const ScopedSymbol* node) = 0;
     virtual void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) = 0;
     virtual void visitSelect(const Select* node) = 0;
     virtual void visitSubCallSymbol(const SubCallSymbol* node) = 0;
@@ -239,9 +236,8 @@ public:
     void visitGotoSymbol(GotoSymbol* node) override;
     void visitInfiniteLoop(InfiniteLoop* node) override;
     void visitLabel(Label* node) override;
-    void visitSelect(Select* node) override;
-    void visitScopedSymbol(ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) override;
+    void visitSelect(Select* node) override;
     void visitSubCallSymbol(SubCallSymbol* node) override;
     void visitSubCall(SubCall* node) override;
     void visitSubReturn(SubReturn* node) override;
@@ -309,7 +305,6 @@ public:
     void visitGotoSymbol(const GotoSymbol* node) override;
     void visitInfiniteLoop(const InfiniteLoop* node) override;
     void visitLabel(const Label* node) override;
-    void visitScopedSymbol(const ScopedSymbol* node) override;
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override;
     void visitSelect(const Select* node) override;
     void visitSubCallSymbol(const SubCallSymbol* node) override;

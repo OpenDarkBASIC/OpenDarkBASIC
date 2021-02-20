@@ -210,7 +210,6 @@ private:
     {
         writeNamedConnection(node, node->symbol(), "symbol");
     }
-    void visitScopedSymbol(const ScopedSymbol* node) override {}
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
     void visitSelect(const Select* node) override
     {
@@ -439,17 +438,13 @@ private:
                 case Ann::WORD: return "WORD";
                 case Ann::STRING: return "STRING";
             }
+            return "(INVALID)";
         };
         writeName(node, "symbol (" + strAnnotation() + "): " + node->name());
     }
-    void visitScopedSymbol(const ScopedSymbol* node) override
-    {
-        using Scope = ScopedSymbol::Scope;
-        writeName(node, std::string("symbol (") + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + "): " + node->name());
-    }
     void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override
     {
-        using Scope = ScopedSymbol::Scope;
+        using Scope = Symbol::Scope;
         using Ann = AnnotatedSymbol::Annotation;
         auto strAnnotation = [&node]() -> std::string {
             switch (node->annotation()) {
@@ -460,6 +455,7 @@ private:
                 case Ann::WORD: return "WORD";
                 case Ann::STRING: return "STRING";
             }
+            return "(INVALID)";
         };
 
         writeName(node, std::string("symbol (") + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ", " + strAnnotation() + "): " + node->name());
