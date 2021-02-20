@@ -848,9 +848,9 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
         generateFunctionBody(globalSymbolTable.getFunction(*function), *function, false);
     }
 
-#ifndef NDEBUG
-    module.print(llvm::errs(), nullptr);
-#endif
+//#ifndef NDEBUG
+//    module.print(llvm::errs(), nullptr);
+//#endif
 
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.

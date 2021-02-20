@@ -2,32 +2,49 @@
 
 #include "codegen/CodeGenerator.hpp"
 #include "codegen/LLVM.hpp"
+#include "codegen/ODBEngineInterface.hpp"
 #include "codegen/TGCEngineInterface.hpp"
 
 #include <iostream>
 
 namespace odb::ir {
-void generateCode(OutputType type, std::ostream& os, const std::string& moduleName, Program& program,
-                  const cmd::CommandIndex& cmdIndex)
+bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTriple, std::ostream& os,
+                  const std::string& moduleName, Program& program, const cmd::CommandIndex& cmdIndex)
 {
     llvm::LLVMContext context;
     llvm::Module module(moduleName, context);
-    TGCEngineInterface engineInterface(module);
-    CodeGenerator gen(module, engineInterface);
-    gen.generateModule(program, cmdIndex.librariesAsList());
+
+    // Generate the module.
+    {
+        std::unique_ptr<EngineInterface> engineInterface;
+        switch (sdk_type)
+        {
+        case SDKType::DarkBASIC:
+            engineInterface = std::make_unique<TGCEngineInterface>(module);
+            break;
+        case SDKType::ODB:
+            engineInterface = std::make_unique<ODBEngineInterface>(module);
+            break;
+        default:
+            Log::info.print("Code generation not implemented for the specified SDK type.");
+            return false;
+        }
+        CodeGenerator gen(module, *engineInterface);
+        gen.generateModule(program, cmdIndex.librariesAsList());
+    }
 
     // If we are emitting LLVM IR or Bitcode, return early.
-    if (type == OutputType::LLVMIR)
+    if (outputType == OutputType::LLVMIR)
     {
         llvm::raw_os_ostream outputStream(os);
         module.print(outputStream, nullptr);
-        return;
+        return true;
     }
-    else if (type == OutputType::LLVMBitcode)
+    else if (outputType == OutputType::LLVMBitcode)
     {
         llvm::raw_os_ostream outputStream(os);
         llvm::WriteBitcodeToFile(module, outputStream);
-        return;
+        return true;
     }
 
     LLVMInitializeX86TargetInfo();
@@ -36,38 +53,47 @@ void generateCode(OutputType type, std::ostream& os, const std::string& moduleNa
     LLVMInitializeX86AsmPrinter();
 
     // Lookup target machine.
-    auto targetTriple = "i386-pc-windows-msvc";
+    std::string llvmTargetTriple = targetTriple.getLLVMTargetTriple();
+    if (sdk_type == SDKType::DarkBASIC)
+    {
+        // Only the i386-pc-windows-msvc target triple is supported.
+        if (targetTriple.arch != TargetTriple::Arch::i386 || targetTriple.platform != TargetTriple::Platform::Windows)
+        {
+            Log::info.print(
+                "Unsupported platform and arch. Only i386 on Windows is supported when working with the DBP SDK type.");
+            return false;
+        }
+    }
     std::string error;
-    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(targetTriple, error);
+    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(llvmTargetTriple, error);
     if (!target)
     {
-        // TODO: Return error.
-        std::cerr << "Unknown target triple. Error: " << error;
-        std::terminate();
+        Log::info.print("Unknown target triple: %s", error.c_str());
+        return false;
     }
 
     auto cpu = "generic";
     auto features = "";
     llvm::TargetOptions opt;
-    llvm::TargetMachine* targetMachine = target->createTargetMachine(targetTriple, cpu, features, opt, {});
+    llvm::TargetMachine* targetMachine = target->createTargetMachine(llvmTargetTriple, cpu, features, opt, {});
     module.setDataLayout(targetMachine->createDataLayout());
-    module.setTargetTriple(targetTriple);
+    module.setTargetTriple(llvmTargetTriple);
 
     llvm::SmallVector<char, 0> outputFileBuffer;
 
-    if (type == OutputType::ObjectFile)
+    if (outputType == OutputType::ObjectFile)
     {
         // Emit object file to buffer.
         llvm::raw_svector_ostream objectFileStream(outputFileBuffer);
         llvm::legacy::PassManager pass;
         if (targetMachine->addPassesToEmitFile(pass, objectFileStream, nullptr, llvm::CGFT_ObjectFile))
         {
-            std::cerr << "TargetMachine can't emit a file of this type";
-            std::terminate();
+            Log::info.print("llvm::TargetMachine can't emit a file of this type");
+            return false;
         }
         pass.run(module);
     }
-    else if (type == OutputType::Executable)
+    else if (outputType == OutputType::Executable)
     {
         // TODO: Call LLD linker to create an executable.
     }
@@ -75,5 +101,7 @@ void generateCode(OutputType type, std::ostream& os, const std::string& moduleNa
     // Flush buffer to stream.
     os.write(outputFileBuffer.data(), outputFileBuffer.size());
     os.flush();
+
+    return true;
 }
 } // namespace odb::ir

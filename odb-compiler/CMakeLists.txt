@@ -207,6 +207,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/commands/CommandIndex.cpp"
     "src/commands/CommandMatcher.cpp"
     "src/ir/codegen/CodeGenerator.cpp"
+    "src/ir/codegen/ODBEngineInterface.cpp"
     "src/ir/codegen/TGCEngineInterface.cpp"
     "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
