@@ -432,10 +432,12 @@ private:
         auto strAnnotation = [&node]() -> std::string {
             using Ann = AnnotatedSymbol::Annotation;
             switch (node->annotation()) {
-                default:
                 case Ann::NONE: return "NONE";
-                case Ann::STRING: return "STRING";
+                case Ann::DOUBLE_FLOAT: return "DOUBLE FLOAT";
                 case Ann::FLOAT: return "FLOAT";
+                case Ann::DOUBLE_INTEGER: return "DOUBLE INTEGER";
+                case Ann::WORD: return "WORD";
+                case Ann::STRING: return "STRING";
             }
         };
         writeName(node, "symbol (" + strAnnotation() + "): " + node->name());
@@ -451,14 +453,16 @@ private:
         using Ann = AnnotatedSymbol::Annotation;
         auto strAnnotation = [&node]() -> std::string {
             switch (node->annotation()) {
-                default:
                 case Ann::NONE: return "NONE";
-                case Ann::STRING: return "STRING";
+                case Ann::DOUBLE_FLOAT: return "DOUBLE FLOAT";
                 case Ann::FLOAT: return "FLOAT";
+                case Ann::DOUBLE_INTEGER: return "DOUBLE INTEGER";
+                case Ann::WORD: return "WORD";
+                case Ann::STRING: return "STRING";
             }
         };
 
-        writeName(node, "symbol (" + strAnnotation() + ", " + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + "): " + node->name());
+        writeName(node, std::string("symbol (") + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ", " + strAnnotation() + "): " + node->name());
     }
     void visitUDTArrayDecl(const UDTArrayDecl* node) override
         { writeName(node, "UDTArrayDecl"); }

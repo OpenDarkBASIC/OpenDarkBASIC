@@ -12,8 +12,11 @@ class ODBCOMPILER_PUBLIC_API Symbol : public Node
 public:
     enum class Annotation : char {
         NONE,
-        STRING,
-        FLOAT
+        DOUBLE_INTEGER,
+        WORD,
+        DOUBLE_FLOAT,
+        FLOAT,
+        STRING
     };
 
     enum class Scope : char {

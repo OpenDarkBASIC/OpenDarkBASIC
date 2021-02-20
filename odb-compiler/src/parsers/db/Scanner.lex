@@ -126,12 +126,14 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
     "#"                 { RETURN_TOKEN('#'); }
     "$"                 { RETURN_TOKEN('$'); }
+    "%"                 { RETURN_TOKEN('%'); }
+    "&"                 { RETURN_TOKEN('&'); }
     "."                 { RETURN_TOKEN('.'); }
 
     "\n"                { RETURN_TOKEN('\n'); }
     ":"                 { RETURN_TOKEN(':'); }
     ";"                 { RETURN_TOKEN(';'); }
-    [ \t]
+    [ \t\r]
     .                   { RETURN_TOKEN(yytext[0]); }
 }
 %%

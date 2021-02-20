@@ -193,6 +193,7 @@
 }
 
 %destructor { str::deleteCStr($$); } <string>
+%destructor { TouchRef($$); } <symbol>
 %destructor { TouchRef($$); } <annotated_symbol>
 %destructor { TouchRef($$); } <array_decl>
 %destructor { TouchRef($$); } <array_ref>
@@ -339,8 +340,11 @@
 %type<annotated_symbol> annotated_symbol
 %type<annotated_symbol> loop_next_sym
 %type<scoped_annotated_symbol> var_decl_int_sym
-%type<scoped_annotated_symbol> var_decl_str_sym
+%type<scoped_annotated_symbol> var_decl_word_sym
+%type<scoped_annotated_symbol> var_decl_double_int_sym
 %type<scoped_annotated_symbol> var_decl_float_sym
+%type<scoped_annotated_symbol> var_decl_double_float_sym
+%type<scoped_annotated_symbol> var_decl_str_sym
 %type<var_ref> var_ref
 %type<loop> loop
 %type<infinite_loop> loop_do
@@ -539,8 +543,14 @@ var_decl
 var_decl_scope
   : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR                     { SourceLocation* loc = driver->newLocation(&@$); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
   | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR                      { SourceLocation* loc = driver->newLocation(&@$); $$ = new IntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, loc), loc); str::deleteCStr($2); }
-  | GLOBAL SYMBOL '#'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
-  | LOCAL SYMBOL '#'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '%'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new WordVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::WORD, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '%'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new WordVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '&'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new DoubleIntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_INTEGER, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '&'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new DoubleIntegerVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '!'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '!'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new FloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | GLOBAL SYMBOL '#'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new DoubleFloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_FLOAT, $2, loc), loc); str::deleteCStr($2); }
+  | LOCAL SYMBOL '#'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new DoubleFloatVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $2, loc), loc); str::deleteCStr($2); }
   | GLOBAL SYMBOL '$'                                         { SourceLocation* loc = driver->newLocation(&@$); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
   | LOCAL SYMBOL '$'                                          { SourceLocation* loc = driver->newLocation(&@$); $$ = new StringVarDecl(new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $2, loc), loc); str::deleteCStr($2); }
   ;
@@ -554,7 +564,10 @@ var_decl_as_type
   | var_decl_int_sym AS DOUBLE FLOAT                          { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_int_sym AS FLOAT                                 { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_int_sym AS STRING                                { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
-  | var_decl_float_sym AS DOUBLE FLOAT                        { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_double_int_sym AS DOUBLE INTEGER                 { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_word_sym AS WORD                                 { $$ = new WordVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_double_float_sym AS DOUBLE FLOAT                 { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_double_float_sym AS FLOAT  /* DBP Compat */      { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_float_sym AS FLOAT                               { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_str_sym AS STRING                                { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_int_sym AS udt_ref                               { $$ = new UDTVarDeclSymbol($1, $3, driver->newLocation(&@$)); }
@@ -564,10 +577,25 @@ var_decl_int_sym
   | LOCAL SYMBOL %prec NO_HASH_OR_DOLLAR                      { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
   | SYMBOL %prec NO_HASH_OR_DOLLAR                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
+var_decl_word_sym
+  : GLOBAL SYMBOL '%'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::WORD, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | LOCAL SYMBOL '%'                                          { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | SYMBOL '%'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
+var_decl_double_int_sym
+  : GLOBAL SYMBOL '&'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_INTEGER, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | LOCAL SYMBOL '&'                                          { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | SYMBOL '&'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
 var_decl_float_sym
-  : GLOBAL SYMBOL '#'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
-  | LOCAL SYMBOL '#'                                          { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
-  | SYMBOL '#'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : GLOBAL SYMBOL '!'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | LOCAL SYMBOL '!'                                          { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | SYMBOL '!'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
+var_decl_double_float_sym
+  : GLOBAL SYMBOL '#'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | LOCAL SYMBOL '#'                                          { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  | SYMBOL '#'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 var_decl_str_sym
   : GLOBAL SYMBOL '$'                                         { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::STRING, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
