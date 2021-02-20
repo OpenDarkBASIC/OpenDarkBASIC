@@ -30,7 +30,10 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
             return false;
         }
         CodeGenerator gen(module, *engineInterface);
-        gen.generateModule(program, cmdIndex.librariesAsList());
+        if (!gen.generateModule(program, cmdIndex.librariesAsList()))
+        {
+            return false;
+        }
     }
 
     // If we are emitting LLVM IR or Bitcode, return early.

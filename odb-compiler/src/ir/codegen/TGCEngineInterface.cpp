@@ -215,7 +215,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     {
         return std::filesystem::path{library->getFilename()}.stem() == "DBProCore";
     };
-    for (int i = 0; i < pluginsToLoad.size(); ++i)
+    for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
         if (isCorePlugin(pluginsToLoad[i]))
         {
@@ -253,7 +253,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     }
     llvm::BasicBlock* failedToLoadPluginsBlock = llvm::BasicBlock::Create(ctx, "failedToLoadPlugin", entryPointFunc);
     llvm::BasicBlock* initialiseEngineBlock = llvm::BasicBlock::Create(ctx, "initialiseEngine", entryPointFunc);
-    for (int i = 0; i < pluginsToLoad.size(); ++i)
+    for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
         DynamicLibrary* plugin = pluginsToLoad[i];
         std::string pluginName = getPluginName(plugin);
@@ -337,6 +337,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         corePlugin, "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z");
     auto closeDisplayFunc =
         getPluginFunction(builder, llvm::FunctionType::get(dwordTy, false), corePlugin, "?CloseDisplay@@YAKXZ");
+    (void)closeDisplayFunc;
 
     llvm::Value* runtimeErrorPtr = builder.CreateAlloca(dwordTy);
     builder.CreateStore(llvm::ConstantInt::get(dwordTy, 0), runtimeErrorPtr);

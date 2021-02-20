@@ -41,14 +41,15 @@
 namespace odb::ir {
 namespace {
 // TODO: Move this elsewhere.
-template <typename... Args> [[noreturn]] void fatalError(ast::SourceLocation* location, char* message, Args&&... args)
+template <typename... Args>
+[[noreturn]] void fatalError(ast::SourceLocation* location, const char* message, Args&&... args)
 {
     fprintf(stderr, "%s: FATAL ERROR: ", location->getFileLineColumn().c_str());
     fprintf(stderr, message, args...);
     std::terminate();
 }
 
-template <typename... Args> [[noreturn]] void fatalError(char* message, Args&&... args)
+template <typename... Args> [[noreturn]] void fatalError(const char* message, Args&&... args)
 {
     fprintf(stderr, "<unknown>: FATAL ERROR: ");
     fprintf(stderr, message, args...);
@@ -313,7 +314,7 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     auto* functionDefinition = functionEntry->second.functionDefinition;
 
     // Verify argument list.
-    int astArgCount = 0;
+    std::size_t astArgCount = 0;
     if (astArgs.notNull())
     {
         astArgCount = astArgs->expressions().size();
@@ -330,7 +331,7 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
     {
         const auto& functionDefArgs = functionDefinition->arguments();
         const auto& providedArgs = astArgs->expressions();
-        for (int i = 0; i < providedArgs.size(); ++i)
+        for (std::size_t i = 0; i < providedArgs.size(); ++i)
         {
             args.emplace_back(ensureType(convertExpression(providedArgs[i]), functionDefArgs[i].type));
         }
@@ -409,6 +410,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     auto* location = statement->location();
     if (auto* constDeclStatement = dynamic_cast<ast::ConstDecl*>(statement))
     {
+        (void)constDeclStatement;
         fatalError("Unimplemented ast::ConstDecl");
     }
     else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
@@ -460,6 +462,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* subReturnSt = dynamic_cast<ast::SubReturn*>(statement))
     {
+        (void)subReturnSt;
         return std::make_unique<SubReturn>(location, currentFunction_);
     }
     else if (auto* funcExitSt = dynamic_cast<ast::FuncExit*>(statement))
