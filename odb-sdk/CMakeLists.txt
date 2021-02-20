@@ -55,6 +55,7 @@ if (UNIX)
 endif ()
 
 add_subdirectory ("plugins")
+add_subdirectory ("runtime")
 
 install (
     TARGETS odb-sdk
