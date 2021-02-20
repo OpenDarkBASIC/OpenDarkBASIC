@@ -1,7 +1,5 @@
 #include "CodeGenerator.hpp"
 
-#include <iostream>
-
 namespace odb::ir {
 namespace {
 llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
@@ -72,7 +70,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     // Convert command to upper camel case.
     const std::string& dbSymbol = command->dbSymbol();
     std::string commandName;
-    for (int i = 0; i < dbSymbol.size(); ++i)
+    for (std::size_t i = 0; i < dbSymbol.size(); ++i)
     {
         if (dbSymbol[i] == ' ' && i < (dbSymbol.size() - 1))
         {
@@ -138,6 +136,8 @@ llvm::Value* CodeGenerator::SymbolTable::getVar(const Variable* variable)
     {
         return entry->second;
     }
+    Log::codegen(Log::Severity::FATAL, "Variable %s missing from variable table.", variable->name().c_str());
+    return nullptr;
 }
 
 llvm::Value* CodeGenerator::SymbolTable::getOrAddStrLiteral(const std::string& literal)
@@ -241,8 +241,9 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         llvm::raw_string_ostream targetTypeStrStream{targetTypeStr};
         innerExpression->getType()->print(sourceTypeStrStream);
         targetType->print(targetTypeStrStream);
-        std::cerr << "CODEGEN ERROR: Unhandled cast from " << sourceTypeStr << " to " << targetTypeStr << std::endl;
-        std::terminate();
+        Log::codegen(Log::Severity::FATAL, "Unhandled LLVM cast from %s to %s", sourceTypeStr.c_str(),
+                     targetTypeStr.c_str());
+        return nullptr;
     }
     else if (auto* unary = dynamic_cast<const UnaryExpression*>(e))
     {
@@ -260,11 +261,12 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                std::cerr << "Invalid inner type in negate unary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Invalid inner type in negate unary op.");
+                return nullptr;
             }
         default:
-            assert(false && "Unimplemented unary op");
+            Log::codegen(Log::Severity::FATAL, "Unimplemented unary op.");
+            return nullptr;
         }
     }
     else if (auto* binary = dynamic_cast<const BinaryExpression*>(e))
@@ -288,13 +290,13 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
                 // TODO: add string.
-                std::cerr << "Unimplemented string concatenation." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unimplemented string concatenation.");
+                return nullptr;
             }
             else
             {
-                std::cerr << "Unknown type in add binary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unknown type in add binary op.");
+                return nullptr;
             }
         case BinaryOp::Sub:
             if (left->getType()->isIntegerTy())
@@ -307,8 +309,8 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                std::cerr << "Unknown type in sub binary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unknown type in sub binary op.");
+                return nullptr;
             }
         case BinaryOp::Mul:
             if (left->getType()->isIntegerTy())
@@ -321,8 +323,8 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                std::cerr << "Unknown type in mul binary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unknown type in mul binary op.");
+                return nullptr;
             }
         case BinaryOp::Div:
             if (left->getType()->isIntegerTy())
@@ -335,8 +337,8 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                std::cerr << "Unknown type in div binary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.");
+                return nullptr;
             }
         case BinaryOp::Mod:
             if (left->getType()->isIntegerTy())
@@ -349,13 +351,13 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                std::cerr << "Unknown type in modulo binary op." << std::endl;
-                std::terminate();
+                Log::codegen(Log::Severity::FATAL, "Unknown type in modulo binary op.");
+                return nullptr;
             }
         case BinaryOp::Pow:
             // TODO: implement
-            std::cerr << "Pow binary op unimplemented." << std::endl;
-            std::terminate();
+            Log::codegen(Log::Severity::FATAL, "Pow binary op unimplemented.");
+            return nullptr;
         case BinaryOp::ShiftLeft:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
@@ -412,7 +414,8 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_NE;
                     break;
                 default:
-                    assert(false);
+                    Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+                    return nullptr;
                 }
                 return builder.CreateICmp(cmpPredicate, left, right);
             }
@@ -440,17 +443,18 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_ONE;
                     break;
                 default:
-                    assert(false);
+                    Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+                    return nullptr;
                 }
                 return builder.CreateFCmp(cmpPredicate, left, right);
             }
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
-                // TODO: compare strings.
-                std::cerr << "Unimplemented string compare." << std::endl;
-                std::abort();
+                Log::codegen(Log::Severity::FATAL, "Unimplemented string compare.");
+                return nullptr;
             }
-            std::cerr << "Unimplemented compare operator." << std::endl;
+            Log::codegen(Log::Severity::FATAL, "Unimplemented compare operator.");
+            return nullptr;
         }
         break;
         case BinaryOp::Or:
@@ -459,6 +463,9 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return builder.CreateAnd(left, right);
         case BinaryOp::Xor:
             return builder.CreateXor(left, right);
+        default:
+            Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+            return nullptr;
         }
     }
     else if (auto* varRef = dynamic_cast<const VarRefExpression*>(e))
@@ -515,16 +522,16 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         }
 
         std::vector<llvm::Value*> args;
-        for (int i = 0; i < call->arguments().size(); ++i)
+        for (const auto& astArg : call->arguments())
         {
-            args.emplace_back(generateExpression(symtab, builder, call->arguments()[i]));
+            args.emplace_back(generateExpression(symtab, builder, astArg));
         }
         return builder.CreateCall(func, args);
     }
     else
     {
-        fprintf(stderr, "FATAL ERROR: Unimplemented expression\n");
-        std::terminate();
+        Log::codegen(Log::Severity::FATAL, "Unimplemented expression type.");
+        return nullptr;
     }
 }
 
@@ -599,8 +606,8 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             auto loopExitBlockIt = symtab.loopExitBlocks.find(exit->loopToBreak());
             if (loopExitBlockIt == symtab.loopExitBlocks.end())
             {
-                fprintf(stderr, "INTERNAL COMPILER ERROR: 'exit' statement matched with unknown loop.");
-                std::abort();
+                Log::codegen(Log::Severity::FATAL, "'exit' statement matched with unknown loop.");
+                return nullptr;
             }
 
             // Branch to the loops exit block.
@@ -709,6 +716,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         }
         else if (auto* subReturn = dynamic_cast<const SubReturn*>(s))
         {
+            (void)subReturn; // SubReturn has no useful data members.
             auto* returnAddr = builder.CreateCall(gosubPopAddress, {symtab.gosubStack, symtab.gosubStackPointer});
             printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
             symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
@@ -716,8 +724,8 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         }
         else
         {
-            fprintf(stderr, "Unhandled statement.");
-            std::exit(1);
+            Log::codegen(Log::Severity::FATAL, "Unhandled statement.");
+            return nullptr;
         }
     }
 
@@ -822,7 +830,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     }
 }
 
-void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLibrary*> pluginsToLoad)
+bool CodeGenerator::generateModule(const Program& program, std::vector<DynamicLibrary*> pluginsToLoad)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 
@@ -848,9 +856,9 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
         generateFunctionBody(globalSymbolTable.getFunction(*function), *function, false);
     }
 
-#ifndef NDEBUG
-    module.print(llvm::errs(), nullptr);
-#endif
+    //#ifndef NDEBUG
+    //    module.print(llvm::errs(), nullptr);
+    //#endif
 
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.
@@ -862,11 +870,11 @@ void CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
     llvm::raw_string_ostream verifyResultStream{verifyResultBuffer};
     if (llvm::verifyModule(module, &verifyResultStream, &brokenDebugInfo))
     {
-        std::cerr << std::endl;
-        std::cerr << "Failed to verify LLVM module. Aborting compile." << std::endl;
-        std::cerr << verifyResultBuffer << std::endl;
-        std::exit(1);
+        Log::codegen(Log::Severity::FATAL, "Failed to verify LLVM module: %s.", verifyResultBuffer.c_str());
+        return false;
     }
+
+    return true;
 }
 
 void CodeGenerator::generateGosubHelperFunctions()
