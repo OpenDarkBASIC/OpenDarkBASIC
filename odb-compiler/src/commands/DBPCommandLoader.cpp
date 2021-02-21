@@ -35,7 +35,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
         if (fs::is_directory(path))
         {
             for (const auto& p : fs::recursive_directory_iterator(path))
-                if (fileIsDynamicLib(p.path()))
+                if (FileSystem::isDynamicLib(p.path()))
                     pluginsToLoad.emplace_back(p.path());
         }
     }
@@ -49,7 +49,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
         }
 
         for (const auto& p : fs::recursive_directory_iterator(path))
-            if (fileIsDynamicLib(p.path()))
+            if (FileSystem::isDynamicLib(p.path()))
                 pluginsToLoad.emplace_back(p.path());
     }
 
@@ -87,7 +87,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
     for (const auto& stringTableEntry : stringTable)
     {
         std::vector<std::string> tokens;
-        str::split(stringTableEntry, tokens, '%');
+        str::split(&tokens, stringTableEntry, '%');
 
         if (tokens.size() < 2)
         {
@@ -127,7 +127,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
         std::vector<std::string> argumentNames;
         if (tokens.size() > 3)
         {
-            str::split(tokens[3], argumentNames, ',');
+            str::split(&argumentNames, tokens[3], ',');
         }
         for (int typeIdx = 0; typeIdx < functionTypes.size(); ++typeIdx)
         {

@@ -26,7 +26,7 @@ namespace cmd {
 
 namespace db {
 
-class Driver
+class ODBCOMPILER_PUBLIC_API Driver
 {
 public:
     enum IncDecDir
@@ -34,6 +34,13 @@ public:
         INC = 1,
         DEC = -1
     };
+
+    Driver();
+    Driver(const Driver&) = delete;
+    Driver(Driver&&) = delete;
+    Driver& operator=(const Driver&) = delete;
+    Driver& operator=(Driver&&) = delete;
+    ~Driver();
 
     // ------------------------------------------------------------------------
     // Functions below are used by BISON only

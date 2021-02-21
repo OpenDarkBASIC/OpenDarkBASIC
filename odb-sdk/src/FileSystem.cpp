@@ -4,6 +4,7 @@
 #if defined(ODBSDK_PLATFORM_WIN32)
 #   define WIN32_LEAN_AND_MEAN
 #   include <io.h>
+#   include <Windows.h>
 #elif defined(ODBSDK_PLATFORM_MACOS)
 #   include <mach-o/dyld.h>
 #   include <limits.h>
@@ -58,7 +59,7 @@ FILE* FileSystem::dupFilePointer(FILE* file)
 // ----------------------------------------------------------------------------
 bool FileSystem::isDynamicLib(const fs::path& filename)
 {
-    std::string ext = str::toLower(filename.extension());
+    std::string ext = str::toLower(filename.extension().string());
     // TODO probably a more reliable way is to dlopen() and see if it loads
     return ext == ".dll"
         || ext == ".so"
@@ -81,8 +82,8 @@ fs::path FileSystem::getPathToSelf()
             return std::string(path, bufsize);
         return "";
 #elif defined(ODBSDK_PLATFORM_WIN32)
-        wchar_t path[MAX_PATH] = { 0 };
-        GetModuleFileNameW(NULL, path, MAX_PATH);
+        char path[_MAX_PATH] = { 0 };
+        GetModuleFileNameA(NULL, path, MAX_PATH);
         return path;
 #endif
     };

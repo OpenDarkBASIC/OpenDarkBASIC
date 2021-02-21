@@ -4,7 +4,7 @@
 
 namespace odb {
 
-class BuildInfo
+class ODBCOMPILER_PUBLIC_API BuildInfo
 {
 public:
     static const char* authors();

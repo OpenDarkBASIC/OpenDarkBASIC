@@ -285,6 +285,12 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
 }
 
 // ----------------------------------------------------------------------------
+Driver::Driver() = default;
+
+// ----------------------------------------------------------------------------
+Driver::~Driver() = default;
+
+// ----------------------------------------------------------------------------
 void Driver::giveProgram(ast::Block* program)
 {
     if (program_.notNull())
