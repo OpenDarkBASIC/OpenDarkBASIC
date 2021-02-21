@@ -60,6 +60,8 @@ public:
     virtual ~RefCounted();
     /// Prevent copy construction.
     RefCounted(const RefCounted& rhs) = delete;
+    /// Prevent assignment.
+    RefCounted& operator=(const RefCounted& rhs) = delete;
 
     /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
     void addRef();
@@ -74,9 +76,6 @@ public:
     RefCount* refCountPtr() { return refCount_; }
 
 private:
-    /// Prevent assignment.
-    RefCounted& operator=(const RefCounted& rhs);
-
     /// Pointer to the reference count structure.
     RefCount* refCount_;
 };

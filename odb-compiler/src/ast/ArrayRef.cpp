@@ -18,9 +18,6 @@ ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation
 }
 
 // ----------------------------------------------------------------------------
-ArrayRef::~ArrayRef() = default;
-
-// ----------------------------------------------------------------------------
 AnnotatedSymbol* ArrayRef::symbol() const
 {
     return symbol_;

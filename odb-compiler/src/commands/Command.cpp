@@ -21,9 +21,6 @@ Command::Command(DynamicLibrary* sourceLibrary,
 }
 
 // ----------------------------------------------------------------------------
-Command::~Command() = default;
-
-// ----------------------------------------------------------------------------
 const std::string& Command::dbSymbol() const
 {
     return dbSymbol_;

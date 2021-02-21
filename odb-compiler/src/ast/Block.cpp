@@ -20,9 +20,6 @@ Block::Block(Statement* stmnt, SourceLocation* location)
 }
 
 // ----------------------------------------------------------------------------
-Block::~Block() = default;
-
-// ----------------------------------------------------------------------------
 void Block::appendStatement(Statement* stmnt)
 {
     stmnt->setParent(this);

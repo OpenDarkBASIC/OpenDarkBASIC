@@ -67,7 +67,6 @@ class ODBCOMPILER_PUBLIC_API UDTArrayDecl : public ArrayDecl
 {
 public:
     UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location);
-    ~UDTArrayDecl();
 
     UDTRef* udt() const;
 

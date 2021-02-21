@@ -40,7 +40,6 @@ public:
             Type returnType,
             const std::vector<Arg>& args,
             const std::string& helpFile="");
-    ~Command();
 
     const std::string& dbSymbol() const;
     const std::string& cppSymbol() const;

@@ -14,7 +14,6 @@ class ODBCOMPILER_PUBLIC_API ExpressionList : public Node
 public:
     ExpressionList(SourceLocation* location);
     ExpressionList(Expression* expr, SourceLocation* location);
-    ~ExpressionList();
 
     void appendExpression(Expression* expr);
 

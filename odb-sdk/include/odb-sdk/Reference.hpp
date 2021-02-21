@@ -191,13 +191,13 @@ public:
     T* get() const { return ptr_; }
 
     /// Return the object's reference count, or 0 if the pointer is null.
-    int refs() const { return ptr_ ? ptr_->refs() : 0; }
+    int refs() const { return ptr_ ? refCountedPtr()->refs() : 0; }
 
     /// Return the object's weak reference count, or 0 if the pointer is null.
-    int weakRefs() const { return ptr_ ? ptr_->weakRefs() : 0; }
+    int weakRefs() const { return ptr_ ? refCountedPtr()->weakRefs() : 0; }
 
     /// Return pointer to the RefCount structure.
-    RefCount* refCountPtr() const { return ptr_ ? ptr_->refCountPtr() : 0; }
+    RefCount* refCountPtr() const { return ptr_ ? refCountedPtr()->refCountPtr() : 0; }
 
     /// Return hash value for HashSet & HashMap.
     unsigned toHash() const { return (unsigned)((size_t)ptr_ / sizeof(T)); }
@@ -209,7 +209,7 @@ private:
     void addRef()
     {
         if (ptr_)
-            ptr_->addRef();
+            refCountedPtr()->addRef();
     }
 
     /// Release the object reference and delete it if necessary.
@@ -217,9 +217,17 @@ private:
     {
         if (ptr_)
         {
-            ptr_->releaseRef();
+            refCountedPtr()->releaseRef();
             ptr_ = 0;
         }
+    }
+
+    /// Returns ptr_ casted to RefCounted*. Needed in case T is forward declared.
+    RefCounted* refCountedPtr() const
+    {
+        // As T may be forward declared, the compiler will not be able to figure out whether this is a valid cast at
+        // compile time, so we need to use reinterpret_cast instead.
+        return reinterpret_cast<RefCounted*>(ptr_);
     }
 
     /// Pointer to the object.
@@ -453,7 +461,7 @@ public:
     int weakRefs() const
     {
         if (!expired())
-            return ptr_->WeakRefs();
+            return refCountedPtr()->weakRefs();
         else
             return refCount_ ? refCount_->weakRefs_ : 0;
     }
@@ -494,6 +502,14 @@ private:
 
         ptr_ = 0;
         refCount_ = 0;
+    }
+
+    /// Returns ptr_ casted to RefCounted*. Needed in case T is forward declared.
+    RefCounted* refCountedPtr() const
+    {
+        // As T may be forward declared, the compiler will not be able to figure out whether this is a valid cast at
+        // compile time, so we need to use reinterpret_cast instead.
+        return reinterpret_cast<RefCounted*>(ptr_);
     }
 
     /// Pointer to the object.

@@ -16,7 +16,6 @@ class ODBCOMPILER_PUBLIC_API Node : public RefCounted
 {
 public:
     Node(SourceLocation* location);
-    ~Node();
 
     template <typename T=Node>
     T* parent() const { return dynamic_cast<T*>(parent_); }

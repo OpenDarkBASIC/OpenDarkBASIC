@@ -76,7 +76,6 @@ class ODBCOMPILER_PUBLIC_API UDTVarDecl : public VarDecl
 {
 public:
     UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location);
-    ~UDTVarDecl();
 
     void setInitialValue(Expression* expression) override;
 
