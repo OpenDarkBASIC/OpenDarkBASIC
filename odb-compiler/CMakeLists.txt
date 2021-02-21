@@ -138,16 +138,16 @@ if (ODBCOMPILER_VERBOSE_BISON)
             YYDEBUG)
 endif ()
 
-gperf_target (DarkBASICCommandToken
+gperf_target (DarkBASICKeywordToken
     "${PROJECT_SOURCE_DIR}/src/parsers/db/KeywordToken.gperf"
     "${PROJECT_BINARY_DIR}/src/parsers/db/KeywordToken.gperf.cpp")
-set_source_files_properties (${Gperf_DarkBASICCommandToken_OUTPUTS}
+set_source_files_properties (${Gperf_DarkBASICKeywordToken_OUTPUTS}
     PROPERTIES COMPILE_FLAGS
         $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
         $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
 #XXX this is broken
-add_gperf_bison_dependency (DarkBASICCommandToken DarkBASICParser)
+add_gperf_bison_dependency (DarkBASICKeywordToken DarkBASICParser)
 
 ###############################################################################
 # Library definition
@@ -158,7 +158,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${PROJECT_BINARY_DIR}/src/BuildInfo.cpp"
     "${BISON_DarkBASICParser_OUTPUTS}"
     "${FLEX_DarkBASICScanner_OUTPUTS}"
-    "${Gperf_DarkBASICCommandToken_OUTPUTS}"
+    "${Gperf_DarkBASICKeywordToken_OUTPUTS}"
     "${BISON_CommandsParser_OUTPUTS}"
     "${FLEX_CommandsScanner_OUTPUTS}"
     "src/ast/ArrayDecl.cpp"

@@ -282,6 +282,20 @@
 %token STRING "string"
 %token INC "increment"
 %token DEC "decrement"
+%token COMPLEX "complex"
+%token QUAT "quat"
+%token MAT2X2 "mat2x2"
+%token MAT2X3 "mat2x3"
+%token MAT2X4 "mat2x4"
+%token MAT3X2 "mat3x2"
+%token MAT3X3 "mat3x3"
+%token MAT3X4 "mat3x4"
+%token MAT4X2 "mat4x2"
+%token MAT4X3 "mat4x3"
+%token MAT4X4 "mat4x4"
+%token VEC2 "vec2"
+%token VEC3 "vec3"
+%token VEC4 "vec4"
 
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal";
@@ -572,6 +586,20 @@ var_decl_as_type
   | var_decl_float_sym AS FLOAT                               { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_str_sym AS STRING                                { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
   | var_decl_int_sym AS udt_ref                               { $$ = new UDTVarDeclSymbol($1, $3, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS COMPLEX                               { $$ = new ComplexVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT2X2                                { $$ = new Mat2x2VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT2X3                                { $$ = new Mat2x3VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT2X4                                { $$ = new Mat2x4VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT3X2                                { $$ = new Mat3x2VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT3X3                                { $$ = new Mat3x3VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT3X4                                { $$ = new Mat3x4VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT4X2                                { $$ = new Mat4x2VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT4X3                                { $$ = new Mat4x3VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS MAT4X4                                { $$ = new Mat4x4VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS QUAT                                  { $$ = new QuatVarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS VEC2                                  { $$ = new Vec2VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS VEC3                                  { $$ = new Vec3VarDecl($1, driver->newLocation(&@$)); }
+  | var_decl_int_sym AS VEC4                                  { $$ = new Vec4VarDecl($1, driver->newLocation(&@$)); }
   ;
 var_decl_int_sym
   : GLOBAL SYMBOL %prec NO_HASH_OR_DOLLAR                     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
@@ -619,13 +647,27 @@ array_decl
   | array_decl_double_float_sym '(' expr_list ')' AS DOUBLE FLOAT { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_float_sym '(' expr_list ')' AS FLOAT           { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_str_sym '(' expr_list ')'AS STRING             { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
-  | array_decl_int_sym '(' expr_list ')' AS udt_ref           { $$ = new UDTArrayDeclSymbol($1, $3, $6, driver->newLocation(&@$)); }
   | array_decl_int_sym '(' expr_list ')'                      { $$ = new IntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_double_int_sym '(' expr_list ')'               { $$ = new DoubleIntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_word_sym '(' expr_list ')'                     { $$ = new WordArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_double_float_sym '(' expr_list ')'             { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_float_sym '(' expr_list ')'                    { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_str_sym '(' expr_list ')'                      { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS udt_ref           { $$ = new UDTArrayDeclSymbol($1, $3, $6, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS COMPLEX           { $$ = new ComplexArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT2X2            { $$ = new Mat2x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT2X3            { $$ = new Mat2x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT2X4            { $$ = new Mat2x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT3X2            { $$ = new Mat3x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT3X3            { $$ = new Mat3x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT3X4            { $$ = new Mat3x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT4X2            { $$ = new Mat4x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT4X3            { $$ = new Mat4x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS MAT4X4            { $$ = new Mat4x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS QUAT              { $$ = new QuatArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS VEC2              { $$ = new Vec2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS VEC3              { $$ = new Vec3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_int_sym '(' expr_list ')' AS VEC4              { $$ = new Vec4ArrayDecl($1, $3, driver->newLocation(&@$)); }
   ;
 array_decl_int_sym
   : GLOBAL DIM SYMBOL %prec NO_HASH_OR_DOLLAR                 { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
@@ -681,6 +723,20 @@ udt_decl_var
   | udt_decl_var_float_sym AS FLOAT                           { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_str_sym AS STRING                            { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_int_sym AS udt_ref                           { $$ = new UDTVarDeclSymbol($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS COMPLEX                           { $$ = new ComplexVarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT2X2                            { $$ = new Mat2x2VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT2X3                            { $$ = new Mat2x3VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT2X4                            { $$ = new Mat2x4VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT3X2                            { $$ = new Mat3x2VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT3X3                            { $$ = new Mat3x3VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT3X4                            { $$ = new Mat3x4VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT4X2                            { $$ = new Mat4x2VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT4X3                            { $$ = new Mat4x3VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS MAT4X4                            { $$ = new Mat4x4VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS QUAT                              { $$ = new QuatVarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS VEC2                              { $$ = new Vec2VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS VEC3                              { $$ = new Vec3VarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_int_sym AS VEC4                              { $$ = new Vec4VarDecl($1, driver->newLocation(&@$)); }
   ;
 udt_decl_var_int_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
@@ -708,6 +764,20 @@ udt_decl_array
   | udt_decl_array_int_sym '(' expr_list ')'                  { $$ = new IntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_float_sym '(' expr_list ')'                { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_str_sym '(' expr_list ')'                  { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS COMPLEX       { $$ = new ComplexArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT2X2        { $$ = new Mat2x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT2X3        { $$ = new Mat2x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT2X4        { $$ = new Mat2x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT3X2        { $$ = new Mat3x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT3X3        { $$ = new Mat3x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT3X4        { $$ = new Mat3x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT4X2        { $$ = new Mat4x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT4X3        { $$ = new Mat4x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS MAT4X4        { $$ = new Mat4x4ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS QUAT          { $$ = new QuatArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS VEC2          { $$ = new Vec2ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS VEC3          { $$ = new Vec3ArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS VEC4          { $$ = new Vec4ArrayDecl($1, $3, driver->newLocation(&@$)); }
   ;
 udt_decl_array_int_sym
   : DIM SYMBOL %prec NO_HASH_OR_DOLLAR                        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
