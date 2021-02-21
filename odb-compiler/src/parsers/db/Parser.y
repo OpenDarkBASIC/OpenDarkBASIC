@@ -148,6 +148,8 @@
     int64_t integer_value;
     double float_value;
     char* string;
+    double complex_value[2];
+    double quat_value[4];
 
     odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ArrayDecl* array_decl;
@@ -874,7 +876,7 @@ goto_label
   ;
 literal
   : BOOLEAN_LITERAL                                           { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&@$)); }
-  | INTEGER_LITERAL                                           { $$ = driver->newPositiveIntLikeLiteral($1, driver->newLocation(&@$)); }
+  | INTEGER_LITERAL                                           { $$ = driver->newIntLikeLiteral($1, driver->newLocation(&@$)); }
   | FLOAT_LITERAL                                             { $$ = new DoubleFloatLiteral($1, driver->newLocation(&@$)); }
   | STRING_LITERAL                                            { $$ = new StringLiteral($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;

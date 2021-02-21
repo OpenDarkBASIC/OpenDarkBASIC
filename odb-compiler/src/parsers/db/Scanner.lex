@@ -56,10 +56,10 @@ FLOAT2          \.[0-9]+
 FLOAT3          [0-9]+\.[0-9]+?{FLOAT_EXP}?
 FLOAT4          \.[0-9]+{FLOAT_EXP}?
 FLOAT5          [0-9]+{FLOAT_EXP}
-FLOAT           {FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
-INTEGER_BASE2   %[01]+
-INTEGER_BASE16  0x[0-9a-fA-F]+
-INTEGER         [0-9]+
+FLOAT           -?{FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
+INTEGER_BASE2   -?%[01]+
+INTEGER_BASE16  -?0x[0-9a-fA-F]+
+INTEGER         -?[0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %x MULTI_COMMENT
@@ -95,8 +95,10 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     {STRING_LITERAL}    { size_t len = strlen(yytext);
                           yylval->string = odb::str::newCStrRange(yytext, 1, len > 1 ? len-1 : 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
     {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
-    {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[2], nullptr, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
-    {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER_BASE2}     { const char* val = yytext[0] == '-' ? &yytext[2] : &yytext[1];  /* Skip leading "%" and handle negatives */
+                          yylval->integer_value = strtol(val, nullptr, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER_BASE16}    { const char* val = yytext[0] == '-' ? &yytext[3] : &yytext[2];  /* Skip leading "0x" and handle negatives */
+                          yylval->integer_value = strtol(val, nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
     "+"                 { RETURN_TOKEN('+'); }

@@ -298,29 +298,26 @@ void Driver::giveProgram(ast::Block* program)
 }
 
 // ----------------------------------------------------------------------------
-ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
+ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
 {
-    assert(value >= 0);
-
-    if (value > std::numeric_limits<uint32_t>::max())
-        return new ast::DoubleIntegerLiteral(value, location);
-    if (value > std::numeric_limits<int32_t>::max())
-        return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
-    if (value > std::numeric_limits<uint16_t>::max())
+    if (value >= 0)
+    {
+        if (value > std::numeric_limits<uint32_t>::max())
+            return new ast::DoubleIntegerLiteral(value, location);
+        if (value > std::numeric_limits<int32_t>::max())
+            return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
+        if (value > std::numeric_limits<uint16_t>::max())
+            return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+        if (value > std::numeric_limits<uint8_t>::max())
+            return new ast::WordLiteral(static_cast<uint16_t>(value), location);
+        return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
+    }
+    else
+    {
+        if (value < std::numeric_limits<int32_t>::min())
+            return new ast::DoubleIntegerLiteral(value, location);
         return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
-    if (value > std::numeric_limits<uint8_t>::max())
-        return new ast::WordLiteral(static_cast<uint16_t>(value), location);
-    return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
-}
-
-// ----------------------------------------------------------------------------
-ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
-{
-    assert(value < 0);
-
-    if (value < std::numeric_limits<int32_t>::min())
-        return new ast::DoubleIntegerLiteral(value, location);
-    return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+    }
 }
 
 // ----------------------------------------------------------------------------
