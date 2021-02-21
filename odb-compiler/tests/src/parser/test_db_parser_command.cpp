@@ -17,6 +17,19 @@ class NAME : public ParserTestHarness
 public:
 };
 
+#define X(enum_, chr, str, dbname)                                            \
+TEST_F(NAME, command_expr_with_type_annotation_##enum_)                       \
+{                                                                             \
+    cmdIndex.addCommand(new cmd::Command(nullptr, "get dir" str, "", cmd::Command::Type::Void, {}));\
+    matcher.updateFromIndex(&cmdIndex);                                       \
+    ast = driver->parse("test",                                               \
+        "OriginalDirectory" str " = get dir" str "()",                        \
+        matcher);                                                             \
+    ASSERT_THAT(ast, NotNull());                                              \
+}
+ODB_TYPE_ANNOTATION_LIST
+#undef X
+
 TEST_F(NAME, print_command)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "print", "", cmd::Command::Type::Void, {}));
@@ -403,16 +416,3 @@ TEST_F(NAME, command_with_same_name_as_keyword)
         matcher);
     ASSERT_THAT(ast, NotNull());
 }
-
-#define X(enum_, chr, str, dbname)                                            \
-TEST_F(NAME, command_expr_with_type_annotation_##enum_)                       \
-{                                                                             \
-    cmdIndex.addCommand(new cmd::Command(nullptr, "get dir" str, "", cmd::Command::Type::Void, {}));\
-    matcher.updateFromIndex(&cmdIndex);                                       \
-    ast = driver->parse("test",                                               \
-        "OriginalDirectory" str " = get dir" str "()",                        \
-        matcher);                                                             \
-    ASSERT_THAT(ast, NotNull());                                              \
-}
-ODB_TYPE_ANNOTATION_LIST
-#undef X

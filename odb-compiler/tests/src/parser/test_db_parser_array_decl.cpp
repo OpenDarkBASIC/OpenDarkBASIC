@@ -14,19 +14,115 @@ class NAME : public ParserTestHarness
 public:
 };
 
+// Scope specifiers
+#define global_str "global"
+#define local_str "local"
+#define none_str ""
+
+// Scope enums
+#define global_scope ast::Symbol::Scope::GLOBAL
+#define local_scope ast::Symbol::Scope::LOCAL
+#define none_scope ast::Symbol::Scope::LOCAL
+
+// Anotations
+#define amp_str "&"
+#define percent_str "%"
+#define excl_str "!"
+#define hash_str "#"
+#define dollar_str "$"
+
+// Annotation enums
+#define amp_ann ast::Symbol::Annotation::DOUBLE_INTEGER
+#define percent_ann ast::Symbol::Annotation::WORD
+#define hash_ann ast::Symbol::Annotation::FLOAT
+#define excl_ann ast::Symbol::Annotation::DOUBLE_FLOAT
+#define dollar_ann ast::Symbol::Annotation::STRING
+#define none_ann ast::Symbol::Annotation::NONE
+
+// Type specifiers
+#define double_integer_str "double integer"
+#define integer_str "integer"
+#define dword_str "dword"
+#define word_str "word"
+#define byte_str "byte"
+#define boolean_str "boolean"
+#define double_float_str "double float"
+#define float_str "float"
+#define string_str "string"
+
+// Type initial values
+#define double_integer_initial_value 0
+#define integer_initial_value 0
+#define dword_initial_value 0
+#define word_initial_value 0
+#define byte_initial_value 0
+#define boolean_initial_value false
+#define double_float_initial_value 0.0
+#define float_initial_value 0.0f
+#define string_initial_value ""
+
+// Type decl visitors
+#define double_integer_decl_visitor visitDoubleIntegerArrayDecl
+#define integer_decl_visitor visitIntegerArrayDecl
+#define dword_decl_visitor visitDwordArrayDecl
+#define word_decl_visitor visitWordArrayDecl
+#define byte_decl_visitor visitByteArrayDecl
+#define boolean_decl_visitor visitBooleanArrayDecl
+#define double_float_decl_visitor visitDoubleFloatArrayDecl
+#define float_decl_visitor visitFloatArrayDecl
+#define string_decl_visitor visitStringArrayDecl
+
 /*
  * All possible valid array declarations:
  *
  *     dim var(...)
+ *     dim var&(...)
+ *     dim var%(...)
+ *     dim var!(...)
  *     dim var#(...)
  *     dim var$(...)
  *     local dim var(...)
+ *     local dim var&(...)
+ *     local dim var%(...)
+ *     local dim var!(...)
  *     local dim var#(...)
  *     local dim var$(...)
  *     global dim var(...)
+ *     global dim var&(...)
+ *     global dim var%(...)
+ *     global dim var!(...)
  *     global dim var#(...)
  *     global dim var$(...)
- *
+ */
+#define VALID(scope, ann, type)                                               \
+TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " dim arr" ann##_str "(2, 3)", matcher);\
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
+                                                                              \
+    ast->accept(&v);                                                          \
+}
+#define VALID_ALL_SCOPES(ann, type)                                           \
+    VALID(none, ann, type)                                                    \
+    VALID(local, ann, type)                                                   \
+    VALID(global, ann, type)
+VALID_ALL_SCOPES(none, integer)
+VALID_ALL_SCOPES(amp, double_integer)
+VALID_ALL_SCOPES(percent, word)
+VALID_ALL_SCOPES(excl, double_float)
+VALID_ALL_SCOPES(hash, float)
+VALID_ALL_SCOPES(dollar, string)
+/*
  *     dim var(...) as double integer
  *     dim var(...) as integer
  *     dim var(...) as dword
@@ -35,9 +131,11 @@ public:
  *     dim var(...) as boolean
  *     dim var(...) as double float
  *     dim var(...) as float
- *     dim var#(...) as double float
- *     dim var#(...) as float
  *     dim var(...) as string
+ *     dim var&(...) as double_integer
+ *     dim var%(...) as word
+ *     dim var!(...) as double float
+ *     dim var#(...) as float
  *     dim var$(...) as string
  *
  *     local dim var(...) as double integer
@@ -48,9 +146,11 @@ public:
  *     local dim var(...) as boolean
  *     local dim var(...) as double float
  *     local dim var(...) as float
- *     local dim var#(...) as double float
- *     local dim var#(...) as float
  *     local dim var(...) as string
+ *     local dim var&(...) as double integer
+ *     local dim var%(...) as word
+ *     local dim var!(...) as double float
+ *     local dim var#(...) as float
  *     local dim var$(...) as string
  *
  *     global dim var(...) as double integer
@@ -61,21 +161,207 @@ public:
  *     global dim var(...) as boolean
  *     global dim var(...) as double float
  *     global dim var(...) as float
- *     global dim var#(...) as double float
- *     global dim var#(...) as float
  *     global dim var(...) as string
+ *     global dim var&(...) as double integer
+ *     global dim var%(...) as word
+ *     global dim var!(...) as double float
+ *     global dim var#(...) as float
  *     global dim var$(...) as string
- *
+ */
+#define VALID_AS_TYPE(scope, ann, type)                                       \
+TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " dim arr" ann##_str "(2, 3) as " type##_str, matcher);\
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
+                                                                              \
+    ast->accept(&v);                                                          \
+}
+#define VALID_AS_TYPE_ALL_SCOPES(ann, type)                                   \
+    VALID_AS_TYPE(none, ann, type)                                            \
+    VALID_AS_TYPE(local, ann, type)                                           \
+    VALID_AS_TYPE(global, ann, type)
+VALID_AS_TYPE_ALL_SCOPES(none, double_integer)
+VALID_AS_TYPE_ALL_SCOPES(none, integer)
+VALID_AS_TYPE_ALL_SCOPES(none, dword)
+VALID_AS_TYPE_ALL_SCOPES(none, word)
+VALID_AS_TYPE_ALL_SCOPES(none, byte)
+VALID_AS_TYPE_ALL_SCOPES(none, boolean)
+VALID_AS_TYPE_ALL_SCOPES(none, double_float)
+VALID_AS_TYPE_ALL_SCOPES(none, float)
+VALID_AS_TYPE_ALL_SCOPES(none, string)
+VALID_AS_TYPE_ALL_SCOPES(amp, double_integer)
+VALID_AS_TYPE_ALL_SCOPES(percent, word)
+VALID_AS_TYPE_ALL_SCOPES(excl, double_float)
+VALID_AS_TYPE_ALL_SCOPES(hash, float)
+VALID_AS_TYPE_ALL_SCOPES(dollar, string)
+/*
  * Invalid variable declarations:
  *
+ *     dim var&(...) as integer
+ *     dim var&(...) as dword
+ *     dim var&(...) as word
+ *     dim var&(...) as byte
+ *     dim var&(...) as boolean
+ *     dim var&(...) as double float
+ *     dim var&(...) as float
+ *     dim var&(...) as string
+ *
+ *     local dim var&(...) as integer
+ *     local dim var&(...) as dword
+ *     local dim var&(...) as word
+ *     local dim var&(...) as byte
+ *     local dim var&(...) as boolean
+ *     local dim var&(...) as double float
+ *     local dim var&(...) as float
+ *     local dim var&(...) as string
+ *
+ *     global dim var&(...) as integer
+ *     global dim var&(...) as dword
+ *     global dim var&(...) as word
+ *     global dim var&(...) as byte
+ *     global dim var&(...) as boolean
+ *     global dim var&(...) as double float
+ *     global dim var&(...) as float
+ *     global dim var&(...) as string
+ */
+#define INVALID_AS_TYPE(scope, ann, type)                                     \
+TEST_F(NAME, scope##_dim_arr_##ann##_as_##type##_is_invalid)                  \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " dim arr" ann##_str "(2, 3) as " type##_str, matcher);\
+    ASSERT_THAT(ast, IsNull());                                               \
+}
+#define INVALID_AS_TYPE_ALL_SCOPES(ann, type)                                 \
+    INVALID_AS_TYPE(none, ann, type)                                          \
+    INVALID_AS_TYPE(local, ann, type)                                         \
+    INVALID_AS_TYPE(global, ann, type)
+INVALID_AS_TYPE_ALL_SCOPES(amp, integer);
+INVALID_AS_TYPE_ALL_SCOPES(amp, dword);
+INVALID_AS_TYPE_ALL_SCOPES(amp, word);
+INVALID_AS_TYPE_ALL_SCOPES(amp, byte);
+INVALID_AS_TYPE_ALL_SCOPES(amp, boolean);
+INVALID_AS_TYPE_ALL_SCOPES(amp, double_float);
+INVALID_AS_TYPE_ALL_SCOPES(amp, float);
+INVALID_AS_TYPE_ALL_SCOPES(amp, string);
+/*
+ *
+ *     dim var%(...) as double integer
+ *     dim var%(...) as integer
+ *     dim var%(...) as dword
+ *     dim var%(...) as byte
+ *     dim var%(...) as boolean
+ *     dim var%(...) as double float
+ *     dim var%(...) as float
+ *     dim var%(...) as string
+ *
+ *     local dim var%(...) as double integer
+ *     local dim var%(...) as integer
+ *     local dim var%(...) as dword
+ *     local dim var%(...) as byte
+ *     local dim var%(...) as boolean
+ *     local dim var%(...) as double float
+ *     local dim var%(...) as float
+ *     local dim var%(...) as string
+ *
+ *     global dim var%(...) as double integer
+ *     global dim var%(...) as integer
+ *     global dim var%(...) as dword
+ *     global dim var%(...) as byte
+ *     global dim var%(...) as boolean
+ *     global dim var%(...) as double float
+ *     global dim var%(...) as float
+ *     global dim var%(...) as string
+ */
+INVALID_AS_TYPE_ALL_SCOPES(percent, double_integer);
+INVALID_AS_TYPE_ALL_SCOPES(percent, integer);
+INVALID_AS_TYPE_ALL_SCOPES(percent, dword);
+INVALID_AS_TYPE_ALL_SCOPES(percent, byte);
+INVALID_AS_TYPE_ALL_SCOPES(percent, boolean);
+INVALID_AS_TYPE_ALL_SCOPES(percent, double_float);
+INVALID_AS_TYPE_ALL_SCOPES(percent, float);
+INVALID_AS_TYPE_ALL_SCOPES(percent, string);
+/*
+ *     dim var!(...) as double integer
+ *     dim var!(...) as integer
+ *     dim var!(...) as dword
+ *     dim var!(...) as word
+ *     dim var!(...) as byte
+ *     dim var!(...) as boolean
+ *     dim var!(...) as float
+ *     dim var!(...) as string
+ *
+ *     local dim var!(...) as double integer
+ *     local dim var!(...) as integer
+ *     local dim var!(...) as dword
+ *     local dim var!(...) as word
+ *     local dim var!(...) as byte
+ *     local dim var!(...) as boolean
+ *     local dim var!(...) as float
+ *     local dim var!(...) as string
+ *
+ *     global dim var!(...) as double integer
+ *     global dim var!(...) as integer
+ *     global dim var!(...) as dword
+ *     global dim var!(...) as word
+ *     global dim var!(...) as byte
+ *     global dim var!(...) as boolean
+ *     global dim var!(...) as float
+ *     global dim var!(...) as string
+ */
+INVALID_AS_TYPE_ALL_SCOPES(excl, double_integer);
+INVALID_AS_TYPE_ALL_SCOPES(excl, integer);
+INVALID_AS_TYPE_ALL_SCOPES(excl, dword);
+INVALID_AS_TYPE_ALL_SCOPES(excl, word);
+INVALID_AS_TYPE_ALL_SCOPES(excl, byte);
+INVALID_AS_TYPE_ALL_SCOPES(excl, boolean);
+INVALID_AS_TYPE_ALL_SCOPES(excl, float);
+INVALID_AS_TYPE_ALL_SCOPES(excl, string);
+/*
  *     dim var#(...) as double integer
  *     dim var#(...) as integer
  *     dim var#(...) as dword
  *     dim var#(...) as word
  *     dim var#(...) as byte
  *     dim var#(...) as boolean
+ *     dim var#(...) as double float
  *     dim var#(...) as string
  *
+ *     local dim var#(...) as double integer
+ *     local dim var#(...) as integer
+ *     local dim var#(...) as dword
+ *     local dim var#(...) as word
+ *     local dim var#(...) as byte
+ *     local dim var#(...) as boolean
+ *     local dim var#(...) as double float
+ *     local dim var#(...) as string
+ *
+ *     global dim var#(...) as double integer
+ *     global dim var#(...) as integer
+ *     global dim var#(...) as dword
+ *     global dim var#(...) as word
+ *     global dim var#(...) as byte
+ *     global dim var#(...) as boolean
+ *     global dim var#(...) as double float
+ *     global dim var#(...) as string
+ */
+INVALID_AS_TYPE_ALL_SCOPES(hash, double_integer);
+INVALID_AS_TYPE_ALL_SCOPES(hash, integer);
+INVALID_AS_TYPE_ALL_SCOPES(hash, dword);
+INVALID_AS_TYPE_ALL_SCOPES(hash, word);
+INVALID_AS_TYPE_ALL_SCOPES(hash, byte);
+INVALID_AS_TYPE_ALL_SCOPES(hash, boolean);
+INVALID_AS_TYPE_ALL_SCOPES(hash, double_float);
+INVALID_AS_TYPE_ALL_SCOPES(hash, string);
+/*
  *     dim var$(...) as double integer
  *     dim var$(...) as integer
  *     dim var$(...) as dword
@@ -84,14 +370,6 @@ public:
  *     dim var$(...) as boolean
  *     dim var$(...) as double float
  *     dim var$(...) as float
- *
- *     local dim var#(...) as double integer
- *     local dim var#(...) as integer
- *     local dim var#(...) as dword
- *     local dim var#(...) as word
- *     local dim var#(...) as byte
- *     local dim var#(...) as boolean
- *     local dim var#(...) as string
  *
  *     local dim var$(...) as double integer
  *     local dim var$(...) as integer
@@ -102,14 +380,6 @@ public:
  *     local dim var$(...) as double float
  *     local dim var$(...) as float
  *
- *     global dim var#(...) as double integer
- *     global dim var#(...) as integer
- *     global dim var#(...) as dword
- *     global dim var#(...) as word
- *     global dim var#(...) as byte
- *     global dim var#(...) as boolean
- *     global dim var#(...) as string
- *
  *     global dim var$(...) as double integer
  *     global dim var$(...) as integer
  *     global dim var$(...) as dword
@@ -118,17 +388,52 @@ public:
  *     global dim var$(...) as boolean
  *     global dim var$(...) as double float
  *     global dim var$(...) as float
- *
+ */
+INVALID_AS_TYPE_ALL_SCOPES(dollar, double_integer);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, integer);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, dword);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, word);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, byte);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, boolean);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, double_float);
+INVALID_AS_TYPE_ALL_SCOPES(dollar, float);
+/*
  *     dim var()
+ *     dim var&()
+ *     dim var%()
+ *     dim var!()
  *     dim var#()
  *     dim var$()
  *     local dim var()
+ *     local dim var&()
+ *     local dim var%()
+ *     local dim var!()
  *     local dim var#()
  *     local dim var$()
  *     global dim var()
+ *     global dim var&()
+ *     global dim var%()
+ *     global dim var!()
  *     global dim var#()
  *     global dim var$()
- *
+ */
+#define INVALID_ZERO_SIZE_ARRAY(scope, ann)                                   \
+TEST_F(NAME, scope##_dim_arr_##ann##_without_arguments_is_invalid)            \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " dim arr" ann##_str "()", matcher);\
+    ASSERT_THAT(ast, IsNull());                                               \
+}
+#define INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(ann)                               \
+    INVALID_ZERO_SIZE_ARRAY(none, ann)                                        \
+    INVALID_ZERO_SIZE_ARRAY(local, ann)                                       \
+    INVALID_ZERO_SIZE_ARRAY(global, ann)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(none)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(amp)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(percent)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(excl)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(hash)
+INVALID_ZERO_SIZE_ARRAY_ALL_SCOPES(dollar)
+/*
  *     dim var() as double integer
  *     dim var() as integer
  *     dim var() as dword
@@ -137,9 +442,11 @@ public:
  *     dim var() as boolean
  *     dim var() as double float
  *     dim var() as float
- *     dim var#() as double float
- *     dim var#() as float
  *     dim var() as string
+ *     dim var&() as double integer
+ *     dim var%() as word
+ *     dim var!() as double float
+ *     dim var#() as float
  *     dim var$() as string
  *
  *     local dim var() as double integer
@@ -150,9 +457,11 @@ public:
  *     local dim var() as boolean
  *     local dim var() as double float
  *     local dim var() as float
- *     local dim var#() as double float
- *     local dim var#() as float
  *     local dim var() as string
+ *     local dim var&() as double integer
+ *     local dim var%() as word
+ *     local dim var!() as double float
+ *     local dim var#() as float
  *     local dim var$() as string
  *
  *     global dim var() as double integer
@@ -163,1448 +472,34 @@ public:
  *     global dim var() as boolean
  *     global dim var() as double float
  *     global dim var() as float
- *     global dim var#() as double float
- *     global dim var#() as float
  *     global dim var() as string
+ *     global dim var&() as double integer
+ *     global dim var%() as word
+ *     global dim var!() as double float
+ *     global dim var#() as float
  *     global dim var$() as string
  */
-
-TEST_F(NAME, float_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, float_var_cannot_be_declared_as_string)
-{
-    ast = driver->parse("test", "dim arr#(2, 3) as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_double_float)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, string_var_cannot_be_declared_as_float)
-{
-    ast = driver->parse("test", "dim arr$(2, 3) as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_float_var_cannot_be_declared_as_string)
-{
-    ast = driver->parse("test", "local dim arr#(2, 3) as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_double_float)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, local_string_var_cannot_be_declared_as_float)
-{
-    ast = driver->parse("test", "local dim arr$(2, 3) as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_float_var_cannot_be_declared_as_string)
-{
-    ast = driver->parse("test", "global dim arr#(2, 3) as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_double_integer)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_integer)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_dword)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_word)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_byte)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_boolean)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_double_float)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, global_string_var_cannot_be_declared_as_float)
-{
-    ast = driver->parse("test", "global dim arr$(2, 3) as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_decl_defaults_to_local_and_integer)
-{
-    ast = driver->parse("test", "dim arr()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_float_decl_defaults_to_local_and_float)
-{
-    ast = driver->parse("test", "dim arr#()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_string_decl_defaults_to_local_and_string)
-{
-    ast = driver->parse("test", "dim arr$()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_decl_defaults_to_integer)
-{
-    ast = driver->parse("test", "local dim arr()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_float_decl_defaults_to_float)
-{
-    ast = driver->parse("test", "local dim arr#()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_string_decl_defaults_to_string)
-{
-    ast = driver->parse("test", "local dim arr$()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_decl_defaults_to_integer)
-{
-    ast = driver->parse("test", "global dim arr()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_float_decl_defaults_to_float)
-{
-    ast = driver->parse("test", "global dim arr#()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_string_decl_defaults_to_string)
-{
-    ast = driver->parse("test", "global dim arr$()", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_double_integer)
-{
-    ast = driver->parse("test", "dim arr() as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_integer)
-{
-    ast = driver->parse("test", "dim arr() as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_dword)
-{
-    ast = driver->parse("test", "dim arr() as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_word)
-{
-    ast = driver->parse("test", "dim arr() as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_byte)
-{
-    ast = driver->parse("test", "dim arr() as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_boolean)
-{
-    ast = driver->parse("test", "dim arr() as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_double_float)
-{
-    ast = driver->parse("test", "dim arr() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_float)
-{
-    ast = driver->parse("test", "dim arr() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_array_as_double_float)
-{
-    ast = driver->parse("test", "dim arr#() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_array_as_float)
-{
-    ast = driver->parse("test", "dim arr#() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_array_as_string)
-{
-    ast = driver->parse("test", "dim arr() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_string_array_as_string)
-{
-    ast = driver->parse("test", "dim arr$() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_double_integer)
-{
-    ast = driver->parse("test", "local dim arr() as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_integer)
-{
-    ast = driver->parse("test", "local dim arr() as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_dword)
-{
-    ast = driver->parse("test", "local dim arr() as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_word)
-{
-    ast = driver->parse("test", "local dim arr() as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_byte)
-{
-    ast = driver->parse("test", "local dim arr() as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_boolean)
-{
-    ast = driver->parse("test", "local dim arr() as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_double_float)
-{
-    ast = driver->parse("test", "local dim arr() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_float)
-{
-    ast = driver->parse("test", "local dim arr() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_local_array_as_double_float)
-{
-    ast = driver->parse("test", "local dim arr#() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_local_array_as_float)
-{
-    ast = driver->parse("test", "local dim arr#() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_local_array_as_string)
-{
-    ast = driver->parse("test", "local dim arr() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_string_local_array_as_string)
-{
-    ast = driver->parse("test", "local dim arr$() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_double_integer)
-{
-    ast = driver->parse("test", "global dim arr() as double integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_integer)
-{
-    ast = driver->parse("test", "global dim arr() as integer", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_dword)
-{
-    ast = driver->parse("test", "global dim arr() as dword", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_word)
-{
-    ast = driver->parse("test", "global dim arr() as word", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_byte)
-{
-    ast = driver->parse("test", "global dim arr() as byte", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_boolean)
-{
-    ast = driver->parse("test", "global dim arr() as boolean", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_double_float)
-{
-    ast = driver->parse("test", "global dim arr() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_float)
-{
-    ast = driver->parse("test", "global dim arr() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_global_array_as_double_float)
-{
-    ast = driver->parse("test", "global dim arr#() as double float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_float_global_array_as_float)
-{
-    ast = driver->parse("test", "global dim arr#() as float", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_global_array_as_string)
-{
-    ast = driver->parse("test", "global dim arr() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, empty_string_global_array_as_string)
-{
-    ast = driver->parse("test", "global dim arr$() as string", matcher);
-    ASSERT_THAT(ast, IsNull());
-}
-
-TEST_F(NAME, array_decl_defaults_to_local_and_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_float_decl_defaults_to_local_and_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr#(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_string_decl_defaults_to_local_and_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr$(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_decl_defaults_to_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_float_decl_defaults_to_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr#(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_string_decl_defaults_to_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr$(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_decl_defaults_to_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_float_decl_defaults_to_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr#(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_string_decl_defaults_to_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr$(2, 3)", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_double_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_dword)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDwordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_word)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as word", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitWordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_byte)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitByteArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_boolean)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitBooleanArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr#(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr#(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, string_array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "dim arr$(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_double_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_dword)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDwordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_word)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as word", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitWordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_byte)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitByteArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_boolean)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitBooleanArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_local_array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr#(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_local_array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr#(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, local_array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, string_local_array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "local dim arr$(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_double_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as double integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_integer)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as integer", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitIntegerArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_dword)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as dword", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDwordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_word)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as word", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitWordArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_byte)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as byte", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitByteArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_boolean)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as boolean", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitBooleanArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_global_array_as_double_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr#(2, 3) as double float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitDoubleFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, float_global_array_as_float)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr#(2, 3) as float", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitFloatArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::FLOAT, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, global_array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, string_global_array_as_string)
-{
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
-    ast = driver->parse("test", "global dim arr$(2, 3) as string", matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitStringArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::GLOBAL, Annotation::STRING, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
-
-    ast->accept(&v);
-}
+#define INVALID_ZERO_SIZE_ARRAY_AS_TYPE(scope, ann, type)                     \
+TEST_F(NAME, scope##_dim_arr_##ann##_as_##type##_without_arguments_is_invalid)\
+{                                                                             \
+    ast = driver->parse("test", scope##_str " dim arr" ann##_str "() as " type##_str, matcher);\
+    ASSERT_THAT(ast, IsNull());                                               \
+}
+#define INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(ann, type)                 \
+    INVALID_ZERO_SIZE_ARRAY_AS_TYPE(none, ann, type)                          \
+    INVALID_ZERO_SIZE_ARRAY_AS_TYPE(local, ann, type)                         \
+    INVALID_ZERO_SIZE_ARRAY_AS_TYPE(global, ann, type)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, double_integer)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, integer)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, dword)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, word)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, byte)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, boolean)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, double_float)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, float)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(none, string)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(amp, double_integer)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(percent, word)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(excl, double_float)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(hash, float)
+INVALID_ZERO_SIZE_ARRAY_AS_TYPE_ALL_SCOPES(dollar, string)

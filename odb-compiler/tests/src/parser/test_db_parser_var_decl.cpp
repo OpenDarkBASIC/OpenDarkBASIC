@@ -95,103 +95,6 @@ public:
 #define float_literal_eq FloatLiteralEq
 #define string_literal_eq StringLiteralEq
 
-#define VALID(scope, ann, type)                                               \
-TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
-{                                                                             \
-    ast = driver->parse("test", scope##_str " var" ann##_str, matcher);       \
-    ASSERT_THAT(ast, NotNull());                                              \
-                                                                              \
-    StrictMock<ASTMockVisitor> v;                                             \
-    Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, type##_literal_visitor(type##_literal_eq(type##_initial_value))).After(exp);\
-                                                                              \
-    ast->accept(&v);                                                          \
-}
-
-#define VALID_INITIAL(scope, ann, type)                                       \
-TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
-{                                                                             \
-    ast = driver->parse("test", scope##_str " var" ann##_str " = 5.4", matcher);\
-    ASSERT_THAT(ast, NotNull());                                              \
-                                                                              \
-    StrictMock<ASTMockVisitor> v;                                             \
-    Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);\
-                                                                              \
-    ast->accept(&v);                                                          \
-}
-
-#define VALID_AS_TYPE(scope, ann, as_type)                                    \
-TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
-{                                                                             \
-    ast = driver->parse("test", "var" ann##_str " as " as_type##_str, matcher);\
-    ASSERT_THAT(ast, NotNull());                                              \
-                                                                              \
-    StrictMock<ASTMockVisitor> v;                                             \
-    Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
-                                                                              \
-    ast->accept(&v);                                                          \
-}
-
-#define VALID_AS_TYPE_INITIAL(scope, ann, as_type)                            \
-TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
-{                                                                             \
-    ast = driver->parse("test", scope##_str " var" ann##_str " as " as_type##_str " = 5.4", matcher); \
-    ASSERT_THAT(ast, NotNull());                                              \
-                                                                              \
-    StrictMock<ASTMockVisitor> v;                                             \
-    Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp); \
-                                                                              \
-    ast->accept(&v);                                                          \
-}
-
-#define INVALID(ann)                                                          \
-TEST_F(NAME, var_##ann##_alone_is_not_a_valid_statement)                      \
-{                                                                             \
-    ast = driver->parse("test", "var" ann##_str, matcher);                    \
-    ASSERT_THAT(ast, IsNull());                                               \
-}
-
-#define INVALID_AS_TYPE(scope, ann, as_type)                                  \
-TEST_F(NAME, scope##_var_##ann##_as_##as_type##_is_invalid)                   \
-{                                                                             \
-    ast = driver->parse("test", scope##_str " var" ann##_str " as " as_type##_str, matcher);\
-    ASSERT_THAT(ast, IsNull());                                               \
-}
-
-#define VALID_AS_TYPE_ALL_SCOPES(ann, as_type)                                \
-    VALID_AS_TYPE(none, ann, as_type)                                         \
-    VALID_AS_TYPE(global, ann, as_type)                                       \
-    VALID_AS_TYPE(local, ann, as_type)
-
-#define VALID_AS_TYPE_INITIAL_ALL_SCOPES(ann, as_type)                        \
-    VALID_AS_TYPE_INITIAL(none, ann, as_type)                                 \
-    VALID_AS_TYPE_INITIAL(global, ann, as_type)                               \
-    VALID_AS_TYPE_INITIAL(local, ann, as_type)
-
-#define INVALID_AS_TYPE_ALL_SCOPES(ann, as_type)                              \
-    INVALID_AS_TYPE(none, ann, as_type)                                       \
-    INVALID_AS_TYPE(global, ann, as_type)                                     \
-    INVALID_AS_TYPE(local, ann, as_type)
-
 /*
  * All possible valid variable declarations:
  *
@@ -208,6 +111,22 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_is_invalid)                   \
  *     global var#
  *     global var$
  */
+#define VALID(scope, ann, type)                                               \
+TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " var" ann##_str, matcher);       \
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, type##_literal_visitor(type##_literal_eq(type##_initial_value))).After(exp);\
+                                                                              \
+    ast->accept(&v);                                                          \
+}
 VALID(local, none, integer)
 VALID(local, amp, double_integer)
 VALID(local, percent, word)
@@ -234,6 +153,22 @@ VALID(global, dollar, string)
  *     global var# = x
  *     global var$ = x
  */
+#define VALID_INITIAL(scope, ann, type)                                       \
+TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " var" ann##_str " = 5.4", matcher);\
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);\
+                                                                              \
+    ast->accept(&v);                                                          \
+}
 VALID_INITIAL(local, none, integer)
 VALID_INITIAL(local, amp, double_integer)
 VALID_INITIAL(local, percent, word)
@@ -292,6 +227,27 @@ VALID_INITIAL(global, dollar, string)
  *     global var# as float
  *     global var$ as string
  */
+
+#define VALID_AS_TYPE(scope, ann, as_type)                                    \
+TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " var" ann##_str " as " as_type##_str, matcher);\
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
+                                                                              \
+    ast->accept(&v);                                                          \
+}
+#define VALID_AS_TYPE_ALL_SCOPES(ann, as_type)                                \
+    VALID_AS_TYPE(none, ann, as_type)                                         \
+    VALID_AS_TYPE(global, ann, as_type)                                       \
+    VALID_AS_TYPE(local, ann, as_type)
 VALID_AS_TYPE_ALL_SCOPES(none, double_integer)
 VALID_AS_TYPE_ALL_SCOPES(none, integer)
 VALID_AS_TYPE_ALL_SCOPES(none, dword)
@@ -352,6 +308,26 @@ VALID_AS_TYPE_ALL_SCOPES(dollar, string)
  *     global var# as float = x
  *     global var$ as string = x
  */
+#define VALID_AS_TYPE_INITIAL_ALL_SCOPES(ann, as_type)                        \
+    VALID_AS_TYPE_INITIAL(none, ann, as_type)                                 \
+    VALID_AS_TYPE_INITIAL(global, ann, as_type)                               \
+    VALID_AS_TYPE_INITIAL(local, ann, as_type)
+#define VALID_AS_TYPE_INITIAL(scope, ann, as_type)                            \
+TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " var" ann##_str " as " as_type##_str " = 5.4", matcher); \
+    ASSERT_THAT(ast, NotNull());                                              \
+                                                                              \
+    StrictMock<ASTMockVisitor> v;                                             \
+    Expectation exp;                                                          \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
+    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
+        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp); \
+                                                                              \
+    ast->accept(&v);                                                          \
+}
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, double_integer)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, integer)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, dword)
@@ -377,6 +353,12 @@ VALID_AS_TYPE_INITIAL_ALL_SCOPES(dollar, string)
  *     var!
  *     var$
  */
+#define INVALID(ann)                                                          \
+TEST_F(NAME, var_##ann##_alone_is_not_a_valid_statement)                      \
+{                                                                             \
+    ast = driver->parse("test", "var" ann##_str, matcher);                    \
+    ASSERT_THAT(ast, IsNull());                                               \
+}
 INVALID(none)
 INVALID(amp)
 INVALID(percent)
@@ -411,6 +393,16 @@ INVALID(dollar)
  *     global var& as float
  *     global var& as string
  */
+#define INVALID_AS_TYPE(scope, ann, as_type)                                  \
+TEST_F(NAME, scope##_var_##ann##_as_##as_type##_is_invalid)                   \
+{                                                                             \
+    ast = driver->parse("test", scope##_str " var" ann##_str " as " as_type##_str, matcher);\
+    ASSERT_THAT(ast, IsNull());                                               \
+}
+#define INVALID_AS_TYPE_ALL_SCOPES(ann, as_type)                              \
+    INVALID_AS_TYPE(none, ann, as_type)                                       \
+    INVALID_AS_TYPE(global, ann, as_type)                                     \
+    INVALID_AS_TYPE(local, ann, as_type)
 INVALID_AS_TYPE_ALL_SCOPES(amp, integer)
 INVALID_AS_TYPE_ALL_SCOPES(amp, dword)
 INVALID_AS_TYPE_ALL_SCOPES(amp, word)

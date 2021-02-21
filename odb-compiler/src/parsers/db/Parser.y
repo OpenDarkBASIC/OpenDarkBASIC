@@ -366,6 +366,9 @@
 %type<block> cond_next
 %type<array_decl> array_decl
 %type<scoped_annotated_symbol> array_decl_int_sym
+%type<scoped_annotated_symbol> array_decl_double_int_sym
+%type<scoped_annotated_symbol> array_decl_word_sym
+%type<scoped_annotated_symbol> array_decl_double_float_sym
 %type<scoped_annotated_symbol> array_decl_float_sym
 %type<scoped_annotated_symbol> array_decl_str_sym
 %type<array_ref> array_ref
@@ -611,11 +614,16 @@ array_decl
   | array_decl_int_sym '(' expr_list ')' AS DOUBLE FLOAT      { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_int_sym '(' expr_list ')' AS FLOAT             { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_int_sym '(' expr_list ')' AS STRING            { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
-  | array_decl_float_sym '(' expr_list ')' AS DOUBLE FLOAT    { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_double_int_sym '(' expr_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_word_sym '(' expr_list ')' AS WORD             { $$ = new WordArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_double_float_sym '(' expr_list ')' AS DOUBLE FLOAT { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_float_sym '(' expr_list ')' AS FLOAT           { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_str_sym '(' expr_list ')'AS STRING             { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_int_sym '(' expr_list ')' AS udt_ref           { $$ = new UDTArrayDeclSymbol($1, $3, $6, driver->newLocation(&@$)); }
   | array_decl_int_sym '(' expr_list ')'                      { $$ = new IntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_double_int_sym '(' expr_list ')'               { $$ = new DoubleIntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_word_sym '(' expr_list ')'                     { $$ = new WordArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | array_decl_double_float_sym '(' expr_list ')'             { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_float_sym '(' expr_list ')'                    { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | array_decl_str_sym '(' expr_list ')'                      { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
   ;
@@ -623,6 +631,21 @@ array_decl_int_sym
   : GLOBAL DIM SYMBOL %prec NO_HASH_OR_DOLLAR                 { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::NONE, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
   | LOCAL DIM SYMBOL %prec NO_HASH_OR_DOLLAR                  { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
   | DIM SYMBOL %prec NO_HASH_OR_DOLLAR                        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+array_decl_double_int_sym
+  : GLOBAL DIM SYMBOL '&'                                     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_INTEGER, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL '&'                                      { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | DIM SYMBOL '&'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+array_decl_word_sym
+  : GLOBAL DIM SYMBOL '%'                                     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::WORD, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL '%'                                      { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | DIM SYMBOL '%'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+array_decl_double_float_sym
+  : GLOBAL DIM SYMBOL '!'                                     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::DOUBLE_FLOAT, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | LOCAL DIM SYMBOL '!'                                      { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
+  | DIM SYMBOL '!'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
   ;
 array_decl_float_sym
   : GLOBAL DIM SYMBOL '#'                                     { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::GLOBAL, Symbol::Annotation::FLOAT, $3, driver->newLocation(&@$)); str::deleteCStr($3); }
