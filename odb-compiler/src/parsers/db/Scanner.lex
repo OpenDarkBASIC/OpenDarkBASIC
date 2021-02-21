@@ -58,7 +58,7 @@ FLOAT4          \.[0-9]+{FLOAT_EXP}?
 FLOAT5          [0-9]+{FLOAT_EXP}
 FLOAT           -?{FLOAT1}f?|{FLOAT2}f?|{FLOAT3}|{FLOAT4}|{FLOAT5}
 INTEGER_BASE2   -?%[01]+
-INTEGER_BASE16  -?0x[0-9a-fA-F]+
+INTEGER_BASE16  -?0[xX][0-9a-fA-F]+
 INTEGER         -?[0-9]+
 SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
@@ -68,74 +68,89 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
 
 %%
 <INITIAL>{
-    (?i:remstart)       { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
-    "/*"                { BEGIN(MULTI_COMMENT_C); dbg("multiline remark"); }
-    {REMARK}            { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
+    (?i:remstart)         { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
+    "/*"                  { BEGIN(MULTI_COMMENT_C); dbg("multiline remark"); }
+    {REMARK}              { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
 }
 <SINGLE_COMMENT>{
     .
-    \n                  { BEGIN(INITIAL); }
+    \n                    { BEGIN(INITIAL); }
 }
 <MULTI_COMMENT>{
-    (?i:remend)         { BEGIN(INITIAL); dbg("multiline remark end"); }
+    (?i:remend)           { BEGIN(INITIAL); dbg("multiline remark end"); }
     .
     \n
 }
 <MULTI_COMMENT_C>{
-    "*/"                { BEGIN(INITIAL); dbg("multiline remark end"); }
+    "*/"                  { BEGIN(INITIAL); dbg("multiline remark end"); }
     .
     \n
 }
 
 <INITIAL>{
-    {CONSTANT}          { RETURN_TOKEN(TOK_CONSTANT); }
+    {CONSTANT}            { RETURN_TOKEN(TOK_CONSTANT); }
 
-    {BOOL_TRUE}         { yylval->boolean_value = true; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {BOOL_FALSE}        { yylval->boolean_value = false; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { size_t len = strlen(yytext);
-                          yylval->string = odb::str::newCStrRange(yytext, 1, len > 1 ? len-1 : 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
-    {FLOAT}             { yylval->float_value = atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
-    {INTEGER_BASE2}     { const char* val = yytext[0] == '-' ? &yytext[2] : &yytext[1];  /* Skip leading "%" and handle negatives */
-                          yylval->integer_value = strtol(val, nullptr, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
-    {INTEGER_BASE16}    { const char* val = yytext[0] == '-' ? &yytext[3] : &yytext[2];  /* Skip leading "0x" and handle negatives */
-                          yylval->integer_value = strtol(val, nullptr, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
-    {INTEGER}           { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {BOOL_TRUE}           { yylval->boolean_value = true; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {BOOL_FALSE}          { yylval->boolean_value = false; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {STRING_LITERAL}      { size_t len = strlen(yytext);
+                            yylval->string = odb::str::newCStrRange(yytext, 1, len > 1 ? len-1 : 1); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {FLOAT}               { yylval->float_value = atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
+    {INTEGER_BASE2}       { if (yytext[0] == '-') {
+                                yytext[1] = '-';  /* overwrite "%" so strol() can parse the number with negation */
+                                yylval->integer_value = strtol(&yytext[1], nullptr, 2);
+                                yytext[1] = '%';  /* restore leading '%' in case someone else cares about yytext */
+                            } else {
+                                yylval->integer_value = strtol(&yytext[1], nullptr, 2);
+                            }
+                            RETURN_TOKEN(TOK_INTEGER_LITERAL);
+                          }
+    {INTEGER_BASE16}      { if (yytext[0] == '-') {
+                                const char x = yytext[2];
+                                yytext[2] = '-';  /* Overwrite the "x" in "0x" so strtol() can parse the number with negation */
+                                yylval->integer_value = strtol(&yytext[2], nullptr, 16);
+                                yytext[2] = x;    /* Restore leading 'x' in case someone else cares about yytext */
+                            } else {
+                                yylval->integer_value = strtol(&yytext[2], nullptr, 16);
+                            }
+                            RETURN_TOKEN(TOK_INTEGER_LITERAL);
+                          }
+    {INTEGER}             { yylval->integer_value = strtol(yytext, nullptr, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    "+"                 { RETURN_TOKEN('+'); }
-    "-"                 { RETURN_TOKEN('-'); }
-    "*"                 { RETURN_TOKEN('*'); }
-    "/"                 { RETURN_TOKEN('/'); }
-    "^"                 { RETURN_TOKEN('^'); }
-    "("                 { RETURN_TOKEN('('); }
-    ")"                 { RETURN_TOKEN(')'); }
-    ","                 { RETURN_TOKEN(','); }
+    "+"                   { RETURN_TOKEN('+'); }
+    "-"                   { RETURN_TOKEN('-'); }
+    "*"                   { RETURN_TOKEN('*'); }
+    "/"                   { RETURN_TOKEN('/'); }
+    "^"                   { RETURN_TOKEN('^'); }
+    "("                   { RETURN_TOKEN('('); }
+    ")"                   { RETURN_TOKEN(')'); }
+    ","                   { RETURN_TOKEN(','); }
 
-    "<<"                { RETURN_TOKEN(TOK_BSHL); }
-    ">>"                { RETURN_TOKEN(TOK_BSHR); }
-    "||"                { RETURN_TOKEN(TOK_BOR); }
-    "&&"                { RETURN_TOKEN(TOK_BAND); }
-    "~~"                { RETURN_TOKEN(TOK_BXOR); }
-    ".."                { RETURN_TOKEN(TOK_BNOT); }
+    "<<"                  { RETURN_TOKEN(TOK_BSHL); }
+    ">>"                  { RETURN_TOKEN(TOK_BSHR); }
+    "||"                  { RETURN_TOKEN(TOK_BOR); }
+    "&&"                  { RETURN_TOKEN(TOK_BAND); }
+    "~~"                  { RETURN_TOKEN(TOK_BXOR); }
+    ".."                  { RETURN_TOKEN(TOK_BNOT); }
 
-    "<>"                { RETURN_TOKEN(TOK_NE); }
-    "<="                { RETURN_TOKEN(TOK_LE); }
-    ">="                { RETURN_TOKEN(TOK_GE); }
-    "="                 { RETURN_TOKEN('='); }
-    "<"                 { RETURN_TOKEN('<'); }
-    ">"                 { RETURN_TOKEN('>'); }
+    "<>"                  { RETURN_TOKEN(TOK_NE); }
+    "<="                  { RETURN_TOKEN(TOK_LE); }
+    ">="                  { RETURN_TOKEN(TOK_GE); }
+    "="                   { RETURN_TOKEN('='); }
+    "<"                   { RETURN_TOKEN('<'); }
+    ">"                   { RETURN_TOKEN('>'); }
 
-    {SYMBOL}            { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(TOK_SYMBOL); }
+    {SYMBOL}              { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(TOK_SYMBOL); }
 
-    "#"                 { RETURN_TOKEN('#'); }
-    "$"                 { RETURN_TOKEN('$'); }
-    "%"                 { RETURN_TOKEN('%'); }
-    "&"                 { RETURN_TOKEN('&'); }
-    "."                 { RETURN_TOKEN('.'); }
+    "#"                   { RETURN_TOKEN('#'); }
+    "$"                   { RETURN_TOKEN('$'); }
+    "%"                   { RETURN_TOKEN('%'); }
+    "&"                   { RETURN_TOKEN('&'); }
+    "."                   { RETURN_TOKEN('.'); }
 
-    "\n"                { RETURN_TOKEN('\n'); }
-    ":"                 { RETURN_TOKEN(':'); }
-    ";"                 { RETURN_TOKEN(';'); }
+    "\n"                  { RETURN_TOKEN('\n'); }
+    ":"                   { RETURN_TOKEN(':'); }
+    ";"                   { RETURN_TOKEN(';'); }
     [ \t\r]
-    .                   { RETURN_TOKEN(yytext[0]); }
+    .                     { RETURN_TOKEN(yytext[0]); }
 }
 %%
