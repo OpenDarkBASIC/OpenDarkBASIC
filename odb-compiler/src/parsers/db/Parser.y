@@ -393,10 +393,16 @@
 %type<lvalue> udt_field_inner
 %type<var_decl> udt_decl_var
 %type<scoped_annotated_symbol> udt_decl_var_int_sym
+%type<scoped_annotated_symbol> udt_decl_var_double_int_sym
+%type<scoped_annotated_symbol> udt_decl_var_word_sym
+%type<scoped_annotated_symbol> udt_decl_var_double_float_sym
 %type<scoped_annotated_symbol> udt_decl_var_float_sym
 %type<scoped_annotated_symbol> udt_decl_var_str_sym
 %type<array_decl> udt_decl_array
 %type<scoped_annotated_symbol> udt_decl_array_int_sym
+%type<scoped_annotated_symbol> udt_decl_array_double_int_sym
+%type<scoped_annotated_symbol> udt_decl_array_word_sym
+%type<scoped_annotated_symbol> udt_decl_array_double_float_sym
 %type<scoped_annotated_symbol> udt_decl_array_float_sym
 %type<scoped_annotated_symbol> udt_decl_array_str_sym
 %type<udt_ref> udt_ref
@@ -719,7 +725,9 @@ udt_decl_var
   | udt_decl_var_int_sym AS DOUBLE FLOAT                      { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_int_sym AS FLOAT                             { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_int_sym AS STRING                            { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
-  | udt_decl_var_float_sym AS DOUBLE FLOAT                    { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_double_int_sym AS DOUBLE INTEGER             { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_word_sym AS WORD                             { $$ = new WordVarDecl($1, driver->newLocation(&@$)); }
+  | udt_decl_var_double_float_sym AS DOUBLE FLOAT             { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_float_sym AS FLOAT                           { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_str_sym AS STRING                            { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
   | udt_decl_var_int_sym AS udt_ref                           { $$ = new UDTVarDeclSymbol($1, $3, driver->newLocation(&@$)); }
@@ -741,6 +749,15 @@ udt_decl_var
 udt_decl_var_int_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
+udt_decl_var_double_int_sym
+  : SYMBOL '&'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
+udt_decl_var_word_sym
+  : SYMBOL '%'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
+udt_decl_var_double_float_sym
+  : SYMBOL '!'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  ;
 udt_decl_var_float_sym
   : SYMBOL '#'                                                { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
@@ -757,13 +774,18 @@ udt_decl_array
   | udt_decl_array_int_sym '(' expr_list ')' AS DOUBLE FLOAT  { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')' AS FLOAT         { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')' AS STRING        { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
-  | udt_decl_array_float_sym '(' expr_list ')' AS DOUBLE FLOAT{ $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_double_int_sym '(' expr_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_word_sym '(' expr_list ')' AS WORD         { $$ = new WordArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_double_float_sym '(' expr_list ')' AS DOUBLE FLOAT { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_float_sym '(' expr_list ')' AS FLOAT       { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_str_sym '(' expr_list ')'AS STRING         { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
-  | udt_decl_array_int_sym '(' expr_list ')' AS udt_ref       { $$ = new UDTArrayDeclSymbol($1, $3, $6, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')'                  { $$ = new IntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_double_int_sym '(' expr_list ')'           { $$ = new DoubleIntegerArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_word_sym '(' expr_list ')'                 { $$ = new WordArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_double_float_sym '(' expr_list ')'         { $$ = new DoubleFloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_float_sym '(' expr_list ')'                { $$ = new FloatArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_str_sym '(' expr_list ')'                  { $$ = new StringArrayDecl($1, $3, driver->newLocation(&@$)); }
+  | udt_decl_array_int_sym '(' expr_list ')' AS udt_ref       { $$ = new UDTArrayDeclSymbol($1, $3, $6, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')' AS COMPLEX       { $$ = new ComplexArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')' AS MAT2X2        { $$ = new Mat2x2ArrayDecl($1, $3, driver->newLocation(&@$)); }
   | udt_decl_array_int_sym '(' expr_list ')' AS MAT2X3        { $$ = new Mat2x3ArrayDecl($1, $3, driver->newLocation(&@$)); }
@@ -781,6 +803,15 @@ udt_decl_array
   ;
 udt_decl_array_int_sym
   : DIM SYMBOL %prec NO_HASH_OR_DOLLAR                        { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+udt_decl_array_double_int_sym
+  : DIM SYMBOL '&'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+udt_decl_array_word_sym
+  : DIM SYMBOL '%'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
+  ;
+udt_decl_array_double_float_sym
+  : DIM SYMBOL '!'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
   ;
 udt_decl_array_float_sym
   : DIM SYMBOL '#'                                            { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $2, driver->newLocation(&@$)); str::deleteCStr($2); }
@@ -934,13 +965,13 @@ loop_until
   ;
 loop_for
   : FOR assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps block seps NEXT loop_next_sym           { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps NEXT loop_next_sym                      { $$ = new ForLoop($2, $4, $7, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps NEXT                          { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps block seps NEXT                         { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps NEXT                                    { $$ = new ForLoop($2, $4, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps NEXT loop_next_sym  { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $7, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps block seps NEXT     { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps NEXT                { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps NEXT                          { $$ = new ForLoop($2, $4, driver->newLocation(&@$)); }
   ;
 loop_next_sym
   : SYMBOL %prec NO_HASH_OR_DOLLAR                            { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }

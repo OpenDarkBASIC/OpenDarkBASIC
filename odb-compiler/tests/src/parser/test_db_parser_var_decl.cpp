@@ -50,17 +50,45 @@ public:
 #define double_float_str "double float"
 #define float_str "float"
 #define string_str "string"
+#define complex_str "complex"
+#define mat2x2_str "mat2x2"
+#define mat2x3_str "mat2x3"
+#define mat2x4_str "mat2x4"
+#define mat3x2_str "mat3x2"
+#define mat3x3_str "mat3x3"
+#define mat3x4_str "mat3x4"
+#define mat4x2_str "mat4x2"
+#define mat4x3_str "mat4x3"
+#define mat4x4_str "mat4x4"
+#define quat_str "quat"
+#define vec2_str "vec2"
+#define vec3_str "vec3"
+#define vec4_str "vec4"
 
 // Type initial values
-#define double_integer_initial_value 0
-#define integer_initial_value 0
-#define dword_initial_value 0
-#define word_initial_value 0
-#define byte_initial_value 0
-#define boolean_initial_value false
-#define double_float_initial_value 0.0
-#define float_initial_value 0.0f
-#define string_initial_value ""
+#define double_integer_initial_value   0
+#define integer_initial_value          0
+#define dword_initial_value            0
+#define word_initial_value             0
+#define byte_initial_value             0
+#define boolean_initial_value          false
+#define double_float_initial_value     0.0
+#define float_initial_value            0.0f
+#define string_initial_value           ""
+#define complex_initial_value          {0, 0}
+#define mat2x2_initial_value           {{1, 0}, {0, 1}}
+#define mat2x3_initial_value           {{0, 0}, {0, 0}, {0, 0}}
+#define mat2x4_initial_value           {{0, 0}, {0, 0}, {0, 0}, {0, 0}}
+#define mat3x2_initial_value           {{0, 0, 0}, {0, 0, 0}}
+#define mat3x3_initial_value           {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}
+#define mat3x4_initial_value           {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+#define mat4x2_initial_value           {{0, 0, 0, 0}, {0, 0, 0, 0}}
+#define mat4x3_initial_value           {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}
+#define mat4x4_initial_value           {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
+#define quat_initial_value             {0, 0, 0, 1}
+#define vec2_initial_value             {0, 0}
+#define vec3_initial_value             {0, 0, 0}
+#define vec4_initial_value             {0, 0, 0, 0}
 
 // Type decl visitors
 #define double_integer_decl_visitor visitDoubleIntegerVarDecl
@@ -227,7 +255,6 @@ VALID_INITIAL(global, dollar, string)
  *     global var# as float
  *     global var$ as string
  */
-
 #define VALID_AS_TYPE(scope, ann, as_type)                                    \
 TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
 {                                                                             \
@@ -262,6 +289,7 @@ VALID_AS_TYPE_ALL_SCOPES(percent, word)
 VALID_AS_TYPE_ALL_SCOPES(excl, double_float)
 VALID_AS_TYPE_ALL_SCOPES(hash, float)
 VALID_AS_TYPE_ALL_SCOPES(dollar, string)
+
 /*
  *     var as double integer = x
  *     var as integer = x

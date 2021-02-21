@@ -77,6 +77,9 @@ then,             TOK_THEN
 to,               TOK_TO
 type,             TOK_TYPE
 until,            TOK_UNTIL
+vec2,             TOK_VEC2
+vec3,             TOK_VEC3
+vec4,             TOK_VEC4
 while,            TOK_WHILE
 word,             TOK_WORD
 xor,              TOK_LXOR

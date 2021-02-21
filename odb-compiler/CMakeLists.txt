@@ -302,6 +302,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/parser/test_db_parser_udt_var_decl.cpp"
         "tests/src/parser/test_db_parser_udt_fields.cpp"
         "tests/src/parser/test_db_parser_var_decl.cpp"
+        "tests/src/parser/test_db_parser_var_decl_math.cpp"
         "tests/src/parser/test_db_parser_var_ref.cpp"
         "tests/src/parser/test_db_parser_cmd_matcher.cpp"
         "tests/src/parser/ASTMatchers.cpp"

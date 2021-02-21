@@ -508,68 +508,68 @@ private:
     void visitStringLiteral(const StringLiteral* node) override
         { writeName(node, "String: " + str::escapeBackslashes(node->value())); }
     void visitComplexLiteral(const ComplexLiteral* node) override
-        { writeName(node, "Complex: " + std::to_string(node->value()[0]) + " + " + std::to_string(node->value()[1]) + "i"); }
+        { writeName(node, "Complex: " + std::to_string(node->value().real) + " + " + std::to_string(node->value().imag) + "i"); }
     void visitQuatLiteral(const QuatLiteral* node) override
-        { writeName(node, "Quat: " + std::to_string(node->value()[3]) + " + " + std::to_string(node->value()[0]) + "i + " + std::to_string(node->value()[1]) + "j + " + std::to_string(node->value()[2]) + "k"); }
+        { writeName(node, "Quat: " + std::to_string(node->value().w) + " + " + std::to_string(node->value().x) + "i + " + std::to_string(node->value().y) + "j + " + std::to_string(node->value().z) + "k"); }
     void visitVec2Literal(const Vec2Literal* node) override
-        { writeName(node, "Vec2: [" + std::to_string(node->value()[0]) + ", " + std::to_string(node->value()[1]) + "]"); }
+        { writeName(node, "Vec2: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + "]"); }
     void visitVec3Literal(const Vec3Literal* node) override
-        { writeName(node, "Vec3: [" + std::to_string(node->value()[0]) + ", " + std::to_string(node->value()[1]) + ", " + std::to_string(node->value()[2]) + "]"); }
+        { writeName(node, "Vec3: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + ", " + std::to_string(node->value().z) + "]"); }
     void visitVec4Literal(const Vec4Literal* node) override
-        { writeName(node, "Vec4: [" + std::to_string(node->value()[0]) + ", " + std::to_string(node->value()[1]) + ", " + std::to_string(node->value()[2]) + std::to_string(node->value()[3]) + "]"); }
+        { writeName(node, "Vec4: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + ", " + std::to_string(node->value().z) + std::to_string(node->value().w) + "]"); }
     void visitMat2x2Literal(const Mat2x2Literal* node) override
     {
-        writeName(node, "Mat2x2: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + "]");
+        writeName(node, "Mat2x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + "]");
     }
     void visitMat2x3Literal(const Mat2x3Literal* node) override
     {
-        writeName(node, "Mat2x3: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + "]");
+        writeName(node, "Mat2x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + "]");
     }
     void visitMat2x4Literal(const Mat2x4Literal* node) override
     {
-        writeName(node, "Mat2x4: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ", " + std::to_string(node->value()[3][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + ", " + std::to_string(node->value()[3][1]) + "]");
+        writeName(node, "Mat2x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + "]");
     }
     void visitMat3x2Literal(const Mat3x2Literal* node) override
     {
-        writeName(node, "Mat3x2: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + "]");
+        writeName(node, "Mat3x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + "]");
     }
     void visitMat3x3Literal(const Mat3x3Literal* node) override
     {
-        writeName(node, "Mat3x3: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + ", " + std::to_string(node->value()[2][2]) + "]");
+        writeName(node, "Mat3x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + "]");
     }
     void visitMat3x4Literal(const Mat3x4Literal* node) override
     {
-        writeName(node, "Mat3x4: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ", " + std::to_string(node->value()[3][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + ", " + std::to_string(node->value()[3][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + ", " + std::to_string(node->value()[2][2]) + ", " + std::to_string(node->value()[3][2]) + "]");
+        writeName(node, "Mat3x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + ", " + std::to_string(node->value().e3.z) + "]");
     }
     void visitMat4x2Literal(const Mat4x2Literal* node) override
     {
-        writeName(node, "Mat4x2: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][3]) + ", " + std::to_string(node->value()[1][3]) + "]");
+        writeName(node, "Mat4x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ";\n"
+                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + "]");
     }
     void visitMat4x3Literal(const Mat4x3Literal* node) override
     {
-        writeName(node, "Mat4x3: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + ", " + std::to_string(node->value()[2][2]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][3]) + ", " + std::to_string(node->value()[1][3]) + ", " + std::to_string(node->value()[2][3]) + "]");
+        writeName(node, "Mat4x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e1.z) + ";\n"
+                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + ", " + std::to_string(node->value().e1.w) + "]");
     }
     void visitMat4x4Literal(const Mat4x4Literal* node) override
     {
-        writeName(node, "Mat4x4: [" + std::to_string(node->value()[0][0]) + ", " + std::to_string(node->value()[1][0]) + ", " + std::to_string(node->value()[2][0]) + ", " + std::to_string(node->value()[3][0]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][1]) + ", " + std::to_string(node->value()[1][1]) + ", " + std::to_string(node->value()[2][1]) + ", " + std::to_string(node->value()[3][1]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][2]) + ", " + std::to_string(node->value()[1][2]) + ", " + std::to_string(node->value()[2][2]) + ", " + std::to_string(node->value()[3][2]) + ";\n"
-                      + "         " + std::to_string(node->value()[0][3]) + ", " + std::to_string(node->value()[1][3]) + ", " + std::to_string(node->value()[2][3]) + ", " + std::to_string(node->value()[3][3]) + "]");
+        writeName(node, "Mat4x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
+                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + ";\n"
+                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + ", " + std::to_string(node->value().e3.z) + ";\n"
+                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + ", " + std::to_string(node->value().e2.w) + ", " + std::to_string(node->value().e3.w) + "]");
     }
 
 #define X(dbname, cppname)                                                    \

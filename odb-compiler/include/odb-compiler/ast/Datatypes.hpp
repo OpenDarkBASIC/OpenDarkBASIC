@@ -35,19 +35,19 @@
 
 namespace odb {
 
-template <typename T> struct Complex : std::array<T, 2> {};
-template <typename T> struct Quat    : std::array<T, 4> {};
-template <typename T> struct Vec2    : std::array<T, 2> {};
-template <typename T> struct Vec3    : std::array<T, 3> {};
-template <typename T> struct Vec4    : std::array<T, 4> {};
-template <typename T> struct Mat2x2  : std::array<std::array<T, 2>, 2> {};
-template <typename T> struct Mat2x3  : std::array<std::array<T, 2>, 3> {};
-template <typename T> struct Mat2x4  : std::array<std::array<T, 2>, 4> {};
-template <typename T> struct Mat3x2  : std::array<std::array<T, 3>, 2> {};
-template <typename T> struct Mat3x3  : std::array<std::array<T, 3>, 3> {};
-template <typename T> struct Mat3x4  : std::array<std::array<T, 3>, 4> {};
-template <typename T> struct Mat4x2  : std::array<std::array<T, 4>, 2> {};
-template <typename T> struct Mat4x3  : std::array<std::array<T, 4>, 3> {};
-template <typename T> struct Mat4x4  : std::array<std::array<T, 4>, 4> {};
+template <typename T> struct Complex { T real = 0; T imag = 0; };
+template <typename T> struct Quat    { T x = 0; T y = 0; T z = 0; T w = 1; };
+template <typename T> struct Vec2    { T x = 0; T y = 0; };
+template <typename T> struct Vec3    { T x = 0; T y = 0; T z = 0; };
+template <typename T> struct Vec4    { T x = 0; T y = 0; T z = 0; T w = 0; };
+template <typename T> struct Mat2x2  { Vec2<T> e0 = {1, 0}; Vec2<T> e1 = {0, 1}; };
+template <typename T> struct Mat2x3  { Vec2<T> e0 = {0, 0}; Vec2<T> e1 = {0, 0}; Vec2<T> e2 = {0, 0}; };
+template <typename T> struct Mat2x4  { Vec2<T> e0 = {0, 0}; Vec2<T> e1 = {0, 0}; Vec2<T> e2 = {0, 0}; Vec2<T> e3 = {0, 0}; };
+template <typename T> struct Mat3x2  { Vec3<T> e0 = {0, 0, 0}; Vec3<T> e1 = {0, 0, 0}; };
+template <typename T> struct Mat3x3  { Vec3<T> e0 = {1, 0, 0}; Vec3<T> e1 = {0, 1, 0}; Vec3<T> e2 = {0, 0, 1}; };
+template <typename T> struct Mat3x4  { Vec3<T> e0 = {0, 0, 0}; Vec3<T> e1 = {0, 0, 0}; Vec3<T> e2 = {0, 0, 0}; Vec3<T> e3 = {0, 0, 0}; };
+template <typename T> struct Mat4x2  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; };
+template <typename T> struct Mat4x3  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; Vec4<T> e2 = {0, 0, 0, 0}; };
+template <typename T> struct Mat4x4  { Vec4<T> e0 = {1, 0, 0, 0}; Vec4<T> e1 = {0, 1, 0, 0}; Vec4<T> e2 = {0, 0, 1, 0}; Vec4<T> e3 = {0, 0, 0, 1}; };
 
 }
