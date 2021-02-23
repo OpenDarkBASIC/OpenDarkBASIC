@@ -1,14 +1,16 @@
 #pragma once
 
 #include "gmock/gmock.h"
+#include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Goto.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 
 using namespace ::testing;
 using namespace odb;
@@ -592,6 +594,48 @@ private:
     const std::string expectedLabel_;
 };
 
+class BinaryOpEqMatcher : public MatcherInterface<const ast::BinaryOp*>
+{
+public:
+    explicit BinaryOpEqMatcher(const ast::BinaryOp::Op op)
+        : expectedOp_(op) {}
+    bool MatchAndExplain(const ast::BinaryOp* node, MatchResultListener* listener) const override {
+        *listener << "node->op() == " << table_[node->op()];
+        return node->op() == expectedOp_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->op() equals " << table_[expectedOp_];
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->op() does not equal " << table_[expectedOp_];
+    }
+
+private:
+    const ast::BinaryOp::Op expectedOp_;
+    static const char** table_;
+};
+
+class UnaryOpEqMatcher : public MatcherInterface<const ast::UnaryOp*>
+{
+public:
+    explicit UnaryOpEqMatcher(const ast::UnaryOp::Op op)
+        : expectedOp_(op) {}
+    bool MatchAndExplain(const ast::UnaryOp* node, MatchResultListener* listener) const override {
+        *listener << "node->op() == " << table_[node->op()];
+        return node->op() == expectedOp_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->op() equals " << table_[expectedOp_];
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->op() does not equal " << table_[expectedOp_];
+    }
+
+private:
+    const ast::UnaryOp::Op expectedOp_;
+    static const char** table_;
+};
+
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
 }
@@ -618,6 +662,12 @@ inline Matcher<const ast::CommandStmntSymbol*> CommandStmntSymbolEq(const std::s
 }
 inline Matcher<const ast::Goto*> GotoEq(const std::string& labelName) {
     return MakeMatcher(new GotoEqMatcher(labelName));
+}
+inline Matcher<const ast::BinaryOp*> BinaryOpEq(const ast::BinaryOp::Op op) {
+    return MakeMatcher(new BinaryOpEqMatcher(op));
+}
+inline Matcher<const ast::UnaryOp*> UnaryOpEq(const ast::UnaryOp::Op op) {
+    return MakeMatcher(new UnaryOpEqMatcher(op));
 }
 #define X(dbname, cppname) \
 inline Matcher<const ast::dbname##Literal*> dbname##LiteralEq(const cppname& value) { \

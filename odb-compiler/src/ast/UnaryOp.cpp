@@ -2,15 +2,21 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UnaryOp::UnaryOp(Expression* expr, SourceLocation* location) :
+UnaryOp::UnaryOp(Op op, Expression* expr, SourceLocation* location) :
     Expression(location),
-    expr_(expr)
+    expr_(expr),
+    op_(op)
 {
     expr->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+UnaryOp::Op UnaryOp::op() const
+{
+    return op_;
 }
 
 // ----------------------------------------------------------------------------
@@ -20,38 +26,35 @@ Expression* UnaryOp::expr() const
 }
 
 // ----------------------------------------------------------------------------
-#define X(op, tok)                                                            \
-UnaryOp##op::UnaryOp##op(Expression* expr, SourceLocation* location) :        \
-    UnaryOp(expr, location)                                                   \
-{                                                                             \
-}                                                                             \
-void UnaryOp##op::accept(Visitor* visitor)                                    \
-{                                                                             \
-    visitor->visitUnaryOp##op(this);                                          \
-    expr_->accept(visitor);                                                   \
-}                                                                             \
-void UnaryOp##op::accept(ConstVisitor* visitor) const                         \
-{                                                                             \
-    visitor->visitUnaryOp##op(this);                                          \
-    expr_->accept(visitor);                                                   \
-}                                                                             \
-void UnaryOp##op::swapChild(const Node* oldNode, Node* newNode)               \
-{                                                                             \
-    if (expr_ == oldNode)                                                     \
-        expr_ = dynamic_cast<Expression*>(newNode);                           \
-    else                                                                      \
-        assert(false);                                                        \
-                                                                              \
-    newNode->setParent(this);                                                 \
-}                                                                             \
-Node* UnaryOp##op::duplicateImpl() const                                      \
-{                                                                             \
-    return new UnaryOp##op(                                                   \
-        expr_->duplicate<Expression>(),                                       \
-        location());                                                          \
+void UnaryOp::accept(Visitor* visitor)
+{
+    visitor->visitUnaryOp(this);
+    expr_->accept(visitor);
 }
-ODB_UNARY_OP_LIST
-#undef X
+void UnaryOp::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUnaryOp(this);
+    expr_->accept(visitor);
+}
 
+// ----------------------------------------------------------------------------
+void UnaryOp::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (expr_ == oldNode)
+        expr_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
+
+    newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* UnaryOp::duplicateImpl() const
+{
+    return new UnaryOp(
+        op_,
+        expr_->duplicate<Expression>(),
+        location());
+}
+
 }

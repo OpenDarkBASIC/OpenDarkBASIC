@@ -28,13 +28,13 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 void GenericVisitor::visitAnnotatedSymbol(AnnotatedSymbol* node)               { visit(node); }
 void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               { visit(node); }
 void GenericVisitor::visitArrayRef(ArrayRef* node)                             { visit(node); }
+void GenericVisitor::visitBinaryOp(BinaryOp* node)                             { visit(node); }
 void GenericVisitor::visitBlock(Block* node)                                   { visit(node); }
 void GenericVisitor::visitCase(Case* node)                                     { visit(node); }
 void GenericVisitor::visitCaseList(CaseList* node)                             { visit(node); }
@@ -73,6 +73,7 @@ void GenericVisitor::visitUDTFieldInner(UDTFieldInner* node)                   {
 void GenericVisitor::visitUDTFieldAssignment(UDTFieldAssignment* node)         { visit(node); }
 void GenericVisitor::visitUDTRef(UDTRef* node)                                 { visit(node); }
 void GenericVisitor::visitUDTVarDecl(UDTVarDecl* node)                         { visit(node); }
+void GenericVisitor::visitUnaryOp(UnaryOp* node)                               { visit(node); }
 void GenericVisitor::visitUntilLoop(UntilLoop* node)                           { visit(node); }
 void GenericVisitor::visitVarAssignment(VarAssignment* node)                   { visit(node); }
 void GenericVisitor::visitVarRef(VarRef* node)                                 { visit(node); }
@@ -85,20 +86,11 @@ void GenericVisitor::visitWhileLoop(WhileLoop* node)                           {
 ODB_DATATYPE_LIST
 #undef X
 
-#define X(op, str) \
-    void GenericVisitor::visitBinaryOp##op(BinaryOp##op* node)                 { visit(node); }
-ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    void GenericVisitor::visitUnaryOp##op(UnaryOp##op* node)                   { visit(node); }
-ODB_UNARY_OP_LIST
-#undef X
-
 // ----------------------------------------------------------------------------
 void GenericConstVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)               { visit(node); }
 void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)               { visit(node); }
 void GenericConstVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
+void GenericConstVisitor::visitBinaryOp(const BinaryOp* node)                             { visit(node); }
 void GenericConstVisitor::visitBlock(const Block* node)                                   { visit(node); }
 void GenericConstVisitor::visitCase(const Case* node)                                     { visit(node); }
 void GenericConstVisitor::visitCaseList(const CaseList* node)                             { visit(node); }
@@ -137,6 +129,7 @@ void GenericConstVisitor::visitUDTFieldInner(const UDTFieldInner* node)         
 void GenericConstVisitor::visitUDTFieldAssignment(const UDTFieldAssignment* node)         { visit(node); }
 void GenericConstVisitor::visitUDTRef(const UDTRef* node)                                 { visit(node); }
 void GenericConstVisitor::visitUDTVarDecl(const UDTVarDecl* node)                         { visit(node); }
+void GenericConstVisitor::visitUnaryOp(const UnaryOp* node)                               { visit(node); }
 void GenericConstVisitor::visitUntilLoop(const UntilLoop* node)                           { visit(node); }
 void GenericConstVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }
 void GenericConstVisitor::visitVarRef(const VarRef* node)                                 { visit(node); }
@@ -149,15 +142,4 @@ void GenericConstVisitor::visitWhileLoop(const WhileLoop* node)                 
 ODB_DATATYPE_LIST
 #undef X
 
-#define X(op, str) \
-    void GenericConstVisitor::visitBinaryOp##op(const BinaryOp##op* node)                 { visit(node); }
-ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    void GenericConstVisitor::visitUnaryOp##op(const UnaryOp##op* node)                   { visit(node); }
-ODB_UNARY_OP_LIST
-#undef X
-
-}
 }

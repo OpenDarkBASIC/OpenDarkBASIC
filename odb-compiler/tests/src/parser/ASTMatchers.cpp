@@ -51,3 +51,17 @@ template <>
 void LiteralEqMatcher<uint8_t>::DescribeNegationTo(::std::ostream* os) const {
     *os << "literal->value() does not equal " << static_cast<int>(expectedValue_);
 }
+
+static const char* binaryOpEqMatcherTable[] = {
+#define X(op, tok) #op,
+    ODB_BINARY_OP_LIST
+#undef X
+};
+static const char* unaryOpEqMatcherTable[] = {
+#define X(op, tok) #op,
+    ODB_UNARY_OP_LIST
+#undef X
+};
+
+const char** BinaryOpEqMatcher::table_ = binaryOpEqMatcherTable;
+const char** UnaryOpEqMatcher::table_ = unaryOpEqMatcherTable;

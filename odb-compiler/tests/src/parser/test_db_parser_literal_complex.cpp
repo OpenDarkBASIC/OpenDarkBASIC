@@ -8,6 +8,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -16,7 +17,7 @@ public:
 
 TEST_F(NAME, real_plus_imag)
 {
-    using Annotation = ast::Symbol::Annotation;
+    using Annotation = Symbol::Annotation;
 
     ast = driver->parse("test",
         "#constant a 1 + 2i\n"
@@ -32,7 +33,7 @@ TEST_F(NAME, real_plus_imag)
         const char* vars[] = {"a", "b"};
         exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, vars[i]))).After(exp);
-        exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
         exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
@@ -42,7 +43,7 @@ TEST_F(NAME, real_plus_imag)
 
 TEST_F(NAME, real_minus_imag)
 {
-    using Annotation = ast::Symbol::Annotation;
+    using Annotation = Symbol::Annotation;
 
     ast = driver->parse("test",
         "#constant a 1 - 2i\n"
@@ -58,7 +59,7 @@ TEST_F(NAME, real_minus_imag)
         const char* vars[] = {"a", "b"};
         exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, vars[i]))).After(exp);
-        exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
         exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
@@ -68,7 +69,7 @@ TEST_F(NAME, real_minus_imag)
 
 TEST_F(NAME, imag_only)
 {
-    using Annotation = ast::Symbol::Annotation;
+    using Annotation = Symbol::Annotation;
 
     ast = driver->parse("test",
         "#constant a 2i\n"
@@ -94,7 +95,7 @@ TEST_F(NAME, imag_only)
 
 TEST_F(NAME, negative_imag_only)
 {
-    using Annotation = ast::Symbol::Annotation;
+    using Annotation = Symbol::Annotation;
 
     ast = driver->parse("test",
         "#constant a -2i\n"
@@ -112,7 +113,7 @@ TEST_F(NAME, negative_imag_only)
         const char* vars[] = {"a", "b", "c", "d"};
         exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, vars[i]))).After(exp);
-        exp = EXPECT_CALL(v, visitUnaryOpNegate(_)).After(exp);
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::NEGATE))).After(exp);
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
 

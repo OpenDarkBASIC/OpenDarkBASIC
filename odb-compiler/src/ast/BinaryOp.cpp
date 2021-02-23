@@ -2,17 +2,23 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-BinaryOp::BinaryOp(Expression* lhs, Expression* rhs, SourceLocation* location) :
-    Expression(location),
-    lhs_(lhs),
-    rhs_(rhs)
+BinaryOp::BinaryOp(Op op, Expression* lhs, Expression* rhs, SourceLocation* location)
+    : Expression(location)
+    , lhs_(lhs)
+    , rhs_(rhs)
+    , op_(op)
 {
     lhs->setParent(this);
     rhs->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+BinaryOp::Op BinaryOp::op() const
+{
+    return op_;
 }
 
 // ----------------------------------------------------------------------------
@@ -28,43 +34,40 @@ Expression* BinaryOp::rhs() const
 }
 
 // ----------------------------------------------------------------------------
-#define X(op, tok)                                                            \
-BinaryOp##op::BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location) : \
-    BinaryOp(lhs, rhs, location)                                              \
-{                                                                             \
-}                                                                             \
-void BinaryOp##op::accept(Visitor* visitor)                                   \
-{                                                                             \
-    visitor->visitBinaryOp##op(this);                                         \
-    lhs_->accept(visitor);                                                    \
-    rhs_->accept(visitor);                                                    \
-}                                                                             \
-void BinaryOp##op::accept(ConstVisitor* visitor) const                        \
-{                                                                             \
-    visitor->visitBinaryOp##op(this);                                         \
-    lhs_->accept(visitor);                                                    \
-    rhs_->accept(visitor);                                                    \
-}                                                                             \
-void BinaryOp##op::swapChild(const Node* oldNode, Node* newNode)              \
-{                                                                             \
-    if (lhs_ == oldNode)                                                      \
-        lhs_ = dynamic_cast<Expression*>(newNode);                            \
-    else if (rhs_ == oldNode)                                                 \
-        rhs_ = dynamic_cast<Expression*>(newNode);                            \
-    else                                                                      \
-        assert(false);                                                        \
-                                                                              \
-    newNode->setParent(this);                                                 \
-}                                                                             \
-Node* BinaryOp##op::duplicateImpl() const                                     \
-{                                                                             \
-    return new BinaryOp##op(                                                  \
-        lhs_->duplicate<Expression>(),                                        \
-        rhs_->duplicate<Expression>(),                                        \
-        location());                                                          \
+void BinaryOp::accept(Visitor* visitor)
+{
+    visitor->visitBinaryOp(this);
+    lhs_->accept(visitor);
+    rhs_->accept(visitor);
 }
-ODB_BINARY_OP_LIST
-#undef X
+void BinaryOp::accept(ConstVisitor* visitor) const
+{
+    visitor->visitBinaryOp(this);
+    lhs_->accept(visitor);
+    rhs_->accept(visitor);
+}
 
+// ----------------------------------------------------------------------------
+void BinaryOp::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (lhs_ == oldNode)
+        lhs_ = dynamic_cast<Expression*>(newNode);
+    else if (rhs_ == oldNode)
+        rhs_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
+
+    newNode->setParent(this);
 }
+
+// ----------------------------------------------------------------------------
+Node* BinaryOp::duplicateImpl() const
+{
+    return new BinaryOp(
+        op_,
+        lhs_->duplicate<Expression>(),
+        rhs_->duplicate<Expression>(),
+        location());
+}
+
 }

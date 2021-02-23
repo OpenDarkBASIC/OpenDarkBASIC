@@ -250,7 +250,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         llvm::Value* inner = generateExpression(symtab, builder, unary->expression());
         switch (unary->op())
         {
-        case UnaryOp::Negate:
+        case UnaryOp::NEGATE:
             if (inner->getType()->isIntegerTy())
             {
                 return builder.CreateNeg(inner);
@@ -278,7 +278,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 
         switch (binary->op())
         {
-        case BinaryOp::Add:
+        case BinaryOp::ADD:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateAdd(left, right);
@@ -298,7 +298,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in add binary op.");
                 return nullptr;
             }
-        case BinaryOp::Sub:
+        case BinaryOp::SUB:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSub(left, right);
@@ -312,7 +312,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in sub binary op.");
                 return nullptr;
             }
-        case BinaryOp::Mul:
+        case BinaryOp::MUL:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateMul(left, right);
@@ -326,7 +326,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in mul binary op.");
                 return nullptr;
             }
-        case BinaryOp::Div:
+        case BinaryOp::DIV:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSDiv(left, right);
@@ -340,7 +340,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.");
                 return nullptr;
             }
-        case BinaryOp::Mod:
+        case BinaryOp::MOD:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSRem(left, right);
@@ -354,63 +354,63 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in modulo binary op.");
                 return nullptr;
             }
-        case BinaryOp::Pow:
+        case BinaryOp::POW:
             // TODO: implement
             Log::codegen(Log::Severity::FATAL, "Pow binary op unimplemented.");
             return nullptr;
-        case BinaryOp::ShiftLeft:
+        case BinaryOp::SHIFT_LEFT:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateShl(left, right);
-        case BinaryOp::ShiftRight:
+        case BinaryOp::SHIFT_RIGHT:
             // TODO: Arithmetic shift right (sign extension), or logical shift right (zero
             // bits)?
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAShr(left, right);
-        case BinaryOp::BitwiseOr:
+        case BinaryOp::BITWISE_OR:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateOr(left, right);
-        case BinaryOp::BitwiseAnd:
+        case BinaryOp::BITWISE_AND:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAnd(left, right);
-        case BinaryOp::BitwiseXor:
+        case BinaryOp::BITWISE_XOR:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateXor(left, right);
-        case BinaryOp::BitwiseNot:
+        case BinaryOp::BITWISE_NOT:
             assert(left->getType()->isIntegerTy());
             return builder.CreateNot(left);
-        case BinaryOp::Less:
-        case BinaryOp::LessEqual:
-        case BinaryOp::Greater:
-        case BinaryOp::GreaterEqual:
-        case BinaryOp::Equal:
-        case BinaryOp::NotEqual:
+        case BinaryOp::LESS_THAN:
+        case BinaryOp::LESS_EQUAL:
+        case BinaryOp::GREATER_THAN:
+        case BinaryOp::GREATER_EQUAL:
+        case BinaryOp::EQUAL:
+        case BinaryOp::NOT_EQUAL:
         {
             if (left->getType()->isIntegerTy())
             {
                 llvm::CmpInst::Predicate cmpPredicate;
                 switch (binary->op())
                 {
-                case BinaryOp::Less:
+                case BinaryOp::LESS_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SLT;
                     break;
-                case BinaryOp::LessEqual:
+                case BinaryOp::LESS_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SLE;
                     break;
-                case BinaryOp::Greater:
+                case BinaryOp::GREATER_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SGT;
                     break;
-                case BinaryOp::GreaterEqual:
+                case BinaryOp::GREATER_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SGE;
                     break;
-                case BinaryOp::Equal:
+                case BinaryOp::EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_EQ;
                     break;
-                case BinaryOp::NotEqual:
+                case BinaryOp::NOT_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_NE;
                     break;
                 default:
@@ -424,22 +424,22 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 llvm::CmpInst::Predicate cmpPredicate;
                 switch (binary->op())
                 {
-                case BinaryOp::Less:
+                case BinaryOp::LESS_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OLT;
                     break;
-                case BinaryOp::LessEqual:
+                case BinaryOp::LESS_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OLE;
                     break;
-                case BinaryOp::Greater:
+                case BinaryOp::GREATER_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OGT;
                     break;
-                case BinaryOp::GreaterEqual:
+                case BinaryOp::GREATER_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OGE;
                     break;
-                case BinaryOp::Equal:
+                case BinaryOp::EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OEQ;
                     break;
-                case BinaryOp::NotEqual:
+                case BinaryOp::NOT_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_ONE;
                     break;
                 default:
@@ -457,11 +457,11 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return nullptr;
         }
         break;
-        case BinaryOp::Or:
+        case BinaryOp::LOGICAL_OR:
             return builder.CreateOr(left, right);
-        case BinaryOp::And:
+        case BinaryOp::LOGICAL_AND:
             return builder.CreateAnd(left, right);
-        case BinaryOp::Xor:
+        case BinaryOp::LOGICAL_XOR:
             return builder.CreateXor(left, right);
         default:
             Log::codegen(Log::Severity::FATAL, "Unknown binary op.");

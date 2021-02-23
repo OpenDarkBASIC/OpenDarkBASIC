@@ -31,8 +31,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
-        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -55,10 +55,10 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -81,10 +81,10 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op1(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op1))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op2(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -105,8 +105,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp##op1(_)).After(exp);               \
-        exp = EXPECT_CALL(v, visitBinaryOp##op2(_)).After(exp);               \
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -131,8 +131,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitUnaryOp##op1(_)).After(exp);                \
-        exp = EXPECT_CALL(v, visitUnaryOp##op2(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \
@@ -151,8 +151,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitUnaryOp##op2(_)).After(exp);                \
-        exp = EXPECT_CALL(v, visitUnaryOp##op1(_)).After(exp);                \
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op2))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op1))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \
@@ -172,38 +172,38 @@ ODB_BINARY_OP_LIST
 // ============================================================================
 
 // + - * mod / ^
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Div, Pow, "/", "^")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Mod, Div, "mod", "/")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Mul, Mod, "*", "mod")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Sub, Mul, "-", "*")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Add, Sub, "+", "-")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(DIV, POW, "/", "^")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(MOD, DIV, "mod", "/")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(MUL, MOD, "*", "mod")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(SUB, MUL, "-", "*")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(ADD, SUB, "+", "-")
 
 // >> +
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(ShiftRight, Add, ">>", "+")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(SHIFT_RIGHT, ADD, ">>", "+")
 
 // .. ~~ || && = < > <= >= <> << >>
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(ShiftLeft, ShiftRight, "<<", ">>")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(NotEqual, ShiftLeft, "<>", "<<")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(GreaterEqual, NotEqual, ">=", "<>")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LessEqual, GreaterEqual, "<=", ">=")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Greater, LessEqual, ">", "<=")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Less, Greater, "<", ">")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Equal, Less, "=", "<")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseAnd, Equal, "&&", "=")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseOr, BitwiseAnd, "||", "&&")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseXor, BitwiseOr, "~~", "||")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BitwiseNot, BitwiseXor, "..", "~~")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(SHIFT_LEFT, SHIFT_RIGHT, "<<", ">>")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(NOT_EQUAL, SHIFT_LEFT, "<>", "<<")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(GREATER_EQUAL, NOT_EQUAL, ">=", "<>")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LESS_EQUAL, GREATER_EQUAL, "<=", ">=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(GREATER_THAN, LESS_EQUAL, ">", "<=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LESS_THAN, GREATER_THAN, "<", ">")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(EQUAL, LESS_THAN, "=", "<")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BITWISE_AND, EQUAL, "&&", "=")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BITWISE_OR, BITWISE_AND, "||", "&&")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BITWISE_XOR, BITWISE_OR, "~~", "||")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(BITWISE_NOT, BITWISE_XOR, "..", "~~")
 
 // and ..
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(And, BitwiseNot, "and", "..")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LOGICAL_AND, BITWISE_NOT, "and", "..")
 
 // xor or not
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Or, And, "or", "and")
-TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(Xor, Or, "xor", "or")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LOGICAL_OR, LOGICAL_AND, "or", "and")
+TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(LOGICAL_XOR, LOGICAL_OR, "xor", "or")
 
 // ============================================================================
 // Test precedence among all unary operators
 // ============================================================================
 
-TEST_UOP1_UOP2_RIGHT_RECURSION(Not, Negate, "not", "-")
-TEST_UOP1_UOP2_RIGHT_RECURSION(Negate, BitwiseNot, "-", "..")
+TEST_UOP1_UOP2_RIGHT_RECURSION(LOGICAL_NOT, NEGATE, "not", "-")
+TEST_UOP1_UOP2_RIGHT_RECURSION(NEGATE, BITWISE_NOT, "-", "..")

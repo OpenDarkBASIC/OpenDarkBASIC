@@ -469,31 +469,31 @@ expr_list
   ;
 expr
   : '(' expr ')'                                              { $$ = $2; }
-  | expr '+' expr                                             { $$ = new BinaryOpAdd($1, $3, driver->newLocation(&@$)); }
-  | expr '-' expr                                             { $$ = new BinaryOpSub($1, $3, driver->newLocation(&@$)); }
-  | expr '*' expr                                             { $$ = new BinaryOpMul($1, $3, driver->newLocation(&@$)); }
-  | expr '/' expr                                             { $$ = new BinaryOpDiv($1, $3, driver->newLocation(&@$)); }
-  | expr MOD expr                                             { $$ = new BinaryOpMod($1, $3, driver->newLocation(&@$)); }
-  | expr '^' expr                                             { $$ = new BinaryOpPow($1, $3, driver->newLocation(&@$)); }
-  | expr BSHL expr                                            { $$ = new BinaryOpShiftLeft($1, $3, driver->newLocation(&@$)); }
-  | expr BSHR expr                                            { $$ = new BinaryOpShiftRight($1, $3, driver->newLocation(&@$)); }
-  | expr BOR expr                                             { $$ = new BinaryOpBitwiseOr($1, $3, driver->newLocation(&@$)); }
-  | expr BAND expr                                            { $$ = new BinaryOpBitwiseAnd($1, $3, driver->newLocation(&@$)); }
-  | expr BXOR expr                                            { $$ = new BinaryOpBitwiseXor($1, $3, driver->newLocation(&@$)); }
-  | expr BNOT expr                                            { $$ = new BinaryOpBitwiseNot($1, $3, driver->newLocation(&@$)); }
-  | expr '<' expr                                             { $$ = new BinaryOpLess($1, $3, driver->newLocation(&@$)); }
-  | expr '>' expr                                             { $$ = new BinaryOpGreater($1, $3, driver->newLocation(&@$)); }
-  | expr LE expr                                              { $$ = new BinaryOpLessEqual($1, $3, driver->newLocation(&@$)); }
-  | expr GE expr                                              { $$ = new BinaryOpGreaterEqual($1, $3, driver->newLocation(&@$)); }
-  | expr '=' expr                                             { $$ = new BinaryOpEqual($1, $3, driver->newLocation(&@$)); }
-  | expr NE expr                                              { $$ = new BinaryOpNotEqual($1, $3, driver->newLocation(&@$)); }
-  | expr LOR expr                                             { $$ = new BinaryOpOr($1, $3, driver->newLocation(&@$)); }
-  | expr LAND expr                                            { $$ = new BinaryOpAnd($1, $3, driver->newLocation(&@$)); }
-  | expr LXOR expr                                            { $$ = new BinaryOpXor($1, $3, driver->newLocation(&@$)); }
-  | LNOT expr                                                 { $$ = new UnaryOpNot($2, driver->newLocation(&@$)); }
-  | BNOT expr %prec UNOT                                      { $$ = new UnaryOpBitwiseNot($2, driver->newLocation(&@$)); }
+  | expr '+' expr                                             { $$ = new BinaryOp(BinaryOp::ADD, $1, $3, driver->newLocation(&@$)); }
+  | expr '-' expr                                             { $$ = new BinaryOp(BinaryOp::SUB, $1, $3, driver->newLocation(&@$)); }
+  | expr '*' expr                                             { $$ = new BinaryOp(BinaryOp::MUL, $1, $3, driver->newLocation(&@$)); }
+  | expr '/' expr                                             { $$ = new BinaryOp(BinaryOp::DIV, $1, $3, driver->newLocation(&@$)); }
+  | expr MOD expr                                             { $$ = new BinaryOp(BinaryOp::MOD, $1, $3, driver->newLocation(&@$)); }
+  | expr '^' expr                                             { $$ = new BinaryOp(BinaryOp::POW, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHL expr                                            { $$ = new BinaryOp(BinaryOp::SHIFT_LEFT, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHR expr                                            { $$ = new BinaryOp(BinaryOp::SHIFT_RIGHT, $1, $3, driver->newLocation(&@$)); }
+  | expr BOR expr                                             { $$ = new BinaryOp(BinaryOp::BITWISE_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr BAND expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr BXOR expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_XOR, $1, $3, driver->newLocation(&@$)); }
+  | expr BNOT expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_NOT, $1, $3, driver->newLocation(&@$)); }
+  | expr '<' expr                                             { $$ = new BinaryOp(BinaryOp::LESS_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr '>' expr                                             { $$ = new BinaryOp(BinaryOp::GREATER_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr LE expr                                              { $$ = new BinaryOp(BinaryOp::LESS_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr GE expr                                              { $$ = new BinaryOp(BinaryOp::GREATER_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr '=' expr                                             { $$ = new BinaryOp(BinaryOp::EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr NE expr                                              { $$ = new BinaryOp(BinaryOp::NOT_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr LOR expr                                             { $$ = new BinaryOp(BinaryOp::LOGICAL_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr LAND expr                                            { $$ = new BinaryOp(BinaryOp::LOGICAL_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr LXOR expr                                            { $$ = new BinaryOp(BinaryOp::LOGICAL_XOR, $1, $3, driver->newLocation(&@$)); }
+  | LNOT expr                                                 { $$ = new UnaryOp(UnaryOp::LOGICAL_NOT, $2, driver->newLocation(&@$)); }
+  | BNOT expr %prec UNOT                                      { $$ = new UnaryOp(UnaryOp::BITWISE_NOT, $2, driver->newLocation(&@$)); }
   | '+' expr %prec UPLUS                                      { $$ = $2; }
-  | '-' expr %prec UMINUS                                     { $$ = new UnaryOpNegate($2, driver->newLocation(&@$)); }
+  | '-' expr %prec UMINUS                                     { $$ = new UnaryOp(UnaryOp::NEGATE, $2, driver->newLocation(&@$)); }
   | literal                                                   { $$ = $1; }
   | func_call_expr_or_array_ref                               { $$ = $1; }
   | command_expr                                              { $$ = $1; }

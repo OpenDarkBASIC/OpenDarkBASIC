@@ -82,6 +82,11 @@ private:
         writeNamedConnection(node, node->array(), "array");
         writeNamedConnection(node, node->expression(), "expr");
     }
+    void visitBinaryOp(const BinaryOp* node) override
+    {
+        writeNamedConnection(node, node->lhs(), "lhs");
+        writeNamedConnection(node, node->rhs(), "rhs");
+    }
     void visitBlock(const Block* node) override
     {
         int i = 0;
@@ -282,6 +287,10 @@ private:
         if (node->initializer().notNull())
             writeNamedConnection(node, node->initializer(), "initializer");
     }
+    void visitUnaryOp(const UnaryOp* node) override
+    {
+        writeNamedConnection(node, node->expr(), "expr");
+    }
     void visitUntilLoop(const UntilLoop* node) override
     {
         writeNamedConnection(node, node->exitCondition(), "exitCondition");
@@ -318,23 +327,6 @@ private:
         writeNamedConnection(node, node->dims(), "dims");                     \
     }
     ODB_DATATYPE_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void visitBinaryOp##op(const BinaryOp##op* node) override                 \
-    {                                                                         \
-        writeNamedConnection(node, node->lhs(), "lhs");                       \
-        writeNamedConnection(node, node->rhs(), "rhs");                       \
-    }
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void visitUnaryOp##op(const UnaryOp##op* node) override                   \
-    {                                                                         \
-        writeNamedConnection(node, node->expr(), "expr");                     \
-    }
-    ODB_UNARY_OP_LIST
 #undef X
 
 private:
@@ -377,6 +369,16 @@ private:
         { writeName(node, "ArrayAssignment"); }
     void visitArrayRef(const ArrayRef* node) override
         { writeName(node, "ArrayRef"); }
+    void visitBinaryOp(const BinaryOp* node) override
+    {
+        static const char* table[] = {
+#define X(op, tok) #op,
+            ODB_BINARY_OP_LIST
+#undef X
+        };
+        writeName(node, std::string("BinaryOp(") + table[node->op()] + ")");
+
+    }
     void visitExit(const Exit* node) override
         { writeName(node, "Exit"); }
     void visitCase(const Case* node) override
@@ -483,6 +485,16 @@ private:
         { writeName(node, "UDTRef: " + node->name()); }
     void visitUDTVarDecl(const UDTVarDecl* node) override
         { writeName(node, "UDTVarDecl"); }
+    void visitUnaryOp(const UnaryOp* node) override
+    {
+        static const char* table[] = {
+#define X(op, tok) #op,
+            ODB_UNARY_OP_LIST
+#undef X
+        };
+        writeName(node, std::string("UnaryOp(") + table[node->op()] + ")");
+
+    }
     void visitUntilLoop(const UntilLoop* node) override
         { writeName(node, "UntilLoop"); }
     void visitVarAssignment(const VarAssignment* node) override
@@ -581,18 +593,6 @@ private:
     void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
         { writeName(node, #dbname "ArrayDecl"); }
     ODB_DATATYPE_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void visitBinaryOp##op(const BinaryOp##op* node) override                 \
-        { writeName(node, tok); }
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void visitUnaryOp##op(const UnaryOp##op* node) override                   \
-        { writeName(node, tok); }
-    ODB_UNARY_OP_LIST
 #undef X
 
 private:

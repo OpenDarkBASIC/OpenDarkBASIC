@@ -3,32 +3,32 @@
 /*!
  * @brief All of the DarkBASIC operators that can exist
  */
-#define ODB_BINARY_OP_LIST   \
-    X(Add,          "+")     \
-    X(Sub,          "-")     \
-    X(Mul,          "*")     \
-    X(Div,          "/")     \
-    X(Mod,          "mod")   \
-    X(Pow,          "^")     \
-                             \
-    X(ShiftLeft,    "<<")    \
-    X(ShiftRight,   ">>")    \
-    X(BitwiseOr,    "||")    \
-    X(BitwiseAnd,   "&&")    \
-    X(BitwiseXor,   "~~")    \
-    X(BitwiseNot,   "..")    \
-                             \
-    X(Less,         "<")     \
-    X(LessEqual,    "<=")    \
-    X(Greater,      ">")     \
-    X(GreaterEqual, ">=")    \
-    X(Equal,        "=")     \
-    X(NotEqual,     "<>")    \
-    X(Or,           "or")    \
-    X(And,          "and")   \
-    X(Xor,          "xor")
+#define ODB_BINARY_OP_LIST    \
+    X(ADD,           "+")     \
+    X(SUB,           "-")     \
+    X(MUL,           "*")     \
+    X(DIV,           "/")     \
+    X(MOD,           "mod")   \
+    X(POW,           "^")     \
+                              \
+    X(SHIFT_LEFT,    "<<")    \
+    X(SHIFT_RIGHT,   ">>")    \
+    X(BITWISE_OR,    "||")    \
+    X(BITWISE_AND,   "&&")    \
+    X(BITWISE_XOR,   "~~")    \
+    X(BITWISE_NOT,   "..")    \
+                              \
+    X(LESS_THAN,     "<")     \
+    X(LESS_EQUAL,    "<=")    \
+    X(GREATER_THAN,  ">")     \
+    X(GREATER_EQUAL, ">=")    \
+    X(EQUAL,         "=")     \
+    X(NOT_EQUAL,     "<>")    \
+    X(LOGICAL_OR,    "or")    \
+    X(LOGICAL_AND,   "and")   \
+    X(LOGICAL_XOR,   "xor")
 
-#define ODB_UNARY_OP_LIST    \
-    X(Not,          "not")   \
-    X(Negate,       "-")     \
-    X(BitwiseNot,   "..")
+#define ODB_UNARY_OP_LIST     \
+    X(LOGICAL_NOT,  "not")    \
+    X(NEGATE,       "-")      \
+    X(BITWISE_NOT,  "..")

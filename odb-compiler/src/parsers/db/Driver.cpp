@@ -324,8 +324,8 @@ ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* loca
 static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
 {
     switch (dir) {
-        case Driver::INC : return new ast::BinaryOpAdd(value, expr, expr->location());
-        case Driver::DEC : return new ast::BinaryOpSub(value, expr, expr->location());
+        case Driver::INC : return new ast::BinaryOp(ast::BinaryOp::ADD, value, expr, expr->location());
+        case Driver::DEC : return new ast::BinaryOp(ast::BinaryOp::SUB, value, expr, expr->location());
     }
 
     return nullptr;

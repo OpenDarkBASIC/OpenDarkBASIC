@@ -13,6 +13,9 @@ class NAME : public ParserTestHarness
 public:
 };
 
+using namespace odb;
+using namespace ast;
+
 TEST_F(NAME, inc_var_by_1)
 {
     using Annotation = ast::Symbol::Annotation;
@@ -26,7 +29,7 @@ TEST_F(NAME, inc_var_by_1)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
@@ -47,7 +50,7 @@ TEST_F(NAME, inc_var_by_10)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
@@ -68,10 +71,10 @@ TEST_F(NAME, inc_var_by_expr)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -93,7 +96,7 @@ TEST_F(NAME, dec_var_by_1)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
@@ -114,7 +117,7 @@ TEST_F(NAME, dec_var_by_10)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
@@ -135,10 +138,10 @@ TEST_F(NAME, dec_var_by_expr)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -163,7 +166,7 @@ TEST_F(NAME, inc_arr_by_1)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
@@ -190,7 +193,7 @@ TEST_F(NAME, inc_arr_by_10)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
@@ -217,13 +220,13 @@ TEST_F(NAME, inc_arr_by_expr)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -248,7 +251,7 @@ TEST_F(NAME, dec_arr_by_1)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
@@ -275,7 +278,7 @@ TEST_F(NAME, dec_arr_by_10)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
@@ -302,13 +305,13 @@ TEST_F(NAME, dec_arr_by_expr)
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -333,7 +336,7 @@ TEST_F(NAME, inc_udt_by_1)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
@@ -360,7 +363,7 @@ TEST_F(NAME, inc_udt_by_10)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
@@ -387,13 +390,13 @@ TEST_F(NAME, inc_udt_by_expr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -418,7 +421,7 @@ TEST_F(NAME, dec_udt_by_1)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
@@ -445,7 +448,7 @@ TEST_F(NAME, dec_udt_by_10)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
@@ -472,13 +475,13 @@ TEST_F(NAME, dec_udt_by_expr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpSub(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::SUB))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);

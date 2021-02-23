@@ -351,28 +351,12 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     auto* location = expression->location();
     if (auto* unaryOp = dynamic_cast<const ast::UnaryOp*>(expression))
     {
-        UnaryOp unaryOpType = [](const ast::Expression* expression) -> UnaryOp
-        {
-#define X(op, tok)                                                                                                     \
-    if (dynamic_cast<const ast::UnaryOp##op*>(expression))                                                             \
-        return UnaryOp::op;
-            ODB_UNARY_OP_LIST
-#undef X
-            fatalError("Unknown unary op.");
-        }(expression);
+        UnaryOp unaryOpType = static_cast<UnaryOp>(unaryOp->op());
         return std::make_unique<UnaryExpression>(location, unaryOpType, convertExpression(unaryOp->expr()));
     }
     else if (auto* binaryOp = dynamic_cast<const ast::BinaryOp*>(expression))
     {
-        BinaryOp binaryOpType = [](const ast::Expression* expression) -> BinaryOp
-        {
-#define X(op, tok)                                                                                                     \
-    if (dynamic_cast<const ast::BinaryOp##op*>(expression))                                                            \
-        return BinaryOp::op;
-            ODB_BINARY_OP_LIST
-#undef X
-            fatalError("Unknown binary op.");
-        }(expression);
+        BinaryOp binaryOpType = static_cast<BinaryOp>(binaryOp->op());
         auto lhs = convertExpression(binaryOp->lhs());
         auto rhs = convertExpression(binaryOp->rhs());
         auto commonType = getBinaryOpCommonType(binaryOpType, lhs.get(), rhs.get());

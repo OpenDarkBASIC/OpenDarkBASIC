@@ -7,11 +7,13 @@
 #define NO_SIDE_EFFECTS       \
     X(AnnotatedSymbol)        \
     X(ArrayRef)               \
+    X(BinaryOp)               \
     X(Conditional)            \
     X(ExpressionList)         \
     X(ScopedAnnotatedSymbol)  \
     X(Symbol)                 \
     X(UDTRef)                 \
+    X(UnaryOp)                \
     X(VarRef)
 
 namespace odb::astpost {
@@ -20,14 +22,15 @@ namespace {
 class Visitor : public ast::GenericVisitor
 {
 public:
-    void visitBinaryOpBitwiseNot(ast::BinaryOpBitwiseNot* node) override final {
-        ops.push_back(node);
+    void visitBinaryOp(ast::BinaryOp* node) override final {
+        if (node->op() == ast::BinaryOp::BITWISE_NOT)
+            ops.push_back(node);
     }
 
     void visit(ast::Node* node) override final { /* don't care */ }
 
 public:
-    std::vector<Reference<ast::BinaryOpBitwiseNot>> ops;
+    std::vector<Reference<ast::BinaryOp>> ops;
 };
 
 class SideEffectFinder : public ast::GenericConstVisitor
@@ -38,12 +41,6 @@ public:
 #undef X
 #define X(dbname, cppname) void visit##dbname##Literal(const ast::dbname##Literal* node) override final {}
     ODB_DATATYPE_LIST
-#undef X
-#define X(op, str) void visitBinaryOp##op(const ast::BinaryOp##op* node) override final {}
-    ODB_BINARY_OP_LIST
-#undef X
-#define X(op, str) void visitUnaryOp##op(const ast::UnaryOp##op* node) override final {}
-    ODB_UNARY_OP_LIST
 #undef X
 
     void visit(const ast::Node* node) override final { hasSideEffects = true; }
@@ -72,8 +69,8 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
             return false;
         }
 
-        op->parent()->swapChild(op, new ast::UnaryOpBitwiseNot(
-            op->lhs(), op->location()
+        op->parent()->swapChild(op, new ast::UnaryOp(
+            ast::UnaryOp::BITWISE_NOT, op->lhs(), op->location()
         ));
     }
 

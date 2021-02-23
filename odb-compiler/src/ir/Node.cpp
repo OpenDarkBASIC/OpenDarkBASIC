@@ -198,27 +198,27 @@ Type BinaryExpression::getType() const
 {
     switch (op_)
     {
-    case BinaryOp::Add:
-    case BinaryOp::Sub:
-    case BinaryOp::Mul:
-    case BinaryOp::Div:
-    case BinaryOp::Mod:
-    case BinaryOp::Pow:
-    case BinaryOp::ShiftLeft:
-    case BinaryOp::ShiftRight:
-    case BinaryOp::BitwiseAnd:
-    case BinaryOp::BitwiseOr:
-    case BinaryOp::BitwiseXor:
-    case BinaryOp::BitwiseNot:
+    case BinaryOp::ADD:
+    case BinaryOp::SUB:
+    case BinaryOp::MUL:
+    case BinaryOp::DIV:
+    case BinaryOp::MOD:
+    case BinaryOp::POW:
+    case BinaryOp::SHIFT_LEFT:
+    case BinaryOp::SHIFT_RIGHT:
+    case BinaryOp::BITWISE_AND:
+    case BinaryOp::BITWISE_OR:
+    case BinaryOp::BITWISE_XOR:
+    case BinaryOp::BITWISE_NOT:
         return left_->getType();
-    case BinaryOp::Less:
-    case BinaryOp::LessEqual:
-    case BinaryOp::Greater:
-    case BinaryOp::GreaterEqual:
-    case BinaryOp::Equal:
-    case BinaryOp::NotEqual:
-    case BinaryOp::Or:
-    case BinaryOp::And:
+    case BinaryOp::LESS_THAN:
+    case BinaryOp::LESS_EQUAL:
+    case BinaryOp::GREATER_THAN:
+    case BinaryOp::GREATER_EQUAL:
+    case BinaryOp::EQUAL:
+    case BinaryOp::NOT_EQUAL:
+    case BinaryOp::LOGICAL_OR:
+    case BinaryOp::LOGICAL_AND:
         return Type{BuiltinType::Boolean};
     default:
         fatalError("Unhandled binary expression.");

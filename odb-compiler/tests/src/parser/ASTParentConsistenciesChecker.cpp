@@ -42,6 +42,11 @@ void ASTParentConsistenciesChecker::visitArrayRef(const ArrayRef* node)
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->args()->parent()));
 }
+void ASTParentConsistenciesChecker::visitBinaryOp(const BinaryOp* node)
+{
+    EXPECT_THAT(node, Eq(node->lhs()->parent()));
+    EXPECT_THAT(node, Eq(node->rhs()->parent()));
+}
 void ASTParentConsistenciesChecker::visitBlock(const Block* node)
 {
     for (const auto& stmnt : node->statements())
@@ -230,6 +235,10 @@ void ASTParentConsistenciesChecker::visitUDTVarDecl(const UDTVarDecl* node)
     if (node->initializer().notNull())
         EXPECT_THAT(node, Eq(node->initializer()->parent()));
 }
+void ASTParentConsistenciesChecker::visitUnaryOp(const UnaryOp* node)
+{
+    EXPECT_THAT(node, Eq(node->expr()->parent()));
+}
 void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
 {
     EXPECT_THAT(node, Eq(node->exitCondition()->parent()));
@@ -266,21 +275,4 @@ void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
         EXPECT_THAT(node, Eq(node->dims()->parent()));                        \
     }
 ODB_DATATYPE_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void ASTParentConsistenciesChecker::visitBinaryOp##op(const BinaryOp##op* node) \
-    {                                                                         \
-        EXPECT_THAT(node, Eq(node->lhs()->parent()));                         \
-        EXPECT_THAT(node, Eq(node->rhs()->parent()));                         \
-    }
-ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, tok)                                                            \
-    void ASTParentConsistenciesChecker::visitUnaryOp##op(const UnaryOp##op* node) \
-    {                                                                         \
-        EXPECT_THAT(node, Eq(node->expr()->parent()));                        \
-    }
-ODB_UNARY_OP_LIST
 #undef X

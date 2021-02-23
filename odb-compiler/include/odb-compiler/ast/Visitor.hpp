@@ -12,6 +12,7 @@ class Node;
 class AnnotatedSymbol;
 class ArrayAssignment;
 class ArrayRef;
+class BinaryOp;
 class Block;
 class Case;
 class CaseList;
@@ -50,6 +51,7 @@ class UDTFieldOuter;
 class UDTFieldInner;
 class UDTFieldAssignment;
 class UDTVarDecl;
+class UnaryOp;
 class UntilLoop;
 class VarAssignment;
 class VarRef;
@@ -66,20 +68,13 @@ template <typename T> class ArrayDeclTemplate;
 ODB_DATATYPE_LIST
 #undef X
 
-#define X(op, str) class BinaryOp##op;
-ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) class UnaryOp##op;
-ODB_UNARY_OP_LIST
-#undef X
-
 class Visitor
 {
 public:
     virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
     virtual void visitArrayAssignment(ArrayAssignment* node) = 0;
-    virtual void visitArrayRef(ArrayRef* node)  = 0;
+    virtual void visitArrayRef(ArrayRef* node) = 0;
+    virtual void visitBinaryOp(BinaryOp* node) = 0;
     virtual void visitBlock(Block* node) = 0;
     virtual void visitCase(Case* node) = 0;
     virtual void visitCaseList(CaseList* node) = 0;
@@ -118,6 +113,7 @@ public:
     virtual void visitUDTFieldInner(UDTFieldInner* node) = 0;
     virtual void visitUDTRef(UDTRef* node) = 0;
     virtual void visitUDTVarDecl(UDTVarDecl* node) = 0;
+    virtual void visitUnaryOp(UnaryOp* node) = 0;
     virtual void visitUntilLoop(UntilLoop* node) = 0;
     virtual void visitVarAssignment(VarAssignment* node) = 0;
     virtual void visitVarRef(VarRef* node) = 0;
@@ -129,16 +125,6 @@ public:
     virtual void visit##dbname##ArrayDecl(dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
-
-#define X(op, str) \
-    virtual void visitBinaryOp##op(BinaryOp##op* node) = 0;
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    virtual void visitUnaryOp##op(UnaryOp##op* node) = 0;
-    ODB_UNARY_OP_LIST
-#undef X
 };
 
 class ConstVisitor
@@ -147,6 +133,7 @@ public:
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitArrayAssignment(const ArrayAssignment* node) = 0;
     virtual void visitArrayRef(const ArrayRef* node)  = 0;
+    virtual void visitBinaryOp(const BinaryOp* node) = 0;
     virtual void visitBlock(const Block* node) = 0;
     virtual void visitCase(const Case* node) = 0;
     virtual void visitCaseList(const CaseList* node) = 0;
@@ -185,6 +172,7 @@ public:
     virtual void visitUDTFieldInner(const UDTFieldInner* node) = 0;
     virtual void visitUDTRef(const UDTRef* node) = 0;
     virtual void visitUDTVarDecl(const UDTVarDecl* node) = 0;
+    virtual void visitUnaryOp(const UnaryOp* node) = 0;
     virtual void visitUntilLoop(const UntilLoop* node) = 0;
     virtual void visitVarAssignment(const VarAssignment* node) = 0;
     virtual void visitVarRef(const VarRef* node) = 0;
@@ -196,16 +184,6 @@ public:
     virtual void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
-
-#define X(op, str) \
-    virtual void visitBinaryOp##op(const BinaryOp##op* node) = 0;
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    virtual void visitUnaryOp##op(const UnaryOp##op* node) = 0;
-    ODB_UNARY_OP_LIST
-#undef X
 };
 
 class GenericVisitor : public Visitor
@@ -214,6 +192,7 @@ public:
     void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
     void visitArrayAssignment(ArrayAssignment* node) override;
     void visitArrayRef(ArrayRef* node) override;
+    void visitBinaryOp(BinaryOp* node) override;
     void visitBlock(Block* node) override;
     void visitCase(Case* node) override;
     void visitCaseList(CaseList* node) override;
@@ -252,6 +231,7 @@ public:
     void visitUDTFieldInner(UDTFieldInner* node) override;
     void visitUDTRef(UDTRef* node) override;
     void visitUDTVarDecl(UDTVarDecl* node) override;
+    void visitUnaryOp(UnaryOp* node) override;
     void visitUntilLoop(UntilLoop* node) override;
     void visitVarAssignment(VarAssignment* node) override;
     void visitVarRef(VarRef* node) override;
@@ -264,16 +244,6 @@ public:
     ODB_DATATYPE_LIST
 #undef X
 
-#define X(op, str) \
-    void visitBinaryOp##op(BinaryOp##op* node) override;
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    void visitUnaryOp##op(UnaryOp##op* node) override;
-    ODB_UNARY_OP_LIST
-#undef X
-
     virtual void visit(Node* node) = 0;
 };
 
@@ -283,6 +253,7 @@ public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
     void visitArrayAssignment(const ArrayAssignment* node) override;
     void visitArrayRef(const ArrayRef* node) override;
+    void visitBinaryOp(const BinaryOp* node) override;
     void visitBlock(const Block* node) override;
     void visitCase(const Case* node) override;
     void visitCaseList(const CaseList* node) override;
@@ -321,6 +292,7 @@ public:
     void visitUDTFieldAssignment(const UDTFieldAssignment* node) override;
     void visitUDTRef(const UDTRef* node) override;
     void visitUDTVarDecl(const UDTVarDecl* node) override;
+    void visitUnaryOp(const UnaryOp* node) override;
     void visitUntilLoop(const UntilLoop* node) override;
     void visitVarAssignment(const VarAssignment* node) override;
     void visitVarRef(const VarRef* node) override;
@@ -331,16 +303,6 @@ public:
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override; \
     void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
-#undef X
-
-#define X(op, str) \
-    void visitBinaryOp##op(const BinaryOp##op* node) override;
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, str) \
-    void visitUnaryOp##op(const UnaryOp##op* node) override;
-    ODB_UNARY_OP_LIST
 #undef X
 
     virtual void visit(const Node* node) = 0;

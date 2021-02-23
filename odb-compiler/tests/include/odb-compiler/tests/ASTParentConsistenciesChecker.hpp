@@ -8,6 +8,7 @@ public:
     void visitAnnotatedSymbol(const odb::ast::AnnotatedSymbol* node) override;
     void visitArrayAssignment(const odb::ast::ArrayAssignment* node) override;
     void visitArrayRef(const odb::ast::ArrayRef* node) override;
+    void visitBinaryOp(const odb::ast::BinaryOp* node) override;
     void visitBlock(const odb::ast::Block* node) override;
     void visitCase(const odb::ast::Case* node) override;
     void visitCaseList(const odb::ast::CaseList* node) override;
@@ -46,6 +47,7 @@ public:
     void visitUDTFieldInner(const odb::ast::UDTFieldInner* node) override;
     void visitUDTRef(const odb::ast::UDTRef* node) override;
     void visitUDTVarDecl(const odb::ast::UDTVarDecl* node) override;
+    void visitUnaryOp(const odb::ast::UnaryOp* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;
     void visitVarRef(const odb::ast::VarRef* node) override;
@@ -58,13 +60,4 @@ public:
     ODB_DATATYPE_LIST
 #undef X
 
-#define X(op, tok) \
-    void visitBinaryOp##op(const odb::ast::BinaryOp##op* node) override;
-    ODB_BINARY_OP_LIST
-#undef X
-
-#define X(op, tok) \
-    void visitUnaryOp##op(const odb::ast::UnaryOp##op* node) override;
-    ODB_UNARY_OP_LIST
-#undef X
 };

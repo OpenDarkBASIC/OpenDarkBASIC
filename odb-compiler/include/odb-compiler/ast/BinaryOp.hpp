@@ -4,37 +4,34 @@
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class ODBCOMPILER_PUBLIC_API BinaryOp : public Expression
 {
 public:
-    BinaryOp(Expression* lhs, Expression* rhs, SourceLocation* location);
+    enum Op
+    {
+#define X(op, tok) op,
+        ODB_BINARY_OP_LIST
+#undef X
+    };
+    BinaryOp(Op op, Expression* lhs, Expression* rhs, SourceLocation* location);
 
+    Op op() const;
     Expression* lhs() const;
     Expression* rhs() const;
 
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
 protected:
+    Node* duplicateImpl() const override;
+
+private:
     Reference<Expression> lhs_;
     Reference<Expression> rhs_;
+    Op op_;
 };
 
-#define X(op, tok)                                                            \
-class ODBCOMPILER_PUBLIC_API BinaryOp##op : public BinaryOp                   \
-{                                                                             \
-public:                                                                       \
-    BinaryOp##op(Expression* lhs, Expression* rhs, SourceLocation* location); \
-                                                                              \
-    void accept(Visitor* visitor) override;                                   \
-    void accept(ConstVisitor* visitor) const override;                        \
-    void swapChild(const Node* oldNode, Node* newNode) override;              \
-                                                                              \
-protected:                                                                    \
-    Node* duplicateImpl() const override;                                     \
-};
-ODB_BINARY_OP_LIST
-#undef X
-
-}
 }
