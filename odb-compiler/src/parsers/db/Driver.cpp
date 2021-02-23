@@ -133,11 +133,11 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
             // Commands unfortunately can start with integers, or have words
             // that start with integers in them. We do not want to put spaces
             // in between integers and following symbols. Additionally, commands
-            // can end in $ or #, in which case we also do not want to append
-            // a space.
-            if (!lastSymbolWasInteger && tokens[i].pushedChar != '$' && tokens[i].pushedChar != '#')
+            // can end in type annotation characters such as $ or #, in which
+            // case we also do not want to append a space.
+            if (!lastSymbolWasInteger && !ast::isTypeAnnotation(tokens[i].pushedChar))
                 possibleCommand += " ";
-            else if (result.tokenIdx == i && (tokens[i].pushedChar == '$' || tokens[i].pushedChar == '#'))
+            else if (result.tokenIdx == i && ast::isTypeAnnotation(tokens[i].pushedChar))
                 result.match.found = false;
             possibleCommand += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
@@ -220,10 +220,11 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 //    string$ as string
                 //
                 // In order to parse this properly, we must avoid changing a
-                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a '$' or '#'
+                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a type
+                // annotation character
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                if (ast::isTypeAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
@@ -241,7 +242,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 // See above comment for why this is here
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (tokens[1].pushedChar == '$' || tokens[1].pushedChar == '#')
+                if (ast::isTypeAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
@@ -297,29 +298,26 @@ void Driver::giveProgram(ast::Block* program)
 }
 
 // ----------------------------------------------------------------------------
-ast::Literal* Driver::newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
+ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
 {
-    assert(value >= 0);
-
-    if (value > std::numeric_limits<uint32_t>::max())
-        return new ast::DoubleIntegerLiteral(value, location);
-    if (value > std::numeric_limits<int32_t>::max())
-        return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
-    if (value > std::numeric_limits<uint16_t>::max())
+    if (value >= 0)
+    {
+        if (value > std::numeric_limits<uint32_t>::max())
+            return new ast::DoubleIntegerLiteral(value, location);
+        if (value > std::numeric_limits<int32_t>::max())
+            return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
+        if (value > std::numeric_limits<uint16_t>::max())
+            return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+        if (value > std::numeric_limits<uint8_t>::max())
+            return new ast::WordLiteral(static_cast<uint16_t>(value), location);
+        return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
+    }
+    else
+    {
+        if (value < std::numeric_limits<int32_t>::min())
+            return new ast::DoubleIntegerLiteral(value, location);
         return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
-    if (value > std::numeric_limits<uint8_t>::max())
-        return new ast::WordLiteral(static_cast<uint16_t>(value), location);
-    return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
-}
-
-// ----------------------------------------------------------------------------
-ast::Literal* Driver::newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location) const
-{
-    assert(value < 0);
-
-    if (value < std::numeric_limits<int32_t>::min())
-        return new ast::DoubleIntegerLiteral(value, location);
-    return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -388,49 +386,6 @@ ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir 
         new ast::ByteLiteral(1, value->location()),
         dir,
         loc);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::printSyntaxError(const DBLTYPE* loc,
-                              dbscan_t scanner,
-                              std::pair<dbtokentype, std::string> unexpectedToken,
-                              const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens)
-{
-    ColorState state(Log::info, Log::FG_WHITE);
-
-    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
-    Reference<ast::SourceLocation> location = driver->newLocation(loc);
-
-    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
-    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
-    Log::info.print(Log::FG_BRIGHT_RED, "syntax error: ");
-
-    if (unexpectedToken.first != TOK_DBEMPTY)
-    {
-        Log::info.print("unexpected ");
-        Log::info.print(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
-    }
-    if (expectedTokens.size() > 0)
-    {
-        Log::info.print(", expected ");
-        for (int i = 0; i != (int)expectedTokens.size(); ++i)
-        {
-            if (i != 0)
-                Log::info.print(" or ");
-            Log::info.print(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
-        }
-        Log::info.print("\n");
-    }
-
-    location->printUnderlinedSection(Log::info);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner)
-{
-    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
-    Reference<ast::SourceLocation> location = driver->newLocation(loc);
-    location->printUnderlinedSection(Log::info);
 }
 
 // ----------------------------------------------------------------------------

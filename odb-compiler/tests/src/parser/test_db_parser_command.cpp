@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMatchers.hpp"
@@ -15,6 +16,19 @@ class NAME : public ParserTestHarness
 {
 public:
 };
+
+#define X(enum_, chr, str, dbname)                                            \
+TEST_F(NAME, command_expr_with_type_annotation_##enum_)                       \
+{                                                                             \
+    cmdIndex.addCommand(new cmd::Command(nullptr, "get dir" str, "", cmd::Command::Type::Void, {}));\
+    matcher.updateFromIndex(&cmdIndex);                                       \
+    ast = driver->parse("test",                                               \
+        "OriginalDirectory" str " = get dir" str "()",                        \
+        matcher);                                                             \
+    ASSERT_THAT(ast, NotNull());                                              \
+}
+ODB_TYPE_ANNOTATION_LIST
+#undef X
 
 TEST_F(NAME, print_command)
 {
@@ -239,6 +253,8 @@ TEST_F(NAME, command_starting_with_builtin)
 
 TEST_F(NAME, builtin_shadowing_command)
 {
+    using Annotation = ast::Symbol::Annotation;
+
     // "loop" is a builtin command
     cmdIndex.addCommand(new cmd::Command(nullptr, "loop", "", cmd::Command::Type::Void, {}));
     cmdIndex.addCommand(new cmd::Command(nullptr, "loop sound", "", cmd::Command::Type::Void, {}));
@@ -247,6 +263,16 @@ TEST_F(NAME, builtin_shadowing_command)
         "do : foo() : loop",
         matcher);
     ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitInfiniteLoop(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+
+    ast->accept(&v);
 }
 
 TEST_F(NAME, multiple_similar_commands_with_spaces)
@@ -258,6 +284,16 @@ TEST_F(NAME, multiple_similar_commands_with_spaces)
         "set object speed 1, 10\n",
         matcher);
     ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("set object speed"))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
+
+    ast->accept(&v);
 }
 
 TEST_F(NAME, multiple_similar_commands_with_spaces_2)
@@ -272,10 +308,21 @@ TEST_F(NAME, multiple_similar_commands_with_spaces_2)
         "set object collision off 1\n",
         matcher);
     ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("set object collision off"))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+
+    ast->accept(&v);
 }
 
 TEST_F(NAME, incomplete_command_at_end_of_file)
 {
+    using Annotation = ast::Symbol::Annotation;
+
     cmdIndex.addCommand(new cmd::Command(nullptr, "color object", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test",
@@ -284,18 +331,23 @@ TEST_F(NAME, incomplete_command_at_end_of_file)
         "endfunction color",
         matcher);
     ASSERT_THAT(ast, NotNull());
+
+    StrictMock<ASTMockVisitor> v;
+    Expectation exp;
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitFuncDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "color"))).After(exp);
+
+    ast->accept(&v);
 }
 
-TEST_F(NAME, commands_with_type)
-{
-    cmdIndex.addCommand(new cmd::Command(nullptr, "get dir$", "", cmd::Command::Type::Void, {}));
-    matcher.updateFromIndex(&cmdIndex);
-    ast = driver->parse("test",
-        "OriginalDirectory$ = get dir$()",
-        matcher);
-    ASSERT_THAT(ast, NotNull());
-}
-/*
 TEST_F(NAME, command_containing_builtin_in_middle)
 {
     cmdIndex.addCommand(new cmd::Command(nullptr, "set effect constant boolean", "", cmd::Command::Type::Void, {}));
@@ -305,7 +357,7 @@ TEST_F(NAME, command_containing_builtin_in_middle)
         "set effect constant float RingsFX, \"shrink\", BlackHoleFunnel(0).shrink#\n",
         matcher);
     ASSERT_THAT(ast, NotNull());
-}*/
+}
 
 TEST_F(NAME, command_variable_name)
 {

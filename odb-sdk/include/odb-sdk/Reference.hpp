@@ -536,6 +536,7 @@ WeakReference<T> dynamicCast(const WeakReference<U>& ptr)
     return ret;
 }
 
+/// An easy way to make sure objects that were just allocated (and have 0 refs) get deleted
 template <class T>
 void TouchRef(T* obj)
 {

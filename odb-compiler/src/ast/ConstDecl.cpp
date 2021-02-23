@@ -4,8 +4,68 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
+
+// ----------------------------------------------------------------------------
+ConstDeclExpr::ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLocation* location) :
+    Statement(location),
+    symbol_(symbol),
+    expr_(expr)
+{
+    symbol->setParent(this);
+    expr->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+AnnotatedSymbol* ConstDeclExpr::symbol() const
+{
+    return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+Expression* ConstDeclExpr::expression() const
+{
+    return expr_;
+}
+
+// ----------------------------------------------------------------------------
+void ConstDeclExpr::accept(Visitor* visitor)
+{
+    visitor->visitConstDeclExpr(this);
+    symbol_->accept(visitor);
+    expr_->accept(visitor);
+}
+void ConstDeclExpr::accept(ConstVisitor* visitor) const
+{
+    visitor->visitConstDeclExpr(this);
+    symbol_->accept(visitor);
+    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+void ConstDeclExpr::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (symbol_ == oldNode)
+        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (expr_ == oldNode)
+        expr_ = dynamic_cast<Expression*>(newNode);
+    else
+        assert(false);
+
+    newNode->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+Node* ConstDeclExpr::duplicateImpl() const
+{
+    return new ConstDeclExpr(
+        symbol_->duplicate<AnnotatedSymbol>(),
+        expr_->duplicate<Expression>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
 ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location) :
@@ -65,5 +125,4 @@ Node* ConstDecl::duplicateImpl() const
         location());
 }
 
-}
 }

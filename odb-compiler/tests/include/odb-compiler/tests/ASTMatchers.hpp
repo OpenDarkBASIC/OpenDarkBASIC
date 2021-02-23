@@ -180,6 +180,358 @@ private:
     const T expectedValue_;
 };
 
+template <>
+class LiteralEqMatcher<odb::Complex<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Complex<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Complex<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Complex<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals " << literal->value().real << " + " << literal->value().imag << "i";
+        return literal->value().real == expectedValue_.real && literal->value().imag == expectedValue_.imag;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals " << expectedValue_.real << " + " << expectedValue_.imag << "i";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal " << expectedValue_.real << " + " << expectedValue_.imag << "i";
+    }
+private:
+    const odb::Complex<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Quat<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Quat<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Quat<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Quat<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals " << literal->value().r << " + " << literal->value().i << "i + " << literal->value().j << "j + " << literal->value().k << "k";
+        return literal->value().i == expectedValue_.i && literal->value().j == expectedValue_.j && literal->value().k == expectedValue_.k && literal->value().r == expectedValue_.r;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals " << expectedValue_.r << " + " << expectedValue_.i << "i + " << expectedValue_.j << "j + " << expectedValue_.k << "k";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal " << expectedValue_.r << " + " << expectedValue_.i << "i + " << expectedValue_.j << "j + " << expectedValue_.k << "k";
+    }
+private:
+    const odb::Quat<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Vec2<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Vec2<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Vec2<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Vec2<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().x << ", " << literal->value().y << "]";
+        return literal->value().x == expectedValue_.x && literal->value().y == expectedValue_.y;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.x << ", " << expectedValue_.y << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.x << ", " << expectedValue_.y << "]";
+    }
+private:
+    const odb::Vec2<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Vec3<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Vec3<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Vec3<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Vec3<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().x << ", " << literal->value().y << ", " << literal->value().z << "]";
+        return literal->value().x == expectedValue_.x && literal->value().y == expectedValue_.y && literal->value().z == expectedValue_.z;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.x << ", " << expectedValue_.y << ", " << expectedValue_.z << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.x << ", " << expectedValue_.y << ", " << expectedValue_.z << "]";
+    }
+private:
+    const odb::Vec3<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Vec4<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Vec4<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Vec4<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Vec4<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().x << ", " << literal->value().y << ", " << literal->value().z << ", " << literal->value().w << "]";
+        return literal->value().x == expectedValue_.x && literal->value().y == expectedValue_.y && literal->value().z == expectedValue_.z && literal->value().w == expectedValue_.w;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.x << ", " << expectedValue_.y << ", " << expectedValue_.z << ", " << expectedValue_.w << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.x << ", " << expectedValue_.y << ", " << expectedValue_.z << ", " << expectedValue_.w << "]";
+    }
+private:
+    const odb::Vec4<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat2x2<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat2x2<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat2x2<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat2x2<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << "]";
+    }
+private:
+    const odb::Mat2x2<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat2x3<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat2x3<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat2x3<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat2x3<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << "]";
+    }
+private:
+    const odb::Mat2x3<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat2x4<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat2x4<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat2x4<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat2x4<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ", " << literal->value().e2.x << ", " << literal->value().e3.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ", " << literal->value().e2.y << ", " << literal->value().e3.y << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x && literal->value().e3.x == expectedValue_.e3.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y && literal->value().e3.y == expectedValue_.e3.y;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << "]";
+    }
+private:
+    const odb::Mat2x4<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat3x2<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat3x2<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat3x2<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat3x2<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ";\n"
+                  << "                         " << literal->value().e0.z << ", " << literal->value().e1.z << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y
+            && literal->value().e0.z == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << "]";
+    }
+private:
+    const odb::Mat3x2<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat3x3<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat3x3<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat3x3<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat3x3<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ";\n"
+                  << "                         " << literal->value().e0.z << ", " << literal->value().e1.z << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y
+            && literal->value().e0.z == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z && literal->value().e2.z == expectedValue_.e2.z;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << "]";
+    }
+private:
+    const odb::Mat3x3<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat3x4<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat3x4<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat3x4<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat3x4<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ", " << literal->value().e2.x << ", " << literal->value().e3.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ", " << literal->value().e2.y << ", " << literal->value().e3.y << ";\n"
+                  << "                         " << literal->value().e0.z << ", " << literal->value().e1.z << ", " << literal->value().e2.z << ", " << literal->value().e3.z << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x && literal->value().e3.x == expectedValue_.e3.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y && literal->value().e3.y == expectedValue_.e3.y
+            && literal->value().e0.z == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z && literal->value().e2.z == expectedValue_.e2.z && literal->value().e3.z == expectedValue_.e3.z;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ", " << expectedValue_.e3.z << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ", " << expectedValue_.e3.z << "]";
+    }
+private:
+    const odb::Mat3x4<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat4x2<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat4x2<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat4x2<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat4x2<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ";\n"
+                  << "                         " << literal->value().e0.z << ", " << literal->value().e1.z << ";\n"
+                  << "                         " << literal->value().e0.w << ", " << literal->value().e1.w << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y
+            && literal->value().e0.w == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z
+            && literal->value().e0.z == expectedValue_.e0.w && literal->value().e1.w == expectedValue_.e1.w;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ";\n"
+            << "                         " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ";\n"
+            << "                                 " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << "]";
+    }
+private:
+    const odb::Mat4x2<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat4x3<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat4x3<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat4x3<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat4x3<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y
+            && literal->value().e0.z == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z && literal->value().e2.z == expectedValue_.e2.z
+            && literal->value().e0.w == expectedValue_.e0.w && literal->value().e1.w == expectedValue_.e1.w && literal->value().e2.w == expectedValue_.e2.w;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ";\n"
+            << "                         " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << ", " << expectedValue_.e2.w << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ";\n"
+            << "                                 " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << ", " << expectedValue_.e2.w << "]";
+    }
+private:
+    const odb::Mat4x3<float> expectedValue_;
+};
+
+template <>
+class LiteralEqMatcher<odb::Mat4x4<float>> : public MatcherInterface<const ast::LiteralTemplate<odb::Mat4x4<float>>*>
+{
+public:
+    explicit LiteralEqMatcher(const odb::Mat4x4<float>& expectedValue)
+        : expectedValue_(expectedValue) {}
+    bool MatchAndExplain(const ast::LiteralTemplate<odb::Mat4x4<float>>* literal, MatchResultListener* listener) const override {
+        *listener << "literal->value() equals [" << literal->value().e0.x << ", " << literal->value().e1.x << ", " << literal->value().e2.x << ", " << literal->value().e3.x << ";\n"
+                  << "                         " << literal->value().e0.y << ", " << literal->value().e1.y << ", " << literal->value().e2.y << ", " << literal->value().e3.y << ";\n"
+                  << "                         " << literal->value().e0.z << ", " << literal->value().e1.z << ", " << literal->value().e2.z << ", " << literal->value().e3.z << ";\n"
+                  << "                         " << literal->value().e0.w << ", " << literal->value().e1.w << ", " << literal->value().e2.w << ", " << literal->value().e3.w << "]";
+        return literal->value().e0.x == expectedValue_.e0.x && literal->value().e1.x == expectedValue_.e1.x && literal->value().e2.x == expectedValue_.e2.x && literal->value().e3.x == expectedValue_.e3.x
+            && literal->value().e0.y == expectedValue_.e0.y && literal->value().e1.y == expectedValue_.e1.y && literal->value().e2.y == expectedValue_.e2.y && literal->value().e3.y == expectedValue_.e3.y
+            && literal->value().e0.z == expectedValue_.e0.z && literal->value().e1.z == expectedValue_.e1.z && literal->value().e2.z == expectedValue_.e2.z && literal->value().e3.z == expectedValue_.e3.z
+            && literal->value().e0.w == expectedValue_.e0.w && literal->value().e1.w == expectedValue_.e1.w && literal->value().e2.w == expectedValue_.e2.w && literal->value().e3.w == expectedValue_.e3.w;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "literal->value() equals [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                         " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << ";\n"
+            << "                         " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ", " << expectedValue_.e3.z << ";\n"
+            << "                         " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << ", " << expectedValue_.e2.w << ", " << expectedValue_.e3.w << "]";
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "literal->value() does not equal [" << expectedValue_.e0.x << ", " << expectedValue_.e1.x << ", " << expectedValue_.e2.x << ", " << expectedValue_.e3.x << ";\n"
+            << "                                 " << expectedValue_.e0.y << ", " << expectedValue_.e1.y << ", " << expectedValue_.e2.y << ", " << expectedValue_.e3.y << ";\n"
+            << "                                 " << expectedValue_.e0.z << ", " << expectedValue_.e1.z << ", " << expectedValue_.e2.z << ", " << expectedValue_.e3.z << ";\n"
+            << "                                 " << expectedValue_.e0.w << ", " << expectedValue_.e1.w << ", " << expectedValue_.e2.w << ", " << expectedValue_.e3.w << "]";
+    }
+private:
+    const odb::Mat4x4<float> expectedValue_;
+};
+
 class CommandExprSymbolEqMatcher : public MatcherInterface<const ast::CommandExprSymbol*>
 {
 public:

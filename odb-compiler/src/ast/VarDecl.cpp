@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/VarDecl.hpp"
-#include "odb-compiler/ast/Expression.hpp"
+#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -9,9 +9,40 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(SourceLocation* location) :
-    Statement(location)
+VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* initializer, SourceLocation* location) :
+    Statement(location),
+    symbol_(symbol),
+    initializer_(initializer)
 {
+    symbol->setParent(this);
+    initializer->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, SourceLocation* location) :
+    Statement(location),
+    symbol_(symbol)
+{
+    symbol->setParent(this);
+}
+
+// ----------------------------------------------------------------------------
+ScopedAnnotatedSymbol* VarDecl::symbol() const
+{
+    return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+MaybeNull<ExpressionList> VarDecl::initializer() const
+{
+    return initializer_.get();
+}
+
+// ----------------------------------------------------------------------------
+void VarDecl::setInitializer(ExpressionList* initializer)
+{
+    initializer_ = initializer;
+    initializer->setParent(this);
 }
 
 // ============================================================================
@@ -21,44 +52,21 @@ VarDecl::VarDecl(SourceLocation* location) :
 #define X(dbname, cppname)                                                    \
     template <>                                                               \
     VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
-                                              Expression* initial,            \
-                                              SourceLocation* location) :     \
-        VarDecl(location),                                                    \
-        symbol_(symbol),                                                      \
-        initialValue_(initial)                                                \
+                                              ExpressionList* initial,        \
+                                              SourceLocation* location)       \
+        : VarDecl(symbol, initial, location)                                  \
     {                                                                         \
-        symbol->setParent(this);                                              \
-        initial->setParent(this);                                             \
     }                                                                         \
                                                                               \
     template <>                                                               \
     VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
-                                              SourceLocation* location) :     \
-        VarDecl(location),                                                    \
-        symbol_(symbol),                                                      \
-        initialValue_(new dbname##Literal(cppname(), location))               \
+                                              SourceLocation* location)       \
+        : VarDecl(symbol,                                                     \
+            new ExpressionList(                                               \
+                new dbname##Literal(cppname(), location),                     \
+                location),                                                    \
+            location)                                                         \
     {                                                                         \
-        symbol->setParent(this);                                              \
-        initialValue_->setParent(this);                                       \
-    }                                                                         \
-                                                                              \
-    template <>                                                               \
-    ScopedAnnotatedSymbol* VarDeclTemplate<cppname>::symbol() const           \
-    {                                                                         \
-        return symbol_;                                                       \
-    }                                                                         \
-                                                                              \
-    template <>                                                               \
-    Expression* VarDeclTemplate<cppname>::initialValue() const                \
-    {                                                                         \
-        return initialValue_;                                                 \
-    }                                                                         \
-                                                                              \
-    template <>                                                               \
-    void VarDeclTemplate<cppname>::setInitialValue(Expression* expression)    \
-    {                                                                         \
-        expression->setParent(this);                                          \
-        initialValue_ = expression;                                           \
     }                                                                         \
                                                                               \
     template<>                                                                \
@@ -66,33 +74,33 @@ VarDecl::VarDecl(SourceLocation* location) :
     {                                                                         \
         visitor->visit##dbname##VarDecl(this);                                \
         symbol_->accept(visitor);                                             \
-        initialValue_->accept(visitor);                                       \
+        initializer_->accept(visitor);                                        \
     }                                                                         \
     template<>                                                                \
     void VarDeclTemplate<cppname>::accept(ConstVisitor* visitor) const        \
     {                                                                         \
         visitor->visit##dbname##VarDecl(this);                                \
         symbol_->accept(visitor);                                             \
-        initialValue_->accept(visitor);                                       \
+        initializer_->accept(visitor);                                        \
     }                                                                         \
     template <>                                                               \
     void VarDeclTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
     {                                                                         \
         if (symbol_ == oldNode)                                               \
             symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
-        else if (initialValue_ == oldNode)                                    \
-            initialValue_ = dynamic_cast<Expression*>(newNode);               \
+        else if (initializer_ == oldNode)                                     \
+            initializer_ = dynamic_cast<ExpressionList*>(newNode);            \
         else                                                                  \
             assert(false);                                                    \
                                                                               \
-    newNode->setParent(this);                                                 \
+        newNode->setParent(this);                                             \
     }                                                                         \
     template <>                                                               \
     Node* VarDeclTemplate<cppname>::duplicateImpl() const                     \
     {                                                                         \
         return new VarDeclTemplate<cppname>(                                  \
             symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
-            initialValue_->duplicate<Expression>(),                           \
+            initializer_->duplicate<ExpressionList>(),                        \
             location());                                                      \
     }
 ODB_DATATYPE_LIST
@@ -102,92 +110,19 @@ ODB_DATATYPE_LIST
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UDTVarDeclSymbol::UDTVarDeclSymbol(ScopedAnnotatedSymbol* symbol, Symbol* udt, SourceLocation* location)
-    : VarDecl(location)
-    , symbol_(symbol)
+UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, ExpressionList* initializer, SourceLocation* location)
+    : VarDecl(symbol, initializer, location)
     , udt_(udt)
 {
-    symbol->setParent(this);
     udt->setParent(this);
 }
-
-// ----------------------------------------------------------------------------
-void UDTVarDeclSymbol::setInitialValue(Expression* expr)
-{
-    assert(false);
-}
-
-// ----------------------------------------------------------------------------
-ScopedAnnotatedSymbol* UDTVarDeclSymbol::symbol() const
-{
-    return symbol_;
-}
-
-// ----------------------------------------------------------------------------
-Symbol* UDTVarDeclSymbol::udtSymbol() const
-{
-    return udt_;
-}
-
-// ----------------------------------------------------------------------------
-void UDTVarDeclSymbol::accept(Visitor* visitor)
-{
-    visitor->visitUDTVarDeclSymbol(this);
-    symbol_->accept(visitor);
-    udt_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
-void UDTVarDeclSymbol::accept(ConstVisitor* visitor) const
-{
-    visitor->visitUDTVarDeclSymbol(this);
-    symbol_->accept(visitor);
-    udt_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
-void UDTVarDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
-    else if (udt_ == oldNode)
-        udt_ = dynamic_cast<Symbol*>(newNode);
-    else
-        assert(false);
-}
-
-// ----------------------------------------------------------------------------
-Node* UDTVarDeclSymbol::duplicateImpl() const
-{
-    return new UDTVarDeclSymbol(
-        symbol_->duplicate<ScopedAnnotatedSymbol>(),
-        udt_->duplicate<Symbol>(),
-        location());
-}
-
-// ============================================================================
-// ============================================================================
 
 // ----------------------------------------------------------------------------
 UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location)
-    : VarDecl(location)
-    , symbol_(symbol)
+    : VarDecl(symbol, location)
     , udt_(udt)
 {
-    symbol->setParent(this);
     udt->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-void UDTVarDecl::setInitialValue(Expression* expr)
-{
-    assert(false);
-}
-
-// ----------------------------------------------------------------------------
-ScopedAnnotatedSymbol* UDTVarDecl::symbol() const
-{
-    return symbol_;
 }
 
 // ----------------------------------------------------------------------------
@@ -202,6 +137,8 @@ void UDTVarDecl::accept(Visitor* visitor)
     visitor->visitUDTVarDecl(this);
     symbol_->accept(visitor);
     udt_->accept(visitor);
+    if (initializer_.notNull())
+        initializer_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -210,6 +147,8 @@ void UDTVarDecl::accept(ConstVisitor* visitor) const
     visitor->visitUDTVarDecl(this);
     symbol_->accept(visitor);
     udt_->accept(visitor);
+    if (initializer_.notNull())
+        initializer_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
@@ -219,6 +158,8 @@ void UDTVarDecl::swapChild(const Node* oldNode, Node* newNode)
         symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
     else if (udt_ == oldNode)
         udt_ = dynamic_cast<UDTRef*>(newNode);
+    if (initializer_ == oldNode)
+        initializer_ = dynamic_cast<ExpressionList*>(newNode);
     else
         assert(false);
 }
@@ -226,9 +167,10 @@ void UDTVarDecl::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* UDTVarDecl::duplicateImpl() const
 {
-    return new UDTVarDeclSymbol(
+    return new UDTVarDecl(
         symbol_->duplicate<ScopedAnnotatedSymbol>(),
         udt_->duplicate<UDTRef>(),
+        initializer_.notNull() ? initializer_->duplicate<ExpressionList>() : nullptr,
         location());
 }
 

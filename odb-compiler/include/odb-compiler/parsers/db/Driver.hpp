@@ -2,7 +2,6 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
-#include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
@@ -50,17 +49,8 @@ public:
      * of the literal.
      *
      * @note Values of 0 and 1 will still be ByteLiteral and not BooleanLiteral.
-     * @param[in] value Must be a positive value (including 0).
      */
-    ODBCOMPILER_PRIVATE_API ast::Literal* newPositiveIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
-
-    /*!
-     * Attempts to create the smallest possible signed integer type based on
-     * the value of the literal.
-     *
-     * @param[in] value Must be a negative integer value (excluding 0).
-     */
-    ODBCOMPILER_PRIVATE_API ast::Literal* newNegativeIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
+    ODBCOMPILER_PRIVATE_API ast::Literal* newIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
 
     /*!
      * Helpers for converting DarkBASIC increment and decrement statements into
@@ -77,13 +67,6 @@ public:
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
-
-    ODBCOMPILER_PRIVATE_API void printSyntaxError(
-        const DBLTYPE* loc,
-        dbscan_t scanner,
-        std::pair<dbtokentype, std::string> unexpectedToken,
-        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens);
-    ODBCOMPILER_PRIVATE_API void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner);
 
     /*!
      * Factory method for converting a BISON location into a SourceLocation.

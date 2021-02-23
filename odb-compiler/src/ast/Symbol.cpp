@@ -81,44 +81,6 @@ Node* AnnotatedSymbol::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ScopedSymbol::ScopedSymbol(Scope scope, const std::string& name, SourceLocation* location) :
-    Symbol(name, location),
-    scope_(scope)
-{
-}
-
-// ----------------------------------------------------------------------------
-Symbol::Scope ScopedSymbol::scope() const
-{
-    return scope_;
-}
-
-// ----------------------------------------------------------------------------
-void ScopedSymbol::accept(Visitor* visitor)
-{
-    visitor->visitScopedSymbol(this);
-}
-void ScopedSymbol::accept(ConstVisitor* visitor) const
-{
-    visitor->visitScopedSymbol(this);
-}
-
-// ----------------------------------------------------------------------------
-void ScopedSymbol::swapChild(const Node* oldNode, Node* newNode)
-{
-    assert(false);
-}
-
-// ----------------------------------------------------------------------------
-Node* ScopedSymbol::duplicateImpl() const
-{
-    return new ScopedSymbol(scope_, name_, location());
-}
-
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
 ScopedAnnotatedSymbol::ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location) :
     Symbol(name, location),
     scope_(scope),
@@ -136,6 +98,12 @@ Symbol::Scope ScopedAnnotatedSymbol::scope() const
 Symbol::Annotation ScopedAnnotatedSymbol::annotation() const
 {
     return annotation_;
+}
+
+// ----------------------------------------------------------------------------
+void ScopedAnnotatedSymbol::setScope(Scope scope)
+{
+    scope_ = scope;
 }
 
 // ----------------------------------------------------------------------------
