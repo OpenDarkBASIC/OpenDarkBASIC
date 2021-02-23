@@ -44,6 +44,7 @@ void GenericVisitor::visitCommandStmntSymbol(CommandStmntSymbol* node)         {
 void GenericVisitor::visitCommandStmnt(CommandStmnt* node)                     { visit(node); }
 void GenericVisitor::visitConditional(Conditional* node)                       { visit(node); }
 void GenericVisitor::visitConstDecl(ConstDecl* node)                           { visit(node); }
+void GenericVisitor::visitConstDeclExpr(ConstDeclExpr* node)                   { visit(node); }
 void GenericVisitor::visitDefaultCase(DefaultCase* node)                       { visit(node); }
 void GenericVisitor::visitExit(Exit* node)                                     { visit(node); }
 void GenericVisitor::visitExpressionList(ExpressionList* node)                 { visit(node); }
@@ -72,7 +73,6 @@ void GenericVisitor::visitUDTFieldInner(UDTFieldInner* node)                   {
 void GenericVisitor::visitUDTFieldAssignment(UDTFieldAssignment* node)         { visit(node); }
 void GenericVisitor::visitUDTRef(UDTRef* node)                                 { visit(node); }
 void GenericVisitor::visitUDTVarDecl(UDTVarDecl* node)                         { visit(node); }
-void GenericVisitor::visitUDTVarDeclSymbol(UDTVarDeclSymbol* node)             { visit(node); }
 void GenericVisitor::visitUntilLoop(UntilLoop* node)                           { visit(node); }
 void GenericVisitor::visitVarAssignment(VarAssignment* node)                   { visit(node); }
 void GenericVisitor::visitVarRef(VarRef* node)                                 { visit(node); }
@@ -108,6 +108,7 @@ void GenericConstVisitor::visitCommandStmntSymbol(const CommandStmntSymbol* node
 void GenericConstVisitor::visitCommandStmnt(const CommandStmnt* node)                     { visit(node); }
 void GenericConstVisitor::visitConditional(const Conditional* node)                       { visit(node); }
 void GenericConstVisitor::visitConstDecl(const ConstDecl* node)                           { visit(node); }
+void GenericConstVisitor::visitConstDeclExpr(const ConstDeclExpr* node)                   { visit(node); }
 void GenericConstVisitor::visitDefaultCase(const DefaultCase* node)                       { visit(node); }
 void GenericConstVisitor::visitExit(const Exit* node)                                     { visit(node); }
 void GenericConstVisitor::visitExpressionList(const ExpressionList* node)                 { visit(node); }
@@ -136,7 +137,6 @@ void GenericConstVisitor::visitUDTFieldInner(const UDTFieldInner* node)         
 void GenericConstVisitor::visitUDTFieldAssignment(const UDTFieldAssignment* node)         { visit(node); }
 void GenericConstVisitor::visitUDTRef(const UDTRef* node)                                 { visit(node); }
 void GenericConstVisitor::visitUDTVarDecl(const UDTVarDecl* node)                         { visit(node); }
-void GenericConstVisitor::visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node)             { visit(node); }
 void GenericConstVisitor::visitUntilLoop(const UntilLoop* node)                           { visit(node); }
 void GenericConstVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }
 void GenericConstVisitor::visitVarRef(const VarRef* node)                                 { visit(node); }

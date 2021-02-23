@@ -27,10 +27,10 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
@@ -50,10 +50,10 @@ TEST_F(NAME, byte_literal)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(255))).After(exp);
 
@@ -73,17 +73,17 @@ TEST_F(NAME, word_literal)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(256))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(65535))).After(exp);
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, positive_integer_literal)
+TEST_F(NAME, integer_literal)
 {
     using Annotation = ast::Symbol::Annotation;
 
@@ -96,10 +96,10 @@ TEST_F(NAME, positive_integer_literal)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(65536))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647))).After(exp);
 
@@ -119,17 +119,17 @@ TEST_F(NAME, dword_literal)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(2147483648))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(4294967295))).After(exp);
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, positive_double_integer_literal)
+TEST_F(NAME, double_integer_literal)
 {
     using Annotation = ast::Symbol::Annotation;
 
@@ -142,63 +142,17 @@ TEST_F(NAME, positive_double_integer_literal)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(4294967296))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(9223372036854775807))).After(exp);
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, negative_integer_literal)
-{
-    using Annotation = ast::Symbol::Annotation;
-
-    ast = driver->parse("test",
-        "#constant x -1\n"
-        "#constant y -2147483648\n",
-        matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(-1))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(-2147483648))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, negative_double_integer_literal)
-{
-    using Annotation = ast::Symbol::Annotation;
-
-    ast = driver->parse("test",
-        "#constant x -2147483649\n"
-        "#constant y -9223372036854775808\n",
-        matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(-2147483649))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(std::numeric_limits<int64_t>::min()))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, positive_hex_literals)
+TEST_F(NAME, hex_literals)
 {
     using Annotation = ast::Symbol::Annotation;
 
@@ -214,49 +168,26 @@ TEST_F(NAME, positive_hex_literals)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "d"))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "e"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
     ast->accept(&v);
 }
 
-TEST_F(NAME, negative_hex_literals)
-{
-    using Annotation = ast::Symbol::Annotation;
-
-    ast = driver->parse("test",
-        "#constant a -0x80000000\n"
-        "#constant b -0x8000000000000000\n",
-        matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(-0x80000000))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(std::numeric_limits<int64_t>::min()))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, positive_binary_literals)
+TEST_F(NAME, binary_literals)
 {
     using Annotation = ast::Symbol::Annotation;
 
@@ -272,44 +203,21 @@ TEST_F(NAME, positive_binary_literals)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "d"))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "e"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
-
-    ast->accept(&v);
-}
-
-TEST_F(NAME, negative_binary_literals)
-{
-    using Annotation = ast::Symbol::Annotation;
-
-    ast = driver->parse("test",
-        "#constant a -%10000000000000000000000000000000\n"
-        "#constant b -%1000000000000000000000000000000000000000000000000000000000000000\n",
-        matcher);
-    ASSERT_THAT(ast, NotNull());
-
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(-0x80000000))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(std::numeric_limits<int64_t>::min()))).After(exp);
 
     ast->accept(&v);
 }

@@ -17,6 +17,7 @@ public:
     void visitCommandStmntSymbol(const odb::ast::CommandStmntSymbol* node) override;
     void visitConditional(const odb::ast::Conditional* node) override;
     void visitConstDecl(const odb::ast::ConstDecl* node) override;
+    void visitConstDeclExpr(const odb::ast::ConstDeclExpr* node) override;
     void visitDefaultCase(const odb::ast::DefaultCase* node) override;
     void visitExit(const odb::ast::Exit* node) override;
     void visitExpressionList(const odb::ast::ExpressionList* node) override;
@@ -45,7 +46,6 @@ public:
     void visitUDTFieldInner(const odb::ast::UDTFieldInner* node) override;
     void visitUDTRef(const odb::ast::UDTRef* node) override;
     void visitUDTVarDecl(const odb::ast::UDTVarDecl* node) override;
-    void visitUDTVarDeclSymbol(const odb::ast::UDTVarDeclSymbol* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;
     void visitVarRef(const odb::ast::VarRef* node) override;

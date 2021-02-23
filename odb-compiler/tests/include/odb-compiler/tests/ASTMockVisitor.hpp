@@ -18,6 +18,7 @@ public:
     MOCK_METHOD(void, visitCommandExprSymbol, (const odb::ast::CommandExprSymbol* node), (override));
     MOCK_METHOD(void, visitConditional, (const odb::ast::Conditional* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const odb::ast::ConstDecl* node), (override));
+    MOCK_METHOD(void, visitConstDeclExpr, (const odb::ast::ConstDeclExpr* node), (override));
     MOCK_METHOD(void, visitDefaultCase, (const odb::ast::DefaultCase* node), (override));
     MOCK_METHOD(void, visitExit, (const odb::ast::Exit* node), (override));
     MOCK_METHOD(void, visitExpressionList, (const odb::ast::ExpressionList* node), (override));
@@ -46,7 +47,6 @@ public:
     MOCK_METHOD(void, visitUDTFieldInner, (const odb::ast::UDTFieldInner* node), (override));
     MOCK_METHOD(void, visitUDTRef, (const odb::ast::UDTRef* node), (override));
     MOCK_METHOD(void, visitUDTVarDecl, (const odb::ast::UDTVarDecl* node), (override));
-    MOCK_METHOD(void, visitUDTVarDeclSymbol, (const odb::ast::UDTVarDeclSymbol* node), (override));
     MOCK_METHOD(void, visitUntilLoop, (const odb::ast::UntilLoop* node), (override));
     MOCK_METHOD(void, visitVarAssignment, (const odb::ast::VarAssignment* node), (override));
     MOCK_METHOD(void, visitVarRef, (const odb::ast::VarRef* node), (override));

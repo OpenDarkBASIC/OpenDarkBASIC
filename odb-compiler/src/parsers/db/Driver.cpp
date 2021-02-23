@@ -389,49 +389,6 @@ ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir 
 }
 
 // ----------------------------------------------------------------------------
-void Driver::printSyntaxError(const DBLTYPE* loc,
-                              dbscan_t scanner,
-                              std::pair<dbtokentype, std::string> unexpectedToken,
-                              const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens)
-{
-    ColorState state(Log::info, Log::FG_WHITE);
-
-    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
-    Reference<ast::SourceLocation> location = driver->newLocation(loc);
-
-    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
-    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
-    Log::info.print(Log::FG_BRIGHT_RED, "syntax error: ");
-
-    if (unexpectedToken.first != TOK_DBEMPTY)
-    {
-        Log::info.print("unexpected ");
-        Log::info.print(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
-    }
-    if (expectedTokens.size() > 0)
-    {
-        Log::info.print(", expected ");
-        for (int i = 0; i != (int)expectedTokens.size(); ++i)
-        {
-            if (i != 0)
-                Log::info.print(" or ");
-            Log::info.print(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
-        }
-        Log::info.print("\n");
-    }
-
-    location->printUnderlinedSection(Log::info);
-}
-
-// ----------------------------------------------------------------------------
-void Driver::printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner)
-{
-    odb::db::Driver* driver = static_cast<odb::db::Driver*>(dbget_extra(scanner));
-    Reference<ast::SourceLocation> location = driver->newLocation(loc);
-    location->printUnderlinedSection(Log::info);
-}
-
-// ----------------------------------------------------------------------------
 ast::Block* FileParserDriver::parse(const std::string& fileName,
                                     const cmd::CommandMatcher& commandMatcher)
 {

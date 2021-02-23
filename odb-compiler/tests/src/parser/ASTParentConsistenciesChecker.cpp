@@ -93,6 +93,11 @@ void ASTParentConsistenciesChecker::visitConstDecl(const ConstDecl* node)
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->literal()->parent()));
 }
+void ASTParentConsistenciesChecker::visitConstDeclExpr(const ConstDeclExpr* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    EXPECT_THAT(node, Eq(node->expression()->parent()));
+}
 void ASTParentConsistenciesChecker::visitDefaultCase(const DefaultCase* node)
 {
     if (node->body().notNull())
@@ -222,11 +227,8 @@ void ASTParentConsistenciesChecker::visitUDTVarDecl(const UDTVarDecl* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->udt()->parent()));
-}
-void ASTParentConsistenciesChecker::visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node)
-{
-    EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
+    if (node->initializer().notNull())
+        EXPECT_THAT(node, Eq(node->initializer()->parent()));
 }
 void ASTParentConsistenciesChecker::visitUntilLoop(const UntilLoop* node)
 {
@@ -255,7 +257,8 @@ void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
     void ASTParentConsistenciesChecker::visit##dbname##VarDecl(const dbname##VarDecl* node) \
     {                                                                         \
         EXPECT_THAT(node, Eq(node->symbol()->parent()));                      \
-        EXPECT_THAT(node, Eq(node->initialValue()->parent()));                \
+        ASSERT_THAT(node->initializer(), NotNull());                          \
+        EXPECT_THAT(node, Eq(node->initializer()->parent()));                 \
     }                                                                         \
     void ASTParentConsistenciesChecker::visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) \
     {                                                                         \

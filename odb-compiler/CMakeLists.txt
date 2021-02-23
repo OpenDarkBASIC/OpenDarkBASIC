@@ -291,7 +291,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/parser/test_db_parser_goto.cpp"
         "tests/src/parser/test_db_parser_inc_dec.cpp"
         "tests/src/parser/test_db_parser_literal_bool.cpp"
-        "tests/src/parser/test_db_parser_literal_comlpex.cpp"
+        "tests/src/parser/test_db_parser_literal_complex.cpp"
         "tests/src/parser/test_db_parser_literal_float.cpp"
         "tests/src/parser/test_db_parser_literal_int.cpp"
         "tests/src/parser/test_db_parser_literal_quat.cpp"

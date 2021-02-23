@@ -22,6 +22,7 @@ class CommandStmnt;
 class CommandStmntSymbol;
 class Conditional;
 class ConstDecl;
+class ConstDeclExpr;
 class DefaultCase;
 class ExpressionList;
 class ForLoop;
@@ -49,7 +50,6 @@ class UDTFieldOuter;
 class UDTFieldInner;
 class UDTFieldAssignment;
 class UDTVarDecl;
-class UDTVarDeclSymbol;
 class UntilLoop;
 class VarAssignment;
 class VarRef;
@@ -89,6 +89,7 @@ public:
     virtual void visitCommandStmntSymbol(CommandStmntSymbol* node) = 0;
     virtual void visitConditional(Conditional* node) = 0;
     virtual void visitConstDecl(ConstDecl* node) = 0;
+    virtual void visitConstDeclExpr(ConstDeclExpr* node) = 0;
     virtual void visitDefaultCase(DefaultCase* node) = 0;
     virtual void visitExit(Exit* node) = 0;
     virtual void visitExpressionList(ExpressionList* node) = 0;
@@ -117,7 +118,6 @@ public:
     virtual void visitUDTFieldInner(UDTFieldInner* node) = 0;
     virtual void visitUDTRef(UDTRef* node) = 0;
     virtual void visitUDTVarDecl(UDTVarDecl* node) = 0;
-    virtual void visitUDTVarDeclSymbol(UDTVarDeclSymbol* node) = 0;
     virtual void visitUntilLoop(UntilLoop* node) = 0;
     virtual void visitVarAssignment(VarAssignment* node) = 0;
     virtual void visitVarRef(VarRef* node) = 0;
@@ -156,6 +156,7 @@ public:
     virtual void visitCommandStmntSymbol(const CommandStmntSymbol* node) = 0;
     virtual void visitConditional(const Conditional* node) = 0;
     virtual void visitConstDecl(const ConstDecl* node) = 0;
+    virtual void visitConstDeclExpr(const ConstDeclExpr* node) = 0;
     virtual void visitDefaultCase(const DefaultCase* node) = 0;
     virtual void visitExit(const Exit* node) = 0;
     virtual void visitExpressionList(const ExpressionList* node) = 0;
@@ -184,7 +185,6 @@ public:
     virtual void visitUDTFieldInner(const UDTFieldInner* node) = 0;
     virtual void visitUDTRef(const UDTRef* node) = 0;
     virtual void visitUDTVarDecl(const UDTVarDecl* node) = 0;
-    virtual void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) = 0;
     virtual void visitUntilLoop(const UntilLoop* node) = 0;
     virtual void visitVarAssignment(const VarAssignment* node) = 0;
     virtual void visitVarRef(const VarRef* node) = 0;
@@ -223,6 +223,7 @@ public:
     void visitCommandStmntSymbol(CommandStmntSymbol* node) override;
     void visitConditional(Conditional* node) override;
     void visitConstDecl(ConstDecl* node) override;
+    void visitConstDeclExpr(ConstDeclExpr* node) override;
     void visitDefaultCase(DefaultCase* node) override;
     void visitExit(Exit* node) override;
     void visitExpressionList(ExpressionList* node) override;
@@ -251,7 +252,6 @@ public:
     void visitUDTFieldInner(UDTFieldInner* node) override;
     void visitUDTRef(UDTRef* node) override;
     void visitUDTVarDecl(UDTVarDecl* node) override;
-    void visitUDTVarDeclSymbol(UDTVarDeclSymbol* node) override;
     void visitUntilLoop(UntilLoop* node) override;
     void visitVarAssignment(VarAssignment* node) override;
     void visitVarRef(VarRef* node) override;
@@ -292,6 +292,7 @@ public:
     void visitCommandStmntSymbol(const CommandStmntSymbol* node) override;
     void visitConditional(const Conditional* node) override;
     void visitConstDecl(const ConstDecl* node) override;
+    void visitConstDeclExpr(const ConstDeclExpr* node) override;
     void visitDefaultCase(const DefaultCase* node) override;
     void visitExit(const Exit* node) override;
     void visitExpressionList(const ExpressionList* node) override;
@@ -320,7 +321,6 @@ public:
     void visitUDTFieldAssignment(const UDTFieldAssignment* node) override;
     void visitUDTRef(const UDTRef* node) override;
     void visitUDTVarDecl(const UDTVarDecl* node) override;
-    void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override;
     void visitUntilLoop(const UntilLoop* node) override;
     void visitVarAssignment(const VarAssignment* node) override;
     void visitVarRef(const VarRef* node) override;

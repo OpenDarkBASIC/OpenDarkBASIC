@@ -36,7 +36,7 @@
 namespace odb {
 
 template <typename T> struct Complex { T real = 0; T imag = 0; };
-template <typename T> struct Quat    { T x = 0; T y = 0; T z = 0; T w = 1; };
+template <typename T> struct Quat    { T r = 1; T i = 0; T j = 0; T k = 0; };
 template <typename T> struct Vec2    { T x = 0; T y = 0; };
 template <typename T> struct Vec3    { T x = 0; T y = 0; T z = 0; };
 template <typename T> struct Vec4    { T x = 0; T y = 0; T z = 0; T w = 0; };

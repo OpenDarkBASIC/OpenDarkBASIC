@@ -207,14 +207,14 @@ public:
     explicit LiteralEqMatcher(const odb::Quat<float>& expectedValue)
         : expectedValue_(expectedValue) {}
     bool MatchAndExplain(const ast::LiteralTemplate<odb::Quat<float>>* literal, MatchResultListener* listener) const override {
-        *listener << "literal->value() equals " << literal->value().w << " + " << literal->value().x << "i + " << literal->value().y << "j + " << literal->value().z << "k";
-        return literal->value().x == expectedValue_.x && literal->value().y == expectedValue_.y && literal->value().z == expectedValue_.z && literal->value().w == expectedValue_.w;
+        *listener << "literal->value() equals " << literal->value().r << " + " << literal->value().i << "i + " << literal->value().j << "j + " << literal->value().k << "k";
+        return literal->value().i == expectedValue_.i && literal->value().j == expectedValue_.j && literal->value().k == expectedValue_.k && literal->value().r == expectedValue_.r;
     }
     void DescribeTo(::std::ostream* os) const override {
-        *os << "literal->value() equals " << expectedValue_.w << " + " << expectedValue_.x << "i + " << expectedValue_.y << "j + " << expectedValue_.z << "k";
+        *os << "literal->value() equals " << expectedValue_.r << " + " << expectedValue_.i << "i + " << expectedValue_.j << "j + " << expectedValue_.k << "k";
     }
     void DescribeNegationTo(::std::ostream* os) const override {
-        *os << "literal->value() does not equal " << expectedValue_.w << " + " << expectedValue_.x << "i + " << expectedValue_.y << "j + " << expectedValue_.z << "k";
+        *os << "literal->value() does not equal " << expectedValue_.r << " + " << expectedValue_.i << "i + " << expectedValue_.j << "j + " << expectedValue_.k << "k";
     }
 private:
     const odb::Quat<float> expectedValue_;

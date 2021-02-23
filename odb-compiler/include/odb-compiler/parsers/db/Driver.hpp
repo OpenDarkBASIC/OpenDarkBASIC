@@ -2,7 +2,6 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
-#include "odb-compiler/parsers/db/Parser.y.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
@@ -68,13 +67,6 @@ public:
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
-
-    ODBCOMPILER_PRIVATE_API void printSyntaxError(
-        const DBLTYPE* loc,
-        dbscan_t scanner,
-        std::pair<dbtokentype, std::string> unexpectedToken,
-        const std::vector<std::pair<dbtokentype, std::string>>& expectedTokens);
-    ODBCOMPILER_PRIVATE_API void printUnderlinedSection(const DBLTYPE* loc, dbscan_t scanner);
 
     /*!
      * Factory method for converting a BISON location into a SourceLocation.

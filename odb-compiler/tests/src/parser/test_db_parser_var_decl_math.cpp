@@ -67,7 +67,7 @@ public:
 #define mat4x2_initial_value           {{0, 0, 0, 0}, {0, 0, 0, 0}}
 #define mat4x3_initial_value           {{0, 0, 0, 0}, {0, 0, 0, 0}, {0, 0, 0, 0}}
 #define mat4x4_initial_value           {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}}
-#define quat_initial_value             {0, 0, 0, 1}
+#define quat_initial_value             {1, 0, 0, 0}
 #define vec2_initial_value             {0, 0}
 #define vec3_initial_value             {0, 0, 0}
 #define vec4_initial_value             {0, 0, 0, 0}
@@ -178,6 +178,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
                                                                               \
     ast->accept(&v);                                                          \
@@ -203,46 +204,46 @@ VALID_AS_TYPE_ALL_SCOPES(none, vec4)
 
 /*
  *     var as complex = 1+2i
- *     var as complex = (r, i)
- *     var as mat2x2 = (m00, m01,
- *                      m10, m11)
- *     var as mat2x3 = (m00, m01, m02,
- *                      m10, m11, m12)
- *     var as mat2x4 = (m00, m01, m02, m03,
- *                      m10, m11, m12, m13)
- *     var as mat3x2 = (m00, m01,
- *                      m10, m11,
- *                      m20, m21)
- *     var as mat3x3 = (m00, m01, m02,
- *                      m10, m11, m12,
- *                      m20, m21, m22)
- *     var as mat3x4 = (m00, m01, m02, m03,
- *                      m10, m11, m12, m13,
- *                      m20, m21, m22, m23)
- *     var as mat4x2 = (m00, m01,
- *                      m10, m11,
- *                      m20, m21,
- *                      m30, m31)
- *     var as mat4x3 = (m00, m01, m02,
- *                      m10, m11, m12,
- *                      m20, m21, m22,
- *                      m30, m31, m32)
- *     var as mat4x4 = (m00, m01, m02, m03,
- *                      m10, m11, m12, m13,
- *                      m20, m21, m22, m23,
- *                      m30, m31, m32, m33)
+ *     var as complex = r, i
+ *     var as mat2x2 = m00, m01,
+ *                     m10, m11
+ *     var as mat2x3 = m00, m01, m02,
+ *                     m10, m11, m12
+ *     var as mat2x4 = m00, m01, m02, m03,
+ *                     m10, m11, m12, m13
+ *     var as mat3x2 = m00, m01,
+ *                     m10, m11,
+ *                     m20, m21
+ *     var as mat3x3 = m00, m01, m02,
+ *                     m10, m11, m12,
+ *                     m20, m21, m22
+ *     var as mat3x4 = m00, m01, m02, m03,
+ *                     m10, m11, m12, m13,
+ *                     m20, m21, m22, m23
+ *     var as mat4x2 = m00, m01,
+ *                     m10, m11,
+ *                     m20, m21,
+ *                     m30, m31
+ *     var as mat4x3 = m00, m01, m02,
+ *                     m10, m11, m12,
+ *                     m20, m21, m22,
+ *                     m30, m31, m32
+ *     var as mat4x4 = m00, m01, m02, m03,
+ *                     m10, m11, m12, m13,
+ *                     m20, m21, m22, m23,
+ *                     m30, m31, m32, m33
  *     var as quat = 1+2i+2j+2k
- *     var as quat = (w, x, y, z)
- *     var as vec2 = (x, y)
- *     var as vec3 = (x, y, z)
- *     var as vec4 = (x, y, z, w)
+ *     var as quat = w, x, y, z
+ *     var as vec2 = x, y
+ *     var as vec3 = x, y, z
+ *     var as vec4 = x, y, z, w
  */
 TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
 {
     using Scope = ast::Symbol::Scope;
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parse("test", "var as complex = 1+2i", matcher);
+    ast = driver->parse("test", "var as complex = 1 + 2i", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -251,7 +252,10 @@ TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
     exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
-    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({1, 2}))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
 
     ast->accept(&v);
 }
@@ -260,7 +264,7 @@ TEST_F(NAME, var_as_complex_with_complex_initializer_list)
     using Scope = ast::Symbol::Scope;
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parse("test", "var as complex = (1, 2)", matcher);
+    ast = driver->parse("test", "var as complex = 1, 2", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -269,43 +273,56 @@ TEST_F(NAME, var_as_complex_with_complex_initializer_list)
     exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
-    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({1, 2}))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
     ast->accept(&v);
 }
-TEST_F(NAME, var_as_complex_with_quat_literal_initializer)
+TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
 {
     using Scope = ast::Symbol::Scope;
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parse("test", "var as quat = 1+2i+3j+4k", matcher);
+    ast = driver->parse("test", "var as quat = 1 + 2i + 3j + 4k", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitQuatVarDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
-    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({1, 2}))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOpAdd(_)).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
+    exp = EXPECT_CALL(v, visitQuatLiteral(QuatLiteralEq({0, 0, 3, 0}))).After(exp);
+    exp = EXPECT_CALL(v, visitQuatLiteral(QuatLiteralEq({0, 0, 0, 4}))).After(exp);
 
     ast->accept(&v);
 }
-TEST_F(NAME, var_as_complex_with_quat_initializer_list)
+TEST_F(NAME, var_as_quat_with_quat_initializer_list)
 {
     using Scope = ast::Symbol::Scope;
     using Ann = ast::Symbol::Annotation;
 
-    ast = driver->parse("test", "var as quat = (1, 2, 3, 4)", matcher);
+    ast = driver->parse("test", "var as quat = 1, 2, 3, 4", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitQuatVarDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
-    exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({1, 2}))).After(exp);
+    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(4))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
+    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(4))).After(exp);
 
     ast->accept(&v);
 }

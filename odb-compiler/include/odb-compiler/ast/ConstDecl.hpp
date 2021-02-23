@@ -7,9 +7,29 @@ namespace odb {
 namespace ast {
 
 class AnnotatedSymbol;
+class Expression;
 class Literal;
 
-/*! #constant x = 42 */
+class ODBCOMPILER_PUBLIC_API ConstDeclExpr : public Statement
+{
+public:
+    ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLocation* location);
+
+    AnnotatedSymbol* symbol() const;
+    Expression* expression() const;
+
+    void accept(Visitor* visitor) override;
+    void accept(ConstVisitor* visitor) const override;
+    void swapChild(const Node* oldNode, Node* newNode) override;
+
+protected:
+    Node* duplicateImpl() const override;
+
+private:
+    Reference<AnnotatedSymbol> symbol_;
+    Reference<Expression> expr_;
+};
+
 class ODBCOMPILER_PUBLIC_API ConstDecl : public Statement
 {
 public:

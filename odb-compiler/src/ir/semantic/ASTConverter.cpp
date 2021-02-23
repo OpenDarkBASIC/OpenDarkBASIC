@@ -416,17 +416,25 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
     {
         // Get var ref and type.
+        // TheComet: All initializers are now ExpressionList instead of Expression
+        //           because the math datatypes have multiple initializer values
+        //           For single-valued variables you can just take the first
+        //           element in the list. Should probably throw an error if there
+        //           are more (or fewer) values than expected for the particular
+        //           type.
         Type varType;
         ast::Expression* initialValue = nullptr;
-#define X(dbname, cppname)                                                                                             \
-    if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))                                            \
-    {                                                                                                                  \
-        varType = Type{BuiltinType::dbname};                                                                           \
-        initialValue = dbname##Ref->initialValue();                                                                    \
+#define X(dbname, cppname)                                                    \
+    if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))   \
+    {                                                                         \
+        varType = Type{BuiltinType::dbname};                                  \
+        initialValue = dbname##Ref->initializer()->expressions()[0];          \
     }
         ODB_DATATYPE_LIST
 #undef X
         // TODO: Implement UDTs.
+        // TheComet: UDTVarDecl::initializer() may be nullptr for UDT declarations
+        //           specifically. In all other cases it should not be null.
 
         // If we're declaring a new variable, it must not exist already.
         auto annotation = getAnnotation(varDeclSt->symbol()->annotation());

@@ -136,6 +136,11 @@ private:
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->literal(), "literal");
     }
+    void visitConstDeclExpr(const ConstDeclExpr* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->expression(), "expr");
+    }
     void visitDefaultCase(const DefaultCase* node) override
     {
         if (node->body().notNull())
@@ -274,11 +279,8 @@ private:
     {
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->udt(), "udt");
-    }
-    void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override
-    {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        writeNamedConnection(node, node->udtSymbol(), "udtSymbol");
+        if (node->initializer().notNull())
+            writeNamedConnection(node, node->initializer(), "initializer");
     }
     void visitUntilLoop(const UntilLoop* node) override
     {
@@ -307,7 +309,8 @@ private:
     void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
-        writeNamedConnection(node, node->initialValue(), "initialValue");     \
+        if (node->initializer().notNull())                                    \
+            writeNamedConnection(node, node->initializer(), "initializer");   \
     }                                                                         \
     void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
     {                                                                         \
@@ -392,6 +395,8 @@ private:
         { writeName(node, "Conditional"); }
     void visitConstDecl(const ConstDecl* node) override
         { writeName(node, "ConstDecl"); }
+    void visitConstDeclExpr(const ConstDeclExpr* node) override
+        { writeName(node, "ConstDeclExpr"); }
     void visitDefaultCase(const DefaultCase* node) override
         { writeName(node, "DefaultCase"); }
     void visitExpressionList(const ExpressionList* node) override
@@ -478,8 +483,6 @@ private:
         { writeName(node, "UDTRef: " + node->name()); }
     void visitUDTVarDecl(const UDTVarDecl* node) override
         { writeName(node, "UDTVarDecl"); }
-    void visitUDTVarDeclSymbol(const UDTVarDeclSymbol* node) override
-        { writeName(node, "UDTVarDeclSymbol"); }
     void visitUntilLoop(const UntilLoop* node) override
         { writeName(node, "UntilLoop"); }
     void visitVarAssignment(const VarAssignment* node) override
@@ -510,7 +513,7 @@ private:
     void visitComplexLiteral(const ComplexLiteral* node) override
         { writeName(node, "Complex: " + std::to_string(node->value().real) + " + " + std::to_string(node->value().imag) + "i"); }
     void visitQuatLiteral(const QuatLiteral* node) override
-        { writeName(node, "Quat: " + std::to_string(node->value().w) + " + " + std::to_string(node->value().x) + "i + " + std::to_string(node->value().y) + "j + " + std::to_string(node->value().z) + "k"); }
+        { writeName(node, "Quat: " + std::to_string(node->value().r) + " + " + std::to_string(node->value().i) + "i + " + std::to_string(node->value().j) + "j + " + std::to_string(node->value().k) + "k"); }
     void visitVec2Literal(const Vec2Literal* node) override
         { writeName(node, "Vec2: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + "]"); }
     void visitVec3Literal(const Vec3Literal* node) override

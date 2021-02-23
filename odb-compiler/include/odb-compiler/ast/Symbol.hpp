@@ -24,6 +24,7 @@ public:
     };
 
     Symbol(const std::string& name, SourceLocation* location);
+
     const std::string& name() const;
 
     void accept(Visitor* visitor) override;
@@ -41,6 +42,7 @@ class ODBCOMPILER_PUBLIC_API AnnotatedSymbol : public Symbol
 {
 public:
     AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
+
     Annotation annotation() const;
 
     void accept(Visitor* visitor) override;
@@ -58,8 +60,11 @@ class ODBCOMPILER_PUBLIC_API ScopedAnnotatedSymbol : public Symbol
 {
 public:
     ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);
+
     Scope scope() const;
     Annotation annotation() const;
+
+    void setScope(Scope scope);
 
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

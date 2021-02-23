@@ -101,6 +101,12 @@ Symbol::Annotation ScopedAnnotatedSymbol::annotation() const
 }
 
 // ----------------------------------------------------------------------------
+void ScopedAnnotatedSymbol::setScope(Scope scope)
+{
+    scope_ = scope;
+}
+
+// ----------------------------------------------------------------------------
 void ScopedAnnotatedSymbol::accept(Visitor* visitor)
 {
     visitor->visitScopedAnnotatedSymbol(this);
