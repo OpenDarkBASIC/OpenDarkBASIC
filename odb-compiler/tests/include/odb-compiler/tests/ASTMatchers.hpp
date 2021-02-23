@@ -1,11 +1,12 @@
 #pragma once
 
 #include "gmock/gmock.h"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Command.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -37,11 +38,30 @@ private:
     const int expectedCount_;
 };
 
-class ExpressionListCountEqMatcher : public MatcherInterface<const ast::ExpressionList*>
+class ArgListCountEqMatcher : public MatcherInterface<const ast::ArgList*>
 {
 public:
-    explicit ExpressionListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
-    bool MatchAndExplain(const ast::ExpressionList* node, MatchResultListener* listener) const override {
+    explicit ArgListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
+    bool MatchAndExplain(const ast::ArgList* node, MatchResultListener* listener) const override {
+        *listener << "node->expressions().size() equals " << node->expressions().size();
+        return node->expressions().size() == expectedCount_;
+    }
+    void DescribeTo(::std::ostream* os) const override {
+        *os << "node->expressions().size() equals " << expectedCount_;
+    }
+    void DescribeNegationTo(::std::ostream* os) const override {
+        *os << "node->expressions().size() does not equal " << expectedCount_;
+    }
+
+private:
+    const int expectedCount_;
+};
+
+class InitializerListCountEqMatcher : public MatcherInterface<const ast::InitializerList*>
+{
+public:
+    explicit InitializerListCountEqMatcher(int expectedCount) : expectedCount_(expectedCount) {}
+    bool MatchAndExplain(const ast::InitializerList* node, MatchResultListener* listener) const override {
         *listener << "node->expressions().size() equals " << node->expressions().size();
         return node->expressions().size() == expectedCount_;
     }
@@ -534,12 +554,12 @@ private:
     const odb::Mat4x4<float> expectedValue_;
 };
 
-class CommandExprSymbolEqMatcher : public MatcherInterface<const ast::CommandExprSymbol*>
+class CommandExprEqMatcher : public MatcherInterface<const ast::CommandExpr*>
 {
 public:
-    explicit CommandExprSymbolEqMatcher(const std::string& name)
+    explicit CommandExprEqMatcher(const std::string& name)
         : expectedCommand_(name) {}
-    bool MatchAndExplain(const ast::CommandExprSymbol* node, MatchResultListener* listener) const override {
+    bool MatchAndExplain(const ast::CommandExpr* node, MatchResultListener* listener) const override {
         *listener << "node->command() == " << node->command();
         return node->command() == expectedCommand_;
     }
@@ -554,12 +574,12 @@ private:
     const std::string expectedCommand_;
 };
 
-class CommandStmntSymbolEqMatcher : public MatcherInterface<const ast::CommandStmntSymbol*>
+class CommandStmntEqMatcher : public MatcherInterface<const ast::CommandStmnt*>
 {
 public:
-    explicit CommandStmntSymbolEqMatcher(const std::string& name)
+    explicit CommandStmntEqMatcher(const std::string& name)
         : expectedCommand_(name) {}
-    bool MatchAndExplain(const ast::CommandStmntSymbol* node, MatchResultListener* listener) const override {
+    bool MatchAndExplain(const ast::CommandStmnt* node, MatchResultListener* listener) const override {
         *listener << "node->command() == " << node->command();
         return node->command() == expectedCommand_;
     }
@@ -580,8 +600,8 @@ public:
     explicit GotoEqMatcher(const std::string& labelName)
         : expectedLabel_(labelName) {}
     bool MatchAndExplain(const ast::Goto* node, MatchResultListener* listener) const override {
-        *listener << "node->label()->symbol()->name() == " << node->label()->symbol()->name();
-        return node->label()->symbol()->name() == expectedLabel_;
+        *listener << "node->label()->name() == " << node->label()->name();
+        return node->label()->name() == expectedLabel_;
     }
     void DescribeTo(::std::ostream* os) const override {
         *os << "node->label()->symbol()->name() equals " << expectedLabel_;
@@ -639,8 +659,11 @@ private:
 inline Matcher<const ast::Block*> BlockStmntCountEq(int expectedCount) {
     return MakeMatcher(new BlockStmntCountEqMatcher(expectedCount));
 }
-inline Matcher<const ast::ExpressionList*> ExpressionListCountEq(int expectedCount) {
-    return MakeMatcher(new ExpressionListCountEqMatcher(expectedCount));
+inline Matcher<const ast::ArgList*> ArgListCountEq(int expectedCount) {
+    return MakeMatcher(new ArgListCountEqMatcher(expectedCount));
+}
+inline Matcher<const ast::InitializerList*> InitializerListCountEq(int expectedCount) {
+    return MakeMatcher(new InitializerListCountEqMatcher(expectedCount));
 }
 inline Matcher<const ast::Symbol*> SymbolEq(const std::string& name) {
     return MakeMatcher(new SymbolEqMatcher(name));
@@ -654,11 +677,11 @@ inline Matcher<const ast::ScopedAnnotatedSymbol*> ScopedAnnotatedSymbolEq(ast::S
 inline Matcher<const ast::UDTRef*> UDTRefEq(const std::string& name) {
     return MakeMatcher(new UDTRefEqMatcher(name));
 }
-inline Matcher<const ast::CommandExprSymbol*> CommandExprSymbolEq(const std::string& name) {
-    return MakeMatcher(new CommandExprSymbolEqMatcher(name));
+inline Matcher<const ast::CommandExpr*> CommandExprEq(const std::string& name) {
+    return MakeMatcher(new CommandExprEqMatcher(name));
 }
-inline Matcher<const ast::CommandStmntSymbol*> CommandStmntSymbolEq(const std::string& name) {
-    return MakeMatcher(new CommandStmntSymbolEqMatcher(name));
+inline Matcher<const ast::CommandStmnt*> CommandStmntEq(const std::string& name) {
+    return MakeMatcher(new CommandStmntEqMatcher(name));
 }
 inline Matcher<const ast::Goto*> GotoEq(const std::string& labelName) {
     return MakeMatcher(new GotoEqMatcher(labelName));

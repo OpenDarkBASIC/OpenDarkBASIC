@@ -173,7 +173,7 @@ TEST_F(NAME, udt_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -203,7 +203,7 @@ TEST_F(NAME, udt_arr_float_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -233,7 +233,7 @@ TEST_F(NAME, udt_arr_string_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -261,7 +261,7 @@ TEST_F(NAME, udt_inner_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -288,7 +288,7 @@ TEST_F(NAME, udt_outer_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -406,7 +406,7 @@ TEST_F(NAME, value_ass_udt_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     ast->accept(&v);
@@ -436,7 +436,7 @@ TEST_F(NAME, value_ass_udt_arr_float)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     ast->accept(&v);
@@ -466,7 +466,7 @@ TEST_F(NAME, value_ass_udt_arr_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     ast->accept(&v);
@@ -494,7 +494,7 @@ TEST_F(NAME, value_ass_udt_inner_arr)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -521,7 +521,7 @@ TEST_F(NAME, value_ass_udt_outer_arr)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -578,7 +578,7 @@ TEST_F(NAME, value_ass_command_returning_udt)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("cmd expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
@@ -715,7 +715,7 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -745,7 +745,7 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -772,7 +772,7 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -802,7 +802,7 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -993,7 +993,7 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -1023,7 +1023,7 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -1050,7 +1050,7 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -1080,7 +1080,7 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
@@ -1137,7 +1137,7 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("cmd expr#"))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr#"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
@@ -1192,7 +1192,7 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("cmd expr$"))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr$"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);

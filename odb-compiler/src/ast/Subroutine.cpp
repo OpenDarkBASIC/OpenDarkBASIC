@@ -8,7 +8,7 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-SubCallSymbol::SubCallSymbol(Symbol* label, SourceLocation* location) :
+SubCall::SubCall(Symbol* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
@@ -16,57 +16,15 @@ SubCallSymbol::SubCallSymbol(Symbol* label, SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-Symbol* SubCallSymbol::labelSymbol() const
+Symbol* SubCall::label() const
 {
     return label_;
 }
 
 // ----------------------------------------------------------------------------
-void SubCallSymbol::accept(Visitor* visitor)
+std::string SubCall::toString() const
 {
-    visitor->visitSubCallSymbol(this);
-    label_->accept(visitor);
-}
-void SubCallSymbol::accept(ConstVisitor* visitor) const
-{
-    visitor->visitSubCallSymbol(this);
-    label_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
-void SubCallSymbol::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (label_ == oldNode)
-        label_ = dynamic_cast<Symbol*>(newNode);
-    else
-        assert(false);
-
-    newNode->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-Node* SubCallSymbol::duplicateImpl() const
-{
-    return new SubCallSymbol(
-        label_->duplicate<Symbol>(),
-        location());
-}
-
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-SubCall::SubCall(Label* label, SourceLocation* location) :
-    Statement(location),
-    label_(label)
-{
-    label->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-Label* SubCall::label() const
-{
-    return label_;
+    return "SubCall";
 }
 
 // ----------------------------------------------------------------------------
@@ -85,7 +43,7 @@ void SubCall::accept(ConstVisitor* visitor) const
 void SubCall::swapChild(const Node* oldNode, Node* newNode)
 {
     if (label_ == oldNode)
-        label_ = dynamic_cast<Label*>(newNode);
+        label_ = dynamic_cast<Symbol*>(newNode);
     else
         assert(false);
 
@@ -96,7 +54,7 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
 Node* SubCall::duplicateImpl() const
 {
     return new SubCall(
-        label_->duplicate<Label>(),
+        label_->duplicate<Symbol>(),
         location());
 }
 
@@ -107,6 +65,12 @@ Node* SubCall::duplicateImpl() const
 SubReturn::SubReturn(SourceLocation* location) :
     Statement(location)
 {
+}
+
+// ----------------------------------------------------------------------------
+std::string SubReturn::toString() const
+{
+    return "SubReturn";
 }
 
 // ----------------------------------------------------------------------------

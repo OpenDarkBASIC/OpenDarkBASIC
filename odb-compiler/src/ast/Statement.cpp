@@ -1,8 +1,7 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Statement::Statement(SourceLocation* location) :
@@ -10,5 +9,4 @@ Statement::Statement(SourceLocation* location) :
 {
 }
 
-}
 }

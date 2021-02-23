@@ -151,7 +151,7 @@ TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
     exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);\
+    exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, type##_literal_visitor(type##_literal_eq(type##_initial_value))).After(exp);\
                                                                               \
     ast->accept(&v);                                                          \
@@ -194,7 +194,7 @@ TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
     exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);\
+    exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);\
                                                                               \
     ast->accept(&v);                                                          \
@@ -269,7 +269,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);\
+    exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
                                                                               \
     ast->accept(&v);                                                          \
@@ -355,7 +355,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
     exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);\
+    exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp); \
                                                                               \
     ast->accept(&v);                                                          \

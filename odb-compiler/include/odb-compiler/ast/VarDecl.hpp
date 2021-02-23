@@ -8,7 +8,7 @@
 namespace odb {
 namespace ast {
 
-class ExpressionList;
+class InitializerList;
 class UDTRef;
 class ScopedAnnotatedSymbol;
 class Symbol;
@@ -16,26 +16,27 @@ class Symbol;
 class ODBCOMPILER_PUBLIC_API VarDecl : public Statement
 {
 public:
-    VarDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* initializer, SourceLocation* location);
+    VarDecl(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location);
     VarDecl(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
 
     ScopedAnnotatedSymbol* symbol() const;
-    MaybeNull<ExpressionList> initializer() const;
+    MaybeNull<InitializerList> initializer() const;
 
-    void setInitializer(ExpressionList* expression);
+    void setInitializer(InitializerList* expression);
 
 protected:
     Reference<ScopedAnnotatedSymbol> symbol_;
-    Reference<ExpressionList> initializer_;
+    Reference<InitializerList> initializer_;
 };
 
 template <typename T>
 class VarDeclTemplate : public VarDecl
 {
 public:
-    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, ExpressionList* initializer, SourceLocation* location);
+    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location);
     VarDeclTemplate(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -53,11 +54,12 @@ ODB_DATATYPE_LIST
 class ODBCOMPILER_PUBLIC_API UDTVarDecl : public VarDecl
 {
 public:
-    UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, ExpressionList* initializer, SourceLocation* location);
+    UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, InitializerList* initializer, SourceLocation* location);
     UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location);
 
     UDTRef* udt() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

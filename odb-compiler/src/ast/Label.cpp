@@ -21,6 +21,12 @@ Symbol* Label::symbol() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Label::toString() const
+{
+    return "Label";
+}
+
+// ----------------------------------------------------------------------------
 void Label::accept(Visitor* visitor)
 {
     visitor->visitLabel(this);

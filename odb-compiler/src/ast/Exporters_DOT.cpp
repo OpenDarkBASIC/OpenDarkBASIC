@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Exporters.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -8,10 +9,10 @@
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -72,6 +73,14 @@ private:
     }
 
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
+    void visitArgList(const ArgList* node) override
+    {
+        int i = 0;
+        for (const auto& expr : node->expressions())
+        {
+            writeNamedConnection(node, expr, "arglist[" + std::to_string(i++) + "]");
+        }
+    }
     void visitArrayRef(const ArrayRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -113,17 +122,7 @@ private:
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
-    void visitCommandExprSymbol(const CommandExprSymbol* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
-    }
     void visitCommandStmnt(const CommandStmnt* node) override
-    {
-        if (node->args().notNull())
-            writeNamedConnection(node, node->args(), "args");
-    }
-    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
     {
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
@@ -150,14 +149,6 @@ private:
     {
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
-    }
-    void visitExpressionList(const ExpressionList* node) override
-    {
-        int i = 0;
-        for (const auto& expr : node->expressions())
-        {
-            writeNamedConnection(node, expr, "exprlist[" + std::to_string(i++) + "]");
-        }
     }
     void visitForLoop(const ForLoop* node) override
     {
@@ -207,14 +198,18 @@ private:
     {
         writeNamedConnection(node, node->label(), "label");
     }
-    void visitGotoSymbol(const GotoSymbol* node) override
-    {
-        writeNamedConnection(node, node->labelSymbol(), "label");
-    }
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
+    }
+    void visitInitializerList(const InitializerList* node) override
+    {
+        int i = 0;
+        for (const auto& expr : node->expressions())
+        {
+            writeNamedConnection(node, expr, "initlist[" + std::to_string(i++) + "]");
+        }
     }
     void visitLabel(const Label* node) override
     {
@@ -231,10 +226,6 @@ private:
     {
         writeNamedConnection(node, node->label(), "label");
     }
-    void visitSubCallSymbol(const SubCallSymbol* node) override
-    {
-        writeNamedConnection(node, node->labelSymbol(), "label");
-    }
     void visitSubReturn(const SubReturn* node) override {}
     void visitSymbol(const Symbol* node) override {}
     void visitUDTArrayDecl(const UDTArrayDecl* node) override
@@ -242,12 +233,6 @@ private:
         writeNamedConnection(node, node->symbol(), "symbol");
         writeNamedConnection(node, node->dims(), "dims");
         writeNamedConnection(node, node->udt(), "udt");
-    }
-    void visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node) override
-    {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        writeNamedConnection(node, node->dims(), "dims");
-        writeNamedConnection(node, node->udtSymbol(), "udtSymbol");
     }
     void visitUDTDecl(const UDTDecl* node) override
     {
@@ -335,7 +320,7 @@ private:
 };
 
 // ----------------------------------------------------------------------------
-class NameWriter : public ConstVisitor
+class NameWriter : public GenericConstVisitor
 {
 public:
     void write(FILE* fp, const NodeGUIDs* guids, const Node* root)
@@ -349,7 +334,7 @@ private:
     void writeName(const Node* node, const std::string& name)
     {
         fprintf(fp_, "N%d [label=\"%s\"];\n",
-                guids_->get(node), name.c_str());
+                guids_->get(node), str::escape(name).c_str());
     }
 
     void visitBlock(const Block* node) override
@@ -365,235 +350,15 @@ private:
         fprintf(fp_, "\"];\n");
     }
 
-    void visitArrayAssignment(const ArrayAssignment* node) override
-        { writeName(node, "ArrayAssignment"); }
-    void visitArrayRef(const ArrayRef* node) override
-        { writeName(node, "ArrayRef"); }
-    void visitBinaryOp(const BinaryOp* node) override
-    {
-        static const char* table[] = {
-#define X(op, tok) #op,
-            ODB_BINARY_OP_LIST
-#undef X
-        };
-        writeName(node, std::string("BinaryOp(") + table[node->op()] + ")");
-
-    }
-    void visitExit(const Exit* node) override
-        { writeName(node, "Exit"); }
-    void visitCase(const Case* node) override
-        { writeName(node, "Case"); }
-    void visitCaseList(const CaseList* node) override
-        { writeName(node, "CaseList"); }
-    void visitCommandExpr(const CommandExpr* node) override
-        { writeName(node, "CommandExpr: " + node->command()->dbSymbol()); }
-    void visitCommandExprSymbol(const CommandExprSymbol* node) override
-        { writeName(node, "CommandExprSymbol: " + node->command()); }
-    void visitCommandStmnt(const CommandStmnt* node) override
-        { writeName(node, "CommandStmnt" + node->command()->dbSymbol()); }
-    void visitCommandStmntSymbol(const CommandStmntSymbol* node) override
-        { writeName(node, "CommandStmntSymbol: " + node->command()); }
-    void visitConditional(const Conditional* node) override
-        { writeName(node, "Conditional"); }
-    void visitConstDecl(const ConstDecl* node) override
-        { writeName(node, "ConstDecl"); }
-    void visitConstDeclExpr(const ConstDeclExpr* node) override
-        { writeName(node, "ConstDeclExpr"); }
-    void visitDefaultCase(const DefaultCase* node) override
-        { writeName(node, "DefaultCase"); }
-    void visitExpressionList(const ExpressionList* node) override
-        { writeName(node, "ExpressionList"); }
-    void visitForLoop(const ForLoop* node) override
-        { writeName(node, "ForLoop"); }
-    void visitFuncCallExpr(const FuncCallExpr* node) override
-        { writeName(node, "FuncCallExpr"); }
-    void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
-        { writeName(node, "FuncCallExpr or ArrayRef"); }
-    void visitFuncCallStmnt(const FuncCallStmnt* node) override
-        { writeName(node, "FuncCallStmnt"); }
-    void visitFuncDecl(const FuncDecl* node) override
-        { writeName(node, "FuncDecl"); }
-    void visitFuncExit(const FuncExit* node) override
-        { writeName(node, "FuncExit"); }
-    void visitGoto(const Goto* node) override
-        { writeName(node, "Goto"); }
-    void visitGotoSymbol(const GotoSymbol* node) override
-        { writeName(node, "GotoSymbol"); }
-    void visitInfiniteLoop(const InfiniteLoop* node) override
-        { writeName(node, "InfiniteLoop"); }
-    void visitLabel(const Label* node) override
-        { writeName(node, "Label"); }
-    void visitSelect(const Select* node) override
-        { writeName(node, "Select"); }
-    void visitSubCall(const SubCall* node) override
-        { writeName(node, "SubCall"); }
-    void visitSubCallSymbol(const SubCallSymbol* node) override
-        { writeName(node, "SubCallSymbol"); }
-    void visitSubReturn(const SubReturn* node) override
-        { writeName(node, "SubReturn"); }
-    void visitSymbol(const Symbol* node) override
-        { writeName(node, "symbol: " + node->name()); }
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override
     {
-        auto strAnnotation = [&node]() -> std::string {
-            using Ann = AnnotatedSymbol::Annotation;
-            switch (node->annotation()) {
-                case Ann::NONE: return "NONE";
-                case Ann::DOUBLE_FLOAT: return "DOUBLE FLOAT";
-                case Ann::FLOAT: return "FLOAT";
-                case Ann::DOUBLE_INTEGER: return "DOUBLE INTEGER";
-                case Ann::WORD: return "WORD";
-                case Ann::STRING: return "STRING";
-            }
-            return "(INVALID)";
-        };
-        writeName(node, "symbol (" + strAnnotation() + "): " + node->name());
-    }
-    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override
-    {
-        using Scope = Symbol::Scope;
-        using Ann = AnnotatedSymbol::Annotation;
-        auto strAnnotation = [&node]() -> std::string {
-            switch (node->annotation()) {
-                case Ann::NONE: return "NONE";
-                case Ann::DOUBLE_FLOAT: return "DOUBLE FLOAT";
-                case Ann::FLOAT: return "FLOAT";
-                case Ann::DOUBLE_INTEGER: return "DOUBLE INTEGER";
-                case Ann::WORD: return "WORD";
-                case Ann::STRING: return "STRING";
-            }
-            return "(INVALID)";
-        };
-
-        writeName(node, std::string("symbol (") + (node->scope() == Scope::GLOBAL ? "GLOBAL" : "LOCAL") + ", " + strAnnotation() + "): " + node->name());
-    }
-    void visitUDTArrayDecl(const UDTArrayDecl* node) override
-        { writeName(node, "UDTArrayDecl"); }
-    void visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node) override
-        { writeName(node, "UDTArrayDeclSymbol"); }
-    void visitUDTDecl(const UDTDecl* node) override
-        { writeName(node, "UDTDecl"); }
-    void visitUDTDeclBody(const UDTDeclBody* node) override
-        { writeName(node, "UDTDeclBody"); }
-    void visitUDTFieldOuter(const UDTFieldOuter* node) override
-        { writeName(node, "UDTFieldOuter"); }
-    void visitUDTFieldInner(const UDTFieldInner* node) override
-        { writeName(node, "UDTFieldInner"); }
-    void visitUDTFieldAssignment(const UDTFieldAssignment* node) override
-        { writeName(node, "UDTFieldAssignment"); }
-    void visitUDTRef(const UDTRef* node) override
-        { writeName(node, "UDTRef: " + node->name()); }
-    void visitUDTVarDecl(const UDTVarDecl* node) override
-        { writeName(node, "UDTVarDecl"); }
-    void visitUnaryOp(const UnaryOp* node) override
-    {
-        static const char* table[] = {
-#define X(op, tok) #op,
-            ODB_UNARY_OP_LIST
-#undef X
-        };
-        writeName(node, std::string("UnaryOp(") + table[node->op()] + ")");
-
-    }
-    void visitUntilLoop(const UntilLoop* node) override
-        { writeName(node, "UntilLoop"); }
-    void visitVarAssignment(const VarAssignment* node) override
-        { writeName(node, "VarAssignment"); }
-    void visitVarRef(const VarRef* node) override
-        { writeName(node, "VarRef"); }
-    void visitWhileLoop(const WhileLoop* node) override
-        { writeName(node, "WhileLoop"); }
-
-    void visitDoubleIntegerLiteral(const DoubleIntegerLiteral* node) override
-        { writeName(node, "DoubleInteger: " + std::to_string(node->value())); }
-    void visitIntegerLiteral(const IntegerLiteral* node) override
-        { writeName(node, "Integer: " + std::to_string(node->value())); }
-    void visitDwordLiteral(const DwordLiteral* node) override
-        { writeName(node, "DWord: " + std::to_string(node->value())); }
-    void visitWordLiteral(const WordLiteral* node) override
-        { writeName(node, "Word: " + std::to_string(node->value())); }
-    void visitByteLiteral(const ByteLiteral* node) override
-        { writeName(node, "Byte: " + std::to_string(node->value())); }
-    void visitBooleanLiteral(const BooleanLiteral* node) override
-        { writeName(node, std::string("Boolean: ") + (node->value() ? "true" : "false")); }
-    void visitDoubleFloatLiteral(const DoubleFloatLiteral* node) override
-        { writeName(node, "DoubleFloat: " + std::to_string(node->value())); }
-    void visitFloatLiteral(const FloatLiteral* node) override
-        { writeName(node, "Float: " + std::to_string(node->value())); }
-    void visitStringLiteral(const StringLiteral* node) override
-        { writeName(node, "String: " + str::escapeBackslashes(node->value())); }
-    void visitComplexLiteral(const ComplexLiteral* node) override
-        { writeName(node, "Complex: " + std::to_string(node->value().real) + " + " + std::to_string(node->value().imag) + "i"); }
-    void visitQuatLiteral(const QuatLiteral* node) override
-        { writeName(node, "Quat: " + std::to_string(node->value().r) + " + " + std::to_string(node->value().i) + "i + " + std::to_string(node->value().j) + "j + " + std::to_string(node->value().k) + "k"); }
-    void visitVec2Literal(const Vec2Literal* node) override
-        { writeName(node, "Vec2: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + "]"); }
-    void visitVec3Literal(const Vec3Literal* node) override
-        { writeName(node, "Vec3: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + ", " + std::to_string(node->value().z) + "]"); }
-    void visitVec4Literal(const Vec4Literal* node) override
-        { writeName(node, "Vec4: [" + std::to_string(node->value().x) + ", " + std::to_string(node->value().y) + ", " + std::to_string(node->value().z) + std::to_string(node->value().w) + "]"); }
-    void visitMat2x2Literal(const Mat2x2Literal* node) override
-    {
-        writeName(node, "Mat2x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + "]");
-    }
-    void visitMat2x3Literal(const Mat2x3Literal* node) override
-    {
-        writeName(node, "Mat2x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + "]");
-    }
-    void visitMat2x4Literal(const Mat2x4Literal* node) override
-    {
-        writeName(node, "Mat2x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + "]");
-    }
-    void visitMat3x2Literal(const Mat3x2Literal* node) override
-    {
-        writeName(node, "Mat3x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + "]");
-    }
-    void visitMat3x3Literal(const Mat3x3Literal* node) override
-    {
-        writeName(node, "Mat3x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + "]");
-    }
-    void visitMat3x4Literal(const Mat3x4Literal* node) override
-    {
-        writeName(node, "Mat3x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + ", " + std::to_string(node->value().e3.z) + "]");
-    }
-    void visitMat4x2Literal(const Mat4x2Literal* node) override
-    {
-        writeName(node, "Mat4x2: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ";\n"
-                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + "]");
-    }
-    void visitMat4x3Literal(const Mat4x3Literal* node) override
-    {
-        writeName(node, "Mat4x3: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e1.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e1.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e1.z) + ";\n"
-                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + ", " + std::to_string(node->value().e1.w) + "]");
-    }
-    void visitMat4x4Literal(const Mat4x4Literal* node) override
-    {
-        writeName(node, "Mat4x4: [" + std::to_string(node->value().e0.x) + ", " + std::to_string(node->value().e1.x) + ", " + std::to_string(node->value().e2.x) + ", " + std::to_string(node->value().e3.x) + ";\n"
-                      + "         " + std::to_string(node->value().e0.y) + ", " + std::to_string(node->value().e1.y) + ", " + std::to_string(node->value().e2.y) + ", " + std::to_string(node->value().e3.y) + ";\n"
-                      + "         " + std::to_string(node->value().e0.z) + ", " + std::to_string(node->value().e1.z) + ", " + std::to_string(node->value().e2.z) + ", " + std::to_string(node->value().e3.z) + ";\n"
-                      + "         " + std::to_string(node->value().e0.w) + ", " + std::to_string(node->value().e1.w) + ", " + std::to_string(node->value().e2.w) + ", " + std::to_string(node->value().e3.w) + "]");
+        writeName(node, node->toString());
     }
 
-#define X(dbname, cppname)                                                    \
-    void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
-        { writeName(node, #dbname "VarDecl"); }                               \
-    void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
-        { writeName(node, #dbname "ArrayDecl"); }
-    ODB_DATATYPE_LIST
-#undef X
+    void visit(const Node* node) override
+    {
+        writeName(node, node->toString());
+    }
 
 private:
     FILE* fp_;

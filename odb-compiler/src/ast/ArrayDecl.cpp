@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/ArrayDecl.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -10,7 +10,7 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-ArrayDecl::ArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, SourceLocation* location)
+ArrayDecl::ArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location)
     : Statement(location)
     , symbol_(symbol)
     , dims_(dims)
@@ -26,7 +26,7 @@ ScopedAnnotatedSymbol* ArrayDecl::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList* ArrayDecl::dims() const
+ArgList* ArrayDecl::dims() const
 {
     return dims_;
 }
@@ -35,10 +35,16 @@ ExpressionList* ArrayDecl::dims() const
 #define X(dbname, cppname)                                                    \
     template <>                                                               \
     ArrayDeclTemplate<cppname>::ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol,\
-                                                  ExpressionList* dims,       \
+                                                  ArgList* dims,              \
                                                   SourceLocation* location)   \
         : ArrayDecl(symbol, dims, location)                                   \
     {                                                                         \
+    }                                                                         \
+                                                                              \
+    template <>                                                               \
+    std::string ArrayDeclTemplate<cppname>::toString() const                  \
+    {                                                                         \
+        return #dbname;                                                       \
     }                                                                         \
                                                                               \
     template<>                                                                \
@@ -61,7 +67,7 @@ ExpressionList* ArrayDecl::dims() const
         if (symbol_ == oldNode)                                               \
             symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
         else if (dims_ == oldNode)                                            \
-            dims_ = dynamic_cast<ExpressionList*>(newNode);                   \
+            dims_ = dynamic_cast<ArgList*>(newNode);                          \
         else                                                                  \
             assert(false);                                                    \
                                                                               \
@@ -72,69 +78,17 @@ ExpressionList* ArrayDecl::dims() const
     {                                                                         \
         return new ArrayDeclTemplate<cppname>(                                \
             symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
-            dims_->duplicate<ExpressionList>(),                               \
+            dims_->duplicate<ArgList>(),                                      \
             location());                                                      \
     }
 ODB_DATATYPE_LIST
 #undef X
 
-// ----------------------------------------------------------------------------
-UDTArrayDeclSymbol::UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location)
-    : ArrayDecl(symbol, dims, location)
-    , udt_(udt)
-{
-    udt->setParent(this);
-}
+// ============================================================================
+// ============================================================================
 
 // ----------------------------------------------------------------------------
-Symbol* UDTArrayDeclSymbol::udtSymbol() const
-{
-    return udt_;
-}
-
-// ----------------------------------------------------------------------------
-void UDTArrayDeclSymbol::accept(Visitor* visitor)
-{
-    visitor->visitUDTArrayDeclSymbol(this);
-    symbol_->accept(visitor);
-    dims_->accept(visitor);
-    udt_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
-void UDTArrayDeclSymbol::accept(ConstVisitor* visitor) const
-{
-    visitor->visitUDTArrayDeclSymbol(this);
-    symbol_->accept(visitor);
-    dims_->accept(visitor);
-    udt_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
-void UDTArrayDeclSymbol::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
-    else if (dims_ == oldNode)
-        dims_ = dynamic_cast<ExpressionList*>(newNode);
-    else if (udt_ == oldNode)
-        udt_ = dynamic_cast<Symbol*>(newNode);
-    else
-        assert(false);
-}
-
-// ----------------------------------------------------------------------------
-Node* UDTArrayDeclSymbol::duplicateImpl() const
-{
-    return new UDTArrayDeclSymbol(
-        symbol_->duplicate<ScopedAnnotatedSymbol>(),
-        dims_->duplicate<ExpressionList>(),
-        udt_->duplicate<Symbol>(),
-        location());
-}
-
-// ----------------------------------------------------------------------------
-UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location)
+UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, UDTRef* udt, SourceLocation* location)
     : ArrayDecl(symbol, dims, location)
     , udt_(udt)
 {
@@ -145,6 +99,12 @@ UDTArrayDecl::UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, 
 UDTRef* UDTArrayDecl::udt() const
 {
     return udt_;
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTArrayDecl::toString() const
+{
+    return "UDTArrayDecl";
 }
 
 // ----------------------------------------------------------------------------
@@ -171,7 +131,7 @@ void UDTArrayDecl::swapChild(const Node* oldNode, Node* newNode)
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
     else if (dims_ == oldNode)
-        dims_ = dynamic_cast<ExpressionList*>(newNode);
+        dims_ = dynamic_cast<ArgList*>(newNode);
     else if (udt_ == oldNode)
         udt_ = dynamic_cast<UDTRef*>(newNode);
     else
@@ -183,7 +143,7 @@ Node* UDTArrayDecl::duplicateImpl() const
 {
     return new UDTArrayDecl(
         symbol_->duplicate<ScopedAnnotatedSymbol>(),
-        dims_->duplicate<ExpressionList>(),
+        dims_->duplicate<ArgList>(),
         udt_->duplicate<UDTRef>(),
         location());
 }

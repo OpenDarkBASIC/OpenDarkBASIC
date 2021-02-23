@@ -21,6 +21,7 @@ public:
     Expression* lhs() const;
     Expression* rhs() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

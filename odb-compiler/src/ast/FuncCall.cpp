@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -8,7 +8,7 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
     Expression(location),
     symbol_(symbol),
     args_(args)
@@ -32,9 +32,15 @@ AnnotatedSymbol* FuncCallExpr::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ExpressionList> FuncCallExpr::args() const
+MaybeNull<ArgList> FuncCallExpr::args() const
 {
     return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncCallExpr::toString() const
+{
+    return "FuncCallExpr";
 }
 
 // ----------------------------------------------------------------------------
@@ -59,7 +65,7 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
     else if (args_ == oldNode)
-        args_ = dynamic_cast<ExpressionList*>(newNode);
+        args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
 
@@ -71,7 +77,7 @@ Node* FuncCallExpr::duplicateImpl() const
 {
     return new FuncCallExpr(
         symbol_->duplicate<AnnotatedSymbol>(),
-        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }
 
@@ -79,7 +85,7 @@ Node* FuncCallExpr::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
     Expression(location),
     symbol_(symbol),
     args_(args)
@@ -95,9 +101,15 @@ AnnotatedSymbol* FuncCallExprOrArrayRef::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ExpressionList> FuncCallExprOrArrayRef::args() const
+MaybeNull<ArgList> FuncCallExprOrArrayRef::args() const
 {
     return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncCallExprOrArrayRef::toString() const
+{
+    return "FuncCallExprOrArrayRef";
 }
 
 // ----------------------------------------------------------------------------
@@ -122,7 +134,7 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
     else if (args_ == oldNode)
-        args_ = dynamic_cast<ExpressionList*>(newNode);
+        args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
 
@@ -134,7 +146,7 @@ Node* FuncCallExprOrArrayRef::duplicateImpl() const
 {
     return new FuncCallExprOrArrayRef(
         symbol_->duplicate<AnnotatedSymbol>(),
-        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }
 
@@ -142,7 +154,7 @@ Node* FuncCallExprOrArrayRef::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     args_(args)
@@ -166,9 +178,15 @@ AnnotatedSymbol* FuncCallStmnt::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ExpressionList> FuncCallStmnt::args() const
+MaybeNull<ArgList> FuncCallStmnt::args() const
 {
     return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncCallStmnt::toString() const
+{
+    return "FuncCallStmnt";
 }
 
 // ----------------------------------------------------------------------------
@@ -193,7 +211,7 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
     else if (args_ == oldNode)
-        args_ = dynamic_cast<ExpressionList*>(newNode);
+        args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
 
@@ -205,7 +223,7 @@ Node* FuncCallStmnt::duplicateImpl() const
 {
     return new FuncCallStmnt(
         symbol_->duplicate<AnnotatedSymbol>(),
-        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }
 

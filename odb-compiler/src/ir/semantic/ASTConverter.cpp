@@ -2,6 +2,7 @@
 
 #include "odb-compiler/ir/Node.hpp"
 
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -15,10 +16,10 @@
 #include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -190,7 +191,7 @@ Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type target
 
 FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLocation* location,
                                                                   const std::string& commandName,
-                                                                  const MaybeNull<ast::ExpressionList>& astArgs)
+                                                                  const MaybeNull<ast::ArgList>& astArgs)
 {
     // Extract arguments.
     PtrVector<Expression> args;
@@ -301,7 +302,7 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
 
 FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLocation* location,
                                                                    ast::AnnotatedSymbol* symbol,
-                                                                   const MaybeNull<ast::ExpressionList>& astArgs)
+                                                                   const MaybeNull<ast::ArgList>& astArgs)
 {
     // Lookup function.
     auto functionName = symbol->name();
@@ -375,7 +376,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
         ODB_DATATYPE_LIST
 #undef X
     }
-    else if (auto* command = dynamic_cast<const ast::CommandExprSymbol*>(expression))
+    else if (auto* command = dynamic_cast<const ast::CommandExpr*>(expression))
     {
         // TODO: Perform type checking of arguments.
         return std::make_unique<FunctionCallExpression>(
@@ -400,7 +401,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
     {
         // Get var ref and type.
-        // TheComet: All initializers are now ExpressionList instead of Expression
+        // TheComet: All initializers are now ArgList instead of Expression
         //           because the math datatypes have multiple initializer values
         //           For single-valued variables you can just take the first
         //           element in the list. Should probably throw an error if there
@@ -539,9 +540,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
             location, currentFunction_,
             convertFunctionCallExpression(funcCallSt->location(), funcCallSt->symbol(), funcCallSt->args()));
     }
-    else if (auto* gotoSt = dynamic_cast<ast::GotoSymbol*>(statement))
+    else if (auto* gotoSt = dynamic_cast<ast::Goto*>(statement))
     {
-        std::string labelName = gotoSt->labelSymbol()->name();
+        std::string labelName = gotoSt->label()->name();
         auto labelIt = labels_.find(labelName);
         Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;
         auto irGotoSt = std::make_unique<Goto>(location, currentFunction_, label);
@@ -551,9 +552,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         }
         return irGotoSt;
     }
-    else if (auto* subCallSt = dynamic_cast<ast::SubCallSymbol*>(statement))
+    else if (auto* subCallSt = dynamic_cast<ast::SubCall*>(statement))
     {
-        std::string labelName = subCallSt->labelSymbol()->name();
+        std::string labelName = subCallSt->label()->name();
         auto labelIt = labels_.find(labelName);
         Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;
         auto irGosubSt = std::make_unique<Gosub>(location, currentFunction_, label);
@@ -563,7 +564,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         }
         return irGosubSt;
     }
-    else if (auto* commandSt = dynamic_cast<ast::CommandStmntSymbol*>(statement))
+    else if (auto* commandSt = dynamic_cast<ast::CommandStmnt*>(statement))
     {
         return std::make_unique<FunctionCall>(
             location, currentFunction_,

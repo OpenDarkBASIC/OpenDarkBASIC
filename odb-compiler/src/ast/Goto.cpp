@@ -4,11 +4,10 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-GotoSymbol::GotoSymbol(Symbol* label, SourceLocation* location) :
+Goto::Goto(Symbol* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
@@ -16,25 +15,31 @@ GotoSymbol::GotoSymbol(Symbol* label, SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-Symbol* GotoSymbol::labelSymbol() const
+Symbol* Goto::label() const
 {
     return label_;
 }
 
 // ----------------------------------------------------------------------------
-void GotoSymbol::accept(Visitor* visitor)
+std::string Goto::toString() const
 {
-    visitor->visitGotoSymbol(this);
+    return "Goto";
+}
+
+// ----------------------------------------------------------------------------
+void Goto::accept(Visitor* visitor)
+{
+    visitor->visitGoto(this);
     label_->accept(visitor);
 }
-void GotoSymbol::accept(ConstVisitor* visitor) const
+void Goto::accept(ConstVisitor* visitor) const
 {
-    visitor->visitGotoSymbol(this);
+    visitor->visitGoto(this);
     label_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-void GotoSymbol::swapChild(const Node* oldNode, Node* newNode)
+void Goto::swapChild(const Node* oldNode, Node* newNode)
 {
     if (label_ == oldNode)
         label_ = dynamic_cast<Symbol*>(newNode);
@@ -43,59 +48,11 @@ void GotoSymbol::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-Node* GotoSymbol::duplicateImpl() const
+Node* Goto::duplicateImpl() const
 {
-    return new GotoSymbol(
+    return new Goto(
         label_->duplicate<Symbol>(),
         location());
 }
 
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-Goto::Goto(Label* label, SourceLocation* location) :
-    Statement(location),
-    label_(label)
-{
-    // DON'T set parent. We're only holding a weak reference
-}
-
-// ----------------------------------------------------------------------------
-WeakReference<Label> Goto::label() const
-{
-    return label_;
-}
-
-// ----------------------------------------------------------------------------
-void Goto::accept(Visitor* visitor)
-{
-    visitor->visitGoto(this);
-}
-void Goto::accept(ConstVisitor* visitor) const
-{
-    visitor->visitGoto(this);
-}
-
-// ----------------------------------------------------------------------------
-void Goto::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (label_ == oldNode)
-        label_ = dynamic_cast<Label*>(newNode);
-    else
-        assert(false);
-
-    newNode->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-Node* Goto::duplicateImpl() const
-{
-    // Goto node can't be duplicated because it references another node in the
-    // old tree
-    assert(false);
-    return nullptr;
-}
-
-}
 }

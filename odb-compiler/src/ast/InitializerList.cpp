@@ -1,26 +1,25 @@
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ExpressionList::ExpressionList(SourceLocation* location) :
+InitializerList::InitializerList(SourceLocation* location) :
     Expression(location)
 {
 }
 
 // ----------------------------------------------------------------------------
-ExpressionList::ExpressionList(Expression* expr, SourceLocation* location) :
+InitializerList::InitializerList(Expression* expr, SourceLocation* location) :
     Expression(location)
 {
     appendExpression(expr);
 }
 
 // ----------------------------------------------------------------------------
-void ExpressionList::appendExpression(Expression* expr)
+void InitializerList::appendExpression(Expression* expr)
 {
     expr->setParent(this);
     expressions_.push_back(expr);
@@ -29,27 +28,33 @@ void ExpressionList::appendExpression(Expression* expr)
 }
 
 // ----------------------------------------------------------------------------
-const std::vector<Reference<Expression>>& ExpressionList::expressions() const
+const std::vector<Reference<Expression>>& InitializerList::expressions() const
 {
     return expressions_;
 }
 
 // ----------------------------------------------------------------------------
-void ExpressionList::accept(Visitor* visitor)
+std::string InitializerList::toString() const
 {
-    visitor->visitExpressionList(this);
+    return "InitializerList(" + std::to_string(expressions_.size()) + ")";
+}
+
+// ----------------------------------------------------------------------------
+void InitializerList::accept(Visitor* visitor)
+{
+    visitor->visitInitializerList(this);
     for (const auto& expr : expressions_)
         expr->accept(visitor);
 }
-void ExpressionList::accept(ConstVisitor* visitor) const
+void InitializerList::accept(ConstVisitor* visitor) const
 {
-    visitor->visitExpressionList(this);
+    visitor->visitInitializerList(this);
     for (const auto& expr : expressions_)
         expr->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
-void ExpressionList::swapChild(const Node* oldNode, Node* newNode)
+void InitializerList::swapChild(const Node* oldNode, Node* newNode)
 {
     for (auto& expr : expressions_)
         if (expr == oldNode)
@@ -63,13 +68,13 @@ void ExpressionList::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-Node* ExpressionList::duplicateImpl() const
+Node* InitializerList::duplicateImpl() const
 {
-    ExpressionList* el = new ExpressionList(location());
+    InitializerList* el = new InitializerList(location());
     for (const auto& expr : expressions_)
         el->appendExpression(expr->duplicate<Expression>());
     return el;
 }
 
 }
-}
+

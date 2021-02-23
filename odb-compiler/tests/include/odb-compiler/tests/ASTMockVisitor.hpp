@@ -7,22 +7,20 @@ class ASTMockVisitor : public odb::ast::ConstVisitor
 {
 public:
     MOCK_METHOD(void, visitAnnotatedSymbol, (const odb::ast::AnnotatedSymbol* node), (override));
+    MOCK_METHOD(void, visitArgList, (const odb::ast::ArgList* node), (override));
     MOCK_METHOD(void, visitArrayAssignment, (const odb::ast::ArrayAssignment* node), (override));
     MOCK_METHOD(void, visitArrayRef, (const odb::ast::ArrayRef* node), (override));
     MOCK_METHOD(void, visitBinaryOp, (const odb::ast::BinaryOp* node), (override));
     MOCK_METHOD(void, visitBlock, (const odb::ast::Block* node), (override));
     MOCK_METHOD(void, visitCase, (const odb::ast::Case* node), (override));
     MOCK_METHOD(void, visitCaseList, (const odb::ast::CaseList* node), (override));
-    MOCK_METHOD(void, visitCommandStmntSymbol, (const odb::ast::CommandStmntSymbol* node), (override));
     MOCK_METHOD(void, visitCommandExpr, (const odb::ast::CommandExpr* node), (override));
     MOCK_METHOD(void, visitCommandStmnt, (const odb::ast::CommandStmnt* node), (override));
-    MOCK_METHOD(void, visitCommandExprSymbol, (const odb::ast::CommandExprSymbol* node), (override));
     MOCK_METHOD(void, visitConditional, (const odb::ast::Conditional* node), (override));
     MOCK_METHOD(void, visitConstDecl, (const odb::ast::ConstDecl* node), (override));
     MOCK_METHOD(void, visitConstDeclExpr, (const odb::ast::ConstDeclExpr* node), (override));
     MOCK_METHOD(void, visitDefaultCase, (const odb::ast::DefaultCase* node), (override));
     MOCK_METHOD(void, visitExit, (const odb::ast::Exit* node), (override));
-    MOCK_METHOD(void, visitExpressionList, (const odb::ast::ExpressionList* node), (override));
     MOCK_METHOD(void, visitForLoop, (const odb::ast::ForLoop* node), (override));
     MOCK_METHOD(void, visitFuncCallExprOrArrayRef, (const odb::ast::FuncCallExprOrArrayRef* node), (override));
     MOCK_METHOD(void, visitFuncCallExpr, (const odb::ast::FuncCallExpr* node), (override));
@@ -30,17 +28,15 @@ public:
     MOCK_METHOD(void, visitFuncDecl, (const odb::ast::FuncDecl* node), (override));
     MOCK_METHOD(void, visitFuncExit, (const odb::ast::FuncExit* node), (override));
     MOCK_METHOD(void, visitGoto, (const odb::ast::Goto* node), (override));
-    MOCK_METHOD(void, visitGotoSymbol, (const odb::ast::GotoSymbol* node), (override));
     MOCK_METHOD(void, visitInfiniteLoop, (const odb::ast::InfiniteLoop* node), (override));
+    MOCK_METHOD(void, visitInitializerList, (const odb::ast::InitializerList* node), (override));
     MOCK_METHOD(void, visitLabel, (const odb::ast::Label* node), (override));
     MOCK_METHOD(void, visitScopedAnnotatedSymbol, (const odb::ast::ScopedAnnotatedSymbol* node), (override));
     MOCK_METHOD(void, visitSelect, (const odb::ast::Select* node), (override));
     MOCK_METHOD(void, visitSubCall, (const odb::ast::SubCall* node), (override));
-    MOCK_METHOD(void, visitSubCallSymbol, (const odb::ast::SubCallSymbol* node), (override));
     MOCK_METHOD(void, visitSubReturn, (const odb::ast::SubReturn* node), (override));
     MOCK_METHOD(void, visitSymbol, (const odb::ast::Symbol* node), (override));
     MOCK_METHOD(void, visitUDTArrayDecl, (const odb::ast::UDTArrayDecl* node), (override));
-    MOCK_METHOD(void, visitUDTArrayDeclSymbol, (const odb::ast::UDTArrayDeclSymbol* node), (override));
     MOCK_METHOD(void, visitUDTDecl, (const odb::ast::UDTDecl* node), (override));
     MOCK_METHOD(void, visitUDTDeclBody, (const odb::ast::UDTDeclBody* node), (override));
     MOCK_METHOD(void, visitUDTFieldAssignment, (const odb::ast::UDTFieldAssignment* node), (override));

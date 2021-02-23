@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
@@ -10,7 +10,7 @@ namespace odb {
 namespace ast {
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     args_(args),
@@ -24,7 +24,7 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, E
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Expression* returnValue, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     args_(args),
@@ -58,7 +58,7 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Expression* returnValue, SourceLocat
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, SourceLocation* location) :
+FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     args_(args),
@@ -70,7 +70,7 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, S
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location) :
+FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     args_(args)
@@ -104,7 +104,7 @@ AnnotatedSymbol* FuncDecl::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ExpressionList> FuncDecl::args() const
+MaybeNull<ArgList> FuncDecl::args() const
 {
     return args_.get();
 }
@@ -119,6 +119,12 @@ MaybeNull<Block> FuncDecl::body() const
 MaybeNull<Expression> FuncDecl::returnValue() const
 {
     return returnValue_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncDecl::toString() const
+{
+    return "FuncDecl";
 }
 
 // ----------------------------------------------------------------------------
@@ -165,7 +171,7 @@ Node* FuncDecl::duplicateImpl() const
 {
     return new FuncDecl(
         symbol_->duplicate<AnnotatedSymbol>(),
-        args_ ? args_->duplicate<ExpressionList>() : nullptr,
+        args_ ? args_->duplicate<ArgList>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
         returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
         location());
@@ -192,6 +198,12 @@ FuncExit::FuncExit(SourceLocation* location) :
 MaybeNull<Expression> FuncExit::returnValue() const
 {
     return returnValue_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncExit::toString() const
+{
+    return "FuncExit";
 }
 
 // ----------------------------------------------------------------------------

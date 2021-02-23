@@ -29,6 +29,12 @@ Expression* ConstDeclExpr::expression() const
 }
 
 // ----------------------------------------------------------------------------
+std::string ConstDeclExpr::toString() const
+{
+    return "ConstDeclExpr";
+}
+
+// ----------------------------------------------------------------------------
 void ConstDeclExpr::accept(Visitor* visitor)
 {
     visitor->visitConstDeclExpr(this);
@@ -87,6 +93,12 @@ AnnotatedSymbol* ConstDecl::symbol() const
 Literal* ConstDecl::literal() const
 {
     return literal_;
+}
+
+// ----------------------------------------------------------------------------
+std::string ConstDecl::toString() const
+{
+    return "ConstDecl";
 }
 
 // ----------------------------------------------------------------------------

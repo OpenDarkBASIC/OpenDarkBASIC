@@ -3,8 +3,7 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 VarRef::VarRef(AnnotatedSymbol* symbol, SourceLocation* location) :
@@ -18,6 +17,12 @@ VarRef::VarRef(AnnotatedSymbol* symbol, SourceLocation* location) :
 AnnotatedSymbol* VarRef::symbol() const
 {
     return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+std::string VarRef::toString() const
+{
+    return "VarRef";
 }
 
 // ----------------------------------------------------------------------------
@@ -51,5 +56,4 @@ Node* VarRef::duplicateImpl() const
         location());
 }
 
-}
 }

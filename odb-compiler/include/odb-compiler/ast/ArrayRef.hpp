@@ -3,20 +3,20 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/LValue.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class AnnotatedSymbol;
-class ExpressionList;
+class ArgList;
 
 class ODBCOMPILER_PUBLIC_API ArrayRef : public LValue
 {
 public:
-    ArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    ExpressionList* args() const;
+    ArgList* args() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -26,8 +26,7 @@ protected:
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExpressionList> args_;
+    Reference<ArgList> args_;
 };
 
-}
 }

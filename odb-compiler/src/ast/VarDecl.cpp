@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/VarDecl.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -9,7 +9,7 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* initializer, SourceLocation* location) :
+VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location) :
     Statement(location),
     symbol_(symbol),
     initializer_(initializer)
@@ -33,13 +33,13 @@ ScopedAnnotatedSymbol* VarDecl::symbol() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ExpressionList> VarDecl::initializer() const
+MaybeNull<InitializerList> VarDecl::initializer() const
 {
     return initializer_.get();
 }
 
 // ----------------------------------------------------------------------------
-void VarDecl::setInitializer(ExpressionList* initializer)
+void VarDecl::setInitializer(InitializerList* initializer)
 {
     initializer_ = initializer;
     initializer->setParent(this);
@@ -52,7 +52,7 @@ void VarDecl::setInitializer(ExpressionList* initializer)
 #define X(dbname, cppname)                                                    \
     template <>                                                               \
     VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
-                                              ExpressionList* initial,        \
+                                              InitializerList* initial,       \
                                               SourceLocation* location)       \
         : VarDecl(symbol, initial, location)                                  \
     {                                                                         \
@@ -62,11 +62,17 @@ void VarDecl::setInitializer(ExpressionList* initializer)
     VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
                                               SourceLocation* location)       \
         : VarDecl(symbol,                                                     \
-            new ExpressionList(                                               \
+            new InitializerList(                                              \
                 new dbname##Literal(cppname(), location),                     \
                 location),                                                    \
             location)                                                         \
     {                                                                         \
+    }                                                                         \
+                                                                              \
+    template <>                                                               \
+    std::string VarDeclTemplate<cppname>::toString() const                    \
+    {                                                                         \
+        return #dbname;                                                       \
     }                                                                         \
                                                                               \
     template<>                                                                \
@@ -89,7 +95,7 @@ void VarDecl::setInitializer(ExpressionList* initializer)
         if (symbol_ == oldNode)                                               \
             symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
         else if (initializer_ == oldNode)                                     \
-            initializer_ = dynamic_cast<ExpressionList*>(newNode);            \
+            initializer_ = dynamic_cast<InitializerList*>(newNode);           \
         else                                                                  \
             assert(false);                                                    \
                                                                               \
@@ -100,7 +106,7 @@ void VarDecl::setInitializer(ExpressionList* initializer)
     {                                                                         \
         return new VarDeclTemplate<cppname>(                                  \
             symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
-            initializer_->duplicate<ExpressionList>(),                        \
+            initializer_->duplicate<InitializerList>(),                       \
             location());                                                      \
     }
 ODB_DATATYPE_LIST
@@ -110,7 +116,7 @@ ODB_DATATYPE_LIST
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, ExpressionList* initializer, SourceLocation* location)
+UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, InitializerList* initializer, SourceLocation* location)
     : VarDecl(symbol, initializer, location)
     , udt_(udt)
 {
@@ -129,6 +135,12 @@ UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocatio
 UDTRef* UDTVarDecl::udt() const
 {
     return udt_;
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTVarDecl::toString() const
+{
+    return "UDTVarDecl";
 }
 
 // ----------------------------------------------------------------------------
@@ -159,7 +171,7 @@ void UDTVarDecl::swapChild(const Node* oldNode, Node* newNode)
     else if (udt_ == oldNode)
         udt_ = dynamic_cast<UDTRef*>(newNode);
     if (initializer_ == oldNode)
-        initializer_ = dynamic_cast<ExpressionList*>(newNode);
+        initializer_ = dynamic_cast<InitializerList*>(newNode);
     else
         assert(false);
 }
@@ -170,7 +182,7 @@ Node* UDTVarDecl::duplicateImpl() const
     return new UDTVarDecl(
         symbol_->duplicate<ScopedAnnotatedSymbol>(),
         udt_->duplicate<UDTRef>(),
-        initializer_.notNull() ? initializer_->duplicate<ExpressionList>() : nullptr,
+        initializer_.notNull() ? initializer_->duplicate<InitializerList>() : nullptr,
         location());
 }
 

@@ -26,6 +26,12 @@ LValue* UDTFieldOuter::right() const
 }
 
 // ----------------------------------------------------------------------------
+std::string UDTFieldOuter::toString() const
+{
+    return "UDTFieldOuter";
+}
+
+// ----------------------------------------------------------------------------
 void UDTFieldOuter::accept(Visitor* visitor)
 {
     visitor->visitUDTFieldOuter(this);
@@ -84,6 +90,12 @@ LValue* UDTFieldInner::left() const
 LValue* UDTFieldInner::right() const
 {
     return right_;
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTFieldInner::toString() const
+{
+    return "UDTFieldInner";
 }
 
 // ----------------------------------------------------------------------------

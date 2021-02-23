@@ -11,6 +11,12 @@ UDTRef::UDTRef(const std::string& name, SourceLocation* location)
 }
 
 // ----------------------------------------------------------------------------
+std::string UDTRef::toString() const
+{
+    return "UDTRef: \"" + name_ + "\"";
+}
+
+// ----------------------------------------------------------------------------
 void UDTRef::accept(Visitor* visitor)
 {
     visitor->visitUDTRef(this);

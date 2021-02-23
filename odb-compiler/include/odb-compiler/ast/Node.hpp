@@ -2,8 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-sdk/Reference.hpp"
-
-typedef struct DBLTYPE DBLTYPE;
+#include <string>
 
 namespace odb::ast {
 
@@ -21,6 +20,8 @@ public:
 
     void setParent(Node* node);
     SourceLocation* location() const;
+
+    virtual std::string toString() const = 0;
 
     virtual void accept(Visitor* visitor) = 0;
     virtual void accept(ConstVisitor* visitor) const = 0;

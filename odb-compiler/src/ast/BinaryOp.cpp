@@ -34,6 +34,17 @@ Expression* BinaryOp::rhs() const
 }
 
 // ----------------------------------------------------------------------------
+std::string BinaryOp::toString() const
+{
+    static const char* table[] = {
+#define X(op, tok) #op,
+        ODB_BINARY_OP_LIST
+#undef X
+    };
+    return std::string("BinaryOp(") + table[op_] + ")";
+}
+
+// ----------------------------------------------------------------------------
 void BinaryOp::accept(Visitor* visitor)
 {
     visitor->visitBinaryOp(this);

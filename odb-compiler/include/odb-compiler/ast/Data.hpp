@@ -7,7 +7,7 @@
 namespace odb::ast {
 
 class Data;
-class ExpressionList;
+class ArgList;
 class Label;
 class LValue;
 class Symbol;
@@ -17,6 +17,7 @@ class ODBCOMPILER_PUBLIC_API DataBlock : public Node
 public:
     DataBlock(SourceLocation* location);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -31,8 +32,9 @@ private:
 class ODBCOMPILER_PUBLIC_API Data : public Statement
 {
 public:
-    Data(ExpressionList* values, SourceLocation* location);
+    Data(ArgList* values, SourceLocation* location);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -48,6 +50,7 @@ public:
 
     Symbol* label() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -66,6 +69,7 @@ public:
 
     Label* label() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

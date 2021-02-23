@@ -19,6 +19,7 @@ public:
     Symbol* typeName() const;
     UDTDeclBody* body() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -45,6 +46,7 @@ public:
     const std::vector<Reference<VarDecl>>& varDeclarations() const;
     const std::vector<Reference<ArrayDecl>>& arrayDeclarations() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

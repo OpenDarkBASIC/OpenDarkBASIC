@@ -9,17 +9,18 @@ namespace odb {
 namespace ast {
 
 class AnnotatedSymbol;
-class ExpressionList;
+class ArgList;
 
 class ODBCOMPILER_PUBLIC_API FuncCallExpr : public Expression
 {
 public:
-    FuncCallExpr(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
     FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    MaybeNull<ExpressionList> args() const;
+    MaybeNull<ArgList> args() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -29,18 +30,19 @@ protected:
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExpressionList> args_;
+    Reference<ArgList> args_;
 };
 
 class ODBCOMPILER_PUBLIC_API FuncCallStmnt : public Statement
 {
 public:
-    FuncCallStmnt(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
     FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    MaybeNull<ExpressionList> args() const;
+    MaybeNull<ArgList> args() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -50,7 +52,7 @@ protected:
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExpressionList> args_;
+    Reference<ArgList> args_;
 };
 
 /*!
@@ -64,11 +66,12 @@ private:
 class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef : public Expression
 {
 public:
-    FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    MaybeNull<ExpressionList> args() const;
+    MaybeNull<ArgList> args() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -78,7 +81,7 @@ protected:
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExpressionList> args_;
+    Reference<ArgList> args_;
 };
 
 }

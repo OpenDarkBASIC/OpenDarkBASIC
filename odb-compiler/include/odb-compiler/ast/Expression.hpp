@@ -3,8 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Node.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class SourceLocation;
 
@@ -14,5 +13,4 @@ public:
     Expression(SourceLocation* location);
 };
 
-}
 }

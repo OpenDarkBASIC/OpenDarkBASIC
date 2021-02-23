@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
@@ -39,6 +39,12 @@ void UDTDecl::accept(Visitor* visitor)
     visitor->visitUDTDecl(this);
     typeName_->accept(visitor);
     body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTDecl::toString() const
+{
+    return "UDTDecl";
 }
 
 // ----------------------------------------------------------------------------
@@ -120,6 +126,12 @@ const std::vector<Reference<VarDecl>>& UDTDeclBody::varDeclarations() const
 const std::vector<Reference<ArrayDecl>>& UDTDeclBody::arrayDeclarations() const
 {
     return arrayDecls_;
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTDeclBody::toString() const
+{
+    return "UDTDecl(vars: " + std::to_string(varDecls_.size()) + ", arrays: " + std::to_string(arrayDecls_.size()) + ")";
 }
 
 // ----------------------------------------------------------------------------

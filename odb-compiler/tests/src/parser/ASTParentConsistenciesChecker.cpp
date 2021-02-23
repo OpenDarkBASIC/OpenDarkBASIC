@@ -1,4 +1,5 @@
 #include "odb-compiler/tests/ASTParentConsistenciesChecker.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
@@ -8,10 +9,10 @@
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
@@ -32,6 +33,11 @@ using namespace odb;
 using namespace ast;
 
 void ASTParentConsistenciesChecker::visitAnnotatedSymbol(const AnnotatedSymbol* node) {}
+void ASTParentConsistenciesChecker::visitArgList(const ArgList* node)
+{
+    for (const auto& expr : node->expressions())
+        EXPECT_THAT(node, Eq(expr->parent()));
+}
 void ASTParentConsistenciesChecker::visitArrayAssignment(const ArrayAssignment* node)
 {
     EXPECT_THAT(node, Eq(node->array()->parent()));
@@ -70,17 +76,7 @@ void ASTParentConsistenciesChecker::visitCommandExpr(const CommandExpr* node)
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
 }
-void ASTParentConsistenciesChecker::visitCommandExprSymbol(const CommandExprSymbol* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
-}
 void ASTParentConsistenciesChecker::visitCommandStmnt(const CommandStmnt* node)
-{
-    if (node->args().notNull())
-        EXPECT_THAT(node, Eq(node->args()->parent()));
-}
-void ASTParentConsistenciesChecker::visitCommandStmntSymbol(const CommandStmntSymbol* node)
 {
     if (node->args().notNull())
         EXPECT_THAT(node, Eq(node->args()->parent()));
@@ -109,11 +105,6 @@ void ASTParentConsistenciesChecker::visitDefaultCase(const DefaultCase* node)
         EXPECT_THAT(node, Eq(node->body()->parent()));
 }
 void ASTParentConsistenciesChecker::visitExit(const Exit* node) {}
-void ASTParentConsistenciesChecker::visitExpressionList(const ExpressionList* node)
-{
-    for (const auto& expr : node->expressions())
-        EXPECT_THAT(node, Eq(expr->parent()));
-}
 void ASTParentConsistenciesChecker::visitForLoop(const ForLoop* node)
 {
     EXPECT_THAT(node, Eq(node->counter()->parent()));
@@ -157,15 +148,19 @@ void ASTParentConsistenciesChecker::visitFuncExit(const FuncExit* node)
     if (node->returnValue().notNull())
         EXPECT_THAT(node, Eq(node->returnValue()->parent()));
 }
-void ASTParentConsistenciesChecker::visitGoto(const Goto* node) {}
-void ASTParentConsistenciesChecker::visitGotoSymbol(const GotoSymbol* node)
+void ASTParentConsistenciesChecker::visitGoto(const Goto* node)
 {
-    EXPECT_THAT(node, Eq(node->labelSymbol()->parent()));
+    EXPECT_THAT(node, Eq(node->label()->parent()));
 }
 void ASTParentConsistenciesChecker::visitInfiniteLoop(const InfiniteLoop* node)
 {
     if (node->body().notNull())
         EXPECT_THAT(node, Eq(node->body()->parent()));
+}
+void ASTParentConsistenciesChecker::visitInitializerList(const InitializerList* node)
+{
+    for (const auto& expr : node->expressions())
+        EXPECT_THAT(node, Eq(expr->parent()));
 }
 void ASTParentConsistenciesChecker::visitLabel(const Label* node)
 {
@@ -182,10 +177,6 @@ void ASTParentConsistenciesChecker::visitSubCall(const SubCall* node)
 {
     EXPECT_THAT(node, Eq(node->label()->parent()));
 }
-void ASTParentConsistenciesChecker::visitSubCallSymbol(const SubCallSymbol* node)
-{
-    EXPECT_THAT(node, Eq(node->labelSymbol()->parent()));
-}
 void ASTParentConsistenciesChecker::visitSubReturn(const SubReturn* node) {}
 void ASTParentConsistenciesChecker::visitSymbol(const Symbol* node) {}
 void ASTParentConsistenciesChecker::visitUDTArrayDecl(const UDTArrayDecl* node)
@@ -193,12 +184,6 @@ void ASTParentConsistenciesChecker::visitUDTArrayDecl(const UDTArrayDecl* node)
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
     EXPECT_THAT(node, Eq(node->dims()->parent()));
     EXPECT_THAT(node, Eq(node->udt()->parent()));
-}
-void ASTParentConsistenciesChecker::visitUDTArrayDeclSymbol(const UDTArrayDeclSymbol* node)
-{
-    EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    EXPECT_THAT(node, Eq(node->dims()->parent()));
-    EXPECT_THAT(node, Eq(node->udtSymbol()->parent()));
 }
 void ASTParentConsistenciesChecker::visitUDTDecl(const UDTDecl* node)
 {

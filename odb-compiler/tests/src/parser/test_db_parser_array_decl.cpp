@@ -106,7 +106,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
     exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \
@@ -180,7 +180,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
     exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \

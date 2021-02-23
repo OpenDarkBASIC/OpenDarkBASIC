@@ -3,17 +3,15 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/TypeAnnotations.hpp"
-#include <string>
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class ODBCOMPILER_PUBLIC_API Symbol : public Node
 {
 public:
     enum class Annotation : char {
-        NONE = '\0',
-#define X(enum_, chr, str, dbname) enum_ = chr,
+        NONE,
+#define X(enum_, chr, str, dbname) enum_,
         ODB_TYPE_ANNOTATION_LIST
 #undef X
     };
@@ -27,6 +25,7 @@ public:
 
     const std::string& name() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -45,6 +44,7 @@ public:
 
     Annotation annotation() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -66,6 +66,7 @@ public:
 
     void setScope(Scope scope);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -78,5 +79,4 @@ private:
     Annotation annotation_;
 };
 
-}
 }

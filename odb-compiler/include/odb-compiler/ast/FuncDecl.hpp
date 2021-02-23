@@ -10,25 +10,26 @@ namespace ast {
 class AnnotatedSymbol;
 class Block;
 class Expression;
-class ExpressionList;
+class ArgList;
 
 class ODBCOMPILER_PUBLIC_API FuncDecl : public Statement
 {
 public:
-    FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Expression* returnValue, SourceLocation* location);
+    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
+    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Expression* returnValue, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, Block* body, Expression* returnValue, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, Block* body, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ExpressionList* args, SourceLocation* location);
+    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, SourceLocation* location);
+    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, Block* body, SourceLocation* location);
     FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location);
 
     AnnotatedSymbol* symbol() const;
-    MaybeNull<ExpressionList> args() const;
+    MaybeNull<ArgList> args() const;
     MaybeNull<Block> body() const;
     MaybeNull<Expression> returnValue() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -38,7 +39,7 @@ protected:
 
 private:
     Reference<AnnotatedSymbol> symbol_;
-    Reference<ExpressionList> args_;
+    Reference<ArgList> args_;
     Reference<Block> body_;
     Reference<Expression> returnValue_;
 };
@@ -51,6 +52,7 @@ public:
 
     MaybeNull<Expression> returnValue() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

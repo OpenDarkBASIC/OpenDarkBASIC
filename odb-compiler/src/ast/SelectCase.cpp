@@ -53,6 +53,12 @@ SourceLocation* Select::endSelectLocation() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Select::toString() const
+{
+    return "Select";
+}
+
+// ----------------------------------------------------------------------------
 void Select::accept(Visitor* visitor)
 {
     visitor->visitSelect(this);
@@ -131,6 +137,12 @@ void CaseList::appendDefaultCase(DefaultCase* case_)
     case_->setParent(this);
 
     location()->unionize(case_->location());
+}
+
+// ----------------------------------------------------------------------------
+std::string CaseList::toString() const
+{
+    return "CaseList(" + std::to_string(cases_.size()) + ")";
 }
 
 // ----------------------------------------------------------------------------
@@ -235,6 +247,12 @@ MaybeNull<Block> Case::body() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Case::toString() const
+{
+    return "Case";
+}
+
+// ----------------------------------------------------------------------------
 void Case::accept(Visitor* visitor)
 {
     visitor->visitCase(this);
@@ -309,6 +327,12 @@ SourceLocation* DefaultCase::beginCaseLocation() const
 SourceLocation* DefaultCase::endCaseLocation() const
 {
     return endLoc_;
+}
+
+// ----------------------------------------------------------------------------
+std::string DefaultCase::toString() const
+{
+    return "DefaultCase";
 }
 
 // ----------------------------------------------------------------------------

@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/Node.hpp"
 #include <vector>
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class Statement;
 
@@ -21,6 +20,7 @@ public:
     void merge(Block* other);
     const std::vector<Reference<Statement>>& statements() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -32,5 +32,4 @@ private:
     std::vector<Reference<Statement>> statements_;
 };
 
-}
 }

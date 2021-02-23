@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/Command.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -28,8 +28,6 @@ public:
     bool check(const ast::FuncCallExprOrArrayRef* func);
     bool check(const ast::CommandExpr* cmd);
     bool check(const ast::CommandStmnt* cmd);
-    bool check(const ast::CommandExprSymbol* cmd);
-    bool check(const ast::CommandStmntSymbol* cmd);
 
     void checkExpr(const ast::Expression* node);
     void checkAnnotation(const ast::AnnotatedSymbol* sym);
@@ -70,20 +68,6 @@ bool Visitor::check(const ast::FuncCallExprOrArrayRef* func)
 }
 bool Visitor::check(const ast::CommandExpr* cmd)
 {
-    /* TODO probably makes sense to add a UDT return type to commands
-    if (cmd->command()->returnType() != ...);*/
-
-    return cmd != nullptr;
-}
-bool Visitor::check(const ast::CommandStmnt* cmd)
-{
-    /* TODO probably makes sense to add a UDT return type to commands
-    if (cmd->command()->returnType() != ...);*/
-
-    return cmd != nullptr;
-}
-bool Visitor::check(const ast::CommandExprSymbol* cmd)
-{
     if (cmd == nullptr)
         return false;
 
@@ -99,7 +83,7 @@ bool Visitor::check(const ast::CommandExprSymbol* cmd)
 
     return true;
 }
-bool Visitor::check(const ast::CommandStmntSymbol* cmd)
+bool Visitor::check(const ast::CommandStmnt* cmd)
 {
     if (cmd == nullptr)
         return false;
@@ -127,8 +111,6 @@ void Visitor::checkExpr(const ast::Expression* node)
     if (check(dynamic_cast<const ast::FuncCallExprOrArrayRef*>(node))) return;
     if (check(dynamic_cast<const ast::CommandExpr*>(node))) return;
     if (check(dynamic_cast<const ast::CommandStmnt*>(node))) return;
-    if (check(dynamic_cast<const ast::CommandExprSymbol*>(node))) return;
-    if (check(dynamic_cast<const ast::CommandStmntSymbol*>(node))) return;
 }
 
 // ----------------------------------------------------------------------------

@@ -42,8 +42,8 @@ TEST_F(NAME, print_command)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("print"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("print"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world"))).After(exp);
 
     ast->accept(&v);
@@ -61,8 +61,8 @@ TEST_F(NAME, command_with_spaces)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("make object sphere"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("make object sphere"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
@@ -82,9 +82,9 @@ TEST_F(NAME, randomize_timer)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("randomize"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("timer"))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("randomize"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("timer"))).After(exp);
 
     ast->accept(&v);
 }
@@ -102,10 +102,10 @@ TEST_F(NAME, randomize_timer_args)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("randomize"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("timer"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("randomize"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("timer"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
     ast->accept(&v);
@@ -124,10 +124,10 @@ TEST_F(NAME, command_with_string_annotation)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("print"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("str$"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("print"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("str$"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
     ast->accept(&v);
@@ -146,10 +146,10 @@ TEST_F(NAME, command_with_float_annotation)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("print"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("str#"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("print"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("str#"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
     ast->accept(&v);
@@ -169,8 +169,8 @@ TEST_F(NAME, load_3d_sound)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(_)).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(_)).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("howl.wav"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
@@ -192,8 +192,8 @@ TEST_F(NAME, command_with_variable_args)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("clone sound"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("clone sound"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
@@ -216,10 +216,10 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("make object sphere"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
-    exp = EXPECT_CALL(v, visitCommandExprSymbol(CommandExprSymbolEq("get ground height"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(3))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("make object sphere"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("get ground height"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(3))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
@@ -244,8 +244,8 @@ TEST_F(NAME, command_starting_with_builtin)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("loop sound"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("loop sound"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
     ast->accept(&v);
@@ -288,8 +288,8 @@ TEST_F(NAME, multiple_similar_commands_with_spaces)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("set object speed"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(2))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("set object speed"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
@@ -312,8 +312,8 @@ TEST_F(NAME, multiple_similar_commands_with_spaces_2)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitCommandStmntSymbol(CommandStmntSymbolEq("set object collision off"))).After(exp);
-    exp = EXPECT_CALL(v, visitExpressionList(ExpressionListCountEq(1))).After(exp);
+    exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("set object collision off"))).After(exp);
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
     ast->accept(&v);

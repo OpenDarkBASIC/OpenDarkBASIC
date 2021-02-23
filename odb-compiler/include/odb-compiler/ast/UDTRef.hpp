@@ -10,6 +10,7 @@ class UDTRef : public Symbol
 public:
     UDTRef(const std::string& name, SourceLocation* location);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
 

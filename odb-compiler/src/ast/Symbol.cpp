@@ -4,6 +4,13 @@
 
 namespace odb::ast {
 
+static const char* annTable[] = {
+    "NONE",
+#define X(enum_, chr, str, dbname) #enum_,
+    ODB_TYPE_ANNOTATION_LIST
+#undef X
+};
+
 // ----------------------------------------------------------------------------
 Symbol::Symbol(const std::string& name, SourceLocation* location) :
     Node(location),
@@ -15,6 +22,12 @@ Symbol::Symbol(const std::string& name, SourceLocation* location) :
 const std::string& Symbol::name() const
 {
     return name_;
+}
+
+// ----------------------------------------------------------------------------
+std::string Symbol::toString() const
+{
+    return  "Symbol: \"" + name_ + "\"";
 }
 
 // ----------------------------------------------------------------------------
@@ -53,6 +66,12 @@ AnnotatedSymbol::AnnotatedSymbol(Annotation annotation, const std::string& name,
 Symbol::Annotation AnnotatedSymbol::annotation() const
 {
     return annotation_;
+}
+
+// ----------------------------------------------------------------------------
+std::string AnnotatedSymbol::toString() const
+{
+    return std::string("AnnotatedSymbol(") + annTable[static_cast<int>(annotation_)] + "): \"" + name_ + "\"";
 }
 
 // ----------------------------------------------------------------------------
@@ -104,6 +123,15 @@ Symbol::Annotation ScopedAnnotatedSymbol::annotation() const
 void ScopedAnnotatedSymbol::setScope(Scope scope)
 {
     scope_ = scope;
+}
+
+// ----------------------------------------------------------------------------
+std::string ScopedAnnotatedSymbol::toString() const
+{
+    return std::string("ScopedAnnotatedSymbol(")
+         + annTable[static_cast<int>(annotation_)]
+         + ", " + (scope_ == Scope::GLOBAL ? "GLOBAL" : "LOCAL")
+         + "): \"" + name_ + "\"";
 }
 
 // ----------------------------------------------------------------------------

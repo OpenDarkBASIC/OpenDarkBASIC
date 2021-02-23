@@ -24,6 +24,7 @@ public:
     SourceLocation* beginSelectLocation() const;
     SourceLocation* endSelectLocation() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -52,6 +53,7 @@ public:
     const std::vector<Reference<DefaultCase>>& defaultCases() const;
     MaybeNull<DefaultCase> defaultCase() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -73,6 +75,7 @@ public:
     Expression* expression() const;
     MaybeNull<Block> body() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -95,6 +98,7 @@ public:
     SourceLocation* beginCaseLocation() const;
     SourceLocation* endCaseLocation() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;

@@ -1,6 +1,7 @@
 %require "3.7"
 %code top
 {
+    #include "odb-compiler/ast/ArgList.hpp"
     #include "odb-compiler/ast/ArrayDecl.hpp"
     #include "odb-compiler/ast/ArrayRef.hpp"
     #include "odb-compiler/ast/Assignment.hpp"
@@ -11,10 +12,10 @@
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Exit.hpp"
     #include "odb-compiler/ast/Expression.hpp"
-    #include "odb-compiler/ast/ExpressionList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
     #include "odb-compiler/ast/Goto.hpp"
+    #include "odb-compiler/ast/InitializerList.hpp"
     #include "odb-compiler/ast/Label.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
@@ -57,14 +58,15 @@
         }
         namespace ast {
             class AnnotatedSymbol;
+            class ArgList;
             class ArrayDecl;
             class ArrayRef;
             class Assignment;
             class Block;
             class Case;
             class CaseList;
-            class CommandExprSymbol;
-            class CommandStmntSymbol;
+            class CommandExpr;
+            class CommandStmnt;
             class Conditional;
             class ConstDeclExpr;
             class DefaultCase;
@@ -75,9 +77,9 @@
             class FuncDecl;
             class FuncExit;
             class Expression;
-            class ExpressionList;
-            class GotoSymbol;
+            class Goto;
             class InfiniteLoop;
+            class InitializerList;
             class Label;
             class Literal;
             class LValue;
@@ -86,7 +88,7 @@
             class ScopedAnnotatedSymbol;
             class Select;
             class Statement;
-            class SubCallSymbol;
+            class SubCall;
             class SubReturn;
             class Symbol;
             class UDTDecl;
@@ -158,20 +160,21 @@
     odb::ast::Block* block;
     odb::ast::Case* case_;
     odb::ast::CaseList* case_list;
-    odb::ast::CommandExprSymbol* command_expr;
-    odb::ast::CommandStmntSymbol* command_stmnt;
+    odb::ast::CommandExpr* command_expr;
+    odb::ast::CommandStmnt* command_stmnt;
     odb::ast::Conditional* conditional;
     odb::ast::ConstDeclExpr* const_decl_expr;
     odb::ast::DefaultCase* default_case;
     odb::ast::Exit* exit;
     odb::ast::Expression* expr;
-    odb::ast::ExpressionList* expr_list;
+    odb::ast::ArgList* arg_list;
     odb::ast::ForLoop* for_loop;
     odb::ast::FuncCallStmnt* func_call_stmnt;
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
-    odb::ast::GotoSymbol* goto_symbol;
+    odb::ast::Goto* goto_symbol;
     odb::ast::InfiniteLoop* infinite_loop;
+    odb::ast::InitializerList* initializer_list;
     odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
@@ -179,7 +182,7 @@
     odb::ast::ScopedAnnotatedSymbol* var_annotated_symbol;
     odb::ast::Select* select;
     odb::ast::Statement* stmnt;
-    odb::ast::SubCallSymbol* sub_call_symbol;
+    odb::ast::SubCall* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
     odb::ast::Symbol* symbol;
     odb::ast::UDTDecl* udt_decl;
@@ -206,7 +209,8 @@
 %destructor { TouchRef($$); } <const_decl_expr>
 %destructor { TouchRef($$); } <default_case>
 %destructor { TouchRef($$); } <expr>
-%destructor { TouchRef($$); } <expr_list>
+%destructor { TouchRef($$); } <arg_list>
+%destructor { TouchRef($$); } <initializer_list>
 %destructor { TouchRef($$); } <for_loop>
 %destructor { TouchRef($$); } <func_call_stmnt>
 %destructor { TouchRef($$); } <func_decl>
@@ -349,7 +353,8 @@
 %type<func_call_stmnt> func_call_stmnt
 %type<expr> func_call_expr_or_array_ref
 %type<expr> expr
-%type<expr_list> expr_list
+%type<arg_list> arg_list
+%type<initializer_list> initializer_list
 %type<command_expr> command_expr
 %type<command_stmnt> command_stmnt
 %type<var_decl> var_decl
@@ -463,12 +468,17 @@ stmnt
   | conditional                                               { $$ = $1; }
   | select                                                    { $$ = $1; }
   ;
-expr_list
-  : expr_list ',' expr                                        { $$ = $1; $$->appendExpression($3); }
-  | expr                                                      { $$ = new ExpressionList($1, driver->newLocation(&@$)); }
+arg_list
+  : arg_list ',' expr                                         { $$ = $1; $$->appendExpression($3); }
+  | expr                                                      { $$ = new ArgList($1, driver->newLocation(&@$)); }
+  ;
+initializer_list
+  : initializer_list ',' expr                                 { $$ = $1; $$->appendExpression($3); }
+  | expr                                                      { $$ = new InitializerList($1, driver->newLocation(&@$)); }
   ;
 expr
-  : '(' expr_list ')'                                         { $$ = $2; }
+  : '(' initializer_list ',' expr ')'                         { $$ = $2; $2->appendExpression($4); }
+  | '(' expr ')'                                              { $$ = $2; }
   | expr '+' expr                                             { $$ = new BinaryOp(BinaryOp::ADD, $1, $3, driver->newLocation(&@$)); }
   | expr '-' expr                                             { $$ = new BinaryOp(BinaryOp::SUB, $1, $3, driver->newLocation(&@$)); }
   | expr '*' expr                                             { $$ = new BinaryOp(BinaryOp::MUL, $1, $3, driver->newLocation(&@$)); }
@@ -504,17 +514,17 @@ expr
 /* Commands appearing as statements usually don't have arguments surrounded by
  * brackets, but it is valid to call a command with brackets as a statement */
 command_stmnt
-  : COMMAND                                                   { $$ = new CommandStmntSymbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND expr_list                                         { $$ = new CommandStmntSymbol($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND '(' ')'                                           { $$ = new CommandStmntSymbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : COMMAND                                                   { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND arg_list                                         { $$ = new CommandStmnt($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND '(' ')'                                           { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
 /* This case is already handled by expr
-  | COMMAND '(' expr_list ')'                                 { $$ = new CommandStmntSymbol($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
+  | COMMAND '(' arg_list ')'                                 { $$ = new CommandStmnt($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
   ;
 
 /* Commands appearing in expressions must be called with arguments in brackets */
 command_expr
-  : COMMAND '(' ')'                                           { $$ = new CommandExprSymbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND '(' expr_list ')'                                 { $$ = new CommandExprSymbol($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : COMMAND '(' ')'                                           { $$ = new CommandExpr($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND '(' arg_list ')'                                 { $$ = new CommandExpr($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 const_decl
   : CONSTANT annotated_symbol expr                            { $$ = new ConstDeclExpr($2, $3, driver->newLocation(&@$)); }
@@ -542,11 +552,11 @@ var_ref
   : annotated_symbol                                          { $$ = new VarRef($1, driver->newLocation(&@$)); }
   ;
 var_decl
-  : scope var_decl_no_as_type '=' expr_list                   { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
+  : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
   | scope var_decl_no_as_type                                 { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
-  | scope var_decl_as_type '=' expr_list                      { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
+  | scope var_decl_as_type '=' initializer_list               { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
   | scope var_decl_as_type                                    { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
-  | var_decl_as_type '=' expr_list                            { $$ = $1; $$->setInitializer($3); }
+  | var_decl_as_type '=' initializer_list                     { $$ = $1; $$->setInitializer($3); }
   | var_decl_as_type                                          { $$ = $1; }
   ;
 var_decl_no_as_type
@@ -589,7 +599,7 @@ var_decl_as_type
   | var_int_sym          AS VEC4                              { $$ = new Vec4VarDecl($1, driver->newLocation(&@$)); }
   ;
 array_ref
-  : annotated_symbol '(' expr_list ')'                        { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                        { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
   ;
 array_decl
   : scope array_decl_as_type                                  { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
@@ -598,43 +608,43 @@ array_decl
   | array_decl_no_as_type                                     { $$ = $1; }
   ;
 array_decl_no_as_type
-  : DIM var_int_sym          '(' expr_list ')'                { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_int_sym   '(' expr_list ')'                { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_word_sym         '(' expr_list ')'                { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_float_sym '(' expr_list ')'                { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_float_sym        '(' expr_list ')'                { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_str_sym          '(' expr_list ')'                { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
+  : DIM var_int_sym          '(' arg_list ')'                { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_int_sym   '(' arg_list ')'                { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_word_sym         '(' arg_list ')'                { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_float_sym '(' arg_list ')'                { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_float_sym        '(' arg_list ')'                { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_str_sym          '(' arg_list ')'                { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
   ;
 array_decl_as_type
-  : DIM var_int_sym          '(' expr_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS INTEGER        { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS DWORD          { $$ = new DwordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS BYTE           { $$ = new ByteArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS BOOLEAN        { $$ = new BooleanArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS STRING         { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_int_sym   '(' expr_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_word_sym         '(' expr_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_float_sym '(' expr_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_float_sym        '(' expr_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_str_sym          '(' expr_list ')'AS STRING          { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS udt_ref        { $$ = new UDTArrayDeclSymbol($2, $4, $7, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS COMPLEX        { $$ = new ComplexArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT2X2         { $$ = new Mat2x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT2X3         { $$ = new Mat2x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT2X4         { $$ = new Mat2x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT3X2         { $$ = new Mat3x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT3X3         { $$ = new Mat3x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT3X4         { $$ = new Mat3x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT4X2         { $$ = new Mat4x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT4X3         { $$ = new Mat4x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS MAT4X4         { $$ = new Mat4x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS QUAT           { $$ = new QuatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS VEC2           { $$ = new Vec2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS VEC3           { $$ = new Vec3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' expr_list ')' AS VEC4           { $$ = new Vec4ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  : DIM var_int_sym          '(' arg_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS INTEGER        { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS DWORD          { $$ = new DwordArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS BYTE           { $$ = new ByteArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS BOOLEAN        { $$ = new BooleanArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS STRING         { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_int_sym   '(' arg_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_word_sym         '(' arg_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_float_sym '(' arg_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_float_sym        '(' arg_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_str_sym          '(' arg_list ')'AS STRING          { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = new UDTArrayDecl($2, $4, $7, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS COMPLEX        { $$ = new ComplexArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X2         { $$ = new Mat2x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X3         { $$ = new Mat2x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X4         { $$ = new Mat2x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X2         { $$ = new Mat3x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X3         { $$ = new Mat3x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X4         { $$ = new Mat3x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X2         { $$ = new Mat4x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X3         { $$ = new Mat4x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X4         { $$ = new Mat4x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS QUAT           { $$ = new QuatArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC2           { $$ = new Vec2ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC3           { $$ = new Vec3ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = new Vec4ArrayDecl($2, $4, driver->newLocation(&@$)); }
   ;
 scope
   : GLOBAL                                                    { $$ = static_cast<char>(Symbol::Scope::GLOBAL); }
@@ -651,10 +661,10 @@ udt_decl
   : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
   ;
 udt_body_decl
-  : udt_body_decl seps var_decl_as_type '=' expr_list         { $$ = $1; $$->appendVarDecl($3); $3->setInitializer($5); }
+  : udt_body_decl seps var_decl_as_type '=' initializer_list  { $$ = $1; $$->appendVarDecl($3); $3->setInitializer($5); }
   | udt_body_decl seps var_decl_as_type                       { $$ = $1; $$->appendVarDecl($3); }
   | udt_body_decl seps array_decl_as_type                     { $$ = $1; $$->appendArrayDecl($3); }
-  | var_decl_as_type '=' expr_list                            { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); $1->setInitializer($3); }
+  | var_decl_as_type '=' initializer_list                     { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); $1->setInitializer($3); }
   | var_decl_as_type                                          { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
   | array_decl_as_type                                        { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
   ;
@@ -678,29 +688,29 @@ udt_field_inner
   ;
 
 func_decl
-  : FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr           { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                      { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' expr_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION                { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                           { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
+  : FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr          { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                     { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION               { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                          { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
   ;
 func_exit
   : EXITFUNCTION expr                                         { $$ = new FuncExit($2, driver->newLocation(&@$)); }
   | EXITFUNCTION                                              { $$ = new FuncExit(driver->newLocation(&@$)); }
   ;
 func_call_expr_or_array_ref
-  : annotated_symbol '(' expr_list ')'                        { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&@$)); }
   | annotated_symbol '(' ')'                                  { $$ = new FuncCallExpr($1, driver->newLocation(&@$)); }
   ;
 func_call_stmnt
-  : annotated_symbol '(' expr_list ')'                        { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&@$)); }
   | annotated_symbol '(' ')'                                  { $$ = new FuncCallStmnt($1, driver->newLocation(&@$)); }
   ;
 sub_call
-  : GOSUB symbol                                              { $$ = new SubCallSymbol($2, driver->newLocation(&@$)); }
+  : GOSUB symbol                                              { $$ = new SubCall($2, driver->newLocation(&@$)); }
   ;
 sub_return
   : RETURN                                                    { $$ = new SubReturn(driver->newLocation(&@$)); }
@@ -709,7 +719,7 @@ label_decl
   : symbol ':'                                                { $$ = new Label($1, driver->newLocation(&@$)); }
   ;
 goto_label
-  : GOTO symbol                                               { $$ = new GotoSymbol($2, driver->newLocation(&@$)); }
+  : GOTO symbol                                               { $$ = new Goto($2, driver->newLocation(&@$)); }
   ;
 literal
   : BOOLEAN_LITERAL                                           { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&@$)); }

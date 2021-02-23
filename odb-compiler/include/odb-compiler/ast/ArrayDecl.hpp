@@ -4,10 +4,9 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
-class ExpressionList;
+class ArgList;
 class ScopedAnnotatedSymbol;
 class Symbol;
 class UDTRef;
@@ -15,22 +14,23 @@ class UDTRef;
 class ODBCOMPILER_PUBLIC_API ArrayDecl : public Statement
 {
 public:
-    ArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, SourceLocation* location);
+    ArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location);
 
     ScopedAnnotatedSymbol* symbol() const;
-    ExpressionList* dims() const;
+    ArgList* dims() const;
 
 protected:
     Reference<ScopedAnnotatedSymbol> symbol_;
-    Reference<ExpressionList> dims_;
+    Reference<ArgList> dims_;
 };
 
 template <typename T>
 class ArrayDeclTemplate : public ArrayDecl
 {
 public:
-    ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, SourceLocation* location);
+    ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location);
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -45,31 +45,14 @@ protected:
 ODB_DATATYPE_LIST
 #undef X
 
-class ODBCOMPILER_PUBLIC_API UDTArrayDeclSymbol : public ArrayDecl
-{
-public:
-    UDTArrayDeclSymbol(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, Symbol* udt, SourceLocation* location);
-
-    Symbol* udtSymbol() const;
-
-    void accept(Visitor* visitor) override;
-    void accept(ConstVisitor* visitor) const override;
-    void swapChild(const Node* oldNode, Node* newNode) override;
-
-protected:
-    Node* duplicateImpl() const override;
-
-private:
-    Reference<Symbol> udt_;
-};
-
 class ODBCOMPILER_PUBLIC_API UDTArrayDecl : public ArrayDecl
 {
 public:
-    UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ExpressionList* dims, UDTRef* udt, SourceLocation* location);
+    UDTArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, UDTRef* udt, SourceLocation* location);
 
     UDTRef* udt() const;
 
+    std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
     void swapChild(const Node* oldNode, Node* newNode) override;
@@ -81,5 +64,4 @@ private:
     Reference<UDTRef> udt_;
 };
 
-}
 }

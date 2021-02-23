@@ -26,6 +26,17 @@ Expression* UnaryOp::expr() const
 }
 
 // ----------------------------------------------------------------------------
+std::string UnaryOp::toString() const
+{
+    static const char* table[] = {
+#define X(op, tok) #op,
+        ODB_UNARY_OP_LIST
+#undef X
+    };
+    return std::string("UnaryOp(") + table[op_] + ")";
+}
+
+// ----------------------------------------------------------------------------
 void UnaryOp::accept(Visitor* visitor)
 {
     visitor->visitUnaryOp(this);

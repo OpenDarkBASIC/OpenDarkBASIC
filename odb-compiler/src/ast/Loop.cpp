@@ -40,6 +40,12 @@ MaybeNull<Block> InfiniteLoop::body() const
 }
 
 // ----------------------------------------------------------------------------
+std::string InfiniteLoop::toString() const
+{
+    return "InfiniteLoop";
+}
+
+// ----------------------------------------------------------------------------
 void InfiniteLoop::accept(Visitor* visitor)
 {
     visitor->visitInfiniteLoop(this);
@@ -103,6 +109,12 @@ Expression* WhileLoop::continueCondition() const
 MaybeNull<Block> WhileLoop::body() const
 {
     return body_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string WhileLoop::toString() const
+{
+    return "WhileLoop";
 }
 
 // ----------------------------------------------------------------------------
@@ -174,6 +186,12 @@ Expression* UntilLoop::exitCondition() const
 MaybeNull<Block> UntilLoop::body() const
 {
     return body_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string UntilLoop::toString() const
+{
+    return "UntilLoop";
 }
 
 // ----------------------------------------------------------------------------
@@ -349,6 +367,12 @@ MaybeNull<AnnotatedSymbol> ForLoop::nextSymbol() const
 MaybeNull<Block> ForLoop::body() const
 {
     return body_.get();
+}
+
+// ----------------------------------------------------------------------------
+std::string ForLoop::toString() const
+{
+    return "ForLoop";
 }
 
 // ----------------------------------------------------------------------------

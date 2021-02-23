@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
-#include "odb-compiler/astpost/ResolveArrayFuncAmbiguity.hpp"
 #include "odb-compiler/astpost/Process.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
@@ -12,6 +13,44 @@
 using namespace testing;
 using namespace odb;
 using namespace ast;
+
+// ----------------------------------------------------------------------------
+// Replaces all FuncCallOrArrayRef nodes with ArrayRef.
+// This is required for some of the unit tests because there is no
+// easy way to get an ArrayRef in the AST.
+// ----------------------------------------------------------------------------
+class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
+{
+    class Gatherer : public GenericVisitor
+    {
+    public:
+        void visitFuncCallExprOrArrayRef(FuncCallExprOrArrayRef* node) override final
+        {
+            nodes.push_back(node);
+        }
+
+        void visit(ast::Node* node) override final { /* don't care */ }
+
+        std::vector<Reference<FuncCallExprOrArrayRef>> nodes;
+    };
+
+public:
+    bool execute(ast::Node* node)
+    {
+        Gatherer gatherer;
+        node->accept(&gatherer);
+        for (const auto& node : gatherer.nodes)
+        {
+            node->parent()->swapChild(node, new ArrayRef(
+                node->symbol(),
+                node->args().notNull() ? node->args() : nullptr,
+                node->location()
+            ));
+        }
+
+        return true;
+    }
+};
 
 class NAME : public ParserTestHarness
 {
@@ -129,13 +168,12 @@ TEST_F(NAME, no_side_effects_3)
 TEST_F(NAME, testname##_no_side_effect)                                       \
 {                                                                             \
     ast = driver->parse("test",                                               \
-        "dim arr(5)\n"                                                        \
         "result = x .. " expr,                                                \
         matcher);                                                             \
     ASSERT_THAT(ast, NotNull());                                              \
                                                                               \
     astpost::ProcessGroup post;                                               \
-    post.addProcess(std::make_unique<astpost::ResolveArrayFuncAmbiguity>());  \
+    post.addProcess(std::make_unique<ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef>()); \
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());     \
     ASSERT_THAT(post.execute(ast), IsTrue());                                 \
 }
@@ -150,7 +188,9 @@ TEST_F(NAME, testname##_side_effect)                                          \
         matcher);                                                             \
     ASSERT_THAT(ast, NotNull());                                              \
                                                                               \
-    astpost::EliminateBitwiseNotRHS post;                                     \
+    astpost::ProcessGroup post;                                               \
+    post.addProcess(std::make_unique<ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef>()); \
+    post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());     \
     ASSERT_THAT(post.execute(ast), IsFalse());                                \
 }
 

@@ -39,6 +39,12 @@ MaybeNull<Block> Conditional::falseBranch() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Conditional::toString() const
+{
+    return "Conditional";
+}
+
+// ----------------------------------------------------------------------------
 void Conditional::accept(Visitor* visitor)
 {
     visitor->visitConditional(this);

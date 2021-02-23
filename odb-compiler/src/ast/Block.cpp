@@ -49,6 +49,12 @@ const std::vector<Reference<Statement>>& Block::statements() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Block::toString() const
+{
+    return "Block(" + std::to_string(statements_.size()) + ")";
+}
+
+// ----------------------------------------------------------------------------
 void Block::accept(Visitor* visitor)
 {
     visitor->visitBlock(this);

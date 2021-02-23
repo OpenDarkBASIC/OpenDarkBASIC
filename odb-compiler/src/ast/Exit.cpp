@@ -11,6 +11,12 @@ Exit::Exit(SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
+std::string Exit::toString() const
+{
+    return "Exit";
+}
+
+// ----------------------------------------------------------------------------
 void Exit::accept(Visitor* visitor)
 {
     visitor->visitExit(this);

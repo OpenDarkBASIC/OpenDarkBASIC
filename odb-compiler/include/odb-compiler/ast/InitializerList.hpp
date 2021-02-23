@@ -1,25 +1,22 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/Expression.hpp"
+#include <vector>
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API UnaryOp : public Expression
+class Expression;
+
+class ODBCOMPILER_PUBLIC_API InitializerList : public Expression
 {
 public:
-    enum Op
-    {
-#define X(op, tok) op,
-        ODB_UNARY_OP_LIST
-#undef X
-    };
+    InitializerList(SourceLocation* location);
+    InitializerList(Expression* expr, SourceLocation* location);
 
-    UnaryOp(Op op, Expression* expr, SourceLocation* location);
+    void appendExpression(Expression* expr);
 
-    Op op() const;
-    Expression* expr() const;
+    const std::vector<Reference<Expression>>& expressions() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -30,8 +27,8 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<Expression> expr_;
-    Op op_;
+    std::vector<Reference<Expression>> expressions_;
 };
 
 }
+

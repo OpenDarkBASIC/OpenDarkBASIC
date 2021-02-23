@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
@@ -41,6 +41,12 @@ VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* loca
 VarRef* VarAssignment::variable() const
 {
     return static_cast<VarRef*>(lvalue_.get());
+}
+
+// ----------------------------------------------------------------------------
+std::string VarAssignment::toString() const
+{
+    return "VarAssignment";
 }
 
 // ----------------------------------------------------------------------------
@@ -95,6 +101,12 @@ ArrayRef* ArrayAssignment::array() const
 }
 
 // ----------------------------------------------------------------------------
+std::string ArrayAssignment::toString() const
+{
+    return "ArrayAssignment";
+}
+
+// ----------------------------------------------------------------------------
 void ArrayAssignment::accept(Visitor* visitor)
 {
     visitor->visitArrayAssignment(this);
@@ -143,6 +155,12 @@ UDTFieldAssignment::UDTFieldAssignment(UDTFieldOuter* field, Expression* expr, S
 UDTFieldOuter* UDTFieldAssignment::field() const
 {
     return static_cast<UDTFieldOuter*>(lvalue_.get());
+}
+
+// ----------------------------------------------------------------------------
+std::string UDTFieldAssignment::toString() const
+{
+    return "UDTFieldAssignment";
 }
 
 // ----------------------------------------------------------------------------

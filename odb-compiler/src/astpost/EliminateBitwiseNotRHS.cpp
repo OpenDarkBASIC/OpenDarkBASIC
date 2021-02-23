@@ -9,7 +9,7 @@
     X(ArrayRef)               \
     X(BinaryOp)               \
     X(Conditional)            \
-    X(ExpressionList)         \
+    X(ArgList)                \
     X(ScopedAnnotatedSymbol)  \
     X(Symbol)                 \
     X(UDTRef)                 \

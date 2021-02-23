@@ -16,7 +16,7 @@ ODBSDK_PUBLIC_API void replaceAll(std::string& subject,
                                   const std::string& search,
                                   const std::string& replace);
 
-ODBSDK_PUBLIC_API std::string escapeBackslashes(const std::string& s);
+ODBSDK_PUBLIC_API std::string escape(const std::string& s);
 
 ODBSDK_PUBLIC_API void toLowerInplace(std::string& str);
 ODBSDK_PUBLIC_API std::string toLower(const std::string& str);

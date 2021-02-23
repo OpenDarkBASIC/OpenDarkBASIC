@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/ast/ExpressionList.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -67,9 +67,9 @@ private:
     Reference<Variable> resolveVariableRef(const ast::VarRef* varRef);
 
     FunctionCallExpression convertCommandCallExpression(SourceLocation* location, const std::string& commandName,
-                                                        const MaybeNull<ast::ExpressionList>& astArgs);
+                                                        const MaybeNull<ast::ArgList>& astArgs);
     FunctionCallExpression convertFunctionCallExpression(SourceLocation* location, ast::AnnotatedSymbol* symbol,
-                                                         const MaybeNull<ast::ExpressionList>& astArgs);
+                                                         const MaybeNull<ast::ArgList>& astArgs);
     Ptr<Expression> convertExpression(const ast::Expression* expression);
 
     Ptr<Statement> convertStatement(ast::Statement* statement, Loop* currentLoop);
