@@ -651,8 +651,10 @@ udt_decl
   : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
   ;
 udt_body_decl
-  : udt_body_decl seps var_decl_as_type                       { $$ = $1; $$->appendVarDecl($3); }
+  : udt_body_decl seps var_decl_as_type '=' expr_list         { $$ = $1; $$->appendVarDecl($3); $3->setInitializer($5); }
+  | udt_body_decl seps var_decl_as_type                       { $$ = $1; $$->appendVarDecl($3); }
   | udt_body_decl seps array_decl_as_type                     { $$ = $1; $$->appendArrayDecl($3); }
+  | var_decl_as_type '=' expr_list                            { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); $1->setInitializer($3); }
   | var_decl_as_type                                          { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
   | array_decl_as_type                                        { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
   ;
