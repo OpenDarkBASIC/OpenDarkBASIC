@@ -14,26 +14,26 @@ public:
     void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad) override;
 
 private:
-    llvm::PointerType* hInstanceTy;
-    llvm::PointerType* stringTy;
-    llvm::PointerType* procAddrTy;
-    llvm::Type* dwordTy;
-    llvm::StructType* globStructTy;
+    llvm::PointerType* voidPtrTy;
+    llvm::PointerType* charPtrTy;
+    llvm::PointerType* dwordTy;
 
-    llvm::Function* getTempPathFunc;
-    llvm::Function* loadLibraryFunc;
-    llvm::Function* getLastErrorFunc;
-    llvm::Function* getProcAddrFunc;
-    llvm::Function* getModuleHandleFunc;
+    llvm::Function* loadPluginFunc;
+    llvm::Function* getFunctionAddressFunc;
+    llvm::Function* debugPrintfFunc;
+    llvm::Function* initialiseEngineFunc;
 
-    std::unordered_map<std::string, llvm::Value*> pluginHModulePtrs;
-    std::unordered_map<std::string, int> pluginGlobStructIndices;
+    std::unordered_map<std::string, llvm::Value*> pluginHandlePtrs;
 
-    llvm::Value* getOrAddPluginHModule(const DynamicLibrary* library);
+    llvm::Value* getOrAddPluginHandleVar(const DynamicLibrary* library);
     llvm::FunctionCallee getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
                                            const DynamicLibrary* library, const std::string& symbol,
                                            const std::string& symbolStringName = "");
-    void printString(llvm::IRBuilder<>& builder, llvm::Value* string);
-    llvm::Value* convertIntegerToString(llvm::IRBuilder<>& builder, llvm::Value* integer);
+
+    template <typename... T>
+    void generatePrintf(llvm::IRBuilder<>& builder, const std::string& string, T*... params)
+    {
+        builder.CreateCall(debugPrintfFunc, {builder.CreateGlobalStringPtr(string), params...});
+    }
 };
 } // namespace odb::ir
