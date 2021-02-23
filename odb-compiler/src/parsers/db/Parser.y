@@ -468,7 +468,7 @@ expr_list
   | expr                                                      { $$ = new ExpressionList($1, driver->newLocation(&@$)); }
   ;
 expr
-  : '(' expr ')'                                              { $$ = $2; }
+  : '(' expr_list ')'                                         { $$ = $2; }
   | expr '+' expr                                             { $$ = new BinaryOp(BinaryOp::ADD, $1, $3, driver->newLocation(&@$)); }
   | expr '-' expr                                             { $$ = new BinaryOp(BinaryOp::SUB, $1, $3, driver->newLocation(&@$)); }
   | expr '*' expr                                             { $$ = new BinaryOp(BinaryOp::MUL, $1, $3, driver->newLocation(&@$)); }

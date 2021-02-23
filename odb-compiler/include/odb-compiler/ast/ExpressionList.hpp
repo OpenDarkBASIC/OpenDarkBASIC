@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Expression.hpp"
 #include <vector>
 
 namespace odb {
@@ -9,7 +9,7 @@ namespace ast {
 
 class Expression;
 
-class ODBCOMPILER_PUBLIC_API ExpressionList : public Node
+class ODBCOMPILER_PUBLIC_API ExpressionList : public Expression
 {
 public:
     ExpressionList(SourceLocation* location);

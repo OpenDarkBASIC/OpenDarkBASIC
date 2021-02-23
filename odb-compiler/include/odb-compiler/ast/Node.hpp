@@ -5,8 +5,7 @@
 
 typedef struct DBLTYPE DBLTYPE;
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class ConstVisitor;
 class SourceLocation;
@@ -32,7 +31,6 @@ public:
      */
     virtual void swapChild(const Node* oldNode, Node* newNode) = 0;
 
-
     template <typename T>
     T* duplicate() const { return static_cast<T*>(duplicateImpl()); }
 
@@ -44,5 +42,4 @@ private:
     Reference<SourceLocation> location_;
 };
 
-}
 }

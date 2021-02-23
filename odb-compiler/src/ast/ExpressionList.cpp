@@ -8,13 +8,13 @@ namespace ast {
 
 // ----------------------------------------------------------------------------
 ExpressionList::ExpressionList(SourceLocation* location) :
-    Node(location)
+    Expression(location)
 {
 }
 
 // ----------------------------------------------------------------------------
 ExpressionList::ExpressionList(Expression* expr, SourceLocation* location) :
-    Node(location)
+    Expression(location)
 {
     appendExpression(expr);
 }
