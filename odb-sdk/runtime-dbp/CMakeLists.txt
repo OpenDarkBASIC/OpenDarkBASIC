@@ -31,6 +31,5 @@ if (ODBSDK_BUILD_DBP_RUNTIME)
         BUILD_ALWAYS 1
     )
 else ()
-    # We need to find a pre-built odb-runtime-dbp.dll.
-    message (STATUS "TODO: Implement code to find odb-runtime-dbp.dll")
+    # TODO: We need to find a pre-built odb-runtime-dbp.dll.
 endif ()
