@@ -1,11 +1,13 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
-#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/CommandExpr.hpp"
+#include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
 #include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/Log.hpp"
@@ -72,7 +74,7 @@ bool Visitor::check(const ast::CommandExpr* cmd)
         return false;
 
     char c = cmd->command().back();
-    if (ast::isTypeAnnotation(c))
+    if (ast::isAnnotation(c))
     {
         Log::dbParserSemanticError(
             cmd->location()->getFileLineColumn().c_str(),
@@ -89,7 +91,7 @@ bool Visitor::check(const ast::CommandStmnt* cmd)
         return false;
 
     char c = cmd->command().back();
-    if (ast::isTypeAnnotation(c))
+    if (ast::isAnnotation(c))
     {
         Log::dbParserSemanticError(
             cmd->location()->getFileLineColumn().c_str(),
@@ -116,7 +118,7 @@ void Visitor::checkExpr(const ast::Expression* node)
 // ----------------------------------------------------------------------------
 void Visitor::checkAnnotation(const ast::AnnotatedSymbol* sym)
 {
-    if (sym->annotation() != ast::Symbol::Annotation::NONE)
+    if (sym->annotation() != ast::Annotation::NONE)
     {
         Log::dbParserSyntaxError(sym->location()->getFileLineColumn().c_str(),
             "UDTs cannot be annotated\n");

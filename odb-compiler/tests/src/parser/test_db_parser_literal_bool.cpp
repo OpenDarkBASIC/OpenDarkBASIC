@@ -1,6 +1,10 @@
 #include "gmock/gmock.h"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -8,6 +12,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -16,8 +21,6 @@ public:
 
 TEST_F(NAME, bool_true)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a true\n",
         matcher);
@@ -35,8 +38,6 @@ TEST_F(NAME, bool_true)
 
 TEST_F(NAME, bool_false)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a false\n",
         matcher);

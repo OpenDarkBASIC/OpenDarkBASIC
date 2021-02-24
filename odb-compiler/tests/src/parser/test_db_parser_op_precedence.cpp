@@ -1,9 +1,12 @@
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Operators.hpp"
-#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BinaryOpEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/UnaryOpEq.hpp"
 
 #define NAME db_parser_op_precedence
 
@@ -20,8 +23,6 @@ using namespace ast;
 #define TEST_LEFT_RECURSION(op, tok)                                          \
     TEST_F(NAME, op##_is_left_recursion_1)                                    \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = a " tok " b " tok " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -31,8 +32,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -44,8 +45,6 @@ using namespace ast;
     }                                                                         \
     TEST_F(NAME, op##_is_left_recursion_2)                                    \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = a " tok " (b " tok " c)", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -55,10 +54,10 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -70,8 +69,6 @@ using namespace ast;
 #define TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(op1, op2, tok1, tok2)            \
     TEST_F(NAME, binary_##op1##_lower_than_##op2##_1)                         \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = a " tok1 " b " tok2 " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -81,10 +78,10 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op1))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op2))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -94,8 +91,6 @@ using namespace ast;
     }                                                                         \
     TEST_F(NAME, binary_##op1##_lower_than_##op2##_2)                         \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = a " tok2 " b " tok1 " c", matcher); \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -105,8 +100,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op1))).After(exp);\
-        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::op2))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
@@ -120,8 +115,6 @@ using namespace ast;
 #define TEST_UOP1_UOP2_RIGHT_RECURSION(op1, op2, tok1, tok2)                  \
     TEST_F(NAME, unary_##op1##_lower_than_##op2##_1)                          \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = " tok1 tok2 " a", matcher);     \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -131,8 +124,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op1))).After(exp);\
-        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op2))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::op2))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \
@@ -140,8 +133,6 @@ using namespace ast;
     }                                                                         \
     TEST_F(NAME, unary_##op1##_lower_than_##op2##_2)                          \
     {                                                                         \
-        using Annotation = ast::Symbol::Annotation;                           \
-                                                                              \
         ast = driver->parse("test", "result = " tok2 tok1 " a", matcher);     \
         ASSERT_THAT(ast, NotNull());                                          \
                                                                               \
@@ -151,8 +142,8 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp); \
-        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op2))).After(exp);\
-        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::op1))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::op2))).After(exp);\
+        exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::op1))).After(exp);\
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \

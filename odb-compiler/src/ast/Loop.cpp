@@ -3,7 +3,7 @@
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 

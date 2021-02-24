@@ -1,13 +1,15 @@
 %require "3.7"
 %code top
 {
+    #include "odb-compiler/ast/AnnotatedSymbol.hpp"
     #include "odb-compiler/ast/ArgList.hpp"
     #include "odb-compiler/ast/ArrayDecl.hpp"
     #include "odb-compiler/ast/ArrayRef.hpp"
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
-    #include "odb-compiler/ast/Command.hpp"
+    #include "odb-compiler/ast/CommandExpr.hpp"
+    #include "odb-compiler/ast/CommandStmnt.hpp"
     #include "odb-compiler/ast/Conditional.hpp"
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Exit.hpp"
@@ -20,6 +22,7 @@
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/LValue.hpp"
+    #include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
     #include "odb-compiler/ast/SelectCase.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
@@ -479,31 +482,31 @@ initializer_list
 expr
   : '(' initializer_list ',' expr ')'                         { $$ = $2; $2->appendExpression($4); }
   | '(' expr ')'                                              { $$ = $2; }
-  | expr '+' expr                                             { $$ = new BinaryOp(BinaryOp::ADD, $1, $3, driver->newLocation(&@$)); }
-  | expr '-' expr                                             { $$ = new BinaryOp(BinaryOp::SUB, $1, $3, driver->newLocation(&@$)); }
-  | expr '*' expr                                             { $$ = new BinaryOp(BinaryOp::MUL, $1, $3, driver->newLocation(&@$)); }
-  | expr '/' expr                                             { $$ = new BinaryOp(BinaryOp::DIV, $1, $3, driver->newLocation(&@$)); }
-  | expr MOD expr                                             { $$ = new BinaryOp(BinaryOp::MOD, $1, $3, driver->newLocation(&@$)); }
-  | expr '^' expr                                             { $$ = new BinaryOp(BinaryOp::POW, $1, $3, driver->newLocation(&@$)); }
-  | expr BSHL expr                                            { $$ = new BinaryOp(BinaryOp::SHIFT_LEFT, $1, $3, driver->newLocation(&@$)); }
-  | expr BSHR expr                                            { $$ = new BinaryOp(BinaryOp::SHIFT_RIGHT, $1, $3, driver->newLocation(&@$)); }
-  | expr BOR expr                                             { $$ = new BinaryOp(BinaryOp::BITWISE_OR, $1, $3, driver->newLocation(&@$)); }
-  | expr BAND expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_AND, $1, $3, driver->newLocation(&@$)); }
-  | expr BXOR expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_XOR, $1, $3, driver->newLocation(&@$)); }
-  | expr BNOT expr                                            { $$ = new BinaryOp(BinaryOp::BITWISE_NOT, $1, $3, driver->newLocation(&@$)); }
-  | expr '<' expr                                             { $$ = new BinaryOp(BinaryOp::LESS_THAN, $1, $3, driver->newLocation(&@$)); }
-  | expr '>' expr                                             { $$ = new BinaryOp(BinaryOp::GREATER_THAN, $1, $3, driver->newLocation(&@$)); }
-  | expr LE expr                                              { $$ = new BinaryOp(BinaryOp::LESS_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr GE expr                                              { $$ = new BinaryOp(BinaryOp::GREATER_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr '=' expr                                             { $$ = new BinaryOp(BinaryOp::EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr NE expr                                              { $$ = new BinaryOp(BinaryOp::NOT_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr LOR expr                                             { $$ = new BinaryOp(BinaryOp::LOGICAL_OR, $1, $3, driver->newLocation(&@$)); }
-  | expr LAND expr                                            { $$ = new BinaryOp(BinaryOp::LOGICAL_AND, $1, $3, driver->newLocation(&@$)); }
-  | expr LXOR expr                                            { $$ = new BinaryOp(BinaryOp::LOGICAL_XOR, $1, $3, driver->newLocation(&@$)); }
-  | LNOT expr                                                 { $$ = new UnaryOp(UnaryOp::LOGICAL_NOT, $2, driver->newLocation(&@$)); }
-  | BNOT expr %prec UNOT                                      { $$ = new UnaryOp(UnaryOp::BITWISE_NOT, $2, driver->newLocation(&@$)); }
+  | expr '+' expr                                             { $$ = new BinaryOp(BinaryOpType::ADD, $1, $3, driver->newLocation(&@$)); }
+  | expr '-' expr                                             { $$ = new BinaryOp(BinaryOpType::SUB, $1, $3, driver->newLocation(&@$)); }
+  | expr '*' expr                                             { $$ = new BinaryOp(BinaryOpType::MUL, $1, $3, driver->newLocation(&@$)); }
+  | expr '/' expr                                             { $$ = new BinaryOp(BinaryOpType::DIV, $1, $3, driver->newLocation(&@$)); }
+  | expr MOD expr                                             { $$ = new BinaryOp(BinaryOpType::MOD, $1, $3, driver->newLocation(&@$)); }
+  | expr '^' expr                                             { $$ = new BinaryOp(BinaryOpType::POW, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHL expr                                            { $$ = new BinaryOp(BinaryOpType::SHIFT_LEFT, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHR expr                                            { $$ = new BinaryOp(BinaryOpType::SHIFT_RIGHT, $1, $3, driver->newLocation(&@$)); }
+  | expr BOR expr                                             { $$ = new BinaryOp(BinaryOpType::BITWISE_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr BAND expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr BXOR expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_XOR, $1, $3, driver->newLocation(&@$)); }
+  | expr BNOT expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_NOT, $1, $3, driver->newLocation(&@$)); }
+  | expr '<' expr                                             { $$ = new BinaryOp(BinaryOpType::LESS_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr '>' expr                                             { $$ = new BinaryOp(BinaryOpType::GREATER_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr LE expr                                              { $$ = new BinaryOp(BinaryOpType::LESS_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr GE expr                                              { $$ = new BinaryOp(BinaryOpType::GREATER_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr '=' expr                                             { $$ = new BinaryOp(BinaryOpType::EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr NE expr                                              { $$ = new BinaryOp(BinaryOpType::NOT_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr LOR expr                                             { $$ = new BinaryOp(BinaryOpType::LOGICAL_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr LAND expr                                            { $$ = new BinaryOp(BinaryOpType::LOGICAL_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr LXOR expr                                            { $$ = new BinaryOp(BinaryOpType::LOGICAL_XOR, $1, $3, driver->newLocation(&@$)); }
+  | LNOT expr                                                 { $$ = new UnaryOp(UnaryOpType::LOGICAL_NOT, $2, driver->newLocation(&@$)); }
+  | BNOT expr %prec UNOT                                      { $$ = new UnaryOp(UnaryOpType::BITWISE_NOT, $2, driver->newLocation(&@$)); }
   | '+' expr %prec UPLUS                                      { $$ = $2; }
-  | '-' expr %prec UMINUS                                     { $$ = new UnaryOp(UnaryOp::NEGATE, $2, driver->newLocation(&@$)); }
+  | '-' expr %prec UMINUS                                     { $$ = new UnaryOp(UnaryOpType::NEGATE, $2, driver->newLocation(&@$)); }
   | literal                                                   { $$ = $1; }
   | func_call_expr_or_array_ref                               { $$ = $1; }
   | command_expr                                              { $$ = $1; }
@@ -552,10 +555,10 @@ var_ref
   : annotated_symbol                                          { $$ = new VarRef($1, driver->newLocation(&@$)); }
   ;
 var_decl
-  : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
-  | scope var_decl_no_as_type                                 { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
-  | scope var_decl_as_type '=' initializer_list               { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); $$->setInitializer($4); }
-  | scope var_decl_as_type                                    { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
+  : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
+  | scope var_decl_no_as_type                                 { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
+  | scope var_decl_as_type '=' initializer_list               { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
+  | scope var_decl_as_type                                    { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
   | var_decl_as_type '=' initializer_list                     { $$ = $1; $$->setInitializer($3); }
   | var_decl_as_type                                          { $$ = $1; }
   ;
@@ -602,8 +605,8 @@ array_ref
   : annotated_symbol '(' arg_list ')'                        { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
   ;
 array_decl
-  : scope array_decl_as_type                                  { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
-  | scope array_decl_no_as_type                               { $$ = $2; $$->symbol()->setScope(static_cast<odb::ast::Symbol::Scope>($1)); }
+  : scope array_decl_as_type                                  { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
+  | scope array_decl_no_as_type                               { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
   | array_decl_as_type                                        { $$ = $1; }
   | array_decl_no_as_type                                     { $$ = $1; }
   ;
@@ -647,15 +650,15 @@ array_decl_as_type
   | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = new Vec4ArrayDecl($2, $4, driver->newLocation(&@$)); }
   ;
 scope
-  : GLOBAL                                                    { $$ = static_cast<char>(Symbol::Scope::GLOBAL); }
-  | LOCAL                                                     { $$ = static_cast<char>(Symbol::Scope::LOCAL); }
+  : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
+  | LOCAL                                                     { $$ = static_cast<char>(Scope::LOCAL); }
   ;
-var_int_sym          : SYMBOL %prec NO_ANNOTATION             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_int_sym   : SYMBOL '&'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_word_sym         : SYMBOL '%'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_float_sym : SYMBOL '!'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_float_sym        : SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_str_sym          : SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Symbol::Scope::LOCAL, Symbol::Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_int_sym          : SYMBOL %prec NO_ANNOTATION             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_int_sym   : SYMBOL '&'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_word_sym         : SYMBOL '%'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_float_sym : SYMBOL '!'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_float_sym        : SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_str_sym          : SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
 
 udt_decl
   : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
@@ -732,12 +735,12 @@ literal
   | IMAG_K                                                    { $$ = new QuatLiteral({0, 0, 0, $1}, driver->newLocation(&@$)); }
   ;
 annotated_symbol
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '&'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '%'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '!'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '$'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '&'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '%'                                                { $$ = new AnnotatedSymbol(Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '!'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '$'                                                { $$ = new AnnotatedSymbol(Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 symbol
   : SYMBOL                                                    { $$ = new Symbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
@@ -827,8 +830,8 @@ loop_for
   | FOR assignment TO expr seps NEXT                          { $$ = new ForLoop($2, $4, driver->newLocation(&@$)); }
   ;
 loop_next_sym
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Symbol::Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Symbol::Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 exit
   : EXIT                                                      { $$ = new Exit(driver->newLocation(&@$)); }
@@ -837,7 +840,7 @@ exit
 
 static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
-    odb::Reference<odb::ast::SourceLocation> location = driver->newLocation(locp);
+    odb::Reference<SourceLocation> location = driver->newLocation(locp);
 
     va_list args;
     va_start(args, fmt);

@@ -29,25 +29,21 @@ protected:
     Reference<InitializerList> initializer_;
 };
 
-template <typename T>
-class VarDeclTemplate : public VarDecl
-{
-public:
-    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location);
-    VarDeclTemplate(ScopedAnnotatedSymbol* symbol, SourceLocation* location);
-
-    std::string toString() const override;
-    void accept(Visitor* visitor) override;
-    void accept(ConstVisitor* visitor) const override;
-    void swapChild(const Node* oldNode, Node* newNode) override;
-
-protected:
-    Node* duplicateImpl() const override;
+#define X(dbname, cppname)                                                    \
+class dbname##VarDecl : public VarDecl                                        \
+{                                                                             \
+public:                                                                       \
+    dbname##VarDecl(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location);\
+    dbname##VarDecl(ScopedAnnotatedSymbol* symbol, SourceLocation* location); \
+                                                                              \
+    std::string toString() const override;                                    \
+    void accept(Visitor* visitor) override;                                   \
+    void accept(ConstVisitor* visitor) const override;                        \
+    void swapChild(const Node* oldNode, Node* newNode) override;              \
+                                                                              \
+protected:                                                                    \
+    Node* duplicateImpl() const override;                                     \
 };
-
-#define X(dbname, cppname) \
-    template class ODBCOMPILER_PUBLIC_API VarDeclTemplate<cppname>; \
-    typedef VarDeclTemplate<cppname> dbname##VarDecl;
 ODB_DATATYPE_LIST
 #undef X
 

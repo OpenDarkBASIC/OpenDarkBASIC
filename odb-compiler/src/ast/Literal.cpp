@@ -56,30 +56,39 @@ Literal::Literal(SourceLocation* location) :
 
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
-    template <>                                                               \
-    std::string LiteralTemplate<cppname>::toString() const                    \
+    dbname##Literal::dbname##Literal(const cppname& value, SourceLocation* location) \
+        : Literal(location)                                                   \
+        , value_(value)                                                       \
+    {}                                                                        \
+                                                                              \
+    const cppname& dbname##Literal::value() const                             \
+    {                                                                         \
+        return value_;                                                        \
+    }                                                                         \
+                                                                              \
+    std::string dbname##Literal::toString() const                             \
     {                                                                         \
         return dbname##_STR;                                                  \
     }                                                                         \
-    template <>                                                               \
-    void LiteralTemplate<cppname>::accept(Visitor* visitor)                   \
+                                                                              \
+    void dbname##Literal::accept(Visitor* visitor)                            \
     {                                                                         \
         visitor->visit##dbname##Literal(this);                                \
     }                                                                         \
-    template <>                                                               \
-    void LiteralTemplate<cppname>::accept(ConstVisitor* visitor) const        \
+                                                                              \
+    void dbname##Literal::accept(ConstVisitor* visitor) const                 \
     {                                                                         \
         visitor->visit##dbname##Literal(this);                                \
     }                                                                         \
-    template <>                                                               \
-    void LiteralTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
+                                                                              \
+    void dbname##Literal::swapChild(const Node* oldNode, Node* newNode)       \
     {                                                                         \
         assert(false);                                                        \
     }                                                                         \
-    template <>                                                               \
-    Node* LiteralTemplate<cppname>::duplicateImpl() const                     \
+                                                                              \
+    Node* dbname##Literal::duplicateImpl() const                              \
     {                                                                         \
-        return new LiteralTemplate<cppname>(value_, location());              \
+        return new dbname##Literal(value_, location());                       \
     }
 ODB_DATATYPE_LIST
 #undef X

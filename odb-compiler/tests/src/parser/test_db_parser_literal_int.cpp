@@ -1,5 +1,9 @@
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include <limits.h>
@@ -8,6 +12,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -16,8 +21,6 @@ public:
 
 TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 0\n"
         "#constant y 1\n",
@@ -39,8 +42,6 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 
 TEST_F(NAME, byte_literal)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 2\n"
         "#constant y 255\n",
@@ -62,8 +63,6 @@ TEST_F(NAME, byte_literal)
 
 TEST_F(NAME, word_literal)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 256\n"
         "#constant y 65535\n",
@@ -85,8 +84,6 @@ TEST_F(NAME, word_literal)
 
 TEST_F(NAME, integer_literal)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 65536\n"
         "#constant y 2147483647\n",
@@ -108,8 +105,6 @@ TEST_F(NAME, integer_literal)
 
 TEST_F(NAME, dword_literal)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 2147483648\n"
         "#constant y 4294967295\n",
@@ -131,8 +126,6 @@ TEST_F(NAME, dword_literal)
 
 TEST_F(NAME, double_integer_literal)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant x 4294967296\n"
         "#constant y 9223372036854775807\n",
@@ -154,8 +147,6 @@ TEST_F(NAME, double_integer_literal)
 
 TEST_F(NAME, hex_literals)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 0xFf\n"
         "#constant b 0XFfFf\n"
@@ -189,8 +180,6 @@ TEST_F(NAME, hex_literals)
 
 TEST_F(NAME, binary_literals)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a %11111111\n"
         "#constant b %1111111111111111\n"

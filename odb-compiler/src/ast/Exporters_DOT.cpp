@@ -1,11 +1,13 @@
 #include "odb-compiler/ast/Exporters.hpp"
+#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/CommandExpr.hpp"
+#include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
@@ -17,6 +19,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Statement.hpp"
@@ -333,8 +336,9 @@ public:
 private:
     void writeName(const Node* node, const std::string& name)
     {
+        std::string escaped = str::escape(name);
         fprintf(fp_, "N%d [label=\"%s\"];\n",
-                guids_->get(node), str::escape(name).c_str());
+                guids_->get(node), escaped.c_str());
     }
 
     void visitBlock(const Block* node) override
@@ -348,11 +352,6 @@ private:
             fprintf(fp_, "<N%d> stmnt[%zu]", guids_->get(stmnts[i].get()), i);
         }
         fprintf(fp_, "\"];\n");
-    }
-
-    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override
-    {
-        writeName(node, node->toString());
     }
 
     void visit(const Node* node) override

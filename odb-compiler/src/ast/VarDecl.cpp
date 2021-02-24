@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -50,17 +50,15 @@ void VarDecl::setInitializer(InitializerList* initializer)
 
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
-    template <>                                                               \
-    VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
-                                              InitializerList* initial,       \
-                                              SourceLocation* location)       \
+    dbname##VarDecl::dbname##VarDecl(ScopedAnnotatedSymbol* symbol,           \
+                                     InitializerList* initial,                \
+                                     SourceLocation* location)                \
         : VarDecl(symbol, initial, location)                                  \
     {                                                                         \
     }                                                                         \
                                                                               \
-    template <>                                                               \
-    VarDeclTemplate<cppname>::VarDeclTemplate(ScopedAnnotatedSymbol* symbol,  \
-                                              SourceLocation* location)       \
+    dbname##VarDecl::dbname##VarDecl(ScopedAnnotatedSymbol* symbol,           \
+                                     SourceLocation* location)                \
         : VarDecl(symbol,                                                     \
             new InitializerList(                                              \
                 new dbname##Literal(cppname(), location),                     \
@@ -69,28 +67,26 @@ void VarDecl::setInitializer(InitializerList* initializer)
     {                                                                         \
     }                                                                         \
                                                                               \
-    template <>                                                               \
-    std::string VarDeclTemplate<cppname>::toString() const                    \
+    std::string dbname##VarDecl::toString() const                             \
     {                                                                         \
         return #dbname;                                                       \
     }                                                                         \
                                                                               \
-    template<>                                                                \
-    void VarDeclTemplate<cppname>::accept(Visitor* visitor)                   \
+    void dbname##VarDecl::accept(Visitor* visitor)                            \
     {                                                                         \
         visitor->visit##dbname##VarDecl(this);                                \
         symbol_->accept(visitor);                                             \
         initializer_->accept(visitor);                                        \
     }                                                                         \
-    template<>                                                                \
-    void VarDeclTemplate<cppname>::accept(ConstVisitor* visitor) const        \
+                                                                              \
+    void dbname##VarDecl::accept(ConstVisitor* visitor) const                 \
     {                                                                         \
         visitor->visit##dbname##VarDecl(this);                                \
         symbol_->accept(visitor);                                             \
         initializer_->accept(visitor);                                        \
     }                                                                         \
-    template <>                                                               \
-    void VarDeclTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
+                                                                              \
+    void dbname##VarDecl::swapChild(const Node* oldNode, Node* newNode)       \
     {                                                                         \
         if (symbol_ == oldNode)                                               \
             symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
@@ -101,10 +97,10 @@ void VarDecl::setInitializer(InitializerList* initializer)
                                                                               \
         newNode->setParent(this);                                             \
     }                                                                         \
-    template <>                                                               \
-    Node* VarDeclTemplate<cppname>::duplicateImpl() const                     \
+                                                                              \
+    Node* dbname##VarDecl::duplicateImpl() const                              \
     {                                                                         \
-        return new VarDeclTemplate<cppname>(                                  \
+        return new dbname##VarDecl(                                           \
             symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
             initializer_->duplicate<InitializerList>(),                       \
             location());                                                      \

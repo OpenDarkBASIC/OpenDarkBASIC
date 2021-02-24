@@ -1,9 +1,13 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Command.hpp"
-#include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/CommandExprEq.hpp"
+#include "odb-compiler/tests/matchers/CommandStmntEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -11,6 +15,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -157,8 +162,6 @@ TEST_F(NAME, command_with_float_annotation)
 
 TEST_F(NAME, load_3d_sound)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "load 3dsound", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test",
@@ -180,8 +183,6 @@ TEST_F(NAME, load_3d_sound)
 
 TEST_F(NAME, command_with_variable_args)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "clone sound", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test",
@@ -203,8 +204,6 @@ TEST_F(NAME, command_with_variable_args)
 
 TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "make object sphere", "", cmd::Command::Type::Void, {}));
     cmdIndex.addCommand(new cmd::Command(nullptr, "get ground height", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
@@ -253,8 +252,6 @@ TEST_F(NAME, command_starting_with_builtin)
 
 TEST_F(NAME, builtin_shadowing_command)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     // "loop" is a builtin command
     cmdIndex.addCommand(new cmd::Command(nullptr, "loop", "", cmd::Command::Type::Void, {}));
     cmdIndex.addCommand(new cmd::Command(nullptr, "loop sound", "", cmd::Command::Type::Void, {}));
@@ -321,8 +318,6 @@ TEST_F(NAME, multiple_similar_commands_with_spaces_2)
 
 TEST_F(NAME, incomplete_command_at_end_of_file)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "color object", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test",

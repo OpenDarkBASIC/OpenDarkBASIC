@@ -2,12 +2,11 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 ArrayDecl::ArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location)
@@ -33,36 +32,33 @@ ArgList* ArrayDecl::dims() const
 
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
-    template <>                                                               \
-    ArrayDeclTemplate<cppname>::ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol,\
+    dbname##ArrayDecl::dbname##ArrayDecl(ScopedAnnotatedSymbol* symbol,       \
                                                   ArgList* dims,              \
                                                   SourceLocation* location)   \
         : ArrayDecl(symbol, dims, location)                                   \
     {                                                                         \
     }                                                                         \
                                                                               \
-    template <>                                                               \
-    std::string ArrayDeclTemplate<cppname>::toString() const                  \
+    std::string dbname##ArrayDecl::toString() const                           \
     {                                                                         \
         return #dbname;                                                       \
     }                                                                         \
                                                                               \
-    template<>                                                                \
-    void ArrayDeclTemplate<cppname>::accept(Visitor* visitor)                 \
+    void dbname##ArrayDecl::accept(Visitor* visitor)                          \
     {                                                                         \
         visitor->visit##dbname##ArrayDecl(this);                              \
         symbol_->accept(visitor);                                             \
         dims_->accept(visitor);                                               \
     }                                                                         \
-    template<>                                                                \
-    void ArrayDeclTemplate<cppname>::accept(ConstVisitor* visitor) const      \
+                                                                              \
+    void dbname##ArrayDecl::accept(ConstVisitor* visitor) const               \
     {                                                                         \
         visitor->visit##dbname##ArrayDecl(this);                              \
         symbol_->accept(visitor);                                             \
         dims_->accept(visitor);                                               \
     }                                                                         \
-    template <>                                                               \
-    void ArrayDeclTemplate<cppname>::swapChild(const Node* oldNode, Node* newNode) \
+                                                                              \
+    void dbname##ArrayDecl::swapChild(const Node* oldNode, Node* newNode)     \
     {                                                                         \
         if (symbol_ == oldNode)                                               \
             symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
@@ -73,10 +69,10 @@ ArgList* ArrayDecl::dims() const
                                                                               \
         newNode->setParent(this);                                             \
     }                                                                         \
-    template <>                                                               \
-    Node* ArrayDeclTemplate<cppname>::duplicateImpl() const                   \
+                                                                              \
+    Node* dbname##ArrayDecl::duplicateImpl() const                            \
     {                                                                         \
-        return new ArrayDeclTemplate<cppname>(                                \
+        return new dbname##ArrayDecl(                                         \
             symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
             dims_->duplicate<ArgList>(),                                      \
             location());                                                      \
@@ -148,5 +144,4 @@ Node* UDTArrayDecl::duplicateImpl() const
         location());
 }
 
-}
 }

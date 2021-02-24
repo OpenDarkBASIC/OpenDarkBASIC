@@ -1,6 +1,9 @@
-#include "gmock/gmock.h"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -8,6 +11,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -16,8 +20,6 @@ public:
 
 TEST_F(NAME, double_1_notation)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 53.\n",
         matcher);
@@ -35,8 +37,6 @@ TEST_F(NAME, double_1_notation)
 
 TEST_F(NAME, double_2_notation)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .53\n",
         matcher);
@@ -54,8 +54,6 @@ TEST_F(NAME, double_2_notation)
 
 TEST_F(NAME, float_1_notation)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 53.f\n",
         matcher);
@@ -73,8 +71,6 @@ TEST_F(NAME, float_1_notation)
 
 TEST_F(NAME, float_2_notation)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .53f\n",
         matcher);
@@ -92,8 +88,6 @@ TEST_F(NAME, float_2_notation)
 
 TEST_F(NAME, float_3_notation)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 53f\n",
         matcher);
@@ -111,8 +105,6 @@ TEST_F(NAME, float_3_notation)
 
 TEST_F(NAME, double_exponential_notation_1)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12e2\n",
         matcher);
@@ -130,8 +122,6 @@ TEST_F(NAME, double_exponential_notation_1)
 
 TEST_F(NAME, double_exponential_notation_2)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12.4e2\n",
         matcher);
@@ -149,8 +139,6 @@ TEST_F(NAME, double_exponential_notation_2)
 
 TEST_F(NAME, double_exponential_notation_3)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .4e2\n",
         matcher);
@@ -168,8 +156,6 @@ TEST_F(NAME, double_exponential_notation_3)
 
 TEST_F(NAME, double_exponential_notation_4)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 43.e2\n",
         matcher);
@@ -187,8 +173,6 @@ TEST_F(NAME, double_exponential_notation_4)
 
 TEST_F(NAME, double_exponential_notation_5)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12e-2\n",
         matcher);
@@ -206,8 +190,6 @@ TEST_F(NAME, double_exponential_notation_5)
 
 TEST_F(NAME, double_exponential_notation_6)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12.4e-2\n",
         matcher);
@@ -225,8 +207,6 @@ TEST_F(NAME, double_exponential_notation_6)
 
 TEST_F(NAME, double_exponential_notation_7)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .4e-2\n",
         matcher);
@@ -244,8 +224,6 @@ TEST_F(NAME, double_exponential_notation_7)
 
 TEST_F(NAME, double_exponential_notation_8)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 43.e-2\n",
         matcher);
@@ -263,8 +241,6 @@ TEST_F(NAME, double_exponential_notation_8)
 
 TEST_F(NAME, double_exponential_notation_9)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12e+2\n",
         matcher);
@@ -282,8 +258,6 @@ TEST_F(NAME, double_exponential_notation_9)
 
 TEST_F(NAME, double_exponential_notation_10)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12.4e+2\n",
         matcher);
@@ -301,8 +275,6 @@ TEST_F(NAME, double_exponential_notation_10)
 
 TEST_F(NAME, double_exponential_notation_11)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .4e+2\n",
         matcher);
@@ -320,8 +292,6 @@ TEST_F(NAME, double_exponential_notation_11)
 
 TEST_F(NAME, double_exponential_notation_12)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 43.e+2\n",
         matcher);
@@ -339,8 +309,6 @@ TEST_F(NAME, double_exponential_notation_12)
 
 TEST_F(NAME, float_exponential_notation_1)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12e2f\n",
         matcher);
@@ -358,8 +326,6 @@ TEST_F(NAME, float_exponential_notation_1)
 
 TEST_F(NAME, float_exponential_notation_2)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12.4e2f\n",
         matcher);
@@ -377,8 +343,6 @@ TEST_F(NAME, float_exponential_notation_2)
 
 TEST_F(NAME, float_exponential_notation_3)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .4e2f\n",
         matcher);
@@ -396,8 +360,6 @@ TEST_F(NAME, float_exponential_notation_3)
 
 TEST_F(NAME, float_exponential_notation_4)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 43.e2f\n",
         matcher);
@@ -415,8 +377,6 @@ TEST_F(NAME, float_exponential_notation_4)
 
 TEST_F(NAME, float_exponential_notation_5)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12e-2f\n",
         matcher);
@@ -434,8 +394,6 @@ TEST_F(NAME, float_exponential_notation_5)
 
 TEST_F(NAME, float_exponential_notation_6)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 12.4e-2f\n",
         matcher);
@@ -453,8 +411,6 @@ TEST_F(NAME, float_exponential_notation_6)
 
 TEST_F(NAME, float_exponential_notation_7)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a .4e-2f\n",
         matcher);
@@ -472,8 +428,6 @@ TEST_F(NAME, float_exponential_notation_7)
 
 TEST_F(NAME, float_exponential_notation_8)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant a 43.e-2f\n",
         matcher);

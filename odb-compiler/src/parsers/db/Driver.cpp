@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/Annotation.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
@@ -135,9 +136,9 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
             // in between integers and following symbols. Additionally, commands
             // can end in type annotation characters such as $ or #, in which
             // case we also do not want to append a space.
-            if (!lastSymbolWasInteger && !ast::isTypeAnnotation(tokens[i].pushedChar))
+            if (!lastSymbolWasInteger && !ast::isAnnotation(tokens[i].pushedChar))
                 possibleCommand += " ";
-            else if (result.tokenIdx == i && ast::isTypeAnnotation(tokens[i].pushedChar))
+            else if (result.tokenIdx == i && ast::isAnnotation(tokens[i].pushedChar))
                 result.match.found = false;
             possibleCommand += tokens[i].str;
             lastSymbolWasInteger = (tokens[i].pushedChar == TOK_INTEGER_LITERAL);
@@ -224,7 +225,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 // annotation character
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (ast::isTypeAnnotation(tokens[1].pushedChar))
+                if (ast::isAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
@@ -242,7 +243,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 // See above comment for why this is here
                 if (tokens.size() < 2)
                     scanNextToken();
-                if (ast::isTypeAnnotation(tokens[1].pushedChar))
+                if (ast::isAnnotation(tokens[1].pushedChar))
                     break;
 
                 const KeywordToken::Result* result = KeywordToken::lookup(tokens[0].pushedValue.string);
@@ -324,8 +325,8 @@ ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* loca
 static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
 {
     switch (dir) {
-        case Driver::INC : return new ast::BinaryOp(ast::BinaryOp::ADD, value, expr, expr->location());
-        case Driver::DEC : return new ast::BinaryOp(ast::BinaryOp::SUB, value, expr, expr->location());
+        case Driver::INC : return new ast::BinaryOp(ast::BinaryOpType::ADD, value, expr, expr->location());
+        case Driver::DEC : return new ast::BinaryOp(ast::BinaryOpType::SUB, value, expr, expr->location());
     }
 
     return nullptr;

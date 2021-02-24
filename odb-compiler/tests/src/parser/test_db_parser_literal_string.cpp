@@ -1,13 +1,17 @@
-#include "gmock/gmock.h"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 
 #define NAME db_parser_literal_string
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -48,8 +52,6 @@ TEST_F(NAME, string_append_filename_with_backslash)
 
 TEST_F(NAME, empty_string)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "x = \"\"",
         matcher);

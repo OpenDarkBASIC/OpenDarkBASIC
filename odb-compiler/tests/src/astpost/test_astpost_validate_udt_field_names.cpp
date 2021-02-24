@@ -3,7 +3,6 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
 
 #define NAME astpost_validate_udt_field_names
 

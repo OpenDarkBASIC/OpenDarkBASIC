@@ -1,5 +1,7 @@
 #pragma once
 
+#include "odb-compiler/config.hpp"
+
 /*!
  * @brief All of the DarkBASIC operators that can exist
  */
@@ -32,3 +34,24 @@
     X(LOGICAL_NOT,  "not")    \
     X(NEGATE,       "-")      \
     X(BITWISE_NOT,  "..")
+
+namespace odb::ast {
+
+enum class BinaryOpType : char
+{
+#define X(op, tok) op,
+    ODB_BINARY_OP_LIST
+#undef X
+};
+
+enum class UnaryOpType : char
+{
+#define X(op, tok) op,
+    ODB_UNARY_OP_LIST
+#undef X
+};
+
+ODBCOMPILER_PUBLIC_API const char* binaryOpTypeEnumString(BinaryOpType op);
+ODBCOMPILER_PUBLIC_API const char* unaryOpTypeEnumString(UnaryOpType op);
+
+}

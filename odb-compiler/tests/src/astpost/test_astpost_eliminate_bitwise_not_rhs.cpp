@@ -1,12 +1,16 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/astpost/Process.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BinaryOpEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
+#include "odb-compiler/tests/matchers/UnaryOpEq.hpp"
 
 #define NAME astpost_eliminate_bitwise_not_rhs
 
@@ -59,8 +63,6 @@ public:
 
 TEST_F(NAME, no_side_effects_1)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "result = x .. 0",
         matcher);
@@ -72,7 +74,7 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
@@ -86,7 +88,7 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     ast->accept(&v);
@@ -94,8 +96,6 @@ TEST_F(NAME, no_side_effects_1)
 
 TEST_F(NAME, no_side_effects_2)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "result = x .. y",
         matcher);
@@ -107,7 +107,7 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -122,7 +122,7 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     ast->accept(&v);
@@ -130,8 +130,6 @@ TEST_F(NAME, no_side_effects_2)
 
 TEST_F(NAME, no_side_effects_3)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "result = foo() .. y",
         matcher);
@@ -143,7 +141,7 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
@@ -158,7 +156,7 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
-    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOp::BITWISE_NOT))).After(exp);
+    exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
     ast->accept(&v);

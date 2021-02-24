@@ -1,16 +1,22 @@
 #include "gmock/gmock.h"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 
 #define NAME db_parser_func_call
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -19,8 +25,6 @@ public:
 
 TEST_F(NAME, function_call_no_args)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -35,8 +39,6 @@ TEST_F(NAME, function_call_no_args)
 
 TEST_F(NAME, function_call_no_args_string_return_type)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo$()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -47,15 +49,10 @@ TEST_F(NAME, function_call_no_args_string_return_type)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "foo"))).After(exp);
 
     ast->accept(&v);
-/*
-    ASSERT_THAT(ast->info.type, Eq(ast::NT_BLOCK));
-    ASSERT_THAT(ast->block.stmnt->info.type, Eq(ast::NT_SYM_FUNC_CALL));*/
 }
 
 TEST_F(NAME, function_call_no_args_float_return_type)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo#()\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -70,8 +67,6 @@ TEST_F(NAME, function_call_no_args_float_return_type)
 
 TEST_F(NAME, function_call_one_arg)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo(3)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -88,8 +83,6 @@ TEST_F(NAME, function_call_one_arg)
 
 TEST_F(NAME, function_call_multiple_args)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo(3, 4.5, true)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -108,8 +101,6 @@ TEST_F(NAME, function_call_multiple_args)
 
 TEST_F(NAME, nested_function_calls)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "foo(bar#(lil(), lel$()), baz$(lol(), lul(false)), 2)\n", matcher);
     ASSERT_THAT(ast, NotNull());
 

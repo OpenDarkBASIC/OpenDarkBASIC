@@ -24,24 +24,21 @@ protected:
     Reference<ArgList> dims_;
 };
 
-template <typename T>
-class ArrayDeclTemplate : public ArrayDecl
-{
-public:
-    ArrayDeclTemplate(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location);
-
-    std::string toString() const override;
-    void accept(Visitor* visitor) override;
-    void accept(ConstVisitor* visitor) const override;
-    void swapChild(const Node* oldNode, Node* newNode) override;
-
-protected:
-    Node* duplicateImpl() const override;
+#define X(dbname, cppname)                                                    \
+class dbname##ArrayDecl : public ArrayDecl                                    \
+{                                                                             \
+public:                                                                       \
+    dbname##ArrayDecl(ScopedAnnotatedSymbol* symbol, ArgList* dims, SourceLocation* location);\
+                                                                              \
+    std::string toString() const override;                                    \
+    void accept(Visitor* visitor) override;                                   \
+    void accept(ConstVisitor* visitor) const override;                        \
+    void swapChild(const Node* oldNode, Node* newNode) override;              \
+                                                                              \
+protected:                                                                    \
+    Node* duplicateImpl() const override;                                     \
 };
 
-#define X(dbname, cppname) \
-    template class ODBCOMPILER_PUBLIC_API ArrayDeclTemplate<cppname>; \
-    typedef ArrayDeclTemplate<cppname> dbname##ArrayDecl;
 ODB_DATATYPE_LIST
 #undef X
 

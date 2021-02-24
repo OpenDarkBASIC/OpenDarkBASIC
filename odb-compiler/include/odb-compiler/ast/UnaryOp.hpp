@@ -9,16 +9,9 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API UnaryOp : public Expression
 {
 public:
-    enum Op
-    {
-#define X(op, tok) op,
-        ODB_UNARY_OP_LIST
-#undef X
-    };
+    UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location);
 
-    UnaryOp(Op op, Expression* expr, SourceLocation* location);
-
-    Op op() const;
+    UnaryOpType op() const;
     Expression* expr() const;
 
     std::string toString() const override;
@@ -31,7 +24,7 @@ protected:
 
 private:
     Reference<Expression> expr_;
-    Op op_;
+    UnaryOpType op_;
 };
 
 }

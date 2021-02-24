@@ -5,7 +5,7 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UnaryOp::UnaryOp(Op op, Expression* expr, SourceLocation* location) :
+UnaryOp::UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location) :
     Expression(location),
     expr_(expr),
     op_(op)
@@ -14,7 +14,7 @@ UnaryOp::UnaryOp(Op op, Expression* expr, SourceLocation* location) :
 }
 
 // ----------------------------------------------------------------------------
-UnaryOp::Op UnaryOp::op() const
+UnaryOpType UnaryOp::op() const
 {
     return op_;
 }
@@ -28,12 +28,7 @@ Expression* UnaryOp::expr() const
 // ----------------------------------------------------------------------------
 std::string UnaryOp::toString() const
 {
-    static const char* table[] = {
-#define X(op, tok) #op,
-        ODB_UNARY_OP_LIST
-#undef X
-    };
-    return std::string("UnaryOp(") + table[op_] + ")";
+    return std::string("UnaryOp(") + unaryOpTypeEnumString(op_) + ")";
 }
 
 // ----------------------------------------------------------------------------

@@ -5,13 +5,11 @@
 #include "odb-sdk/Reference.hpp"
 #include "gmock/gmock.h"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
     class Block;
 }
-namespace db {
+namespace odb::db {
     class FileParserDriver;
-}
 }
 
 class ParserTestHarness : public testing::Test

@@ -23,7 +23,7 @@ class Visitor : public ast::GenericVisitor
 {
 public:
     void visitBinaryOp(ast::BinaryOp* node) override final {
-        if (node->op() == ast::BinaryOp::BITWISE_NOT)
+        if (node->op() == ast::BinaryOpType::BITWISE_NOT)
             ops.push_back(node);
     }
 
@@ -70,7 +70,7 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
         }
 
         op->parent()->swapChild(op, new ast::UnaryOp(
-            ast::UnaryOp::BITWISE_NOT, op->lhs(), op->location()
+            ast::UnaryOpType::BITWISE_NOT, op->lhs(), op->location()
         ));
     }
 

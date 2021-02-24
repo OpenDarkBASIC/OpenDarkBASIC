@@ -9,15 +9,9 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API BinaryOp : public Expression
 {
 public:
-    enum Op
-    {
-#define X(op, tok) op,
-        ODB_BINARY_OP_LIST
-#undef X
-    };
-    BinaryOp(Op op, Expression* lhs, Expression* rhs, SourceLocation* location);
+    BinaryOp(BinaryOpType op, Expression* lhs, Expression* rhs, SourceLocation* location);
 
-    Op op() const;
+    BinaryOpType op() const;
     Expression* lhs() const;
     Expression* rhs() const;
 
@@ -32,7 +26,7 @@ protected:
 private:
     Reference<Expression> lhs_;
     Reference<Expression> rhs_;
-    Op op_;
+    BinaryOpType op_;
 };
 
 }

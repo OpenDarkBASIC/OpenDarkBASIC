@@ -1,6 +1,14 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Scope.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
+#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/SymbolEq.hpp"
+#include "odb-compiler/tests/matchers/UDTRefEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -8,6 +16,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -1241,9 +1250,6 @@ TEST_F(NAME, empty_udt_is_invalid)
 
 TEST_F(NAME, var_decl_as_double_integer)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as double integer\n"
@@ -1267,9 +1273,6 @@ TEST_F(NAME, var_decl_as_double_integer)
 
 TEST_F(NAME, var_decl_as_integer)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as integer\n"
@@ -1293,9 +1296,6 @@ TEST_F(NAME, var_decl_as_integer)
 
 TEST_F(NAME, var_decl_as_dword)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as dword\n"
@@ -1319,9 +1319,6 @@ TEST_F(NAME, var_decl_as_dword)
 
 TEST_F(NAME, var_decl_as_word)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as word\n"
@@ -1345,9 +1342,6 @@ TEST_F(NAME, var_decl_as_word)
 
 TEST_F(NAME, var_decl_as_byte)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as byte\n"
@@ -1371,9 +1365,6 @@ TEST_F(NAME, var_decl_as_byte)
 
 TEST_F(NAME, var_decl_as_boolean)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as boolean\n"
@@ -1397,9 +1388,6 @@ TEST_F(NAME, var_decl_as_boolean)
 
 TEST_F(NAME, var_decl_as_double_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as double float\n"
@@ -1423,9 +1411,6 @@ TEST_F(NAME, var_decl_as_double_float)
 
 TEST_F(NAME, var_decl_as_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as float\n"
@@ -1449,9 +1434,6 @@ TEST_F(NAME, var_decl_as_float)
 
 TEST_F(NAME, float_var_decl_as_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var# as float\n"
@@ -1475,9 +1457,6 @@ TEST_F(NAME, float_var_decl_as_float)
 
 TEST_F(NAME, var_decl_as_string)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as string\n"
@@ -1501,9 +1480,6 @@ TEST_F(NAME, var_decl_as_string)
 
 TEST_F(NAME, string_var_decl_as_string)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var$ as string\n"
@@ -1527,9 +1503,6 @@ TEST_F(NAME, string_var_decl_as_string)
 
 TEST_F(NAME, var_decl_as_nested_udt)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    var as nestedudt\n"
@@ -1552,9 +1525,6 @@ TEST_F(NAME, var_decl_as_nested_udt)
 
 TEST_F(NAME, arr_decl_as_double_integer)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as double integer\n"
@@ -1579,9 +1549,6 @@ TEST_F(NAME, arr_decl_as_double_integer)
 
 TEST_F(NAME, arr_decl_as_integer)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as integer\n"
@@ -1606,9 +1573,6 @@ TEST_F(NAME, arr_decl_as_integer)
 
 TEST_F(NAME, arr_decl_as_dword)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as dword\n"
@@ -1633,9 +1597,6 @@ TEST_F(NAME, arr_decl_as_dword)
 
 TEST_F(NAME, arr_decl_as_word)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as word\n"
@@ -1660,9 +1621,6 @@ TEST_F(NAME, arr_decl_as_word)
 
 TEST_F(NAME, arr_decl_as_byte)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as byte\n"
@@ -1687,9 +1645,6 @@ TEST_F(NAME, arr_decl_as_byte)
 
 TEST_F(NAME, arr_decl_as_boolean)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as boolean\n"
@@ -1714,9 +1669,6 @@ TEST_F(NAME, arr_decl_as_boolean)
 
 TEST_F(NAME, arr_decl_as_double_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as double float\n"
@@ -1741,9 +1693,6 @@ TEST_F(NAME, arr_decl_as_double_float)
 
 TEST_F(NAME, arr_decl_as_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as float\n"
@@ -1768,9 +1717,6 @@ TEST_F(NAME, arr_decl_as_float)
 
 TEST_F(NAME, float_arr_decl_as_float)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr#(2, 3) as float\n"
@@ -1795,9 +1741,6 @@ TEST_F(NAME, float_arr_decl_as_float)
 
 TEST_F(NAME, arr_decl_as_string)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as string\n"
@@ -1822,9 +1765,6 @@ TEST_F(NAME, arr_decl_as_string)
 
 TEST_F(NAME, string_arr_decl_as_string)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr$(2, 3) as string\n"
@@ -1849,9 +1789,6 @@ TEST_F(NAME, string_arr_decl_as_string)
 
 TEST_F(NAME, arr_decl_as_nested_udt)
 {
-    using Annotation = ast::Symbol::Annotation;
-    using Scope = ast::Symbol::Scope;
-
     ast = driver->parse("test",
         "type udt\n"
         "    dim arr(2, 3) as nestedudt\n"

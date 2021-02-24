@@ -1,8 +1,10 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
-#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -10,6 +12,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -18,8 +21,6 @@ public:
 
 TEST_F(NAME, bool_constant)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant mybool1 true\n"
         "#constant mybool2 false\n",
@@ -41,8 +42,6 @@ TEST_F(NAME, bool_constant)
 
 TEST_F(NAME, integer_constant)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant myint 2147483647\n",
         matcher);
@@ -60,8 +59,6 @@ TEST_F(NAME, integer_constant)
 
 TEST_F(NAME, double_constant)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant mydouble 5.2\n",
         matcher);
@@ -79,8 +76,6 @@ TEST_F(NAME, double_constant)
 
 TEST_F(NAME, double_constant_annotated)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant mydouble# 5.2\n",
         matcher);
@@ -98,8 +93,6 @@ TEST_F(NAME, double_constant_annotated)
 
 TEST_F(NAME, string_constant)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant mystring \"hello world!\"\n",
         matcher);
@@ -117,8 +110,6 @@ TEST_F(NAME, string_constant)
 
 TEST_F(NAME, string_constant_annotated)
 {
-    using Annotation = ast::Symbol::Annotation;
-
     ast = driver->parse("test",
         "#constant mystring$ \"hello world!\"\n",
         matcher);

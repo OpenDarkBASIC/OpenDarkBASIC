@@ -2,7 +2,6 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
-#include "odb-compiler/ast/Operators.hpp"
 
 namespace odb::ast {
 
@@ -52,14 +51,10 @@ class VarAssignment;
 class VarRef;
 class WhileLoop;
 
-template <typename T> class LiteralTemplate;
-template <typename T> class VarDeclTemplate;
-template <typename T> class ArrayDeclTemplate;
-
 #define X(dbname, cppname) \
-    typedef LiteralTemplate<cppname> dbname##Literal; \
-    typedef VarDeclTemplate<cppname> dbname##VarDecl; \
-    typedef ArrayDeclTemplate<cppname> dbname##ArrayDecl;
+    class dbname##Literal; \
+    class dbname##VarDecl; \
+    class dbname##ArrayDecl;
 ODB_DATATYPE_LIST
 #undef X
 

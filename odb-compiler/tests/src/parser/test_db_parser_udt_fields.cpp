@@ -1,6 +1,11 @@
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/CommandExprEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -8,6 +13,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -75,8 +81,6 @@ public:
 
 TEST_F(NAME, udt_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -86,14 +90,14 @@ TEST_F(NAME, udt_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -102,8 +106,6 @@ TEST_F(NAME, udt_ass_value)
 
 TEST_F(NAME, udt_float_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c# = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -113,14 +115,14 @@ TEST_F(NAME, udt_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -129,8 +131,6 @@ TEST_F(NAME, udt_float_ass_value)
 
 TEST_F(NAME, udt_string_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c$ = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -140,14 +140,14 @@ TEST_F(NAME, udt_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -156,8 +156,6 @@ TEST_F(NAME, udt_string_ass_value)
 
 TEST_F(NAME, udt_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -167,17 +165,17 @@ TEST_F(NAME, udt_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -186,8 +184,6 @@ TEST_F(NAME, udt_arr_ass_value)
 
 TEST_F(NAME, udt_arr_float_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c#(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -197,17 +193,17 @@ TEST_F(NAME, udt_arr_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -216,8 +212,6 @@ TEST_F(NAME, udt_arr_float_ass_value)
 
 TEST_F(NAME, udt_arr_string_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b.c$(x) = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -227,17 +221,17 @@ TEST_F(NAME, udt_arr_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -246,8 +240,6 @@ TEST_F(NAME, udt_arr_string_ass_value)
 
 TEST_F(NAME, udt_inner_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -257,17 +249,17 @@ TEST_F(NAME, udt_inner_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -276,8 +268,6 @@ TEST_F(NAME, udt_inner_arr_ass_value)
 
 TEST_F(NAME, udt_outer_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -287,17 +277,17 @@ TEST_F(NAME, udt_outer_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -306,8 +296,6 @@ TEST_F(NAME, udt_outer_arr_ass_value)
 
 TEST_F(NAME, value_ass_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -316,15 +304,15 @@ TEST_F(NAME, value_ass_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -333,8 +321,6 @@ TEST_F(NAME, value_ass_udt)
 
 TEST_F(NAME, value_ass_udt_float)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c#", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -343,15 +329,15 @@ TEST_F(NAME, value_ass_udt_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -360,8 +346,6 @@ TEST_F(NAME, value_ass_udt_float)
 
 TEST_F(NAME, value_ass_udt_string)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c$", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -370,15 +354,15 @@ TEST_F(NAME, value_ass_udt_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -387,8 +371,6 @@ TEST_F(NAME, value_ass_udt_string)
 
 TEST_F(NAME, value_ass_udt_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -397,18 +379,18 @@ TEST_F(NAME, value_ass_udt_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -417,8 +399,6 @@ TEST_F(NAME, value_ass_udt_arr)
 
 TEST_F(NAME, value_ass_udt_arr_float)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c#(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -427,18 +407,18 @@ TEST_F(NAME, value_ass_udt_arr_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -447,8 +427,6 @@ TEST_F(NAME, value_ass_udt_arr_float)
 
 TEST_F(NAME, value_ass_udt_arr_string)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b.c$(x)", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -457,18 +435,18 @@ TEST_F(NAME, value_ass_udt_arr_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -477,8 +455,6 @@ TEST_F(NAME, value_ass_udt_arr_string)
 
 TEST_F(NAME, value_ass_udt_inner_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -487,18 +463,18 @@ TEST_F(NAME, value_ass_udt_inner_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -507,8 +483,6 @@ TEST_F(NAME, value_ass_udt_inner_arr)
 
 TEST_F(NAME, value_ass_udt_outer_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -517,18 +491,18 @@ TEST_F(NAME, value_ass_udt_outer_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -537,8 +511,6 @@ TEST_F(NAME, value_ass_udt_outer_arr)
 
 TEST_F(NAME, value_ass_func_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = func_expr().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -547,15 +519,15 @@ TEST_F(NAME, value_ass_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "func_expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -564,8 +536,6 @@ TEST_F(NAME, value_ass_func_returning_udt)
 
 TEST_F(NAME, value_ass_command_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr", "", cmd::Command::Type::Void, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test", "value = cmd expr().b.c", matcher);
@@ -576,14 +546,14 @@ TEST_F(NAME, value_ass_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -592,8 +562,6 @@ TEST_F(NAME, value_ass_command_returning_udt)
 
 TEST_F(NAME, udt_inner_float_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b#.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -603,14 +571,14 @@ TEST_F(NAME, udt_inner_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -619,8 +587,6 @@ TEST_F(NAME, udt_inner_float_ass_value)
 
 TEST_F(NAME, udt_inner_string_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b$.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -630,14 +596,14 @@ TEST_F(NAME, udt_inner_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -646,8 +612,6 @@ TEST_F(NAME, udt_inner_string_ass_value)
 
 TEST_F(NAME, udt_outer_float_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a#.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -657,14 +621,14 @@ TEST_F(NAME, udt_outer_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -673,8 +637,6 @@ TEST_F(NAME, udt_outer_float_ass_value)
 
 TEST_F(NAME, udt_outer_string_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a$.b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -684,14 +646,14 @@ TEST_F(NAME, udt_outer_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -700,8 +662,6 @@ TEST_F(NAME, udt_outer_string_ass_value)
 
 TEST_F(NAME, udt_inner_float_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b#(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -711,17 +671,17 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -730,8 +690,6 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
 
 TEST_F(NAME, udt_inner_string_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a.b$(x).c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -741,17 +699,17 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -760,8 +718,6 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
 
 TEST_F(NAME, udt_outer_float_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a#(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -771,17 +727,17 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -790,8 +746,6 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
 
 TEST_F(NAME, udt_outer_string_arr_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "a$(x).b.c = value", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -801,17 +755,17 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -820,8 +774,6 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
 
 TEST_F(NAME, func_returning_udt_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "func_stmnt().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
@@ -836,8 +788,6 @@ TEST_F(NAME, command_returning_udt_ass_value)
 
 TEST_F(NAME, float_func_returning_udt_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "func_stmnt#().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
@@ -852,8 +802,6 @@ TEST_F(NAME, float_command_returning_udt_ass_value)
 
 TEST_F(NAME, string_func_returning_udt_ass_value)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "func_stmnt$().b.c = value", matcher);
     ASSERT_THAT(ast, IsNull());
 }
@@ -868,8 +816,6 @@ TEST_F(NAME, string_command_returning_udt_ass_value)
 
 TEST_F(NAME, value_ass_udt_inner_float)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b#.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -878,15 +824,15 @@ TEST_F(NAME, value_ass_udt_inner_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -895,8 +841,6 @@ TEST_F(NAME, value_ass_udt_inner_float)
 
 TEST_F(NAME, value_ass_udt_outer_float)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a#.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -905,15 +849,15 @@ TEST_F(NAME, value_ass_udt_outer_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -922,8 +866,6 @@ TEST_F(NAME, value_ass_udt_outer_float)
 
 TEST_F(NAME, value_ass_udt_inner_string)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b$.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -932,15 +874,15 @@ TEST_F(NAME, value_ass_udt_inner_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -949,8 +891,6 @@ TEST_F(NAME, value_ass_udt_inner_string)
 
 TEST_F(NAME, value_ass_udt_outer_string)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a$.b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -959,15 +899,15 @@ TEST_F(NAME, value_ass_udt_outer_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -976,8 +916,6 @@ TEST_F(NAME, value_ass_udt_outer_string)
 
 TEST_F(NAME, value_ass_udt_inner_float_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b#(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -986,18 +924,18 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1006,8 +944,6 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
 
 TEST_F(NAME, value_ass_udt_inner_string_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a.b$(x).c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -1016,18 +952,18 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1036,8 +972,6 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
 
 TEST_F(NAME, value_ass_udt_outer_float_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a#(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -1046,18 +980,18 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1066,8 +1000,6 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
 
 TEST_F(NAME, value_ass_udt_outer_string_arr)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = a$(x).b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -1076,18 +1008,18 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1096,8 +1028,6 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
 
 TEST_F(NAME, value_ass_float_func_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = func_expr#().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -1106,15 +1036,15 @@ TEST_F(NAME, value_ass_float_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::FLOAT, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "func_expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1123,8 +1053,6 @@ TEST_F(NAME, value_ass_float_func_returning_udt)
 
 TEST_F(NAME, value_ass_float_command_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr#", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test", "value = cmd expr#().b.c", matcher);
@@ -1135,14 +1063,14 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr#"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1151,8 +1079,6 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
 
 TEST_F(NAME, value_ass_string_func_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     ast = driver->parse("test", "value = func_expr$().b.c", matcher);
     ASSERT_THAT(ast, NotNull());
 
@@ -1161,15 +1087,15 @@ TEST_F(NAME, value_ass_string_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::STRING, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "func_expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1178,8 +1104,6 @@ TEST_F(NAME, value_ass_string_func_returning_udt)
 
 TEST_F(NAME, value_ass_string_command_returning_udt)
 {
-    using Ann = ast::Symbol::Annotation;
-
     cmdIndex.addCommand(new cmd::Command(nullptr, "cmd expr$", "", cmd::Command::Type::Float, {}));
     matcher.updateFromIndex(&cmdIndex);
     ast = driver->parse("test", "value = cmd expr$().b.c", matcher);
@@ -1190,14 +1114,14 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr$"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Ann::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     ast->accept(&v);
 
     astpost::ValidateUDTFieldNames post;

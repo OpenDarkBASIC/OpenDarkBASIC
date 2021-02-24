@@ -1,12 +1,11 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-sdk/Str.hpp"
-#include <fstream>
-#include <tuple>
 
 #define NAME db_parser_remarks
 
@@ -19,8 +18,6 @@ class NAME : public ParserTestHarness
 public:
     void doTestWithRemark(const std::string& s)
     {
-        using Annotation = ast::AnnotatedSymbol::Annotation;
-
         std::vector<std::string> variants{s, s, s};
         str::replaceAll(variants[0], "%remstart", "remstart");
         str::replaceAll(variants[1], "%remstart", "/*");

@@ -1,7 +1,9 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
+#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -9,6 +11,7 @@
 
 using namespace testing;
 using namespace odb;
+using namespace ast;
 
 class NAME : public ParserTestHarness
 {
@@ -21,9 +24,9 @@ public:
 #define none_str ""
 
 // Scope enums
-#define global_scope ast::Symbol::Scope::GLOBAL
-#define local_scope ast::Symbol::Scope::LOCAL
-#define none_scope ast::Symbol::Scope::LOCAL
+#define global_scope Scope::GLOBAL
+#define local_scope Scope::LOCAL
+#define none_scope Scope::LOCAL
 
 // Anotations
 #define amp_str "&"
@@ -33,12 +36,12 @@ public:
 #define dollar_str "$"
 
 // Annotation enums
-#define amp_ann ast::Symbol::Annotation::DOUBLE_INTEGER
-#define percent_ann ast::Symbol::Annotation::WORD
-#define hash_ann ast::Symbol::Annotation::FLOAT
-#define excl_ann ast::Symbol::Annotation::DOUBLE_FLOAT
-#define dollar_ann ast::Symbol::Annotation::STRING
-#define none_ann ast::Symbol::Annotation::NONE
+#define amp_ann Annotation::DOUBLE_INTEGER
+#define percent_ann Annotation::WORD
+#define hash_ann Annotation::FLOAT
+#define excl_ann Annotation::DOUBLE_FLOAT
+#define dollar_ann Annotation::STRING
+#define none_ann Annotation::NONE
 
 // Type specifiers
 #define double_integer_str "double integer"

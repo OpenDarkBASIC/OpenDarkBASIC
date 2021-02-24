@@ -5,7 +5,7 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-BinaryOp::BinaryOp(Op op, Expression* lhs, Expression* rhs, SourceLocation* location)
+BinaryOp::BinaryOp(BinaryOpType op, Expression* lhs, Expression* rhs, SourceLocation* location)
     : Expression(location)
     , lhs_(lhs)
     , rhs_(rhs)
@@ -16,7 +16,7 @@ BinaryOp::BinaryOp(Op op, Expression* lhs, Expression* rhs, SourceLocation* loca
 }
 
 // ----------------------------------------------------------------------------
-BinaryOp::Op BinaryOp::op() const
+BinaryOpType BinaryOp::op() const
 {
     return op_;
 }
@@ -36,12 +36,7 @@ Expression* BinaryOp::rhs() const
 // ----------------------------------------------------------------------------
 std::string BinaryOp::toString() const
 {
-    static const char* table[] = {
-#define X(op, tok) #op,
-        ODB_BINARY_OP_LIST
-#undef X
-    };
-    return std::string("BinaryOp(") + table[op_] + ")";
+    return std::string("BinaryOp(") + binaryOpTypeEnumString(op_) + ")";
 }
 
 // ----------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"

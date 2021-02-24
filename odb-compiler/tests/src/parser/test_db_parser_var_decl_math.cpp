@@ -1,7 +1,12 @@
-#include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/commands/Command.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Scope.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ASTMatchers.hpp"
+#include "odb-compiler/tests/matchers/BinaryOpEq.hpp"
+#include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
+#include "odb-compiler/tests/matchers/LiteralEq.hpp"
+#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -22,9 +27,9 @@ public:
 #define none_str ""
 
 // Scope enums
-#define global_scope Symbol::Scope::GLOBAL
-#define local_scope Symbol::Scope::LOCAL
-#define none_scope Symbol::Scope::LOCAL
+#define global_scope Scope::GLOBAL
+#define local_scope Scope::LOCAL
+#define none_scope Scope::LOCAL
 
 // Anotations
 #define amp_str "&"
@@ -34,12 +39,12 @@ public:
 #define dollar_str "$"
 
 // Annotation enums
-#define amp_ann Symbol::Annotation::DOUBLE_INTEGER
-#define percent_ann Symbol::Annotation::WORD
-#define hash_ann Symbol::Annotation::FLOAT
-#define excl_ann Symbol::Annotation::DOUBLE_FLOAT
-#define dollar_ann Symbol::Annotation::STRING
-#define none_ann Symbol::Annotation::NONE
+#define amp_ann Annotation::DOUBLE_INTEGER
+#define percent_ann Annotation::WORD
+#define hash_ann Annotation::FLOAT
+#define excl_ann Annotation::DOUBLE_FLOAT
+#define dollar_ann Annotation::STRING
+#define none_ann Annotation::NONE
 
 // Type specifiers
 #define complex_str "complex"
@@ -241,8 +246,8 @@ VALID_AS_TYPE_ALL_SCOPES(none, vec4)
  */
 TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
 {
-    using Scope = Symbol::Scope;
-    using Ann = Symbol::Annotation;
+    using Scope = Scope;
+    using Ann = Annotation;
 
     ast = driver->parse("test", "var as complex = 1 + 2i", matcher);
     ASSERT_THAT(ast, NotNull());
@@ -254,7 +259,7 @@ TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
 
@@ -262,8 +267,8 @@ TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
 }
 TEST_F(NAME, var_as_complex_with_complex_initializer_list)
 {
-    using Scope = Symbol::Scope;
-    using Ann = Symbol::Annotation;
+    using Scope = Scope;
+    using Ann = Annotation;
 
     ast = driver->parse("test", "var as complex = 1, 2", matcher);
     ASSERT_THAT(ast, NotNull());
@@ -282,8 +287,8 @@ TEST_F(NAME, var_as_complex_with_complex_initializer_list)
 }
 TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
 {
-    using Scope = Symbol::Scope;
-    using Ann = Symbol::Annotation;
+    using Scope = Scope;
+    using Ann = Annotation;
 
     ast = driver->parse("test", "var as quat = 1 + 2i + 3j + 4k", matcher);
     ASSERT_THAT(ast, NotNull());
@@ -295,9 +300,9 @@ TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
-    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOp::ADD))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::ADD))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::ADD))).After(exp);
+    exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::ADD))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     exp = EXPECT_CALL(v, visitQuatLiteral(QuatLiteralEq({0, 0, 3, 0}))).After(exp);
@@ -307,8 +312,8 @@ TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
 }
 TEST_F(NAME, var_as_quat_with_quat_initializer_list)
 {
-    using Scope = Symbol::Scope;
-    using Ann = Symbol::Annotation;
+    using Scope = Scope;
+    using Ann = Annotation;
 
     ast = driver->parse("test", "var as quat = 1, 2, 3, 4", matcher);
     ASSERT_THAT(ast, NotNull());

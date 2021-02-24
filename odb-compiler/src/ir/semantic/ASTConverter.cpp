@@ -2,13 +2,15 @@
 
 #include "odb-compiler/ir/Node.hpp"
 
+#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Command.hpp"
+#include "odb-compiler/ast/CommandExpr.hpp"
+#include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Data.hpp"
@@ -23,7 +25,7 @@
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
-#include "odb-compiler/ast/Operators.hpp"
+#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
@@ -96,15 +98,15 @@ Type ASTConverter::getTypeFromCommandType(cmd::Command::Type type)
     }
 }
 
-Variable::Annotation getAnnotation(ast::Symbol::Annotation astAnnotation)
+Variable::Annotation getAnnotation(ast::Annotation astAnnotation)
 {
     switch (astAnnotation)
     {
-    case ast::Symbol::Annotation::NONE:
+    case ast::Annotation::NONE:
         return Variable::Annotation::None;
-    case ast::Symbol::Annotation::STRING:
+    case ast::Annotation::STRING:
         return Variable::Annotation::String;
-    case ast::Symbol::Annotation::FLOAT:
+    case ast::Annotation::FLOAT:
         return Variable::Annotation::Float;
     }
 
