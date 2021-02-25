@@ -660,7 +660,7 @@ std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
     }
 
     // Generate functions bodies.
-    FunctionDefinition mainFunction(new ast::InlineSourceLocation("", "", 0, 0, 0, 0), "main");
+    FunctionDefinition mainFunction(new ast::InlineSourceLocation("", "", 0, 0, 0, 1), "main");
     currentFunction_ = &mainFunction;
     mainFunction.appendStatements(convertBlock(astMainStatements, nullptr));
     for (auto& [_, funcDetails] : functionMap_)
