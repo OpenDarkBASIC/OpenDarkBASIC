@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <ostream>
 
@@ -70,9 +71,10 @@ struct TargetTriple
     }
 };
 
-ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTriple,
-                                         std::ostream& os, const std::string& moduleName, Program& program,
+ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple,
+                                         std::ostream& output, const std::string& moduleName, Program& program,
                                          const cmd::CommandIndex& cmdIndex);
-ODBCOMPILER_PUBLIC_API bool linkExecutable(TargetTriple::Platform platform,
-                                           const std::vector<std::string>& inputFilenames, std::string& outputFilename);
+ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
+                                           TargetTriple targetTriple, std::vector<std::string> inputFilenames,
+                                           std::string& outputFilename);
 } // namespace odb::ir

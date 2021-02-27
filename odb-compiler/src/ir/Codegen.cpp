@@ -10,7 +10,7 @@
 #include <lld/Common/Driver.h>
 
 namespace odb::ir {
-bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTriple, std::ostream& os,
+bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple, std::ostream& output,
                   const std::string& moduleName, Program& program, const cmd::CommandIndex& cmdIndex)
 {
     llvm::LLVMContext context;
@@ -19,7 +19,7 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
     // Generate the module.
     {
         std::unique_ptr<EngineInterface> engineInterface;
-        switch (sdk_type)
+        switch (sdkType)
         {
         case SDKType::DarkBASIC:
             engineInterface = std::make_unique<DBPEngineInterface>(module);
@@ -41,13 +41,13 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
     // If we are emitting LLVM IR or Bitcode, return early.
     if (outputType == OutputType::LLVMIR)
     {
-        llvm::raw_os_ostream outputStream(os);
+        llvm::raw_os_ostream outputStream(output);
         module.print(outputStream, nullptr);
         return true;
     }
     else if (outputType == OutputType::LLVMBitcode)
     {
-        llvm::raw_os_ostream outputStream(os);
+        llvm::raw_os_ostream outputStream(output);
         llvm::WriteBitcodeToFile(module, outputStream);
         return true;
     }
@@ -70,7 +70,7 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
 
     // Lookup target machine.
     std::string llvmTargetTriple = targetTriple.getLLVMTargetTriple();
-    if (sdk_type == SDKType::DarkBASIC)
+    if (sdkType == SDKType::DarkBASIC)
     {
         // Only the i386-pc-windows-msvc target triple is supported.
         if (targetTriple.arch != TargetTriple::Arch::i386 || targetTriple.platform != TargetTriple::Platform::Windows)
@@ -108,30 +108,58 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
     pass.run(module);
 
     // Flush buffer to stream.
-    os.write(outputFileBuffer.data(), outputFileBuffer.size());
-    os.flush();
+    output.write(outputFileBuffer.data(), outputFileBuffer.size());
+    output.flush();
 
     return true;
 }
 
-bool linkExecutable(TargetTriple::Platform platform, const std::vector<std::string>& inputFilenames,
+bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, TargetTriple targetTriple, std::vector<std::string> inputFilenames,
                     std::string& outputFilename)
 {
-    if (platform == TargetTriple::Platform::Windows)
+    if (targetTriple.platform == TargetTriple::Platform::Windows)
     {
         std::string outFlag = "/out:" + outputFilename;
 
+        if (sdkType == SDKType::DarkBASIC)
+        {
+            inputFilenames.emplace_back(sdkRootDir / "odb-runtime-dbp.lib");
+            inputFilenames.emplace_back(sdkRootDir / "odb-runtime-dbp-prelude.lib");
+        }
+
         std::vector<const char*> args;
         args.emplace_back("lld");
+        args.emplace_back("/nodefaultlib");
+        args.emplace_back("/entry:main");
+        args.emplace_back("/subsystem:windows");
+        if (targetTriple.arch == TargetTriple::Arch::i386)
+        {
+            args.emplace_back("/machine:x86");
+        }
+        else if (targetTriple.arch == TargetTriple::Arch::x86_64)
+        {
+            args.emplace_back("/machine:x64");
+        }
+        else if (targetTriple.arch == TargetTriple::Arch::AArch64)
+        {
+            Log::codegen(Log::ERROR, "lld does not support linking an AArch64 executable for Windows.");
+            return false;
+        }
+        args.emplace_back(outFlag.c_str());
         for (const auto& inputs : inputFilenames)
         {
             args.emplace_back(inputs.c_str());
         }
-        args.emplace_back(outFlag.c_str());
-        args.emplace_back("/nodefaultlib");
-        args.emplace_back("/entry:main");
-        args.emplace_back("/subsystem:windows");
-        args.emplace_back("/machine:x86");
+
+        // Invoke the LLD COFF linker.
+        std::string invocationArgslist;
+        for (std::size_t i = 1; i < args.size(); ++i) {
+            invocationArgslist += args[i];
+            invocationArgslist += " ";
+        }
+        Log::codegen(Log::INFO, "Invoking LLD with arguments: %s", invocationArgslist.c_str());
+
+        // TODO: Implement a LLVM stream that writes to Log::codegen.
         llvm::raw_os_ostream outputStream{std::cout};
         llvm::raw_os_ostream errorStream{std::cerr};
         return lld::coff::link(args, false, outputStream, errorStream);

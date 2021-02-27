@@ -115,54 +115,52 @@ bool output(const std::vector<std::string>& args)
         }
     }
 
-    // Generate IR program, then generate code.
+    odb::ir::TargetTriple targetTriple{*targetTripleArch_, *targetTriplePlatform_};
+
+    // Run semantic checks and generate IR.
     auto program = odb::ir::runSemanticChecks(ast, *cmdIndex);
     if (!program)
     {
         return false;
     }
 
-    // Generate code.
-    std::filesystem::path codegenOutputFilename = outputName;
-    if (outputIsExecutable_)
+    // Ensure that the executable extension is .exe if Windows is the target platform.
+    if (outputIsExecutable_ && targetTriplePlatform_ == odb::ir::TargetTriple::Platform::Windows)
     {
-        codegenOutputFilename.filename() = "_" + codegenOutputFilename.filename().string() + ".o";
+        if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
+        {
+            outputName += ".exe";
+        }
     }
+
+    // Generate code.
     std::unique_ptr<std::ofstream> outputFile;
     if (!outputToStdout)
     {
-        outputFile = std::make_unique<std::ofstream>(codegenOutputFilename, std::ios::binary);
+        outputFile = std::make_unique<std::ofstream>(outputName, std::ios::binary);
         if (!outputFile->is_open())
         {
-            odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", codegenOutputFilename.c_str());
+            odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", outputName.c_str());
             return false;
         }
 
-        odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", codegenOutputFilename.c_str());
+        odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", outputName.c_str());
     }
     std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
-    if (!odb::ir::generateCode(getSDKType(), outputType_,
-                               odb::ir::TargetTriple{*targetTripleArch_, *targetTriplePlatform_}, outputStream,
-                               "input.dba", *program, *cmdIndex))
+    if (!odb::ir::generateCode(getSDKType(), outputType_, targetTriple, outputStream, "input.dba", *program, *cmdIndex))
     {
         return false;
     }
 
+    // If we're generating an executable, invoke the linker.
     if (outputIsExecutable_)
     {
-        // We need to link the generated object file to the runtime to create an executable.
-        if (targetTriplePlatform_ == odb::ir::TargetTriple::Platform::Windows)
-        {
-            if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
-            {
-                outputName += ".exe";
-            }
-        }
+        assert(outputType_ == odb::ir::OutputType::ObjectFile);
 
-        if (!odb::ir::linkExecutable(*targetTriplePlatform_,
-                                     {codegenOutputFilename, getSDKRootDir() / "odb-runtime-dbp.lib",
-                                      getSDKRootDir() / "odb-runtime-dbp-prelude.lib"},
-                                     outputName))
+        // Above, we generated an object file and wrote it to `outputName`, even though it is not an executable
+        // yet.Here, we invoke the linker, which takes the above object file (written to `outputName`), links it, and
+        // overwrites the object file with the actual executable.
+        if (!odb::ir::linkExecutable(getSDKType(), getSDKRootDir(), targetTriple, {outputName}, outputName))
         {
             odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
             return false;
