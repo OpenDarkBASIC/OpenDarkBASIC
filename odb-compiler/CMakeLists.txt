@@ -283,7 +283,8 @@ add_dependencies(odb-compiler lief)
 # LLVM stuff
 ###############################################################################
 
-find_package(LLVM REQUIRED CONFIG)
+find_package (LLVM REQUIRED CONFIG)
+find_package (LLD REQUIRED)
 
 # This is apparently deprecated since 4 years
 # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
@@ -297,10 +298,12 @@ find_package(LLVM REQUIRED CONFIG)
 if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
     set (llvm_use_shared USE_SHARED)
 endif()
-llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen)
+llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen aarch64codegen)
 
 target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+
+target_link_libraries (odb-compiler PRIVATE lldCOFF)
 
 ###############################################################################
 # Unit tests

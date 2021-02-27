@@ -7,6 +7,8 @@
 
 #include <iostream>
 
+#include <lld/Common/Driver.h>
+
 namespace odb::ir {
 bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTriple, std::ostream& os,
                   const std::string& moduleName, Program& program, const cmd::CommandIndex& cmdIndex)
@@ -50,10 +52,21 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
         return true;
     }
 
-    LLVMInitializeX86TargetInfo();
-    LLVMInitializeX86Target();
-    LLVMInitializeX86TargetMC();
-    LLVMInitializeX86AsmPrinter();
+    assert(outputType == OutputType::ObjectFile);
+
+    static std::once_flag initLLVMBackends;
+    std::call_once(initLLVMBackends,
+                   []
+                   {
+                       LLVMInitializeX86TargetInfo();
+                       LLVMInitializeX86Target();
+                       LLVMInitializeX86TargetMC();
+                       LLVMInitializeX86AsmPrinter();
+                       LLVMInitializeAArch64TargetInfo();
+                       LLVMInitializeAArch64Target();
+                       LLVMInitializeAArch64TargetMC();
+                       LLVMInitializeAArch64AsmPrinter();
+                   });
 
     // Lookup target machine.
     std::string llvmTargetTriple = targetTriple.getLLVMTargetTriple();
@@ -84,27 +97,49 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
 
     llvm::SmallVector<char, 0> outputFileBuffer;
 
-    if (outputType == OutputType::ObjectFile)
+    // Emit object file to buffer.
+    llvm::raw_svector_ostream objectFileStream(outputFileBuffer);
+    llvm::legacy::PassManager pass;
+    if (targetMachine->addPassesToEmitFile(pass, objectFileStream, nullptr, llvm::CGFT_ObjectFile))
     {
-        // Emit object file to buffer.
-        llvm::raw_svector_ostream objectFileStream(outputFileBuffer);
-        llvm::legacy::PassManager pass;
-        if (targetMachine->addPassesToEmitFile(pass, objectFileStream, nullptr, llvm::CGFT_ObjectFile))
-        {
-            Log::info.print("llvm::TargetMachine can't emit a file of this type");
-            return false;
-        }
-        pass.run(module);
+        Log::info.print("llvm::TargetMachine can't emit a file of this type");
+        return false;
     }
-    else if (outputType == OutputType::Executable)
-    {
-        // TODO: Call LLD linker to create an executable.
-    }
+    pass.run(module);
 
     // Flush buffer to stream.
     os.write(outputFileBuffer.data(), outputFileBuffer.size());
     os.flush();
 
     return true;
+}
+
+bool linkExecutable(TargetTriple::Platform platform, const std::vector<std::string>& inputFilenames,
+                    std::string& outputFilename)
+{
+    if (platform == TargetTriple::Platform::Windows)
+    {
+        std::string outFlag = "/out:" + outputFilename;
+
+        std::vector<const char*> args;
+        args.emplace_back("lld");
+        for (const auto& inputs : inputFilenames)
+        {
+            args.emplace_back(inputs.c_str());
+        }
+        args.emplace_back(outFlag.c_str());
+        args.emplace_back("/nodefaultlib");
+        args.emplace_back("/entry:main");
+        args.emplace_back("/subsystem:windows");
+        args.emplace_back("/machine:x86");
+        llvm::raw_os_ostream outputStream{std::cout};
+        llvm::raw_os_ostream errorStream{std::cerr};
+        return lld::coff::link(args, false, outputStream, errorStream);
+    }
+    else
+    {
+        // TODO: Implement ELF linking.
+        return false;
+    }
 }
 } // namespace odb::ir

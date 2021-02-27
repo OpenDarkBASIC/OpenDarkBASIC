@@ -11,6 +11,7 @@
 #include <iostream>
 
 static odb::ir::OutputType outputType_ = odb::ir::OutputType::ObjectFile;
+static bool outputIsExecutable_ = false;
 static std::optional<odb::ir::TargetTriple::Arch> targetTripleArch_;
 static std::optional<odb::ir::TargetTriple::Platform> targetTriplePlatform_;
 
@@ -25,14 +26,12 @@ bool setOutputType(const std::vector<std::string>& args)
     {
         outputType_ = odb::ir::OutputType::LLVMBitcode;
     }
-    else if (args[0] == "obj")
+    else if (args[0] == "obj" || args[0] == "exe")
     {
         outputType_ = odb::ir::OutputType::ObjectFile;
     }
-    else if (args[0] == "exe")
-    {
-        outputType_ = odb::ir::OutputType::Executable;
-    }
+
+    outputIsExecutable_ = args[0] == "exe";
 
     return true;
 }
@@ -79,33 +78,7 @@ bool setPlatform(const std::vector<std::string>& args)
 bool output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
-
     bool outputToStdout = outputName == "-";
-    std::unique_ptr<std::ofstream> outputFile;
-
-    if (!outputToStdout)
-    {
-#ifdef _WIN32
-        if (outputType_ == odb::ir::OutputType::Executable)
-        {
-            if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
-            {
-                outputName += ".exe";
-            }
-        }
-#endif
-
-        outputFile = std::make_unique<std::ofstream>(outputName, std::ios::binary);
-        if (!outputFile->is_open())
-        {
-            odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", outputName.c_str());
-            return false;
-        }
-
-        odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", outputName.c_str());
-    }
-
-    std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
 
     auto* cmdIndex = getCommandIndex();
     auto* ast = getAST();
@@ -144,12 +117,57 @@ bool output(const std::vector<std::string>& args)
 
     // Generate IR program, then generate code.
     auto program = odb::ir::runSemanticChecks(ast, *cmdIndex);
-    if (program)
+    if (!program)
     {
-        return odb::ir::generateCode(getSDKType(), outputType_,
-                                     odb::ir::TargetTriple{*targetTripleArch_, *targetTriplePlatform_}, outputStream,
-                                     "input.dba", *program, *cmdIndex);
+        return false;
     }
 
-    return false;
+    // Generate code.
+    std::filesystem::path codegenOutputFilename = outputName;
+    if (outputIsExecutable_)
+    {
+        codegenOutputFilename.filename() = "_" + codegenOutputFilename.filename().string() + ".o";
+    }
+    std::unique_ptr<std::ofstream> outputFile;
+    if (!outputToStdout)
+    {
+        outputFile = std::make_unique<std::ofstream>(codegenOutputFilename, std::ios::binary);
+        if (!outputFile->is_open())
+        {
+            odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", codegenOutputFilename.c_str());
+            return false;
+        }
+
+        odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", codegenOutputFilename.c_str());
+    }
+    std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
+    if (!odb::ir::generateCode(getSDKType(), outputType_,
+                               odb::ir::TargetTriple{*targetTripleArch_, *targetTriplePlatform_}, outputStream,
+                               "input.dba", *program, *cmdIndex))
+    {
+        return false;
+    }
+
+    if (outputIsExecutable_)
+    {
+        // We need to link the generated object file to the runtime to create an executable.
+        if (targetTriplePlatform_ == odb::ir::TargetTriple::Platform::Windows)
+        {
+            if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
+            {
+                outputName += ".exe";
+            }
+        }
+
+        if (!odb::ir::linkExecutable(*targetTriplePlatform_,
+                                     {codegenOutputFilename, getSDKRootDir() / "odb-runtime-dbp.lib",
+                                      getSDKRootDir() / "odb-runtime-dbp-prelude.lib"},
+                                     outputName))
+        {
+            odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
+            return false;
+        }
+    }
+
+    return true;
 }
