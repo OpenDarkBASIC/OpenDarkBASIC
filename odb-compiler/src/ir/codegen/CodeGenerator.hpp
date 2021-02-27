@@ -80,7 +80,7 @@ public:
     llvm::Function* generateFunctionPrototype(const FunctionDefinition& irFunction);
     void generateFunctionBody(llvm::Function* function, const FunctionDefinition& irFunction, bool isMainFunction);
 
-    bool generateModule(const Program& program, std::vector<DynamicLibrary*> pluginsToLoad);
+    bool generateModule(const Program& program, std::vector<TargetLibParser*> pluginsToLoad);
 
 private:
     llvm::LLVMContext& ctx;

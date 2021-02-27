@@ -1,5 +1,5 @@
 #include "odb-compiler/commands/CommandIndex.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
+#include "odb-compiler/parsers/TargetLibParser.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 
@@ -100,13 +100,13 @@ std::vector<std::string> CommandIndex::commandNamesAsList() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<DynamicLibrary*> CommandIndex::librariesAsList() const
+std::vector<TargetLibParser*> CommandIndex::librariesAsList() const
 {
-    std::unordered_set<DynamicLibrary*> librarySet;
+    std::unordered_set<TargetLibParser*> librarySet;
     librarySet.reserve(commands_.size());
     for (const auto& cmd : commands_)
         librarySet.emplace(cmd->library());
-    return std::vector<DynamicLibrary*>(librarySet.begin(), librarySet.end());
+    return std::vector<TargetLibParser*>(librarySet.begin(), librarySet.end());
 }
 
 }

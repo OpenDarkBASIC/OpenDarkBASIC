@@ -208,8 +208,8 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
     auto candidates = cmdIndex_.lookup(commandName);
     const cmd::Command* command = candidates.front();
 
-    // If there are arguments, then we will need to perform overload resolution.
-    if (!args.empty())
+    // If a command is overloaded, then we will need to perform overload resolution.
+    if (candidates.size() > 1)
     {
         // Remove candidates which don't have the correct number of arguments.
         candidates.erase(std::remove_if(candidates.begin(), candidates.end(),

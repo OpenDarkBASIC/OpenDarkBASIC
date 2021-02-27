@@ -1,17 +1,17 @@
-#include "TGCEngineInterface.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
+#include "DBPEngineInterface.hpp"
+#include "odb-compiler/parsers/TargetLibParser.hpp"
 
 #include <filesystem>
 
 namespace odb::ir {
 namespace {
-std::string getPluginName(const DynamicLibrary* library)
+std::string getPluginName(const TargetLibParser* library)
 {
     return std::filesystem::path{library->getFilename()}.stem().string();
 }
 } // namespace
 
-TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(module)
+DBPEngineInterface::DBPEngineInterface(llvm::Module& module) : EngineInterface(module)
 {
     dwordTy = llvm::Type::getInt8PtrTy(ctx);
 
@@ -44,7 +44,7 @@ TGCEngineInterface::TGCEngineInterface(llvm::Module& module) : EngineInterface(m
     initialiseEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 }
 
-llvm::Function* TGCEngineInterface::generateCommandCall(const cmd::Command& command, const std::string& functionName,
+llvm::Function* DBPEngineInterface::generateCommandCall(const cmd::Command& command, const std::string& functionName,
                                                         llvm::FunctionType* functionType)
 {
     llvm::Function* function =
@@ -95,7 +95,7 @@ llvm::Function* TGCEngineInterface::generateCommandCall(const cmd::Command& comm
     return function;
 }
 
-void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad)
+void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<TargetLibParser*> pluginsToLoad)
 {
     if (pluginsToLoad.empty())
     {
@@ -105,7 +105,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     }
 
     // Ensuring that DBProCore.dll is the first plugin.
-    auto isCorePlugin = [](const DynamicLibrary* library) -> bool
+    auto isCorePlugin = [](const TargetLibParser* library) -> bool
     {
         return std::filesystem::path{library->getFilename()}.stem() == "DBProCore";
     };
@@ -150,7 +150,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     // Load plugins.
     for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
-        DynamicLibrary* plugin = pluginsToLoad[i];
+        TargetLibParser* plugin = pluginsToLoad[i];
         std::string pluginName = getPluginName(plugin);
         std::string pluginPath = std::filesystem::path{plugin->getFilename()}.filename().string();
 
@@ -184,7 +184,7 @@ void TGCEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
 }
 
-llvm::Value* TGCEngineInterface::getOrAddPluginHandleVar(const DynamicLibrary* library)
+llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const TargetLibParser* library)
 {
     auto pluginName = getPluginName(library);
 
@@ -200,8 +200,8 @@ llvm::Value* TGCEngineInterface::getOrAddPluginHandleVar(const DynamicLibrary* l
     return pluginHandle;
 }
 
-llvm::FunctionCallee TGCEngineInterface::getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
-                                                           const DynamicLibrary* library, const std::string& symbol,
+llvm::FunctionCallee DBPEngineInterface::getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
+                                                           const TargetLibParser* library, const std::string& symbol,
                                                            const std::string& symbolStringName)
 {
     llvm::Value* pluginHandle = builder.CreateLoad(getOrAddPluginHandleVar(library));

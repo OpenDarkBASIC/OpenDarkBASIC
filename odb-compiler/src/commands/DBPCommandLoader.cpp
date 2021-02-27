@@ -1,12 +1,12 @@
 #include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/parsers/db/KeywordToken.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
 #include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
+#include <algorithm>
+#include <odb-compiler/parsers/TargetLibParser.hpp>
 #include <set>
-#include <unordered_set>
 
 namespace fs = std::filesystem;
 
@@ -21,7 +21,6 @@ DBPCommandLoader::DBPCommandLoader(const fs::path& sdkRoot, const std::vector<fs
 // ----------------------------------------------------------------------------
 bool DBPCommandLoader::populateIndex(CommandIndex* index)
 {
-#if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::vector<fs::path> pluginsToLoad;
 
     if (!fs::is_directory(sdkRoot_))
@@ -55,7 +54,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<DynamicLibrary> lib = DynamicLibrary::open(path.string().c_str());
+        Reference<TargetLibParser> lib = TargetLibParser::open(path.string());
         if (lib == nullptr)
             continue;
 
@@ -64,17 +63,11 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
     }
 
     return true;
-#else
-    // Not implemented on other platforms... yet.
-    Log::sdk(Log::ERROR, "DBP command loading not implemented on this platform\n");
-    return false;
-#endif
 }
 
 // ----------------------------------------------------------------------------
-bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
+bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library)
 {
-#if defined(ODBCOMPILER_PLATFORM_WIN32)
     std::set<std::string> stringTable;
 
     // Load string table from library. We use a set here to deal with any duplicate entries in the library.
@@ -102,7 +95,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
 
         // Extract command name and return type.
         auto& commandName = tokens[0];
-        auto& functionTypes = tokens[1];
+        auto& argumentTypeList = tokens[1];
         const auto& dllSymbol = tokens[2];
         Command::Type returnType = Command::Type::Void;
         std::vector<Command::Arg> args;
@@ -112,7 +105,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
         {
             commandName = commandName.substr(0, commandName.size() - 1);
             returnType = convertTypeChar(tokens[1][0]);
-            functionTypes = functionTypes.substr(1);
+            argumentTypeList = argumentTypeList.substr(1);
         }
         std::transform(commandName.begin(), commandName.end(), commandName.begin(),
                        [](char c) { return std::tolower(c); });
@@ -129,30 +122,31 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
         {
             str::split(&argumentNames, tokens[3], ',');
         }
-        for (int typeIdx = 0; typeIdx < functionTypes.size(); ++typeIdx)
+
+        // If a function has a single void type, represented by '0', it should be treated as having no arguments.
+        if (argumentTypeList != "0")
         {
-            Command::Arg arg;
-            arg.type = convertTypeChar(functionTypes[typeIdx]);
-            if (arg.type == Command::Type::Void)
+            for (std::size_t typeIdx = 0; typeIdx < argumentTypeList.size(); ++typeIdx)
             {
-                continue;
+                Command::Arg arg;
+                arg.type = convertTypeChar(argumentTypeList[typeIdx]);
+                if (arg.type == Command::Type::Void)
+                {
+                    fprintf(stderr, "Void type '0' encountered in string table entry: %s\n", stringTableEntry.c_str());
+                    return false;
+                }
+                if (typeIdx < argumentNames.size())
+                {
+                    arg.description = std::move(argumentNames[typeIdx]);
+                }
+                args.emplace_back(std::move(arg));
             }
-            if (typeIdx < argumentNames.size())
-            {
-                arg.description = std::move(argumentNames[typeIdx]);
-            }
-            args.emplace_back(std::move(arg));
         }
 
         index->addCommand(new Command(library, commandName, dllSymbol, returnType, args));
     }
 
     return true;
-#else
-    // Not implemented on other platforms... yet.
-    Log::sdk(Log::ERROR, "DBP command loading not implemented on this platform\n");
-    return false;
-#endif
 }
 
 } // namespace odb::cmd

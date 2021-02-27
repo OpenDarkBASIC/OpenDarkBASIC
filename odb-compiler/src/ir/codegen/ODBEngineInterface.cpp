@@ -15,7 +15,7 @@ llvm::Function* ODBEngineInterface::generateCommandCall(const cmd::Command& comm
     return llvm::Function::Create(functionType, llvm::Function::ExternalLinkage, functionName, module);
 }
 
-void ODBEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad)
+void ODBEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<TargetLibParser*> pluginsToLoad)
 {
     // Create main function.
     llvm::Function* entryPointFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}),

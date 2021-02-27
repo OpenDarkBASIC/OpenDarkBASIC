@@ -38,7 +38,7 @@ public:
 
     const std::vector<Reference<Command>>& commands() const;
     std::vector<std::string> commandNamesAsList() const;
-    std::vector<DynamicLibrary*> librariesAsList() const;
+    std::vector<TargetLibParser*> librariesAsList() const;
 
 private:
     std::vector<Reference<Command>> commands_;

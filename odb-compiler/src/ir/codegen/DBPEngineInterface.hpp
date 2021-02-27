@@ -4,14 +4,14 @@
 #include <unordered_map>
 
 namespace odb::ir {
-class TGCEngineInterface : public EngineInterface
+class DBPEngineInterface : public EngineInterface
 {
 public:
-    explicit TGCEngineInterface(llvm::Module& module);
+    explicit DBPEngineInterface(llvm::Module& module);
 
     llvm::Function* generateCommandCall(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
-    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad) override;
+    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<TargetLibParser*> pluginsToLoad) override;
 
 private:
     llvm::PointerType* voidPtrTy;
@@ -25,9 +25,9 @@ private:
 
     std::unordered_map<std::string, llvm::Value*> pluginHandlePtrs;
 
-    llvm::Value* getOrAddPluginHandleVar(const DynamicLibrary* library);
+    llvm::Value* getOrAddPluginHandleVar(const TargetLibParser* library);
     llvm::FunctionCallee getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
-                                           const DynamicLibrary* library, const std::string& symbol,
+                                           const TargetLibParser* library, const std::string& symbol,
                                            const std::string& symbolStringName = "");
 
     template <typename... T>

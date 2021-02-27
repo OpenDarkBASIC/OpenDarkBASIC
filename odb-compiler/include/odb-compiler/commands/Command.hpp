@@ -7,7 +7,7 @@
 #include <optional>
 
 namespace odb {
-class DynamicLibrary;
+class TargetLibParser;
 
 namespace cmd {
 
@@ -34,7 +34,7 @@ public:
         std::string description;
     };
 
-    Command(DynamicLibrary* sourceLibrary,
+    Command(TargetLibParser* sourceLibrary,
             const std::string& dbSymbol,
             const std::string& cppSymbol,
             Type returnType,
@@ -47,10 +47,10 @@ public:
     const std::vector<Arg>& args() const;
     Type returnType() const;
 
-    DynamicLibrary* library() const;
+    TargetLibParser* library() const;
 
 private:
-    Reference<DynamicLibrary> library_;
+    Reference<TargetLibParser> library_;
     std::string dbSymbol_;
     std::string cppSymbol_;
     std::string helpFile_;

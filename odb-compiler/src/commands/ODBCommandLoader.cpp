@@ -1,7 +1,7 @@
 #include "odb-compiler/commands/ODBCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
+#include "odb-compiler/parsers/TargetLibParser.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Reference.hpp"
@@ -117,7 +117,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<DynamicLibrary> lib = DynamicLibrary::open(path.string().c_str());
+        Reference<TargetLibParser> lib = TargetLibParser::open(path.string());
         if (lib == nullptr)
             continue;
 
@@ -129,12 +129,13 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
+bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library)
 {
     auto lookupString = [&library](std::string sym) -> std::string {
-        const char** addr = reinterpret_cast<const char**>(
-            library->lookupSymbolAddress(sym.c_str()));
-        return addr ? *addr : "";
+        //        const char** addr = reinterpret_cast<const char**>(
+        //            library->lookupSymbolAddress(sym.c_str()));
+        //        return addr ? *addr : "";
+        return "";
     };
 
     for (int i = 0; i != library->getSymbolCount(); ++i)

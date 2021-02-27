@@ -213,12 +213,13 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/commands/CommandMatcher.cpp"
     "src/ir/codegen/CodeGenerator.cpp"
     "src/ir/codegen/ODBEngineInterface.cpp"
-    "src/ir/codegen/TGCEngineInterface.cpp"
+    "src/ir/codegen/DBPEngineInterface.cpp"
     "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
     "src/ir/SemanticChecker.cpp"
-    "src/parsers/db/Driver.cpp")
+    "src/parsers/db/Driver.cpp"
+    "src/parsers/TargetLibParser.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -249,6 +250,34 @@ set_target_properties (odb-compiler
         LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR}
         POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
+
+###############################################################################
+# Executable parsing.
+###############################################################################
+include (ExternalProject)
+
+ExternalProject_Add(
+    lief
+    URL https://github.com/lief-project/LIEF/archive/0.11.2.tar.gz
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install
+        -DBUILD_SHARED_LIBS=OFF
+        -DLIEF_PYTHON_API=OFF
+        -DLIEF_C_API=OFF
+        -DLIEF_EXAMPLES=OFF
+        -DLIEF_USE_CCACHE=OFF
+        -DLIEF_LOGGING=OFF
+        -DLIEF_LOGGING_DEBUG=OFF
+        -DLIEF_ENABLE_JSON=OFF
+        -DLIEF_OAT=OFF
+        -DLIEF_DEX=OFF
+        -DLIEF_VDEX=OFF
+        -DLIEF_ART=OFF
+    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/lib/libLIEF.a
+)
+target_include_directories(odb-compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/include)
+target_link_libraries(odb-compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/lib/libLIEF.a)
+add_dependencies(odb-compiler lief)
 
 ###############################################################################
 # LLVM stuff

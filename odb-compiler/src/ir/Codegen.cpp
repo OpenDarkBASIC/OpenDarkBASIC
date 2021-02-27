@@ -1,9 +1,9 @@
 #include "odb-compiler/ir/Codegen.hpp"
 
 #include "codegen/CodeGenerator.hpp"
+#include "codegen/DBPEngineInterface.hpp"
 #include "codegen/LLVM.hpp"
 #include "codegen/ODBEngineInterface.hpp"
-#include "codegen/TGCEngineInterface.hpp"
 
 #include <iostream>
 
@@ -20,7 +20,7 @@ bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTr
         switch (sdk_type)
         {
         case SDKType::DarkBASIC:
-            engineInterface = std::make_unique<TGCEngineInterface>(module);
+            engineInterface = std::make_unique<DBPEngineInterface>(module);
             break;
         case SDKType::ODB:
             engineInterface = std::make_unique<ODBEngineInterface>(module);

@@ -1,11 +1,10 @@
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
 
 namespace odb {
 namespace cmd {
 
 // ----------------------------------------------------------------------------
-Command::Command(DynamicLibrary* sourceLibrary,
+Command::Command(TargetLibParser* sourceLibrary,
                  const std::string& dbSymbol,
                  const std::string& cppSymbol,
                  Type returnType,
@@ -51,7 +50,7 @@ Command::Type Command::returnType() const
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary* Command::library() const
+TargetLibParser* Command::library() const
 {
     return library_;
 }
