@@ -22,62 +22,84 @@
 
 #pragma once
 
-#include "odb-sdk/config.hpp"
+#include "odb-sdk/RefCounted.hxx"
+#include <cassert>
+#include <new>
 
 namespace odb {
 
-/// common::Reference< count structure.
-struct ODBSDK_PUBLIC_API RefCount
+namespace detail {
+
+template <typename RefCountType>
+RefCountedBase<RefCountType>::RefCountedBase()
+    : refs_(0)
 {
-    /// Construct.
-    RefCount() :
-        refs_(0),
-        weakRefs_(0)
-    {
-    }
+}
 
-    /// Destruct.
-    ~RefCount()
-    {
-        // Set reference counts below zero to fire asserts if this object is still accessed
-        refs_ = -1;
-        weakRefs_ = -1;
-    }
+template <typename RefCountType>
+RefCountedBase<RefCountType>::~RefCountedBase() {}
 
-    /// common::Reference< count. If below zero, the object has been destroyed.
-    int refs_;
-    /// Weak reference count.
-    int weakRefs_;
-};
 
-/// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
-class ODBSDK_PUBLIC_API RefCounted
+template <typename RefCountType>
+void RefCountedBase<RefCountType>::addRef()
 {
-public:
-    /// Construct. Allocate the reference count structure and set an initial self weak reference.
-    RefCounted();
-    /// Destruct. Mark as expired and also delete the reference count structure if no outside weak references exist.
-    virtual ~RefCounted();
-    /// Prevent copy construction.
-    RefCounted(const RefCounted& rhs) = delete;
-    /// Prevent assignment.
-    RefCounted& operator=(const RefCounted& rhs) = delete;
+    assert(refs_ >= 0);
+    ++refs_;
+}
 
-    /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
-    void addRef();
-    /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting.
-    void releaseRef();
-    /// Return reference count.
-    int refs() const;
-    /// Return weak reference count.
-    int weakRefs() const;
+template <typename RefCountType>
+void RefCountedBase<RefCountType>::releaseRef()
+{
+    assert(refs_ > 0);
+    if (!--refs_)
+        seppuku();
+}
 
-    /// Return pointer to the reference count structure.
-    RefCount* refCountPtr() { return refCount_; }
+template <typename RefCountType>
+void RefCountedBase<RefCountType>::detach()
+{
+    ++refs_; // 2 refs
+    releaseRef(); // 1 ref
+    --refs_; // 0 refs
+}
 
-private:
-    /// Pointer to the reference count structure.
-    RefCount* refCount_;
-};
+template <typename RefCountType>
+RefCountType RefCountedBase<RefCountType>::refs() const
+{
+    return refs_;
+}
+
+}
+
+template <typename Allocator, typename RefCountType>
+Reference<typename RefCounted<Allocator, RefCountType>::Instancer> RefCounted<Allocator, RefCountType>::newInstancer()
+{
+    return new Instancer();
+}
+
+template <typename Allocator, typename RefCountType>
+RefCounted<Allocator, RefCountType>::~RefCounted()
+{
+    instancer_->releaseRef();
+}
+
+template <typename Allocator, typename RefCountType>
+void RefCounted<Allocator, RefCountType>::setInstancer(Instancer* instancer)
+{
+    instancer_ = instancer;
+    instancer_->addRef();
+}
+
+template <typename Allocator, typename RefCountType>
+void RefCounted<Allocator, RefCountType>::seppuku()
+{
+    instancer_->destroy(this);
+}
+
+template <typename RefCountType>
+void RefCounted<alloc::DefaultAllocator, RefCountType>::seppuku()
+{
+    delete this;
+}
 
 }

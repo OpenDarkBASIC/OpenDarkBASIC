@@ -35,19 +35,79 @@
 
 namespace odb::ast {
 
-template <typename T> struct Complex { T real = 0; T imag = 0; };
-template <typename T> struct Quat    { T r = 1; T i = 0; T j = 0; T k = 0; };
-template <typename T> struct Vec2    { T x = 0; T y = 0; };
-template <typename T> struct Vec3    { T x = 0; T y = 0; T z = 0; };
-template <typename T> struct Vec4    { T x = 0; T y = 0; T z = 0; T w = 0; };
-template <typename T> struct Mat2x2  { Vec2<T> e0 = {1, 0}; Vec2<T> e1 = {0, 1}; };
-template <typename T> struct Mat2x3  { Vec2<T> e0 = {0, 0}; Vec2<T> e1 = {0, 0}; Vec2<T> e2 = {0, 0}; };
-template <typename T> struct Mat2x4  { Vec2<T> e0 = {0, 0}; Vec2<T> e1 = {0, 0}; Vec2<T> e2 = {0, 0}; Vec2<T> e3 = {0, 0}; };
-template <typename T> struct Mat3x2  { Vec3<T> e0 = {0, 0, 0}; Vec3<T> e1 = {0, 0, 0}; };
-template <typename T> struct Mat3x3  { Vec3<T> e0 = {1, 0, 0}; Vec3<T> e1 = {0, 1, 0}; Vec3<T> e2 = {0, 0, 1}; };
-template <typename T> struct Mat3x4  { Vec3<T> e0 = {0, 0, 0}; Vec3<T> e1 = {0, 0, 0}; Vec3<T> e2 = {0, 0, 0}; Vec3<T> e3 = {0, 0, 0}; };
-template <typename T> struct Mat4x2  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; };
-template <typename T> struct Mat4x3  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; Vec4<T> e2 = {0, 0, 0, 0}; };
-template <typename T> struct Mat4x4  { Vec4<T> e0 = {1, 0, 0, 0}; Vec4<T> e1 = {0, 1, 0, 0}; Vec4<T> e2 = {0, 0, 1, 0}; Vec4<T> e3 = {0, 0, 0, 1}; };
+template <typename T> struct Complex {
+    Complex() : real(0), imag(0){}
+    Complex(T real, T imag) : real(real), imag(imag){}
+    T real, imag; };
+template <typename T> struct Quat {
+    Quat() : r(1), i(0), j(0), k(0) {}
+    Quat(T r, T i, T j, T k) : r(r), i(i), j(j), k(k){}
+    T r, i, j, k; };
+template <typename T> struct Vec2 {
+    Vec2() : x(0), y(0) {}
+    Vec2(T x, T y) : x(x), y(y){}
+    T x, y; };
+template <typename T> struct Vec3 {
+    Vec3() : x(0), y(0), z(0) {}
+    Vec3(T x, T y, T z) : x(x), y(y), z(z){}
+    T x, y, z; };
+template <typename T> struct Vec4 {
+    Vec4() : x(0), y(0), z(0), w(1) {}
+    Vec4(T x, T y, T z, T w) : x(x), y(y), z(z), w(w){}
+    T x, y, z, w; };
+template <typename T> struct Mat2x2 {
+    Mat2x2() : e0(1, 0)
+             , e1(0, 1) {}
+    Mat2x2(Vec2<T> e0, Vec2<T> e1) : e0(e0), e1(e1){}
+    Vec2<T> e0, e1; };
+template <typename T> struct Mat2x3 {
+    Mat2x3() : e0(0, 0)
+             , e1(0, 0)
+             , e2(0, 0) {}
+    Mat2x3(Vec2<T> e0, Vec2<T> e1, Vec2<T> e2) : e0(e0), e1(e1), e2(e2){}
+    Vec2<T> e0, e1, e2; };
+template <typename T> struct Mat2x4 {
+    Mat2x4() : e0(0, 0)
+             , e1(0, 0)
+             , e2(0, 0)
+             , e3(0, 0) {}
+    Mat2x4(Vec2<T> e0, Vec2<T> e1, Vec2<T> e2, Vec2<T> e3) : e0(e0), e1(e1), e2(e2), e3(e3){}
+    Vec2<T> e0, e1, e2, e3; };
+template <typename T> struct Mat3x2 {
+    Mat3x2() : e0(0, 0, 0)
+             , e1(0, 0, 0) {}
+    Mat3x2(Vec3<T> e0, Vec3<T> e1) : e0(e0), e1(e1){}
+    Vec3<T> e0, e1; };
+template <typename T> struct Mat3x3 {
+    Mat3x3() : e0(1, 0, 0)
+             , e1(0, 1, 0)
+             , e2(0, 0, 1) {}
+    Mat3x3(Vec3<T> e0, Vec3<T> e1, Vec3<T> e2) : e0(e0), e1(e1), e2(e2){}
+    Vec3<T> e0, e1, e2; };
+template <typename T> struct Mat3x4 {
+    Mat3x4() : e0(0, 0, 0)
+             , e1(0, 0, 0)
+             , e2(0, 0, 0)
+             , e3(0, 0, 0) {}
+    Mat3x4(Vec3<T> e0, Vec3<T> e1, Vec3<T> e2, Vec3<T> e3) : e0(e0), e1(e1), e2(e2), e3(e3){}
+    Vec3<T> e0, e1, e2, e3; };
+template <typename T> struct Mat4x2 {
+    Mat4x2() : e0(0, 0, 0, 0)
+             , e1(0, 0, 0, 0) {}
+    Mat4x2(Vec4<T> e0, Vec4<T> e1) : e0(e0), e1(e1){}
+    Vec4<T> e0, e1; };
+template <typename T> struct Mat4x3 {
+    Mat4x3() : e0(0, 0, 0, 0)
+             , e1(0, 0, 0, 0)
+             , e2(0, 0, 0, 0) {}
+    Mat4x3(Vec4<T> e0, Vec4<T> e1, Vec4<T> e2) : e0(e0), e1(e1), e2(e2){}
+    Vec4<T> e0, e1, e2; };
+template <typename T> struct Mat4x4 {
+    Mat4x4() : e0(1, 0, 0, 0)
+             , e1(0, 1, 0, 0)
+             , e2(0, 0, 1, 0)
+             , e3(0, 0, 0, 1) {}
+    Mat4x4(Vec4<T> e0, Vec4<T> e1, Vec4<T> e2, Vec4<T> e3) : e0(e0), e1(e1), e2(e2), e3(e3){}
+    Vec4<T> e0, e1, e2, e3; };
 
 }

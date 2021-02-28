@@ -10,7 +10,7 @@ namespace odb {
 
 struct DynLibPlatformData;
 
-class ODBSDK_PUBLIC_API DynamicLibrary : public RefCounted
+class ODBSDK_PUBLIC_API DynamicLibrary : public RefCounted<>
 {
 public:
     DynamicLibrary() = delete;

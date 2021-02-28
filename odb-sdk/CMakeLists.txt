@@ -26,8 +26,10 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/DynamicLibrary.cpp"
     "src/FileSystem.cpp"
     "src/Log.cpp"
-    "src/RefCounted.cpp"
-    "src/Str.cpp")
+    "src/Str.cpp"
+    "src/allocators/Mallocator.cpp"
+    "src/allocators/Null.cpp"
+    "src/allocators/Page.cpp")
 target_include_directories (odb-sdk
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

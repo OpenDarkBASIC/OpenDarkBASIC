@@ -2,7 +2,9 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-sdk/Log.hpp"
-#include "odb-sdk/RefCounted.hpp"
+#include "odb-sdk/allocators/Linear.hpp"
+#include "odb-sdk/allocators/Page.hpp"
+#include "odb-sdk/allocators/Instancer.hpp"
 #include <istream>
 #include <vector>
 #include <memory>
@@ -20,7 +22,7 @@ namespace ast {
  * and 3. The first/last column range is exclusive, so columns 1-3 would mean
  * columns 1 and 2. This is just an artefact of the way lexing is implemented.
  */
-class ODBCOMPILER_PUBLIC_API SourceLocation : public RefCounted
+class ODBCOMPILER_PUBLIC_API SourceLocation : public RefCounted<alloc::Linear<alloc::Page, 4*1024*1024>>
 {
 public:
     SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color=Log::RESET);

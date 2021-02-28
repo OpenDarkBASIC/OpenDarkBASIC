@@ -2,6 +2,9 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-sdk/Reference.hpp"
+#include "odb-sdk/allocators/Linear.hpp"
+#include "odb-sdk/allocators/Page.hpp"
+#include "odb-sdk/allocators/Instancer.hpp"
 #include <string>
 
 namespace odb::ast {
@@ -10,7 +13,7 @@ class ConstVisitor;
 class SourceLocation;
 class Visitor;
 
-class ODBCOMPILER_PUBLIC_API Node : public RefCounted
+class ODBCOMPILER_PUBLIC_API Node : public RefCounted<alloc::Linear<alloc::Page, 4*1024*1024>>
 {
 public:
     Node(SourceLocation* location);

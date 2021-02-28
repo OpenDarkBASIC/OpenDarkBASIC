@@ -449,7 +449,7 @@ seps : seps sep | sep;
 seps_maybe : seps | ;
 block
   : block seps stmnt                                          { $$ = $1; $$->appendStatement($3); }
-  | stmnt                                                     { $$ = new Block($1, driver->newLocation(&@$)); }
+  | stmnt                                                     { $$ = driver->create<Block>($1, driver->newLocation(&@$)); }
   ;
 stmnt
   : const_decl                                                { $$ = $1; }
@@ -473,40 +473,40 @@ stmnt
   ;
 arg_list
   : arg_list ',' expr                                         { $$ = $1; $$->appendExpression($3); }
-  | expr                                                      { $$ = new ArgList($1, driver->newLocation(&@$)); }
+  | expr                                                      { $$ = driver->create<ArgList>($1, driver->newLocation(&@$)); }
   ;
 initializer_list
   : initializer_list ',' expr                                 { $$ = $1; $$->appendExpression($3); }
-  | expr                                                      { $$ = new InitializerList($1, driver->newLocation(&@$)); }
+  | expr                                                      { $$ = driver->create<InitializerList>($1, driver->newLocation(&@$)); }
   ;
 expr
   : '(' initializer_list ',' expr ')'                         { $$ = $2; $2->appendExpression($4); }
   | '(' expr ')'                                              { $$ = $2; }
-  | expr '+' expr                                             { $$ = new BinaryOp(BinaryOpType::ADD, $1, $3, driver->newLocation(&@$)); }
-  | expr '-' expr                                             { $$ = new BinaryOp(BinaryOpType::SUB, $1, $3, driver->newLocation(&@$)); }
-  | expr '*' expr                                             { $$ = new BinaryOp(BinaryOpType::MUL, $1, $3, driver->newLocation(&@$)); }
-  | expr '/' expr                                             { $$ = new BinaryOp(BinaryOpType::DIV, $1, $3, driver->newLocation(&@$)); }
-  | expr MOD expr                                             { $$ = new BinaryOp(BinaryOpType::MOD, $1, $3, driver->newLocation(&@$)); }
-  | expr '^' expr                                             { $$ = new BinaryOp(BinaryOpType::POW, $1, $3, driver->newLocation(&@$)); }
-  | expr BSHL expr                                            { $$ = new BinaryOp(BinaryOpType::SHIFT_LEFT, $1, $3, driver->newLocation(&@$)); }
-  | expr BSHR expr                                            { $$ = new BinaryOp(BinaryOpType::SHIFT_RIGHT, $1, $3, driver->newLocation(&@$)); }
-  | expr BOR expr                                             { $$ = new BinaryOp(BinaryOpType::BITWISE_OR, $1, $3, driver->newLocation(&@$)); }
-  | expr BAND expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_AND, $1, $3, driver->newLocation(&@$)); }
-  | expr BXOR expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_XOR, $1, $3, driver->newLocation(&@$)); }
-  | expr BNOT expr                                            { $$ = new BinaryOp(BinaryOpType::BITWISE_NOT, $1, $3, driver->newLocation(&@$)); }
-  | expr '<' expr                                             { $$ = new BinaryOp(BinaryOpType::LESS_THAN, $1, $3, driver->newLocation(&@$)); }
-  | expr '>' expr                                             { $$ = new BinaryOp(BinaryOpType::GREATER_THAN, $1, $3, driver->newLocation(&@$)); }
-  | expr LE expr                                              { $$ = new BinaryOp(BinaryOpType::LESS_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr GE expr                                              { $$ = new BinaryOp(BinaryOpType::GREATER_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr '=' expr                                             { $$ = new BinaryOp(BinaryOpType::EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr NE expr                                              { $$ = new BinaryOp(BinaryOpType::NOT_EQUAL, $1, $3, driver->newLocation(&@$)); }
-  | expr LOR expr                                             { $$ = new BinaryOp(BinaryOpType::LOGICAL_OR, $1, $3, driver->newLocation(&@$)); }
-  | expr LAND expr                                            { $$ = new BinaryOp(BinaryOpType::LOGICAL_AND, $1, $3, driver->newLocation(&@$)); }
-  | expr LXOR expr                                            { $$ = new BinaryOp(BinaryOpType::LOGICAL_XOR, $1, $3, driver->newLocation(&@$)); }
-  | LNOT expr                                                 { $$ = new UnaryOp(UnaryOpType::LOGICAL_NOT, $2, driver->newLocation(&@$)); }
-  | BNOT expr %prec UNOT                                      { $$ = new UnaryOp(UnaryOpType::BITWISE_NOT, $2, driver->newLocation(&@$)); }
+  | expr '+' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::ADD, $1, $3, driver->newLocation(&@$)); }
+  | expr '-' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::SUB, $1, $3, driver->newLocation(&@$)); }
+  | expr '*' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::MUL, $1, $3, driver->newLocation(&@$)); }
+  | expr '/' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::DIV, $1, $3, driver->newLocation(&@$)); }
+  | expr MOD expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::MOD, $1, $3, driver->newLocation(&@$)); }
+  | expr '^' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::POW, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHL expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::SHIFT_LEFT, $1, $3, driver->newLocation(&@$)); }
+  | expr BSHR expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::SHIFT_RIGHT, $1, $3, driver->newLocation(&@$)); }
+  | expr BOR expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::BITWISE_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr BAND expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::BITWISE_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr BXOR expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::BITWISE_XOR, $1, $3, driver->newLocation(&@$)); }
+  | expr BNOT expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::BITWISE_NOT, $1, $3, driver->newLocation(&@$)); }
+  | expr '<' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::LESS_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr '>' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::GREATER_THAN, $1, $3, driver->newLocation(&@$)); }
+  | expr LE expr                                              { $$ = driver->create<BinaryOp>(BinaryOpType::LESS_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr GE expr                                              { $$ = driver->create<BinaryOp>(BinaryOpType::GREATER_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr '=' expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr NE expr                                              { $$ = driver->create<BinaryOp>(BinaryOpType::NOT_EQUAL, $1, $3, driver->newLocation(&@$)); }
+  | expr LOR expr                                             { $$ = driver->create<BinaryOp>(BinaryOpType::LOGICAL_OR, $1, $3, driver->newLocation(&@$)); }
+  | expr LAND expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::LOGICAL_AND, $1, $3, driver->newLocation(&@$)); }
+  | expr LXOR expr                                            { $$ = driver->create<BinaryOp>(BinaryOpType::LOGICAL_XOR, $1, $3, driver->newLocation(&@$)); }
+  | LNOT expr                                                 { $$ = driver->create<UnaryOp>(UnaryOpType::LOGICAL_NOT, $2, driver->newLocation(&@$)); }
+  | BNOT expr %prec UNOT                                      { $$ = driver->create<UnaryOp>(UnaryOpType::BITWISE_NOT, $2, driver->newLocation(&@$)); }
   | '+' expr %prec UPLUS                                      { $$ = $2; }
-  | '-' expr %prec UMINUS                                     { $$ = new UnaryOp(UnaryOpType::NEGATE, $2, driver->newLocation(&@$)); }
+  | '-' expr %prec UMINUS                                     { $$ = driver->create<UnaryOp>(UnaryOpType::NEGATE, $2, driver->newLocation(&@$)); }
   | literal                                                   { $$ = $1; }
   | func_call_expr_or_array_ref                               { $$ = $1; }
   | command_expr                                              { $$ = $1; }
@@ -517,20 +517,20 @@ expr
 /* Commands appearing as statements usually don't have arguments surrounded by
  * brackets, but it is valid to call a command with brackets as a statement */
 command_stmnt
-  : COMMAND                                                   { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND arg_list                                         { $$ = new CommandStmnt($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND '(' ')'                                           { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : COMMAND                                                   { $$ = driver->create<CommandStmnt>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND arg_list                                          { $$ = driver->create<CommandStmnt>($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND '(' ')'                                           { $$ = driver->create<CommandStmnt>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
 /* This case is already handled by expr
-  | COMMAND '(' arg_list ')'                                 { $$ = new CommandStmnt($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
+  | COMMAND '(' arg_list ')'                                 { $$ = driver->create<CommandStmnt>($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
   ;
 
 /* Commands appearing in expressions must be called with arguments in brackets */
 command_expr
-  : COMMAND '(' ')'                                           { $$ = new CommandExpr($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND '(' arg_list ')'                                 { $$ = new CommandExpr($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : COMMAND '(' ')'                                           { $$ = driver->create<CommandExpr>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND '(' arg_list ')'                                  { $$ = driver->create<CommandExpr>($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 const_decl
-  : CONSTANT annotated_symbol expr                            { $$ = new ConstDeclExpr($2, $3, driver->newLocation(&@$)); }
+  : CONSTANT annotated_symbol expr                            { $$ = driver->create<ConstDeclExpr>($2, $3, driver->newLocation(&@$)); }
   ;
 incdec
   : INC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, odb::db::Driver::INC, &@$); }
@@ -547,12 +547,12 @@ incdec
   | DEC udt_field_lvalue                                      { $$ = driver->newIncDecUDTField($2, odb::db::Driver::DEC, &@$); }
   ;
 assignment
-  : var_ref '=' expr                                          { $$ = new VarAssignment($1, $3, driver->newLocation(&@$)); }
-  | array_ref '=' expr                                        { $$ = new ArrayAssignment($1, $3, driver->newLocation(&@$)); }
-  | udt_field_lvalue '=' expr                                 { $$ = new UDTFieldAssignment($1, $3, driver->newLocation(&@$)); }
+  : var_ref '=' expr                                          { $$ = driver->create<VarAssignment>($1, $3, driver->newLocation(&@$)); }
+  | array_ref '=' expr                                        { $$ = driver->create<ArrayAssignment>($1, $3, driver->newLocation(&@$)); }
+  | udt_field_lvalue '=' expr                                 { $$ = driver->create<UDTFieldAssignment>($1, $3, driver->newLocation(&@$)); }
   ;
 var_ref
-  : annotated_symbol                                          { $$ = new VarRef($1, driver->newLocation(&@$)); }
+  : annotated_symbol                                          { $$ = driver->create<VarRef>($1, driver->newLocation(&@$)); }
   ;
 var_decl
   : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
@@ -563,46 +563,46 @@ var_decl
   | var_decl_as_type                                          { $$ = $1; }
   ;
 var_decl_no_as_type
-  : var_int_sym                                               { $$ = new IntegerVarDecl($1, driver->newLocation(&@$)); }
-  | var_double_int_sym                                        { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&@$)); }
-  | var_word_sym                                              { $$ = new WordVarDecl($1, driver->newLocation(&@$)); }
-  | var_double_float_sym                                      { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_float_sym                                             { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_str_sym                                               { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
+  : var_int_sym                                               { $$ = driver->create<IntegerVarDecl>($1, driver->newLocation(&@$)); }
+  | var_double_int_sym                                        { $$ = driver->create<DoubleIntegerVarDecl>($1, driver->newLocation(&@$)); }
+  | var_word_sym                                              { $$ = driver->create<WordVarDecl>($1, driver->newLocation(&@$)); }
+  | var_double_float_sym                                      { $$ = driver->create<DoubleFloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_float_sym                                             { $$ = driver->create<FloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_str_sym                                               { $$ = driver->create<StringVarDecl>($1, driver->newLocation(&@$)); }
   ;
 var_decl_as_type
-  : var_int_sym          AS DOUBLE INTEGER                    { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS INTEGER                           { $$ = new IntegerVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS DWORD                             { $$ = new DwordVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS WORD                              { $$ = new WordVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS BYTE                              { $$ = new ByteVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS BOOLEAN                           { $$ = new BooleanVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS DOUBLE FLOAT                      { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS FLOAT                             { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS STRING                            { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
-  | var_double_int_sym   AS DOUBLE INTEGER                    { $$ = new DoubleIntegerVarDecl($1, driver->newLocation(&@$)); }
-  | var_word_sym         AS WORD                              { $$ = new WordVarDecl($1, driver->newLocation(&@$)); }
-  | var_double_float_sym AS DOUBLE FLOAT                      { $$ = new DoubleFloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_float_sym        AS FLOAT                             { $$ = new FloatVarDecl($1, driver->newLocation(&@$)); }
-  | var_str_sym          AS STRING                            { $$ = new StringVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS udt_ref                           { $$ = new UDTVarDecl($1, $3, driver->newLocation(&@$)); }
-  | var_int_sym          AS COMPLEX                           { $$ = new ComplexVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT2X2                            { $$ = new Mat2x2VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT2X3                            { $$ = new Mat2x3VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT2X4                            { $$ = new Mat2x4VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT3X2                            { $$ = new Mat3x2VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT3X3                            { $$ = new Mat3x3VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT3X4                            { $$ = new Mat3x4VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT4X2                            { $$ = new Mat4x2VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT4X3                            { $$ = new Mat4x3VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS MAT4X4                            { $$ = new Mat4x4VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS QUAT                              { $$ = new QuatVarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS VEC2                              { $$ = new Vec2VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS VEC3                              { $$ = new Vec3VarDecl($1, driver->newLocation(&@$)); }
-  | var_int_sym          AS VEC4                              { $$ = new Vec4VarDecl($1, driver->newLocation(&@$)); }
+  : var_int_sym          AS DOUBLE INTEGER                    { $$ = driver->create<DoubleIntegerVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS INTEGER                           { $$ = driver->create<IntegerVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS DWORD                             { $$ = driver->create<DwordVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS WORD                              { $$ = driver->create<WordVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS BYTE                              { $$ = driver->create<ByteVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS BOOLEAN                           { $$ = driver->create<BooleanVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS DOUBLE FLOAT                      { $$ = driver->create<DoubleFloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS FLOAT                             { $$ = driver->create<FloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS STRING                            { $$ = driver->create<StringVarDecl>($1, driver->newLocation(&@$)); }
+  | var_double_int_sym   AS DOUBLE INTEGER                    { $$ = driver->create<DoubleIntegerVarDecl>($1, driver->newLocation(&@$)); }
+  | var_word_sym         AS WORD                              { $$ = driver->create<WordVarDecl>($1, driver->newLocation(&@$)); }
+  | var_double_float_sym AS DOUBLE FLOAT                      { $$ = driver->create<DoubleFloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_float_sym        AS FLOAT                             { $$ = driver->create<FloatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_str_sym          AS STRING                            { $$ = driver->create<StringVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS udt_ref                           { $$ = driver->create<UDTVarDecl>($1, $3, driver->newLocation(&@$)); }
+  | var_int_sym          AS COMPLEX                           { $$ = driver->create<ComplexVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT2X2                            { $$ = driver->create<Mat2x2VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT2X3                            { $$ = driver->create<Mat2x3VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT2X4                            { $$ = driver->create<Mat2x4VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT3X2                            { $$ = driver->create<Mat3x2VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT3X3                            { $$ = driver->create<Mat3x3VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT3X4                            { $$ = driver->create<Mat3x4VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT4X2                            { $$ = driver->create<Mat4x2VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT4X3                            { $$ = driver->create<Mat4x3VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS MAT4X4                            { $$ = driver->create<Mat4x4VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS QUAT                              { $$ = driver->create<QuatVarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS VEC2                              { $$ = driver->create<Vec2VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS VEC3                              { $$ = driver->create<Vec3VarDecl>($1, driver->newLocation(&@$)); }
+  | var_int_sym          AS VEC4                              { $$ = driver->create<Vec4VarDecl>($1, driver->newLocation(&@$)); }
   ;
 array_ref
-  : annotated_symbol '(' arg_list ')'                        { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                         { $$ = driver->create<ArrayRef>($1, $3, driver->newLocation(&@$)); }
   ;
 array_decl
   : scope array_decl_as_type                                  { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
@@ -611,156 +611,156 @@ array_decl
   | array_decl_no_as_type                                     { $$ = $1; }
   ;
 array_decl_no_as_type
-  : DIM var_int_sym          '(' arg_list ')'                { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_int_sym   '(' arg_list ')'                { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_word_sym         '(' arg_list ')'                { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_float_sym '(' arg_list ')'                { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_float_sym        '(' arg_list ')'                { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_str_sym          '(' arg_list ')'                { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
+  : DIM var_int_sym          '(' arg_list ')'                 { $$ = driver->create<IntegerArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_int_sym   '(' arg_list ')'                 { $$ = driver->create<DoubleIntegerArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_word_sym         '(' arg_list ')'                 { $$ = driver->create<WordArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_float_sym '(' arg_list ')'                 { $$ = driver->create<DoubleFloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_float_sym        '(' arg_list ')'                 { $$ = driver->create<FloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_str_sym          '(' arg_list ')'                 { $$ = driver->create<StringArrayDecl>($2, $4, driver->newLocation(&@$)); }
   ;
 array_decl_as_type
-  : DIM var_int_sym          '(' arg_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS INTEGER        { $$ = new IntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS DWORD          { $$ = new DwordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS BYTE           { $$ = new ByteArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS BOOLEAN        { $$ = new BooleanArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS STRING         { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_int_sym   '(' arg_list ')' AS DOUBLE INTEGER { $$ = new DoubleIntegerArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_word_sym         '(' arg_list ')' AS WORD           { $$ = new WordArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_double_float_sym '(' arg_list ')' AS DOUBLE FLOAT   { $$ = new DoubleFloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_float_sym        '(' arg_list ')' AS FLOAT          { $$ = new FloatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_str_sym          '(' arg_list ')'AS STRING          { $$ = new StringArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = new UDTArrayDecl($2, $4, $7, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS COMPLEX        { $$ = new ComplexArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X2         { $$ = new Mat2x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X3         { $$ = new Mat2x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X4         { $$ = new Mat2x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X2         { $$ = new Mat3x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X3         { $$ = new Mat3x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X4         { $$ = new Mat3x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X2         { $$ = new Mat4x2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X3         { $$ = new Mat4x3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X4         { $$ = new Mat4x4ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS QUAT           { $$ = new QuatArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC2           { $$ = new Vec2ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC3           { $$ = new Vec3ArrayDecl($2, $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = new Vec4ArrayDecl($2, $4, driver->newLocation(&@$)); }
+  : DIM var_int_sym          '(' arg_list ')' AS DOUBLE INTEGER { $$ = driver->create<DoubleIntegerArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS INTEGER        { $$ = driver->create<IntegerArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS DWORD          { $$ = driver->create<DwordArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS WORD           { $$ = driver->create<WordArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS BYTE           { $$ = driver->create<ByteArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS BOOLEAN        { $$ = driver->create<BooleanArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS DOUBLE FLOAT   { $$ = driver->create<DoubleFloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS FLOAT          { $$ = driver->create<FloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS STRING         { $$ = driver->create<StringArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_int_sym   '(' arg_list ')' AS DOUBLE INTEGER { $$ = driver->create<DoubleIntegerArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_word_sym         '(' arg_list ')' AS WORD           { $$ = driver->create<WordArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_double_float_sym '(' arg_list ')' AS DOUBLE FLOAT   { $$ = driver->create<DoubleFloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_float_sym        '(' arg_list ')' AS FLOAT          { $$ = driver->create<FloatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_str_sym          '(' arg_list ')'AS STRING          { $$ = driver->create<StringArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = driver->create<UDTArrayDecl>($2, $4, $7, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS COMPLEX        { $$ = driver->create<ComplexArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X2         { $$ = driver->create<Mat2x2ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X3         { $$ = driver->create<Mat2x3ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT2X4         { $$ = driver->create<Mat2x4ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X2         { $$ = driver->create<Mat3x2ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X3         { $$ = driver->create<Mat3x3ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT3X4         { $$ = driver->create<Mat3x4ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X2         { $$ = driver->create<Mat4x2ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X3         { $$ = driver->create<Mat4x3ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS MAT4X4         { $$ = driver->create<Mat4x4ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS QUAT           { $$ = driver->create<QuatArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC2           { $$ = driver->create<Vec2ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC3           { $$ = driver->create<Vec3ArrayDecl>($2, $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = driver->create<Vec4ArrayDecl>($2, $4, driver->newLocation(&@$)); }
   ;
 scope
   : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
   | LOCAL                                                     { $$ = static_cast<char>(Scope::LOCAL); }
   ;
-var_int_sym          : SYMBOL %prec NO_ANNOTATION             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_int_sym   : SYMBOL '&'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_word_sym         : SYMBOL '%'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_float_sym : SYMBOL '!'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_float_sym        : SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_str_sym          : SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_int_sym          : SYMBOL %prec NO_ANNOTATION             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_int_sym   : SYMBOL '&'                             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_word_sym         : SYMBOL '%'                             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_float_sym : SYMBOL '!'                             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_float_sym        : SYMBOL '#'                             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_str_sym          : SYMBOL '$'                             { $$ = driver->create<ScopedAnnotatedSymbol>(Scope::LOCAL, Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
 
 udt_decl
-  : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
+  : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = driver->create<UDTDecl>($2, $4, driver->newLocation(&@$)); }
   ;
 udt_body_decl
   : udt_body_decl seps var_decl_as_type '=' initializer_list  { $$ = $1; $$->appendVarDecl($3); $3->setInitializer($5); }
   | udt_body_decl seps var_decl_as_type                       { $$ = $1; $$->appendVarDecl($3); }
   | udt_body_decl seps array_decl_as_type                     { $$ = $1; $$->appendArrayDecl($3); }
-  | var_decl_as_type '=' initializer_list                     { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); $1->setInitializer($3); }
-  | var_decl_as_type                                          { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
-  | array_decl_as_type                                        { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
+  | var_decl_as_type '=' initializer_list                     { $$ = driver->create<UDTDeclBody>($1, driver->newLocation(&@$)); $1->setInitializer($3); }
+  | var_decl_as_type                                          { $$ = driver->create<UDTDeclBody>($1, driver->newLocation(&@$)); }
+  | array_decl_as_type                                        { $$ = driver->create<UDTDeclBody>($1, driver->newLocation(&@$)); }
   ;
 udt_ref
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new UDTRef($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_ANNOTATION                                { $$ = driver->create<UDTRef>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 udt_field_lvalue
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | array_ref '.' udt_field_inner                             { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  : var_ref '.' udt_field_inner                               { $$ = driver->create<UDTFieldOuter>($1, $3, driver->newLocation(&@$)); }
+  | array_ref '.' udt_field_inner                             { $$ = driver->create<UDTFieldOuter>($1, $3, driver->newLocation(&@$)); }
   ;
 udt_field_rvalue
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | func_call_expr_or_array_ref '.' udt_field_inner           { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | command_expr '.' udt_field_inner                          { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  : var_ref '.' udt_field_inner                               { $$ = driver->create<UDTFieldOuter>($1, $3, driver->newLocation(&@$)); }
+  | func_call_expr_or_array_ref '.' udt_field_inner           { $$ = driver->create<UDTFieldOuter>($1, $3, driver->newLocation(&@$)); }
+  | command_expr '.' udt_field_inner                          { $$ = driver->create<UDTFieldOuter>($1, $3, driver->newLocation(&@$)); }
   ;
 udt_field_inner
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
-  | array_ref '.' udt_field_inner                             { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
+  : var_ref '.' udt_field_inner                               { $$ = driver->create<UDTFieldInner>($1, $3, driver->newLocation(&@$)); }
+  | array_ref '.' udt_field_inner                             { $$ = driver->create<UDTFieldInner>($1, $3, driver->newLocation(&@$)); }
   | var_ref                                                   { $$ = $1; }
   | array_ref                                                 { $$ = $1; }
   ;
 
 func_decl
-  : FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr          { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                     { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION               { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                          { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
+  : FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = driver->create<FuncDecl>($2, $4, $7, $10, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION expr            { $$ = driver->create<FuncDecl>($2, $4, $8, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr          { $$ = driver->create<FuncDecl>($2, $6, $9, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                     { $$ = driver->create<FuncDecl>($2, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = driver->create<FuncDecl>($2, $4, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION                 { $$ = driver->create<FuncDecl>($2, $4, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION               { $$ = driver->create<FuncDecl>($2, $6, driver->newLocation(&@$)); }
+  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                          { $$ = driver->create<FuncDecl>($2, driver->newLocation(&@$)); }
   ;
 func_exit
-  : EXITFUNCTION expr                                         { $$ = new FuncExit($2, driver->newLocation(&@$)); }
-  | EXITFUNCTION                                              { $$ = new FuncExit(driver->newLocation(&@$)); }
+  : EXITFUNCTION expr                                         { $$ = driver->create<FuncExit>($2, driver->newLocation(&@$)); }
+  | EXITFUNCTION                                              { $$ = driver->create<FuncExit>(driver->newLocation(&@$)); }
   ;
 func_call_expr_or_array_ref
-  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&@$)); }
-  | annotated_symbol '(' ')'                                  { $$ = new FuncCallExpr($1, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                         { $$ = driver->create<FuncCallExprOrArrayRef>($1, $3, driver->newLocation(&@$)); }
+  | annotated_symbol '(' ')'                                  { $$ = driver->create<FuncCallExpr>($1, driver->newLocation(&@$)); }
   ;
 func_call_stmnt
-  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&@$)); }
-  | annotated_symbol '(' ')'                                  { $$ = new FuncCallStmnt($1, driver->newLocation(&@$)); }
+  : annotated_symbol '(' arg_list ')'                         { $$ = driver->create<FuncCallStmnt>($1, $3, driver->newLocation(&@$)); }
+  | annotated_symbol '(' ')'                                  { $$ = driver->create<FuncCallStmnt>($1, driver->newLocation(&@$)); }
   ;
 sub_call
-  : GOSUB symbol                                              { $$ = new SubCall($2, driver->newLocation(&@$)); }
+  : GOSUB symbol                                              { $$ = driver->create<SubCall>($2, driver->newLocation(&@$)); }
   ;
 sub_return
-  : RETURN                                                    { $$ = new SubReturn(driver->newLocation(&@$)); }
+  : RETURN                                                    { $$ = driver->create<SubReturn>(driver->newLocation(&@$)); }
   ;
 label_decl
-  : symbol ':'                                                { $$ = new Label($1, driver->newLocation(&@$)); }
+  : symbol ':'                                                { $$ = driver->create<Label>($1, driver->newLocation(&@$)); }
   ;
 goto_label
-  : GOTO symbol                                               { $$ = new Goto($2, driver->newLocation(&@$)); }
+  : GOTO symbol                                               { $$ = driver->create<Goto>($2, driver->newLocation(&@$)); }
   ;
 literal
-  : BOOLEAN_LITERAL                                           { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&@$)); }
+  : BOOLEAN_LITERAL                                           { $$ = driver->create<BooleanLiteral>(yylval.boolean_value, driver->newLocation(&@$)); }
   | INTEGER_LITERAL                                           { $$ = driver->newIntLikeLiteral($1, driver->newLocation(&@$)); }
-  | DOUBLE_LITERAL                                            { $$ = new DoubleFloatLiteral($1, driver->newLocation(&@$)); }
-  | FLOAT_LITERAL                                             { $$ = new FloatLiteral($1, driver->newLocation(&@$)); }
-  | STRING_LITERAL                                            { $$ = new StringLiteral($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | IMAG_I                                                    { $$ = new ComplexLiteral({0, $1}, driver->newLocation(&@$)); }
-  | IMAG_J                                                    { $$ = new QuatLiteral({0, 0, $1, 0}, driver->newLocation(&@$)); }
-  | IMAG_K                                                    { $$ = new QuatLiteral({0, 0, 0, $1}, driver->newLocation(&@$)); }
+  | DOUBLE_LITERAL                                            { $$ = driver->create<DoubleFloatLiteral>($1, driver->newLocation(&@$)); }
+  | FLOAT_LITERAL                                             { $$ = driver->create<FloatLiteral>($1, driver->newLocation(&@$)); }
+  | STRING_LITERAL                                            { $$ = driver->create<StringLiteral>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IMAG_I                                                    { $$ = driver->create<ComplexLiteral>(Complex<float>(0, $1), driver->newLocation(&@$)); }
+  | IMAG_J                                                    { $$ = driver->create<QuatLiteral>(Quat<float>(0, 0, $1, 0), driver->newLocation(&@$)); }
+  | IMAG_K                                                    { $$ = driver->create<QuatLiteral>(Quat<float>(0, 0, 0, $1), driver->newLocation(&@$)); }
   ;
 annotated_symbol
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '&'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '%'                                                { $$ = new AnnotatedSymbol(Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '!'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '$'                                                { $$ = new AnnotatedSymbol(Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_ANNOTATION                                { $$ = driver->create<AnnotatedSymbol>(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '&'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '%'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '!'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '#'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '$'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 symbol
-  : SYMBOL                                                    { $$ = new Symbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL                                                    { $$ = driver->create<Symbol>($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 conditional
   : cond_oneline                                              { $$ = $1; }
   | cond_begin                                                { $$ = $1; }
   ;
 cond_oneline
-  : IF expr THEN stmnt ELSE stmnt                             { $$ = new Conditional($2, new Block($4, driver->newLocation(&@$)), new Block($6, driver->newLocation(&@$)), driver->newLocation(&@$)); }
-  | IF expr THEN stmnt %prec NO_ELSE                          { $$ = new Conditional($2, new Block($4, driver->newLocation(&@$)), nullptr, driver->newLocation(&@$)); }
-  | IF expr THEN ELSE stmnt                                   { $$ = new Conditional($2, nullptr, new Block($5, driver->newLocation(&@$)), driver->newLocation(&@$)); }
+  : IF expr THEN stmnt ELSE stmnt                             { $$ = driver->create<Conditional>($2, new Block($4, driver->newLocation(&@$)), new Block($6, driver->newLocation(&@$)), driver->newLocation(&@$)); }
+  | IF expr THEN stmnt %prec NO_ELSE                          { $$ = driver->create<Conditional>($2, new Block($4, driver->newLocation(&@$)), nullptr, driver->newLocation(&@$)); }
+  | IF expr THEN ELSE stmnt                                   { $$ = driver->create<Conditional>($2, nullptr, new Block($5, driver->newLocation(&@$)), driver->newLocation(&@$)); }
   ;
 cond_begin
-  : IF expr seps block seps cond_next                         { $$ = new Conditional($2, $4, $6, driver->newLocation(&@$)); }
-  | IF expr seps cond_next                                    { $$ = new Conditional($2, nullptr, $4, driver->newLocation(&@$)); }
+  : IF expr seps block seps cond_next                         { $$ = driver->create<Conditional>($2, $4, $6, driver->newLocation(&@$)); }
+  | IF expr seps cond_next                                    { $$ = driver->create<Conditional>($2, nullptr, $4, driver->newLocation(&@$)); }
   ;
 cond_next
-  : ELSEIF expr seps block seps cond_next                     { $$ = new Block(new Conditional($2, $4, $6, driver->newLocation(&@$)), driver->newLocation(&@$)); }
-  | ELSEIF expr seps cond_next                                { $$ = new Block(new Conditional($2, nullptr, $4, driver->newLocation(&@$)), driver->newLocation(&@$)); }
+  : ELSEIF expr seps block seps cond_next                     { $$ = driver->create<Block>(new Conditional($2, $4, $6, driver->newLocation(&@$)), driver->newLocation(&@$)); }
+  | ELSEIF expr seps cond_next                                { $$ = driver->create<Block>(new Conditional($2, nullptr, $4, driver->newLocation(&@$)), driver->newLocation(&@$)); }
   | ELSE seps block seps ENDIF                                { $$ = $3; }
   | ELSE seps ENDIF                                           { $$ = nullptr; }
   | ENDIF                                                     { $$ = nullptr; }
@@ -768,36 +768,36 @@ cond_next
 select
   : SELECT expr seps case_list seps ENDSELECT                 { SourceLocation* beg = driver->newLocation(&@1);
                                                                 SourceLocation* end = driver->newLocation(&@6);
-                                                                $$ = new Select($2, $4, driver->newLocation(&@$), beg, end);
+                                                                $$ = driver->create<Select>($2, $4, driver->newLocation(&@$), beg, end);
                                                               }
   | SELECT expr seps ENDSELECT                                { SourceLocation* beg = driver->newLocation(&@1);
                                                                 SourceLocation* end = driver->newLocation(&@4);
-                                                                $$ = new Select($2, driver->newLocation(&@$), beg, end);
+                                                                $$ = driver->create<Select>($2, driver->newLocation(&@$), beg, end);
                                                               }
   ;
 case_list
-  : case                                                      { $$ = new CaseList($1, driver->newLocation(&@$)); }
-  | default_case                                              { $$ = new CaseList($1, driver->newLocation(&@$)); }
+  : case                                                      { $$ = driver->create<CaseList>($1, driver->newLocation(&@$)); }
+  | default_case                                              { $$ = driver->create<CaseList>($1, driver->newLocation(&@$)); }
   | case_list seps case                                       { $$ = $1; $$->appendCase($3); }
   | case_list seps default_case                               { $$ = $1; $$->appendDefaultCase($3); }
   ;
 case
-  : CASE expr seps block seps ENDCASE                         { $$ = new Case($2, $4, driver->newLocation(&@$)); }
-  | CASE expr seps ENDCASE                                    { $$ = new Case($2, driver->newLocation(&@$)); }
+  : CASE expr seps block seps ENDCASE                         { $$ = driver->create<Case>($2, $4, driver->newLocation(&@$)); }
+  | CASE expr seps ENDCASE                                    { $$ = driver->create<Case>($2, driver->newLocation(&@$)); }
   ;
 default_case
   : CASE DEFAULT seps block seps ENDCASE                      { SourceLocation* beg1 = driver->newLocation(&@1);
                                                                 SourceLocation* beg2 = driver->newLocation(&@2);
                                                                 SourceLocation* end = driver->newLocation(&@6);
                                                                 beg1->unionize(beg2);
-                                                                $$ = new DefaultCase($4, driver->newLocation(&@$), beg1, end);
+                                                                $$ = driver->create<DefaultCase>($4, driver->newLocation(&@$), beg1, end);
                                                                 TouchRef(beg2);
                                                               }
   | CASE DEFAULT seps ENDCASE                                 { SourceLocation* beg1 = driver->newLocation(&@1);
                                                                 SourceLocation* beg2 = driver->newLocation(&@2);
                                                                 SourceLocation* end = driver->newLocation(&@4);
                                                                 beg1->unionize(beg2);
-                                                                $$ = new DefaultCase(driver->newLocation(&@$), beg1, end);
+                                                                $$ = driver->create<DefaultCase>(driver->newLocation(&@$), beg1, end);
                                                                 TouchRef(beg2);
                                                               }
   ;
@@ -808,33 +808,33 @@ loop
   | loop_for                                                  { $$ = $1; }
   ;
 loop_do
-  : DO seps block seps LOOP                                   { $$ = new InfiniteLoop($3, driver->newLocation(&@$)); }
-  | DO seps LOOP                                              { $$ = new InfiniteLoop(driver->newLocation(&@$)); }
+  : DO seps block seps LOOP                                   { $$ = driver->create<InfiniteLoop>($3, driver->newLocation(&@$)); }
+  | DO seps LOOP                                              { $$ = driver->create<InfiniteLoop>(driver->newLocation(&@$)); }
   ;
 loop_while
-  : WHILE expr seps block seps ENDWHILE                       { $$ = new WhileLoop($2, $4, driver->newLocation(&@$)); }
-  | WHILE expr seps ENDWHILE                                  { $$ = new WhileLoop($2, driver->newLocation(&@$)); }
+  : WHILE expr seps block seps ENDWHILE                       { $$ = driver->create<WhileLoop>($2, $4, driver->newLocation(&@$)); }
+  | WHILE expr seps ENDWHILE                                  { $$ = driver->create<WhileLoop>($2, driver->newLocation(&@$)); }
   ;
 loop_until
-  : REPEAT seps block seps UNTIL expr                         { $$ = new UntilLoop($6, $3, driver->newLocation(&@$)); }
-  | REPEAT seps UNTIL expr                                    { $$ = new UntilLoop($4, driver->newLocation(&@$)); }
+  : REPEAT seps block seps UNTIL expr                         { $$ = driver->create<UntilLoop>($6, $3, driver->newLocation(&@$)); }
+  | REPEAT seps UNTIL expr                                    { $$ = driver->create<UntilLoop>($4, driver->newLocation(&@$)); }
   ;
 loop_for
-  : FOR assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $6, $11, $8, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps NEXT loop_next_sym  { $$ = new ForLoop($2, $4, $6, $9, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps block seps NEXT loop_next_sym { $$ = new ForLoop($2, $4, $9, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps NEXT loop_next_sym            { $$ = new ForLoop($2, $4, $7, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps block seps NEXT     { $$ = new ForLoop($2, $4, $6, $8, driver->newLocation(&@$)); }
-  | FOR assignment TO expr STEP expr seps NEXT                { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps block seps NEXT               { $$ = new ForLoop($2, $4, $6, driver->newLocation(&@$)); }
-  | FOR assignment TO expr seps NEXT                          { $$ = new ForLoop($2, $4, driver->newLocation(&@$)); }
+  : FOR assignment TO expr STEP expr seps block seps NEXT loop_next_sym { $$ = driver->create<ForLoop>($2, $4, $6, $11, $8, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps NEXT loop_next_sym  { $$ = driver->create<ForLoop>($2, $4, $6, $9, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps block seps NEXT loop_next_sym { $$ = driver->create<ForLoop>($2, $4, $9, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps NEXT loop_next_sym            { $$ = driver->create<ForLoop>($2, $4, $7, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps block seps NEXT     { $$ = driver->create<ForLoop>($2, $4, $6, $8, driver->newLocation(&@$)); }
+  | FOR assignment TO expr STEP expr seps NEXT                { $$ = driver->create<ForLoop>($2, $4, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps block seps NEXT               { $$ = driver->create<ForLoop>($2, $4, $6, driver->newLocation(&@$)); }
+  | FOR assignment TO expr seps NEXT                          { $$ = driver->create<ForLoop>($2, $4, driver->newLocation(&@$)); }
   ;
 loop_next_sym
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : SYMBOL %prec NO_ANNOTATION                                { $$ = driver->create<AnnotatedSymbol>(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | SYMBOL '#'                                                { $$ = driver->create<AnnotatedSymbol>(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 exit
-  : EXIT                                                      { $$ = new Exit(driver->newLocation(&@$)); }
+  : EXIT                                                      { $$ = driver->create<Exit>(driver->newLocation(&@$)); }
   ;
 %%
 

@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/UDTField.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {

@@ -11,7 +11,7 @@ class DynamicLibrary;
 
 namespace cmd {
 
-class ODBCOMPILER_PUBLIC_API Command : public RefCounted
+class ODBCOMPILER_PUBLIC_API Command : public RefCounted<>
 {
 public:
     // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112

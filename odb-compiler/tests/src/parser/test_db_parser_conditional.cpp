@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"

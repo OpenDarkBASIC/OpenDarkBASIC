@@ -24,7 +24,11 @@ option (ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS "Link with a shared library build of
 option (ODBCOMPILER_PIC "Enable building with -fPIC (position independent code)" ON)
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
-option (ODBCOMPILER_TESTS "Build unit tests" ON)
+option (ODBCOMPILER_TESTS "Build unit tests" ${DEBUG_FEATURE})
+option (ODBCOMPILER_TESTS_COMMANDS "Build command related unit tests" ON)
+option (ODBCOMPILER_TESTS_DB_PARSER "Build parser unit tests" ON)
+option (ODBCOMPILER_TESTS_ASTPOST "Build astpost unit tests" ON)
+option (ODBCOMPILER_TESTS_SDK "Build SDK unit tests" ON)
 
 test_visibility_macros (
     ODBCOMPILER_API_EXPORT
@@ -279,54 +283,67 @@ target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
-        "tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
-        "tests/src/astpost/test_astpost_validate_udt_field_names.cpp"
-        "tests/src/commands/test_cmd_matcher.cpp"
-        "tests/src/harness/ParserTestHarness.cpp"
-        "tests/src/matchers/AnnotatedSymbolEq.cpp"
-        "tests/src/matchers/ArgListCountEq.cpp"
-        "tests/src/matchers/BinaryOpEq.cpp"
-        "tests/src/matchers/BlockStmntCountEq.cpp"
-        "tests/src/matchers/CommandExprEq.cpp"
-        "tests/src/matchers/CommandStmntEq.cpp"
-        "tests/src/matchers/GotoEq.cpp"
-        "tests/src/matchers/InitializerListCountEq.cpp"
-        "tests/src/matchers/LiteralEq.cpp"
-        "tests/src/matchers/ScopedAnnotatedSymbolEq.cpp"
-        "tests/src/matchers/SymbolEq.cpp"
-        "tests/src/matchers/UDTRefEq.cpp"
-        "tests/src/matchers/UnaryOpEq.cpp"
-        "tests/src/parser/test_db_parser_array_decl.cpp"
-        "tests/src/parser/test_db_parser_arrays.cpp"
-        "tests/src/parser/test_db_parser_assignment.cpp"
-        "tests/src/parser/test_db_parser_command.cpp"
-        "tests/src/parser/test_db_parser_conditional.cpp"
-        "tests/src/parser/test_db_parser_constant.cpp"
-        "tests/src/parser/test_db_parser_func_call.cpp"
-        "tests/src/parser/test_db_parser_func_decl.cpp"
-        "tests/src/parser/test_db_parser_goto.cpp"
-        "tests/src/parser/test_db_parser_inc_dec.cpp"
-        "tests/src/parser/test_db_parser_literal_bool.cpp"
-        "tests/src/parser/test_db_parser_literal_complex.cpp"
-        "tests/src/parser/test_db_parser_literal_float.cpp"
-        "tests/src/parser/test_db_parser_literal_int.cpp"
-        "tests/src/parser/test_db_parser_literal_quat.cpp"
-        "tests/src/parser/test_db_parser_literal_string.cpp"
-        "tests/src/parser/test_db_parser_location_info.cpp"
-        "tests/src/parser/test_db_parser_loop_do.cpp"
-        "tests/src/parser/test_db_parser_loop_for.cpp"
-        "tests/src/parser/test_db_parser_loop_repeat.cpp"
-        "tests/src/parser/test_db_parser_loop_while.cpp"
-        "tests/src/parser/test_db_parser_op_precedence.cpp"
-        "tests/src/parser/test_db_parser_remarks.cpp"
-        "tests/src/parser/test_db_parser_select.cpp"
-        "tests/src/parser/test_db_parser_subroutine.cpp"
-        "tests/src/parser/test_db_parser_udt_var_decl.cpp"
-        "tests/src/parser/test_db_parser_udt_fields.cpp"
-        "tests/src/parser/test_db_parser_var_decl.cpp"
-        "tests/src/parser/test_db_parser_var_decl_math.cpp"
-        "tests/src/parser/test_db_parser_var_ref.cpp"
-        "tests/src/parser/ASTParentConsistenciesChecker.cpp"
+        # SDK related tests
+        $<$<BOOL:${ODBCOMPILER_TESTS_SDK}>:tests/src/sdk/test_sdk_reference.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_SDK}>:tests/src/sdk/test_sdk_allocator_ref_counted_arena.cpp>
+
+        # Command related unit tests
+        $<$<BOOL:${ODBCOMPILER_TESTS_COMMANDS}>:tests/src/commands/test_cmd_matcher.cpp>
+
+        # AST matchers are used by parser and astpost unit tests
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/AnnotatedSymbolEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/ArgListCountEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/BinaryOpEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/BlockStmntCountEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/CommandExprEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/CommandStmntEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/GotoEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/InitializerListCountEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/LiteralEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/ScopedAnnotatedSymbolEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/SymbolEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/UDTRefEq.cpp>
+        $<$<OR:$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>,$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>>:tests/src/matchers/UnaryOpEq.cpp>
+
+        # Parser related tests
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/ParserTestHarness.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/ASTParentConsistenciesChecker.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_array_decl.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_arrays.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_assignment.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_command.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_conditional.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_constant.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_func_call.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_func_decl.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_goto.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_inc_dec.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_bool.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_complex.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_float.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_int.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_quat.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_literal_string.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_location_info.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_loop_do.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_loop_for.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_loop_repeat.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_loop_while.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_op_precedence.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_remarks.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_select.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_subroutine.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_udt_var_decl.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_udt_fields.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_var_decl.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_var_decl_math.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_DB_PARSER}>:tests/src/parser/test_db_parser_var_ref.cpp>
+
+        # AST post related tests
+        $<$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>:tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp>
+        $<$<BOOL:${ODBCOMPILER_TESTS_ASTPOST}>:tests/src/astpost/test_astpost_validate_udt_field_names.cpp>
+
+        # misc
         "tests/src/test_SourceLocation.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests

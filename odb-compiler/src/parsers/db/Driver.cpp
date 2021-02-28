@@ -30,6 +30,11 @@ namespace odb {
 namespace db {
 
 // ----------------------------------------------------------------------------
+Driver::~Driver()
+{
+}
+
+// ----------------------------------------------------------------------------
 static bool tokenHasFreeableString(int pushedChar)
 {
     switch (pushedChar)
@@ -173,6 +178,9 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
         }
     };
 
+    // Set up allocator
+    instancer_ = ast::Node::newInstancer();
+
     // main parse loop
     program_.reset();
     do {
@@ -276,6 +284,9 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
         if (tokenHasFreeableString(token.pushedChar))
             str::deleteCStr(token.pushedValue.string);
 
+    // Release reference to allocator so AST can delete itself
+    instancer_.reset();
+
     if (parseResult == 0)
     {
         ast::Block* program = program_;
@@ -304,29 +315,29 @@ ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* loca
     if (value >= 0)
     {
         if (value > std::numeric_limits<uint32_t>::max())
-            return new ast::DoubleIntegerLiteral(value, location);
+            return instancer_->create<ast::DoubleIntegerLiteral>(value, location);
         if (value > std::numeric_limits<int32_t>::max())
-            return new ast::DwordLiteral(static_cast<uint32_t>(value), location);
+            return instancer_->create<ast::DwordLiteral>(static_cast<uint32_t>(value), location);
         if (value > std::numeric_limits<uint16_t>::max())
-            return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+            return instancer_->create<ast::IntegerLiteral>(static_cast<int32_t>(value), location);
         if (value > std::numeric_limits<uint8_t>::max())
-            return new ast::WordLiteral(static_cast<uint16_t>(value), location);
-        return new ast::ByteLiteral(static_cast<uint8_t>(value), location);
+            return instancer_->create<ast::WordLiteral>(static_cast<uint16_t>(value), location);
+        return instancer_->create<ast::ByteLiteral>(static_cast<uint8_t>(value), location);
     }
     else
     {
         if (value < std::numeric_limits<int32_t>::min())
-            return new ast::DoubleIntegerLiteral(value, location);
-        return new ast::IntegerLiteral(static_cast<int32_t>(value), location);
+            return instancer_->create<ast::DoubleIntegerLiteral>(value, location);
+        return instancer_->create<ast::IntegerLiteral>(static_cast<int32_t>(value), location);
     }
 }
 
 // ----------------------------------------------------------------------------
-static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
+static ast::BinaryOp* newIncDecOp(ast::Node::Instancer* instancer, ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
 {
     switch (dir) {
-        case Driver::INC : return new ast::BinaryOp(ast::BinaryOpType::ADD, value, expr, expr->location());
-        case Driver::DEC : return new ast::BinaryOp(ast::BinaryOpType::SUB, value, expr, expr->location());
+        case Driver::INC : return instancer->create<ast::BinaryOp>(ast::BinaryOpType::ADD, value, expr, expr->location());
+        case Driver::DEC : return instancer->create<ast::BinaryOp>(ast::BinaryOpType::SUB, value, expr, expr->location());
     }
 
     return nullptr;
@@ -335,27 +346,27 @@ static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Dri
 // ----------------------------------------------------------------------------
 ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
-    return new ast::VarAssignment(
+    return instancer_->create<ast::VarAssignment>(
         value->duplicate<ast::VarRef>(),
-        newIncDecOp(value, expr, dir),
+        newIncDecOp(instancer_, value, expr, dir),
         newLocation(loc));
 }
 
 // ----------------------------------------------------------------------------
 ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
-    return new ast::ArrayAssignment(
+    return instancer_->create<ast::ArrayAssignment>(
         value->duplicate<ast::ArrayRef>(),
-        newIncDecOp(value, expr, dir),
+        newIncDecOp(instancer_, value, expr, dir),
         newLocation(loc));
 }
 
 // ----------------------------------------------------------------------------
 ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
-    return new ast::UDTFieldAssignment(
+    return instancer_->create<ast::UDTFieldAssignment>(
         value->duplicate<ast::UDTFieldOuter>(),
-        newIncDecOp(value, expr, dir),
+        newIncDecOp(instancer_, value, expr, dir),
         newLocation(loc));
 }
 
@@ -364,7 +375,7 @@ ast::Assignment* Driver::newIncDecVar(ast::VarRef* value, IncDecDir dir, const D
 {
     return newIncDecVar(
         value,
-        new ast::ByteLiteral(1, value->location()),
+        instancer_->create<ast::ByteLiteral>(1, value->location()),
         dir,
         loc);
 }
@@ -374,7 +385,7 @@ ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, IncDecDir dir, con
 {
     return newIncDecArray(
         value,
-        new ast::ByteLiteral(1, value->location()),
+        instancer_->create<ast::ByteLiteral>(1, value->location()),
         dir,
         loc);
 }
@@ -384,7 +395,7 @@ ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir 
 {
     return newIncDecUDTField(
         value,
-        new ast::ByteLiteral(1, value->location()),
+        instancer_->create<ast::ByteLiteral>(1, value->location()),
         dir,
         loc);
 }
@@ -448,7 +459,7 @@ ast::Block* StringParserDriver::parse(const std::string& sourceName,
 ast::SourceLocation* FileParserDriver::newLocation(const DBLTYPE* loc) const
 {
     assert(fileName_);
-    return new ast::FileSourceLocation(*fileName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+    return instancer_->create<ast::FileSourceLocation>(*fileName_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
 }
 
 // ----------------------------------------------------------------------------
@@ -456,7 +467,7 @@ ast::SourceLocation* StringParserDriver::newLocation(const DBLTYPE* loc) const
 {
     assert(sourceName_);
     assert(code_);
-    return new ast::InlineSourceLocation(*sourceName_, *code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
+    return instancer_->create<ast::InlineSourceLocation>(*sourceName_, *code_, loc->first_line, loc->last_line, loc->first_column, loc->last_column);
 }
 
 }

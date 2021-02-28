@@ -107,7 +107,7 @@ private:
     Reference<SourceLocation> location_;
 };
 
-class ODBCOMPILER_PUBLIC_API Variable : public Node, public RefCounted
+class ODBCOMPILER_PUBLIC_API Variable : public Node, public RefCounted<>
 {
 public:
     enum class Annotation : int

@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
+#include "odb-compiler/ast/Node.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
@@ -33,6 +34,8 @@ public:
         INC = 1,
         DEC = -1
     };
+
+    virtual ~Driver();
 
     // ------------------------------------------------------------------------
     // Functions below are used by BISON only
@@ -75,12 +78,20 @@ public:
      */
     ODBCOMPILER_PRIVATE_API virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const = 0;
 
+    template <typename T, typename... Args>
+    T* create(Args&&... args)
+    {
+        return instancer_->create<T>(std::forward<Args>(args)...);
+    }
+
     // ------------------------------------------------------------------------
     // Functions above used by BISON only
     // ------------------------------------------------------------------------
 
 protected:
     ast::Block* doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher);
+
+    odb::Reference<ast::Node::Instancer> instancer_;
 
 private:
     odb::Reference<ast::Block> program_;
