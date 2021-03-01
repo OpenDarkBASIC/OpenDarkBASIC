@@ -1,12 +1,15 @@
 #include "argdefgen/driver.h"
+#include "argdefgen/node.h"
 #include "argdefgen/scanner.lex.h"
 #include "argdefgen/str.h"
 #include <stdarg.h>
+#include <assert.h>
 
 /* ------------------------------------------------------------------------- */
-static int
+static union adg_node*
 do_parse(struct adg_driver* driver)
 {
+    union adg_node* root;
     ADGSTYPE pushed_value;
     int pushed_char;
     int parse_result;
@@ -15,11 +18,13 @@ do_parse(struct adg_driver* driver)
     do
     {
         pushed_char = adglex(&pushed_value, &loc, driver->scanner);
-        printf("token(%d): `%s` \n", pushed_char, adgget_text(driver->scanner));
         parse_result = adgpush_parse(driver->parser, pushed_char, &pushed_value, &loc, driver->scanner);
     } while (parse_result == YYPUSH_MORE);
 
-    return parse_result;
+    root = driver->root;
+    driver->root = NULL;
+
+    return root;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -29,17 +34,18 @@ adg_driver_init(struct adg_driver* driver)
     driver->filename = NULL;
     driver->stream = NULL;
     driver->help_str = NULL;
+    driver->root = NULL;
 
     if (adglex_init_extra(driver, &driver->scanner) != 0)
     {
-        fprintf(stderr, "Failed to initialize FLEX scanner");
+        fprintf(stderr, "Failed to initialize FLEX scanner\n");
         goto init_scanner_failed;
     }
 
     driver->parser = adgpstate_new();
     if (driver->parser == NULL)
     {
-        fprintf(stderr, "Failed to initializer BISON parser");
+        fprintf(stderr, "Failed to initializer BISON parser\n");
         goto init_parser_failed;
     }
 
@@ -61,26 +67,26 @@ adg_driver_deinit(struct adg_driver* driver)
 }
 
 /* ------------------------------------------------------------------------- */
-int
+union adg_node*
 adg_driver_parse_file(struct adg_driver* driver, const char* filename)
 {
-    int result;
+    union adg_node* root;
 
     FILE* fp = fopen(filename, "r");
     if (fp == NULL)
     {
         fprintf(stderr, "Failed to open file `%s`\n", filename);
-        return -1;
+        return NULL;
     }
 
-    result = adg_driver_parse_stream(driver, fp);
+    root = adg_driver_parse_stream(driver, fp);
     fclose(fp);
 
-    return result;
+    return root;
 }
 
 /* ------------------------------------------------------------------------- */
-int
+union adg_node*
 adg_driver_parse_stream(struct adg_driver* driver, FILE* stream)
 {
     adgset_in(stream, driver->scanner);
@@ -101,13 +107,10 @@ adg_driver_append_help_str(struct adg_driver* driver, char c)
     if (driver->help_str_len >= driver->help_str_capacity)
     {
         char* new;
-        new = malloc(driver->help_str_capacity*2);
+        new = realloc(driver->help_str, driver->help_str_capacity * 2);
         if (new == NULL)
             return -1;
 
-
-        memcpy(new, driver->help_str, driver->help_str_len);
-        free(driver->help_str);
         driver->help_str = new;
         driver->help_str_capacity *= 2;
     }
@@ -128,8 +131,15 @@ adg_driver_take_help_str(struct adg_driver* driver)
     driver->help_str = NULL;
     driver->help_str_len = 0;
 
-    printf("take: %s\n", str);
     return str;
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_driver_give(struct adg_driver* driver, union adg_node* root)
+{
+    assert(driver->root == NULL);
+    driver->root = root;
 }
 
 /* ------------------------------------------------------------------------- */

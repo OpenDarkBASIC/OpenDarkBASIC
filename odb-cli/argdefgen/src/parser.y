@@ -4,7 +4,7 @@
     #include "argdefgen/parser.y.h"
     #include "argdefgen/scanner.lex.h"
     #include "argdefgen/driver.h"
-    #include "argdefgen/action.h"
+    #include "argdefgen/node.h"
     #include "argdefgen/str.h"
     #define driver ((struct adg_driver*)adgget_extra(scanner))
     void adgerror(ADGLTYPE* locp, adgscan_t scanner, const char* msg, ...);
@@ -34,11 +34,11 @@
 
 %union {
     char* string_value;
-    struct adg_action* node;
+    union adg_node* node_value;
 }
 
 %destructor { adg_str_free($$); } <string_value>
-%destructor { adg_action_destroy($$); } <node>
+%destructor { adg_node_destroy($$); } <node_value>
 
 %token EOF 0 "end of file"
 %token ERROR 1 "lexer error"
@@ -54,61 +54,74 @@
 %token<string_value> IMPLICIT_META_ACTION
 %token<string_value> STRING
 
+%type<string_value> help_str
+%type<node_value> sections
+%type<node_value> section
+%type<node_value> actions
+%type<node_value> action
+%type<node_value> actionattrs
+%type<node_value> actionattr
+%type<node_value> parse_required_args
+%type<node_value> parse_optional_args
+%type<node_value> required_argnames
+%type<node_value> optional_argnames
+%type<node_value> runafter_list
+
 %%
 root
-  : sections
-  | EOF
+  : sections                                      { adg_driver_give(driver, $1); }
   ;
 sections
-  : sections section
-  | section
+  : sections section                              { $$ = $1; adg_node_append_section($$, $2); }
+  | section                                       { $$ = $1; }
   ;
 section
-  : SECTION actions { adg_str_free($1); }
+  : SECTION actions                               { $$ = adg_node_new_section($2, $1); }
   ;
 actions
-  : actions action
-  | action
+  : action actions                                { $$ = $2; adg_node_append_action($$, $1); }
+  | action                                        { $$ = $1; }
   ;
 action
-  : HELP help_str
-  | ARGS parse_args
-  | FUNC { adg_str_free($1); }
-  | RUNAFTER runafter_list
-  | EXPLICIT_ACTION { adg_str_free($1); }
-  | IMPLICIT_ACTION { adg_str_free($1); }
-  | EXPLICIT_META_ACTION { adg_str_free($1); }
-  | IMPLICIT_META_ACTION { adg_str_free($1); }
+  : EXPLICIT_ACTION actionattrs                   { $$ = adg_node_new_explicit_action($1, $2); }
+  | IMPLICIT_ACTION actionattrs                   { $$ = adg_node_new_implicit_action($1, $2); }
+  | EXPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_explicit_meta_action($1, $2); }
+  | IMPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_implicit_meta_action($1, $2); }
+  ;
+actionattrs
+  : actionattrs actionattr                        { $$ = $1; adg_node_append_actionattr($$, $2); }
+  | actionattr                                    { $$ = $1; }
+  ;
+actionattr
+  : HELP help_str                                 { $$ = adg_node_new_actionattr(adg_node_new_help($2)); }
+  | ARGS parse_required_args                      { $$ = adg_node_new_actionattr($2); }
+  | FUNC                                          { $$ = adg_node_new_actionattr(adg_node_new_func($1)); }
+  | RUNAFTER runafter_list                        { $$ = adg_node_new_actionattr($2); }
   ;
 help_str
-  : help_str STRING { adg_str_free($2); }
-  | STRING { adg_str_free($1); }
-  ;
-parse_args
-  : parse_required_args
+  : help_str STRING                               { $$ = adg_str_join($1, $2, " "); adg_str_free($2); }
+  | STRING                                        { $$ = $1; }
   ;
 parse_required_args
-  : parse_required_args '<' required_argnames '>' parse_optional_args
-  | '<' required_argnames '>' parse_optional_args
-  | parse_required_args '<' required_argnames '>'
-  | '<' required_argnames '>'
-  | parse_optional_args
+  : '<' required_argnames '>' parse_optional_args { $$ = adg_node_new_arg($4, $2); }
+  | '<' required_argnames '>'                     { $$ = adg_node_new_arg(NULL, $2); }
+  | parse_optional_args                           { $$ = $1; }
   ;
 parse_optional_args
-  : parse_optional_args '[' optional_argnames ']'
-  | '[' optional_argnames ELLIPSIS ']'
-  | '[' optional_argnames ']'
+  : '[' optional_argnames ']' parse_optional_args { $$ = adg_node_new_optional_arg($4, $2, 0); }
+  | '[' optional_argnames ELLIPSIS ']'            { $$ = adg_node_new_optional_arg(NULL, $2, 1); }
+  | '[' optional_argnames ']'                     { $$ = adg_node_new_optional_arg(NULL, $2, 0); }
   ;
 required_argnames
-  : STRING '|' required_argnames { adg_str_free($1); }
-  | STRING { adg_str_free($1); }
+  : STRING '|' required_argnames                  { $$ = adg_node_new_argname($3, $1); }
+  | STRING                                        { $$ = adg_node_new_argname(NULL, $1); }
   ;
 optional_argnames
-  : STRING '|' optional_argnames { adg_str_free($1); }
-  | STRING { adg_str_free($1); }
+  : STRING '|' optional_argnames                  { $$ = adg_node_new_argname($3, $1); }
+  | STRING                                        { $$ = adg_node_new_argname(NULL, $1); }
   ;
 runafter_list
-  : STRING ',' runafter_list { adg_str_free($1); }
-  | STRING { adg_str_free($1); }
+  : STRING ',' runafter_list                      { $$ = adg_node_new_runafter($3, $1); }
+  | STRING                                        { $$ = adg_node_new_runafter(NULL, $1); }
   ;
 %%

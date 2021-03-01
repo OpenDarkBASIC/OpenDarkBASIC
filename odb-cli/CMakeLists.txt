@@ -13,7 +13,10 @@ add_custom_command (
     OUTPUT "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
            "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
     COMMAND argdefgen
-    ARGS --argdef "src/Actions.argdef" --source "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp" --header "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
+    ARGS --argdef "src/Actions.argdef"
+         --source "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
+         --header "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
+         --dot "${PROJECT_BINARY_DIR}/Actions.argdef.dot"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     MAIN_DEPENDENCY "src/Actions.argdef"
     DEPENDS argdefgen

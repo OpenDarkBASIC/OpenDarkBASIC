@@ -21,7 +21,7 @@ section global:
   help(h):
     help: Print this help text, or print help about a specific section, or print
           everything by specifying 'all'.
-    args: [all|section]
+    args: [all|section...]
     func: printHelp
     runafter: print-banner
 
