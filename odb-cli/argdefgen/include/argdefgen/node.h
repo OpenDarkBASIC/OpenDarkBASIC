@@ -1,10 +1,14 @@
 #pragma once
 
+struct ADGLTYPE;
+
 enum adg_node_type
 {
     ADG_HELP,
     ADG_FUNC,
     ADG_RUNAFTER,
+    ADG_REQUIRES,
+    ADG_METADEP,
     ADG_ARG,
     ADG_OPTIONAL_ARG,
     ADG_ARGNAME,
@@ -16,10 +20,19 @@ enum adg_node_type
     ADG_SECTION
 };
 
+struct adg_node_location
+{
+    int l1;
+    int c1;
+    int l2;
+    int c2;
+};
+
 union adg_node
 {
     struct info {
         enum adg_node_type type;
+        struct adg_node_location loc;
     } info;
 
     struct base {
@@ -44,24 +57,30 @@ union adg_node
         struct info info;
         struct action_base* next;
         struct actionattrs* attrs;
+        char* longopt;
+        char shortopt;
     } explicit_action;
 
     struct implicit_action {
         struct info info;
         struct action_base* next;
         struct actionattrs* attrs;
+        char* name;
     } implicit_action;
 
     struct explicit_meta_action {
         struct info info;
         struct action_base* next;
         struct actionattrs* attrs;
+        char* longopt;
+        char shortopt;
     } explicit_meta_action;
 
     struct implicit_meta_action {
         struct info info;
         struct action_base* next;
         struct actionattrs* attrs;
+        char* name;
     } implicit_meta_action;
 
     struct section {
@@ -77,6 +96,20 @@ union adg_node
         union adg_node* _padding;
         char* str;
     } runafter;
+
+    struct requires {
+        struct info info;
+        struct requires* next;
+        union adg_node* _padding;
+        char* str;
+    } requires;
+
+    struct metadep {
+        struct info info;
+        struct metadep* next;
+        union adg_node* _padding;
+        char* str;
+    } metadep;
 
     struct argname {
         struct info info;
@@ -109,18 +142,20 @@ union adg_node
     } func;
 };
 
-union adg_node* adg_node_new_help(char* str);
-union adg_node* adg_node_new_func(char* str);
-union adg_node* adg_node_new_runafter(union adg_node* next, char* str);
-union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames);
-union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* argnames, int continued);
-union adg_node* adg_node_new_argname(union adg_node* next, char* name);
-union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs);
-union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs);
-union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs);
-union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs);
-union adg_node* adg_node_new_actionattr(union adg_node* attr);
-union adg_node* adg_node_new_section(union adg_node* action, char* name);
+union adg_node* adg_node_new_help(char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_func(char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_runafter(union adg_node* next, char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_requires(union adg_node* next, char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_metadep(union adg_node* next, char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* argnames, int continued, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_argname(union adg_node* next, char* name, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_actionattr(union adg_node* attr, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_section(union adg_node* action, char* name, struct ADGLTYPE* loc);
 
 void adg_node_append_section(union adg_node* section, union adg_node* next);
 void adg_node_append_action(union adg_node* action, union adg_node* next);
@@ -130,3 +165,5 @@ void adg_node_destroy(union adg_node* node);
 void adg_node_destroy_recursive(union adg_node* node);
 
 int adg_node_export_dot(union adg_node* root, const char* filename);
+
+int adg_node_is_action(union adg_node* node);

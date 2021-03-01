@@ -1,44 +1,49 @@
 #include "argdefgen/node.h"
+#include "argdefgen/parser.y.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
 
-#define MALLOC_AND_INIT(type)          \
+#define MALLOC_AND_INIT(type, loc)     \
     malloc(sizeof(union adg_node));    \
     if (node == NULL)                  \
         return NULL;                   \
-    init_base(node, type)
+    init_base(node, type, loc)
 
 /* ------------------------------------------------------------------------- */
 static void
-init_base(union adg_node* node, enum adg_node_type type)
+init_base(union adg_node* node, enum adg_node_type type, struct ADGLTYPE* loc)
 {
     node->base.info.type = type;
+    node->base.info.loc.l1 = loc->first_line;
+    node->base.info.loc.c1 = loc->first_column;
+    node->base.info.loc.l2 = loc->last_line;
+    node->base.info.loc.c2 = loc->last_column;
     node->base.left = NULL;
     node->base.right = NULL;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_help(char* str)
+union adg_node* adg_node_new_help(char* str, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_HELP);
+    union adg_node* node = MALLOC_AND_INIT(ADG_HELP, loc);
     node->help.text = str;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_func(char* str)
+union adg_node* adg_node_new_func(char* str, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_FUNC);
+    union adg_node* node = MALLOC_AND_INIT(ADG_FUNC, loc);
     node->func.name = str;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_runafter(union adg_node* next, char* str)
+union adg_node* adg_node_new_runafter(union adg_node* next, char* str, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_RUNAFTER);
+    union adg_node* node = MALLOC_AND_INIT(ADG_RUNAFTER, loc);
     if (next)
     {
         assert(next->info.type == ADG_RUNAFTER);
@@ -50,9 +55,37 @@ union adg_node* adg_node_new_runafter(union adg_node* next, char* str)
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames)
+union adg_node* adg_node_new_requires(union adg_node* next, char* str, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_ARG);
+    union adg_node* node = MALLOC_AND_INIT(ADG_REQUIRES, loc);
+    if (next)
+    {
+        assert(next->info.type == ADG_REQUIRES);
+        node->runafter.next = &next->runafter;
+    }
+
+    node->runafter.str = str;
+    return node;
+}
+
+/* ------------------------------------------------------------------------- */
+union adg_node* adg_node_new_metadep(union adg_node* next, char* str, struct ADGLTYPE* loc)
+{
+    union adg_node* node = MALLOC_AND_INIT(ADG_METADEP, loc);
+    if (next)
+    {
+        assert(next->info.type == ADG_METADEP);
+        node->runafter.next = &next->runafter;
+    }
+
+    node->runafter.str = str;
+    return node;
+}
+
+/* ------------------------------------------------------------------------- */
+union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames, struct ADGLTYPE* loc)
+{
+    union adg_node* node = MALLOC_AND_INIT(ADG_ARG, loc);
     if (next)
     {
         assert(next->info.type == ADG_ARG || next->info.type == ADG_OPTIONAL_ARG);
@@ -65,9 +98,9 @@ union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames)
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* argnames, int continued)
+union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* argnames, int continued, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_OPTIONAL_ARG);
+    union adg_node* node = MALLOC_AND_INIT(ADG_OPTIONAL_ARG, loc);
     if (next)
     {
         assert(next->info.type == ADG_OPTIONAL_ARG);
@@ -81,9 +114,9 @@ union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* 
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_argname(union adg_node* next, char* name)
+union adg_node* adg_node_new_argname(union adg_node* next, char* name, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_ARGNAME);
+    union adg_node* node = MALLOC_AND_INIT(ADG_ARGNAME, loc);
     if (next)
     {
         assert(next->info.type == ADG_ARGNAME);
@@ -95,53 +128,59 @@ union adg_node* adg_node_new_argname(union adg_node* next, char* name)
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs)
+union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_ACTION);
+    union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
     node->explicit_action.attrs = &attrs->actionattrs;
+    node->explicit_action.longopt = name;
+    node->explicit_action.shortopt = '\0';
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs)
+union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_ACTION);
+    union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
-    node->explicit_action.attrs = &attrs->actionattrs;
+    node->implicit_action.attrs = &attrs->actionattrs;
+    node->implicit_action.name = name;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs)
+union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_META_ACTION);
+    union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_META_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
-    node->explicit_action.attrs = &attrs->actionattrs;
+    node->explicit_meta_action.attrs = &attrs->actionattrs;
+    node->explicit_meta_action.longopt = name;
+    node->explicit_meta_action.shortopt = '\0';
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs)
+union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_META_ACTION);
+    union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_META_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
-    node->explicit_action.attrs = &attrs->actionattrs;
+    node->implicit_meta_action.attrs = &attrs->actionattrs;
+    node->implicit_meta_action.name = name;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_actionattr(union adg_node* attr)
+union adg_node* adg_node_new_actionattr(union adg_node* attr, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_ACTIONATTRS);
+    union adg_node* node = MALLOC_AND_INIT(ADG_ACTIONATTRS, loc);
     node->actionattrs.attr = attr;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_section(union adg_node* action, char* name)
+union adg_node* adg_node_new_section(union adg_node* action, char* name, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_SECTION);
+    union adg_node* node = MALLOC_AND_INIT(ADG_SECTION, loc);
     node->section.actions = action;
     node->section.name = name;
     return node;
@@ -167,14 +206,8 @@ void adg_node_append_action(union adg_node* action, union adg_node* next)
 {
     union adg_node* last = action;
 
-    assert(action->info.type == ADG_EXPLICIT_ACTION
-        || action->info.type == ADG_IMPLICIT_ACTION
-        || action->info.type == ADG_EXPLICIT_META_ACTION
-        || action->info.type == ADG_IMPLICIT_META_ACTION);
-    assert(next->info.type == ADG_EXPLICIT_ACTION
-        || next->info.type == ADG_IMPLICIT_ACTION
-        || next->info.type == ADG_EXPLICIT_META_ACTION
-        || next->info.type == ADG_IMPLICIT_META_ACTION);
+    assert(adg_node_is_action(action));
+    assert(adg_node_is_action(next));
     assert(next->action_base.next == NULL);
 
     while (last->action_base.next != NULL)
@@ -206,15 +239,17 @@ void adg_node_destroy(union adg_node* node)
         case ADG_HELP                 : free(node->help.text); break;
         case ADG_FUNC                 : free(node->func.name); break;
         case ADG_RUNAFTER             : free(node->runafter.str); break;
+        case ADG_REQUIRES             : free(node->requires.str); break;
+        case ADG_METADEP              : free(node->metadep.str); break;
         case ADG_ARG                  : break;
         case ADG_OPTIONAL_ARG         : break;
         case ADG_ARGNAME              : free(node->argname.str); break;
-        case ADG_EXPLICIT_ACTION      : break;
-        case ADG_IMPLICIT_ACTION      : break;
-        case ADG_EXPLICIT_META_ACTION : break;
-        case ADG_IMPLICIT_META_ACTION : break;
+        case ADG_EXPLICIT_ACTION      : free(node->explicit_action.longopt); break;
+        case ADG_IMPLICIT_ACTION      : free(node->implicit_action.name); break;
+        case ADG_EXPLICIT_META_ACTION : free(node->explicit_meta_action.longopt); break;
+        case ADG_IMPLICIT_META_ACTION : free(node->implicit_meta_action.name); break;
         case ADG_ACTIONATTRS          : break;
-        case ADG_SECTION              : break;
+        case ADG_SECTION              : free(node->section.name); break;
     }
 
     free(node);
@@ -223,7 +258,12 @@ void adg_node_destroy(union adg_node* node)
 /* ------------------------------------------------------------------------- */
 void adg_node_destroy_recursive(union adg_node* node)
 {
+    if (node->base.left)
+        adg_node_destroy_recursive(node->base.left);
+    if (node->base.right)
+        adg_node_destroy_recursive(node->base.right);
 
+    adg_node_destroy(node);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -235,6 +275,12 @@ static void write_connections(union adg_node* node, FILE* fp)
         case ADG_FUNC                 : break;
         case ADG_RUNAFTER :
             if (node->runafter.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->runafter.next);
+            break;
+        case ADG_REQUIRES :
+            if (node->requires.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->requires.next);
+            break;
+        case ADG_METADEP :
+            if (node->requires.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->metadep.next);
             break;
         case ADG_ARG :
             if (node->arg.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->arg.next);
@@ -288,15 +334,27 @@ static void write_names(union adg_node* node, FILE* fp)
         case ADG_HELP                 : fprintf(fp, "help"); break;
         case ADG_FUNC                 : fprintf(fp, "func: %s", node->func.name); break;
         case ADG_RUNAFTER             : fprintf(fp, "runafter: %s", node->runafter.str); break;
+        case ADG_REQUIRES             : fprintf(fp, "runafter: %s", node->requires.str); break;
+        case ADG_METADEP              : fprintf(fp, "metadep: %s", node->requires.str); break;
         case ADG_ARG                  : fprintf(fp, "arg"); break;
         case ADG_OPTIONAL_ARG         : fprintf(fp, "optional arg: %s", node->optional_arg.continued ? "continued" : "not continued"); break;
         case ADG_ARGNAME              : fprintf(fp, "argname: %s", node->argname.str); break;
-        case ADG_EXPLICIT_ACTION      : fprintf(fp, "explicit action"); break;
-        case ADG_IMPLICIT_ACTION      : fprintf(fp, "implicit action"); break;
-        case ADG_EXPLICIT_META_ACTION : fprintf(fp, "explicit meta action"); break;
-        case ADG_IMPLICIT_META_ACTION : fprintf(fp, "implicit meta action"); break;
         case ADG_ACTIONATTRS          : fprintf(fp, "actionattrs"); break;
         case ADG_SECTION              : fprintf(fp, "section: %s", node->section.name); break;
+        case ADG_IMPLICIT_ACTION      : fprintf(fp, "%s", node->implicit_action.name); break;
+        case ADG_IMPLICIT_META_ACTION : fprintf(fp, "%s[...]", node->implicit_meta_action.name); break;
+        case ADG_EXPLICIT_ACTION :
+            if (node->explicit_action.shortopt != '\0')
+                fprintf(fp, "%s(%c)", node->explicit_action.longopt, node->explicit_action.shortopt);
+            else
+                fprintf(fp, "%s()", node->explicit_action.longopt);
+            break;
+        case ADG_EXPLICIT_META_ACTION :
+            if (node->explicit_action.shortopt != '\0')
+                fprintf(fp, "%s(%c)[...]", node->explicit_meta_action.longopt, node->explicit_meta_action.shortopt);
+            else
+                fprintf(fp, "%s()[...]", node->explicit_meta_action.longopt);
+            break;
     }
     fprintf(fp, "\"];\n");
 
@@ -323,4 +381,13 @@ int adg_node_export_dot(union adg_node* root, const char* filename)
 
     fclose(fp);
     return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+int adg_node_is_action(union adg_node* node)
+{
+    return node->info.type == ADG_EXPLICIT_ACTION
+        || node->info.type == ADG_IMPLICIT_ACTION
+        || node->info.type == ADG_EXPLICIT_META_ACTION
+        || node->info.type == ADG_IMPLICIT_META_ACTION;
 }

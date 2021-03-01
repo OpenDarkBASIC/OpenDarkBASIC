@@ -8,7 +8,7 @@ char*
 adg_str_dup(const char* src)
 {
     int len = strlen(src);
-    char* dst = malloc((len + 1) * sizeof(char));
+    char* dst = malloc(len + 1);
     if (dst == NULL)
         return NULL;
 
@@ -49,14 +49,26 @@ adg_str_join(char* s1, const char* s2, const char* delim)
 
     char* str = realloc(s1, ld + l1 + l2 + 1);
     if (str == NULL)
-    {
-        free(s1);
         return NULL;
-    }
 
-    memcpy(str, s1, l1);
     memcpy(str + l1, delim, ld);
     memcpy(str + l1 + ld, s2, l2);
     str[l1 + ld + l2] = '\0';
+    return str;
+}
+
+// ------------------------------------------------------------------------- */
+char*
+adg_str_append(char* s1, const char* s2)
+{
+    int l1 = strlen(s1);
+    int l2 = strlen(s2);
+
+    char* str = realloc(s1, l1 + l2 + 1);
+    if (str == NULL)
+        return NULL;
+
+    memcpy(str + l1, s2, l2);
+    str[l1 + l2] = '\0';
     return str;
 }

@@ -48,21 +48,23 @@ section sdk:
 
   sdk-type():
     help: Specify if the SDK is the original DBPro SDK, or if it is the ODB
-          reimplementation. --sdkroot will autodetect the type so this is
+          reimplementation. --sdk-root will autodetect the type so this is
           usually not needed. If specified, it will override the autodetected
           value.
     args: <odb|dbpro>
     func: setSDKType
-    runafter: sdkroot
+    runafter: sdk-root
 
   plugins():
     help: Add additional directories to scan for thirdparty plugins. Note that
           ODB and DBPro plugins are not compatible with each other.
     args: <path|file> [path|file...]
+    func: setAdditionalPluginsDir
+    runafter: global
 
   init-sdk:
     func: initSDK
-    runafter: sdkroot, sdktype, plugins
+    runafter: sdk-root, sdk-type, plugins
 
   print-sdk-root():
     help: Prints the location of the SDK
@@ -157,3 +159,5 @@ section codegen:
     help: Generate output. If no filename is given then output is written to
           stdout.
     args: [file]
+    func: output
+    runafter: parser

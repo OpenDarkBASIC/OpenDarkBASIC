@@ -37,10 +37,11 @@ static char* action_name(const char* str);
 %x HELP
 %x ARGS
 %x RUNAFTER
+%x REQUIRES
 
 SEC_NAME  [a-zA-Z0-9\-_]+
 FUNC_NAME [a-zA-Z0-9_]+
-SHORT_OPT [a-zA-Z0-9_]+
+SHORT_OPT [a-zA-Z0-9_]
 META_LIST [a-zA-Z0-9, ]+
 EXPLICIT_META_ACTION {SEC_NAME}\({SHORT_OPT}?\)\[{META_LIST}\]
 IMPLICIT_META_ACTION {SEC_NAME}\[{META_LIST}\]
@@ -54,6 +55,7 @@ IMPLICIT_ACTION {SEC_NAME}
     ^" "+?args:" "+?                 { BEGIN(ARGS); return TOK_ARGS; }
     ^" "+?help:" "+?                 { BEGIN(HELP); return TOK_HELP; }
     ^" "+?runafter:" "+?             { BEGIN(RUNAFTER); return TOK_RUNAFTER; }
+    ^" "+?requires:" "+?             { BEGIN(REQUIRES); return TOK_REQUIRES; }
     ^" "+?{EXPLICIT_META_ACTION}:    { BEGIN(INITIAL); yylval->string_value = action_name(yytext); return TOK_EXPLICIT_META_ACTION; }
     ^" "+?{IMPLICIT_META_ACTION}:    { BEGIN(INITIAL); yylval->string_value = action_name(yytext); return TOK_IMPLICIT_META_ACTION; }
     ^" "+?{EXPLICIT_ACTION}:         { BEGIN(INITIAL); yylval->string_value = action_name(yytext); return TOK_EXPLICIT_ACTION; }
@@ -86,7 +88,7 @@ IMPLICIT_ACTION {SEC_NAME}
     \n                               { BEGIN(INITIAL); }
     .
 }
-<RUNAFTER>{
+<RUNAFTER,REQUIRES>{
     [a-zA-Z0-9\-]+                   { yylval->string_value = adg_str_dup(yytext); return TOK_STRING; }
     ,                                { return yytext[0]; }
     \n                               { BEGIN(INITIAL); }
@@ -98,7 +100,7 @@ static char* section_name(const char* str)
 {
     str = strchr(str, ' ');
     do { str++; } while (*str == ' ');
-    return adg_str_dup(str);
+    return adg_str_dup_range(str, 0, strlen(str) - 1);
 }
 static char* func_name(const char* str)
 {
