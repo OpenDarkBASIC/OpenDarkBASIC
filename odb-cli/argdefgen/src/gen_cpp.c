@@ -4,29 +4,36 @@
 
 /* ------------------------------------------------------------------------- */
 void
-adg_gen_write_action_struct_cpp(FILE* fp)
+adg_gen_cpp_write_typedefs(FILE* fp)
+{
+    fprintf(fp, "typedef std::vector<std::string> ArgList;\n");
+    fprintf(fp, "typedef bool (*Handler)(const ArgList& args);\n\n");
+
+    fprintf(fp, "struct MetaHandlerResult\n{\n");
+    fprintf(fp, "    int actionId = -1;\n");
+    fprintf(fp, "    ArgList argList;\n");
+    fprintf(fp, "};\n\n");
+
+    fprintf(fp, "typedef MetaHandlerResult (*MetaHandler)(const ArgList& args);\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_action_struct_def(FILE* fp)
 {
     fprintf(fp, "struct Action\n{\n");
-    fprintf(fp, "    struct MetaResult\n    {\n");
-    fprintf(fp, "        Handler handler;\n");
-    fprintf(fp, "        ArgList argList;\n");
-    fprintf(fp, "    }\n\n");
-
-    fprintf(fp, "    typedef std::vector<std::string> ArgList;\n");
-    fprintf(fp, "    typedef bool (*Handler)(const ArgList& args);\n");
-    fprintf(fp, "    typedef MetaResult (*MetaHandler)(const ArgList& args);\n\n");
-
     fprintf(fp, "    const char* fullOption;\n");
     fprintf(fp, "    const char* argDoc;\n");
-    fprintf(fp, "    union {\n");
-    fprintf(fp, "        Handler handler;\n");
-    fprintf(fp, "        MetaHandler metaHandler;\n");
-    fprintf(fp, "    };\n");
-    fprintf(fp, "    int* requires;\n");
-    fprintf(fp, "    struct { int l; int h; } argRange;\n");
-    fprintf(fp, "    int priority;\n");
-    fprintf(fp, "    bool isImplicit;\n");
-    fprintf(fp, "    bool isMeta;\n");
+    fprintf(fp, "    const union HU {\n");
+    fprintf(fp, "        Handler standard;\n");
+    fprintf(fp, "        MetaHandler meta;\n");
+    fprintf(fp, "    } handler;\n");
+    fprintf(fp, "    const int* requires;\n");
+    fprintf(fp, "    const int* metadeps;\n");
+    fprintf(fp, "    const struct { int l; int h; } argRange;\n");
+    fprintf(fp, "    const int priority;\n");
+    fprintf(fp, "    const char shortOption;\n");
+    fprintf(fp, "    const unsigned char type;\n");
     fprintf(fp, "    const char* help;\n");
     fprintf(fp, "};\n");
 }
@@ -52,12 +59,32 @@ write_requires_tables(struct adg_action** action_table, FILE* fp)
 }
 
 /* ------------------------------------------------------------------------- */
+static void
+write_metadeps_tables(struct adg_action** action_table, FILE* fp)
+{
+    struct adg_action** actionp;
+    for (actionp = action_table; *actionp; ++actionp)
+    {
+        int* metadeps;
+        if ((*actionp)->metadeps[0] == -1)
+            continue;
+
+        fprintf(fp, "static const int %s_metadeps_[] = {", (*actionp)->func_name);
+        for (metadeps = (*actionp)->metadeps; *metadeps != -1; ++metadeps)
+        {
+            fprintf(fp, "%d, ", *metadeps);
+        }
+        fprintf(fp, "-1};\n");
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 void
-adg_gen_write_action_table_cpp(struct adg_action** action_table, FILE* fp)
+adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp)
 {
     struct adg_action** actionp;
     int padding;
-    int longopt_len = 0, argdoc_len = 0, func_len = 0, requires_len = 0;
+    int longopt_len = 0, argdoc_len = 0, func_len = 0, requires_len = 0, metadeps_len = 0;
     for (actionp = action_table; *actionp; ++actionp)
     {
         int len = strlen((*actionp)->long_option);
@@ -66,10 +93,34 @@ adg_gen_write_action_table_cpp(struct adg_action** action_table, FILE* fp)
         argdoc_len = len > argdoc_len ? len : argdoc_len;
         len = strlen((*actionp)->func_name);
         func_len = len > func_len ? len : func_len;
-        requires_len = len + 10 > requires_len ? len + 10 : requires_len;
+
+        if ((*actionp)->requires[0] != -1)
+            requires_len = len + sizeof("_requires_") > requires_len ? len + sizeof("_requires_") : requires_len;
+        else
+            requires_len = sizeof("nullptr") > requires_len ? sizeof("nullptr") : requires_len;
+
+        if ((*actionp)->metadeps[0] != -1)
+            metadeps_len = len + sizeof("_metadeps_") > metadeps_len ? len + sizeof("_metadeps_") : metadeps_len;
+        else
+            metadeps_len = sizeof("nullptr") > metadeps_len ? sizeof("nullptr") : metadeps_len;
     }
 
     write_requires_tables(action_table, fp);
+    write_metadeps_tables(action_table, fp);
+
+    fprintf(fp, "static Action::HU toUnion(Handler handler) {\n");
+    fprintf(fp, "    Action::HU u;\n");
+    fprintf(fp, "    u.standard = handler;\n");
+    fprintf(fp, "    return u;\n");
+    fprintf(fp, "}\n");
+    fprintf(fp, "static Action::HU toUnion(MetaHandler handler) {\n");
+    fprintf(fp, "    Action::HU u;\n");
+    fprintf(fp, "    u.meta = handler;\n");
+    fprintf(fp, "    return u;\n");
+    fprintf(fp, "}\n");
+
+    fprintf(fp, "#define IMPLICIT 0x01\n");
+    fprintf(fp, "#define META     0x02\n");
 
     fprintf(fp, "static const Action actions_[] = {\n");
     for (actionp = action_table; *actionp; ++actionp)
@@ -79,28 +130,39 @@ adg_gen_write_action_table_cpp(struct adg_action** action_table, FILE* fp)
         fprintf(fp, "    { \"");
         padding -= fprintf(fp, "%s", action->long_option);
         fprintf(fp, "\", ");
-        while (padding--)
+        while (padding-- > 0)
             putc(' ', fp);
 
         padding = argdoc_len;
         fprintf(fp, "\"");
         padding -= fprintf(fp, "%s", action->arg_doc);
         fprintf(fp, "\", ");
-        while (padding--)
+        while (padding-- > 0)
             putc(' ', fp);
 
         padding = func_len;
-        putc('&', fp);
+        fprintf(fp, "toUnion(&");
         padding -= fprintf(fp, "%s", action->func_name);
-        fprintf(fp, ", ");
-        while (padding--)
+        fprintf(fp, "), ");
+        while (padding-- > 0)
             putc(' ', fp);
 
         padding = requires_len;
-        putc('&', fp);
-        padding -= fprintf(fp, "%s_requires_", action->func_name);
+        if ((*actionp)->requires[0] != -1)
+            padding -= fprintf(fp, "%s_requires_", action->func_name);
+        else
+            padding -= fprintf(fp, "nullptr");
         fprintf(fp, ", ");
-        while (padding--)
+        while (padding-- > 0)
+            putc(' ', fp);
+
+        padding = metadeps_len;
+        if ((*actionp)->metadeps[0] != -1)
+            padding -= fprintf(fp, "%s_metadeps_", action->func_name);
+        else
+            padding -= fprintf(fp, "nullptr");
+        fprintf(fp, ", ");
+        while (padding-- > 0)
             putc(' ', fp);
 
         fprintf(fp, "{%2d, %3d}, ", action->arg_range.l, action->arg_range.h);
@@ -111,8 +173,7 @@ adg_gen_write_action_table_cpp(struct adg_action** action_table, FILE* fp)
         else
             fprintf(fp, " 0, ");
 
-        fprintf(fp, action->is_implicit ? "true,  " : "false, ");
-        fprintf(fp, action->is_meta ? "true,  " : "false, ");
+        fprintf(fp, "%d, ", (action->is_implicit ? 1 : 0 ) | (action->is_meta ? 2 : 0));
         fprintf(fp, "\"%s\"", action->help);
 
         if (*(actionp+1))

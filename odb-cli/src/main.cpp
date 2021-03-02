@@ -1,4 +1,4 @@
-#include "odb-cli/Actions.hpp"
+#include "odb-cli/Actions.argdef.hpp"
 #include "odb-sdk/Log.hpp"
 
 // ----------------------------------------------------------------------------

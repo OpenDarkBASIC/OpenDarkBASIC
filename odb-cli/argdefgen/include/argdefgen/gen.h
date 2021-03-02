@@ -5,7 +5,10 @@
 struct adg_action;
 
 void
-adg_gen_write_action_struct_cpp(FILE* fp);
+adg_gen_cpp_write_typedefs(FILE* fp);
 
 void
-adg_gen_write_action_table_cpp(struct adg_action** action_table, FILE* fp);
+adg_gen_cpp_write_action_struct_def(FILE* fp);
+
+void
+adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp);

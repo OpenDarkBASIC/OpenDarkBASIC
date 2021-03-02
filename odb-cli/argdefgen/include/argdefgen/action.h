@@ -6,6 +6,7 @@ struct adg_action
 {
     int* runafter;
     int* requires;
+    int* metadeps;
 
     char* section_name;
     char* action_name;
@@ -30,6 +31,9 @@ adg_action_create(void);
 
 void
 adg_action_destroy(struct adg_action* action);
+
+struct adg_action**
+adg_action_table_new_empty(void);
 
 struct adg_action**
 adg_action_table_from_nodes(union adg_node* root);

@@ -104,7 +104,8 @@ adg_driver_append_help_str(struct adg_driver* driver, char c)
         driver->help_str = malloc(driver->help_str_capacity);
     }
 
-    if (driver->help_str_len >= driver->help_str_capacity)
+    /* +1 so we have space to escape characters */
+    if (driver->help_str_len + 1 >= driver->help_str_capacity)
     {
         char* new;
         new = realloc(driver->help_str, driver->help_str_capacity * 2);
@@ -116,6 +117,8 @@ adg_driver_append_help_str(struct adg_driver* driver, char c)
     }
 
     driver->help_str[driver->help_str_len++] = c;
+    if (c == '\\' || c == '"')
+        driver->help_str[driver->help_str_len++] = c;
     return 0;
 }
 

@@ -4,6 +4,12 @@ struct ADGLTYPE;
 
 enum adg_node_type
 {
+    ADG_HEADER_PREAMBLE,
+    ADG_HEADER_POSTAMBLE,
+    ADG_SOURCE_PREAMBLE,
+    ADG_SOURCE_POSTAMBLE,
+    ADG_ACTION_TABLE,
+
     ADG_HELP,
     ADG_FUNC,
     ADG_RUNAFTER,
@@ -41,11 +47,62 @@ union adg_node
         union adg_node* right;
     } base;
 
+    /* block nodes */
+
+    struct block_base {
+        struct info info;
+        struct block_base* next;
+        union adg_node* _padding;
+    } block_base;
+
+    struct {
+        struct info info;
+        union adg_node* next;
+        union adg_node* _padding;
+        char* text;
+    } header_preamble;
+
+    struct {
+        struct info info;
+        union adg_node* next;
+        union adg_node* _padding;
+        char* text;
+    } header_postamble;
+
+    struct {
+        struct info info;
+        union adg_node* next;
+        union adg_node* _padding;
+        char* text;
+    } source_preamble;
+
+    struct {
+        struct info info;
+        union adg_node* next;
+        union adg_node* _padding;
+        char* text;
+    } source_postamble;
+
+    struct {
+        struct info info;
+        union adg_node* next;
+        union adg_node* sections;
+    } action_table;
+
+    /* action table nodes */
+
     struct actionattrs {
         struct info info;
         struct actionattrs* next;
         union adg_node* attr;
     } actionattrs;
+
+    struct metadep {
+        struct info info;
+        struct metadep* next;
+        union adg_node* _padding;
+        char* str;
+    } metadep;
 
     struct action_base {
         struct info info;
@@ -104,13 +161,6 @@ union adg_node
         char* str;
     } requires;
 
-    struct metadep {
-        struct info info;
-        struct metadep* next;
-        union adg_node* _padding;
-        char* str;
-    } metadep;
-
     struct argname {
         struct info info;
         struct argname* next;
@@ -142,6 +192,16 @@ union adg_node
     } func;
 };
 
+/* block nodes */
+union adg_node* adg_node_new_header_preamble(char* text, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_header_postamble(char* text, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_source_preamble(char* text, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_source_postamble(char* text, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_action_table(union adg_node* sections, struct ADGLTYPE* loc);
+void adg_node_append_block(union adg_node* block, union adg_node* next);
+int adg_node_is_block(union adg_node* node);
+
+/* action table nodes */
 union adg_node* adg_node_new_help(char* str, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_func(char* str, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_runafter(union adg_node* next, char* str, struct ADGLTYPE* loc);
@@ -156,6 +216,7 @@ union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* at
 union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_actionattr(union adg_node* attr, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_section(union adg_node* action, char* name, struct ADGLTYPE* loc);
+int adg_node_is_action(union adg_node* node);
 
 void adg_node_append_section(union adg_node* section, union adg_node* next);
 void adg_node_append_action(union adg_node* action, union adg_node* next);
@@ -165,5 +226,3 @@ void adg_node_destroy(union adg_node* node);
 void adg_node_destroy_recursive(union adg_node* node);
 
 int adg_node_export_dot(union adg_node* root, const char* filename);
-
-int adg_node_is_action(union adg_node* node);

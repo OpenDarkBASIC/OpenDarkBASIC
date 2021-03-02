@@ -42,6 +42,12 @@
 
 %token EOF 0 "end of file"
 %token ERROR 1 "lexer error"
+%token HEADER_PREAMBLE_START
+%token HEADER_POSTAMBLE_START
+%token SOURCE_PREAMBLE_START
+%token SOURCE_POSTAMBLE_START
+%token ACTION_TABLE_START
+%token BLOCK_END
 %token HELP
 %token ARGS
 %token RUNAFTER
@@ -55,7 +61,18 @@
 %token<string_value> IMPLICIT_META_ACTION
 %token<string_value> STRING
 
+%type<string_value> header_preamble_str
+%type<string_value> header_postamble_str
+%type<string_value> source_preamble_str
+%type<string_value> source_postamble_str
 %type<string_value> help_str
+%type<node_value> blocks
+%type<node_value> block
+%type<node_value> header_preamble
+%type<node_value> header_postamble
+%type<node_value> source_preamble
+%type<node_value> source_postamble
+%type<node_value> action_table
 %type<node_value> sections
 %type<node_value> section
 %type<node_value> actions
@@ -71,7 +88,50 @@
 
 %%
 root
-  : sections                                      { adg_driver_give(driver, $1); }
+  : blocks                                        { adg_driver_give(driver, $1); }
+  | EOF
+  ;
+blocks
+  : blocks block                                  { $$ = $1; adg_node_append_block($$, $2); }
+  | block                                         { $$ = $1; }
+  ;
+block
+  : header_preamble                               { $$ = $1; }
+  | header_postamble                              { $$ = $1; }
+  | source_preamble                               { $$ = $1; }
+  | source_postamble                              { $$ = $1; }
+  | action_table                                  { $$ = $1; }
+  ;
+header_preamble
+  : HEADER_PREAMBLE_START header_preamble_str BLOCK_END { $$ = adg_node_new_header_preamble($2, &@$); }
+  ;
+header_preamble_str
+  : header_preamble_str STRING                    { $$ = adg_str_append($1, $2); adg_str_free($2); }
+  | STRING                                        { $$ = $1; }
+  ;
+header_postamble
+  : HEADER_POSTAMBLE_START header_postamble_str BLOCK_END { $$ = adg_node_new_header_postamble($2, &@$); }
+  ;
+header_postamble_str
+  : header_postamble_str STRING                   { $$ = adg_str_append($1, $2); adg_str_free($2); }
+  | STRING                                        { $$ = $1; }
+  ;
+source_preamble
+  : SOURCE_PREAMBLE_START source_preamble_str BLOCK_END { $$ = adg_node_new_source_preamble($2, &@$); }
+  ;
+source_preamble_str
+  : source_preamble_str STRING                    { $$ = adg_str_append($1, $2); adg_str_free($2); }
+  | STRING                                        { $$ = $1; }
+  ;
+source_postamble
+  : SOURCE_POSTAMBLE_START source_postamble_str BLOCK_END { $$ = adg_node_new_source_postamble($2, &@$); }
+  ;
+source_postamble_str
+  : source_postamble_str STRING                   { $$ = adg_str_append($1, $2); adg_str_free($2); }
+  | STRING                                        { $$ = $1; }
+  ;
+action_table
+  : ACTION_TABLE_START sections BLOCK_END         { $$ = adg_node_new_action_table($2, &@$); }
   ;
 sections
   : sections section                              { $$ = $1; adg_node_append_section($$, $2); }
@@ -85,10 +145,10 @@ actions
   | action                                        { $$ = $1; }
   ;
 action
-  : EXPLICIT_ACTION actionattrs                   { $$ = adg_node_new_explicit_action($1, $2, &@$); }
-  | IMPLICIT_ACTION actionattrs                   { $$ = adg_node_new_implicit_action($1, $2, &@$); }
-  | EXPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_explicit_meta_action($1, $2, &@$); }
-  | IMPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_implicit_meta_action($1, $2, &@$); }
+  : EXPLICIT_ACTION actionattrs                   { $$ = adg_node_new_explicit_action($1, $2, &@$); if (!$$) YYABORT; }
+  | IMPLICIT_ACTION actionattrs                   { $$ = adg_node_new_implicit_action($1, $2, &@$); if (!$$) YYABORT; }
+  | EXPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_explicit_meta_action($1, $2, &@$); if (!$$) YYABORT; }
+  | IMPLICIT_META_ACTION actionattrs              { $$ = adg_node_new_implicit_meta_action($1, $2, &@$); if (!$$) YYABORT; }
   ;
 actionattrs
   : actionattrs actionattr                        { $$ = $1; adg_node_append_actionattr($$, $2); }

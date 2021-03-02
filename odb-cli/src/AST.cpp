@@ -41,6 +41,20 @@ bool parseDBA(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
+MetaHandlerResult parseDBPro(const ArgList& args)
+{
+    MetaHandlerResult result;
+    result.actionId = 25;
+    return result;
+}
+
+// ----------------------------------------------------------------------------
+MetaHandlerResult autoDetectInput(const ArgList& args)
+{
+    return MetaHandlerResult();
+}
+
+// ----------------------------------------------------------------------------
 bool dumpASTDOT(const std::vector<std::string>& args)
 {
 #if defined(ODBCOMPILER_DOT_EXPORT)

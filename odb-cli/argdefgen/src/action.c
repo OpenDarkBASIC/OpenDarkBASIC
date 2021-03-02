@@ -31,8 +31,16 @@ adg_action_destroy(struct adg_action* action)
 
     if (action->runafter) free(action->runafter);
     if (action->requires) free(action->requires);
+    if (action->metadeps) free(action->metadeps);
 
     free(action);
+}
+
+/* ------------------------------------------------------------------------- */
+struct adg_action**
+adg_action_table_new_empty(void)
+{
+    return calloc(1, sizeof(struct adg_action*));
 }
 
 /* ------------------------------------------------------------------------- */
@@ -162,6 +170,7 @@ init_action_argdoc_and_range(struct adg_action* action, union adg_node* node)
             }
             action->arg_doc = adg_str_append(action->arg_doc, ">");
             action->arg_range.l++;
+            action->arg_range.h++;
             arg = (union adg_node*)arg->arg.next;
         }
         else if (arg->info.type == ADG_OPTIONAL_ARG)
@@ -363,35 +372,17 @@ find_action_node(union adg_node* node, const char* name)
 
 /* ------------------------------------------------------------------------- */
 static union adg_node*
-find_runafter_node(union adg_node* node)
+find_node(union adg_node* node, enum adg_node_type type)
 {
     union adg_node* found;
-    if (node->info.type == ADG_RUNAFTER)
+    if (node->info.type == type)
         return node;
 
     if (node->base.left)
-        if ((found = find_runafter_node(node->base.left)) != NULL)
+        if ((found = find_node(node->base.left, type)) != NULL)
             return found;
     if (node->base.right)
-        if ((found = find_runafter_node(node->base.right)) != NULL)
-            return found;
-
-    return NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-static union adg_node*
-find_requires_node(union adg_node* node)
-{
-    union adg_node* found;
-    if (node->info.type == ADG_REQUIRES)
-        return node;
-
-    if (node->base.left)
-        if ((found = find_requires_node(node->base.left)) != NULL)
-            return found;
-    if (node->base.right)
-        if ((found = find_requires_node(node->base.right)) != NULL)
+        if ((found = find_node(node->base.right, type)) != NULL)
             return found;
 
     return NULL;
@@ -423,8 +414,13 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
             return -1;
         action->requires[0] = -1;
 
+        action->metadeps = malloc(sizeof(*action->metadeps));
+        if (action->metadeps == NULL)
+            return -1;
+        action->metadeps[0] = -1;
+
         /* Fill in runafter dependency list */
-        node = find_runafter_node((union adg_node*)action_node->action_base.attrs);
+        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_RUNAFTER);
         if (node != NULL)
         {
             union adg_node* runafter;
@@ -456,7 +452,7 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
         }
 
         /* Fill in requires dependency list */
-        node = find_requires_node((union adg_node*)action_node->action_base.attrs);
+        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_REQUIRES);
         if (node != NULL)
         {
             union adg_node* requires;
@@ -465,11 +461,11 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
             for (requires = node; requires; requires = (union adg_node*)requires->requires.next)
             {
                 struct adg_action** a;
-                const char* runafter_str = requires->requires.str;
+                const char* requires_str = requires->requires.str;
                 int found = 0;
                 for (a = action_table; *a; ++a)
-                    if (strcmp((*a)->section_name, runafter_str) == 0 ||
-                        strcmp((*a)->action_name, runafter_str) == 0)
+                    if (strcmp((*a)->section_name, requires_str) == 0 ||
+                        strcmp((*a)->action_name, requires_str) == 0)
                     {
                         void* newmem = realloc(action->requires, (idx + 2) * sizeof(*action->requires));
                         if (newmem == NULL)
@@ -481,7 +477,39 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
                     }
                 if (found == 0)
                 {
-                    fprintf(stderr, "Error: Undefined action or section `%s' referenced in requires list in action `%s'\n", runafter_str, action->action_name);
+                    fprintf(stderr, "Error: Undefined action or section `%s' referenced in requires list in action `%s'\n", requires_str, action->action_name);
+                    return -1;
+                }
+            }
+        }
+
+        /* Fill in metadeps dependency list */
+        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_METADEP);
+        if (node != NULL)
+        {
+            union adg_node* metadep;
+            int idx = 0;
+
+            for (metadep = node; metadep; metadep = (union adg_node*)metadep->metadep.next)
+            {
+                struct adg_action** a;
+                const char* metadep_str = metadep->metadep.str;
+                int found = 0;
+                for (a = action_table; *a; ++a)
+                    if (strcmp((*a)->section_name, metadep_str) == 0 ||
+                        strcmp((*a)->action_name, metadep_str) == 0)
+                    {
+                        void* newmem = realloc(action->metadeps, (idx + 2) * sizeof(*action->metadeps));
+                        if (newmem == NULL)
+                            return -1;
+                        action->metadeps = newmem;
+                        action->metadeps[idx++] = a - action_table;
+                        action->metadeps[idx] = -1;
+                        found = 1;
+                    }
+                if (found == 0)
+                {
+                    fprintf(stderr, "Error: Undefined action or section `%s' referenced in metadeps list in action `%s'\n", metadep_str, action->action_name);
                     return -1;
                 }
             }
@@ -499,8 +527,7 @@ adg_action_table_from_nodes(union adg_node* root)
     struct adg_action** action_table;
     struct adg_action** listp;
 
-    /* Root node must be a section. The parser enforces this but doesn't hurt
-     * to check for sanity sake */
+    /* Root node must be a section. */
     if (root->info.type != ADG_SECTION)
     {
         fprintf(stderr, "Error: Expected a section\n");

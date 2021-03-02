@@ -13,7 +13,7 @@ add_custom_command (
     OUTPUT "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
            "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
     COMMAND argdefgen
-    ARGS --argdef "src/Actions.argdef"
+    ARGS "src/Actions.argdef"
          --source "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
          --header "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
          --ast "${PROJECT_BINARY_DIR}/Actions.argdef.ast.dot"
@@ -40,7 +40,8 @@ add_executable (odbc
     "src/main.cpp")
 target_include_directories (odbc
     PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>)
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>)
 target_link_libraries (odbc
     PRIVATE
         odb-compiler)
