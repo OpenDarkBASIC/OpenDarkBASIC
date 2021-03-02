@@ -130,11 +130,17 @@ union adg_node* adg_node_new_argname(union adg_node* next, char* name, struct AD
 /* ------------------------------------------------------------------------- */
 union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
+    char* longopt_end;
+
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
     node->explicit_action.attrs = &attrs->actionattrs;
+
+    longopt_end = strchr(name, '(');
+    *longopt_end = '\0'; /* just terminate string here so longopt is correct */
     node->explicit_action.longopt = name;
-    node->explicit_action.shortopt = '\0';
+    node->explicit_action.shortopt = longopt_end[1] == ')' ? '\0' : longopt_end[1];
+
     return node;
 }
 
@@ -151,11 +157,16 @@ union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, 
 /* ------------------------------------------------------------------------- */
 union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
+    char* longopt_end;
+
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_META_ACTION, loc);
     assert(attrs->info.type == ADG_ACTIONATTRS);
     node->explicit_meta_action.attrs = &attrs->actionattrs;
+
+    longopt_end = strchr(name, '(');
+    *longopt_end = '\0'; /* just terminate string here so longopt is correct */
     node->explicit_meta_action.longopt = name;
-    node->explicit_meta_action.shortopt = '\0';
+    node->explicit_meta_action.shortopt = longopt_end[1] == ')' ? '\0' : longopt_end[1];
     return node;
 }
 

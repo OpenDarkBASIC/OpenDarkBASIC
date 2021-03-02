@@ -4,8 +4,8 @@ union adg_node;
 
 struct adg_action
 {
-    struct adg_action** runafter;
-    struct adg_action** depends;
+    int* runafter;
+    int* requires;
 
     char* section_name;
     char* action_name;
@@ -19,6 +19,7 @@ struct adg_action
         int l, h;
     } arg_range;
 
+    int priority;
     char short_option;
     char is_implicit;
     char is_meta;

@@ -23,6 +23,7 @@ add_flex_bison_dependency (adg_scanner adg_parser)
 add_executable (argdefgen
     "src/action.c"
     "src/driver.c"
+    "src/gen_cpp.c"
     "src/main.c"
     "src/node.c"
     "src/str.c"

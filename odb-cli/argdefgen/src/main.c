@@ -1,6 +1,7 @@
 #include "argdefgen/action.h"
 #include "argdefgen/driver.h"
 #include "argdefgen/node.h"
+#include "argdefgen/gen.h"
 
 int main(int argc, char** argv)
 {
@@ -18,10 +19,8 @@ int main(int argc, char** argv)
     if ((action_table = adg_action_table_from_nodes(root)) == NULL)
         goto create_action_list_failed;
 
-    for (struct adg_action** p = action_table; *p; p++)
-    {
-        fprintf(stderr, "%s:%s %s\n", (*p)->section_name, (*p)->action_name, (*p)->arg_doc);
-    }
+    adg_gen_write_action_struct_cpp(stderr);
+    adg_gen_write_action_table_cpp(action_table, stderr);
 
     adg_action_table_destroy(action_table);
     adg_node_destroy_recursive(root);
