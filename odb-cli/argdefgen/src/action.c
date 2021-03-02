@@ -703,23 +703,6 @@ remove_unnecessary_dependencies(struct adg_action** action_table)
                 child++;
             }
         }
-
-        child = 0;
-        while ((*action)->metadeps[child] != -1)
-        {
-            struct adg_action* child_action = action_table[(*action)->metadeps[child]];
-            if (child_action->priority != (*action)->priority - 1)
-            {
-                int* dst;
-                int* src;
-                for (dst = (*action)->metadeps + child, src = (*action)->metadeps + child + 1; *dst != -1;)
-                    *dst++ = *src++;
-            }
-            else
-            {
-                child++;
-            }
-        }
     }
 }
 
