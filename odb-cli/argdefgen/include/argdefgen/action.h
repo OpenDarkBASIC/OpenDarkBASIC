@@ -40,3 +40,6 @@ adg_action_table_from_nodes(union adg_node* root);
 
 void
 adg_action_table_destroy(struct adg_action** action_table);
+
+void
+adg_action_table_export_dot(struct adg_action** action_table, const char* filename);

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <assert.h>
+#include <limits.h>
 
 /* ------------------------------------------------------------------------- */
 struct adg_action*
@@ -520,6 +521,209 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
 }
 
 /* ------------------------------------------------------------------------- */
+static int
+verify_action_table_dependencies_are_unique(struct adg_action** action_table)
+{
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+static int
+verify_action_table_dependencies_are_acyclic(struct adg_action** action_table)
+{
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+static int*
+find_action_table_root_nodes(struct adg_action** action_table)
+{
+    int i;
+    struct adg_action** action;
+    int* roots = malloc(sizeof(int));
+    if (roots == NULL)
+        return NULL;
+    roots[0] = -1;
+
+    i = 0;
+    for (action = action_table; *action; ++action)
+    {
+        void* new;
+        struct adg_action** inner;
+        for (inner = action_table; *inner; ++inner)
+        {
+            int* child;
+            if (inner == action)
+                continue;
+            for (child = (*action)->runafter; *child != -1; ++child)
+            {
+                if (action - action_table == *child)
+                    goto not_a_root;
+            }
+        }
+
+        new = realloc(roots, (i + 2) * sizeof(int));
+        if (new == NULL)
+            goto realloc_failed;
+        roots = new;
+        roots[i++] = action - action_table;
+        roots[i] = -1;
+
+        not_a_root:;
+    }
+
+    return roots;
+
+    realloc_failed : free(roots);
+    return NULL;
+}
+static int
+is_indirectly_connected(struct adg_action** action_table, int current, int target)
+{
+    int* child;
+    if (current == target)
+        return 1;
+
+    for (child = action_table[current]->runafter; *child != -1; ++child)
+        if (is_indirectly_connected(action_table, *child, target))
+            return 1;
+
+    return 0;
+}
+static int
+is_most_direct_path(struct adg_action** action_table, int from, int to)
+{
+    int* child;
+    for (child = action_table[from]->runafter; *child != -1; ++child)
+    {
+        if (*child == to)
+            continue;
+        if (is_indirectly_connected(action_table, *child, to))
+            return 0;
+    }
+    return 1;
+}
+static void
+assign_priorities(struct adg_action** action_table, int action, int depth)
+{
+    int* child;
+    if (action_table[action]->priority < depth)
+        action_table[action]->priority = depth;
+
+    for (child = action_table[action]->runafter; *child != -1; ++child)
+        assign_priorities(action_table, *child, depth + 1);
+}
+static int
+assign_priorities_reverse(struct adg_action** action_table, int action)
+{
+    int* child;
+    int smallest_priority = INT_MAX;
+
+    for (child = action_table[action]->runafter; *child != -1; ++child)
+    {
+        int child_priority = assign_priorities_reverse(action_table, *child);
+        action_table[action]->priority = child_priority - 1;
+    }
+
+    for (child = action_table[action]->runafter; *child != -1; ++child)
+    {
+        if (smallest_priority > action_table[*child]->priority)
+            smallest_priority = action_table[*child]->priority;
+    }
+    if (action_table[action]->priority > smallest_priority - 1)
+        action_table[action]->priority = smallest_priority - 1;
+
+    return action_table[action]->priority;
+}
+static int
+calculate_action_table_priorities(struct adg_action** action_table)
+{
+    int max_priority;
+    int* root;
+    int* root_nodes;
+    struct adg_action** action;
+
+    root_nodes = find_action_table_root_nodes(action_table);
+    if (root_nodes == NULL)
+        return -1;
+    for (root = root_nodes; *root != -1; ++root)
+        assign_priorities(action_table, *root, 0);
+    for (root = root_nodes; *root != -1; ++root)
+        assign_priorities_reverse(action_table, *root);
+
+    max_priority = 0;
+    for (action = action_table; *action; ++action)
+        if (max_priority < (*action)->priority)
+            max_priority = (*action)->priority;
+
+    for (action = action_table; *action; ++action)
+        (*action)->priority = max_priority - (*action)->priority;
+
+    free(root_nodes);
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+static void
+remove_unnecessary_dependencies(struct adg_action** action_table)
+{
+    struct adg_action** action;
+    for (action = action_table; *action; ++action)
+    {
+        int child = 0;
+        while ((*action)->runafter[child] != -1)
+        {
+            struct adg_action* child_action = action_table[(*action)->runafter[child]];
+            if (child_action->priority != (*action)->priority - 1)
+            {
+                int* dst;
+                int* src;
+                for (dst = (*action)->runafter + child, src = (*action)->runafter + child + 1; *dst != -1;)
+                    *dst++ = *src++;
+            }
+            else
+            {
+                child++;
+            }
+        }
+
+        child = 0;
+        while ((*action)->requires[child] != -1)
+        {
+            struct adg_action* child_action = action_table[(*action)->requires[child]];
+            if (child_action->priority != (*action)->priority - 1)
+            {
+                int* dst;
+                int* src;
+                for (dst = (*action)->requires + child, src = (*action)->requires + child + 1; *dst != -1;)
+                    *dst++ = *src++;
+            }
+            else
+            {
+                child++;
+            }
+        }
+
+        child = 0;
+        while ((*action)->metadeps[child] != -1)
+        {
+            struct adg_action* child_action = action_table[(*action)->metadeps[child]];
+            if (child_action->priority != (*action)->priority - 1)
+            {
+                int* dst;
+                int* src;
+                for (dst = (*action)->metadeps + child, src = (*action)->metadeps + child + 1; *dst != -1;)
+                    *dst++ = *src++;
+            }
+            else
+            {
+                child++;
+            }
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 struct adg_action**
 adg_action_table_from_nodes(union adg_node* root)
 {
@@ -548,6 +752,15 @@ adg_action_table_from_nodes(union adg_node* root)
         goto populate_action_table_failed;
     if (init_action_table_dependencies(action_table, root) != 0)
         goto populate_action_table_failed;
+    if (verify_action_table_dependencies_are_unique(action_table) != 0)
+        goto populate_action_table_failed;
+    if (verify_action_table_dependencies_are_acyclic(action_table) != 0)
+        goto populate_action_table_failed;
+    if (calculate_action_table_priorities(action_table) != 0)
+        goto populate_action_table_failed;
+    remove_unnecessary_dependencies(action_table);
+
+    // TODO requires cannot depend on implicit commands
 
     return action_table;
 
@@ -563,4 +776,50 @@ adg_action_table_destroy(struct adg_action** action_table)
     for (ptr = action_table; *ptr; ++ptr)
         adg_action_destroy(*ptr);
     free(action_table);
+}
+
+/* ------------------------------------------------------------------------- */
+static void
+write_connections(struct adg_action** action_table, FILE* fp)
+{
+    struct adg_action** action;
+    for (action = action_table; *action; ++action)
+    {
+        int* child;
+        int id = action - action_table;
+        for (child = (*action)->runafter; *child != -1; ++child)
+            fprintf(fp, "    N%d -> N%d [color=\"gray50\"];\n", id, *child);
+        for (child = (*action)->requires; *child != -1; ++child)
+            fprintf(fp, "    N%d -> N%d [color=\"brown3\"];\n", id, *child);
+        for (child = (*action)->metadeps; *child != -1; ++child)
+            fprintf(fp, "    N%d -> N%d [style=\"dashed\"];\n", id, *child);
+    }
+}
+static void
+write_names(struct adg_action** action_table, FILE* fp)
+{
+    struct adg_action** action;
+    for (action = action_table; *action; ++action)
+    {
+        int id = action - action_table;
+        fprintf(fp, "    N%d [label=\"%s\\n%d\", color=\"%s\"];\n", id, (*action)->action_name, (*action)->priority,
+                (*action)->is_implicit ? "chocolate" : (*action)->is_meta ? "darkorchid1" : "black");
+    }
+}
+void
+adg_action_table_export_dot(struct adg_action** action_table, const char* filename)
+{
+    FILE* fp = fopen(filename, "w");
+    if (fp == NULL)
+    {
+        fprintf(stderr, "Error: Failed to open file `%s'\n", filename);
+        return;
+    }
+
+    fprintf(fp, "digraph name {\n");
+    write_connections(action_table, fp);
+    write_names(action_table, fp);
+    fprintf(fp, "}\n");
+
+    fclose(fp);
 }

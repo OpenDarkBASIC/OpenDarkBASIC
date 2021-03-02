@@ -183,6 +183,12 @@ int main(int argc, char** argv)
         }
     }
 
+    if (depgraph_file)
+    {
+        fprintf(stderr, "Exporting depgraph to `%s'\n", depgraph_file);
+        adg_action_table_export_dot(action_table, depgraph_file);
+    }
+
     /* Write header if applicable */
     block = find_block(root, ADG_HEADER_PREAMBLE);
     if (header_file)
