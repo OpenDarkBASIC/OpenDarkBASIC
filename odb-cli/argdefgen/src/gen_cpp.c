@@ -1,6 +1,7 @@
 #include "argdefgen/action.h"
-#include "argdefgen/gen.h"
 #include "argdefgen/argparse.h"
+#include "argdefgen/gen.h"
+#include "argdefgen/section.h"
 #include <string.h>
 
 /* ------------------------------------------------------------------------- */
@@ -43,9 +44,20 @@ adg_gen_cpp_write_action_struct_def(FILE* fp)
     fprintf(fp, "    const int* metadeps;\n");
     fprintf(fp, "    const struct { int l; int h; } argRange;\n");
     fprintf(fp, "    const int priority;\n");
+    fprintf(fp, "    const int sectionId;\n");
     fprintf(fp, "    const char shortOption;\n");
     fprintf(fp, "    const unsigned char type;\n");
     fprintf(fp, "    const char* help;\n");
+    fprintf(fp, "};\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_section_struct_def(FILE* fp)
+{
+    fprintf(fp, "struct Section\n{\n");
+    fprintf(fp, "    const char* name;\n");
+    fprintf(fp, "    const char* info;\n");
     fprintf(fp, "};\n");
 }
 
@@ -91,7 +103,23 @@ write_metadeps_tables(struct adg_action** action_table, FILE* fp)
 
 /* ------------------------------------------------------------------------- */
 void
-adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp)
+adg_gen_cpp_write_section_table(struct adg_section** section_table, FILE* fp)
+{
+    struct adg_section** section;
+    fprintf(fp, "static const Section sections_[] = {\n");
+    for (section = section_table; *section; ++section)
+    {
+        fprintf(fp, "    {\"%s\", \"%s\"},\n", (*section)->name, (*section)->info);
+    }
+    fprintf(fp, "    {}\n};\n");
+
+    fprintf(fp, "#define SECTION_VALID(section) \\\n");
+    fprintf(fp, "    ((section)->name != nullptr)\n\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_action_table(struct adg_action** action_table, struct adg_section** section_table, FILE* fp)
 {
     struct adg_action** actionp;
     int padding;
@@ -179,6 +207,8 @@ adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp)
         fprintf(fp, "{%2d, %3d}, ", action->arg_range.l, action->arg_range.h);
         fprintf(fp, "%2d, ", action->priority);
 
+        fprintf(fp, "%d, ", adg_section_table_name_to_index(section_table, action->section_name));
+
         if (action->short_option != '\0')
             fprintf(fp, "'%c',", action->short_option);
         else
@@ -190,7 +220,7 @@ adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp)
         fprintf(fp, " },\n");
     }
     fprintf(fp, "    {}  // sentinel\n");
-    fprintf(fp, "};\n\n");
+    fprintf(fp, "};\n");
 
     fprintf(fp, "#define ACTION_VALID(action) \\\n");
     fprintf(fp, "    ((action)->fullOption != nullptr)\n\n");

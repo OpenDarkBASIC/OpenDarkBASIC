@@ -41,6 +41,7 @@ add_executable (argdefgen
     "src/main.c"
     "src/node.c"
     "src/str.c"
+    "src/section.c"
     "${PROJECT_BINARY_DIR}/src/argparse.c"
     ${BISON_adg_parser_OUTPUTS}
     ${FLEX_adg_scanner_OUTPUTS})

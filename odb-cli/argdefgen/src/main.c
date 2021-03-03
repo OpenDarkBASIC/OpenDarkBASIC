@@ -1,7 +1,8 @@
 #include "argdefgen/action.h"
 #include "argdefgen/driver.h"
-#include "argdefgen/node.h"
 #include "argdefgen/gen.h"
+#include "argdefgen/node.h"
+#include "argdefgen/section.h"
 #include <string.h>
 
 static const char* argdef_file = NULL;
@@ -162,6 +163,7 @@ parse_argdef_file_to_ast(void)
 int main(int argc, char** argv)
 {
     struct adg_action** action_table;
+    struct adg_section** section_table;
     union adg_node* root;
     union adg_node* block;
 
@@ -177,14 +179,21 @@ int main(int argc, char** argv)
     {
         fprintf(stderr, "Warning: Missing action table block in input file\n");
         action_table = adg_action_table_new_empty();
+        if (action_table == NULL)
+            goto create_action_table_failed;
+        section_table = adg_section_table_new_empty();
+        if (section_table == NULL)
+            goto create_section_table_failed;
     }
     else
     {
-        if ((action_table = adg_action_table_from_nodes(
-                block->action_table.sections)) == NULL)
-        {
+        action_table = adg_action_table_from_nodes(block->action_table.sections);
+        if (action_table == NULL)
             goto create_action_table_failed;
-        }
+
+        section_table = adg_section_table_from_nodes(block->action_table.sections);
+        if (section_table == NULL)
+            goto create_section_table_failed;
     }
 
     if (depgraph_file)
@@ -257,8 +266,10 @@ int main(int argc, char** argv)
             fprintf(fp, "%s", block->source_preamble.text);
 
         adg_gen_cpp_write_argparse_preamble(fp);
+        adg_gen_cpp_write_section_struct_def(fp);
         adg_gen_cpp_write_action_struct_def(fp);
-        adg_gen_cpp_write_action_table(action_table, fp);
+        adg_gen_cpp_write_section_table(section_table, fp);
+        adg_gen_cpp_write_action_table(action_table, section_table, fp);
         adg_gen_cpp_write_argparse_postamble(fp);
         adg_gen_cpp_write_helpers_impl(fp);
 
@@ -270,13 +281,15 @@ int main(int argc, char** argv)
             fclose(fp);
     }
 
+    adg_section_table_destroy(section_table);
     adg_action_table_destroy(action_table);
     adg_node_destroy_recursive(root);
 
     return 0;
 
-    export_failed              : adg_action_table_destroy(action_table);
-    create_action_table_failed : adg_node_destroy_recursive(root);
-    parse_argdef_file_failed   :
-    parse_command_line_failed  : return -1;
+    export_failed               : adg_section_table_destroy(section_table);
+    create_section_table_failed : adg_action_table_destroy(action_table);
+    create_action_table_failed  : adg_node_destroy_recursive(root);
+    parse_argdef_file_failed    :
+    parse_command_line_failed   : return -1;
 }

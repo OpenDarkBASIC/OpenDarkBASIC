@@ -111,6 +111,7 @@ IMPLICIT_ACTION {SEC_NAME}
     ^" "+?func:" "+?{FUNC_NAME}      { BEGIN(ACTION_TABLE); yylval->string_value = func_name(yytext); return TOK_FUNC; }
     ^" "+?args:" "+?                 { BEGIN(ARGS); return TOK_ARGS; }
     ^" "+?help:" "+?                 { BEGIN(HELP); return TOK_HELP; }
+    ^" "+?info:" "+?                 { BEGIN(HELP); return TOK_INFO; }
     ^" "+?runafter:" "+?             { BEGIN(RUNAFTER); return TOK_RUNAFTER; }
     ^" "+?requires:" "+?             { BEGIN(REQUIRES); return TOK_REQUIRES; }
     ^" "+?{EXPLICIT_META_ACTION}:    { BEGIN(ACTION_TABLE); yylval->string_value = action_name(yytext); return TOK_EXPLICIT_META_ACTION; }

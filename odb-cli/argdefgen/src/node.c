@@ -100,6 +100,14 @@ union adg_node* adg_node_new_help(char* str, struct ADGLTYPE* loc)
 }
 
 /* ------------------------------------------------------------------------- */
+union adg_node* adg_node_new_sectioninfo(char* str, struct ADGLTYPE* loc)
+{
+    union adg_node* node = MALLOC_AND_INIT(ADG_SECTIONINFO, loc);
+    node->sectioninfo.text = str;
+    return node;
+}
+
+/* ------------------------------------------------------------------------- */
 union adg_node* adg_node_new_func(char* str, struct ADGLTYPE* loc)
 {
     union adg_node* node = MALLOC_AND_INIT(ADG_FUNC, loc);
@@ -200,8 +208,8 @@ union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, 
     char* longopt_end;
 
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTRS);
-    node->explicit_action.attrs = &attrs->actionattrs;
+    assert(attrs->info.type == ADG_ACTIONATTR);
+    node->explicit_action.attrs = &attrs->actionattr;
 
     longopt_end = strchr(name, '(');
     *longopt_end = '\0'; /* just terminate string here so longopt is correct */
@@ -215,8 +223,8 @@ union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, 
 union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
     union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTRS);
-    node->implicit_action.attrs = &attrs->actionattrs;
+    assert(attrs->info.type == ADG_ACTIONATTR);
+    node->implicit_action.attrs = &attrs->actionattr;
     node->implicit_action.name = name;
     return node;
 }
@@ -298,7 +306,7 @@ union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* at
     union adg_node* metadeps;
 
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_META_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTRS);
+    assert(attrs->info.type == ADG_ACTIONATTR);
 
     longopt_end = strchr(name, '(');
     *longopt_end = '\0'; /* just terminate string here so longopt is correct */
@@ -311,9 +319,9 @@ union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* at
     }
 
     metadeps = adg_node_new_actionattr(metadeps, loc);
-    metadeps->actionattrs.next = &attrs->actionattrs;
+    metadeps->actionattr.next = &attrs->actionattr;
 
-    node->explicit_meta_action.attrs = &metadeps->actionattrs;
+    node->explicit_meta_action.attrs = &metadeps->actionattr;
     node->explicit_meta_action.longopt = name;
     node->explicit_meta_action.shortopt = longopt_end[1] == ')' ? '\0' : longopt_end[1];
 
@@ -325,7 +333,7 @@ union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* at
 {
     union adg_node* metadeps;
     union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_META_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTRS);
+    assert(attrs->info.type == ADG_ACTIONATTR);
 
     metadeps = parse_meta_arglist(strchr(name, '['), loc);
     if (metadeps == NULL)
@@ -335,9 +343,9 @@ union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* at
     }
 
     metadeps = adg_node_new_actionattr(metadeps, loc);
-    metadeps->actionattrs.next = &attrs->actionattrs;
+    metadeps->actionattr.next = &attrs->actionattr;
 
-    node->implicit_meta_action.attrs = &metadeps->actionattrs;
+    node->implicit_meta_action.attrs = &metadeps->actionattr;
     node->implicit_meta_action.name = name;
     return node;
 }
@@ -345,17 +353,25 @@ union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* at
 /* ------------------------------------------------------------------------- */
 union adg_node* adg_node_new_actionattr(union adg_node* attr, struct ADGLTYPE* loc)
 {
-    union adg_node* node = MALLOC_AND_INIT(ADG_ACTIONATTRS, loc);
-    node->actionattrs.attr = attr;
+    union adg_node* node = MALLOC_AND_INIT(ADG_ACTIONATTR, loc);
+    node->actionattr.attr = attr;
     return node;
 }
 
 /* ------------------------------------------------------------------------- */
-union adg_node* adg_node_new_section(union adg_node* action, char* name, struct ADGLTYPE* loc)
+union adg_node* adg_node_new_section(union adg_node* attrs, char* name, struct ADGLTYPE* loc)
 {
     union adg_node* node = MALLOC_AND_INIT(ADG_SECTION, loc);
-    node->section.actions = action;
+    node->section.attrs = attrs;
     node->section.name = name;
+    return node;
+}
+
+/* ------------------------------------------------------------------------- */
+union adg_node* adg_node_new_sectionattr(union adg_node* attr, struct ADGLTYPE* loc)
+{
+    union adg_node* node = MALLOC_AND_INIT(ADG_SECTIONATTR, loc);
+    node->sectionattr.attr = attr;
     return node;
 }
 
@@ -372,6 +388,21 @@ void adg_node_append_section(union adg_node* section, union adg_node* next)
         last = (union adg_node*)last->section.next;
 
     last->section.next = &next->section;
+}
+
+/* ------------------------------------------------------------------------- */
+void adg_node_append_sectionattr(union adg_node* actionattrs, union adg_node* next)
+{
+    union adg_node* last = actionattrs;
+
+    assert(actionattrs->info.type == ADG_SECTIONATTR);
+    assert(next->info.type == ADG_SECTIONATTR);
+    assert(next->sectionattr.next == NULL);
+
+    while (last->actionattr.next != NULL)
+        last = (union adg_node*)last->actionattr.next;
+
+    last->actionattr.next = &next->actionattr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -394,14 +425,14 @@ void adg_node_append_actionattr(union adg_node* actionattrs, union adg_node* nex
 {
     union adg_node* last = actionattrs;
 
-    assert(actionattrs->info.type == ADG_ACTIONATTRS);
-    assert(next->info.type == ADG_ACTIONATTRS);
-    assert(next->actionattrs.next == NULL);
+    assert(actionattrs->info.type == ADG_ACTIONATTR);
+    assert(next->info.type == ADG_ACTIONATTR);
+    assert(next->actionattr.next == NULL);
 
-    while (last->actionattrs.next != NULL)
-        last = (union adg_node*)last->actionattrs.next;
+    while (last->actionattr.next != NULL)
+        last = (union adg_node*)last->actionattr.next;
 
-    last->actionattrs.next = &next->actionattrs;
+    last->actionattr.next = &next->actionattr;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -424,8 +455,9 @@ void adg_node_destroy(union adg_node* node)
         case ADG_ARGNAME              : free(node->argname.str); break;
         case ADG_EXPLICIT_ACTION      : free(node->explicit_action.longopt); break;
         case ADG_IMPLICIT_ACTION      : free(node->implicit_action.name); break;
-        case ADG_ACTIONATTRS          : break;
+        case ADG_ACTIONATTR           : break;
         case ADG_SECTION              : free(node->section.name); break;
+        case ADG_SECTIONATTR          : break;
         case ADG_EXPLICIT_META_ACTION : free(node->explicit_meta_action.longopt); break;
         case ADG_IMPLICIT_META_ACTION : free(node->implicit_meta_action.name); break;
     }
@@ -503,13 +535,17 @@ static void write_connections(union adg_node* node, FILE* fp)
             if (node->implicit_meta_action.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->implicit_meta_action.next);
             if (node->implicit_meta_action.attrs) fprintf(fp, "    N%p -> N%p [label=\"attrs\"];\n", node, node->implicit_action.attrs);
             break;
-        case ADG_ACTIONATTRS :
-            if (node->actionattrs.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->actionattrs.next);
-            if (node->actionattrs.attr) fprintf(fp, "    N%p -> N%p [label=\"attr\"];\n", node, node->actionattrs.attr);
+        case ADG_ACTIONATTR :
+            if (node->actionattr.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->actionattr.next);
+            if (node->actionattr.attr) fprintf(fp, "    N%p -> N%p [label=\"attr\"];\n", node, node->actionattr.attr);
             break;
         case ADG_SECTION :
             if (node->section.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->section.next);
-            if (node->section.actions) fprintf(fp, "    N%p -> N%p [label=\"actions\"];\n", node, node->section.actions);
+            if (node->section.attrs) fprintf(fp, "    N%p -> N%p [label=\"attrs\"];\n", node, node->section.attrs);
+            break;
+        case ADG_SECTIONATTR :
+            if (node->sectionattr.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->sectionattr.next);
+            if (node->sectionattr.attr) fprintf(fp, "    N%p -> N%p [label=\"attr\"];\n", node, node->sectionattr.attr);
             break;
     }
 
@@ -538,8 +574,9 @@ static void write_names(union adg_node* node, FILE* fp)
         case ADG_ARG                  : fprintf(fp, "arg"); break;
         case ADG_OPTIONAL_ARG         : fprintf(fp, "optional arg: %s", node->optional_arg.continued ? "continued" : "not continued"); break;
         case ADG_ARGNAME              : fprintf(fp, "argname: %s", node->argname.str); break;
-        case ADG_ACTIONATTRS          : fprintf(fp, "actionattrs"); break;
+        case ADG_ACTIONATTR           : fprintf(fp, "actionattr"); break;
         case ADG_SECTION              : fprintf(fp, "section: %s", node->section.name); break;
+        case ADG_SECTIONATTR          : fprintf(fp, "sectionattr"); break;
         case ADG_IMPLICIT_ACTION      : fprintf(fp, "%s", node->implicit_action.name); break;
         case ADG_IMPLICIT_META_ACTION :
             fprintf(fp, "%s[...]", node->implicit_meta_action.name);
@@ -585,7 +622,7 @@ int adg_node_export_dot(union adg_node* root, const char* filename)
 }
 
 /* ------------------------------------------------------------------------- */
-int adg_node_is_action(union adg_node* node)
+int adg_node_is_action(const union adg_node* node)
 {
     return node->info.type == ADG_EXPLICIT_ACTION
         || node->info.type == ADG_IMPLICIT_ACTION
@@ -658,7 +695,7 @@ int adg_node_generate_help_action_if_not_available(union adg_node* root)
             adg_node_new_argname(NULL, adg_str_dup("all"), &loc), adg_str_dup("section"), &loc);
         union adg_node* help = adg_node_new_help(adg_str_dup("Prints this help text."), &loc);
         union adg_node* attrs = adg_node_new_actionattr(help, &loc);
-        union adg_node* action = adg_node_new_explicit_action(adg_str_dup("help(h)"), attrs, &loc);
+        union adg_node* action = adg_node_new_explicit_action(adg_str_dup("help()"), attrs, &loc);
         union adg_node* args = adg_node_new_optional_arg(NULL, argnames, 0, &loc);
         section = adg_node_new_section(action, adg_str_dup("help-action"), &loc);
         adg_node_append_actionattr(attrs, adg_node_new_actionattr(args, &loc));

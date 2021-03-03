@@ -23,6 +23,9 @@
 #if !defined(ADG_COLOR_ARG)
 #define ADG_COLOR_ARG      "\u001b[1;36m"
 #endif
+#if !defined(ADG_COLOR_ERROR)
+#   define ADG_COLOR_ERROR "\u001b[1;31m"
+#endif
 
 #if !defined(ADG_HELP_EXAMPLES)
 #   define ADG_HELP_EXAMPLES
@@ -90,74 +93,152 @@ static void justifyWrap(std::vector<std::string>* lines,
 }
 
 // ----------------------------------------------------------------------------
-static bool printHelp(const ArgList& args)
+static void printHelpAction(const Action* action)
 {
     const int WRAP = 80;
     const int DOC_INDENT = 8;
 
-    // ------------------------------------------------------------------------
-    // Usage
-    // ------------------------------------------------------------------------
+    // Implicit actions are invisible to the user
+    if (action->type & IMPLICIT)
+        return;
 
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", "Usage:\n");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "  %s ", programName_.c_str());
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "[");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%s", "options");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "]\n\n");
-
-    // ------------------------------------------------------------------------
-    // Examples
-    // ------------------------------------------------------------------------
-
-    ADG_HELP_EXAMPLES
-
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", "Available options:\n");
-
-    for (const Action* action = actions_; ACTION_VALID(action); ++action)
+    // Print short option, if it exists
+    if (action->shortOption)
     {
-        // Implicit actions are invisible to the user
-        if (action->type & IMPLICIT)
-            continue;
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_SHORTOPT, "  -%c", action->shortOption);
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", ", ");
+    }
+    else
+    {
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "      ");
+    }
 
-        // Print short option, if it exists
-        if (action->shortOption)
+    // Print full option
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "--%s ", action->fullOption);
+
+    // Format argument documentation, if any
+    for (const char* p = action->argDoc; *p; ++p)
+    {
+        if (*p == '<' || *p == '>' || *p == '[' || *p == ']' || *p == '|' || *p == '.')
         {
-            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_SHORTOPT, "  -%c", action->shortOption);
-            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", ", ");
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%c", *p);
         }
         else
         {
-            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "      ");
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%c", *p);
         }
+    }
 
-        // Print full option
-        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "--%s ", action->fullOption);
-
-        // Format argument documentation, if any
-        for (const char* p = action->argDoc; *p; ++p)
+    ArgList lines;
+    justifyWrap(&lines, std::string(action->help), WRAP - DOC_INDENT);
+    for (auto line = lines.begin(); line != lines.end(); ++line)
+    {
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+        for (int j = 0; j != DOC_INDENT; ++j)
         {
-            if (*p == '<' || *p == '>' || *p == '[' || *p == ']' || *p == '|' || *p == '.')
-            {
-                ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%c", *p);
-            }
-            else
-            {
-                ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%c", *p);
-            }
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " ");
         }
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", line->c_str());
+    }
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+}
+static void printAvailableSections()
+{
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s\n", "Available sections:");
 
-        ArgList lines;
-        justifyWrap(&lines, std::string(action->help), WRAP - DOC_INDENT);
-        for (auto line = lines.begin(); line != lines.end(); ++line)
+    int padding = 0;
+    for (const Section* section = sections_; SECTION_VALID(section); ++section)
+    {
+        std::size_t len = strlen(section->name);
+        padding = padding < len ? len : padding;
+    }
+    for (const Section* section = sections_; SECTION_VALID(section); ++section)
+    {
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING2, "  %-*s", padding, section->name);
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, " : %s\n", section->info);
+    }
+}
+static void printSection(const char* sectionName)
+{
+    bool found = false;
+    for (const Action* action = actions_; ACTION_VALID(action); ++action)
+    {
+        if (strcmp(sections_[action->sectionId].name, sectionName))
+            continue;
+        if (found == false)
         {
-            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
-            for (int j = 0; j != DOC_INDENT; ++j)
-            {
-                ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " ");
-            }
-            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", line->c_str());
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", "Commands in section ");
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%s", sectionName);
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", ":\n");
         }
-        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n\n");
+        printHelpAction(action);
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+        found = true;
+    }
+
+    if (found == false)
+    {
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ERROR, "%s", "Error: ");
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "Unknown section `%s'\n\n", sectionName);
+        printAvailableSections();
+    }
+}
+static void printHelpAll()
+{
+    for (const Action* action = actions_; ACTION_VALID(action); ++action)
+    {
+        printHelpAction(action);
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+    }
+}
+
+// ----------------------------------------------------------------------------
+static bool printHelp(const ArgList& args)
+{
+    if (args.size() == 0)
+    {
+        // ------------------------------------------------------------------------
+        // Usage
+        // ------------------------------------------------------------------------
+
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", "Usage:\n");
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "  %s ", programName_.c_str());
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "[");
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%s", "options");
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "]\n\n");
+
+        // ------------------------------------------------------------------------
+        // Examples
+        // ------------------------------------------------------------------------
+
+        ADG_HELP_EXAMPLES
+    }
+
+    // If there is only one section then we print everything. But if there are
+    // multiple sections, only print the help doc if no args were specified.
+    if (!SECTION_VALID(sections_ + 1) || (args.size() > 0 && args[0] == "all"))
+    {
+        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s\n", "Available options:");
+        printHelpAll();
+    }
+    else if (SECTION_VALID(sections_ + 1) && args.size() == 0)
+    {
+        int actionId = findActionId("help");
+        if (actionId == -1)
+        {
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s\n", "Available options:");
+            printHelpAll();
+        }
+        else
+        {
+            printAvailableSections();
+            ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "\n%s\n", "Use --help to read more about a section:");
+            printHelpAction(actions_ + actionId);
+        }
+    }
+    else
+    {
+        printSection(args[0].c_str());
     }
 
     return false;

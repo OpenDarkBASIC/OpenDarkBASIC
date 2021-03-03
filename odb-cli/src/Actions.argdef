@@ -23,6 +23,7 @@ static bool printHelp(const ArgList& args);
 #define ADG_COLOR_LONGOPT  odb::Log::Color::FG_BRIGHT_GREEN
 #define ADG_COLOR_SHORTOPT odb::Log::Color::FG_BRIGHT_YELLOW
 #define ADG_COLOR_ARG      odb::Log::Color::FG_BRIGHT_YELLOW
+#define ADG_COLOR_ERROR    odb::Log::Color::FG_BRIGHT_RED
 
 #define ADG_HELP_EXAMPLES \
     printHelpExamples();
@@ -33,11 +34,13 @@ static void printHelpExamples();
 %action-table {
 ###############################################################################
 section global:
+  info: Initial setup and version information
+
   no-banner(b):
     help: Don't print the cool art banner.
     func: disableBanner
 
-  color(c):
+  color():
     help: Enables color escape sequences for all messages. Color is enabled by
           default unless the output is piped.
     func: enableColor
@@ -54,7 +57,7 @@ section global:
   help(h):
     help: Print this help text, or print help about a specific section, or print
           everything by specifying 'all'.
-    args: [all|section...]
+    args: [all|section]
     func: printHelp
     runafter: print-banner
 
@@ -70,6 +73,8 @@ section global:
 
 ###############################################################################
 section sdk:
+  info: Options to configure the SDK, plugins and commands
+
   sdk-root():
     help: Tells the compiler where to look for plugins, help files, and other
           necessary information. In the case of DBPro this should be a path to
@@ -130,6 +135,8 @@ section sdk:
 
 ###############################################################################
 section parser:
+  info: Options for parsing DBA and DBPro files
+
   init-command-matcher:
     func: initCommandMatcher
     runafter: load-commands
@@ -167,6 +174,8 @@ section parser:
 
 ###############################################################################
 section codegen:
+  info: Optimization, target arch and platform settings, and output type settings
+
   arch():
     help: Specify the output architecture if the output type is an executable
           or object file. Defaults to 'x86_64' for the ODB SDK, or 'i386' for
@@ -210,7 +219,7 @@ static void printHelpExamples()
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source.dba ");
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--output");
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " program.exe\n");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "    %s ", programName_.c_str());
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "    %s ", programName_.c_str());
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source1.dba source2.dba ");
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--output");

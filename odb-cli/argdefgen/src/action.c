@@ -98,11 +98,11 @@ find_func_name(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTRS);
-        if (attr->actionattrs.attr->info.type == ADG_FUNC)
-            return attr->actionattrs.attr->func.name;
+        assert(attr->info.type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.type == ADG_FUNC)
+            return attr->actionattr.attr->func.name;
 
-        attr = (union adg_node*)attr->actionattrs.next;
+        attr = (union adg_node*)attr->actionattr.next;
     }
 
     return NULL;
@@ -116,11 +116,11 @@ find_help(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTRS);
-        if (attr->actionattrs.attr->info.type == ADG_HELP)
-            return attr->actionattrs.attr->help.text;
+        assert(attr->info.type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.type == ADG_HELP)
+            return attr->actionattr.attr->help.text;
 
-        attr = (union adg_node*)attr->actionattrs.next;
+        attr = (union adg_node*)attr->actionattr.next;
     }
 
     return NULL;
@@ -134,11 +134,11 @@ find_args_node(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTRS);
-        if (attr->actionattrs.attr->info.type == ADG_ARG || attr->actionattrs.attr->info.type == ADG_OPTIONAL_ARG)
-            return (union adg_node*)attr->actionattrs.attr;
+        assert(attr->info.type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.type == ADG_ARG || attr->actionattr.attr->info.type == ADG_OPTIONAL_ARG)
+            return (union adg_node*)attr->actionattr.attr;
 
-        attr = (union adg_node*)attr->actionattrs.next;
+        attr = (union adg_node*)attr->actionattr.next;
     }
 
     return NULL;
@@ -792,6 +792,7 @@ adg_action_table_from_nodes(union adg_node* root)
     remove_indirect_dependencies(action_table);
 
     // TODO requires cannot depend on implicit commands
+    // TODO duplicate short options
 
     free(requires_roots);
     free(runafter_roots);

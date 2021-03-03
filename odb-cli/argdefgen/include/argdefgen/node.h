@@ -11,6 +11,7 @@ enum adg_node_type
     ADG_ACTION_TABLE,
 
     ADG_HELP,
+    ADG_SECTIONINFO,
     ADG_FUNC,
     ADG_RUNAFTER,
     ADG_REQUIRES,
@@ -22,8 +23,9 @@ enum adg_node_type
     ADG_IMPLICIT_ACTION,
     ADG_EXPLICIT_META_ACTION,
     ADG_IMPLICIT_META_ACTION,
-    ADG_ACTIONATTRS,
-    ADG_SECTION
+    ADG_ACTIONATTR,
+    ADG_SECTION,
+    ADG_SECTIONATTR
 };
 
 struct adg_node_location
@@ -91,11 +93,11 @@ union adg_node
 
     /* action table nodes */
 
-    struct actionattrs {
+    struct actionattr {
         struct info info;
-        struct actionattrs* next;
+        struct actionattr* next;
         union adg_node* attr;
-    } actionattrs;
+    } actionattr;
 
     struct metadep {
         struct info info;
@@ -107,13 +109,13 @@ union adg_node
     struct action_base {
         struct info info;
         struct action_base* next;
-        struct actionattrs* attrs;
+        struct actionattr* attrs;
     } action_base;
 
     struct explicit_action {
         struct info info;
         struct action_base* next;
-        struct actionattrs* attrs;
+        struct actionattr* attrs;
         char* longopt;
         char shortopt;
     } explicit_action;
@@ -121,14 +123,14 @@ union adg_node
     struct implicit_action {
         struct info info;
         struct action_base* next;
-        struct actionattrs* attrs;
+        struct actionattr* attrs;
         char* name;
     } implicit_action;
 
     struct explicit_meta_action {
         struct info info;
         struct action_base* next;
-        struct actionattrs* attrs;
+        struct actionattr* attrs;
         char* longopt;
         char shortopt;
     } explicit_meta_action;
@@ -136,16 +138,22 @@ union adg_node
     struct implicit_meta_action {
         struct info info;
         struct action_base* next;
-        struct actionattrs* attrs;
+        struct actionattr* attrs;
         char* name;
     } implicit_meta_action;
 
     struct section {
         struct info info;
         struct section* next;
-        union adg_node* actions;
+        union adg_node* attrs;
         char* name;
     } section;
+
+    struct sectionattr {
+        struct info info;
+        struct sectionattr* next;
+        union adg_node* attr;
+    } sectionattr;
 
     struct runafter {
         struct info info;
@@ -188,6 +196,11 @@ union adg_node
 
     struct {
         struct base base;
+        char* text;
+    } sectioninfo;
+
+    struct {
+        struct base base;
         char* name;
     } func;
 };
@@ -203,6 +216,7 @@ int adg_node_is_block(union adg_node* node);
 
 /* action table nodes */
 union adg_node* adg_node_new_help(char* str, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_sectioninfo(char* str, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_func(char* str, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_runafter(union adg_node* next, char* str, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_requires(union adg_node* next, char* str, struct ADGLTYPE* loc);
@@ -215,10 +229,12 @@ union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, 
 union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc);
 union adg_node* adg_node_new_actionattr(union adg_node* attr, struct ADGLTYPE* loc);
-union adg_node* adg_node_new_section(union adg_node* action, char* name, struct ADGLTYPE* loc);
-int adg_node_is_action(union adg_node* node);
+union adg_node* adg_node_new_section(union adg_node* attrs, char* name, struct ADGLTYPE* loc);
+union adg_node* adg_node_new_sectionattr(union adg_node* attr, struct ADGLTYPE* loc);
+int adg_node_is_action(const union adg_node* node);
 
 void adg_node_append_section(union adg_node* section, union adg_node* next);
+void adg_node_append_sectionattr(union adg_node* sectionattrs, union adg_node* next);
 void adg_node_append_action(union adg_node* action, union adg_node* next);
 void adg_node_append_actionattr(union adg_node* actionattrs, union adg_node* next);
 

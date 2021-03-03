@@ -49,6 +49,7 @@
 %token ACTION_TABLE_START
 %token BLOCK_END
 %token HELP
+%token INFO
 %token ARGS
 %token RUNAFTER
 %token REQUIRES
@@ -75,7 +76,8 @@
 %type<node_value> action_table
 %type<node_value> sections
 %type<node_value> section
-%type<node_value> actions
+%type<node_value> sectionattrs
+%type<node_value> sectionattr
 %type<node_value> action
 %type<node_value> actionattrs
 %type<node_value> actionattr
@@ -138,11 +140,15 @@ sections
   | section                                       { $$ = $1; }
   ;
 section
-  : SECTION actions                               { $$ = adg_node_new_section($2, $1, &@$); }
+  : SECTION sectionattrs                          { $$ = adg_node_new_section($2, $1, &@$); }
   ;
-actions
-  : action actions                                { $$ = $2; adg_node_append_action($$, $1); }
-  | action                                        { $$ = $1; }
+sectionattrs
+  : sectionattrs sectionattr                      { $$ = $1; adg_node_append_sectionattr($$, $2); }
+  | sectionattr                                   { $$ = $1; }
+  ;
+sectionattr
+  : INFO help_str                                 { $$ = adg_node_new_sectionattr(adg_node_new_sectioninfo($2, &@2), &@$); }
+  | action                                        { $$ = adg_node_new_sectionattr($1, &@$); }
   ;
 action
   : EXPLICIT_ACTION actionattrs                   { $$ = adg_node_new_explicit_action($1, $2, &@$); if (!$$) YYABORT; }
