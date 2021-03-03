@@ -226,3 +226,8 @@ void adg_node_destroy(union adg_node* node);
 void adg_node_destroy_recursive(union adg_node* node);
 
 int adg_node_export_dot(union adg_node* root, const char* filename);
+
+union adg_node* adg_node_find(union adg_node* node, enum adg_node_type type);
+union adg_node* adg_node_find_action_matching(union adg_node* node, const char* action_node_name);
+
+int adg_node_generate_help_action_if_not_available(union adg_node* root);

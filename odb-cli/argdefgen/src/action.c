@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdint.h>
+#include <stddef.h>
 #include <assert.h>
 #include <limits.h>
 
@@ -143,14 +145,41 @@ find_args_node(union adg_node* node)
 }
 
 /* ------------------------------------------------------------------------- */
+static void
+init_action_arg_range(struct adg_action* action, union adg_node* node)
+{
+    /* We'll use these as counters for number of required and number of
+     * optional args */
+    action->arg_range.l = 0;
+    action->arg_range.h = 0;
+
+    union adg_node* arg = find_args_node(node);
+    while (arg)
+    {
+        if (arg->info.type == ADG_ARG)
+        {
+            action->arg_range.l++;
+            action->arg_range.h++;
+            arg = (union adg_node*)arg->arg.next;
+        }
+        else  /* ADG_OPTIONAL_ARG */
+        {
+            if (arg->optional_arg.continued)
+                action->arg_range.h = -1;  /* indicates infinite additional optional args */
+            else
+                action->arg_range.h++;
+            arg = (union adg_node*)arg->optional_arg.next;
+        }
+    }
+}
+
+/* ------------------------------------------------------------------------- */
 static int
-init_action_argdoc_and_range(struct adg_action* action, union adg_node* node)
+init_action_arg_doc(struct adg_action* action, union adg_node* node)
 {
     /* We'll use these as counters for number of required and number of
      * optional args */
     action->arg_doc = adg_str_dup("");
-    action->arg_range.l = 0;
-    action->arg_range.h = 0;
 
     union adg_node* arg = find_args_node(node);
     while (arg)
@@ -170,11 +199,9 @@ init_action_argdoc_and_range(struct adg_action* action, union adg_node* node)
                 action->arg_doc = adg_str_append(action->arg_doc, argname->argname.str);
             }
             action->arg_doc = adg_str_append(action->arg_doc, ">");
-            action->arg_range.l++;
-            action->arg_range.h++;
             arg = (union adg_node*)arg->arg.next;
         }
-        else if (arg->info.type == ADG_OPTIONAL_ARG)
+        else  /* ADG_OPTIONAL_ARG */
         {
             int i;
             union adg_node* argname;
@@ -186,22 +213,15 @@ init_action_argdoc_and_range(struct adg_action* action, union adg_node* node)
             {
                 if (i != 0)
                     action->arg_doc = adg_str_append(action->arg_doc, "|");
+
                 action->arg_doc = adg_str_append(action->arg_doc, argname->argname.str);
             }
+
             if (arg->optional_arg.continued)
-            {
                 action->arg_doc = adg_str_append(action->arg_doc, "...");
-                action->arg_range.h = -1;  /* indicates infinite additional optional args */
-            }
-            else
-                action->arg_range.h++;
+
             action->arg_doc = adg_str_append(action->arg_doc, "]");
             arg = (union adg_node*)arg->optional_arg.next;
-        }
-        else
-        {
-            fprintf(stderr, "Encountered invalid node type `%d' in args linked list\n", node->info.type);
-            return -1;
         }
 
         /* Space between each argument */
@@ -268,7 +288,8 @@ populate_action_table_from_tree(struct adg_action*** listp, union adg_node* node
                 if (action->long_option == NULL)
                     goto init_action_failed;
 
-                if (init_action_argdoc_and_range(action, node) != 0)
+                init_action_arg_range(action, node);
+                if (init_action_arg_doc(action, node) != 0)
                     goto init_action_failed;
             } break;
 
@@ -278,8 +299,6 @@ populate_action_table_from_tree(struct adg_action*** listp, union adg_node* node
             case ADG_IMPLICIT_ACTION: {
                 if (help)
                     fprintf(stderr, "Warning: Action `%s' has a help attribute, but it will be ignored because the action is implicit.\n", long_option);
-                if (find_args_node(node))
-                    fprintf(stderr, "Warning: Action `%s' has an args attribute, but it will be ignored because the action is implicit.\n", long_option);
 
                 if (func_name == NULL)
                 {
@@ -299,6 +318,10 @@ populate_action_table_from_tree(struct adg_action*** listp, union adg_node* node
                 action->help = adg_str_dup("");
                 if (action->help == NULL)
                     goto init_action_failed;
+
+                /* The argdoc of implicit actions is not required, but we do
+                 * need to set the argument range. */
+                init_action_arg_range(action, node);
 
                 action->is_implicit = 1;
             } break;
@@ -353,43 +376,6 @@ verify_actions_and_sections_are_unique(struct adg_action** action_table)
 }
 
 /* ------------------------------------------------------------------------- */
-static union adg_node*
-find_action_node(union adg_node* node, const char* name)
-{
-    union adg_node* found;
-    if (adg_node_is_action(node))
-        if (strcmp(get_long_option(node), name) == 0)
-            return node;
-
-    if (node->base.left)
-        if ((found = find_action_node(node->base.left, name)) != NULL)
-            return found;
-    if (node->base.right)
-        if ((found = find_action_node(node->base.right, name)) != NULL)
-            return found;
-
-    return NULL;
-}
-
-/* ------------------------------------------------------------------------- */
-static union adg_node*
-find_node(union adg_node* node, enum adg_node_type type)
-{
-    union adg_node* found;
-    if (node->info.type == type)
-        return node;
-
-    if (node->base.left)
-        if ((found = find_node(node->base.left, type)) != NULL)
-            return found;
-    if (node->base.right)
-        if ((found = find_node(node->base.right, type)) != NULL)
-            return found;
-
-    return NULL;
-}
-
-/* ------------------------------------------------------------------------- */
 static int
 init_action_table_dependencies(struct adg_action** action_table, union adg_node* root)
 {
@@ -398,7 +384,7 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
     {
         union adg_node* node;
         struct adg_action* action = *ptr;
-        union adg_node* action_node = find_action_node(root, action->action_name);
+        union adg_node* action_node = adg_node_find_action_matching(root, action->action_name);
         if (action_node == NULL)
         {
             fprintf(stderr, "Error: Something horrible happened: Action `%s' in table could not be found in AST, should never happen\n", action->action_name);
@@ -421,7 +407,7 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
         action->metadeps[0] = -1;
 
         /* Fill in runafter dependency list */
-        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_RUNAFTER);
+        node = adg_node_find((union adg_node*)action_node->action_base.attrs, ADG_RUNAFTER);
         if (node != NULL)
         {
             union adg_node* runafter;
@@ -453,7 +439,7 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
         }
 
         /* Fill in requires dependency list */
-        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_REQUIRES);
+        node = adg_node_find((union adg_node*)action_node->action_base.attrs, ADG_REQUIRES);
         if (node != NULL)
         {
             union adg_node* requires;
@@ -485,7 +471,7 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
         }
 
         /* Fill in metadeps dependency list */
-        node = find_node((union adg_node*)action_node->action_base.attrs, ADG_METADEP);
+        node = adg_node_find((union adg_node*)action_node->action_base.attrs, ADG_METADEP);
         if (node != NULL)
         {
             union adg_node* metadep;
@@ -522,21 +508,198 @@ init_action_table_dependencies(struct adg_action** action_table, union adg_node*
 
 /* ------------------------------------------------------------------------- */
 static int
+deplist_has_duplicates(const int* deplist)
+{
+    const int* first;
+    for (first = deplist; *first != -1; ++first)
+    {
+        const int* second;
+        for (second = first + 1; *second != -1; ++second)
+        {
+            if (*first == *second)
+                return 1;
+        }
+    }
+
+    return 0;
+}
+static int
 verify_action_table_dependencies_are_unique(struct adg_action** action_table)
 {
+    struct adg_action** action;
+    for (action = action_table; *action; ++action)
+    {
+        if (deplist_has_duplicates((*action)->runafter))
+        {
+            fprintf(stderr, "Error: Action `%s' has duplicate runafter dependencies\n", (*action)->action_name);
+            return -1;
+        }
+        if (deplist_has_duplicates((*action)->requires))
+        {
+            fprintf(stderr, "Error: Action `%s' has duplicate requires dependencies\n", (*action)->action_name);
+            return -1;
+        }
+        if (deplist_has_duplicates((*action)->metadeps))
+        {
+            fprintf(stderr, "Error: Action `%s' has duplicate metadeps dependencies\n", (*action)->action_name);
+            return -1;
+        }
+    }
     return 0;
 }
 
 /* ------------------------------------------------------------------------- */
 static int
-verify_action_table_dependencies_are_acyclic(struct adg_action** action_table)
+find_cycle(struct adg_action** action_table, uintptr_t deplistmember, const char* deplistname, int action, int* visited, int depth)
 {
+    const int* child;
+    const int* deplist = *(int**)((char*)action_table[action] + deplistmember);
+    for (child = deplist; *child != -1; ++child)
+    {
+        int i;
+        for (i = 0; i != depth; ++i)
+            if (visited[i] == *child)
+            {
+                fprintf(stderr, "Error: %s circular dependency: ", deplistname);
+                for (; i != depth; ++i)
+                    fprintf(stderr, "%s -> ", action_table[visited[i]]->action_name);
+                fprintf(stderr, "%s\n", action_table[*child]->action_name);
+                return 1;
+            }
+
+        visited[depth] = *child;
+        if (find_cycle(action_table, deplistmember, deplistname, *child, visited, depth + 1))
+            return 1;
+    }
+
+    return 0;
+}
+static int
+verify_action_table_dependencies_are_acyclic(struct adg_action** action_table, const int* runafter_roots, const int* requires_roots)
+{
+    struct adg_action** action;
+    int* visited;
+    const int* root;
+    int table_size;
+
+    table_size = 0;
+    for (action = action_table; *action; ++action)
+        table_size++;
+    visited = malloc(table_size * sizeof(int));
+    if (visited == NULL)
+        return -1;
+
+    for (root = runafter_roots; *root != -1; ++root)
+    {
+        visited[0] = *root;
+        if (find_cycle(action_table, offsetof(struct adg_action, runafter), "runafter", *root, visited, 1))
+            return 1;
+    }
+
+    for (root = requires_roots; *root != -1; ++root)
+    {
+        visited[0] = *root;
+        if (find_cycle(action_table, offsetof(struct adg_action, requires), "requires", *root, visited, 1))
+            return 1;
+    }
+
+    free(visited);
     return 0;
 }
 
 /* ------------------------------------------------------------------------- */
+static int
+assign_priorities(struct adg_action** action_table, int action)
+{
+    int* child;
+    int smallest_priority = -1;  /* Assumes the lowest priority in the tree is 0 */
+
+    for (child = action_table[action]->runafter; *child != -1; ++child)
+    {
+        int child_priority = assign_priorities(action_table, *child);
+        action_table[action]->priority = child_priority + 1;
+    }
+
+    for (child = action_table[action]->runafter; *child != -1; ++child)
+    {
+        if (smallest_priority < action_table[*child]->priority)
+            smallest_priority = action_table[*child]->priority;
+    }
+    if (action_table[action]->priority < smallest_priority + 1)
+        action_table[action]->priority = smallest_priority + 1;
+
+    return action_table[action]->priority;
+}
+static int
+calculate_action_table_priorities(struct adg_action** action_table, const int* runafter_roots)
+{
+    const int* root;
+    for (root = runafter_roots; *root != -1; ++root)
+        assign_priorities(action_table, *root);
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+static int
+is_indirectly_connected(struct adg_action** action_table, const uintptr_t deplistmember, int current, int target)
+{
+    const int* child;
+    const int* deplist;
+    if (current == target)
+        return 1;
+
+    deplist = *(int**)((char*)action_table[current] + deplistmember);
+    for (child = deplist; *child != -1; ++child)
+        if (is_indirectly_connected(action_table, deplistmember, *child, target))
+            return 1;
+
+    return 0;
+}
+static int
+is_most_direct_path(struct adg_action** action_table, const uintptr_t deplistmember, int from, int to)
+{
+    const int* child;
+    const int* deplist = *(int**)((char*)action_table[from] + deplistmember);
+    for (child = deplist; *child != -1; ++child)
+    {
+        if (*child == to)
+            continue;
+        if (is_indirectly_connected(action_table, deplistmember, *child, to))
+            return 0;
+    }
+    return 1;
+}
+static void
+remove_indirect_dependencies_deplist(struct adg_action** action_table, const uintptr_t deplistmember)
+{
+    struct adg_action** action;
+    for (action = action_table; *action; ++action)
+    {
+        int* child;
+        int* deplist = *(int**)((char*)(*action) + deplistmember);
+        for (child = deplist; *child != -1; ++child)
+        {
+            if (!is_most_direct_path(action_table, deplistmember, action - action_table, *child))
+            {
+                int* dst;
+                int* src;
+                for (dst = child, src = child + 1; *dst != -1;)
+                    *dst++ = *src++;
+                child--;
+            }
+        }
+    }
+}
+static void
+remove_indirect_dependencies(struct adg_action** action_table)
+{
+    remove_indirect_dependencies_deplist(action_table, offsetof(struct adg_action, runafter));
+    remove_indirect_dependencies_deplist(action_table, offsetof(struct adg_action, requires));
+}
+
+/* ------------------------------------------------------------------------- */
 static int*
-find_action_table_root_nodes(struct adg_action** action_table)
+find_action_table_root_nodes(struct adg_action** action_table, uintptr_t deplistmember)
 {
     int i;
     struct adg_action** action;
@@ -549,13 +712,16 @@ find_action_table_root_nodes(struct adg_action** action_table)
     for (action = action_table; *action; ++action)
     {
         void* new;
-        struct adg_action** inner;
-        for (inner = action_table; *inner; ++inner)
+        struct adg_action** other_action;
+        for (other_action = action_table; *other_action; ++other_action)
         {
-            int* child;
-            if (inner == action)
+            const int* child;
+            const int* deplist;
+            if (other_action == action)  /* Allow circular dependency to self to be root nodes */
                 continue;
-            for (child = (*action)->runafter; *child != -1; ++child)
+
+            deplist = *(int**)((char*)(*other_action) + deplistmember);
+            for (child = deplist; *child != -1; ++child)
             {
                 if (action - action_table == *child)
                     goto not_a_root;
@@ -577,134 +743,6 @@ find_action_table_root_nodes(struct adg_action** action_table)
     realloc_failed : free(roots);
     return NULL;
 }
-static int
-is_indirectly_connected(struct adg_action** action_table, int current, int target)
-{
-    int* child;
-    if (current == target)
-        return 1;
-
-    for (child = action_table[current]->runafter; *child != -1; ++child)
-        if (is_indirectly_connected(action_table, *child, target))
-            return 1;
-
-    return 0;
-}
-static int
-is_most_direct_path(struct adg_action** action_table, int from, int to)
-{
-    int* child;
-    for (child = action_table[from]->runafter; *child != -1; ++child)
-    {
-        if (*child == to)
-            continue;
-        if (is_indirectly_connected(action_table, *child, to))
-            return 0;
-    }
-    return 1;
-}
-static void
-assign_priorities(struct adg_action** action_table, int action, int depth)
-{
-    int* child;
-    if (action_table[action]->priority < depth)
-        action_table[action]->priority = depth;
-
-    for (child = action_table[action]->runafter; *child != -1; ++child)
-        assign_priorities(action_table, *child, depth + 1);
-}
-static int
-assign_priorities_reverse(struct adg_action** action_table, int action)
-{
-    int* child;
-    int smallest_priority = INT_MAX;
-
-    for (child = action_table[action]->runafter; *child != -1; ++child)
-    {
-        int child_priority = assign_priorities_reverse(action_table, *child);
-        action_table[action]->priority = child_priority - 1;
-    }
-
-    for (child = action_table[action]->runafter; *child != -1; ++child)
-    {
-        if (smallest_priority > action_table[*child]->priority)
-            smallest_priority = action_table[*child]->priority;
-    }
-    if (action_table[action]->priority > smallest_priority - 1)
-        action_table[action]->priority = smallest_priority - 1;
-
-    return action_table[action]->priority;
-}
-static int
-calculate_action_table_priorities(struct adg_action** action_table)
-{
-    int max_priority;
-    int* root;
-    int* root_nodes;
-    struct adg_action** action;
-
-    root_nodes = find_action_table_root_nodes(action_table);
-    if (root_nodes == NULL)
-        return -1;
-    for (root = root_nodes; *root != -1; ++root)
-        assign_priorities(action_table, *root, 0);
-    for (root = root_nodes; *root != -1; ++root)
-        assign_priorities_reverse(action_table, *root);
-
-    max_priority = 0;
-    for (action = action_table; *action; ++action)
-        if (max_priority < (*action)->priority)
-            max_priority = (*action)->priority;
-
-    for (action = action_table; *action; ++action)
-        (*action)->priority = max_priority - (*action)->priority;
-
-    free(root_nodes);
-    return 0;
-}
-
-/* ------------------------------------------------------------------------- */
-static void
-remove_unnecessary_dependencies(struct adg_action** action_table)
-{
-    struct adg_action** action;
-    for (action = action_table; *action; ++action)
-    {
-        int child = 0;
-        while ((*action)->runafter[child] != -1)
-        {
-            struct adg_action* child_action = action_table[(*action)->runafter[child]];
-            if (child_action->priority != (*action)->priority - 1)
-            {
-                int* dst;
-                int* src;
-                for (dst = (*action)->runafter + child, src = (*action)->runafter + child + 1; *dst != -1;)
-                    *dst++ = *src++;
-            }
-            else
-            {
-                child++;
-            }
-        }
-
-        child = 0;
-        while ((*action)->requires[child] != -1)
-        {
-            struct adg_action* child_action = action_table[(*action)->requires[child]];
-            if (child_action->priority != (*action)->priority - 1)
-            {
-                int* dst;
-                int* src;
-                for (dst = (*action)->requires + child, src = (*action)->requires + child + 1; *dst != -1;)
-                    *dst++ = *src++;
-            }
-            else
-            {
-                child++;
-            }
-        }
-    }
-}
 
 /* ------------------------------------------------------------------------- */
 struct adg_action**
@@ -713,6 +751,8 @@ adg_action_table_from_nodes(union adg_node* root)
     int num_actions;
     struct adg_action** action_table;
     struct adg_action** listp;
+    int* runafter_roots;
+    int* requires_roots;
 
     /* Root node must be a section. */
     if (root->info.type != ADG_SECTION)
@@ -730,24 +770,37 @@ adg_action_table_from_nodes(union adg_node* root)
 
     listp = action_table;
     if (populate_action_table_from_tree(&listp, root, root->section.name) != 0)
-        goto populate_action_table_failed;
+        goto init_pass_failed;
     if (verify_actions_and_sections_are_unique(action_table) != 0)
-        goto populate_action_table_failed;
+        goto init_pass_failed;
     if (init_action_table_dependencies(action_table, root) != 0)
-        goto populate_action_table_failed;
+        goto init_pass_failed;
     if (verify_action_table_dependencies_are_unique(action_table) != 0)
-        goto populate_action_table_failed;
-    if (verify_action_table_dependencies_are_acyclic(action_table) != 0)
-        goto populate_action_table_failed;
-    if (calculate_action_table_priorities(action_table) != 0)
-        goto populate_action_table_failed;
-    remove_unnecessary_dependencies(action_table);
+        goto init_pass_failed;
+
+    runafter_roots = find_action_table_root_nodes(action_table, offsetof(struct adg_action, runafter));
+    if (runafter_roots == NULL)
+        goto find_runafter_roots_failed;
+    requires_roots = find_action_table_root_nodes(action_table, offsetof(struct adg_action, requires));
+    if (requires_roots == NULL)
+        goto find_requires_roots_failed;
+
+    if (verify_action_table_dependencies_are_acyclic(action_table, runafter_roots, requires_roots) != 0)
+        goto dependency_pass_failed;
+    if (calculate_action_table_priorities(action_table, runafter_roots) != 0)
+        goto init_pass_failed;
+    remove_indirect_dependencies(action_table);
 
     // TODO requires cannot depend on implicit commands
 
+    free(requires_roots);
+    free(runafter_roots);
     return action_table;
 
-    populate_action_table_failed : adg_action_table_destroy(action_table);
+    dependency_pass_failed       : free(requires_roots);
+    find_requires_roots_failed   : free(runafter_roots);
+    find_runafter_roots_failed   :
+    init_pass_failed             : adg_action_table_destroy(action_table);
     alloc_action_table_failed    : return NULL;
 }
 

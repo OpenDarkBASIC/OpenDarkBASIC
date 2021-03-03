@@ -1,16 +1,4 @@
-%header-preamble {
-#pragma once
-
-#include <string>
-#include <vector>
-%}
-
-%header-postamble {
-bool parseCommandLine(int argc, char** argv);
-%}
-
 %source-preamble {
-
 #include "odb-cli/Actions.argdef.hpp"
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
@@ -21,27 +9,25 @@ bool parseCommandLine(int argc, char** argv);
 #include "odb-cli/SDK.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
-#include <cstring>
-#include <queue>
-
-struct ActionHandler
-{
-    ArgList args;
-    int actionId = -1;
-    int priority;
-};
-
-struct ActionCompare
-{
-    bool operator()(const ActionHandler& a, const ActionHandler& b) {
-        return a.priority > b.priority;
-    }
-};
-
-typedef std::priority_queue<ActionHandler, std::vector<ActionHandler>, ActionCompare> ActionQueue;
+#include <cstdarg>
 
 static bool printHelp(const ArgList& args);
 
+#define ADG_FPRINTF(fp, fmt, ...) \
+    odb::Log::info.print(fmt, __VA_ARGS__)
+#define ADG_FPRINTF_COLOR(print_func, fp, color, fmt, ...) \
+    odb::Log::info.print(color, fmt, __VA_ARGS__)
+#define ADG_COLOR_RESET    odb::Log::Color::RESET
+#define ADG_COLOR_HEADING1 odb::Log::Color::FG_BRIGHT_WHITE
+#define ADG_COLOR_HEADING2 odb::Log::Color::FG_BRIGHT_YELLOW
+#define ADG_COLOR_LONGOPT  odb::Log::Color::FG_BRIGHT_GREEN
+#define ADG_COLOR_SHORTOPT odb::Log::Color::FG_BRIGHT_YELLOW
+#define ADG_COLOR_ARG      odb::Log::Color::FG_BRIGHT_YELLOW
+
+#define ADG_HELP_EXAMPLES \
+    printHelpExamples();
+
+static void printHelpExamples();
 %}
 
 %action-table {
@@ -63,7 +49,7 @@ section global:
 
   print-banner:
     func: printBanner
-    runafter: no-banner, color, no-color
+    runafter: no-banner, no-color, color
 
   help(h):
     help: Print this help text, or print help about a specific section, or print
@@ -213,343 +199,43 @@ section codegen:
 %}
 
 %source-postamble {
-static ActionQueue actionQueue_;
-static std::string programName_;
-
-#define N_ACTIONS (sizeof(actions_) / sizeof(*actions_))
-
-// ----------------------------------------------------------------------------
-static bool printHelp(const ArgList& args)
+static void printHelpExamples()
 {
-    const int WRAP = 80;
-    const int DOC_INDENT = 8;
-
-    auto& log = odb::Log::info;
-    using C = odb::Log::Color;
-
-    // ------------------------------------------------------------------------
-    // Usage
-    // ------------------------------------------------------------------------
-
-    log.print(C::FG_BRIGHT_WHITE, "Usage:\n");
-    log.print(C::FG_BRIGHT_YELLOW, "  %s ", programName_.c_str());
-    log.print("[");
-    log.print(C::FG_BRIGHT_GREEN, "options");
-    log.print("]\n\n");
-
-    // ------------------------------------------------------------------------
-    // Examples
-    // ------------------------------------------------------------------------
-
-    log.print(C::FG_BRIGHT_WHITE, "Examples:\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", "Examples:\n");
 
     // Compile dba to exe
-    log.print(C::FG_BRIGHT_YELLOW, "  Compiling a .dba file to an executable\n");
-    log.print("    %s ", programName_.c_str());
-    log.print(C::FG_BRIGHT_GREEN, "--dba");
-    log.print(" source.dba ");
-    log.print(C::FG_BRIGHT_GREEN, "--output");
-    log.print(" program.exe\n");
-    log.print("    %s ", programName_.c_str());
-    log.print(C::FG_BRIGHT_GREEN, "--dba");
-    log.print(" source1.dba source2.dba ");
-    log.print(C::FG_BRIGHT_GREEN, "--output");
-    log.print(" program.exe\n\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING2, "%s", "  Compiling a .dba file to an executable\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "    %s ", programName_.c_str());
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source.dba ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--output");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " program.exe\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "    %s ", programName_.c_str());
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source1.dba source2.dba ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--output");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " program.exe\n\n");
 
     // Using the DBPro SDK
-    log.print(C::FG_BRIGHT_YELLOW, "  Using the DBPro SDK instead of ODB\n");
-    log.print("    %s ", programName_.c_str());
-    log.print(C::FG_BRIGHT_GREEN, "--sdktype");
-    log.print(" dbpro ");
-    log.print(C::FG_BRIGHT_GREEN, "--sdkroot");
-    log.print(" <");
-    log.print(C::FG_BRIGHT_YELLOW, "path/to/dbp/installation");
-    log.print("> ");
-    log.print(C::FG_BRIGHT_GREEN, "--dba");
-    log.print(" source.dba ");
-    log.print(C::FG_BRIGHT_GREEN, "--output");
-    log.print(" program.exe\n\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING2, "%s", "  Using the DBPro SDK instead of ODB\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "    %s ", programName_.c_str());
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--sdktype");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " dbpro ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--sdkroot");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " <");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%s", "path/to/dbp/installation");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "> ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source.dba ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--output");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " program.exe\n\n");
 
     // Rendering
-    log.print(C::FG_BRIGHT_YELLOW, "  Converting your program into a graph\n");
-    log.print("    %s ", programName_.c_str());
-    log.print(C::FG_BRIGHT_GREEN, "--dba");
-    log.print(" source.dba ");
-    log.print(C::FG_BRIGHT_GREEN, "--dump-ast-dot");
-    log.print(" | dot -Tpdf > out.pdf\n\n");
-
-    log.print(C::FG_BRIGHT_WHITE, "Available options:\n");
-
-    for (int i = 0; i != N_ACTIONS; ++i)
-    {
-        // Implicit actions are invisible to the user
-        if (actions_[i].type & IMPLICIT)
-            continue;
-
-        // Print short option, if it exists
-        if (actions_[i].shortOption)
-        {
-            log.print(C::FG_BRIGHT_YELLOW, "  -%c", actions_[i].shortOption);
-            log.print(", ");
-        }
-        else
-            log.print("      ");
-
-        // Print full option
-        log.print(C::FG_BRIGHT_GREEN, "--%s ", actions_[i].fullOption);
-
-        // Format argument documentation, if any
-        {
-            odb::ColorState state(odb::Log::info, C::FG_BRIGHT_YELLOW);
-            for (const char* p = actions_[i].argDoc; *p; ++p)
-            {
-                if (*p == '<' || *p == '>' || *p == '[' || *p == ']' || *p == '|' || *p == '.')
-                    log.putc(C::FG_WHITE, *p);
-                else
-                    log.putc(*p);
-            }
-        }
-
-        ArgList lines;
-        odb::str::justifyWrap(&lines, std::string(actions_[i].help), WRAP - DOC_INDENT);
-        for (auto line = lines.begin(); line != lines.end(); ++line)
-        {
-            log.putc('\n');
-            for (int j = 0; j != DOC_INDENT; ++j)
-                log.putc(' ');
-            log.print("%s", line->c_str());
-        }
-        log.putc('\n');
-        log.putc('\n');
-    }
-
-    return false;
-}
-
-// ----------------------------------------------------------------------------
-static int parseFullOption(int argc, char** argv, ActionQueue* queue)
-{
-    char* str = &argv[0][2];  // skip "--"
-    auto processTable = [str, argc, argv](ActionQueue* queue) -> int
-    {
-        for (int i = 0; i != N_ACTIONS; ++i)
-            if (strcmp(str, actions_[i].fullOption) == 0)
-            {
-                if (argc <= actions_[i].argRange.l)
-                {
-                    odb::Log::info.print("Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
-                    return -1;
-                }
-
-                ActionHandler handler;
-                handler.actionId = i;
-                handler.priority = actions_[i].priority;
-                for (int arg = 0; arg != actions_[i].argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
-                    handler.args.push_back(argv[arg + 1]);
-                queue->push(handler);
-                return handler.args.size() + 1;
-            }
-        return 0;
-    };
-
-    int argsProcessed;
-    while (true)
-    {
-        if ((argsProcessed = processTable(queue)) > 0)
-            return argsProcessed;
-        else if (argsProcessed == -1)
-            break;
-
-        if (argsProcessed == 0)
-            odb::Log::info.print("Error: Unrecognized command line option `%s`\n", argv[0]);
-
-        break;
-    }
-
-    return 0;
-}
-
-// ----------------------------------------------------------------------------
-static int parseShortOptions(int argc, char** argv, ActionQueue* queue)
-{
-    auto processTable = [argc, argv](ActionQueue* queue, const char* str) -> int
-    {
-        for (int i = 0; i != N_ACTIONS; ++i)
-            if (actions_[i].shortOption == *str)
-            {
-                if (actions_[i].argRange.l > 0 && str[1] != '\0')
-                {
-                    odb::Log::info.print("Option `-%c` must be at end of short option list (before `-%c`)\n", *str, str[1]);
-                    return -1;
-                }
-                if (argc <= actions_[i].argRange.l)
-                {
-                    odb::Log::info.print("Error: Option %s expects at least %d argument%s\n", argv[0], actions_[i].argRange.l, actions_[i].argRange.l == 1 ? "" : "s");
-                    return -1;
-                }
-
-                ActionHandler handler;
-                handler.actionId = i;
-                handler.priority = actions_[i].priority;
-                if (str[1] == '\0')
-                {
-                    for (int arg = 0; arg != actions_[i].argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
-                        handler.args.push_back(argv[arg + 1]);
-                }
-                queue->push(handler);
-                return handler.args.size() + 1;
-            }
-
-        return 0;
-    };
-
-    for (char* str = &argv[0][1]; *str; ++str)
-    {
-        int argsProcessed;
-        if ((argsProcessed = processTable(queue, str)) > 1)
-            return argsProcessed;
-        else if (argsProcessed == 1)
-            continue;
-
-        if (argsProcessed == 0)
-            odb::Log::info.print("Error: Unrecognized command line option `-%c`\n", *str);
-        return 0;
-    }
-
-    return 1;
-}
-
-// ----------------------------------------------------------------------------
-static int parseOption(int argc, char** argv, ActionQueue* queue)
-{
-    if (argv[0][0] == '-')
-    {
-        if (argv[0][1] == '-')
-            return parseFullOption(argc, argv, queue);
-        else
-            return parseShortOptions(argc, argv, queue);
-    }
-
-    odb::Log::info.print("Error: Unrecognized command line option `%s`\n", argv[0]);
-    return 0;
-}
-
-// ----------------------------------------------------------------------------
-static void addImplicitActions(ActionQueue* queue, int lastPriority)
-{
-    if (queue->empty())
-        return;
-
-    for (int i = 0; i != N_ACTIONS; ++i)
-    {
-        if (!(actions_[i].type & IMPLICIT))
-            continue;
-
-        // Only add an implicit action if there is an action in the queue that
-        // depends on it. These would be actions that strictly have a lower
-        // value
-        if (actions_[i].priority >= lastPriority)
-            continue;
-
-        ActionHandler handler;
-        handler.actionId = i;
-        handler.priority = actions_[i].priority;
-        queue->push(handler);
-    }
-}
-
-// ----------------------------------------------------------------------------
-bool parseCommandLine(int argc, char** argv)
-{
-    ActionQueue queue;
-    programName_ = argv[0];
-
-    for (int i = 1; i < argc; )
-    {
-        int processed = parseOption(argc - i, &argv[i], &queue);
-        if (processed == 0)
-            return false;
-        i += processed;
-    }
-
-    // Find the priority of the action that will be executed last
-    ActionQueue copy(queue);
-    int lastPriority = 0;
-    while (!copy.empty())
-    {
-        if (lastPriority < copy.top().priority)
-            lastPriority = copy.top().priority;
-        copy.pop();
-    }
-
-    addImplicitActions(&queue, lastPriority);
-
-    // Find the priority of the help action
-    int helpPriority = 0;
-    int helpActionId = -1;
-    for (int i = 0; i != N_ACTIONS; ++i)
-        if (strcmp(actions_[i].fullOption, "help") == 0)
-        {
-            helpActionId = i;
-            helpPriority = actions_[i].priority;
-            break;
-        }
-
-    // Be nice and show help if no meaningful actions are going to be run.
-    // We assume that all actions that are run before the help action are not
-    // meaningful
-    if (queue.empty() || lastPriority < helpPriority)
-    {
-        // or not
-        if (helpActionId == -1)
-            return true;
-
-        ActionHandler handler;
-        handler.actionId = helpActionId;
-        handler.priority = helpPriority;
-        queue.push(handler);
-        addImplicitActions(&queue, helpPriority);
-    }
-
-    // Process all actions
-    while (!queue.empty())
-    {
-        const ActionHandler& handler = queue.top();
-        const Action& action = actions_[handler.actionId];
-        if (action.type & META)
-        {
-            MetaHandlerResult result = action.handler.meta(handler.args);
-            if (result.actionId == -1)
-                return false;
-
-            const int* metadepId = action.metadeps;
-            while (1)
-            {
-                if (result.actionId == *metadepId++)
-                    break;
-                if (*metadepId == -1)
-                {
-                    if (result.actionId < N_ACTIONS)
-                        odb::Log::info.print("Error: Meta-action `%s' tried to execute `%s' without specifying it in its meta dependency list\n", action.fullOption, actions_[result.actionId].fullOption);
-                    else
-                        odb::Log::info.print("Error: Meta-action `%s' returned an actionId %d which is out of range\n", action.fullOption, result.actionId);
-                    return false;
-                }
-            }
-
-            ActionHandler handler;
-            handler.actionId = result.actionId;
-            handler.priority = actions_[result.actionId].priority;
-            queue.push(handler);
-        }
-        else
-        {
-            if (action.handler.standard(handler.args) == false)
-                return false;
-        }
-        queue.pop();
-    }
-
-    return true;
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING2, "%s", "  Converting your program into a graph\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "    %s ", programName_.c_str());
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source.dba ");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dump-ast-dot");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " | dot -Tpdf > out.pdf\n\n");
 }
 %}

@@ -592,3 +592,89 @@ int adg_node_is_action(union adg_node* node)
         || node->info.type == ADG_EXPLICIT_META_ACTION
         || node->info.type == ADG_IMPLICIT_META_ACTION;
 }
+
+/* ------------------------------------------------------------------------- */
+union adg_node* adg_node_find(union adg_node* node, enum adg_node_type type)
+{
+    union adg_node* found;
+    if (node->info.type == type)
+        return node;
+
+    if (node->base.left)
+        if ((found = adg_node_find(node->base.left, type)) != NULL)
+            return found;
+    if (node->base.right)
+        if ((found = adg_node_find(node->base.right, type)) != NULL)
+            return found;
+
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+union adg_node* adg_node_find_action_matching(union adg_node* node, const char* action_node_name)
+{
+    union adg_node* found;
+    if (adg_node_is_action(node))
+    {
+        const char* name;
+        switch (node->info.type)
+        {
+            case ADG_EXPLICIT_ACTION      : name = node->explicit_action.longopt; break;
+            case ADG_EXPLICIT_META_ACTION : name = node->explicit_meta_action.longopt; break;
+            case ADG_IMPLICIT_ACTION      : name = node->implicit_action.name; break;
+            case ADG_IMPLICIT_META_ACTION : name = node->implicit_meta_action.name; break;
+
+            default : assert(0); return NULL;
+        }
+        if (strcmp(name, action_node_name) == 0)
+            return node;
+    }
+
+    if (node->base.left)
+        if ((found = adg_node_find_action_matching(node->base.left, action_node_name)) != NULL)
+            return found;
+    if (node->base.right)
+        if ((found = adg_node_find_action_matching(node->base.right, action_node_name)) != NULL)
+            return found;
+
+    return NULL;
+}
+
+/* ------------------------------------------------------------------------- */
+int adg_node_generate_help_action_if_not_available(union adg_node* root)
+{
+    union adg_node* action_table;
+    union adg_node* section;
+    ADGLTYPE loc = {1, 1, 1, 1};
+
+    assert(adg_node_is_block(root));
+
+    if (adg_node_find_action_matching(root, "help") != NULL)
+        return 0;
+
+    {
+        union adg_node* func = adg_node_new_func(adg_str_dup("printHelp"), &loc);
+        union adg_node* argnames = adg_node_new_argname(
+            adg_node_new_argname(NULL, adg_str_dup("all"), &loc), adg_str_dup("section"), &loc);
+        union adg_node* help = adg_node_new_help(adg_str_dup("Prints this help text."), &loc);
+        union adg_node* attrs = adg_node_new_actionattr(help, &loc);
+        union adg_node* action = adg_node_new_explicit_action(adg_str_dup("help(h)"), attrs, &loc);
+        union adg_node* args = adg_node_new_optional_arg(NULL, argnames, 0, &loc);
+        section = adg_node_new_section(action, adg_str_dup("help-action"), &loc);
+        adg_node_append_actionattr(attrs, adg_node_new_actionattr(args, &loc));
+        adg_node_append_actionattr(attrs, adg_node_new_actionattr(func, &loc));
+    }
+
+    action_table = adg_node_find(root, ADG_ACTION_TABLE);
+    if (action_table == NULL)
+    {
+        action_table = adg_node_new_action_table(section, &loc);
+        adg_node_append_block(root, action_table);
+    }
+    else
+    {
+        adg_node_append_section(action_table->action_table.sections, section);
+    }
+
+    return 0;
+}

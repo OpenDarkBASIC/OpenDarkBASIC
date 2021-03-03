@@ -1,20 +1,31 @@
 #include "argdefgen/action.h"
 #include "argdefgen/gen.h"
+#include "argdefgen/argparse.h"
 #include <string.h>
 
 /* ------------------------------------------------------------------------- */
 void
 adg_gen_cpp_write_typedefs(FILE* fp)
 {
+    fprintf(fp, "#include <string>\n");
+    fprintf(fp, "#include <vector>\n\n");
+
     fprintf(fp, "typedef std::vector<std::string> ArgList;\n");
     fprintf(fp, "typedef bool (*Handler)(const ArgList& args);\n\n");
 
     fprintf(fp, "struct MetaHandlerResult\n{\n");
     fprintf(fp, "    int actionId = -1;\n");
-    fprintf(fp, "    ArgList argList;\n");
+    fprintf(fp, "    ArgList args;\n");
     fprintf(fp, "};\n\n");
 
-    fprintf(fp, "typedef MetaHandlerResult (*MetaHandler)(const ArgList& args);\n");
+    fprintf(fp, "typedef MetaHandlerResult (*MetaHandler)(const ArgList& args);\n\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_entry_function_forward_decl(FILE* fp)
+{
+    fprintf(fp, "bool parseCommandLine(int argc, char** argv);\n\n");
 }
 
 /* ------------------------------------------------------------------------- */
@@ -176,10 +187,45 @@ adg_gen_cpp_write_action_table(struct adg_action** action_table, FILE* fp)
         fprintf(fp, "%d, ", (action->is_implicit ? 1 : 0 ) | (action->is_meta ? 2 : 0));
         fprintf(fp, "\"%s\"", action->help);
 
-        if (*(actionp+1))
-            fprintf(fp, " },\n");
-        else
-            fprintf(fp, " }\n");
+        fprintf(fp, " },\n");
     }
+    fprintf(fp, "    {}  // sentinel\n");
     fprintf(fp, "};\n\n");
+
+    fprintf(fp, "#define ACTION_VALID(action) \\\n");
+    fprintf(fp, "    ((action)->fullOption != nullptr)\n\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_argparse_preamble(FILE* fp)
+{
+    fprintf(fp, "%s", agd_argparse_cpp_preamble);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_argparse_postamble(FILE* fp)
+{
+    fprintf(fp, "%s", agd_argparse_cpp_postamble);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_helpers_forward_decl(FILE* fp)
+{
+    fprintf(fp, "static int findActionId(const char* fullOption);\n");
+}
+
+/* ------------------------------------------------------------------------- */
+void
+adg_gen_cpp_write_helpers_impl(FILE* fp)
+{
+    fprintf(fp, "static int findActionId(const char* fullOption)\n");
+    fprintf(fp, "{\n");
+    fprintf(fp, "    for (const Action* action = actions_; ACTION_VALID(action); ++action)\n");
+    fprintf(fp, "        if (strcmp(action->fullOption, fullOption) == 0)\n");
+    fprintf(fp, "            return action - actions_;\n");
+    fprintf(fp, "    return -1;\n");
+    fprintf(fp, "}\n");
 }

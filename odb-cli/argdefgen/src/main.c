@@ -136,6 +136,9 @@ parse_argdef_file_to_ast(void)
     if ((root = adg_driver_parse_stream(&driver, fp)) == NULL)
         goto parse_file_failed;
 
+    if (adg_node_generate_help_action_if_not_available(root) != 0)
+        goto generate_help_node_failed;
+
     if (ast_file)
     {
         fprintf(stderr, "Exporting AST to `%s'\n", ast_file);
@@ -149,9 +152,10 @@ parse_argdef_file_to_ast(void)
 
     return root;
 
-    parse_file_failed       : adg_driver_deinit(&driver);
-    init_driver_failed      : if (argdef_file) fclose(fp);
-    open_argdef_file_failed : return NULL;
+    generate_help_node_failed :
+    parse_file_failed         : adg_driver_deinit(&driver);
+    init_driver_failed        : if (argdef_file) fclose(fp);
+    open_argdef_file_failed   : return NULL;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -200,11 +204,14 @@ int main(int argc, char** argv)
             goto export_failed;
         }
 
+        fprintf(fp, "#pragma once\n\n");
+
         block = find_block(root, ADG_HEADER_PREAMBLE);
         if (block)
             fprintf(fp, "%s", block->source_preamble.text);
 
         adg_gen_cpp_write_typedefs(fp);
+        adg_gen_cpp_write_entry_function_forward_decl(fp);
 
         block = find_block(root, ADG_HEADER_POSTAMBLE);
         if (block)
@@ -214,10 +221,10 @@ int main(int argc, char** argv)
     }
     else
     {
-        block = find_block(root, ADG_SOURCE_PREAMBLE);
+        block = find_block(root, ADG_HEADER_PREAMBLE);
         if (block)
             fprintf(stderr, "Warning: argdef contains a header preamble block, but no --header argument was specified. Cannot export.\n");
-        block = find_block(root, ADG_SOURCE_POSTAMBLE);
+        block = find_block(root, ADG_HEADER_POSTAMBLE);
         if (block)
             fprintf(stderr, "Warning: argdef contains a header preamble block, but no --header argument was specified. Cannot export.\n");
     }
@@ -240,14 +247,20 @@ int main(int argc, char** argv)
             fp = stdout;
         }
 
+        if (header_file == NULL)
+            adg_gen_cpp_write_typedefs(fp);
+
+        adg_gen_cpp_write_helpers_forward_decl(fp);
+
         block = find_block(root, ADG_SOURCE_PREAMBLE);
         if (block)
             fprintf(fp, "%s", block->source_preamble.text);
 
-        if (header_file == NULL)
-            adg_gen_cpp_write_typedefs(fp);
+        adg_gen_cpp_write_argparse_preamble(fp);
         adg_gen_cpp_write_action_struct_def(fp);
         adg_gen_cpp_write_action_table(action_table, fp);
+        adg_gen_cpp_write_argparse_postamble(fp);
+        adg_gen_cpp_write_helpers_impl(fp);
 
         block = find_block(root, ADG_SOURCE_POSTAMBLE);
         if (block)
@@ -262,7 +275,7 @@ int main(int argc, char** argv)
 
     return 0;
 
-    export_failed              :
+    export_failed              : adg_action_table_destroy(action_table);
     create_action_table_failed : adg_node_destroy_recursive(root);
     parse_argdef_file_failed   :
     parse_command_line_failed  : return -1;

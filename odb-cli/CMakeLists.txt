@@ -1,5 +1,4 @@
 include (GNUInstallDirs)
-add_subdirectory ("argdefgen")
 
 project ("odbc"
     LANGUAGES CXX
@@ -9,27 +8,18 @@ project ("odbc"
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src")
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-cli")
 
-add_custom_command (
-    OUTPUT "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
-           "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
-    COMMAND argdefgen
-    ARGS "src/Actions.argdef"
-         --source "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
-         --header "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp"
-         --ast "${PROJECT_BINARY_DIR}/Actions.argdef.ast.dot"
-         --depgraph "${PROJECT_BINARY_DIR}/Actions.argdef.depgraph.dot"
-    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    MAIN_DEPENDENCY "src/Actions.argdef"
-    DEPENDS argdefgen
-    COMMENT "Generating argument table from argdef"
-    VERBATIM)
+add_subdirectory ("argdefgen")
+argdefgen_target (odbc_argdef
+    "${PROJECT_SOURCE_DIR}/src/Actions.argdef"
+    "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-cli/Actions.argdef.hpp")
 
 ###############################################################################
 # Executable
 ###############################################################################
 
 add_executable (odbc
-    "${PROJECT_BINARY_DIR}/src/Actions.argdef.cpp"
+    ${argdefgen_odbc_argdef_OUTPUTS}
     "src/AST.cpp"
     "src/Banner.cpp"
     "src/BuildInfo.cpp"
