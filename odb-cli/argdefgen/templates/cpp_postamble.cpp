@@ -452,7 +452,6 @@ bool parseCommandLine(int argc, char** argv)
             MetaHandlerResult result = action.handler.meta(handler.args);
             if (result.actionId == -1)
                 return false;
-            queue.pop();
 
             const int* metadepId = action.metadeps;
             while (1)
@@ -474,14 +473,13 @@ bool parseCommandLine(int argc, char** argv)
             handler.args = result.args;
             handler.priority = actions_[result.actionId].priority;
             queue.push(handler);
-            addImplicitActions(&queue);
         }
         else
         {
             if (action.handler.standard(handler.args) == false)
                 return false;
-            queue.pop();
         }
+        queue.pop();
     }
 
     return true;

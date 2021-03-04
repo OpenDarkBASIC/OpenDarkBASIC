@@ -72,7 +72,7 @@ section global:
 
 ###############################################################################
 section warnings:
-  info: Options to configure compiler warnings
+  info: Configure compiler warnings
 
   Wtest():
     help: Test
@@ -89,7 +89,7 @@ section warnings:
 
 ###############################################################################
 section sdk:
-  info: Options to configure the SDK, plugins and commands
+  info: Configure the SDK, plugins and commands
 
   sdk-root():
     help: Tells the compiler where to look for plugins, help files, and other
@@ -152,7 +152,7 @@ section sdk:
 
 ###############################################################################
 section parser:
-  info: Options for parsing DBA and DBPro files
+  info: .dba and .dbpro file related options
 
   init-command-matcher:
     func: initCommandMatcher
