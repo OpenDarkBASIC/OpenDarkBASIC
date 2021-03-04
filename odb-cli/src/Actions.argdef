@@ -81,7 +81,7 @@ section warnings:
     func: warn
     args: <name>
 
-  warn-test(a):
+  warn-test():
     help: Test
     func: warnTest
     args: <1|0>

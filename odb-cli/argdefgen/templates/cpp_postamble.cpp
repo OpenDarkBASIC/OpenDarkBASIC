@@ -335,7 +335,7 @@ static int parseShortOptions(int argc, char** argv, ActionList* list)
                 handler.args.push_back(str + 1);
             for (int i = 0; i != argc - 1; ++i)
             {
-                if (i == action.argRange.h)
+                if (handler.args.size() == action.argRange.h)
                     break;
                 if (argv[i+1][0] == '-')
                     break;
