@@ -41,15 +41,15 @@ bool parseDBA(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-MetaHandlerResult parseDBPro(const ArgList& args)
+ActionHandler parseDBPro(const ArgList& args)
 {
-    return MetaHandlerResult();
+    return ActionHandler();
 }
 
 // ----------------------------------------------------------------------------
-MetaHandlerResult autoDetectInput(const ArgList& args)
+ActionHandler autoDetectInput(const ArgList& args)
 {
-    return MetaHandlerResult();
+    return ActionHandler();
 }
 
 // ----------------------------------------------------------------------------

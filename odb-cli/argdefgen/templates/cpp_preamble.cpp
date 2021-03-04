@@ -1,20 +1,12 @@
 #include <cstring>
 #include <queue>
 
-struct ActionHandler
+struct ActionHandlerCompare
 {
-    ArgList args;
-    int actionId = -1;
-    int priority;
+    bool operator()(const ActionHandler& a, const ActionHandler& b);
 };
 
-struct ActionCompare
-{
-    bool operator()(const ActionHandler& a, const ActionHandler& b) {
-        return a.priority > b.priority;
-    }
-};
-
-typedef std::priority_queue<ActionHandler, std::vector<ActionHandler>, ActionCompare> ActionQueue;
+typedef std::priority_queue<ActionHandler, std::vector<ActionHandler>, ActionHandlerCompare> ActionQueue;
+typedef std::vector<ActionHandler> ActionList;
 
 static bool printHelp(const ArgList& args);

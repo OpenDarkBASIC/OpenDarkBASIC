@@ -31,8 +31,13 @@
 #   define ADG_HELP_EXAMPLES
 #endif
 
-static ActionQueue actionQueue_;
 static std::string programName_;
+
+// ----------------------------------------------------------------------------
+bool ActionHandlerCompare::operator()(const ActionHandler& a, const ActionHandler& b)
+{
+    return actions_[a.actionId].priority > actions_[b.actionId].priority;
+}
 
 // ----------------------------------------------------------------------------
 static void split(std::vector<std::string>* strlist,
@@ -93,7 +98,7 @@ static void justifyWrap(std::vector<std::string>* lines,
 }
 
 // ----------------------------------------------------------------------------
-static void printHelpAction(const Action* action)
+static void printHelpForAction(const Action* action)
 {
     const int WRAP = 80;
     const int DOC_INDENT = 8;
@@ -140,7 +145,7 @@ static void printHelpAction(const Action* action)
         }
         ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", line->c_str());
     }
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n\n");
 }
 static void printAvailableSections()
 {
@@ -171,8 +176,7 @@ static void printSection(const char* sectionName)
             ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_ARG, "%s", sectionName);
             ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "%s", ":\n");
         }
-        printHelpAction(action);
-        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+        printHelpForAction(action);
         found = true;
     }
 
@@ -187,8 +191,7 @@ static void printHelpAll()
 {
     for (const Action* action = actions_; ACTION_VALID(action); ++action)
     {
-        printHelpAction(action);
-        ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", "\n");
+        printHelpForAction(action);
     }
 }
 
@@ -233,7 +236,7 @@ static bool printHelp(const ArgList& args)
         {
             printAvailableSections();
             ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_HEADING1, "\n%s\n", "Use --help to read more about a section:");
-            printHelpAction(actions_ + actionId);
+            printHelpForAction(actions_ + actionId);
         }
     }
     else
@@ -245,107 +248,118 @@ static bool printHelp(const ArgList& args)
 }
 
 // ----------------------------------------------------------------------------
-static int parseFullOption(int argc, char** argv, ActionQueue* queue)
+static int parseFullOption(int argc, char** argv, ActionList* list)
 {
-    char* str = &argv[0][2];  // skip "--"
-    auto processTable = [str, argc, argv](ActionQueue* queue) -> int
+    // skip "--"
+    const char* str = &argv[0][2];
+
+    // Handle --option=arg1,arg2,... syntax separately
+    const char* assignment = strchr(str, '=');
+    if (assignment)
     {
-        for (const Action* action = actions_; ACTION_VALID(action); ++action)
-            if (strcmp(str, action->fullOption) == 0)
-            {
-                if (argc <= action->argRange.l)
-                {
-                    ADG_FPRINTF(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], action->argRange.l, action->argRange.l == 1 ? "" : "s");
-                    return -1;
-                }
+        std::string name(str, assignment - str);
+        auto handler = ActionHandler::fromFullOption(name);
+        if (handler.actionId == -1)
+        {
+            ADG_FPRINTF(stderr, "Error: Unrecognized command line option `--%s'\n", name.c_str());
+            return 0;
+        }
 
-                ActionHandler handler;
-                handler.actionId = action - actions_;
-                handler.priority = action->priority;
-                for (int arg = 0; arg != action->argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
-                    handler.args.push_back(argv[arg + 1]);
-                queue->push(handler);
-                return handler.args.size() + 1;
-            }
-        return 0;
-    };
-
-    int argsProcessed;
-    while (true)
+        assignment++;
+        split(&handler.args, assignment, ',');
+        list->push_back(handler);
+    }
+    else  // handle --option arg1 arg2 ... syntax
     {
-        if ((argsProcessed = processTable(queue)) > 0)
-            return argsProcessed;
-        else if (argsProcessed == -1)
-            break;
+        auto handler = ActionHandler::fromFullOption(str);
+        if (handler.actionId == -1)
+        {
+            ADG_FPRINTF(stderr, "Error: Unrecognized command line option `%s'\n", argv[0]);
+            return 0;
+        }
 
-        if (argsProcessed == 0)
-            ADG_FPRINTF(stderr, "Error: Unrecognized command line option `%s`\n", argv[0]);
-
-        break;
+        const Action& action = actions_[handler.actionId];
+        for (int i = 0; i != argc - 1; ++i)
+        {
+            if (i == action.argRange.h)
+                break;
+            if (argv[i+1][0] == '-')
+                break;
+            handler.args.push_back(argv[i + 1]);
+        }
+        list->push_back(handler);
     }
 
-    return 0;
+    const ActionHandler& handler = list->back();
+    const Action& action = actions_[handler.actionId];
+    if (handler.args.size() < action.argRange.l)
+    {
+        ADG_FPRINTF(stderr, "Error: Option `--%s' expects at least %d argument%s\n",
+                    action.fullOption, action.argRange.l, action.argRange.l == 1 ? "" : "s");
+        return 0;
+    }
+    if (handler.args.size() > action.argRange.h)
+    {
+        ADG_FPRINTF(stderr, "Error: Option `--%s' accepts at most %d argument%s\n",
+                    action.fullOption, action.argRange.h, action.argRange.h == 1 ? "" : "s");
+        return 0;
+    }
+
+    if (assignment)  // We only processed one argument
+        return 1;
+
+    return handler.args.size() + 1;
 }
 
 // ----------------------------------------------------------------------------
-static int parseShortOptions(int argc, char** argv, ActionQueue* queue)
+static int parseShortOptions(int argc, char** argv, ActionList* list)
 {
-    auto processTable = [argc, argv](ActionQueue* queue, const char* str) -> int
+    // skip "-"
+    // Note: there is guaranteed to be at least one character after "-"
+    const char* str = &argv[0][1];
+    while (str[0])
     {
-        for (const Action* action = actions_; ACTION_VALID(action); ++action)
-            if (action->shortOption == str[0])
+        auto handler = ActionHandler::fromShortOption(str[0]);
+        if (handler.actionId == -1)
+        {
+            ADG_FPRINTF(stderr, "Error: Unrecognized short option `-%c'\n", str[0]);
+            return 0;
+        }
+
+        // Interpret the rest of the string as the first argument if the action
+        // has a minimum arg count requirement
+        const Action& action = actions_[handler.actionId];
+        if (action.argRange.l > 0)
+        {
+            handler.args.push_back(str + 1);
+            for (int i = 0; i != argc - 1; ++i)
             {
-                if (action->argRange.l > 0 && str[1] != '\0')
-                {
-                    ADG_FPRINTF(stderr, "Option `-%c` must be at end of short option list (before `-%c`)\n", *str, str[1]);
-                    return -1;
-                }
-                if (argc <= action->argRange.l)
-                {
-                    ADG_FPRINTF(stderr, "Error: Option %s expects at least %d argument%s\n", argv[0], action->argRange.l, action->argRange.l == 1 ? "" : "s");
-                    return -1;
-                }
-
-                ActionHandler handler;
-                handler.actionId = action - actions_;
-                handler.priority = action->priority;
-                if (str[1] == '\0')
-                {
-                    for (int arg = 0; arg != action->argRange.h && arg != argc - 1 && argv[arg + 1][0] != '-'; ++arg)
-                        handler.args.push_back(argv[arg + 1]);
-                }
-                queue->push(handler);
-                return handler.args.size() + 1;
+                if (i == action.argRange.h)
+                    break;
+                if (argv[i+1][0] == '-')
+                    break;
+                handler.args.push_back(argv[i + 1]);
             }
+            list->push_back(handler);
+            return handler.args.size();
+        }
 
-        return 0;
-    };
-
-    for (char* str = &argv[0][1]; *str; ++str)
-    {
-        int argsProcessed;
-        if ((argsProcessed = processTable(queue, str)) > 1)
-            return argsProcessed;
-        else if (argsProcessed == 1)
-            continue;
-
-        if (argsProcessed == 0)
-            ADG_FPRINTF(stderr, "Error: Unrecognized command line option `-%c`\n", *str);
-        return 0;
+        list->push_back(handler);
+        str++;
     }
 
     return 1;
 }
 
 // ----------------------------------------------------------------------------
-static int parseOption(int argc, char** argv, ActionQueue* queue)
+static int parseOption(int argc, char** argv, ActionList* list)
 {
     if (argv[0][0] == '-')
     {
         if (argv[0][1] == '-')
-            return parseFullOption(argc, argv, queue);
-        else
-            return parseShortOptions(argc, argv, queue);
+            return parseFullOption(argc, argv, list);
+        else if (argv[0][1] != '\0')
+            return parseShortOptions(argc, argv, list);
     }
 
     ADG_FPRINTF(stderr, "Error: Unrecognized command line option `%s`\n", argv[0]);
@@ -353,94 +367,117 @@ static int parseOption(int argc, char** argv, ActionQueue* queue)
 }
 
 // ----------------------------------------------------------------------------
-static void addImplicitActions(ActionQueue* queue)
+static bool actionIsInList(const ActionList& list, int actionId)
 {
-    if (queue->empty())
-        return;
+    for (const auto& handler : list)
+        if (handler.actionId == actionId)
+            return true;
+    return false;
+}
+static void addImplicitRunafterDependencies(ActionList* list, int actionId)
+{
+    if ((actions_[actionId].type & IMPLICIT) && actionIsInList(*list, actionId) == false)
+        list->push_back(ActionHandler::fromId(actionId));
 
-    // First, remove all existing implicit actions in the queue
-    ActionQueue newExplicitQueue;
-    int lastPriority = 0;
-    while (!queue->empty())
+    for (const int* child = actions_[actionId].runafter; child && *child != -1; ++child)
+        addImplicitRunafterDependencies(list, *child);
+    for (const int* child = actions_[actionId].metadeps; child && *child != -1; ++child)
+        addImplicitRunafterDependencies(list, *child);
+}
+static void addImplicitDependencies(ActionList* list)
+{
+    for (std::size_t i = 0; i < list->size(); ++i)
     {
-        const ActionHandler& handler = queue->top();
-        if (lastPriority < handler.priority)
-            lastPriority = handler.priority;
-        if (!(actions_[handler.actionId].type & IMPLICIT))
-            newExplicitQueue.push(handler);
-        queue->pop();
+        const Action& action = actions_[(*list)[i].actionId];
+        for (const int* child = action.runafter; child && *child != -1; ++child)
+            addImplicitRunafterDependencies(list, *child);
+        for (const int* child = action.metadeps; child && *child != -1; ++child)
+            addImplicitRunafterDependencies(list, *child);
     }
-    *queue = std::move(newExplicitQueue);
+}
 
-    for (const Action* action = actions_; ACTION_VALID(action); ++action)
-    {
-        if (!(action->type & IMPLICIT))
-            continue;
+// ----------------------------------------------------------------------------
+static void tryToHelp(ActionList* list)
+{
+    // Find the priority of the help action
+    int helpActionId = findActionId("help");
+    int helpPriority = helpActionId != -1 ? actions_[helpActionId].priority : 0;
 
-        // Only add an implicit action if there is an action in the queue that
-        // depends on it. These would be actions that strictly have a lower
-        // value
-        if (action->priority >= lastPriority)
-            continue;
+    // Find the priority of the lowest priority action (higher numbers means lower priority)
+    int lastPriority = [](const ActionList& list) -> int {
+        int priority = 0;
+        for (const auto& handler : list)
+        {
+            if (priority < actions_[handler.actionId].priority)
+                priority = actions_[handler.actionId].priority;
+        }
+        return priority;
+    }(*list);
 
-        ActionHandler handler;
-        handler.actionId = action - actions_;
-        handler.priority = action->priority;
-        queue->push(handler);
-    }
+    // Be nice and show help if no meaningful actions are going to be run.
+    // We assume that all actions that are run before the help action are not
+    // meaningful. Small caveat: Meta actions can have a lower priority than
+    // the help action, but can trigger higher priority actions to be run.
+    // Therefore, if any meta actions are in the list, skip trying to add
+    // help
+    for (const auto& handler : *list)
+        if (actions_[handler.actionId].type & META)
+            return;
+
+    if (list->size() == 0 || lastPriority < helpPriority)
+        if (helpActionId != -1) // or maybe not if there is no help action
+        {
+            list->push_back(ActionHandler::fromId(helpActionId));
+            addImplicitDependencies(list);
+        }
 }
 
 // ----------------------------------------------------------------------------
 bool parseCommandLine(int argc, char** argv)
 {
-    ActionQueue queue;
+    ActionList list;
     programName_ = argv[0];
 
     for (int i = 1; i < argc; )
     {
-        int processed = parseOption(argc - i, &argv[i], &queue);
+        int processed = parseOption(argc - i, &argv[i], &list);
         if (processed == 0)
             return false;
         i += processed;
     }
 
-    // Find the priority of the help action
-    int helpPriority = 0;
-    int helpActionId = -1;
-    for (const Action* action = actions_; ACTION_VALID(action); ++action)
-        if (strcmp(action->fullOption, "help") == 0)
-        {
-            helpActionId = action - actions_;
-            helpPriority = action->priority;
-            break;
-        }
-
-    // Find the priority of the action that will be executed last
-    ActionQueue copy(queue);
-    int lastPriority = 0;
-    while (!copy.empty())
+    // Ensure that all requires dependencies are satisfied
+    for (const auto& action : list)
     {
-        if (lastPriority < copy.top().priority)
-            lastPriority = copy.top().priority;
-        copy.pop();
+        if (actions_[action.actionId].requires == nullptr)
+            continue;
+
+        // Because this action has a requires dependency list, each actionId in
+        // that list must have been specified on the command line
+        auto isInList = [&list](int actionId) ->bool {
+            for (const auto& action : list)
+                if (action.actionId == actionId)
+                    return true;
+            return false;
+        };
+        for (const int* child = actions_[action.actionId].requires; *child != -1; ++child)
+            if (isInList(*child) == false)
+            {
+                ADG_FPRINTF(stderr, "Error: Option `--%s' requires --`%s'\n",
+                            actions_[action.actionId].fullOption, actions_[*child].fullOption);
+                return false;
+            }
     }
 
-    // Be nice and show help if no meaningful actions are going to be run.
-    // We assume that all actions that are run before the help action are not
-    // meaningful
-    if (queue.empty() || lastPriority < helpPriority)
-    {
-        // or not
-        if (helpActionId == -1)
-            return true;
+    addImplicitDependencies(&list);
+    tryToHelp(&list);
 
-        ActionHandler handler;
-        handler.actionId = helpActionId;
-        handler.priority = helpPriority;
-        queue.push(handler);
-    }
-
-    addImplicitActions(&queue);
+    // Move all handlers from the list into a priority queue and make sure
+    // actions with equal priority are executed in the order they are in the
+    // list
+    ActionQueue queue;
+    for (auto it = list.rbegin(); it != list.rend(); ++it)
+        queue.push(std::move(*it));
 
     // Process all actions
     while (!queue.empty())
@@ -449,10 +486,11 @@ bool parseCommandLine(int argc, char** argv)
         const Action& action = actions_[handler.actionId];
         if (action.type & META)
         {
-            MetaHandlerResult result = action.handler.meta(handler.args);
+            ActionHandler result = action.handler.meta(handler.args);
             if (result.actionId == -1)
                 return false;
 
+            // Ensure meta dependency list is satisfied
             const int* metadepId = action.metadeps;
             while (1)
             {
@@ -468,11 +506,24 @@ bool parseCommandLine(int argc, char** argv)
                 }
             }
 
-            ActionHandler handler;
-            handler.actionId = result.actionId;
-            handler.args = result.args;
-            handler.priority = actions_[result.actionId].priority;
-            queue.push(handler);
+            // Check that the correct number of arguments were returned
+            const Action& resultAction = actions_[result.actionId];
+            if (result.args.size() < resultAction.argRange.l)
+            {
+                ADG_FPRINTF(stderr, "Error: Meta-action `--%s' returned %d arguments, but `--%s' expects at least %d argument%s\n",
+                            action.fullOption, (int)result.args.size(),
+                            resultAction.fullOption, resultAction.argRange.l, resultAction.argRange.l == 1 ? "" : "s");
+                return 0;
+            }
+            if (result.args.size() > resultAction.argRange.h)
+            {
+                ADG_FPRINTF(stderr, "Error: Meta-action `--%s' returned %d arguments, but `--%s' accepts at most %d argument%s\n",
+                            action.fullOption, (int)result.args.size(),
+                            resultAction.fullOption, resultAction.argRange.h, resultAction.argRange.h == 1 ? "" : "s");
+                return 0;
+            }
+
+            queue.push(result);
         }
         else
         {

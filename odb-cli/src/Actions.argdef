@@ -69,22 +69,22 @@ section global:
     help: Prints the git commit hash.
     func: printCommitHash
     runafter: help
+    requires: version
 
 ###############################################################################
 section warnings:
   info: Configure compiler warnings
-
-  Wtest():
-    help: Test
-    func: warnTest
-    args: <1|0>
-    runafter: global
 
   warn(W)[Wtest]:
     help: This helper command lets you use the -Wname and -Wno-name syntax for
           warnings.
     func: warn
     args: <name>
+
+  Wtest():
+    help: Test
+    func: warnTest
+    args: <1|0>
     runafter: global
 
 ###############################################################################

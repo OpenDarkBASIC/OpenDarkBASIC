@@ -4,4 +4,4 @@
 
 bool warnTest(const std::vector<std::string>& args);
 
-MetaHandlerResult warn(const std::vector<std::string>& args);
+ActionHandler warn(const std::vector<std::string>& args);

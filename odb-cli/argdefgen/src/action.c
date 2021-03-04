@@ -372,6 +372,14 @@ verify_actions_and_sections_are_unique(struct adg_action** action_table)
                 return -1;
             }
 
+    for (a1 = action_table; *a1; ++a1)
+        for (a2 = a1+1; *a2; ++a2)
+            if ((*a1)->short_option == (*a2)->short_option && (*a1)->short_option != '\0')
+            {
+                fprintf(stderr, "Error: Duplicate short option `%c' found for actions `%s' and `%s'\n", (*a1)->short_option, (*a1)->action_name, (*a2)->action_name);
+                return -1;
+            }
+
     return 0;
 }
 
@@ -641,6 +649,35 @@ calculate_action_table_priorities(struct adg_action** action_table, const int* r
 
 /* ------------------------------------------------------------------------- */
 static int
+requires_depends_on_implicit_action(struct adg_action** action_table, int action)
+{
+    const int* child;
+    for (child = action_table[action]->requires; *child != -1; ++child)
+    {
+        if (action_table[*child]->is_implicit)
+        {
+            fprintf(stderr, "Error: Action `%s' requires action `%s', but `%s' is an implicit action.\n",
+                    action_table[action]->action_name, action_table[*child]->action_name,action_table[*child]->action_name);
+            return 1;
+        }
+        if (requires_depends_on_implicit_action(action_table, *child))
+            return 1;
+    }
+    return 0;
+}
+static int
+verify_requires_dont_depend_on_implicit_actions(struct adg_action** action_table, const int* requires_roots)
+{
+    const int* root;
+    for (root = requires_roots; *root != -1; ++root)
+        if (requires_depends_on_implicit_action(action_table, *root))
+            return -1;
+
+    return 0;
+}
+
+/* ------------------------------------------------------------------------- */
+static int
 is_indirectly_connected(struct adg_action** action_table, const uintptr_t deplistmember, int current, int target)
 {
     const int* child;
@@ -788,11 +825,10 @@ adg_action_table_from_nodes(union adg_node* root)
     if (verify_action_table_dependencies_are_acyclic(action_table, runafter_roots, requires_roots) != 0)
         goto dependency_pass_failed;
     if (calculate_action_table_priorities(action_table, runafter_roots) != 0)
-        goto init_pass_failed;
+        goto dependency_pass_failed;
+    if (verify_requires_dont_depend_on_implicit_actions(action_table, requires_roots) != 0)
+        goto dependency_pass_failed;
     remove_indirect_dependencies(action_table);
-
-    // TODO requires cannot depend on implicit commands
-    // TODO duplicate short options
 
     free(requires_roots);
     free(runafter_roots);
