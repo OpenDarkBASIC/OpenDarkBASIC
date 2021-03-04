@@ -15,6 +15,8 @@ adg_gen_cpp_write_typedefs(FILE* fp)
     fprintf(fp, "typedef bool (*Handler)(const ArgList& args);\n\n");
 
     fprintf(fp, "struct MetaHandlerResult\n{\n");
+    fprintf(fp, "    MetaHandlerResult();\n");
+    fprintf(fp, "    MetaHandlerResult(const std::string& fullOption, const std::vector<std::string>& args);\n");
     fprintf(fp, "    int actionId = -1;\n");
     fprintf(fp, "    ArgList args;\n");
     fprintf(fp, "};\n\n");
@@ -258,4 +260,10 @@ adg_gen_cpp_write_helpers_impl(FILE* fp)
     fprintf(fp, "            return action - actions_;\n");
     fprintf(fp, "    return -1;\n");
     fprintf(fp, "}\n");
+
+    fprintf(fp, "MetaHandlerResult::MetaHandlerResult() {}\n");
+    fprintf(fp, "MetaHandlerResult::MetaHandlerResult(const std::string& fullOption, const std::vector<std::string>& args)\n");
+    fprintf(fp, "    : actionId(findActionId(fullOption.c_str()))\n");
+    fprintf(fp, "    , args(args)\n");
+    fprintf(fp, "{}\n");
 }

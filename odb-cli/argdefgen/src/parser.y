@@ -172,7 +172,7 @@ help_str
   | STRING                                        { $$ = $1; }
   ;
 parse_required_args
-  : '<' required_argnames '>' parse_optional_args { $$ = adg_node_new_arg($4, $2, &@$); }
+  : '<' required_argnames '>' parse_required_args { $$ = adg_node_new_arg($4, $2, &@$); }
   | '<' required_argnames '>'                     { $$ = adg_node_new_arg(NULL, $2, &@$); }
   | parse_optional_args                           { $$ = $1; }
   ;

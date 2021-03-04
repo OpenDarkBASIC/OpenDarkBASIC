@@ -27,6 +27,7 @@ add_executable (odbc
     "src/Commands.cpp"
     "src/Log.cpp"
     "src/SDK.cpp"
+    "src/Warnings.cpp"
     "src/main.cpp")
 target_include_directories (odbc
     PUBLIC

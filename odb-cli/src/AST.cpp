@@ -43,9 +43,7 @@ bool parseDBA(const std::vector<std::string>& args)
 // ----------------------------------------------------------------------------
 MetaHandlerResult parseDBPro(const ArgList& args)
 {
-    MetaHandlerResult result;
-    result.actionId = 25;
-    return result;
+    return MetaHandlerResult();
 }
 
 // ----------------------------------------------------------------------------

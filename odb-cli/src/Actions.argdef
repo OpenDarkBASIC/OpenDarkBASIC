@@ -7,11 +7,10 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Log.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-cli/Warnings.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include <cstdarg>
-
-static bool printHelp(const ArgList& args);
 
 #define ADG_FPRINTF(fp, fmt, ...) \
     odb::Log::info.print(fmt, __VA_ARGS__)
@@ -70,6 +69,23 @@ section global:
     help: Prints the git commit hash.
     func: printCommitHash
     runafter: help
+
+###############################################################################
+section warnings:
+  info: Options to configure compiler warnings
+
+  Wtest():
+    help: Test
+    func: warnTest
+    args: <1|0>
+    runafter: global
+
+  warn(W)[Wtest]:
+    help: This helper command lets you use the -Wname and -Wno-name syntax for
+          warnings.
+    func: warn
+    args: <name>
+    runafter: global
 
 ###############################################################################
 section sdk:
@@ -132,6 +148,7 @@ section sdk:
     args: [file]
     func: dumpCommandsINI
     runafter: load-commands
+
 
 ###############################################################################
 section parser:

@@ -293,7 +293,7 @@ static int parseShortOptions(int argc, char** argv, ActionQueue* queue)
     auto processTable = [argc, argv](ActionQueue* queue, const char* str) -> int
     {
         for (const Action* action = actions_; ACTION_VALID(action); ++action)
-            if (action->shortOption == *str)
+            if (action->shortOption == str[0])
             {
                 if (action->argRange.l > 0 && str[1] != '\0')
                 {
@@ -353,10 +353,24 @@ static int parseOption(int argc, char** argv, ActionQueue* queue)
 }
 
 // ----------------------------------------------------------------------------
-static void addImplicitActions(ActionQueue* queue, int lastPriority)
+static void addImplicitActions(ActionQueue* queue)
 {
     if (queue->empty())
         return;
+
+    // First, remove all existing implicit actions in the queue
+    ActionQueue newExplicitQueue;
+    int lastPriority = 0;
+    while (!queue->empty())
+    {
+        const ActionHandler& handler = queue->top();
+        if (lastPriority < handler.priority)
+            lastPriority = handler.priority;
+        if (!(actions_[handler.actionId].type & IMPLICIT))
+            newExplicitQueue.push(handler);
+        queue->pop();
+    }
+    *queue = std::move(newExplicitQueue);
 
     for (const Action* action = actions_; ACTION_VALID(action); ++action)
     {
@@ -390,18 +404,6 @@ bool parseCommandLine(int argc, char** argv)
         i += processed;
     }
 
-    // Find the priority of the action that will be executed last
-    ActionQueue copy(queue);
-    int lastPriority = 0;
-    while (!copy.empty())
-    {
-        if (lastPriority < copy.top().priority)
-            lastPriority = copy.top().priority;
-        copy.pop();
-    }
-
-    addImplicitActions(&queue, lastPriority);
-
     // Find the priority of the help action
     int helpPriority = 0;
     int helpActionId = -1;
@@ -412,6 +414,16 @@ bool parseCommandLine(int argc, char** argv)
             helpPriority = action->priority;
             break;
         }
+
+    // Find the priority of the action that will be executed last
+    ActionQueue copy(queue);
+    int lastPriority = 0;
+    while (!copy.empty())
+    {
+        if (lastPriority < copy.top().priority)
+            lastPriority = copy.top().priority;
+        copy.pop();
+    }
 
     // Be nice and show help if no meaningful actions are going to be run.
     // We assume that all actions that are run before the help action are not
@@ -426,8 +438,9 @@ bool parseCommandLine(int argc, char** argv)
         handler.actionId = helpActionId;
         handler.priority = helpPriority;
         queue.push(handler);
-        addImplicitActions(&queue, helpPriority);
     }
+
+    addImplicitActions(&queue);
 
     // Process all actions
     while (!queue.empty())
@@ -439,6 +452,7 @@ bool parseCommandLine(int argc, char** argv)
             MetaHandlerResult result = action.handler.meta(handler.args);
             if (result.actionId == -1)
                 return false;
+            queue.pop();
 
             const int* metadepId = action.metadeps;
             while (1)
@@ -460,13 +474,14 @@ bool parseCommandLine(int argc, char** argv)
             handler.args = result.args;
             handler.priority = actions_[result.actionId].priority;
             queue.push(handler);
+            addImplicitActions(&queue);
         }
         else
         {
             if (action.handler.standard(handler.args) == false)
                 return false;
+            queue.pop();
         }
-        queue.pop();
     }
 
     return true;
