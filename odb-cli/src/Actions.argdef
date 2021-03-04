@@ -75,13 +75,13 @@ section global:
 section warnings:
   info: Configure compiler warnings
 
-  warn(W)[Wtest]:
+  warn(W)[warn-test]:
     help: This helper command lets you use the -Wname and -Wno-name syntax for
           warnings.
     func: warn
     args: <name>
 
-  Wtest():
+  warn-test(a):
     help: Test
     func: warnTest
     args: <1|0>

@@ -331,7 +331,8 @@ static int parseShortOptions(int argc, char** argv, ActionList* list)
         const Action& action = actions_[handler.actionId];
         if (action.argRange.l > 0)
         {
-            handler.args.push_back(str + 1);
+            if (str[1] != '\0')
+                handler.args.push_back(str + 1);
             for (int i = 0; i != argc - 1; ++i)
             {
                 if (i == action.argRange.h)
@@ -341,7 +342,10 @@ static int parseShortOptions(int argc, char** argv, ActionList* list)
                 handler.args.push_back(argv[i + 1]);
             }
             list->push_back(handler);
-            return handler.args.size();
+
+            if (str[1] != '\0')
+                return handler.args.size();
+            return handler.args.size() + 1;
         }
 
         list->push_back(handler);
