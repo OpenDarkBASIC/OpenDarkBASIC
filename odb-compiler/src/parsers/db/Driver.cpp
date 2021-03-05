@@ -237,7 +237,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
                 }
             } break;
 
-            // Allow commands to be changed to builtin commands. This is something
+            // Allow commands to be changed to builtin keywords. This is something
             // DBP did, but ODB should not do. Issue a warning if this happens.
             case TOK_COMMAND: {
                 // See above comment for why this is here

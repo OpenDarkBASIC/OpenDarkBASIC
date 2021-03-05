@@ -218,6 +218,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
     "src/ir/SemanticChecker.cpp"
+    "src/messages/Situation.cpp"
     "src/parsers/db/Driver.cpp")
 target_include_directories (odb-compiler
     PUBLIC
@@ -296,6 +297,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/matchers/SymbolEq.cpp"
         "tests/src/matchers/UDTRefEq.cpp"
         "tests/src/matchers/UnaryOpEq.cpp"
+        "tests/src/messages/test_messages_MessageBuilder.cpp"
         "tests/src/parser/test_db_parser_array_decl.cpp"
         "tests/src/parser/test_db_parser_arrays.cpp"
         "tests/src/parser/test_db_parser_assignment.cpp"
