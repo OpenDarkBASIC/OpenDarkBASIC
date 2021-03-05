@@ -486,7 +486,9 @@ bool parseCommandLine(int argc, char** argv)
     // Process all actions
     while (!queue.empty())
     {
-        const ActionHandler& handler = queue.top();
+        ActionHandler handler = queue.top();
+        queue.pop();
+
         const Action& action = actions_[handler.actionId];
         if (action.type & META)
         {
@@ -534,9 +536,7 @@ bool parseCommandLine(int argc, char** argv)
             if (action.handler.standard(handler.args) == false)
                 return false;
         }
-        queue.pop();
     }
 
     return true;
 }
-
