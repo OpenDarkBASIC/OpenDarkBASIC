@@ -1,6 +1,6 @@
 #include "gmock/gmock.h"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/messages/Situation.hpp"
+#include "odb-compiler/messages/MessageBuilder.hpp"
 
 #define NAME messages
 
@@ -8,8 +8,7 @@ using namespace odb;
 
 TEST(NAME, unexpected_x_expected_y_z)
 {
-    auto message = msg::MessageBuilder()
-        .dbParser()
+    auto message = msg::MessageBuilder(msg::DB_PARSER)
         .syntaxError()
         .location(new ast::InlineSourceLocation("test", "variable anothervariable", 1, 1, 10, 25))
         .unexpected("symbol")
@@ -19,8 +18,7 @@ TEST(NAME, unexpected_x_expected_y_z)
 
 TEST(NAME, command_same_as_keyword_warning)
 {
-    auto message = msg::MessageBuilder()
-        .dbParser()
+    auto message = msg::MessageBuilder(msg::DB_PARSER)
         .syntaxWarning()
         .location(new ast::InlineSourceLocation("test", "do : sync : loop", 1, 1, 1, 3))
         .text("Command").quote("do").text("has same name as built-in keyword. Command will be ignored")
@@ -41,9 +39,8 @@ TEST(NAME, multiple_default_cases_error)
         "  endcase\n"
         "endselect\n";
 
-    auto builder = msg::MessageBuilder();
+    auto builder = msg::MessageBuilder(msg::ASTPOST);
     builder
-        .astpost()
         .syntaxError()
         .location(new ast::InlineSourceLocation("test", src, 1, 1, 1, 9))
         .text("Select statement has multiple default cases")
@@ -69,8 +66,7 @@ TEST(NAME, binary_op_warning)
     auto op  = new ast::InlineSourceLocation("test", src, 1, 1, 16, 18);
     auto rhs = new ast::InlineSourceLocation("test", src, 1, 1, 19, 24);
 
-    auto message = msg::MessageBuilder()
-        .astpost()
+    auto message = msg::MessageBuilder(msg::ASTPOST)
         .semanticError()
         .binaryOpLocation(lhs, op, rhs)
         .text("RHS of bitwise-not operator causes side effects")
