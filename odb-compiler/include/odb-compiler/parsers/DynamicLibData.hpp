@@ -9,13 +9,12 @@
 #include "odb-sdk/Reference.hpp"
 
 namespace odb {
-struct TargetLibParserData;
-
-class TargetLibParser : public RefCounted {
+class DynamicLibData : public RefCounted {
 public:
-    ~TargetLibParser();
+    ~DynamicLibData();
 
-    static Reference<TargetLibParser> open(const std::string& filename);
+    /// @brief Opens a dynamic lib (either dll, so, or dylib) for extracting data.
+    static Reference<DynamicLibData> open(const std::string& filename);
 
     const char* getFilename() const;
 
@@ -39,15 +38,12 @@ public:
      */
     std::vector<std::string> getStringTable() const;
 
-    /*!
-     * @brief Iterates over every string in the string table.
-     */
-    void forEachStringTableEntry(std::function<void(std::string)> iterator) const;
-
 private:
-    TargetLibParser(std::unique_ptr<TargetLibParserData> data, const std::string& filename);
+    struct Storage;
 
-    std::unique_ptr<TargetLibParserData> data_;
+    DynamicLibData(std::unique_ptr<Storage> data, const std::string& filename);
+
+    std::unique_ptr<Storage> data_;
     const std::string filename_;
 };
 }

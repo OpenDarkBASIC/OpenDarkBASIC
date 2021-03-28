@@ -13,7 +13,7 @@ public:
                      const std::vector<std::filesystem::path>& pluginDirs={});
 
     bool populateIndex(CommandIndex* index) override;
-    bool populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library) override;
+    bool populateIndexFromLibrary(CommandIndex* index, DynamicLibData* library) override;
 };
 
 }

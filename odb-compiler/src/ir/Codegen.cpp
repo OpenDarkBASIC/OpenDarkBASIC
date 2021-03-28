@@ -54,19 +54,19 @@ bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTri
 
     assert(outputType == OutputType::ObjectFile);
 
-    static std::once_flag initLLVMBackends;
-    std::call_once(initLLVMBackends,
-                   []
-                   {
-                       LLVMInitializeX86TargetInfo();
-                       LLVMInitializeX86Target();
-                       LLVMInitializeX86TargetMC();
-                       LLVMInitializeX86AsmPrinter();
-                       LLVMInitializeAArch64TargetInfo();
-                       LLVMInitializeAArch64Target();
-                       LLVMInitializeAArch64TargetMC();
-                       LLVMInitializeAArch64AsmPrinter();
-                   });
+    static std::once_flag initLLVMBackendsFlag;
+    auto initLLVMBackends = []
+    {
+      LLVMInitializeX86TargetInfo();
+      LLVMInitializeX86Target();
+      LLVMInitializeX86TargetMC();
+      LLVMInitializeX86AsmPrinter();
+      LLVMInitializeAArch64TargetInfo();
+      LLVMInitializeAArch64Target();
+      LLVMInitializeAArch64TargetMC();
+      LLVMInitializeAArch64AsmPrinter();
+    };
+    std::call_once(initLLVMBackendsFlag, initLLVMBackends);
 
     // Lookup target machine.
     std::string llvmTargetTriple = targetTriple.getLLVMTargetTriple();

@@ -4,7 +4,7 @@ namespace odb {
 namespace cmd {
 
 // ----------------------------------------------------------------------------
-Command::Command(TargetLibParser* sourceLibrary,
+Command::Command(DynamicLibData* sourceLibrary,
                  const std::string& dbSymbol,
                  const std::string& cppSymbol,
                  Type returnType,
@@ -50,7 +50,7 @@ Command::Type Command::returnType() const
 }
 
 // ----------------------------------------------------------------------------
-TargetLibParser* Command::library() const
+DynamicLibData* Command::library() const
 {
     return library_;
 }

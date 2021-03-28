@@ -5,7 +5,7 @@
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include <algorithm>
-#include <odb-compiler/parsers/TargetLibParser.hpp>
+#include <odb-compiler/parsers/DynamicLibData.hpp>
 #include <set>
 
 namespace fs = std::filesystem;
@@ -54,7 +54,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<TargetLibParser> lib = TargetLibParser::open(path.string());
+        Reference<DynamicLibData> lib = DynamicLibData::open(path.string());
         if (lib == nullptr)
             continue;
 
@@ -66,7 +66,7 @@ bool DBPCommandLoader::populateIndex(CommandIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library)
+bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibData* library)
 {
     std::set<std::string> stringTable;
 

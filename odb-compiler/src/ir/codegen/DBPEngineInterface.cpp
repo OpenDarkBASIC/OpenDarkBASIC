@@ -1,11 +1,11 @@
 #include "DBPEngineInterface.hpp"
-#include "odb-compiler/parsers/TargetLibParser.hpp"
+#include "odb-compiler/parsers/DynamicLibData.hpp"
 
 #include <filesystem>
 
 namespace odb::ir {
 namespace {
-std::string getPluginName(const TargetLibParser* library)
+std::string getPluginName(const DynamicLibData* library)
 {
     return std::filesystem::path{library->getFilename()}.stem().string();
 }
@@ -95,7 +95,7 @@ llvm::Function* DBPEngineInterface::generateCommandCall(const cmd::Command& comm
     return function;
 }
 
-void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<TargetLibParser*> pluginsToLoad)
+void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibData*> pluginsToLoad)
 {
     if (pluginsToLoad.empty())
     {
@@ -105,7 +105,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     }
 
     // Ensuring that DBProCore.dll is the first plugin.
-    auto isCorePlugin = [](const TargetLibParser* library) -> bool
+    auto isCorePlugin = [](const DynamicLibData* library) -> bool
     {
         return std::filesystem::path{library->getFilename()}.stem() == "DBProCore";
     };
@@ -150,7 +150,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     // Load plugins.
     for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
-        TargetLibParser* plugin = pluginsToLoad[i];
+        DynamicLibData* plugin = pluginsToLoad[i];
         std::string pluginName = getPluginName(plugin);
         std::string pluginPath = std::filesystem::path{plugin->getFilename()}.filename().string();
 
@@ -184,7 +184,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
 }
 
-llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const TargetLibParser* library)
+llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const DynamicLibData* library)
 {
     auto pluginName = getPluginName(library);
 
@@ -201,7 +201,7 @@ llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const TargetLibParser* 
 }
 
 llvm::FunctionCallee DBPEngineInterface::getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
-                                                           const TargetLibParser* library, const std::string& symbol,
+                                                           const DynamicLibData* library, const std::string& symbol,
                                                            const std::string& symbolStringName)
 {
     llvm::Value* pluginHandle = builder.CreateLoad(getOrAddPluginHandleVar(library));

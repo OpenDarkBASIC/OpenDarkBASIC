@@ -79,7 +79,7 @@ If you want a quick list of instructions to build LLVM from source with the mini
 1. `git clone https://github.com/llvm/llvm-project -b llvmorg-11.0.0` (for LLVM 11.0)
 1. `cd llvm-project`
 1. `mkdir build && cd build`
-1. `cmake ../llvm -DCMAKE_INSTALL_PREFIX=./install -DLLVM_INCLUDE_TESTS=0 -DLLVM_INCLUDE_BENCHMARKS=0 -DLLVM_TARGETS_TO_BUILD="X86" -DLLVM_ENABLE_PROJECTS="lld"`
+1. `cmake ../llvm -DCMAKE_INSTALL_PREFIX=./install -DLLVM_INCLUDE_TESTS=0 -DLLVM_INCLUDE_BENCHMARKS=0 -DLLVM_TARGETS_TO_BUILD="ARM;X86;AArch64" -DLLVM_ENABLE_PROJECTS="lld"`
     * If on Windows, add these options: `-DLLVM_COMPILER_JOBS=$(nproc) -Thost=x64`
     * If on Linux, it is recommended to use ninja build by adding this option: `-GNinja`
 1. `cmake --build . --target install` (this took about 15 minutes on a Ryzen 2700X)

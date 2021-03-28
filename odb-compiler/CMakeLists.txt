@@ -219,7 +219,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ir/Node.cpp"
     "src/ir/SemanticChecker.cpp"
     "src/parsers/db/Driver.cpp"
-    "src/parsers/TargetLibParser.cpp")
+    "src/parsers/DynamicLibData.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>

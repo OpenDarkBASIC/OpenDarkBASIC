@@ -1,9 +1,9 @@
 #include "odb-compiler/commands/ODBCommandLoader.hpp"
-#include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-compiler/parsers/TargetLibParser.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/parsers/DynamicLibData.hpp"
 #include "odb-sdk/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <filesystem>
 #include <unordered_set>
@@ -117,7 +117,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<TargetLibParser> lib = TargetLibParser::open(path.string());
+        Reference<DynamicLibData> lib = DynamicLibData::open(path.string());
         if (lib == nullptr)
             continue;
 
@@ -129,7 +129,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library)
+bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibData* library)
 {
     auto lookupString = [&library](const std::string& sym) -> std::string {
         return library->lookupStringBySymbol(sym).value_or("");

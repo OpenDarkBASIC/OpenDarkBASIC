@@ -7,7 +7,7 @@
 #include <filesystem>
 
 namespace odb {
-class TargetLibParser;
+class DynamicLibData;
 
 namespace cmd {
 class CommandIndex;
@@ -21,7 +21,7 @@ public:
     virtual ~CommandLoader() {}
 
     virtual bool populateIndex(CommandIndex* index) = 0;
-    virtual bool populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library) = 0;
+    virtual bool populateIndexFromLibrary(CommandIndex* index, DynamicLibData* library) = 0;
 
 protected:
     const std::filesystem::path sdkRoot_;
