@@ -254,30 +254,27 @@ set_target_properties (odb-compiler
 ###############################################################################
 # Executable parsing.
 ###############################################################################
-include (ExternalProject)
+include (FetchContent)
 
-ExternalProject_Add(
+set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
+set (LIEF_C_API OFF CACHE BOOL "" FORCE)
+set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
+set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
+set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
+set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
+set (LIEF_OAT OFF CACHE BOOL "" FORCE)
+set (LIEF_DEX OFF CACHE BOOL "" FORCE)
+set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
+set (LIEF_ART OFF CACHE BOOL "" FORCE)
+FetchContent_Declare (
     lief
-    URL https://github.com/lief-project/LIEF/archive/0.11.2.tar.gz
-    CMAKE_ARGS
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install
-        -DBUILD_SHARED_LIBS=OFF
-        -DLIEF_PYTHON_API=OFF
-        -DLIEF_C_API=OFF
-        -DLIEF_EXAMPLES=OFF
-        -DLIEF_USE_CCACHE=OFF
-        -DLIEF_LOGGING=OFF
-        -DLIEF_LOGGING_DEBUG=OFF
-        -DLIEF_ENABLE_JSON=OFF
-        -DLIEF_OAT=OFF
-        -DLIEF_DEX=OFF
-        -DLIEF_VDEX=OFF
-        -DLIEF_ART=OFF
-    BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/lib/libLIEF.a
+    URL https://github.com/dgavedissian/LIEF/archive/5eb19bafbf90bef577bdc6e127dfc8211f052927.zip
 )
-target_include_directories(odb-compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/include)
-target_link_libraries(odb-compiler PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/lief-prefix/install/lib/libLIEF.a)
-add_dependencies(odb-compiler lief)
+FetchContent_MakeAvailable (lief)
+
+target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 ###############################################################################
 # LLVM stuff
