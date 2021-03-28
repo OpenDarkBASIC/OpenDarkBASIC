@@ -131,22 +131,20 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 // ----------------------------------------------------------------------------
 bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, TargetLibParser* library)
 {
-    auto lookupString = [&library](std::string sym) -> std::string {
-        //        const char** addr = reinterpret_cast<const char**>(
-        //            library->lookupSymbolAddress(sym.c_str()));
-        //        return addr ? *addr : "";
-        return "";
+    auto lookupString = [&library](const std::string& sym) -> std::string {
+        return library->lookupStringBySymbol(sym).value_or("");
     };
 
-    for (int i = 0; i != library->getSymbolCount(); ++i)
+    int symbolCount = library->getSymbolCount();
+    for (int i = 0; i != symbolCount; ++i)
     {
-        std::string cppSymbol = library->getSymbolAt(i);
+        std::string cppSymbol = library->getSymbolNameAt(i);
 
         std::string dbSymbol = lookupString(cppSymbol + "_name");
-        if (dbSymbol == "")
+        if (dbSymbol.empty())
             continue;
         std::string typeinfo = lookupString(cppSymbol + "_typeinfo");
-        if (typeinfo == "")
+        if (typeinfo.empty())
             continue;
         std::string helpfile = lookupString(cppSymbol + "_helpfile");  // optional symbol
 

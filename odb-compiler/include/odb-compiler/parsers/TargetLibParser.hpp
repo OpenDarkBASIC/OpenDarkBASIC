@@ -1,8 +1,10 @@
 #pragma once
 
-#include <vector>
-#include <string>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "odb-sdk/Reference.hpp"
 
@@ -15,22 +17,32 @@ public:
 
     static Reference<TargetLibParser> open(const std::string& filename);
 
-    virtual const char* getFilename() const;
+    const char* getFilename() const;
 
     /*!
      * @brief Returns the total number of symbols present in the symbol table.
      */
-    virtual int getSymbolCount() const;
+    int getSymbolCount() const;
 
     /*!
      * @brief Returns a symbol at the specified index in the symbol table.
      */
-    virtual const char* getSymbolAt(int idx) const;
+    std::string getSymbolNameAt(int idx) const;
+
+    /*!
+     * @brief Return the value of a null-terminated string pointed at by a symbol called 'name'.
+     */
+     std::optional<std::string> lookupStringBySymbol(const std::string& name);
 
     /*!
      * @brief Returns a copy of all strings in the string table.
      */
-    virtual std::vector<std::string> getStringTable() const;
+    std::vector<std::string> getStringTable() const;
+
+    /*!
+     * @brief Iterates over every string in the string table.
+     */
+    void forEachStringTableEntry(std::function<void(std::string)> iterator) const;
 
 private:
     TargetLibParser(std::unique_ptr<TargetLibParserData> data, const std::string& filename);
