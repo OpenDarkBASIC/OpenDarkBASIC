@@ -158,7 +158,7 @@ bool output(const std::vector<std::string>& args)
         assert(outputType_ == odb::ir::OutputType::ObjectFile);
 
         // Above, we generated an object file and wrote it to `outputName`, even though it is not an executable
-        // yet.Here, we invoke the linker, which takes the above object file (written to `outputName`), links it, and
+        // yet. Here, we invoke the linker, which takes the above object file (written to `outputName`), links it, and
         // overwrites the object file with the actual executable.
         if (!odb::ir::linkExecutable(getSDKType(), getSDKRootDir(), targetTriple, {outputName}, outputName))
         {

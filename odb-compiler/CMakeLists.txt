@@ -363,7 +363,7 @@ endif ()
 
 FetchContent_Declare (
     lld
-    URL https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/lld-11.1.0.src.tar.xz
+    URL https://github.com/llvm/llvm-project/releases/download/llvmorg-${LLVM_VERSION}/lld-${LLVM_VERSION}.src.tar.xz
 )
 FetchContent_MakeAvailable (lld)
 
