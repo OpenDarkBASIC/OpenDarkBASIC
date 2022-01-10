@@ -61,6 +61,8 @@ ODB_DATATYPE_LIST
 class Visitor
 {
 public:
+    virtual ~Visitor() = default;
+
     virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
     virtual void visitArgList(ArgList* node) = 0;
     virtual void visitArrayAssignment(ArrayAssignment* node) = 0;
@@ -116,6 +118,8 @@ public:
 class ConstVisitor
 {
 public:
+    virtual ~ConstVisitor() = default;
+
     virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitArgList(const ArgList* node) = 0;
     virtual void visitArrayAssignment(const ArrayAssignment* node) = 0;

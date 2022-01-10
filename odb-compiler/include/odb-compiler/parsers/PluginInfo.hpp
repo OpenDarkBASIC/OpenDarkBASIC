@@ -16,12 +16,15 @@ public:
     /// @brief Opens a dynamic lib (either dll, so, or dylib) for extracting data.
     static Reference<DynamicLibData> open(const std::string& filename);
 
+    /*!
+     * @brief Returns the filename of the dynamic lib.
+     */
     const char* getFilename() const;
 
     /*!
      * @brief Returns the total number of symbols present in the symbol table.
      */
-    int getSymbolCount() const;
+    size_t getSymbolCount() const;
 
     /*!
      * @brief Returns a symbol at the specified index in the symbol table.

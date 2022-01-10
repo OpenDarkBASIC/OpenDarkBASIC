@@ -31,7 +31,7 @@ const char* DynamicLibData::getFilename() const
     return filename_.c_str();
 }
 
-int DynamicLibData::getSymbolCount() const
+size_t DynamicLibData::getSymbolCount() const
 {
     const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(data_->binary.get());
     return elfBinary ? elfBinary->dynamic_symbols().size() : data_->binary->symbols().size();

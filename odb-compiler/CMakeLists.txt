@@ -367,6 +367,10 @@ FetchContent_Declare (
 )
 FetchContent_MakeAvailable (lld)
 
+target_compile_features(lldCommon PUBLIC cxx_std_17)
+target_compile_features(lldCOFF PUBLIC cxx_std_17)
+target_compile_features(lldELF PUBLIC cxx_std_17)
+
 target_link_libraries (odb-compiler PRIVATE lldCOFF lldELF)
 
 ###############################################################################
