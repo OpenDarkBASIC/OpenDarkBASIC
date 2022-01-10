@@ -11,7 +11,7 @@ public:
 
     llvm::Function* generateCommandCall(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
-    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibData*> pluginsToLoad) override;
+    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad) override;
 
 private:
     llvm::PointerType* voidPtrTy;
@@ -25,9 +25,9 @@ private:
 
     std::unordered_map<std::string, llvm::Value*> pluginHandlePtrs;
 
-    llvm::Value* getOrAddPluginHandleVar(const DynamicLibData* library);
+    llvm::Value* getOrAddPluginHandleVar(const PluginInfo* library);
     llvm::FunctionCallee getPluginFunction(llvm::IRBuilder<>& builder, llvm::FunctionType* functionTy,
-                                           const DynamicLibData* library, const std::string& symbol,
+                                           const PluginInfo* library, const std::string& symbol,
                                            const std::string& symbolStringName = "");
 
     template <typename... T>

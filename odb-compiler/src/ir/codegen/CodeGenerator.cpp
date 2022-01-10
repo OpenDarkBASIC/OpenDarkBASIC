@@ -830,7 +830,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     }
 }
 
-bool CodeGenerator::generateModule(const Program& program, std::vector<DynamicLibData*> pluginsToLoad)
+bool CodeGenerator::generateModule(const Program& program, std::vector<PluginInfo*> pluginsToLoad)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 

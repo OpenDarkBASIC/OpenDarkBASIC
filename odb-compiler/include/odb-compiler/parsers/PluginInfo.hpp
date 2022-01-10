@@ -8,13 +8,17 @@
 
 #include "odb-sdk/Reference.hpp"
 
+namespace LIEF {
+class Binary;
+}
+
 namespace odb {
-class DynamicLibData : public RefCounted {
+class PluginInfo : public RefCounted {
 public:
-    ~DynamicLibData();
+    ~PluginInfo();
 
     /// @brief Opens a dynamic lib (either dll, so, or dylib) for extracting data.
-    static Reference<DynamicLibData> open(const std::string& filename);
+    static Reference<PluginInfo> open(const std::string& filename);
 
     /*!
      * @brief Returns the filename of the dynamic lib.
@@ -42,11 +46,9 @@ public:
     std::vector<std::string> getStringTable() const;
 
 private:
-    struct Storage;
+    PluginInfo(std::unique_ptr<LIEF::Binary> binary, std::string  filename);
 
-    DynamicLibData(std::unique_ptr<Storage> data, const std::string& filename);
-
-    std::unique_ptr<Storage> data_;
+    std::unique_ptr<LIEF::Binary> binary_;
     const std::string filename_;
 };
 }

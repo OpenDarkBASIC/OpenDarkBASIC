@@ -1,58 +1,53 @@
-#include "odb-compiler/parsers/DynamicLibData.hpp"
+#include "odb-compiler/parsers/PluginInfo.hpp"
 #include "odb-sdk/Log.hpp"
 
 #include <LIEF/LIEF.hpp>
 #include <codecvt>
+#include <utility>
 
 namespace odb {
-struct DynamicLibData::Storage
-{
-    std::unique_ptr<LIEF::Binary> binary;
-};
+PluginInfo::~PluginInfo() = default;
 
-DynamicLibData::~DynamicLibData() = default;
-
-Reference<DynamicLibData> DynamicLibData::open(const std::string& filename)
+Reference<PluginInfo> PluginInfo::open(const std::string& filename)
 {
     try
     {
-        return new DynamicLibData(
-            std::make_unique<DynamicLibData::Storage>(DynamicLibData::Storage{LIEF::Parser::parse(filename)}), filename);
+        return new PluginInfo(LIEF::Parser::parse(filename), filename);
     }
     catch (const LIEF::exception& err)
     {
-        Log::codegen(Log::ERROR, "Failed to load plugin %s: %s", filename.c_str(), err.what());
+        Log::codegen(Log::ERROR, "Failed to open plugin %s: %s", filename.c_str(), err.what());
         return nullptr;
     }
 }
 
-const char* DynamicLibData::getFilename() const
+const char* PluginInfo::getFilename() const
 {
     return filename_.c_str();
 }
 
-size_t DynamicLibData::getSymbolCount() const
+size_t PluginInfo::getSymbolCount() const
 {
-    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(data_->binary.get());
-    return elfBinary ? elfBinary->dynamic_symbols().size() : data_->binary->symbols().size();
+    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
+    return elfBinary ? elfBinary->dynamic_symbols().size() : binary_->symbols().size();
 }
 
-std::string DynamicLibData::getSymbolNameAt(int idx) const
+std::string PluginInfo::getSymbolNameAt(int idx) const
 {
-    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(data_->binary.get());
-    return elfBinary ? elfBinary->dynamic_symbols()[idx].name() : data_->binary->symbols()[idx].name();
+    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
+    return elfBinary ? elfBinary->dynamic_symbols()[idx].name() : binary_->symbols()[idx].name();
 }
 
-std::optional<std::string> DynamicLibData::lookupStringBySymbol(const std::string& name)
+std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& name)
 {
-    if (!data_->binary->has_symbol(name)) {
+    if (!binary_->has_symbol(name)) {
         return std::nullopt;
     }
 
-    const auto& symbol = data_->binary->get_symbol(name);
+    const auto& symbol = binary_->get_symbol(name);
 
     // The symbol stores a virtual address to the actual string data, look that up.
-    auto buffer = data_->binary->get_content_from_virtual_address(symbol.value(), symbol.size());
+    auto buffer = binary_->get_content_from_virtual_address(symbol.value(), symbol.size());
     std::uint64_t address = 0;
     std::memcpy(&address, buffer.data(), buffer.size());
 
@@ -63,7 +58,7 @@ std::optional<std::string> DynamicLibData::lookupStringBySymbol(const std::strin
     {
         // Load bytes from the virtual address.
         const std::uint64_t bufferSize = 64;
-        auto bytes = data_->binary->get_content_from_virtual_address(address, bufferSize);
+        auto bytes = binary_->get_content_from_virtual_address(address, bufferSize);
         address += bufferSize;
 
         // Have we encountered a null terminator yet?
@@ -87,9 +82,9 @@ std::optional<std::string> DynamicLibData::lookupStringBySymbol(const std::strin
     return {result};
 }
 
-std::vector<std::string> DynamicLibData::getStringTable() const
+std::vector<std::string> PluginInfo::getStringTable() const
 {
-    const auto* binary = data_->binary.get();
+    const auto* binary = binary_.get();
     if (binary->format() != LIEF::FORMAT_PE) {
         // Other executable formats don't support string tables.
         return {};
@@ -110,7 +105,7 @@ std::vector<std::string> DynamicLibData::getStringTable() const
     return stringTable;
 }
 
-DynamicLibData::DynamicLibData(std::unique_ptr<Storage> data, const std::string& filename) : data_(std::move(data)), filename_(filename)
+PluginInfo::PluginInfo(std::unique_ptr<LIEF::Binary> binary, std::string filename) : binary_(std::move(binary)), filename_(std::move(filename))
 {
 }
 } // namespace odb

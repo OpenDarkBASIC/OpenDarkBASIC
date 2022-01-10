@@ -28,6 +28,8 @@ namespace db {
 class ODBCOMPILER_PUBLIC_API Driver
 {
 public:
+    virtual ~Driver() = default;
+
     enum IncDecDir
     {
         INC = 1,
