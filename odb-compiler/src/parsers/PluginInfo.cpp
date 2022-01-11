@@ -4,26 +4,31 @@
 #include <LIEF/LIEF.hpp>
 #include <codecvt>
 #include <utility>
+#include <filesystem>
 
 namespace odb {
 PluginInfo::~PluginInfo() = default;
 
-Reference<PluginInfo> PluginInfo::open(const std::string& filename)
+Reference<PluginInfo> PluginInfo::open(const std::string& path)
 {
     try
     {
-        return new PluginInfo(LIEF::Parser::parse(filename), filename);
+        return new PluginInfo(LIEF::Parser::parse(path), path);
     }
     catch (const LIEF::exception& err)
     {
-        Log::codegen(Log::ERROR, "Failed to open plugin %s: %s", filename.c_str(), err.what());
+        Log::codegen(Log::ERROR, "Failed to open plugin %s: %s", path.c_str(), err.what());
         return nullptr;
     }
 }
 
-const char* PluginInfo::getFilename() const
+const char *PluginInfo::getPath() const {
+    return path_.c_str();
+}
+
+const char* PluginInfo::getName() const
 {
-    return filename_.c_str();
+    return name_.c_str();
 }
 
 size_t PluginInfo::getSymbolCount() const
@@ -32,7 +37,7 @@ size_t PluginInfo::getSymbolCount() const
     return elfBinary ? elfBinary->dynamic_symbols().size() : binary_->symbols().size();
 }
 
-std::string PluginInfo::getSymbolNameAt(int idx) const
+std::string PluginInfo::getSymbolNameAt(size_t idx) const
 {
     const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
     return elfBinary ? elfBinary->dynamic_symbols()[idx].name() : binary_->symbols()[idx].name();
@@ -105,7 +110,10 @@ std::vector<std::string> PluginInfo::getStringTable() const
     return stringTable;
 }
 
-PluginInfo::PluginInfo(std::unique_ptr<LIEF::Binary> binary, std::string filename) : binary_(std::move(binary)), filename_(std::move(filename))
+PluginInfo::PluginInfo(std::unique_ptr<LIEF::Binary> binary, const std::string& path)
+    : binary_(std::move(binary)),
+      path_(path),
+      name_(std::filesystem::path{path}.stem().string())
 {
 }
 } // namespace odb

@@ -11,7 +11,7 @@
 #include <iostream>
 
 static odb::ir::OutputType outputType_ = odb::ir::OutputType::ObjectFile;
-static bool outputIsExecutable_ = false;
+static bool outputIsExecutable_ = true;
 static std::optional<odb::ir::TargetTriple::Arch> targetTripleArch_;
 static std::optional<odb::ir::TargetTriple::Platform> targetTriplePlatform_;
 

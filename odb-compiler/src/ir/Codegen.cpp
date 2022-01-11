@@ -142,7 +142,11 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, Ta
         }
         else if (targetTriple.arch == TargetTriple::Arch::AArch64)
         {
-            Log::codegen(Log::ERROR, "lld does not support linking an AArch64 executable for Windows.");
+            args.emplace_back("/machine:arm64");
+        }
+        else
+        {
+            Log::codegen(Log::ERROR, "lld does not support linking this architecture for Windows.");
             return false;
         }
         args.emplace_back(outFlag.c_str());
@@ -166,7 +170,7 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, Ta
     }
     else
     {
-        // TODO: Implement ELF linking.
+        // TODO: Implement ELF and Mach-O linking.
         return false;
     }
 }

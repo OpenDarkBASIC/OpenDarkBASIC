@@ -135,8 +135,8 @@ bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo*
         return library->lookupStringBySymbol(sym).value_or("");
     };
 
-    int symbolCount = library->getSymbolCount();
-    for (int i = 0; i != symbolCount; ++i)
+    size_t symbolCount = library->getSymbolCount();
+    for (size_t i = 0; i != symbolCount; ++i)
     {
         std::string cppSymbol = library->getSymbolNameAt(i);
 
@@ -152,7 +152,8 @@ bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo*
         std::vector<Command::Arg> args;
         if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            Log::sdk(Log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
+            Log::sdk(Log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(),
+                     library->getName());
             return false;
         }
 

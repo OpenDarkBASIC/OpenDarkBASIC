@@ -4,13 +4,6 @@
 #include <filesystem>
 
 namespace odb::ir {
-namespace {
-std::string getPluginName(const PluginInfo* library)
-{
-    return std::filesystem::path{library->getFilename()}.stem().string();
-}
-} // namespace
-
 DBPEngineInterface::DBPEngineInterface(llvm::Module& module) : EngineInterface(module)
 {
     dwordTy = llvm::Type::getInt8PtrTy(ctx);
@@ -104,10 +97,10 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         std::terminate();
     }
 
-    // Ensuring that DBProCore.dll is the first plugin.
-    auto isCorePlugin = [](const PluginInfo* library) -> bool
+    // Ensuring that DBProCore is loaded first.
+    auto isCorePlugin = [](const PluginInfo* plugin) -> bool
     {
-        return std::filesystem::path{library->getFilename()}.stem() == "DBProCore";
+        return strcmp(plugin->getName(), "DBProCore") == 0;
     };
     for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
@@ -126,6 +119,8 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     }
 
     // Remove plugins that we haven't used.
+    // TODO: We can't necessarily do this, as some plugins initialise different parts of the engine.
+    //
     //    pluginsToLoad.erase(std::remove_if(pluginsToLoad.begin(), pluginsToLoad.end(),
     //    [this](const std::string& plugin) {
     //        return pluginHandlePtrs.count(plugin) == 0;
@@ -141,7 +136,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     pluginLoadingBlocks.reserve(pluginsToLoad.size());
     for (const auto& plugin : pluginsToLoad)
     {
-        pluginLoadingBlocks.emplace_back(llvm::BasicBlock::Create(ctx, "load" + getPluginName(plugin), entryPointFunc));
+        pluginLoadingBlocks.emplace_back(llvm::BasicBlock::Create(ctx, "load" + std::string{plugin->getName()}, entryPointFunc));
     }
     llvm::BasicBlock* initialiseEngineBlock = llvm::BasicBlock::Create(ctx, "initialiseEngine", entryPointFunc);
     llvm::BasicBlock* failedToInitialiseEngineBlock = llvm::BasicBlock::Create(ctx, "failedToInitialiseEngine", entryPointFunc);
@@ -151,8 +146,8 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
     {
         PluginInfo* plugin = pluginsToLoad[i];
-        std::string pluginName = getPluginName(plugin);
-        std::string pluginPath = std::filesystem::path{plugin->getFilename()}.filename().string();
+        std::string pluginName = plugin->getName();
+        std::string pluginPath = std::filesystem::path{plugin->getPath()}.filename().string();
 
         builder.SetInsertPoint(pluginLoadingBlocks[i]);
 
@@ -184,9 +179,9 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
 }
 
-llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const PluginInfo* library)
+llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const PluginInfo* plugin)
 {
-    auto pluginName = getPluginName(library);
+    auto pluginName = plugin->getName();
 
     auto pluginHandleIt = pluginHandlePtrs.find(pluginName);
     if (pluginHandleIt != pluginHandlePtrs.end())
@@ -195,7 +190,7 @@ llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const PluginInfo* libra
     }
 
     auto* pluginHandle = new llvm::GlobalVariable(module, voidPtrTy, false, llvm::GlobalValue::InternalLinkage,
-                                                   llvm::ConstantPointerNull::get(voidPtrTy), pluginName + "Handle");
+                                                   llvm::ConstantPointerNull::get(voidPtrTy), std::string{pluginName} + "Handle");
     pluginHandlePtrs.emplace(pluginName, pluginHandle);
     return pluginHandle;
 }
