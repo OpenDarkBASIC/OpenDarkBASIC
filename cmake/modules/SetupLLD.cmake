@@ -1,7 +1,7 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(LLD_BUILT_STANDALONE TRUE)
 
-find_program(LLVM_CONFIG_PATH "llvm-config" DOC "Path to llvm-config binary")
+find_program(LLVM_CONFIG_PATH NAMES llvm-config llvm-config-${LLVM_VERSION_MAJOR})
 if(NOT LLVM_CONFIG_PATH)
     message(FATAL_ERROR "llvm-config not found: specify LLVM_CONFIG_PATH")
 endif()
@@ -50,8 +50,12 @@ find_program(LLVM_TABLEGEN_EXE "llvm-tblgen" ${LLVM_TOOLS_BINARY_DIR} NO_DEFAULT
 include(AddLLVM)
 include(TableGen)
 include(HandleLLVMOptions)
-include(GetErrcMessages)
-include(CheckAtomic)
+if(${LLVM_VERSION} VERSION_GREATER_EQUAL 13.0.0)
+    include(GetErrcMessages)
+endif ()
+if(${LLVM_VERSION} VERSION_GREATER_EQUAL 11.0.0)
+    include(CheckAtomic)
+endif()
 
 if(LLVM_HAVE_LIBXAR)
     set(XAR_LIB xar)
@@ -60,6 +64,9 @@ endif()
 if(NOT WIN32)
     set(LLVM_LINK_LLVM_DYLIB ${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
 endif()
+
+function(export_executable_symbols_for_plugins target)
+endfunction()
 
 FetchContent_Declare(
     lld
