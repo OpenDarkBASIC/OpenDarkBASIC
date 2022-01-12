@@ -77,7 +77,16 @@ if (WIN32)
     add_definitions(/D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
-add_subdirectory ("thirdparty/googletest")
+include (FetchContent)
+
+# googletest
+FetchContent_Declare (
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/release-1.11.0.tar.gz
+    URL_HASH MD5=e8a8df240b6938bb6384155d4c37d937
+)
+FetchContent_MakeAvailable (googletest)
+
 add_subdirectory ("thirdparty/gperf-3.1")
 add_subdirectory ("odb-sdk")
 add_subdirectory ("odb-compiler")
