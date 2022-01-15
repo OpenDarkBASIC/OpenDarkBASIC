@@ -301,7 +301,6 @@ target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 # LLD
-
 set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${LLVM_CMAKE_DIR}/../lld")
 find_package (LLD REQUIRED)
 
