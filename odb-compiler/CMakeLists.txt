@@ -302,9 +302,10 @@ target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 # LLD
 
-include (SetupLLD)
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${LLVM_CMAKE_DIR}/../lld")
+find_package (LLD REQUIRED)
 
-target_link_libraries (odb-compiler PRIVATE lldCOFF lldELF)
+target_link_libraries (odb-compiler PRIVATE lldCOFF lldELF lldMachO)
 
 ###############################################################################
 # Unit tests
