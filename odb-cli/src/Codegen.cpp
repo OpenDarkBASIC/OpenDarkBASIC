@@ -6,6 +6,7 @@
 #include "odb-compiler/ir/Node.hpp"
 #include "odb-compiler/ir/SemanticChecker.hpp"
 #include "odb-sdk/Log.hpp"
+#include "odb-sdk/FileSystem.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -157,10 +158,24 @@ bool output(const std::vector<std::string>& args)
     {
         assert(outputType_ == odb::ir::OutputType::ObjectFile);
 
+        // Select a linker. By default, we choose the locally embedded LLD linker.
+        std::filesystem::path linker = odb::FileSystem::getPathToSelf().parent_path() / "lld/bin";
+        switch (targetTriple.platform) {
+        case odb::ir::TargetTriple::Platform::Windows:
+            linker /= "lld-link";
+            break;
+        case odb::ir::TargetTriple::Platform::macOS:
+            linker /= "ld64.lld";
+            break;
+        case odb::ir::TargetTriple::Platform::Linux:
+            linker /= "ld.lld";
+            break;
+        }
+
         // Above, we generated an object file and wrote it to `outputName`, even though it is not an executable
         // yet. Here, we invoke the linker, which takes the above object file (written to `outputName`), links it, and
         // overwrites the object file with the actual executable.
-        if (!odb::ir::linkExecutable(getSDKType(), getSDKRootDir(), targetTriple, {outputName}, outputName))
+        if (!odb::ir::linkExecutable(getSDKType(), getSDKRootDir(), linker, targetTriple, {outputName}, outputName))
         {
             odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
             return false;

@@ -279,6 +279,18 @@ FetchContent_MakeAvailable (lief)
 
 target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
+# reproc
+
+set(REPROC++ ON)
+set(REPROC_OBJECT_LIBRARIES ON)
+FetchContent_Declare (
+    reproc
+    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
+)
+FetchContent_MakeAvailable (reproc)
+
+target_link_libraries (odb-compiler PRIVATE reproc++)
+
 # LLVM
 
 find_package (LLVM REQUIRED CONFIG)
@@ -300,11 +312,8 @@ llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen aarch64co
 target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
-# LLD
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} "${LLVM_CMAKE_DIR}/../lld")
-find_package (LLD REQUIRED)
-
-target_link_libraries (odb-compiler PRIVATE lldCOFF lldELF lldMachO)
+# Push LLVM binary dir to parent scope.
+set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
 
 ###############################################################################
 # Unit tests

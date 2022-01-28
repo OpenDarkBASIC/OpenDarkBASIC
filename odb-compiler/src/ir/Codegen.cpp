@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-#include <lld/Common/Driver.h>
+#include <reproc++/run.hpp>
 
 namespace odb::ir {
 bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple, std::ostream& output,
@@ -114,9 +114,12 @@ bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTri
     return true;
 }
 
-bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, TargetTriple targetTriple, std::vector<std::string> inputFilenames,
-                    std::string& outputFilename)
+bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, const std::filesystem::path& linker,
+                    TargetTriple targetTriple, std::vector<std::string> inputFilenames, std::string& outputFilename)
 {
+    std::vector<std::string> args;
+    args.emplace_back(linker.string());
+
     if (targetTriple.platform == TargetTriple::Platform::Windows)
     {
         std::string outFlag = "/out:" + outputFilename;
@@ -127,8 +130,6 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, Ta
             inputFilenames.emplace_back(sdkRootDir / "odb-runtime-dbp-prelude.lib");
         }
 
-        std::vector<const char*> args;
-        args.emplace_back("lld");
         args.emplace_back("/nodefaultlib");
         args.emplace_back("/entry:main");
         args.emplace_back("/subsystem:windows");
@@ -146,32 +147,41 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, Ta
         }
         else
         {
-            Log::codegen(Log::ERROR, "lld does not support linking this architecture for Windows.");
+            Log::codegen(Log::ERROR, "This architecture cannot be linked for Windows.");
             return false;
         }
-        args.emplace_back(outFlag.c_str());
+        args.emplace_back(outFlag);
         for (const auto& inputs : inputFilenames)
         {
-            args.emplace_back(inputs.c_str());
+            args.emplace_back(inputs);
         }
-
-        // Invoke the LLD COFF linker.
-        std::string invocationArgslist;
-        for (std::size_t i = 1; i < args.size(); ++i) {
-            invocationArgslist += args[i];
-            invocationArgslist += " ";
-        }
-        Log::codegen(Log::INFO, "Invoking LLD with arguments: %s", invocationArgslist.c_str());
-
-        // TODO: Implement a LLVM stream that writes to Log::codegen.
-        llvm::raw_os_ostream outputStream{std::cout};
-        llvm::raw_os_ostream errorStream{std::cerr};
-        return lld::coff::link(args, false, outputStream, errorStream);
     }
     else
     {
         // TODO: Implement ELF and Mach-O linking.
         return false;
     }
+
+    std::string linker_args_list = args[0];
+    for (size_t i = 1; i < args.size(); ++i) {
+        linker_args_list += " ";
+        linker_args_list += args[i];
+    }
+    Log::codegen(Log::INFO, "Invoking linker: %s\n", linker_args_list.c_str());
+
+    int status = -1;
+    std::error_code ec;
+
+    reproc::options options;
+    options.redirect.parent = true;
+    options.deadline = reproc::milliseconds(5000);
+    std::tie(status, ec) = reproc::run(args, options);
+
+    if (ec) {
+        Log::codegen(Log::ERROR, "Linker output:\n%s\n", ec.message().c_str());
+        return false;
+    }
+
+    return true;
 }
 } // namespace odb::ir

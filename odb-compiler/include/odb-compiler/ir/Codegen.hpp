@@ -75,6 +75,6 @@ ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdkType, OutputType outputType,
                                          std::ostream& output, const std::string& moduleName, Program& program,
                                          const cmd::CommandIndex& cmdIndex);
 ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
-                                           TargetTriple targetTriple, std::vector<std::string> inputFilenames,
-                                           std::string& outputFilename);
+                                           const std::filesystem::path& linker, TargetTriple targetTriple,
+                                           std::vector<std::string> inputFilenames, std::string& outputFilename);
 } // namespace odb::ir
