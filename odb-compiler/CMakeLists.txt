@@ -255,7 +255,6 @@ set_target_properties (odb-compiler
 # Dependencies.
 ###############################################################################
 include (FetchContent)
-include (ExternalProject)
 
 # LIEF
 
@@ -288,6 +287,9 @@ FetchContent_Declare (
     URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
 )
 FetchContent_MakeAvailable (reproc)
+
+set_property (TARGET reproc PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_link_libraries (odb-compiler PRIVATE reproc++)
 
