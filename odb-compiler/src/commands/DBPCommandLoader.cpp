@@ -84,7 +84,7 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo*
 
         if (tokens.size() < 2)
         {
-            fprintf(stderr, "Invalid string table entry: %s\n", stringTableEntry.c_str());
+            fprintf(stderr, "Invalid string table entry in %s: %s\n", library->getPath(), stringTableEntry.c_str());
             continue;
         }
 
