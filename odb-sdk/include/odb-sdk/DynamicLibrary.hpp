@@ -42,13 +42,6 @@ public:
      */
     const char* getSymbolAt(int idx) const;
 
-    /*!
-     * @brief Returns a copy of all strings in the string table.
-     */
-#if defined(ODBSDK_PLATFORM_WIN32)
-    std::vector<std::string> getStringTable() const;
-#endif
-
 private:
     explicit DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename);
     std::unique_ptr<DynLibPlatformData> data_;

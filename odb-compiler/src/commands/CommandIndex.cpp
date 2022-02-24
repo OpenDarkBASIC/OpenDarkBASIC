@@ -1,5 +1,5 @@
 #include "odb-compiler/commands/CommandIndex.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
+#include "odb-compiler/parsers/PluginInfo.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 
@@ -60,8 +60,9 @@ bool CommandIndex::findConflicts() const
                     typeinfo.push_back(static_cast<char>(arg.type));
                 typeinfo.push_back(')');
 
-                Log::sdk(Log::ERROR, "Command `%s %s` redefined in library `%s`\n", cmd->dbSymbol().c_str(), typeinfo.c_str(), cmd->library()->getFilename());
-                Log::sdk(Log::NOTICE, "Command was first declared in library `%s`\n", overload->library()->getFilename());
+                Log::sdk(Log::ERROR, "Command `%s %s` redefined in library `%s`\n", cmd->dbSymbol().c_str(), typeinfo.c_str(),
+                         cmd->library()->getName());
+                Log::sdk(Log::NOTICE, "Command was first declared in library `%s`\n", overload->library()->getName());
                 return true;
             }
         }
@@ -100,13 +101,13 @@ std::vector<std::string> CommandIndex::commandNamesAsList() const
 }
 
 // ----------------------------------------------------------------------------
-std::vector<DynamicLibrary*> CommandIndex::librariesAsList() const
+std::vector<PluginInfo*> CommandIndex::librariesAsList() const
 {
-    std::unordered_set<DynamicLibrary*> librarySet;
+    std::unordered_set<PluginInfo*> librarySet;
     librarySet.reserve(commands_.size());
     for (const auto& cmd : commands_)
         librarySet.emplace(cmd->library());
-    return std::vector<DynamicLibrary*>(librarySet.begin(), librarySet.end());
+    return std::vector<PluginInfo*>(librarySet.begin(), librarySet.end());
 }
 
 }

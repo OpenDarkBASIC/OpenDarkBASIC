@@ -1,5 +1,6 @@
 #pragma once
 
+#include <filesystem>
 #include <memory>
 #include <ostream>
 
@@ -13,8 +14,7 @@ enum class OutputType
 {
     LLVMIR,
     LLVMBitcode,
-    ObjectFile,
-    Executable
+    ObjectFile
 };
 
 struct TargetTriple
@@ -36,12 +36,14 @@ struct TargetTriple
     Arch arch;
     Platform platform;
 
-    std::string getLLVMTargetTriple() const {
+    std::string getLLVMTargetTriple() const
+    {
         // Examples:
         //   i386-pc-windows-msvc
         //   x86_64-pc-linux-gnu
         std::string target_triple;
-        switch (arch) {
+        switch (arch)
+        {
         case TargetTriple::Arch::i386:
             target_triple += "i386";
             break;
@@ -53,7 +55,8 @@ struct TargetTriple
             break;
         }
         target_triple += "-";
-        switch (platform) {
+        switch (platform)
+        {
         case TargetTriple::Platform::Windows:
             target_triple += "pc-windows-msvc";
             break;
@@ -68,6 +71,10 @@ struct TargetTriple
     }
 };
 
-ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdk_type, OutputType outputType, TargetTriple targetTriple, std::ostream& os, const std::string& moduleName,
-                                         Program& program, const cmd::CommandIndex& cmdIndex);
+ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple,
+                                         std::ostream& output, const std::string& moduleName, Program& program,
+                                         const cmd::CommandIndex& cmdIndex);
+ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
+                                           const std::filesystem::path& linker, TargetTriple targetTriple,
+                                           std::vector<std::string> inputFilenames, std::string& outputFilename);
 } // namespace odb::ir

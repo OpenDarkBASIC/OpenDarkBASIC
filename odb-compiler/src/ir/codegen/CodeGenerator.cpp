@@ -830,7 +830,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     }
 }
 
-bool CodeGenerator::generateModule(const Program& program, std::vector<DynamicLibrary*> pluginsToLoad)
+bool CodeGenerator::generateModule(const Program& program, std::vector<PluginInfo*> pluginsToLoad)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 
@@ -856,13 +856,13 @@ bool CodeGenerator::generateModule(const Program& program, std::vector<DynamicLi
         generateFunctionBody(globalSymbolTable.getFunction(*function), *function, false);
     }
 
-    //#ifndef NDEBUG
-    //    module.print(llvm::errs(), nullptr);
-    //#endif
-
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.
     engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
+
+    // #ifndef NDEBUG
+    //     module.print(llvm::errs(), nullptr);
+    // #endif
 
     // Verify module.
     bool brokenDebugInfo;

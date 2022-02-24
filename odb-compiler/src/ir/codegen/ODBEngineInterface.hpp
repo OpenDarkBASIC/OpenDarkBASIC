@@ -10,6 +10,6 @@ public:
 
     llvm::Function* generateCommandCall(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
-    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<DynamicLibrary*> pluginsToLoad) override;
+    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad) override;
 };
 } // namespace odb::ir

@@ -7,7 +7,7 @@
 #include <optional>
 
 namespace odb {
-class DynamicLibrary;
+class PluginInfo;
 
 namespace cmd {
 
@@ -34,7 +34,7 @@ public:
         std::string description;
     };
 
-    Command(DynamicLibrary* sourceLibrary,
+    Command(PluginInfo* sourceLibrary,
             const std::string& dbSymbol,
             const std::string& cppSymbol,
             Type returnType,
@@ -47,10 +47,10 @@ public:
     const std::vector<Arg>& args() const;
     Type returnType() const;
 
-    DynamicLibrary* library() const;
+    PluginInfo* library() const;
 
 private:
-    Reference<DynamicLibrary> library_;
+    Reference<PluginInfo> library_;
     std::string dbSymbol_;
     std::string cppSymbol_;
     std::string helpFile_;

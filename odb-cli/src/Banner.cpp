@@ -74,7 +74,7 @@ static void printBannerNoEscapeSequences()
 // ----------------------------------------------------------------------------
 bool printBanner(const std::vector<std::string>& args)
 {
-    if (printBanner_ == false)
+    if (!printBanner_)
         return true;
 
     if (odb::Log::info.colorEnabled())

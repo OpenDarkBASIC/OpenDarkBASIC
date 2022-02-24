@@ -213,12 +213,13 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/commands/CommandMatcher.cpp"
     "src/ir/codegen/CodeGenerator.cpp"
     "src/ir/codegen/ODBEngineInterface.cpp"
-    "src/ir/codegen/TGCEngineInterface.cpp"
+    "src/ir/codegen/DBPEngineInterface.cpp"
     "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
     "src/ir/Node.cpp"
     "src/ir/SemanticChecker.cpp"
-    "src/parsers/db/Driver.cpp")
+    "src/parsers/db/Driver.cpp"
+    "src/parsers/PluginInfo.cpp")
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -251,10 +252,50 @@ set_target_properties (odb-compiler
         POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
 
 ###############################################################################
-# LLVM stuff
+# Dependencies.
 ###############################################################################
+include (FetchContent)
 
-find_package(LLVM REQUIRED CONFIG)
+# LIEF
+
+set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
+set (LIEF_C_API OFF CACHE BOOL "" FORCE)
+set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
+set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
+set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
+set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
+set (LIEF_OAT OFF CACHE BOOL "" FORCE)
+set (LIEF_DEX OFF CACHE BOOL "" FORCE)
+set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
+set (LIEF_ART OFF CACHE BOOL "" FORCE)
+FetchContent_Declare (
+    lief
+    URL https://github.com/lief-project/LIEF/archive/b8422047e90e287a76d899c28bea3978f1521b74.tar.gz
+)
+FetchContent_MakeAvailable (lief)
+
+target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
+
+# reproc
+
+set(REPROC++ ON)
+set(REPROC_OBJECT_LIBRARIES ON)
+FetchContent_Declare (
+    reproc
+    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
+)
+FetchContent_MakeAvailable (reproc)
+
+set_property (TARGET reproc PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+target_link_libraries (odb-compiler PRIVATE reproc++)
+
+# LLVM
+
+find_package (LLVM REQUIRED CONFIG)
 
 # This is apparently deprecated since 4 years
 # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
@@ -268,10 +309,13 @@ find_package(LLVM REQUIRED CONFIG)
 if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
     set (llvm_use_shared USE_SHARED)
 endif()
-llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen)
+llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen aarch64codegen)
 
 target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+
+# Push LLVM binary dir to parent scope.
+set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
 
 ###############################################################################
 # Unit tests

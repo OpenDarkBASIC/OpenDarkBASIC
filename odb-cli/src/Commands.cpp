@@ -24,7 +24,7 @@ bool loadCommands(const std::vector<std::string>& args)
             break;
     }
 
-    if (loader->populateIndex(&cmdIndex_) == false)
+    if (!loader->populateIndex(&cmdIndex_))
         return false;
 
     if (cmdIndex_.findConflicts())

@@ -90,7 +90,7 @@ DynamicLibrary* DynamicLibrary::open(const char* filename)
 #elif defined(ODBSDK_PLATFORM_MACOS)
     // TODO
 #elif defined(ODBSDK_PLATFORM_WIN32)
-    data->handle = LoadLibraryExA(filename, nullptr, LOAD_LIBRARY_AS_DATAFILE);
+    data->handle = LoadLibraryA(filename);
     if (!data->handle)
     {
         auto error = GetLastError();
@@ -198,37 +198,5 @@ const char* DynamicLibrary::getSymbolAt(int idx) const
     return nullptr;
 #endif
 }
-
-// ----------------------------------------------------------------------------
-#if defined(ODBSDK_PLATFORM_WIN32)
-std::vector<std::string> DynamicLibrary::getStringTable() const
-{
-    std::vector<std::string> stringTable;
-
-    auto resourceCallback = [](HMODULE hModule, LPCSTR lpType, LPSTR lpName, LONG_PTR lParam) -> BOOL
-    {
-        if (IS_INTRESOURCE(lpName))
-        {
-            auto& stringTable = *reinterpret_cast<std::vector<std::string>*>(lParam);
-
-            // Each string table resource always contain 16 strings.
-            char buffer[4096];
-            std::size_t stringTableOffset = (reinterpret_cast<std::size_t>(lpName) - 1) * 16;
-            for (int i = 1; i <= 16; ++i)
-            {
-                int size = LoadStringA(hModule, stringTableOffset + i, buffer, sizeof(buffer));
-                if (size == 0)
-                {
-                    continue;
-                }
-                stringTable.emplace_back(std::string(buffer, size));
-            }
-        }
-        return TRUE;
-    };
-    EnumResourceNamesA(data_->handle, RT_STRING, resourceCallback, reinterpret_cast<LONG_PTR>(&stringTable));
-    return stringTable;
-}
-#endif
 
 } // namespace odb

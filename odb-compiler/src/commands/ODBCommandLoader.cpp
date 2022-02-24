@@ -1,9 +1,9 @@
 #include "odb-compiler/commands/ODBCommandLoader.hpp"
-#include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/DynamicLibrary.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/parsers/PluginInfo.hpp"
 #include "odb-sdk/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
 #include "odb-sdk/Reference.hpp"
 #include <filesystem>
 #include <unordered_set>
@@ -117,7 +117,7 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 
     for (const auto& path : pluginsToLoad)
     {
-        Reference<DynamicLibrary> lib = DynamicLibrary::open(path.string().c_str());
+        Reference<PluginInfo> lib = PluginInfo::open(path.string());
         if (lib == nullptr)
             continue;
 
@@ -129,23 +129,22 @@ bool ODBCommandLoader::populateIndex(CommandIndex* index)
 }
 
 // ----------------------------------------------------------------------------
-bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibrary* library)
+bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo* library)
 {
-    auto lookupString = [&library](std::string sym) -> std::string {
-        const char** addr = reinterpret_cast<const char**>(
-            library->lookupSymbolAddress(sym.c_str()));
-        return addr ? *addr : "";
+    auto lookupString = [&library](const std::string& sym) -> std::string {
+        return library->lookupStringBySymbol(sym).value_or("");
     };
 
-    for (int i = 0; i != library->getSymbolCount(); ++i)
+    size_t symbolCount = library->getSymbolCount();
+    for (size_t i = 0; i != symbolCount; ++i)
     {
-        std::string cppSymbol = library->getSymbolAt(i);
+        std::string cppSymbol = library->getSymbolNameAt(i);
 
         std::string dbSymbol = lookupString(cppSymbol + "_name");
-        if (dbSymbol == "")
+        if (dbSymbol.empty())
             continue;
         std::string typeinfo = lookupString(cppSymbol + "_typeinfo");
-        if (typeinfo == "")
+        if (typeinfo.empty())
             continue;
         std::string helpfile = lookupString(cppSymbol + "_helpfile");  // optional symbol
 
@@ -153,7 +152,8 @@ bool ODBCommandLoader::populateIndexFromLibrary(CommandIndex* index, DynamicLibr
         std::vector<Command::Arg> args;
         if (!parseTypeinfoString(&retType, &args, typeinfo.c_str()))
         {
-            Log::sdk(Log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(), library->getFilename());
+            Log::sdk(Log::NOTICE, "Error occurred while loading command `%s` from `%s`", dbSymbol.c_str(),
+                     library->getName());
             return false;
         }
 

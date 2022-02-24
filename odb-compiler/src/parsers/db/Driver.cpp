@@ -198,7 +198,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
         // token before being pushed to the parser.
         //
         // If we fail to identify a valid command, then the next step is to
-        // determine if this TOK_SYMBOL is a builting keyword. We do this by
+        // determine if this TOK_SYMBOL is a builtin keyword. We do this by
         // looking up the string associated with each TOK_SYMBOL in a hashtable
         // (generated using gperf). If this succeeds, then we convert the token
         // into a TOK_KEYWORD.

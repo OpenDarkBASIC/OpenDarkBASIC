@@ -1,5 +1,2 @@
-x = 1
-stdout str$(x)
-x = x + 2
-stdout str$(x)
+stdout "Hello World"
 test command
