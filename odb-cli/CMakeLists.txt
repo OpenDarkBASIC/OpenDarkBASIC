@@ -46,27 +46,32 @@ add_custom_command (TARGET odbc
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ODB_RUNTIME_DIR}/lld/bin
     COMMAND ${CMAKE_COMMAND} -E make_directory ${ODB_RUNTIME_DIR}/lld/lib
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${LLVM_BINARY_DIR}/bin/lld
+        ${LLVM_BINARY_DIR}/bin/lld${CMAKE_EXECUTABLE_SUFFIX}
         ${ODB_RUNTIME_DIR}/lld/bin
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${LLVM_BINARY_DIR}/bin/lld-link
+        ${LLVM_BINARY_DIR}/bin/lld-link${CMAKE_EXECUTABLE_SUFFIX}
         ${ODB_RUNTIME_DIR}/lld/bin
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${LLVM_BINARY_DIR}/bin/ld.lld
+        ${LLVM_BINARY_DIR}/bin/ld.lld${CMAKE_EXECUTABLE_SUFFIX}
         ${ODB_RUNTIME_DIR}/lld/bin
     COMMAND ${CMAKE_COMMAND} -E copy
-        ${LLVM_BINARY_DIR}/bin/ld64.lld
+        ${LLVM_BINARY_DIR}/bin/ld64.lld${CMAKE_EXECUTABLE_SUFFIX}
         ${ODB_RUNTIME_DIR}/lld/bin
-    COMMAND ${CMAKE_COMMAND} -E copy
-        ${LLVM_BINARY_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}
-        ${ODB_RUNTIME_DIR}/lld/lib
     BYPRODUCTS
-        ${ODB_RUNTIME_DIR}/lld/bin/lld
-        ${ODB_RUNTIME_DIR}/lld/bin/lld-link
-        ${ODB_RUNTIME_DIR}/lld/bin/ld.lld
-        ${ODB_RUNTIME_DIR}/lld/bin/ld64.lld
-        ${ODB_RUNTIME_DIR}/lld/lib/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}
+        ${ODB_RUNTIME_DIR}/lld/bin/lld${CMAKE_EXECUTABLE_SUFFIX}
+        ${ODB_RUNTIME_DIR}/lld/bin/lld-link${CMAKE_EXECUTABLE_SUFFIX}
+        ${ODB_RUNTIME_DIR}/lld/bin/ld.lld${CMAKE_EXECUTABLE_SUFFIX}
+        ${ODB_RUNTIME_DIR}/lld/bin/ld64.lld${CMAKE_EXECUTABLE_SUFFIX}
 )
+if (NOT MSVC)
+    add_custom_command (TARGET odbc
+        COMMAND ${CMAKE_COMMAND} -E copy
+            ${LLVM_BINARY_DIR}/lib/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}
+            ${ODB_RUNTIME_DIR}/lld/lib
+        BYPRODUCTS
+            ${ODB_RUNTIME_DIR}/lld/lib/${CMAKE_SHARED_LIBRARY_PREFIX}LLVM${CMAKE_SHARED_LIBRARY_SUFFIX}
+    )
+endif ()
 
 ###############################################################################
 # Installation
