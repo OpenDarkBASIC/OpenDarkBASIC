@@ -126,8 +126,8 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, co
 
         if (sdkType == SDKType::DarkBASIC)
         {
-            inputFilenames.emplace_back(sdkRootDir / "odb-runtime-dbp.lib");
-            inputFilenames.emplace_back(sdkRootDir / "odb-runtime-dbp-prelude.lib");
+            inputFilenames.emplace_back((sdkRootDir / std::filesystem::path{"odb-runtime-dbp.lib"}).string());
+            inputFilenames.emplace_back((sdkRootDir / std::filesystem::path{"odb-runtime-dbp-prelude.lib"}).string());
         }
 
         args.emplace_back("/nodefaultlib");

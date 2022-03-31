@@ -119,6 +119,9 @@ endif ()
 if (ODBCOMPILER_BISON_COUNTER_EXAMPLES)
     set (BISON_COMPILE_FLAGS -Wcounterexamples)
 endif ()
+if (MSVC)
+    set (FLEX_COMPILE_FLAGS --wincompat)
+endif ()
 bison_target (DarkBASICParser
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
     "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
@@ -126,7 +129,8 @@ bison_target (DarkBASICParser
     COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
 flex_target (DarkBASICScanner
     "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
-    "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp")
+    "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp"
+    COMPILE_FLAGS ${FLEX_COMPILE_FLAGS})
 add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
 
 if (ODBCOMPILER_VERBOSE_BISON)

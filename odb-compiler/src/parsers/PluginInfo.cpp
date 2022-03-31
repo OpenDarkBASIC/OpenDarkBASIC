@@ -6,6 +6,10 @@
 #include <utility>
 #include <filesystem>
 
+#ifdef _WIN32
+#undef ERROR
+#endif
+
 namespace odb {
 PluginInfo::~PluginInfo() = default;
 

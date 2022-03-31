@@ -5,6 +5,9 @@ project (argdefgen
 find_package (FLEX REQUIRED 2.6)
 find_package (BISON REQUIRED 3.2)
 
+if (MSVC)
+    set (FLEX_COMPILE_FLAGS --wincompat)
+endif ()
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src")
@@ -18,7 +21,8 @@ bison_target (adg_parser
 flex_target (adg_scanner
     "${PROJECT_SOURCE_DIR}/src/scanner.lex"
     "${PROJECT_BINARY_DIR}/src/scanner.lex.c"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/argdefgen/scanner.lex.h")
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/argdefgen/scanner.lex.h"
+    COMPILE_FLAGS ${FLEX_COMPILE_FLAGS})
 add_flex_bison_dependency (adg_scanner adg_parser)
 
 add_subdirectory ("templates")
