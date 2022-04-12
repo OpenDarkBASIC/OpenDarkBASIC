@@ -1,6 +1,7 @@
 #include "ASTConverter.hpp"
 
 #include "odb-compiler/ir/Node.hpp"
+#include "odb-compiler/ir/Error.hpp"
 
 #include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
@@ -42,24 +43,6 @@
 #include <unordered_map>
 
 namespace odb::ir {
-namespace {
-// TODO: Move this elsewhere.
-template <typename... Args>
-[[noreturn]] void fatalError(ast::SourceLocation* location, const char* message, Args&&... args)
-{
-    fprintf(stderr, "%s: FATAL ERROR: ", location->getFileLineColumn().c_str());
-    fprintf(stderr, message, args...);
-    std::terminate();
-}
-
-template <typename... Args> [[noreturn]] void fatalError(const char* message, Args&&... args)
-{
-    fprintf(stderr, "<unknown>: FATAL ERROR: ");
-    fprintf(stderr, message, args...);
-    std::terminate();
-}
-} // namespace
-
 Type ASTConverter::getTypeFromAnnotation(Variable::Annotation annotation)
 {
     switch (annotation)
@@ -389,7 +372,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
         return std::make_unique<FunctionCallExpression>(
             convertFunctionCallExpression(location, funcCall->symbol(), funcCall->args()));
     }
-    fatalError("Unknown expression type");
+    fatalError("Unknown expression type: %s", typeid(*expression).name());
 }
 
 Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* currentLoop)
@@ -574,7 +557,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else
     {
-        fatalError("Unknown statement type.");
+        fatalError("Unknown statement type: %s", typeid(*statement).name());
     }
 }
 
