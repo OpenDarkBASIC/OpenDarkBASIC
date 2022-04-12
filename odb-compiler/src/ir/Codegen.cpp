@@ -22,10 +22,10 @@ bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTri
         switch (sdkType)
         {
         case SDKType::DarkBASIC:
-            engineInterface = std::make_unique<DBPEngineInterface>(module);
+            engineInterface = std::make_unique<DBPEngineInterface>(module, cmdIndex);
             break;
         case SDKType::ODB:
-            engineInterface = std::make_unique<ODBEngineInterface>(module);
+            engineInterface = std::make_unique<ODBEngineInterface>(module, cmdIndex);
             break;
         default:
             Log::info.print("Code generation not implemented for the specified SDK type.");

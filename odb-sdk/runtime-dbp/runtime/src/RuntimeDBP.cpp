@@ -53,7 +53,11 @@ DLLEXPORT void debugPrintf(const char* fmt, ...) {
     va_end(args);
 }
 
-DLLEXPORT int initialiseEngine() {
+DLLEXPORT int initEngine() {
+    /*
+        Based upon CEXEBlock::Init.
+     */
+
     auto core_dll = loadedPlugins["DBProCore.dll"];
 
     // Set up glob struct.
@@ -89,11 +93,10 @@ DLLEXPORT int initialiseEngine() {
     glob_ptr->g_LODTerrain = loadedPlugins["DBProLODTerrainDebug.dll"];
     glob_ptr->g_CSG = loadedPlugins["DBProCSGDebug.dll"];
 
-    // Initialise engine.
+    // Init engine.
     // auto PassCmdLinePtr = (void(*)(void*))GetProcAddress(core_dll, "?PassCmdLineHandlerPtr@@YAXPAX@Z");
     auto PassErrorPtr = (void(*)(void*))GetProcAddress(core_dll, "?PassErrorHandlerPtr@@YAXPAX@Z");
     auto InitDisplay = (DWORD(*)(DWORD, DWORD, DWORD, DWORD, HINSTANCE, char*))GetProcAddress(core_dll, "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z");
-    // auto CloseDisplay = (DWORD(*)())GetProcAddress(core_dll, "?CloseDisplay@@YAKXZ");
     auto PassDLLs = (void(*)())GetProcAddress(core_dll, "?PassDLLs@@YAXXZ");
 
     char cmdlinePtr[] = "command_line";
@@ -124,10 +127,57 @@ DLLEXPORT int initialiseEngine() {
     PassDLLs();
     if (InitDisplay(initialDisplayMode, initialDisplayWidth, initialDisplayHeight,
                     initialDisplayDepth, ::GetModuleHandleA(nullptr), nullptr) != 0) {
-        std::cout << "Failed to initialise display." << std::endl;
+        std::cout << "Failed to init display." << std::endl;
         return 1;
     }
 
     return 0;
+}
+
+DLLEXPORT int closeEngine() {
+    /*
+        From 'DBProCompiler/DBPCompilerEXE/DarkEXE.cpp:855
+
+        // Free Display First
+        CEXE.FreeUptoDisplay();
+
+        // Report any errors
+        if(pErrorString)
+        {
+            // Report Failure to Run
+            ShowCursor(TRUE);
+            SetCursor(LoadCursor(NULL, IDC_ARROW));
+            char pFullError[_MAX_PATH];
+            strcpy ( pFullError, pErrorString );
+
+            // is there any additional error info after EXEPATH string?
+            DWORD dwEXEPathLength = strlen ( g_pGlob->pEXEUnpackDirectory );
+            LPSTR pSecretErrorMessage = g_pGlob->pEXEUnpackDirectory + dwEXEPathLength + 1;
+            if ( strlen ( pSecretErrorMessage ) > 0 && strlen ( pSecretErrorMessage ) < _MAX_PATH )
+            {
+                // addition error info
+                strcat ( pFullError, ".\n" );
+                strcat ( pFullError, pSecretErrorMessage );
+            }
+            //MessageBox(NULL, pFullError, "Error", MB_TOPMOST | MB_OK);
+            char err[512];
+            wsprintf ( err, "GameGuru has detected an unexpected issue and needs to restart your session. If this problem persists, please contact support with error code (%s)", pErrorString );
+            MessageBox(NULL, err, "GameGuru Problem Detected", MB_TOPMOST | MB_OK);
+            SAFE_DELETE(pErrorString);
+        }
+     */
+
+    auto core_dll = loadedPlugins["DBProCore.dll"];
+    auto CloseDisplay = (DWORD(*)())GetProcAddress(core_dll, "?CloseDisplay@@YAKXZ");
+    if (CloseDisplay() != 0) {
+        std::cout << "Failed to close display." << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+DLLEXPORT void exitProcess(int exitCode) {
+    ExitProcess(exitCode);
 }
 }

@@ -7,21 +7,24 @@ namespace odb::ir {
 class DBPEngineInterface : public EngineInterface
 {
 public:
-    explicit DBPEngineInterface(llvm::Module& module);
+    DBPEngineInterface(llvm::Module& module, const cmd::CommandIndex& index);
 
     llvm::Function* generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
+    llvm::Value *generateMainLoopCondition(llvm::IRBuilder<>& builder) override;
     void generateEntryPoint(llvm::Function* plugin, std::vector<PluginInfo*> pluginsToLoad) override;
 
 private:
     llvm::PointerType* voidPtrTy;
     llvm::PointerType* charPtrTy;
-    llvm::PointerType* dwordTy;
+    llvm::IntegerType* dwordTy;
 
     llvm::Function* loadPluginFunc;
     llvm::Function* getFunctionAddressFunc;
     llvm::Function* debugPrintfFunc;
-    llvm::Function* initialiseEngineFunc;
+    llvm::Function* initEngineFunc;
+    llvm::Function* closeEngineFunc;
+    llvm::Function* exitProcessFunc;
 
     std::unordered_map<std::string, llvm::Value*> pluginHandlePtrs;
 
