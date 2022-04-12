@@ -36,22 +36,22 @@ private:
     std::unordered_map<std::string, Label*> labels_;
 
 private:
-    template <typename... T> void semanticWarning(SourceLocation* location, const char* format, T... args)
+    template <typename... T> void semanticWarning(SourceLocation* location, const char* format, T&&... args)
     {
         // TODO: Use a consistent logging library.
         // TODO: Use location properly.
         (void)location;
-        fprintf(stderr, "%s: SEMANTIC WARNING: ", location->getFileLineColumn().c_str());
+        fprintf(stderr, "%s: Semantic Warning: ", location->getFileLineColumn().c_str());
         fprintf(stderr, format, args...);
         fprintf(stderr, "\n");
     }
 
-    template <typename... T> void semanticError(SourceLocation* location, const char* format, T... args)
+    template <typename... T> void semanticError(SourceLocation* location, const char* format, T&&... args)
     {
         // TODO: Use a consistent logging library.
         // TODO: Use location properly.
         (void)location;
-        fprintf(stderr, "%s: SEMANTIC ERROR: ", location->getFileLineColumn().c_str());
+        fprintf(stderr, "%s: Semantic Error: ", location->getFileLineColumn().c_str());
         fprintf(stderr, format, args...);
         fprintf(stderr, "\n");
         errorOccurred_ = true;
