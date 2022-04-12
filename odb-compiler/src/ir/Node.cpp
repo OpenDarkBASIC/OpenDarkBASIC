@@ -1,4 +1,5 @@
 #include "odb-compiler/ir/Node.hpp"
+#include "odb-compiler/ir/Error.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -7,16 +8,6 @@
 #include <utility>
 
 namespace odb::ir {
-namespace {
-// TODO: Move this elsewhere.
-template <typename... Args> [[noreturn]] void fatalError(const char* format, Args&&... args)
-{
-    fprintf(stderr, "FATAL ERROR: ");
-    fprintf(stderr, format, args...);
-    std::terminate();
-}
-} // namespace
-
 bool isIntegralType(BuiltinType type)
 {
     return type == BuiltinType::DoubleInteger || type == BuiltinType::Integer || type == BuiltinType::Dword ||

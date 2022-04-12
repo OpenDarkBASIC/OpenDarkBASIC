@@ -1,5 +1,6 @@
 #include "DBPEngineInterface.hpp"
 #include "odb-compiler/parsers/PluginInfo.hpp"
+#include "odb-compiler/ir/Error.hpp"
 
 #include <filesystem>
 
@@ -92,9 +93,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
 {
     if (pluginsToLoad.empty())
     {
-        // TODO: Fatal error.
-        fprintf(stderr, "FATAL ERROR: No plugins specified.\n");
-        std::terminate();
+        fatalError("No plugins specified.");
     }
 
     // Ensuring that DBProCore is loaded first.
@@ -113,9 +112,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     }
     if (!isCorePlugin(pluginsToLoad[0]))
     {
-        // TODO: Fatal error.
-        fprintf(stderr, "FATAL ERROR: DBProCore.dll is missing.\n");
-        std::terminate();
+        fatalError("DBProCore.dll is missing");
     }
 
     // Remove plugins that we haven't used.

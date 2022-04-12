@@ -1,4 +1,5 @@
 #include "CodeGenerator.hpp"
+#include "odb-compiler/ir/Error.hpp"
 
 namespace odb::ir {
 namespace {
@@ -29,7 +30,7 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type)
     if (type.isUDT())
     {
         // TODO
-        return nullptr;
+        fatalError("getLLVMType for UDTs not implemented yet.");
     }
     else if (type.isBuiltinType())
     {
@@ -530,8 +531,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
     }
     else
     {
-        Log::codegen(Log::Severity::FATAL, "Unimplemented expression type.");
-        return nullptr;
+        fatalError("Codegen: Unhandled expression type: %s", typeid(*e).name());
     }
 }
 
@@ -724,8 +724,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         }
         else
         {
-            Log::codegen(Log::Severity::FATAL, "Unhandled statement.");
-            return nullptr;
+            fatalError("Codegen: Unhandled statement type: %s", typeid(*s).name());
         }
     }
 
@@ -780,7 +779,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     // Gosub stack.
     // TODO: Only generate this if the function contains gosubs.
     symtab.gosubStack = builder.CreateAlloca(gosubStackType, nullptr, "gosubStack");
-    symtab.gosubStackPointer = builder.CreateAlloca(llvm::Type::getInt64Ty(ctx), nullptr, "gosubSP");
+    symtab.gosubStackPointer = builder.CreateAlloca(llvm::Type::getInt64Ty(ctx), nullptr, "gosubStackPointer");
     builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), symtab.gosubStackPointer);
 
     // Variables.
@@ -807,12 +806,13 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
                 initialiser = builder.CreateGlobalStringPtr("");
             }
             else
-            { // FATAL ERROR
+            {
+                fatalError("Unknown variable built in type to initialize");
             }
         }
         else
         {
-            // FATAL ERROR.
+            fatalError("Unknown variable type to initialize");
         }
         builder.CreateStore(initialiser, variableStorage);
 
