@@ -619,15 +619,21 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         {
             // Create blocks.
             llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
+            llvm::BasicBlock* loopBodyBlock = llvm::BasicBlock::Create(ctx, "loopBody", parent);
             llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
             symtab.loopExitBlocks[infiniteLoop] = endBlock;
 
-            // Generate loop body.
-            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBlock, infiniteLoop->statements());
-            endBlock->moveAfter(statementsEndBlock);
-
             // Jump into initial loop entry.
             builder.CreateBr(loopBlock);
+
+            // Evaluate main loop condition.
+            builder.SetInsertPoint(loopBlock);
+            builder.CreateCondBr(engineInterface.generateMainLoopCondition(builder), loopBodyBlock, endBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, infiniteLoop->statements());
+            loopBodyBlock->moveAfter(loopBlock);
+            endBlock->moveAfter(statementsEndBlock);
 
             // Add a branch back to the beginning of the loop.
             builder.SetInsertPoint(statementsEndBlock);

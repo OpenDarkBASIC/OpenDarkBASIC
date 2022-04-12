@@ -5,21 +5,21 @@
 #include <filesystem>
 
 namespace odb::ir {
-DBPEngineInterface::DBPEngineInterface(llvm::Module& module) : EngineInterface(module)
+DBPEngineInterface::DBPEngineInterface(llvm::Module& module, const cmd::CommandIndex& index) : EngineInterface(module, index)
 {
-    dwordTy = llvm::Type::getInt8PtrTy(ctx);
-
     /*
         DBP Runtime Interface:
 
         void* loadPlugin(const char* pluginName);
         void* getFunctionAddress(void* plugin, const char* functionName);
         void debugPrintf(const char* fmt, ...);
-        int initialiseEngine();
+        int initEngine();
+        int closeEngine();
      */
 
     voidPtrTy = llvm::Type::getInt8PtrTy(ctx);
     charPtrTy = llvm::Type::getInt8PtrTy(ctx);
+    dwordTy = llvm::Type::getInt32Ty(ctx);
 
     loadPluginFunc = llvm::Function::Create(llvm::FunctionType::get(voidPtrTy, {charPtrTy}, false),
                                              llvm::Function::ExternalLinkage, "loadPlugin", module);
@@ -33,9 +33,18 @@ DBPEngineInterface::DBPEngineInterface(llvm::Module& module) : EngineInterface(m
                                               llvm::Function::ExternalLinkage, "debugPrintf", module);
     debugPrintfFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 
-    initialiseEngineFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
-                                             llvm::Function::ExternalLinkage, "initialiseEngine", module);
-    initialiseEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    initEngineFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
+                                            llvm::Function::ExternalLinkage, "initEngine", module);
+    initEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+
+    closeEngineFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
+                                             llvm::Function::ExternalLinkage, "closeEngine", module);
+    closeEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+
+    exitProcessFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
+                                             llvm::Function::ExternalLinkage, "exitProcess", module);
+    exitProcessFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+    exitProcessFunc->setDoesNotReturn();
 }
 
 llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
@@ -80,13 +89,32 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
         llvm::Value* dwordStoragePtr = builder.CreateAlloca(dwordTy);
         builder.CreateStore(commandResult, dwordStoragePtr);
         llvm::Value* dwordAsFloatStorage = builder.CreateBitCast(dwordStoragePtr, llvm::Type::getFloatPtrTy(ctx));
-        builder.CreateRet(builder.CreateLoad(dwordAsFloatStorage));
+        builder.CreateRet(builder.CreateLoad(llvm::Type::getFloatTy(ctx), dwordAsFloatStorage));
     }
     else
     {
         builder.CreateRet(commandResult);
     }
     return function;
+}
+
+llvm::Value *DBPEngineInterface::generateMainLoopCondition(llvm::IRBuilder<>& builder) {
+    // Get DBProCore library.
+    const PluginInfo* dbproCore = nullptr;
+    for (const PluginInfo* plugin : index.librariesAsList()) {
+        if (strcmp(plugin->getName(), "DBProCore") == 0) {
+            dbproCore = plugin;
+            break;
+        }
+    }
+    if (!dbproCore) {
+        fatalError("DBProCore.dll missing.");
+    }
+
+    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {}, false);
+    // If ProcessMessages returns 1, we exit the loop.
+    auto processMessages = getPluginFunction(builder, functionTy, dbproCore, "?ProcessMessages@@YAKXZ", "ProcessMessagesSymbol");
+    return builder.CreateICmpNE(builder.CreateCall(processMessages, {}), llvm::ConstantInt::get(dwordTy, 1));
 }
 
 void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad)
@@ -135,9 +163,10 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     {
         pluginLoadingBlocks.emplace_back(llvm::BasicBlock::Create(ctx, "load" + std::string{plugin->getName()}, entryPointFunc));
     }
-    llvm::BasicBlock* initialiseEngineBlock = llvm::BasicBlock::Create(ctx, "initialiseEngine", entryPointFunc);
-    llvm::BasicBlock* failedToInitialiseEngineBlock = llvm::BasicBlock::Create(ctx, "failedToInitialiseEngine", entryPointFunc);
+    llvm::BasicBlock* initEngineBlock = llvm::BasicBlock::Create(ctx, "initEngine", entryPointFunc);
     llvm::BasicBlock* launchGameBlock = llvm::BasicBlock::Create(ctx, "launchGame", entryPointFunc);
+    llvm::BasicBlock* returnSuccessBlock = llvm::BasicBlock::Create(ctx, "returnSuccess", entryPointFunc);
+    llvm::BasicBlock* returnFailureBlock = llvm::BasicBlock::Create(ctx, "returnFailure", entryPointFunc);
     
     // Load plugins.
     for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
@@ -156,24 +185,33 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         builder.CreateStore(libraryHandle, getOrAddPluginHandleVar(plugin));
 
         // Check if loaded successfully.
-        auto* nextBlock = i == (pluginsToLoad.size() - 1) ? initialiseEngineBlock : pluginLoadingBlocks[i + 1];
+        auto* nextBlock = i == (pluginsToLoad.size() - 1) ? initEngineBlock : pluginLoadingBlocks[i + 1];
         builder.CreateCondBr(builder.CreateICmpNE(libraryHandle, llvm::ConstantPointerNull::get(voidPtrTy)),
-                             nextBlock, failedToInitialiseEngineBlock);
+                             nextBlock, returnFailureBlock);
     }
 
-    // Initialise engine.
-    builder.SetInsertPoint(initialiseEngineBlock);
-    auto* initialiseEngineResult = builder.CreateCall(initialiseEngineFunc, {});
-    builder.CreateCondBr(builder.CreateICmpEQ(initialiseEngineResult, llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0)), launchGameBlock, failedToInitialiseEngineBlock);
+    // Init engine.
+    builder.SetInsertPoint(initEngineBlock);
+    auto* initEngineResult = builder.CreateCall(initEngineFunc, {});
+    builder.CreateCondBr(builder.CreateICmpEQ(initEngineResult, llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0)), launchGameBlock, returnFailureBlock);
 
-    // Failure.
-    builder.SetInsertPoint(failedToInitialiseEngineBlock);
-    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 1));
-
-    // Launch application and exit.
+    // Launch application.
     builder.SetInsertPoint(launchGameBlock);
     builder.CreateCall(gameEntryPoint, {});
-    builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
+
+    // Clean up.
+    auto* closeEngineResult = builder.CreateCall(closeEngineFunc, {});
+    builder.CreateCondBr(builder.CreateICmpEQ(closeEngineResult, llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0)), returnSuccessBlock, returnFailureBlock);
+
+    // Success.
+    builder.SetInsertPoint(returnSuccessBlock);
+    builder.CreateCall(exitProcessFunc, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0)});
+    builder.CreateUnreachable();
+
+    // Failure.
+    builder.SetInsertPoint(returnFailureBlock);
+    builder.CreateCall(exitProcessFunc, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 1)});
+    builder.CreateUnreachable();
 }
 
 llvm::Value* DBPEngineInterface::getOrAddPluginHandleVar(const PluginInfo* plugin)
