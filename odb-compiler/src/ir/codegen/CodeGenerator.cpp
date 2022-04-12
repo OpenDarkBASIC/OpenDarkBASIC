@@ -105,9 +105,9 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     // Get return type.
     llvm::Type* returnTy = getLLVMType(module.getContext(), command->returnType());
 
-    // Generate command call.
+    // Generate command function.
     llvm::FunctionType* functionTy = llvm::FunctionType::get(returnTy, argTypes, false);
-    llvm::Function* function = engineInterface.generateCommandCall(*command, "DBCommand" + commandName, functionTy);
+    llvm::Function* function = engineInterface.generateCommandFunction(*command, "DBCommand" + commandName, functionTy);
     commandThunks.emplace(command->cppSymbol(), function);
     return function;
 }

@@ -38,7 +38,7 @@ DBPEngineInterface::DBPEngineInterface(llvm::Module& module) : EngineInterface(m
     initialiseEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 }
 
-llvm::Function* DBPEngineInterface::generateCommandCall(const cmd::Command& command, const std::string& functionName,
+llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                                         llvm::FunctionType* functionType)
 {
     llvm::Function* function =
