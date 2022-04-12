@@ -8,7 +8,7 @@ class ODBEngineInterface : public EngineInterface
 public:
     explicit ODBEngineInterface(llvm::Module& module);
 
-    llvm::Function* generateCommandCall(const cmd::Command& command, const std::string& functionName,
+    llvm::Function* generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
     void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad) override;
 };

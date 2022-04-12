@@ -9,7 +9,7 @@ ODBEngineInterface::ODBEngineInterface(llvm::Module& module) : EngineInterface(m
 {
 }
 
-llvm::Function* ODBEngineInterface::generateCommandCall(const cmd::Command& command, const std::string& functionName,
+llvm::Function* ODBEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                                         llvm::FunctionType* functionType)
 {
     return llvm::Function::Create(functionType, llvm::Function::ExternalLinkage, functionName, module);

@@ -9,7 +9,7 @@ class DBPEngineInterface : public EngineInterface
 public:
     explicit DBPEngineInterface(llvm::Module& module);
 
-    llvm::Function* generateCommandCall(const cmd::Command& command, const std::string& functionName,
+    llvm::Function* generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                         llvm::FunctionType* functionType) override;
     void generateEntryPoint(llvm::Function* plugin, std::vector<PluginInfo*> pluginsToLoad) override;
 
