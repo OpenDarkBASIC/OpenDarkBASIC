@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/Type.hpp"
+#include "odb-compiler/ast/UDTRef.hpp"
 
 namespace odb::ast
 {
@@ -35,7 +36,7 @@ Type Type::getBuiltin(BuiltinType builtin) {
     return Type(builtin);
 }
 
-Type Type::getUDT(UDTDecl* udt) {
+Type Type::getUDT(UDTRef* udt) {
     return Type(UDTType{udt});
 }
 
@@ -128,9 +129,9 @@ size_t Type::size() const
     }
 }
 
-std::optional<UDTDecl*> Type::getUDT() const
+std::optional<UDTRef*> Type::getUDT() const
 {
-    return isUDT() ? std::optional<UDTDecl*>{std::get_if<UDTType>(&variant_)->udt} : std::nullopt;
+    return isUDT() ? std::optional<UDTRef*>{std::get_if<UDTType>(&variant_)->udt} : std::nullopt;
 }
 
 std::optional<BuiltinType> Type::getBuiltinType() const

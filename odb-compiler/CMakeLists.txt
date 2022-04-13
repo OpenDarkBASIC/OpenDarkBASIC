@@ -345,6 +345,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/matchers/SymbolEq.cpp"
         "tests/src/matchers/UDTRefEq.cpp"
         "tests/src/matchers/UnaryOpEq.cpp"
+        "tests/src/matchers/VarDeclEq.cpp"
         "tests/src/parser/test_db_parser_array_decl.cpp"
         "tests/src/parser/test_db_parser_arrays.cpp"
         "tests/src/parser/test_db_parser_assignment.cpp"

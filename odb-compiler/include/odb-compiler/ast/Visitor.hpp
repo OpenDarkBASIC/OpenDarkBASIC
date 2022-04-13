@@ -37,6 +37,7 @@ class Select;
 class SubCall;
 class SubReturn;
 class Symbol;
+class VarDecl;
 class UDTArrayDecl;
 class UDTDecl;
 class UDTDeclBody;
@@ -44,7 +45,6 @@ class UDTRef;
 class UDTFieldOuter;
 class UDTFieldInner;
 class UDTFieldAssignment;
-class UDTVarDecl;
 class UnaryOp;
 class UntilLoop;
 class VarAssignment;
@@ -53,7 +53,6 @@ class WhileLoop;
 
 #define X(dbname, cppname) \
     class dbname##Literal; \
-    class dbname##VarDecl; \
     class dbname##ArrayDecl;
 ODB_DATATYPE_LIST
 #undef X
@@ -93,6 +92,7 @@ public:
     virtual void visitSubCall(SubCall* node) = 0;
     virtual void visitSubReturn(SubReturn* node) = 0;
     virtual void visitSymbol(Symbol* node) = 0;
+    virtual void visitVarDecl(VarDecl* node) = 0;
     virtual void visitUDTArrayDecl(UDTArrayDecl* node) = 0;
     virtual void visitUDTDecl(UDTDecl* node) = 0;
     virtual void visitUDTDeclBody(UDTDeclBody* node) = 0;
@@ -100,7 +100,6 @@ public:
     virtual void visitUDTFieldOuter(UDTFieldOuter* node) = 0;
     virtual void visitUDTFieldInner(UDTFieldInner* node) = 0;
     virtual void visitUDTRef(UDTRef* node) = 0;
-    virtual void visitUDTVarDecl(UDTVarDecl* node) = 0;
     virtual void visitUnaryOp(UnaryOp* node) = 0;
     virtual void visitUntilLoop(UntilLoop* node) = 0;
     virtual void visitVarAssignment(VarAssignment* node) = 0;
@@ -109,7 +108,6 @@ public:
 
 #define X(dbname, cppname) \
     virtual void visit##dbname##Literal(dbname##Literal* node) = 0; \
-    virtual void visit##dbname##VarDecl(dbname##VarDecl* node) = 0; \
     virtual void visit##dbname##ArrayDecl(dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
@@ -150,6 +148,7 @@ public:
     virtual void visitSubCall(const SubCall* node) = 0;
     virtual void visitSubReturn(const SubReturn* node) = 0;
     virtual void visitSymbol(const Symbol* node) = 0;
+    virtual void visitVarDecl(const VarDecl* node) = 0;
     virtual void visitUDTArrayDecl(const UDTArrayDecl* node) = 0;
     virtual void visitUDTDecl(const UDTDecl* node) = 0;
     virtual void visitUDTDeclBody(const UDTDeclBody* node) = 0;
@@ -157,7 +156,6 @@ public:
     virtual void visitUDTFieldOuter(const UDTFieldOuter* node) = 0;
     virtual void visitUDTFieldInner(const UDTFieldInner* node) = 0;
     virtual void visitUDTRef(const UDTRef* node) = 0;
-    virtual void visitUDTVarDecl(const UDTVarDecl* node) = 0;
     virtual void visitUnaryOp(const UnaryOp* node) = 0;
     virtual void visitUntilLoop(const UntilLoop* node) = 0;
     virtual void visitVarAssignment(const VarAssignment* node) = 0;
@@ -166,7 +164,6 @@ public:
 
 #define X(dbname, cppname) \
     virtual void visit##dbname##Literal(const dbname##Literal* node) = 0; \
-    virtual void visit##dbname##VarDecl(const dbname##VarDecl* node) = 0; \
     virtual void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) = 0;
     ODB_DATATYPE_LIST
 #undef X
@@ -205,6 +202,7 @@ public:
     void visitSubCall(SubCall* node) override;
     void visitSubReturn(SubReturn* node) override;
     void visitSymbol(Symbol* node) override;
+    void visitVarDecl(VarDecl* node) override;
     void visitUDTArrayDecl(UDTArrayDecl* node) override;
     void visitUDTDecl(UDTDecl* node) override;
     void visitUDTDeclBody(UDTDeclBody* node) override;
@@ -212,7 +210,6 @@ public:
     void visitUDTFieldOuter(UDTFieldOuter* node) override;
     void visitUDTFieldInner(UDTFieldInner* node) override;
     void visitUDTRef(UDTRef* node) override;
-    void visitUDTVarDecl(UDTVarDecl* node) override;
     void visitUnaryOp(UnaryOp* node) override;
     void visitUntilLoop(UntilLoop* node) override;
     void visitVarAssignment(VarAssignment* node) override;
@@ -221,7 +218,6 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(dbname##VarDecl* node) override; \
     void visit##dbname##ArrayDecl(dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X
@@ -262,6 +258,7 @@ public:
     void visitSubCall(const SubCall* node) override;
     void visitSubReturn(const SubReturn* node) override;
     void visitSymbol(const Symbol* node) override;
+    void visitVarDecl(const VarDecl* node) override;
     void visitUDTArrayDecl(const UDTArrayDecl* node) override;
     void visitUDTDecl(const UDTDecl* node) override;
     void visitUDTDeclBody(const UDTDeclBody* node) override;
@@ -269,7 +266,6 @@ public:
     void visitUDTFieldInner(const UDTFieldInner* node) override;
     void visitUDTFieldAssignment(const UDTFieldAssignment* node) override;
     void visitUDTRef(const UDTRef* node) override;
-    void visitUDTVarDecl(const UDTVarDecl* node) override;
     void visitUnaryOp(const UnaryOp* node) override;
     void visitUntilLoop(const UntilLoop* node) override;
     void visitVarAssignment(const VarAssignment* node) override;
@@ -278,7 +274,6 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(const dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(const dbname##VarDecl* node) override; \
     void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X

@@ -7,6 +7,7 @@
 #include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/VarDeclEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -78,21 +79,21 @@ public:
 #define vec3_initial_value             {0, 0, 0}
 #define vec4_initial_value             {0, 0, 0, 0}
 
-// Type decl visitors
-#define complex_decl_visitor visitComplexVarDecl
-#define mat2x2_decl_visitor visitMat2x2VarDecl
-#define mat2x3_decl_visitor visitMat2x3VarDecl
-#define mat2x4_decl_visitor visitMat2x4VarDecl
-#define mat3x2_decl_visitor visitMat3x2VarDecl
-#define mat3x3_decl_visitor visitMat3x3VarDecl
-#define mat3x4_decl_visitor visitMat3x4VarDecl
-#define mat4x2_decl_visitor visitMat4x2VarDecl
-#define mat4x3_decl_visitor visitMat4x3VarDecl
-#define mat4x4_decl_visitor visitMat4x4VarDecl
-#define quat_decl_visitor visitQuatVarDecl
-#define vec2_decl_visitor visitVec2VarDecl
-#define vec3_decl_visitor visitVec3VarDecl
-#define vec4_decl_visitor visitVec4VarDecl
+// Type names
+#define complex_type Complex
+#define mat2x2_type Mat2x2
+#define mat2x3_type Mat2x3
+#define mat2x4_type Mat2x4
+#define mat3x2_type Mat3x2
+#define mat3x3_type Mat3x3
+#define mat3x4_type Mat3x4
+#define mat4x2_type Mat4x2
+#define mat4x3_type Mat4x3
+#define mat4x4_type Mat4x4
+#define quat_type Quat
+#define vec2_type Vec2
+#define vec3_type Vec3
+#define vec4_type Vec4
 
 // type literal visitor
 #define complex_literal_visitor visitComplexLiteral
@@ -181,7 +182,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
@@ -255,7 +256,7 @@ TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Complex))).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
@@ -276,7 +277,7 @@ TEST_F(NAME, var_as_complex_with_complex_initializer_list)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitComplexVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Complex))).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(2))).After(exp);
@@ -296,7 +297,7 @@ TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitQuatVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Quat))).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
@@ -321,7 +322,7 @@ TEST_F(NAME, var_as_quat_with_quat_initializer_list)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
-    exp = EXPECT_CALL(v, visitQuatVarDecl(_)).After(exp);
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Quat))).After(exp);
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(
         ScopedAnnotatedSymbolEq(Scope::LOCAL, Ann::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(4))).After(exp);

@@ -182,6 +182,19 @@ void ASTParentConsistenciesChecker::visitSubCall(const SubCall* node)
 }
 void ASTParentConsistenciesChecker::visitSubReturn(const SubReturn* node) {}
 void ASTParentConsistenciesChecker::visitSymbol(const Symbol* node) {}
+void ASTParentConsistenciesChecker::visitVarDecl(const VarDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    if (node->type().isUDT())
+    {
+        EXPECT_THAT(node, Eq((*node->type().getUDT())->parent()));
+    }
+    if (node->type().isBuiltinType())
+    {
+        ASSERT_THAT(node->initializer(), NotNull());
+        EXPECT_THAT(node, Eq(node->initializer()->parent()));
+    }
+}
 void ASTParentConsistenciesChecker::visitUDTArrayDecl(const UDTArrayDecl* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
@@ -216,13 +229,6 @@ void ASTParentConsistenciesChecker::visitUDTFieldInner(const UDTFieldInner* node
     EXPECT_THAT(node, Eq(node->right()->parent()));
 }
 void ASTParentConsistenciesChecker::visitUDTRef(const UDTRef* node) {}
-void ASTParentConsistenciesChecker::visitUDTVarDecl(const UDTVarDecl* node)
-{
-    EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    EXPECT_THAT(node, Eq(node->udt()->parent()));
-    if (node->initializer().notNull())
-        EXPECT_THAT(node, Eq(node->initializer()->parent()));
-}
 void ASTParentConsistenciesChecker::visitUnaryOp(const UnaryOp* node)
 {
     EXPECT_THAT(node, Eq(node->expr()->parent()));
@@ -251,12 +257,6 @@ void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
 
 #define X(dbname, cppname) \
     void ASTParentConsistenciesChecker::visit##dbname##Literal(const dbname##Literal* node) {} \
-    void ASTParentConsistenciesChecker::visit##dbname##VarDecl(const dbname##VarDecl* node) \
-    {                                                                         \
-        EXPECT_THAT(node, Eq(node->symbol()->parent()));                      \
-        ASSERT_THAT(node->initializer(), NotNull());                          \
-        EXPECT_THAT(node, Eq(node->initializer()->parent()));                 \
-    }                                                                         \
     void ASTParentConsistenciesChecker::visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) \
     {                                                                         \
         EXPECT_THAT(node, Eq(node->symbol()->parent()));                      \
