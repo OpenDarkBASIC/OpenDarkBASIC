@@ -58,6 +58,11 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type)
             std::terminate();
         }
     }
+    else if (type.isArray())
+    {
+        // Arrays are i8*
+        return llvm::IntegerType::getInt8PtrTy(ctx);
+    }
     else
     {
         // Type is void.
