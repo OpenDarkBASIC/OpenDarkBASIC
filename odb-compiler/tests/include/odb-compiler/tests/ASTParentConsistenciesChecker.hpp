@@ -35,6 +35,7 @@ public:
     void visitSubCall(const odb::ast::SubCall* node) override;
     void visitSubReturn(const odb::ast::SubReturn* node) override;
     void visitSymbol(const odb::ast::Symbol* node) override;
+    void visitVarDecl(const odb::ast::VarDecl* node) override;
     void visitUDTArrayDecl(const odb::ast::UDTArrayDecl* node) override;
     void visitUDTDecl(const odb::ast::UDTDecl* node) override;
     void visitUDTDeclBody(const odb::ast::UDTDeclBody* node) override;
@@ -42,7 +43,6 @@ public:
     void visitUDTFieldOuter(const odb::ast::UDTFieldOuter* node) override;
     void visitUDTFieldInner(const odb::ast::UDTFieldInner* node) override;
     void visitUDTRef(const odb::ast::UDTRef* node) override;
-    void visitUDTVarDecl(const odb::ast::UDTVarDecl* node) override;
     void visitUnaryOp(const odb::ast::UnaryOp* node) override;
     void visitUntilLoop(const odb::ast::UntilLoop* node) override;
     void visitVarAssignment(const odb::ast::VarAssignment* node) override;
@@ -51,7 +51,6 @@ public:
 
 #define X(dbname, cppname) \
     void visit##dbname##Literal(const odb::ast::dbname##Literal* node) override; \
-    void visit##dbname##VarDecl(const odb::ast::dbname##VarDecl* node) override; \
     void visit##dbname##ArrayDecl(const odb::ast::dbname##ArrayDecl* node) override;
     ODB_DATATYPE_LIST
 #undef X

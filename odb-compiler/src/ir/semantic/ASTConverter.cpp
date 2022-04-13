@@ -392,16 +392,8 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         //           element in the list. Should probably throw an error if there
         //           are more (or fewer) values than expected for the particular
         //           type.
-        Type varType = Type::getVoid();
-        ast::Expression* initialValue = nullptr;
-#define X(dbname, cppname)                                                    \
-    if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))   \
-    {                                                                         \
-        varType = Type::getBuiltin(BuiltinType::dbname);                      \
-        initialValue = dbname##Ref->initializer()->expressions()[0];          \
-    }
-        ODB_DATATYPE_LIST
-#undef X
+        Type varType = varDeclSt->type();
+        ast::Expression* initialValue = varDeclSt->initializer()->expressions()[0];
         // TODO: Implement UDTs.
         // TheComet: UDTVarDecl::initializer() may be nullptr for UDT declarations
         //           specifically. In all other cases it should not be null.

@@ -7,29 +7,65 @@
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
-
-// ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, InitializerList* initializer, SourceLocation* location) :
-    Statement(location),
-    symbol_(symbol),
-    initializer_(initializer)
+namespace {
+InitializerList* defaultInitializer(const Type& type, SourceLocation* location)
 {
-    symbol->setParent(this);
-    initializer->setParent(this);
+    Expression* defaultLiteral = nullptr;
+    if (type.isBuiltinType()) {
+        switch (*type.getBuiltinType())
+        {
+#define X(dbname, cppname)                                             \
+        case BuiltinType::dbname:                                      \
+            defaultLiteral = new dbname##Literal(cppname(), location); \
+            break;
+            ODB_DATATYPE_LIST
+#undef X
+            default:
+                return nullptr;
+        }
+        return new InitializerList(defaultLiteral, location);
+    }
+    else
+    {
+        return nullptr;
+    }
+}
 }
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, SourceLocation* location) :
+VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, Type type, InitializerList* initializer, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol)
+    symbol_(symbol),
+    type_(std::move(type)),
+    initializer_(initializer)
 {
     symbol->setParent(this);
+    if (type_.isUDT())
+    {
+        (*type_.getUDT())->setParent(this);
+    }
+    if (initializer)
+    {
+        initializer->setParent(this);
+    }
+}
+
+// ----------------------------------------------------------------------------
+VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, Type type, SourceLocation* location) :
+    VarDecl(symbol, std::move(type), defaultInitializer(type, location), location)
+{
 }
 
 // ----------------------------------------------------------------------------
 ScopedAnnotatedSymbol* VarDecl::symbol() const
 {
     return symbol_;
+}
+
+// ----------------------------------------------------------------------------
+Type VarDecl::type() const
+{
+    return type_;
 }
 
 // ----------------------------------------------------------------------------
@@ -45,140 +81,64 @@ void VarDecl::setInitializer(InitializerList* initializer)
     initializer->setParent(this);
 }
 
-// ============================================================================
-// ============================================================================
+// ----------------------------------------------------------------------------
+std::string VarDecl::toString() const
+{
+    return "VarDecl";
+}
 
 // ----------------------------------------------------------------------------
-#define X(dbname, cppname)                                                    \
-    dbname##VarDecl::dbname##VarDecl(ScopedAnnotatedSymbol* symbol,           \
-                                     InitializerList* initial,                \
-                                     SourceLocation* location)                \
-        : VarDecl(symbol, initial, location)                                  \
-    {                                                                         \
-    }                                                                         \
-                                                                              \
-    dbname##VarDecl::dbname##VarDecl(ScopedAnnotatedSymbol* symbol,           \
-                                     SourceLocation* location)                \
-        : VarDecl(symbol,                                                     \
-            new InitializerList(                                              \
-                new dbname##Literal(cppname(), location),                     \
-                location),                                                    \
-            location)                                                         \
-    {                                                                         \
-    }                                                                         \
-                                                                              \
-    std::string dbname##VarDecl::toString() const                             \
-    {                                                                         \
-        return #dbname;                                                       \
-    }                                                                         \
-                                                                              \
-    void dbname##VarDecl::accept(Visitor* visitor)                            \
-    {                                                                         \
-        visitor->visit##dbname##VarDecl(this);                                \
-        symbol_->accept(visitor);                                             \
-        initializer_->accept(visitor);                                        \
-    }                                                                         \
-                                                                              \
-    void dbname##VarDecl::accept(ConstVisitor* visitor) const                 \
-    {                                                                         \
-        visitor->visit##dbname##VarDecl(this);                                \
-        symbol_->accept(visitor);                                             \
-        initializer_->accept(visitor);                                        \
-    }                                                                         \
-                                                                              \
-    void dbname##VarDecl::swapChild(const Node* oldNode, Node* newNode)       \
-    {                                                                         \
-        if (symbol_ == oldNode)                                               \
-            symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);          \
-        else if (initializer_ == oldNode)                                     \
-            initializer_ = dynamic_cast<InitializerList*>(newNode);           \
-        else                                                                  \
-            assert(false);                                                    \
-                                                                              \
-        newNode->setParent(this);                                             \
-    }                                                                         \
-                                                                              \
-    Node* dbname##VarDecl::duplicateImpl() const                              \
-    {                                                                         \
-        return new dbname##VarDecl(                                           \
-            symbol_->duplicate<ScopedAnnotatedSymbol>(),                      \
-            initializer_->duplicate<InitializerList>(),                       \
-            location());                                                      \
+void VarDecl::accept(Visitor* visitor)
+{
+    visitor->visitVarDecl(this);
+    symbol_->accept(visitor);
+    if (type_.isUDT())
+    {
+        (*type_.getUDT())->accept(visitor);
     }
-ODB_DATATYPE_LIST
-#undef X
-
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, InitializerList* initializer, SourceLocation* location)
-    : VarDecl(symbol, initializer, location)
-    , udt_(udt)
-{
-    udt->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-UDTVarDecl::UDTVarDecl(ScopedAnnotatedSymbol* symbol, UDTRef* udt, SourceLocation* location)
-    : VarDecl(symbol, location)
-    , udt_(udt)
-{
-    udt->setParent(this);
-}
-
-// ----------------------------------------------------------------------------
-UDTRef* UDTVarDecl::udt() const
-{
-    return udt_;
-}
-
-// ----------------------------------------------------------------------------
-std::string UDTVarDecl::toString() const
-{
-    return "UDTVarDecl";
-}
-
-// ----------------------------------------------------------------------------
-void UDTVarDecl::accept(Visitor* visitor)
-{
-    visitor->visitUDTVarDecl(this);
-    symbol_->accept(visitor);
-    udt_->accept(visitor);
-    if (initializer_.notNull())
+    if (initializer_)
+    {
         initializer_->accept(visitor);
+    }
 }
 
 // ----------------------------------------------------------------------------
-void UDTVarDecl::accept(ConstVisitor* visitor) const
+void VarDecl::accept(ConstVisitor* visitor) const
 {
-    visitor->visitUDTVarDecl(this);
+    visitor->visitVarDecl(this);
     symbol_->accept(visitor);
-    udt_->accept(visitor);
-    if (initializer_.notNull())
+    if (type_.isUDT())
+    {
+        (*type_.getUDT())->accept(visitor);
+    }
+    if (initializer_)
+    {
         initializer_->accept(visitor);
+    }
 }
 
 // ----------------------------------------------------------------------------
-void UDTVarDecl::swapChild(const Node* oldNode, Node* newNode)
+void VarDecl::swapChild(const Node* oldNode, Node* newNode)
 {
     if (symbol_ == oldNode)
         symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
-    else if (udt_ == oldNode)
-        udt_ = dynamic_cast<UDTRef*>(newNode);
-    if (initializer_ == oldNode)
+    else if (type_.isUDT() && *type_.getUDT() == oldNode)
+        type_ = Type::getUDT(dynamic_cast<UDTRef*>(newNode));
+    else if (initializer_ == oldNode)
         initializer_ = dynamic_cast<InitializerList*>(newNode);
     else
         assert(false);
+
+    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
-Node* UDTVarDecl::duplicateImpl() const
+Node* VarDecl::duplicateImpl() const
 {
-    return new UDTVarDecl(
+    return new VarDecl(
         symbol_->duplicate<ScopedAnnotatedSymbol>(),
-        udt_->duplicate<UDTRef>(),
-        initializer_.notNull() ? initializer_->duplicate<InitializerList>() : nullptr,
+        type_.isUDT() ? Type::getUDT((*type_.getUDT())->duplicate<UDTRef>()) : type_,
+        initializer_->duplicate<InitializerList>(),
         location());
 }
 

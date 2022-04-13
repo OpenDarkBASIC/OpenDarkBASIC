@@ -4,6 +4,7 @@
 #include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/VarDeclEq.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
 
@@ -93,16 +94,16 @@ public:
 #define vec3_initial_value             {0, 0, 0}
 #define vec4_initial_value             {0, 0, 0, 0}
 
-// Type decl visitors
-#define double_integer_decl_visitor visitDoubleIntegerVarDecl
-#define integer_decl_visitor visitIntegerVarDecl
-#define dword_decl_visitor visitDwordVarDecl
-#define word_decl_visitor visitWordVarDecl
-#define byte_decl_visitor visitByteVarDecl
-#define boolean_decl_visitor visitBooleanVarDecl
-#define double_float_decl_visitor visitDoubleFloatVarDecl
-#define float_decl_visitor visitFloatVarDecl
-#define string_decl_visitor visitStringVarDecl
+// Type names
+#define double_integer_type DoubleInteger
+#define integer_type Integer
+#define dword_type Dword
+#define word_type Word
+#define byte_type Byte
+#define boolean_type Boolean
+#define double_float_type DoubleFloat
+#define float_type Float
+#define string_type String
 
 // type literal visitor
 #define double_integer_literal_visitor visitDoubleIntegerLiteral
@@ -151,7 +152,7 @@ TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
@@ -194,7 +195,7 @@ TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
@@ -269,7 +270,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
@@ -355,7 +356,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, as_type##_decl_visitor(_)).After(exp);               \
+    exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\

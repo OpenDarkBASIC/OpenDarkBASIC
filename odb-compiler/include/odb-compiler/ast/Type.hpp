@@ -5,7 +5,7 @@
 #include <optional>
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-sdk/Reference.hpp"
 
 /*!
  * @brief All of the DarkBASIC primitive types that can exist and what types
@@ -37,6 +37,8 @@
     X(Vec4,          odb::ast::Vec4<float>)
 
 namespace odb::ast {
+
+class UDTRef;
 
 // An enum of builtin datatypes i.e. not user defined types.
 enum class BuiltinType
@@ -84,7 +86,7 @@ class ODBCOMPILER_PUBLIC_API Type
 public:
     static Type getVoid();
     static Type getBuiltin(BuiltinType builtin);
-    static Type getUDT(UDTDecl* udt);
+    static Type getUDT(UDTRef* udt);
     static Type getArray(Type inner);
 
     bool isVoid() const;
@@ -94,7 +96,7 @@ public:
 
     size_t size() const;
 
-    std::optional<UDTDecl*> getUDT() const;
+    std::optional<UDTRef*> getUDT() const;
     std::optional<BuiltinType> getBuiltinType() const;
     std::optional<Type> getArrayInnerType() const;
 
@@ -105,7 +107,7 @@ public:
 
 private:
     struct VoidType {};
-    struct UDTType { UDTDecl* udt; };
+    struct UDTType { Reference<UDTRef> udt; };
     struct ArrayType
     {
         explicit ArrayType(Type type);

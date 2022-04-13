@@ -231,6 +231,14 @@ private:
     }
     void visitSubReturn(const SubReturn* node) override {}
     void visitSymbol(const Symbol* node) override {}
+    void visitVarDecl(const VarDecl* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        if (node->type().isUDT())
+            writeNamedConnection(node, *node->type().getUDT(), "udt");
+        if (node->initializer().notNull())
+            writeNamedConnection(node, node->initializer(), "initializer");
+    }
     void visitUDTArrayDecl(const UDTArrayDecl* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -268,13 +276,6 @@ private:
         writeNamedConnection(node, node->expression(), "expr");
     }
     void visitUDTRef(const UDTRef* node) override {}
-    void visitUDTVarDecl(const UDTVarDecl* node) override
-    {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        writeNamedConnection(node, node->udt(), "udt");
-        if (node->initializer().notNull())
-            writeNamedConnection(node, node->initializer(), "initializer");
-    }
     void visitUnaryOp(const UnaryOp* node) override
     {
         writeNamedConnection(node, node->expr(), "expr");
@@ -303,12 +304,6 @@ private:
 
 #define X(dbname, cppname)                                                    \
     void visit##dbname##Literal(const dbname##Literal* node) override {}      \
-    void visit##dbname##VarDecl(const dbname##VarDecl* node) override         \
-    {                                                                         \
-        writeNamedConnection(node, node->symbol(), "symbol");                 \
-        if (node->initializer().notNull())                                    \
-            writeNamedConnection(node, node->initializer(), "initializer");   \
-    }                                                                         \
     void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
     {                                                                         \
         writeNamedConnection(node, node->symbol(), "symbol");                 \
