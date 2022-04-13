@@ -6,7 +6,7 @@
 #include <string>
 
 namespace odb::cmd {
-    class Command;
+class Command;
 }
 
 namespace odb::ast {

@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 SubCall::SubCall(Symbol* label, SourceLocation* location) :
@@ -95,5 +94,4 @@ Node* SubReturn::duplicateImpl() const
     return new SubReturn(location());
 }
 
-}
 }

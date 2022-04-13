@@ -7,8 +7,7 @@
 #include <vector>
 #include <memory>
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 /*!
  * @brief Stores information on where a particular token or group of tokens
@@ -98,5 +97,4 @@ private:
     std::string code_;
 };
 
-}
 }

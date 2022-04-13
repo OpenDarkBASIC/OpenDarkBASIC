@@ -3,8 +3,7 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Block::Block(SourceLocation* location)
@@ -91,5 +90,4 @@ Node* Block::duplicateImpl() const
     return block;
 }
 
-}
 }

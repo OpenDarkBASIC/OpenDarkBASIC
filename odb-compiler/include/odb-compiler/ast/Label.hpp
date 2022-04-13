@@ -3,8 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class Symbol;
 
@@ -27,5 +26,4 @@ private:
     Reference<Symbol> symbol_;
 };
 
-}
 }

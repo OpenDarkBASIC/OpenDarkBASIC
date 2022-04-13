@@ -6,8 +6,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
@@ -239,5 +238,4 @@ Node* FuncExit::duplicateImpl() const
         location());
 }
 
-}
 }

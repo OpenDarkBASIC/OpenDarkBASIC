@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
@@ -227,5 +226,4 @@ Node* FuncCallStmnt::duplicateImpl() const
         location());
 }
 
-}
 }

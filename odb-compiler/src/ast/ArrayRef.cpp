@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
@@ -71,5 +70,4 @@ Node* ArrayRef::duplicateImpl() const
         location());
 }
 
-}
 }

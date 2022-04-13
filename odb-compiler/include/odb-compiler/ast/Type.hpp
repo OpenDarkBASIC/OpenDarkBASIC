@@ -1,8 +1,11 @@
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include <array>
+#include <variant>
+#include <memory>
+#include <optional>
+
+#include "odb-compiler/config.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
 
 /*!
  * @brief All of the DarkBASIC primitive types that can exist and what types
@@ -35,6 +38,19 @@
 
 namespace odb::ast {
 
+// An enum of builtin datatypes i.e. not user defined types.
+enum class BuiltinType
+{
+#define X(dbname, cppname) dbname,
+    ODB_DATATYPE_LIST
+#undef X
+};
+
+ODBCOMPILER_PUBLIC_API bool isIntegralType(BuiltinType type);
+ODBCOMPILER_PUBLIC_API bool isFloatingPointType(BuiltinType type);
+ODBCOMPILER_PUBLIC_API const char* builtinTypeEnumString(BuiltinType type);
+
+// Literal types.
 template <typename T> struct Complex { T real = 0; T imag = 0; };
 template <typename T> struct Quat    { T r = 1; T i = 0; T j = 0; T k = 0; };
 template <typename T> struct Vec2    { T x = 0; T y = 0; };
@@ -49,5 +65,61 @@ template <typename T> struct Mat3x4  { Vec3<T> e0 = {0, 0, 0}; Vec3<T> e1 = {0, 
 template <typename T> struct Mat4x2  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; };
 template <typename T> struct Mat4x3  { Vec4<T> e0 = {0, 0, 0, 0}; Vec4<T> e1 = {0, 0, 0, 0}; Vec4<T> e2 = {0, 0, 0, 0}; };
 template <typename T> struct Mat4x4  { Vec4<T> e0 = {1, 0, 0, 0}; Vec4<T> e1 = {0, 1, 0, 0}; Vec4<T> e2 = {0, 0, 1, 0}; Vec4<T> e3 = {0, 0, 0, 1}; };
+
+// Type trait that maps a C++ type to the corresponding BuiltinType enum.
+template <typename T> struct LiteralType
+{
+};
+#define X(dbname, cppname)                                                                                             \
+template <> struct LiteralType<cppname>                                                                            \
+{                                                                                                                  \
+    static constexpr BuiltinType type = BuiltinType::dbname;                                                       \
+};
+ODB_DATATYPE_LIST
+#undef X
+
+// Describes a type in the DBP type system.
+class ODBCOMPILER_PUBLIC_API Type
+{
+public:
+    static Type getVoid();
+    static Type getBuiltin(BuiltinType builtin);
+    static Type getUDT(UDTDecl* udt);
+    static Type getArray(Type inner);
+
+    bool isVoid() const;
+    bool isBuiltinType() const;
+    bool isUDT() const;
+    bool isArray() const;
+
+    size_t size() const;
+
+    std::optional<UDTDecl*> getUDT() const;
+    std::optional<BuiltinType> getBuiltinType() const;
+    std::optional<Type> getArrayInnerType() const;
+
+    std::string toString() const;
+
+    bool operator==(const Type& other) const;
+    bool operator!=(const Type& other) const;
+
+private:
+    struct VoidType {};
+    struct UDTType { UDTDecl* udt; };
+    struct ArrayType
+    {
+        explicit ArrayType(Type type);
+        ArrayType(const ArrayType& other);
+        ArrayType& operator=(const ArrayType& other);
+
+        std::unique_ptr<Type> inner;
+    };
+
+    using TypeVariant = std::variant<VoidType, BuiltinType, UDTType, ArrayType>;
+
+    explicit Type(TypeVariant variant);
+
+    TypeVariant variant_;
+};
 
 }

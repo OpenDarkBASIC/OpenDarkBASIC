@@ -3,8 +3,7 @@
 #include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Label::Label(Symbol* symbol, SourceLocation* location) :
@@ -57,5 +56,4 @@ Node* Label::duplicateImpl() const
         location());
 }
 
-}
 }
