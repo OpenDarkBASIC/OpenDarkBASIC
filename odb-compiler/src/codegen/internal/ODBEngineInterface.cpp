@@ -10,9 +10,25 @@ ODBEngineInterface::ODBEngineInterface(llvm::Module& module, const cmd::CommandI
 }
 
 llvm::Function* ODBEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
-                                                        llvm::FunctionType* functionType)
+                                                            llvm::FunctionType* functionType)
 {
     return llvm::Function::Create(functionType, llvm::Function::ExternalLinkage, functionName, module);
+}
+
+llvm::Value* ODBEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builder, ast::Type arrayElementTy, std::vector<llvm::Value*> dims) {
+    (void)(builder, arrayElementTy, dims);
+    // Always return nullptr.
+    return llvm::ConstantInt::get(llvm::IntegerType::getInt32Ty(ctx), 0);
+}
+
+llvm::Value* ODBEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
+    (void)(builder, arrayElementPtrTy, arrayPtr, dims);
+    // Always return nullptr.
+    return llvm::ConstantInt::get(llvm::IntegerType::getInt32Ty(ctx), 0);
+}
+
+void ODBEngineInterface::generateFreeArray(llvm::IRBuilder<>& builder, llvm::Value *arrayPtr) {
+    (void)(builder, arrayPtr);
 }
 
 llvm::Value *ODBEngineInterface::generateMainLoopCondition(llvm::IRBuilder<>& builder) {

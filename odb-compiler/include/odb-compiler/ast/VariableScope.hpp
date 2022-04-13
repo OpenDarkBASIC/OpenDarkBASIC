@@ -14,12 +14,14 @@ class VariableScope
 public:
     void add(ast::Variable* variable);
 
-    ast::Variable* lookup(const std::string& name, ast::Annotation annotation) const;
-    const std::vector<ast::Variable*>& list() const;
+    Variable* lookup(const std::string& name, Annotation annotation, bool isArray) const;
+    const std::vector<Variable*>& list() const;
 
 private:
-    std::unordered_map<std::string, std::array<Reference<ast::Variable>, 6>> variables_;
-    std::vector<ast::Variable*> variables_as_list_;
+    std::unordered_map<std::string, Reference<Variable>> variables_;
+    std::vector<Variable*> variables_as_list_;
+
+    std::string variableKey(const std::string& name, Annotation annotation, bool isArray) const;
 };
 
 }

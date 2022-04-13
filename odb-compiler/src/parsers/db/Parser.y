@@ -4,6 +4,7 @@
     #include "odb-compiler/ast/ArgList.hpp"
     #include "odb-compiler/ast/ArrayDecl.hpp"
     #include "odb-compiler/ast/ArrayRef.hpp"
+    #include "odb-compiler/ast/ArrayUndim.hpp"
     #include "odb-compiler/ast/Assignment.hpp"
     #include "odb-compiler/ast/BinaryOp.hpp"
     #include "odb-compiler/ast/Block.hpp"
@@ -62,6 +63,7 @@
             class ArgList;
             class ArrayDecl;
             class ArrayRef;
+            class ArrayUndim;
             class Assignment;
             class Block;
             class Case;
@@ -155,6 +157,7 @@
 
     odb::ast::ArrayDecl* array_decl;
     odb::ast::ArrayRef* array_ref;
+    odb::ast::ArrayUndim* array_undim;
     odb::ast::Assignment* assignment;
     odb::ast::Block* block;
     odb::ast::Case* case_;
@@ -197,6 +200,7 @@
 %destructor { str::deleteCStr($$); } <string>
 %destructor { TouchRef($$); } <array_decl>
 %destructor { TouchRef($$); } <array_ref>
+%destructor { TouchRef($$); } <array_undim>
 %destructor { TouchRef($$); } <assignment>
 %destructor { TouchRef($$); } <block>
 %destructor { TouchRef($$); } <case_>
@@ -269,6 +273,7 @@
 %token ENDCASE "endcase"
 %token DEFAULT "default"
 %token DIM "dim"
+%token UNDIM "undim"
 %token GLOBAL "global"
 %token LOCAL "local"
 %token AS "as"
@@ -387,8 +392,9 @@
 %type<block> cond_next
 %type<array_decl> array_decl
 %type<array_decl> array_decl_as_type
-%type<array_decl> array_decl_no_as_type
+%type<array_decl> array_decl_without_type
 %type<array_ref> array_ref
+%type<array_undim> array_undim
 %type<udt_decl> udt_decl
 %type<udt_decl_body> udt_body_decl
 %type<udt_field_outer> udt_field_lvalue
@@ -450,6 +456,7 @@ stmnt
   | command_stmnt                                             { $$ = $1; }
   | var_decl                                                  { $$ = $1; }
   | array_decl                                                { $$ = $1; }
+  | array_undim                                               { $$ = $1; }
   | udt_decl                                                  { $$ = $1; }
   | assignment                                                { $$ = $1; }
   | loop                                                      { $$ = $1; }
@@ -599,11 +606,11 @@ array_ref
   ;
 array_decl
   : scope array_decl_as_type                                  { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
-  | scope array_decl_no_as_type                               { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
+  | scope array_decl_without_type                               { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
   | array_decl_as_type                                        { $$ = $1; }
-  | array_decl_no_as_type                                     { $$ = $1; }
+  | array_decl_without_type                                   { $$ = $1; }
   ;
-array_decl_no_as_type
+array_decl_without_type
   : DIM var_int_sym          '(' arg_list ')'                { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Integer)), $4, driver->newLocation(&@$)); }
   | DIM var_double_int_sym   '(' arg_list ')'                { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $4, driver->newLocation(&@$)); }
   | DIM var_word_sym         '(' arg_list ')'                { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $4, driver->newLocation(&@$)); }
@@ -641,6 +648,14 @@ array_decl_as_type
   | DIM var_int_sym          '(' arg_list ')' AS VEC2           { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Vec2)), $4, driver->newLocation(&@$)); }
   | DIM var_int_sym          '(' arg_list ')' AS VEC3           { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Vec3)), $4, driver->newLocation(&@$)); }
   | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Vec4)), $4, driver->newLocation(&@$)); }
+  ;
+array_undim
+  : UNDIM var_int_sym          '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
+  | UNDIM var_double_int_sym   '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
+  | UNDIM var_word_sym         '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
+  | UNDIM var_double_float_sym '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
+  | UNDIM var_float_sym        '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
+  | UNDIM var_str_sym          '(' arg_list ')'                { $$ = new ArrayUndim($2, $4, driver->newLocation(&@$)); }
   ;
 scope
   : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
