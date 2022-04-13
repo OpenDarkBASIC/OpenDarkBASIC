@@ -1,6 +1,8 @@
 #include "odb-compiler/astpost/ResolveAndCheckTypes.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/ArrayUndim.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/CommandExpr.hpp"
@@ -14,12 +16,12 @@
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/Program.hpp"
-#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
-#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-sdk/Log.hpp"
@@ -34,6 +36,41 @@ ast::Type getBinaryOpCommonType(ast::BinaryOpType op, ast::Expression* left, ast
 {
     // TODO: Implement this properly.
     return left->getType();
+}
+
+std::string formatArgTypes(ast::ArgList* args)
+{
+    std::string types;
+    bool firstArg = true;
+    if (args)
+    {
+        for (ast::Expression* arg : args->expressions())
+        {
+            if (!firstArg)
+            {
+                types += ", ";
+            }
+            firstArg = false;
+            types += arg->getType().toString();
+        }
+    }
+    return types;
+}
+
+std::string formatCmdArgTypes(const std::vector<cmd::Command::Arg>& args)
+{
+    std::string types;
+    bool firstArg = true;
+    for (const auto& arg : args)
+    {
+        if (!firstArg)
+        {
+            types += ", ";
+        }
+        firstArg = false;
+        types += ast::Type::getFromCommandType(arg.type).toString();
+    }
+    return types;
 }
 
 struct FunctionInfo
@@ -205,7 +242,7 @@ public:
 
         // If we're declaring a new variable, it must not exist already.
         auto annotation = node->identifier()->annotation();
-        Reference<ast::Variable> variable = info_.localScopeForNode.at(node)->lookup(node->identifier()->name(), annotation);
+        ast::Variable* variable = info_.localScopeForNode.at(node)->lookup(node->identifier()->name(), annotation, false);
         if (variable)
         {
             Log::dbParserSemanticError(
@@ -223,11 +260,68 @@ public:
         node->swapChild(node->identifier(), variable);
     }
 
+    void visitArrayDecl(ast::ArrayDecl* node) override
+    {
+        // If we're declaring a new array, it either must not exist, or if it does, it should have the same type.
+        auto annotation = node->identifier()->annotation();
+        auto* scope = info_.localScopeForNode.at(node);
+        ast::Variable* variable = scope->lookup(node->identifier()->name(), annotation, true);
+        if (variable && variable->getType() != node->type())
+        {
+            Log::dbParserSemanticError(node->identifier()->location()->getFileLineColumn().c_str(),
+                                       "Array '%s' has already been declared as type %s.",
+                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
+            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
+            fail = true;
+            return;
+        }
+        else if (!variable)
+        {
+            // Declare new variable.
+            variable =
+                new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
+            scope->add(variable);
+        }
+
+        for (ast::Expression* index : node->dims()->expressions())
+        {
+            node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+        }
+        node->setVariable(resolveVariable(node->identifier(), true));
+    }
+
     void visitVarAssignment(ast::VarAssignment* node) override
     {
-        auto variable = resolveVariableRef(node->varRef());
-        node->swapChild(node->varRef(), variable);
-        node->swapChild(node->expression(), ensureType(node->expression(), variable->getType()));
+        node->swapChild(node->expression(), ensureType(node->expression(), node->varRef()->getType()));
+    }
+
+    void visitArrayAssignment(ast::ArrayAssignment* node) override
+    {
+        node->swapChild(node->expression(),
+                        ensureType(node->expression(), node->array()->getType()));
+    }
+
+    void visitVarRef(ast::VarRef* node) override
+    {
+        node->setVariable(resolveVariable(node->identifier(), false));
+    }
+
+    void visitArrayUndim(ast::ArrayUndim* node) override
+    {
+        for (ast::Expression* index : node->dims()->expressions())
+        {
+            node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+        }
+        node->setVariable(resolveVariable(node->identifier(), true));
+    }
+
+    void visitArrayRef(ast::ArrayRef* node) override
+    {
+        for (ast::Expression* index : node->args()->expressions())
+        {
+            node->args()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+        }
+        node->setVariable(resolveVariable(node->identifier(), true));
     }
 
     void visitConditional(ast::Conditional* node) override
@@ -287,8 +381,10 @@ public:
         auto func = info_.functionsByName.find(node->identifier()->name());
         if (func == info_.functionsByName.end())
         {
-            replaceNode(new ast::ArrayRef(node->identifier(), node->args(),
-                                          node->location()));
+            // Turn this into an ArrayRef, then call visitArrayRef to do the usual argument processing..
+            auto* newArrayRef = new ast::ArrayRef(node->identifier(), node->args(), node->location());
+            newArrayRef->accept(this);
+            replaceNode(newArrayRef);
         }
         else
         {
@@ -325,17 +421,29 @@ private:
         parent_->swapChild(current_, newNode);
     }
 
-    Reference<ast::Variable> resolveVariableRef(const ast::VarRef* varRef)
+    ast::Variable* resolveVariable(const ast::Identifier* identifier, bool isArray)
     {
-        auto annotation = varRef->identifier()->annotation();
+        auto annotation = identifier->annotation();
+        auto* scope = info_.localScopeForNode.at(identifier);
         // TODO: This should take arguments into account as well.
-        Reference<ast::Variable> variable = info_.localScopeForNode.at(varRef)->lookup(varRef->identifier()->name(), annotation);
+        ast::Variable* variable = scope->lookup(identifier->name(), annotation, isArray);
         if (!variable)
         {
-            // If the variable doesn't exist, it gets implicitly declared with the annotation type.
-            variable = new ast::Variable(varRef->identifier()->location(), varRef->identifier()->name(), annotation,
-                                    ast::Type::getFromAnnotation(annotation));
-            info_.localScopeForNode.at(varRef)->add(variable);
+            if (isArray)
+            {
+                // Arrays are not implicitly declared.
+                Log::dbParserSemanticError(identifier->location()->getFileLineColumn().c_str(),
+                                           "Array '%s' does not exist in this scope.",
+                                           identifier->name().c_str());
+                fail = true;
+            }
+            else
+            {
+                // If the variable doesn't exist, it gets implicitly declared with the annotation type.
+                variable = new ast::Variable(identifier->location(), identifier->name(), annotation,
+                                             ast::Type::getFromAnnotation(annotation));
+                scope->add(variable);
+            }
         }
         return variable;
     }
@@ -373,13 +481,15 @@ private:
     const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args, ast::SourceLocation* location)
     {
         // Extract arguments.
-        auto candidates = cmdIndex_.lookup(commandName);
-        assert(!candidates.empty() && "The command index must contain this command.");
-        const cmd::Command* command = candidates.front();
+        auto overloads = cmdIndex_.lookup(commandName);
+        assert(!overloads.empty() && "The command index must contain this command.");
+        const cmd::Command* command = overloads.front();
 
         // If a command is overloaded, then we will need to perform overload resolution.
-        if (candidates.size() > 1)
+        if (overloads.size() > 1)
         {
+            auto candidates = overloads;
+
             // Remove candidates which don't have the correct number of arguments.
             auto differentArgumentCountPrecondition = [&](const Reference<cmd::Command>& candidate)
             {
@@ -413,10 +523,23 @@ private:
 
             if (candidates.empty())
             {
+                auto types = formatArgTypes(args);
                 Log::dbParserSemanticError(
                     location->getFileLineColumn().c_str(),
-                    "Unable to find matching overload for command '%s'.\n", commandName.c_str());
+                    "Unable to find matching overload for command '%s' matching '%s'.\n", commandName.c_str(), types.c_str());
                 location->printUnderlinedSection(Log::info);
+                for (cmd::Command* cmd : overloads)
+                {
+                    if (cmd->args().empty())
+                    {
+                        Log::dbParserError("... does not match '%s'.\n", cmd->dbSymbol().c_str());
+                    }
+                    else
+                    {
+                        auto cmdTypes = formatCmdArgTypes(cmd->args());
+                        Log::dbParserError("... does not match '%s %s'.\n", cmd->dbSymbol().c_str(), cmdTypes.c_str());
+                    }
+                }
                 fail = true;
                 return nullptr;
             }
@@ -468,6 +591,24 @@ private:
             };
             std::sort(candidates.begin(), candidates.end(), candidateRankFunction);
             command = candidates.back();
+        }
+
+        // Even if the command only has one overload, the number of arguments might be incorrect.
+        size_t currentArgCount = args.notNull() ? args->expressions().size() : 0;
+        size_t expectedArgCount = command->args().size();
+        if (currentArgCount != expectedArgCount)
+        {
+            std::string types;
+            if (!command->args().empty())
+            {
+                types = " with signature '" + formatCmdArgTypes(command->args()) + "'";
+            }
+            Log::dbParserSemanticError(location->getFileLineColumn().c_str(),
+                                       "Command '%s'%s expects %d arguments, but %d %s provided.\n",
+                                       commandName.c_str(), types.c_str(), expectedArgCount, currentArgCount,
+                                       currentArgCount == 1 ? "was" : "were");
+            fail = true;
+            return nullptr;
         }
 
         // Now we have selected an overload, we may need to insert cast operations when passing arguments (in case the

@@ -87,7 +87,7 @@ ODB_DATATYPE_LIST
 class ODBCOMPILER_PUBLIC_API Type
 {
 public:
-    static Type getUnknown();
+    static Type getUnknown(std::string info = "");
     static Type getVoid();
     static Type getBuiltin(BuiltinType builtin);
     static Type getUDT(std::string name);
@@ -115,7 +115,7 @@ public:
     bool operator!=(const Type& other) const;
 
 private:
-    struct UnknownType {};
+    struct UnknownType { std::string info; };
     struct VoidType {};
     struct UDTType { std::string udt; };
     struct ArrayType

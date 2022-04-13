@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/ArrayUndim.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
@@ -93,6 +94,11 @@ private:
     {
         writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->args(), "args");
+    }
+    void visitArrayUndim(const ArrayUndim* node) override
+    {
+        writeNamedConnection(node, node->identifier(), "identifier");
+        writeNamedConnection(node, node->dims(), "args");
     }
     void visitArrayAssignment(const ArrayAssignment* node) override
     {

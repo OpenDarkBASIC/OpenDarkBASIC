@@ -168,6 +168,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Annotation.cpp"
     "src/ast/ArgList.cpp"
     "src/ast/ArrayDecl.cpp"
+    "src/ast/ArrayUndim.cpp"
     "src/ast/ArrayRef.cpp"
     "src/ast/Assignment.cpp"
     "src/ast/BinaryOp.cpp"

@@ -12,6 +12,7 @@
     X(ArrayAssignment)                  \
     X(ArrayDecl)                        \
     X(ArrayRef)                         \
+    X(ArrayUndim)                       \
     X(BinaryOp)                         \
     X(Block)                            \
     X(Case)                             \

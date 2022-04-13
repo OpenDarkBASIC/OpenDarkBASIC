@@ -31,7 +31,12 @@ ArgList* ArrayRef::args() const
 // ----------------------------------------------------------------------------
 Type ArrayRef::getType() const
 {
-    return variable_ ? variable_->getType() : Type::getUnknown();
+    if (variable_)
+    {
+        assert(variable_->getType().isArray());
+        return *variable_->getType().getArrayInnerType();
+    }
+    return Type::getUnknown();
 }
 
 // ----------------------------------------------------------------------------

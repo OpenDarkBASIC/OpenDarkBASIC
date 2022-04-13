@@ -4,6 +4,7 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/ArrayUndim.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
@@ -507,6 +508,19 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         llvm::Value* variableInst = symtab.getVar(varRef->variable());
         return builder.CreateLoad(variableInst, "");
     }
+    else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(e))
+    {
+        llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
+        llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
+
+        std::vector<llvm::Value*> dims;
+        for (ast::Expression* dim : arrayRef->args()->expressions()) {
+            dims.push_back(generateExpression(symtab, builder, dim));
+        }
+        llvm::Type* arrayElementTy = getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
+        llvm::Value* loadTarget = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
+        return builder.CreateLoad(arrayElementTy, loadTarget);
+    }
     else if (auto* doubleIntegerLiteral = dynamic_cast<const ast::DoubleIntegerLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), std::uint64_t(doubleIntegerLiteral->value()));
@@ -745,11 +759,56 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
-        else if (auto* assignment = dynamic_cast<const ast::VarAssignment*>(s))
+        else if (auto* arrayDecl = dynamic_cast<const ast::ArrayDecl*>(s))
         {
-            assert(assignment->variable());
+            assert(arrayDecl->variable());
+            std::vector<llvm::Value*> dims;
+            for (ast::Expression* dim : arrayDecl->dims()->expressions())
+            {
+                dims.push_back(generateExpression(symtab, builder, dim));
+            }
+            llvm::Value* expression = engineInterface.generateAllocateArray(builder, *arrayDecl->variable()->getType().getArrayInnerType(), dims);
+            llvm::Value* storeTarget = symtab.getVar(arrayDecl->variable());
+            builder.CreateStore(expression, storeTarget);
+        }
+        else if (auto* arrayUndim = dynamic_cast<const ast::ArrayUndim*>(s))
+        {
+            assert(arrayUndim->variable());
+            llvm::Value* arrayVar = symtab.getVar(arrayUndim->variable());
+            llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
+            engineInterface.generateFreeArray(builder, arrayPtr);
+        }
+        else if (auto* assignment = dynamic_cast<const ast::Assignment*>(s))
+        {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression());
-            llvm::Value* storeTarget = symtab.getVar(assignment->variable());
+            llvm::Value* storeTarget = nullptr;
+            if (auto* varRef = dynamic_cast<const ast::VarRef*>(assignment->lvalue()))
+            {
+                assert(varRef->variable());
+                storeTarget = symtab.getVar(varRef->variable());
+            }
+            else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(assignment->lvalue()))
+            {
+                assert(arrayRef->variable());
+
+                llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
+                llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
+
+                // Dereference array.
+                std::vector<llvm::Value*> dims;
+                for (ast::Expression* dim : arrayRef->args()->expressions())
+                {
+                    dims.push_back(generateExpression(symtab, builder, dim));
+                }
+                llvm::Type* arrayElementTy =
+                    getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
+                storeTarget = engineInterface.generateIndexArray(
+                    builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
+            }
+            else
+            {
+                fatalError("Codegen: Unhandled lvalue type: %s", typeid(*assignment->lvalue()).name());
+            }
             builder.CreateStore(expression, storeTarget);
         }
         else if (auto* call = dynamic_cast<const ast::FuncCallStmnt*>(s))
@@ -902,6 +961,10 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
                 fatalError("Unknown variable built in type to initialize");
             }
         }
+        else if (type.isArray())
+        {
+            initialiser = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(llvmType));
+        }
         else
         {
             fatalError("Unknown variable type to initialize");
@@ -969,6 +1032,10 @@ bool CodeGenerator::generateModule(const ast::Program* program, std::vector<Plug
     {
         generateFunctionBody(globalSymbolTable.getFunction(function), function->scope(), function->body(), false);
     }
+
+#ifndef NDEBUG
+    module.print(llvm::errs(), nullptr);
+#endif
 
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.

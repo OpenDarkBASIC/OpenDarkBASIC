@@ -37,5 +37,6 @@ static inline bool isAnnotation(char c) {
 }
 
 ODBCOMPILER_PUBLIC_API const char* typeAnnotationEnumString(Annotation annotation);
+ODBCOMPILER_PUBLIC_API char typeAnnotationChar(Annotation annotation);
 
 }

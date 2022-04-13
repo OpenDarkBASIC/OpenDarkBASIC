@@ -10,13 +10,12 @@ class ArgList;
 class ScopedIdentifier;
 class Variable;
 
-class ODBCOMPILER_PUBLIC_API ArrayDecl final : public Statement
+class ODBCOMPILER_PUBLIC_API ArrayUndim final : public Statement
 {
 public:
-    ArrayDecl(ScopedIdentifier* identifier, Type type, ArgList* dims, SourceLocation* location);
+    ArrayUndim(ScopedIdentifier* identifier, ArgList* dims, SourceLocation* location);
 
     ScopedIdentifier* identifier() const;
-    Type type() const;
     ArgList* dims() const;
 
     void setVariable(Variable* variable);
@@ -33,7 +32,6 @@ protected:
 
 private:
     Reference<ScopedIdentifier> identifier_;
-    Type type_;
     Reference<ArgList> dims_;
 
     // Resolved in a later pass.

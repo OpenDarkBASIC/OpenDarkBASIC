@@ -76,6 +76,7 @@ string,           TOK_STRING
 then,             TOK_THEN
 to,               TOK_TO
 type,             TOK_TYPE
+undim,            TOK_UNDIM
 until,            TOK_UNTIL
 vec2,             TOK_VEC2
 vec3,             TOK_VEC3

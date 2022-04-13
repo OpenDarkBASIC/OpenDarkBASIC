@@ -29,9 +29,9 @@ case BuiltinType::dbname:                                                       
     }
 }
 
-Type Type::getUnknown()
+Type Type::getUnknown(std::string info)
 {
-    return Type(UnknownType{});
+    return Type(UnknownType{std::move(info)});
 }
 
 Type Type::getVoid() {
@@ -90,7 +90,7 @@ Type Type::getFromCommandType(cmd::Command::Type commandType)
     case cmd::Command::Type::Void:
         return Type::getVoid();
     default:
-        assert(false && "Unknown keyword type");
+        return Type::getUnknown(std::string(1, static_cast<char>(commandType)));
     }
 }
 
@@ -247,9 +247,21 @@ std::string Type::toString() const
     {
         return "!UNIMPLEMENTED UDT TYPE!";
     }
-    else
+    else if (isVoid())
     {
         return "void";
+    }
+    else
+    {
+        auto info = std::get_if<UnknownType>(&variant_)->info;
+        if (info.empty())
+        {
+            return "unknown";
+        }
+        else
+        {
+            return "unknown [" + std::get_if<UnknownType>(&variant_)->info + "]";
+        }
     }
 }
 

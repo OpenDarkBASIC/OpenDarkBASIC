@@ -1,5 +1,5 @@
-#include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/ArrayUndim.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
@@ -9,66 +9,59 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayDecl::ArrayDecl(ScopedIdentifier* identifier, Type type, ArgList* dims, SourceLocation* location)
+ArrayUndim::ArrayUndim(ScopedIdentifier* identifier, ArgList* dims, SourceLocation* location)
     : Statement(location)
     , identifier_(identifier)
-    , type_(std::move(type))
     , dims_(dims)
 {
 }
 
 // ----------------------------------------------------------------------------
-ScopedIdentifier* ArrayDecl::identifier() const
+ScopedIdentifier* ArrayUndim::identifier() const
 {
     return identifier_;
 }
 
 // ----------------------------------------------------------------------------
-Type ArrayDecl::type() const
-{
-    return type_;
-}
-
-// ----------------------------------------------------------------------------
-ArgList* ArrayDecl::dims() const
+ArgList* ArrayUndim::dims() const
 {
     return dims_;
 }
 
 // ----------------------------------------------------------------------------
-void ArrayDecl::setVariable(Variable* variable)
+void ArrayUndim::setVariable(Variable* variable)
 {
     assert(identifier_->name() == variable->name());
     variable_ = variable;
 }
 
 // ----------------------------------------------------------------------------
-Variable* ArrayDecl::variable() const
+Variable* ArrayUndim::variable() const
 {
     assert(identifier_->name() == variable_->name());
     return variable_;
 }
 
 // ----------------------------------------------------------------------------
-std::string ArrayDecl::toString() const
+std::string ArrayUndim::toString() const
 {
-    return "ArrayDecl";
+    return "ArrayUndim";
 }
 
 // ----------------------------------------------------------------------------
-void ArrayDecl::accept(Visitor* visitor)
+void ArrayUndim::accept(Visitor* visitor)
 {
-    visitor->visitArrayDecl(this);
+    visitor->visitArrayUndim(this);
 }
 
 // ----------------------------------------------------------------------------
-void ArrayDecl::accept(ConstVisitor* visitor) const
+void ArrayUndim::accept(ConstVisitor* visitor) const
 {
-    visitor->visitArrayDecl(this);
+    visitor->visitArrayUndim(this);
 }
 
 // ----------------------------------------------------------------------------
-Node::ChildRange ArrayDecl::children()
+Node::ChildRange ArrayUndim::children()
 {
     Node::ChildRange children;
     children.push_back(identifier_);
@@ -77,7 +70,7 @@ Node::ChildRange ArrayDecl::children()
 }
 
 // ----------------------------------------------------------------------------
-void ArrayDecl::swapChild(const Node* oldNode, Node* newNode)
+void ArrayUndim::swapChild(const Node* oldNode, Node* newNode)
 {
     if (identifier_ == oldNode)
         identifier_ = dynamic_cast<ScopedIdentifier*>(newNode);
@@ -88,11 +81,10 @@ void ArrayDecl::swapChild(const Node* oldNode, Node* newNode)
 }
 
 // ----------------------------------------------------------------------------
-Node* ArrayDecl::duplicateImpl() const
+Node* ArrayUndim::duplicateImpl() const
 {
-    return new ArrayDecl(
+    return new ArrayUndim(
         identifier_->duplicate<ScopedIdentifier>(),
-        type_,
         dims_->duplicate<ArgList>(),
         location());
 }
