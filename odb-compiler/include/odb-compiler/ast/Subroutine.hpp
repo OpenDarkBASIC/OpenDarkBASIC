@@ -3,8 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class Label;
 class Symbol;
@@ -42,5 +41,4 @@ protected:
     Node* duplicateImpl() const override;
 };
 
-}
 }

@@ -5,8 +5,7 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-sdk/MaybeNull.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class AnnotatedSymbol;
 class ArgList;
@@ -84,5 +83,4 @@ private:
     Reference<ArgList> args_;
 };
 
-}
 }

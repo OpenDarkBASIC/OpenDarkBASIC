@@ -5,104 +5,27 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
-#include <variant>
 
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/Type.hpp"
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-sdk/Reference.hpp"
 
 namespace odb::ir {
-enum class UnaryOp
-{
-#define X(op, tok) op,
-    ODB_UNARY_OP_LIST
-#undef X
-};
-
-enum class BinaryOp
-{
-#define X(op, tok) op,
-    ODB_BINARY_OP_LIST
-#undef X
-};
 
 template <typename T> using Ptr = std::unique_ptr<T>;
-
 template <typename T> using PtrVector = std::vector<Ptr<T>>;
 
-class UDTDefinition;
 class FunctionDefinition;
 
 using ast::SourceLocation;
-
-enum class BuiltinType
-{
-#define X(dbname, cppname) dbname,
-    ODB_DATATYPE_LIST
-#undef X
-};
-
-ODBCOMPILER_PUBLIC_API bool isIntegralType(BuiltinType type);
-ODBCOMPILER_PUBLIC_API bool isFloatingPointType(BuiltinType type);
-ODBCOMPILER_PUBLIC_API const char* convertBuiltinTypeToString(BuiltinType type);
-
-// Type trait that maps a C++ type to the corresponding BuiltinType enum.
-template <typename T> struct LiteralType
-{
-};
-#define X(dbname, cppname)                                                                                             \
-    template <> struct LiteralType<cppname>                                                                            \
-    {                                                                                                                  \
-        static constexpr BuiltinType type = BuiltinType::dbname;                                                       \
-    };
-ODB_DATATYPE_LIST
-#undef X
-
-class ODBCOMPILER_PUBLIC_API Type
-{
-public:
-    static Type getVoid();
-    static Type getBuiltin(BuiltinType builtin);
-    static Type getUDT(UDTDefinition* udt);
-    static Type getArray(Type inner);
-
-    bool isVoid() const;
-    bool isBuiltinType() const;
-    bool isUDT() const;
-    bool isArray() const;
-
-    size_t size() const;
-
-    std::optional<UDTDefinition*> getUDT() const;
-    std::optional<BuiltinType> getBuiltinType() const;
-    std::optional<Type> getArrayInnerType() const;
-
-    std::string toString() const;
-
-    bool operator==(const Type& other) const;
-    bool operator!=(const Type& other) const;
-
-private:
-    struct VoidType {};
-    struct UDTType { UDTDefinition* udt; };
-    struct ArrayType
-    {
-        explicit ArrayType(Type type);
-        ArrayType(const ArrayType& other);
-        ArrayType& operator=(const ArrayType& other);
-
-        std::unique_ptr<Type> inner;
-    };
-
-    using TypeVariant = std::variant<VoidType, BuiltinType, UDTType, ArrayType>;
-
-    explicit Type(TypeVariant variant);
-
-    TypeVariant variant_;
-};
+using ast::BuiltinType;
+using ast::Type;
+using UnaryOp = ast::UnaryOpType;
+using BinaryOp = ast::BinaryOpType;
+template <typename T> using LiteralType = ast::LiteralType<T>;
 
 class ODBCOMPILER_PUBLIC_API Node
 {

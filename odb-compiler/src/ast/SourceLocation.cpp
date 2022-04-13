@@ -5,8 +5,7 @@
 #include <sstream>
 #include <cassert>
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color) :
@@ -280,5 +279,4 @@ SourceLocation* InlineSourceLocation::duplicate() const
         lastColumn_);
 }
 
-}
 }

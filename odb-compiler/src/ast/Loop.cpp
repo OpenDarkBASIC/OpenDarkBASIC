@@ -7,8 +7,7 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Loop::Loop(SourceLocation* location) :
@@ -434,5 +433,4 @@ Node* ForLoop::duplicateImpl() const
         location());
 }
 
-}
 }

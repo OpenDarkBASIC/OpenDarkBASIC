@@ -2,8 +2,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include <cstdio>
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 static void doIndent(FILE* fp, int count)
@@ -54,5 +53,4 @@ int dumpToJSON(FILE* fp, const Node* node, int indent)
     return 0;
 }
 
-}
 }

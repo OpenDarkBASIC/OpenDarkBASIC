@@ -2,7 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
-#include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/Type.hpp"
 
 namespace odb::ast {
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "gmock/gmock-matchers.h"
-#include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/Type.hpp"
 
 namespace odb::ast {
     template <typename T> class LiteralTemplate;

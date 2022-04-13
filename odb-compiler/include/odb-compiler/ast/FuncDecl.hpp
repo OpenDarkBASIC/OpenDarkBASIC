@@ -4,8 +4,7 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-sdk/MaybeNull.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class AnnotatedSymbol;
 class Block;
@@ -64,5 +63,4 @@ private:
     Reference<Expression> returnValue_;
 };
 
-}
 }

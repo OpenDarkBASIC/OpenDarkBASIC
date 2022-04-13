@@ -2,11 +2,10 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
-#include "odb-compiler/ast/Datatypes.hpp"
+#include "odb-compiler/ast/Type.hpp"
 #include "odb-sdk/MaybeNull.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class InitializerList;
 class UDTRef;
@@ -67,5 +66,4 @@ private:
     Reference<UDTRef> udt_;
 };
 
-}
 }
