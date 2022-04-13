@@ -48,11 +48,11 @@ Type ASTConverter::getTypeFromAnnotation(Variable::Annotation annotation)
     switch (annotation)
     {
     case Variable::Annotation::None:
-        return Type{BuiltinType::Integer};
+        return Type::getBuiltin(BuiltinType::Integer);
     case Variable::Annotation::String:
-        return Type{BuiltinType::String};
+        return Type::getBuiltin(BuiltinType::String);
     case Variable::Annotation::Float:
-        return Type{BuiltinType::Float};
+        return Type::getBuiltin(BuiltinType::Float);
     default:
         fatalError("getTypeFromAnnotation encountered unknown type.");
     }
@@ -63,19 +63,19 @@ Type ASTConverter::getTypeFromCommandType(cmd::Command::Type type)
     switch (type)
     {
     case cmd::Command::Type::Integer:
-        return Type{BuiltinType::Integer};
+        return Type::getBuiltin(BuiltinType::Integer);
     case cmd::Command::Type::Float:
-        return Type{BuiltinType::Float};
+        return Type::getBuiltin(BuiltinType::Float);
     case cmd::Command::Type::String:
-        return Type{BuiltinType::String};
+        return Type::getBuiltin(BuiltinType::String);
     case cmd::Command::Type::Double:
-        return Type{BuiltinType::DoubleFloat};
+        return Type::getBuiltin(BuiltinType::DoubleFloat);
     case cmd::Command::Type::Long:
-        return Type{BuiltinType::DoubleInteger};
+        return Type::getBuiltin(BuiltinType::DoubleInteger);
     case cmd::Command::Type::Dword:
-        return Type{BuiltinType::Dword};
+        return Type::getBuiltin(BuiltinType::Dword);
     case cmd::Command::Type::Void:
-        return Type{};
+        return Type::getVoid();
     default:
         fatalError("Unknown keyword type %c", (char)type);
     }
@@ -323,7 +323,7 @@ FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLo
         }
     }
 
-    Type returnType;
+    Type returnType = Type::getVoid();
     if (functionDefinition->returnExpression())
     {
         returnType = functionDefinition->returnExpression()->getType();
@@ -392,12 +392,12 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         //           element in the list. Should probably throw an error if there
         //           are more (or fewer) values than expected for the particular
         //           type.
-        Type varType;
+        Type varType = Type::getVoid();
         ast::Expression* initialValue = nullptr;
 #define X(dbname, cppname)                                                    \
     if (auto* dbname##Ref = dynamic_cast<ast::dbname##VarDecl*>(varDeclSt))   \
     {                                                                         \
-        varType = Type{BuiltinType::dbname};                                  \
+        varType = Type::getBuiltin(BuiltinType::dbname);                      \
         initialValue = dbname##Ref->initializer()->expressions()[0];          \
     }
         ODB_DATATYPE_LIST
@@ -434,7 +434,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     {
         return std::make_unique<Conditional>(
             location, currentFunction_,
-            ensureType(convertExpression(conditionalSt->condition()), Type{BuiltinType::Boolean}),
+            ensureType(convertExpression(conditionalSt->condition()), Type::getBuiltin(BuiltinType::Boolean)),
             convertBlock(conditionalSt->trueBranch(), currentLoop),
             convertBlock(conditionalSt->falseBranch(), currentLoop));
     }
@@ -594,9 +594,11 @@ std::unique_ptr<FunctionDefinition> ASTConverter::convertFunctionWithoutBody(ast
             // TODO: Should args()->expressions() be a list of VarRef's instead? Want to avoid the risk of nullptr here.
             auto* varRef = dynamic_cast<ast::VarRef*>(expression);
             assert(varRef);
-            FunctionDefinition::Argument arg;
-            arg.name = varRef->symbol()->name();
-            arg.type = getTypeFromAnnotation(getAnnotation(varRef->symbol()->annotation()));
+            FunctionDefinition::Argument arg
+            {
+                varRef->symbol()->name(),
+                getTypeFromAnnotation(getAnnotation(varRef->symbol()->annotation()))
+            };
             args.emplace_back(arg);
         }
     }

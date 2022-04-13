@@ -5,6 +5,7 @@
 #include <optional>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Datatypes.hpp"
@@ -63,19 +64,21 @@ ODB_DATATYPE_LIST
 class ODBCOMPILER_PUBLIC_API Type
 {
 public:
-    // Void constructor.
-    Type();
-    // UDT constructor.
-    explicit Type(UDTDefinition* udt);
-    // Builtin constructor.
-    explicit Type(BuiltinType builtin);
+    static Type getVoid();
+    static Type getBuiltin(BuiltinType builtin);
+    static Type getUDT(UDTDefinition* udt);
+    static Type getArray(Type inner);
 
     bool isVoid() const;
-    bool isUDT() const;
     bool isBuiltinType() const;
+    bool isUDT() const;
+    bool isArray() const;
+
+    size_t size() const;
 
     std::optional<UDTDefinition*> getUDT() const;
     std::optional<BuiltinType> getBuiltinType() const;
+    std::optional<Type> getArrayInnerType() const;
 
     std::string toString() const;
 
@@ -83,16 +86,22 @@ public:
     bool operator!=(const Type& other) const;
 
 private:
-    bool isVoid_;
-    bool isUDT_;
-    union
+    struct VoidType {};
+    struct UDTType { UDTDefinition* udt; };
+    struct ArrayType
     {
-        struct
-        {
-        } voidTag_;
-        UDTDefinition* udt_;
-        BuiltinType builtin_;
+        explicit ArrayType(Type type);
+        ArrayType(const ArrayType& other);
+        ArrayType& operator=(const ArrayType& other);
+
+        std::unique_ptr<Type> inner;
     };
+
+    using TypeVariant = std::variant<VoidType, BuiltinType, UDTType, ArrayType>;
+
+    explicit Type(TypeVariant variant);
+
+    TypeVariant variant_;
 };
 
 class ODBCOMPILER_PUBLIC_API Node
@@ -213,7 +222,7 @@ template <typename T> class LiteralTemplate : public Literal
 public:
     LiteralTemplate(SourceLocation* location, const T& value) : Literal(location), value_(value) {}
     const T& value() const { return value_; }
-    Type literalType() const override { return Type{LiteralType<T>::type}; }
+    Type literalType() const override { return Type::getBuiltin(LiteralType<T>::type); }
 
 private:
     const T value_;
@@ -504,8 +513,8 @@ class ODBCOMPILER_PUBLIC_API FunctionDefinition : public Node
 public:
     struct Argument
     {
-        Type type;
         std::string name;
+        Type type;
     };
 
     class VariableScope
