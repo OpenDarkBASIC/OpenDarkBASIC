@@ -3,6 +3,7 @@
 #include "odb-compiler/ast/Scope.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
+#include "odb-compiler/tests/matchers/ArrayDeclEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
@@ -67,16 +68,16 @@ public:
 #define float_initial_value 0.0f
 #define string_initial_value ""
 
-// Type decl visitors
-#define double_integer_decl_visitor visitDoubleIntegerArrayDecl
-#define integer_decl_visitor visitIntegerArrayDecl
-#define dword_decl_visitor visitDwordArrayDecl
-#define word_decl_visitor visitWordArrayDecl
-#define byte_decl_visitor visitByteArrayDecl
-#define boolean_decl_visitor visitBooleanArrayDecl
-#define double_float_decl_visitor visitDoubleFloatArrayDecl
-#define float_decl_visitor visitFloatArrayDecl
-#define string_decl_visitor visitStringArrayDecl
+// Type names
+#define double_integer_type DoubleInteger
+#define integer_type Integer
+#define dword_type Dword
+#define word_type Word
+#define byte_type Byte
+#define boolean_type Boolean
+#define double_float_type DoubleFloat
+#define float_type Float
+#define string_type String
 
 /*
  * All possible valid array declarations:
@@ -109,7 +110,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\
@@ -183,7 +184,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
-    exp = EXPECT_CALL(v, type##_decl_visitor(_)).After(exp);                  \
+    exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
         ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\

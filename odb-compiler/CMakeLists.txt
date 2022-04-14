@@ -334,6 +334,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/harness/ParserTestHarness.cpp"
         "tests/src/matchers/AnnotatedSymbolEq.cpp"
         "tests/src/matchers/ArgListCountEq.cpp"
+        "tests/src/matchers/ArrayDeclEq.cpp"
         "tests/src/matchers/BinaryOpEq.cpp"
         "tests/src/matchers/BlockStmntCountEq.cpp"
         "tests/src/matchers/CommandExprEq.cpp"

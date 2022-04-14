@@ -38,6 +38,7 @@ namespace odb::ast {
 void GenericVisitor::visitAnnotatedSymbol(AnnotatedSymbol* node)               { visit(node); }
 void GenericVisitor::visitArgList(ArgList* node)                               { visit(node); }
 void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               { visit(node); }
+void GenericVisitor::visitArrayDecl(ArrayDecl* node)                           { visit(node); }
 void GenericVisitor::visitArrayRef(ArrayRef* node)                             { visit(node); }
 void GenericVisitor::visitBinaryOp(BinaryOp* node)                             { visit(node); }
 void GenericVisitor::visitBlock(Block* node)                                   { visit(node); }
@@ -66,7 +67,6 @@ void GenericVisitor::visitSubCall(SubCall* node)                               {
 void GenericVisitor::visitSubReturn(SubReturn* node)                           { visit(node); }
 void GenericVisitor::visitSymbol(Symbol* node)                                 { visit(node); }
 void GenericVisitor::visitVarDecl(VarDecl* node)                               { visit(node); }
-void GenericVisitor::visitUDTArrayDecl(UDTArrayDecl* node)                     { visit(node); }
 void GenericVisitor::visitUDTDecl(UDTDecl* node)                               { visit(node); }
 void GenericVisitor::visitUDTDeclBody(UDTDeclBody* node)                       { visit(node); }
 void GenericVisitor::visitUDTFieldOuter(UDTFieldOuter* node)                   { visit(node); }
@@ -80,8 +80,7 @@ void GenericVisitor::visitVarRef(VarRef* node)                                 {
 void GenericVisitor::visitWhileLoop(WhileLoop* node)                           { visit(node); }
 
 #define X(dbname, cppname) \
-    void GenericVisitor::visit##dbname##Literal(dbname##Literal* node)         { visit(node); } \
-    void GenericVisitor::visit##dbname##ArrayDecl(dbname##ArrayDecl* node)     { visit(node); }
+    void GenericVisitor::visit##dbname##Literal(dbname##Literal* node)         { visit(node); }
 ODB_DATATYPE_LIST
 #undef X
 
@@ -89,6 +88,7 @@ ODB_DATATYPE_LIST
 void GenericConstVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)               { visit(node); }
 void GenericConstVisitor::visitArgList(const ArgList* node)                               { visit(node); }
 void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)               { visit(node); }
+void GenericConstVisitor::visitArrayDecl(const ArrayDecl* node)                           { visit(node); }
 void GenericConstVisitor::visitArrayRef(const ArrayRef* node)                             { visit(node); }
 void GenericConstVisitor::visitBinaryOp(const BinaryOp* node)                             { visit(node); }
 void GenericConstVisitor::visitBlock(const Block* node)                                   { visit(node); }
@@ -117,7 +117,6 @@ void GenericConstVisitor::visitSubCall(const SubCall* node)                     
 void GenericConstVisitor::visitSubReturn(const SubReturn* node)                           { visit(node); }
 void GenericConstVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }
 void GenericConstVisitor::visitVarDecl(const VarDecl* node)                               { visit(node); }
-void GenericConstVisitor::visitUDTArrayDecl(const UDTArrayDecl* node)                     { visit(node); }
 void GenericConstVisitor::visitUDTDecl(const UDTDecl* node)                               { visit(node); }
 void GenericConstVisitor::visitUDTDeclBody(const UDTDeclBody* node)                       { visit(node); }
 void GenericConstVisitor::visitUDTFieldOuter(const UDTFieldOuter* node)                   { visit(node); }
@@ -131,8 +130,7 @@ void GenericConstVisitor::visitVarRef(const VarRef* node)                       
 void GenericConstVisitor::visitWhileLoop(const WhileLoop* node)                           { visit(node); }
 
 #define X(dbname, cppname) \
-    void GenericConstVisitor::visit##dbname##Literal(const dbname##Literal* node)         { visit(node); } \
-    void GenericConstVisitor::visit##dbname##ArrayDecl(const dbname##ArrayDecl* node)     { visit(node); }
+    void GenericConstVisitor::visit##dbname##Literal(const dbname##Literal* node)         { visit(node); }
 ODB_DATATYPE_LIST
 #undef X
 

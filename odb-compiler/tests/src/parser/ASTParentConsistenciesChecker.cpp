@@ -46,6 +46,15 @@ void ASTParentConsistenciesChecker::visitArrayAssignment(const ArrayAssignment* 
     EXPECT_THAT(node, Eq(node->array()->parent()));
     EXPECT_THAT(node, Eq(node->expression()->parent()));
 }
+void ASTParentConsistenciesChecker::visitArrayDecl(const ArrayDecl* node)
+{
+    EXPECT_THAT(node, Eq(node->symbol()->parent()));
+    if (node->type().isUDT())
+    {
+        EXPECT_THAT(node, Eq((*node->type().getUDT())->parent()));
+    }
+    EXPECT_THAT(node, Eq(node->dims()->parent()));
+}
 void ASTParentConsistenciesChecker::visitArrayRef(const ArrayRef* node)
 {
     EXPECT_THAT(node, Eq(node->symbol()->parent()));
@@ -195,12 +204,6 @@ void ASTParentConsistenciesChecker::visitVarDecl(const VarDecl* node)
         EXPECT_THAT(node, Eq(node->initializer()->parent()));
     }
 }
-void ASTParentConsistenciesChecker::visitUDTArrayDecl(const UDTArrayDecl* node)
-{
-    EXPECT_THAT(node, Eq(node->symbol()->parent()));
-    EXPECT_THAT(node, Eq(node->dims()->parent()));
-    EXPECT_THAT(node, Eq(node->udt()->parent()));
-}
 void ASTParentConsistenciesChecker::visitUDTDecl(const UDTDecl* node)
 {
     EXPECT_THAT(node, Eq(node->typeName()->parent()));
@@ -256,11 +259,6 @@ void ASTParentConsistenciesChecker::visitWhileLoop(const WhileLoop* node)
 }
 
 #define X(dbname, cppname) \
-    void ASTParentConsistenciesChecker::visit##dbname##Literal(const dbname##Literal* node) {} \
-    void ASTParentConsistenciesChecker::visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) \
-    {                                                                         \
-        EXPECT_THAT(node, Eq(node->symbol()->parent()));                      \
-        EXPECT_THAT(node, Eq(node->dims()->parent()));                        \
-    }
+    void ASTParentConsistenciesChecker::visit##dbname##Literal(const dbname##Literal* node) {}
 ODB_DATATYPE_LIST
 #undef X
