@@ -9,6 +9,7 @@ public:
     MOCK_METHOD(void, visitAnnotatedSymbol, (const odb::ast::AnnotatedSymbol* node), (override));
     MOCK_METHOD(void, visitArgList, (const odb::ast::ArgList* node), (override));
     MOCK_METHOD(void, visitArrayAssignment, (const odb::ast::ArrayAssignment* node), (override));
+    MOCK_METHOD(void, visitArrayDecl, (const odb::ast::ArrayDecl* node), (override));
     MOCK_METHOD(void, visitArrayRef, (const odb::ast::ArrayRef* node), (override));
     MOCK_METHOD(void, visitBinaryOp, (const odb::ast::BinaryOp* node), (override));
     MOCK_METHOD(void, visitBlock, (const odb::ast::Block* node), (override));
@@ -37,7 +38,6 @@ public:
     MOCK_METHOD(void, visitSubReturn, (const odb::ast::SubReturn* node), (override));
     MOCK_METHOD(void, visitSymbol, (const odb::ast::Symbol* node), (override));
     MOCK_METHOD(void, visitVarDecl, (const odb::ast::VarDecl* node), (override));
-    MOCK_METHOD(void, visitUDTArrayDecl, (const odb::ast::UDTArrayDecl* node), (override));
     MOCK_METHOD(void, visitUDTDecl, (const odb::ast::UDTDecl* node), (override));
     MOCK_METHOD(void, visitUDTDeclBody, (const odb::ast::UDTDeclBody* node), (override));
     MOCK_METHOD(void, visitUDTFieldAssignment, (const odb::ast::UDTFieldAssignment* node), (override));
@@ -51,8 +51,7 @@ public:
     MOCK_METHOD(void, visitWhileLoop, (const odb::ast::WhileLoop* node), (override));
 
 #define X(dbname, cppname) \
-    MOCK_METHOD(void, visit##dbname##Literal, (const odb::ast::dbname##Literal* node), (override)); \
-    MOCK_METHOD(void, visit##dbname##ArrayDecl, (const odb::ast::dbname##ArrayDecl* node), (override));
+    MOCK_METHOD(void, visit##dbname##Literal, (const odb::ast::dbname##Literal* node), (override));
     ODB_DATATYPE_LIST
 #undef X
 

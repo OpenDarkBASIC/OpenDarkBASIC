@@ -84,6 +84,13 @@ private:
             writeNamedConnection(node, expr, "arglist[" + std::to_string(i++) + "]");
         }
     }
+    void visitArrayDecl(const ArrayDecl* node) override
+    {
+        writeNamedConnection(node, node->symbol(), "symbol");
+        if (node->type().isUDT())
+            writeNamedConnection(node, *node->type().getUDT(), "udt");
+        writeNamedConnection(node, node->dims(), "dims");
+    }
     void visitArrayRef(const ArrayRef* node) override
     {
         writeNamedConnection(node, node->symbol(), "symbol");
@@ -239,12 +246,6 @@ private:
         if (node->initializer().notNull())
             writeNamedConnection(node, node->initializer(), "initializer");
     }
-    void visitUDTArrayDecl(const UDTArrayDecl* node) override
-    {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        writeNamedConnection(node, node->dims(), "dims");
-        writeNamedConnection(node, node->udt(), "udt");
-    }
     void visitUDTDecl(const UDTDecl* node) override
     {
         writeNamedConnection(node, node->typeName(), "typeName");
@@ -303,12 +304,7 @@ private:
     }
 
 #define X(dbname, cppname)                                                    \
-    void visit##dbname##Literal(const dbname##Literal* node) override {}      \
-    void visit##dbname##ArrayDecl(const dbname##ArrayDecl* node) override     \
-    {                                                                         \
-        writeNamedConnection(node, node->symbol(), "symbol");                 \
-        writeNamedConnection(node, node->dims(), "dims");                     \
-    }
+    void visit##dbname##Literal(const dbname##Literal* node) override {}
     ODB_DATATYPE_LIST
 #undef X
 
