@@ -12,7 +12,6 @@ CommandExpr::CommandExpr(const std::string& command, ArgList* args, SourceLocati
     args_(args),
     command_(command)
 {
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -70,8 +69,6 @@ void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

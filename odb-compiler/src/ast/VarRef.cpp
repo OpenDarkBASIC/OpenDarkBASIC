@@ -10,7 +10,6 @@ VarRef::VarRef(AnnotatedSymbol* symbol, SourceLocation* location) :
     LValue(location),
     symbol_(symbol)
 {
-    symbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -48,8 +47,6 @@ void VarRef::swapChild(const Node* oldNode, Node* newNode)
         symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

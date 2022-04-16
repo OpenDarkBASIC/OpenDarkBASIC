@@ -11,7 +11,6 @@ Goto::Goto(Symbol* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
-    label->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

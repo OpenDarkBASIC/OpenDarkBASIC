@@ -11,7 +11,6 @@ SubCall::SubCall(Symbol* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
-    label->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -49,8 +48,6 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
         label_ = dynamic_cast<Symbol*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

@@ -12,8 +12,6 @@ FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocatio
     symbol_(symbol),
     args_(args)
 {
-    symbol->setParent(this);
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -21,7 +19,6 @@ FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location) :
     Expression(location),
     symbol_(symbol)
 {
-    symbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,8 +71,6 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -96,8 +91,6 @@ FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList*
     symbol_(symbol),
     args_(args)
 {
-    symbol->setParent(this);
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -150,8 +143,6 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -172,8 +163,6 @@ FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocat
     symbol_(symbol),
     args_(args)
 {
-    symbol->setParent(this);
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -181,7 +170,6 @@ FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location) 
     Statement(location),
     symbol_(symbol)
 {
-    symbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -234,8 +222,6 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

@@ -12,8 +12,6 @@ ConstDeclExpr::ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLo
     symbol_(symbol),
     expr_(expr)
 {
-    symbol->setParent(this);
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -59,8 +57,6 @@ void ConstDeclExpr::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -81,8 +77,6 @@ ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* 
     symbol_(symbol),
     literal_(literal)
 {
-    symbol->setParent(this);
-    literal->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -128,8 +122,6 @@ void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
         literal_ = dynamic_cast<Literal*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

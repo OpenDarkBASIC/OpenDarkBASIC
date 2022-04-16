@@ -16,10 +16,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expressi
     body_(body),
     returnValue_(returnValue)
 {
-    symbol->setParent(this);
-    args->setParent(this);
-    body->setParent(this);
-    returnValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -29,9 +25,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Expression* returnVal
     args_(args),
     returnValue_(returnValue)
 {
-    symbol->setParent(this);
-    args->setParent(this);
-    returnValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -41,9 +34,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Block* body, Expression* returnValue
     body_(body),
     returnValue_(returnValue)
 {
-    symbol->setParent(this);
-    body->setParent(this);
-    returnValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -52,8 +42,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Expression* returnValue, SourceLocat
     symbol_(symbol),
     returnValue_(returnValue)
 {
-    symbol->setParent(this);
-    returnValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -63,9 +51,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, SourceLo
     args_(args),
     body_(body)
 {
-    symbol->setParent(this);
-    args->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,8 +59,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* locat
     symbol_(symbol),
     args_(args)
 {
-    symbol->setParent(this);
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -84,8 +67,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Block* body, SourceLocation* locatio
     symbol_(symbol),
     body_(body)
 {
-    symbol->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -93,7 +74,6 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location) :
     Statement(location),
     symbol_(symbol)
 {
-    symbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -167,8 +147,6 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
         returnValue_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -190,7 +168,6 @@ FuncExit::FuncExit(Expression* returnValue, SourceLocation* location) :
     Statement(location),
     returnValue_(returnValue)
 {
-    returnValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -241,8 +218,6 @@ void FuncExit::swapChild(const Node* oldNode, Node* newNode)
         returnValue_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

@@ -12,7 +12,6 @@ CommandStmnt::CommandStmnt(const std::string& command, ArgList* args, SourceLoca
     args_(args),
     command_(command)
 {
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -70,8 +69,6 @@ void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

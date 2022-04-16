@@ -21,8 +21,7 @@ Block::Block(Statement* stmnt, SourceLocation* location)
 // ----------------------------------------------------------------------------
 void Block::appendStatement(Statement* stmnt)
 {
-    stmnt->setParent(this);
-    statements_.push_back(stmnt);
+    statements_.emplace_back(stmnt);
 
     location()->unionize(stmnt->location());
 }
@@ -79,7 +78,6 @@ void Block::swapChild(const Node* oldNode, Node* newNode)
         if (stmnt == oldNode)
         {
             stmnt = dynamic_cast<Statement*>(newNode);
-            newNode->setParent(this);
             return;
         }
 

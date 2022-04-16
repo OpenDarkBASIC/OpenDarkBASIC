@@ -13,11 +13,6 @@ Conditional::Conditional(Expression* condition, Block* trueBranch, Block* falseB
     true_(trueBranch),
     false_(falseBranch)
 {
-    condition->setParent(this);
-    if (trueBranch)
-        trueBranch->setParent(this);
-    if (falseBranch)
-        falseBranch->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -81,8 +76,6 @@ void Conditional::swapChild(const Node* oldNode, Node* newNode)
         false_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

@@ -19,10 +19,6 @@ public:
 
     Node(SourceLocation* location);
 
-    template <typename T=Node>
-    T* parent() const { return dynamic_cast<T*>(parent_); }
-
-    void setParent(Node* node);
     SourceLocation* location() const;
 
     virtual std::string toString() const = 0;
@@ -54,7 +50,6 @@ protected:
     virtual Node* duplicateImpl() const = 0;
 
 private:
-    Node* parent_;
     Reference<SourceLocation> location_;
 };
 

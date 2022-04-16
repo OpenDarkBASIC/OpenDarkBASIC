@@ -21,8 +21,7 @@ ArgList::ArgList(Expression* expr, SourceLocation* location) :
 // ----------------------------------------------------------------------------
 void ArgList::appendExpression(Expression* expr)
 {
-    expr->setParent(this);
-    expressions_.push_back(expr);
+    expressions_.emplace_back(expr);
 
     location()->unionize(expr->location());
 }
@@ -67,7 +66,6 @@ void ArgList::swapChild(const Node* oldNode, Node* newNode)
         if (expr == oldNode)
         {
             expr = dynamic_cast<Expression*>(newNode);
-            newNode->setParent(this);
             return;
         }
 

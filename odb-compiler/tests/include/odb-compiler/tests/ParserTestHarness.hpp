@@ -15,7 +15,6 @@ namespace odb::db {
 class ParserTestHarness : public testing::Test
 {
 public:
-    void checkParentConnectionConsistencies(const odb::ast::Block* ast);
     void SetUp() override;
     void TearDown() override;
 
