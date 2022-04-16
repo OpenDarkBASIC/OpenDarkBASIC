@@ -10,7 +10,6 @@ UnaryOp::UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location) :
     expr_(expr),
     op_(op)
 {
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -54,8 +53,6 @@ void UnaryOp::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

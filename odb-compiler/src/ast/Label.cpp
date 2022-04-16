@@ -10,7 +10,6 @@ Label::Label(Symbol* symbol, SourceLocation* location) :
     Statement(location),
     symbol_(symbol)
 {
-    symbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -48,8 +47,6 @@ void Label::swapChild(const Node* oldNode, Node* newNode)
         symbol_ = dynamic_cast<Symbol*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

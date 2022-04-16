@@ -1,6 +1,7 @@
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
+#include "odb-compiler/ast/ParentMap.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-sdk/Log.hpp"
 
@@ -19,7 +20,7 @@
 namespace odb::astpost {
 
 namespace {
-class Visitor : public ast::GenericVisitor
+class Gatherer : public ast::GenericVisitor
 {
 public:
     void visitBinaryOp(ast::BinaryOp* node) override final {
@@ -51,11 +52,12 @@ public:
 }
 
 // ----------------------------------------------------------------------------
-bool EliminateBitwiseNotRHS::execute(ast::Node* node)
+bool EliminateBitwiseNotRHS::execute(ast::Node* root)
 {
-    Visitor gatherer;
-    visitAST(node, gatherer);
+    Gatherer gatherer;
+    visitAST(root, gatherer);
 
+    ast::ParentMap parents(root);
     for (auto& op : gatherer.ops)
     {
         SideEffectFinder finder;
@@ -69,9 +71,11 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* node)
             return false;
         }
 
-        op->parent()->swapChild(op, new ast::UnaryOp(
+        ast::Node* parent = parents.parent(op);
+        parent->swapChild(op, new ast::UnaryOp(
             ast::UnaryOpType::BITWISE_NOT, op->lhs(), op->location()
         ));
+        parents.updateFrom(parent);
     }
 
     return true;

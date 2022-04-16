@@ -15,12 +15,6 @@ ArrayDecl::ArrayDecl(ScopedAnnotatedSymbol* symbol, Type type, ArgList* dims, So
     , type_(std::move(type))
     , dims_(dims)
 {
-    symbol->setParent(this);
-    if (type_.getArrayInnerType()->isUDT())
-    {
-        (*type_.getArrayInnerType()->getUDT())->setParent(this);
-    }
-    dims->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

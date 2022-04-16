@@ -14,8 +14,6 @@ Select::Select(Expression* expr, CaseList* cases, SourceLocation* location, Sour
     , beginLoc_(beginSelect)
     , endLoc_(endSelect)
 {
-    expr->setParent(this);
-    cases->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -25,7 +23,6 @@ Select::Select(Expression* expr, SourceLocation* location, SourceLocation* begin
     , beginLoc_(beginSelect)
     , endLoc_(endSelect)
 {
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -90,8 +87,6 @@ void Select::swapChild(const Node* oldNode, Node* newNode)
         cases_ = dynamic_cast<CaseList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -131,8 +126,7 @@ CaseList::CaseList(SourceLocation* location)
 // ----------------------------------------------------------------------------
 void CaseList::appendCase(Case* case_)
 {
-    cases_.push_back(case_);
-    case_->setParent(this);
+    cases_.emplace_back(case_);
 
     location()->unionize(case_->location());
 }
@@ -140,8 +134,7 @@ void CaseList::appendCase(Case* case_)
 // ----------------------------------------------------------------------------
 void CaseList::appendDefaultCase(DefaultCase* case_)
 {
-    defaults_.push_back(case_);
-    case_->setParent(this);
+    defaults_.emplace_back(case_);
 
     location()->unionize(case_->location());
 }
@@ -202,14 +195,12 @@ void CaseList::swapChild(const Node* oldNode, Node* newNode)
         if (case_ == oldNode)
         {
             case_ = dynamic_cast<Case*>(newNode);
-            newNode->setParent(this);
             return;
         }
     for (auto& default_ : defaults_)
         if (default_ == oldNode)
         {
             default_ = dynamic_cast<DefaultCase*>(newNode);
-            newNode->setParent(this);
             return;
         }
 
@@ -236,8 +227,6 @@ Case::Case(Expression* expr, Block* body, SourceLocation* location)
     , expr_(expr)
     , body_(body)
 {
-    expr->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -245,7 +234,6 @@ Case::Case(Expression* expr, SourceLocation* location)
     : Node(location)
     , expr_(expr)
 {
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -298,8 +286,6 @@ void Case::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -321,7 +307,6 @@ DefaultCase::DefaultCase(Block* body, SourceLocation* location, SourceLocation* 
     , beginLoc_(beginCaseLoc)
     , endLoc_(endCaseLoc)
 {
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -386,8 +371,6 @@ void DefaultCase::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

@@ -39,15 +39,6 @@ VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, Type type, InitializerList* init
     type_(std::move(type)),
     initializer_(initializer)
 {
-    symbol->setParent(this);
-    if (type_.isUDT())
-    {
-        (*type_.getUDT())->setParent(this);
-    }
-    if (initializer)
-    {
-        initializer->setParent(this);
-    }
 }
 
 // ----------------------------------------------------------------------------
@@ -78,7 +69,6 @@ MaybeNull<InitializerList> VarDecl::initializer() const
 void VarDecl::setInitializer(InitializerList* initializer)
 {
     initializer_ = initializer;
-    initializer->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -126,8 +116,6 @@ void VarDecl::swapChild(const Node* oldNode, Node* newNode)
         initializer_ = dynamic_cast<InitializerList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

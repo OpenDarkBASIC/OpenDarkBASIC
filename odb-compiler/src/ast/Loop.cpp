@@ -23,7 +23,6 @@ InfiniteLoop::InfiniteLoop(Block* body, SourceLocation* location) :
     Loop(location),
     body_(body)
 {
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,8 +73,6 @@ void InfiniteLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -95,8 +92,6 @@ WhileLoop::WhileLoop(Expression* continueCondition, Block* body, SourceLocation*
     continueCondition_(continueCondition),
     body_(body)
 {
-    continueCondition->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -104,7 +99,6 @@ WhileLoop::WhileLoop(Expression* continueCondition, SourceLocation* location) :
     Loop(location),
     continueCondition_(continueCondition)
 {
-    continueCondition->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -157,8 +151,6 @@ void WhileLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -179,8 +171,6 @@ UntilLoop::UntilLoop(Expression* exitCondition, Block* body, SourceLocation* loc
     exitCondition_(exitCondition),
     body_(body)
 {
-    exitCondition->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -188,7 +178,6 @@ UntilLoop::UntilLoop(Expression* exitCondition, SourceLocation* location) :
     Loop(location),
     exitCondition_(exitCondition)
 {
-    exitCondition->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -241,8 +230,6 @@ void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -266,11 +253,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
     nextSymbol_(nextSymbol),
     body_(body)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    stepValue->setParent(this);
-    nextSymbol->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -281,10 +263,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
     stepValue_(stepValue),
     nextSymbol_(nextSymbol)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    stepValue->setParent(this);
-    nextSymbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -295,10 +273,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
     stepValue_(stepValue),
     body_(body)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    stepValue->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -308,9 +282,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
     endValue_(endValue),
     stepValue_(stepValue)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    stepValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -321,10 +292,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nex
     nextSymbol_(nextSymbol),
     body_(body)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    nextSymbol->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -334,9 +301,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nex
     endValue_(endValue),
     nextSymbol_(nextSymbol)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    nextSymbol->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -346,9 +310,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceL
     endValue_(endValue),
     body_(body)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
-    body->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -357,8 +318,6 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, SourceLocation* loca
     counter_(counter),
     endValue_(endValue)
 {
-    counter->setParent(this);
-    endValue->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -443,8 +402,6 @@ void ForLoop::swapChild(const Node* oldNode, Node* newNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

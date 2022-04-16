@@ -17,8 +17,6 @@ UDTDecl::UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* locatio
     typeName_(typeName),
     body_(udtBody)
 {
-    typeName->setParent(this);
-    udtBody->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -101,18 +99,14 @@ UDTDeclBody::UDTDeclBody(ArrayDecl* arrayDecl, SourceLocation* location) :
 // ----------------------------------------------------------------------------
 void UDTDeclBody::appendVarDecl(VarDecl* varDecl)
 {
-    varDecl->setParent(this);
-    varDecls_.push_back(varDecl);
-
+    varDecls_.emplace_back(varDecl);
     location()->unionize(varDecl->location());
 }
 
 // ----------------------------------------------------------------------------
 void UDTDeclBody::appendArrayDecl(ArrayDecl* arrayDecl)
 {
-    arrayDecl->setParent(this);
-    arrayDecls_.push_back(arrayDecl);
-
+    arrayDecls_.emplace_back(arrayDecl);
     location()->unionize(arrayDecl->location());
 }
 

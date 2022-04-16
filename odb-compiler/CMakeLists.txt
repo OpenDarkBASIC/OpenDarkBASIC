@@ -191,6 +191,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/LValue.cpp"
     "src/ast/Node.cpp"
     "src/ast/Operator.cpp"
+    "src/ast/ParentMap.cpp"
     "src/ast/Scope.cpp"
     "src/ast/ScopedAnnotatedSymbol.cpp"
     "src/ast/SelectCase.cpp"
@@ -378,7 +379,6 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/parser/test_db_parser_var_decl.cpp"
         "tests/src/parser/test_db_parser_var_decl_math.cpp"
         "tests/src/parser/test_db_parser_var_ref.cpp"
-        "tests/src/parser/ASTParentConsistenciesChecker.cpp"
         "tests/src/test_SourceLocation.cpp"
         "tests/src/main.cpp")
     target_link_libraries (odbc_tests

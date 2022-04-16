@@ -12,8 +12,6 @@ ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* locat
     symbol_(symbol),
     args_(args)
 {
-    symbol->setParent(this);
-    args->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -59,8 +57,6 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

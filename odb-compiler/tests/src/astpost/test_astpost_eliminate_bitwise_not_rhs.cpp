@@ -1,11 +1,12 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/astpost/Process.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/matchers/BinaryOpEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
@@ -39,13 +40,16 @@ class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
     };
 
 public:
-    bool execute(ast::Node* node)
+    bool execute(ast::Node* root) override
     {
-        Gatherer gatherer;
-        visitAST(node, gatherer);
-        for (const auto& node : gatherer.nodes)
+        auto range = ast::depthFirst(root);
+        for (auto it = range.begin(); it != range.end(); ++it)
         {
-            node->parent()->swapChild(node, new ArrayRef(
+            auto* node = dynamic_cast<ast::FuncCallExprOrArrayRef*>(*it);
+            if (!node)
+                continue;
+
+            it.parent()->swapChild(node, new ArrayRef(
                 node->symbol(),
                 node->args().notNull() ? node->args() : nullptr,
                 node->location()

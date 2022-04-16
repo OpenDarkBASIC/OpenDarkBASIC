@@ -15,8 +15,6 @@ Assignment::Assignment(LValue* lvalue, Expression* expr, SourceLocation* locatio
     , lvalue_(lvalue)
     , expr_(expr)
 {
-    lvalue->setParent(this);
-    expr->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -74,8 +72,6 @@ void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -133,8 +129,6 @@ void ArrayAssignment::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -192,8 +186,6 @@ void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

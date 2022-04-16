@@ -11,8 +11,6 @@ BinaryOp::BinaryOp(BinaryOpType op, Expression* lhs, Expression* rhs, SourceLoca
     , rhs_(rhs)
     , op_(op)
 {
-    lhs->setParent(this);
-    rhs->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -64,8 +62,6 @@ void BinaryOp::swapChild(const Node* oldNode, Node* newNode)
         rhs_ = dynamic_cast<Expression*>(newNode);
     else
         assert(false);
-
-    newNode->setParent(this);
 }
 
 // ----------------------------------------------------------------------------

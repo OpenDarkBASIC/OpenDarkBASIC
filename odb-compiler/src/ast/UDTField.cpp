@@ -9,8 +9,6 @@ UDTFieldOuter::UDTFieldOuter(Expression* left, LValue* right, SourceLocation* lo
     , left_(left)
     , right_(right)
 {
-    left->setParent(this);
-    right->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -55,9 +53,7 @@ void UDTFieldOuter::swapChild(const Node* oldNode, Node* newNode)
     else if (right_ == oldNode)
         right_ = dynamic_cast<LValue*>(newNode);
     else
-        assert(false),
-
-    newNode->setParent(this);
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
@@ -78,8 +74,6 @@ UDTFieldInner::UDTFieldInner(LValue* left, LValue* right, SourceLocation* locati
     , left_(left)
     , right_(right)
 {
-    left->setParent(this);
-    right->setParent(this);
 }
 
 // ----------------------------------------------------------------------------
@@ -124,9 +118,7 @@ void UDTFieldInner::swapChild(const Node* oldNode, Node* newNode)
     else if (right_ == oldNode)
         right_ = dynamic_cast<LValue*>(newNode);
     else
-        assert(false),
-
-    newNode->setParent(this);
+        assert(false);
 }
 
 // ----------------------------------------------------------------------------
