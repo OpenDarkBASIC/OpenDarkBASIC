@@ -11,7 +11,7 @@ class Block;
 class Expression;
 class ArgList;
 
-class ODBCOMPILER_PUBLIC_API FuncDecl : public Statement
+class ODBCOMPILER_PUBLIC_API FuncDecl final : public Statement
 {
 public:
     FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
@@ -31,6 +31,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -43,7 +44,7 @@ private:
     Reference<Expression> returnValue_;
 };
 
-class ODBCOMPILER_PUBLIC_API FuncExit : public Statement
+class ODBCOMPILER_PUBLIC_API FuncExit final : public Statement
 {
 public:
     FuncExit(Expression* returnValue, SourceLocation* location);
@@ -54,6 +55,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

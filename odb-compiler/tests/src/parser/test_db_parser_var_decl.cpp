@@ -158,7 +158,7 @@ TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, type##_literal_visitor(type##_literal_eq(type##_initial_value))).After(exp);\
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 VALID(local, none, integer)
 VALID(local, amp, double_integer)
@@ -201,7 +201,7 @@ TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);\
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 VALID_INITIAL(local, none, integer)
 VALID_INITIAL(local, amp, double_integer)
@@ -276,7 +276,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 #define VALID_AS_TYPE_ALL_SCOPES(ann, as_type)                                \
     VALID_AS_TYPE(none, ann, as_type)                                         \
@@ -362,7 +362,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp); \
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, double_integer)
 VALID_AS_TYPE_INITIAL_ALL_SCOPES(none, integer)

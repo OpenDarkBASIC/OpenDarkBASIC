@@ -43,14 +43,21 @@ std::string ArgList::toString() const
 void ArgList::accept(Visitor* visitor)
 {
     visitor->visitArgList(this);
-    for (const auto& expr : expressions_)
-        expr->accept(visitor);
 }
 void ArgList::accept(ConstVisitor* visitor) const
 {
     visitor->visitArgList(this);
-    for (const auto& expr : expressions_)
-        expr->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ArgList::children()
+{
+    ChildRange children;
+    for (Expression* e : expressions_)
+    {
+        children.push_back(e);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

@@ -91,30 +91,28 @@ std::string VarDecl::toString() const
 void VarDecl::accept(Visitor* visitor)
 {
     visitor->visitVarDecl(this);
-    symbol_->accept(visitor);
-    if (type_.isUDT())
-    {
-        (*type_.getUDT())->accept(visitor);
-    }
-    if (initializer_)
-    {
-        initializer_->accept(visitor);
-    }
 }
 
 // ----------------------------------------------------------------------------
 void VarDecl::accept(ConstVisitor* visitor) const
 {
     visitor->visitVarDecl(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange VarDecl::children()
+{
+    ChildRange children;
+    children.push_back(symbol_);
     if (type_.isUDT())
     {
-        (*type_.getUDT())->accept(visitor);
+        children.push_back(*type_.getUDT());
     }
     if (initializer_)
     {
-        initializer_->accept(visitor);
+        children.push_back(initializer_);
     }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

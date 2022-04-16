@@ -34,6 +34,12 @@ void Symbol::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+Node::ChildRange Symbol::children()
+{
+    return {};
+}
+
+// ----------------------------------------------------------------------------
 void Symbol::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);

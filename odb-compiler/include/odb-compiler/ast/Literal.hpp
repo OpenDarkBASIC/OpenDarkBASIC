@@ -13,7 +13,7 @@ public:
 };
 
 #define X(dbname, cppname)                                                    \
-class ODBCOMPILER_PUBLIC_API dbname##Literal : public Literal                 \
+class ODBCOMPILER_PUBLIC_API dbname##Literal final : public Literal           \
 {                                                                             \
 public:                                                                       \
     dbname##Literal(const cppname& value, SourceLocation* location);          \
@@ -22,6 +22,7 @@ public:                                                                       \
     std::string toString() const override;                                    \
     void accept(Visitor* visitor) override;                                   \
     void accept(ConstVisitor* visitor) const override;                        \
+    ChildRange children() override;                                           \
     void swapChild(const Node* oldNode, Node* newNode) override;              \
                                                                               \
 protected:                                                                    \

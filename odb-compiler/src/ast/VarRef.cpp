@@ -29,12 +29,16 @@ std::string VarRef::toString() const
 void VarRef::accept(Visitor* visitor)
 {
     visitor->visitVarRef(this);
-    symbol_->accept(visitor);
 }
 void VarRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitVarRef(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange VarRef::children()
+{
+    return {symbol_};
 }
 
 // ----------------------------------------------------------------------------

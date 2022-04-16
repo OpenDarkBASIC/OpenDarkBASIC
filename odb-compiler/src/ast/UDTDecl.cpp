@@ -34,25 +34,25 @@ UDTDeclBody* UDTDecl::body() const
 }
 
 // ----------------------------------------------------------------------------
-void UDTDecl::accept(Visitor* visitor)
-{
-    visitor->visitUDTDecl(this);
-    typeName_->accept(visitor);
-    body_->accept(visitor);
-}
-
-// ----------------------------------------------------------------------------
 std::string UDTDecl::toString() const
 {
     return "UDTDecl";
 }
 
 // ----------------------------------------------------------------------------
+void UDTDecl::accept(Visitor* visitor)
+{
+    visitor->visitUDTDecl(this);
+}
 void UDTDecl::accept(ConstVisitor* visitor) const
 {
     visitor->visitUDTDecl(this);
-    typeName_->accept(visitor);
-    body_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UDTDecl::children()
+{
+    return {typeName_, body_};
 }
 
 // ----------------------------------------------------------------------------
@@ -138,20 +138,27 @@ std::string UDTDeclBody::toString() const
 void UDTDeclBody::accept(Visitor* visitor)
 {
     visitor->visitUDTDeclBody(this);
-    for (auto& varDecl : varDecls_)
-        varDecl->accept(visitor);
-    for (auto& arrayDecl : arrayDecls_)
-        arrayDecl->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
 void UDTDeclBody::accept(ConstVisitor* visitor) const
 {
     visitor->visitUDTDeclBody(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UDTDeclBody::children()
+{
+    ChildRange children;
     for (const auto& varDecl : varDecls_)
-        varDecl->accept(visitor);
+    {
+        children.push_back(varDecl);
+    }
     for (auto& arrayDecl : arrayDecls_)
-        arrayDecl->accept(visitor);
+    {
+        children.push_back(arrayDecl);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

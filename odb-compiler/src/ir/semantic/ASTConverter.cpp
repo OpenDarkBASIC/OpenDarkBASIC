@@ -152,6 +152,7 @@ bool ASTConverter::isTypeConvertible(Type sourceType, Type targetType) const
     return false;
 }
 
+// TODO: Turn ASTConverter::ensureType into an astpost pass.
 Ptr<Expression> ASTConverter::ensureType(Ptr<Expression> expression, Type targetType)
 {
     Type expressionType = expression->getType();

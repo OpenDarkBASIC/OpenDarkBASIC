@@ -10,7 +10,7 @@ class ArgList;
 class ScopedAnnotatedSymbol;
 class Symbol;
 
-class ODBCOMPILER_PUBLIC_API ArrayDecl : public Statement
+class ODBCOMPILER_PUBLIC_API ArrayDecl final : public Statement
 {
 public:
     ArrayDecl(ScopedAnnotatedSymbol* symbol, Type type, ArgList* dims, SourceLocation* location);
@@ -22,6 +22,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

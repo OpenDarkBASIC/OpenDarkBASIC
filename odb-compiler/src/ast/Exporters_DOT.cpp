@@ -44,7 +44,7 @@ namespace odb::ast {
 class NodeGUIDs : public GenericConstVisitor
 {
 public:
-    void calculate(const Node* root) { root->accept(this); }
+    void calculate(const Node* root) { visitAST(root, *this); }
 
 public:
     void visit(const Node* node) override { map_.emplace(node, guidCounter_++); }
@@ -63,7 +63,7 @@ public:
     {
         fp_ = fp;
         guids_ = guids;
-        root->accept(this);
+        visitAST(root, *this);
     }
 
 private:
@@ -321,7 +321,7 @@ public:
     {
         fp_ = fp;
         guids_ = guids;
-        root->accept(this);
+        visitAST(root, *this);
     }
 
 private:

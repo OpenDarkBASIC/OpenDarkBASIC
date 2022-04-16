@@ -44,14 +44,23 @@ std::string CommandStmnt::toString() const
 void CommandStmnt::accept(Visitor* visitor)
 {
     visitor->visitCommandStmnt(this);
-    if (args_)
-        args_->accept(visitor);
 }
 void CommandStmnt::accept(ConstVisitor* visitor) const
 {
     visitor->visitCommandStmnt(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange CommandStmnt::children()
+{
     if (args_)
-        args_->accept(visitor);
+    {
+        return {args_};
+    }
+    else
+    {
+        return {};
+    }
 }
 
 // ----------------------------------------------------------------------------

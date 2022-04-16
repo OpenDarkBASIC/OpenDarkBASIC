@@ -10,7 +10,7 @@ namespace odb::ast {
 class AnnotatedSymbol;
 class ArgList;
 
-class ODBCOMPILER_PUBLIC_API FuncCallExpr : public Expression
+class ODBCOMPILER_PUBLIC_API FuncCallExpr final : public Expression
 {
 public:
     FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
@@ -22,6 +22,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -32,7 +33,7 @@ private:
     Reference<ArgList> args_;
 };
 
-class ODBCOMPILER_PUBLIC_API FuncCallStmnt : public Statement
+class ODBCOMPILER_PUBLIC_API FuncCallStmnt final : public Statement
 {
 public:
     FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
@@ -44,6 +45,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -62,7 +64,7 @@ private:
  * is a function call or an array access. This class represents such an entity.
  * This is fixed in a second stage later.
  */
-class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef : public Expression
+class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef final : public Expression
 {
 public:
     FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
@@ -73,6 +75,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

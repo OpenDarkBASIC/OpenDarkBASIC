@@ -46,16 +46,23 @@ std::string FuncCallExpr::toString() const
 void FuncCallExpr::accept(Visitor* visitor)
 {
     visitor->visitFuncCallExpr(this);
-    symbol_->accept(visitor);
-    if (args_)
-        args_->accept(visitor);
 }
 void FuncCallExpr::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncCallExpr(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncCallExpr::children()
+{
     if (args_)
-        args_->accept(visitor);
+    {
+        return {symbol_, args_};
+    }
+    else
+    {
+        return {symbol_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -115,16 +122,23 @@ std::string FuncCallExprOrArrayRef::toString() const
 void FuncCallExprOrArrayRef::accept(Visitor* visitor)
 {
     visitor->visitFuncCallExprOrArrayRef(this);
-    symbol_->accept(visitor);
-    if (args_)
-        args_->accept(visitor);
 }
 void FuncCallExprOrArrayRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncCallExprOrArrayRef(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncCallExprOrArrayRef::children()
+{
     if (args_)
-        args_->accept(visitor);
+    {
+        return {symbol_, args_};
+    }
+    else
+    {
+        return {symbol_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -192,16 +206,23 @@ std::string FuncCallStmnt::toString() const
 void FuncCallStmnt::accept(Visitor* visitor)
 {
     visitor->visitFuncCallStmnt(this);
-    symbol_->accept(visitor);
-    if (args_)
-        args_->accept(visitor);
 }
 void FuncCallStmnt::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncCallStmnt(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncCallStmnt::children()
+{
     if (args_)
-        args_->accept(visitor);
+    {
+        return {symbol_, args_};
+    }
+    else
+    {
+        return {symbol_};
+    }
 }
 
 // ----------------------------------------------------------------------------

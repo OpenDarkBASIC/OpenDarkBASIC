@@ -48,20 +48,26 @@ std::string Conditional::toString() const
 void Conditional::accept(Visitor* visitor)
 {
     visitor->visitConditional(this);
-    cond_->accept(visitor);
-    if (true_)
-        true_->accept(visitor);
-    if (false_)
-        false_->accept(visitor);
 }
 void Conditional::accept(ConstVisitor* visitor) const
 {
     visitor->visitConditional(this);
-    cond_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Conditional::children()
+{
+    ChildRange children;
+    children.push_back(cond_);
     if (true_)
-        true_->accept(visitor);
+    {
+        children.push_back(true_);
+    }
     if (false_)
-        false_->accept(visitor);
+    {
+        children.push_back(false_);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

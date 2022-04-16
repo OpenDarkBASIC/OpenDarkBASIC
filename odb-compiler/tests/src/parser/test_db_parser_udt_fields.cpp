@@ -98,7 +98,7 @@ TEST_F(NAME, udt_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -123,7 +123,7 @@ TEST_F(NAME, udt_float_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -148,7 +148,7 @@ TEST_F(NAME, udt_string_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -176,7 +176,7 @@ TEST_F(NAME, udt_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -204,7 +204,7 @@ TEST_F(NAME, udt_arr_float_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -232,7 +232,7 @@ TEST_F(NAME, udt_arr_string_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -260,7 +260,7 @@ TEST_F(NAME, udt_inner_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -288,7 +288,7 @@ TEST_F(NAME, udt_outer_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -313,7 +313,7 @@ TEST_F(NAME, value_ass_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -338,7 +338,7 @@ TEST_F(NAME, value_ass_udt_float)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -363,7 +363,7 @@ TEST_F(NAME, value_ass_udt_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -391,7 +391,7 @@ TEST_F(NAME, value_ass_udt_arr)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -419,7 +419,7 @@ TEST_F(NAME, value_ass_udt_arr_float)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -447,7 +447,7 @@ TEST_F(NAME, value_ass_udt_arr_string)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -475,7 +475,7 @@ TEST_F(NAME, value_ass_udt_inner_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -503,7 +503,7 @@ TEST_F(NAME, value_ass_udt_outer_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -528,7 +528,7 @@ TEST_F(NAME, value_ass_func_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -554,7 +554,7 @@ TEST_F(NAME, value_ass_command_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsTrue());
@@ -579,7 +579,7 @@ TEST_F(NAME, udt_inner_float_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -604,7 +604,7 @@ TEST_F(NAME, udt_inner_string_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -629,7 +629,7 @@ TEST_F(NAME, udt_outer_float_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -654,7 +654,7 @@ TEST_F(NAME, udt_outer_string_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -682,7 +682,7 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -710,7 +710,7 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -738,7 +738,7 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -766,7 +766,7 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -833,7 +833,7 @@ TEST_F(NAME, value_ass_udt_inner_float)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -858,7 +858,7 @@ TEST_F(NAME, value_ass_udt_outer_float)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -883,7 +883,7 @@ TEST_F(NAME, value_ass_udt_inner_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -908,7 +908,7 @@ TEST_F(NAME, value_ass_udt_outer_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -936,7 +936,7 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -964,7 +964,7 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -992,7 +992,7 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -1020,7 +1020,7 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -1045,7 +1045,7 @@ TEST_F(NAME, value_ass_float_func_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -1071,7 +1071,7 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -1096,7 +1096,7 @@ TEST_F(NAME, value_ass_string_func_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());
@@ -1122,7 +1122,7 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
     ASSERT_THAT(post.execute(ast), IsFalse());

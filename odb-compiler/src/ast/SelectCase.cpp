@@ -62,16 +62,23 @@ std::string Select::toString() const
 void Select::accept(Visitor* visitor)
 {
     visitor->visitSelect(this);
-    expr_->accept(visitor);
-    if (cases_)
-        cases_->accept(visitor);
 }
 void Select::accept(ConstVisitor* visitor) const
 {
     visitor->visitSelect(this);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Select::children()
+{
     if (cases_)
-        cases_->accept(visitor);
+    {
+        return {expr_, cases_};
+    }
+    else
+    {
+        return {expr_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -160,25 +167,32 @@ const std::vector<Reference<DefaultCase>>& CaseList::defaultCases() const
 // ----------------------------------------------------------------------------
 MaybeNull<DefaultCase> CaseList::defaultCase() const
 {
-    return defaults_.size() > 0 ? defaults_.back().get() : nullptr;
+    return !defaults_.empty() ? defaults_.back().get() : nullptr;
 }
 
 // ----------------------------------------------------------------------------
 void CaseList::accept(Visitor* visitor)
 {
     visitor->visitCaseList(this);
-    for (const auto& case_ : cases_)
-        case_->accept(visitor);
-    for (const auto& default_ : defaults_)
-        default_->accept(visitor);
 }
 void CaseList::accept(ConstVisitor* visitor) const
 {
     visitor->visitCaseList(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange CaseList::children()
+{
+    ChildRange children;
     for (const auto& case_ : cases_)
-        case_->accept(visitor);
+    {
+        children.push_back(case_);
+    }
     for (const auto& default_ : defaults_)
-        default_->accept(visitor);
+    {
+        children.push_back(default_);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------
@@ -256,16 +270,23 @@ std::string Case::toString() const
 void Case::accept(Visitor* visitor)
 {
     visitor->visitCase(this);
-    expr_->accept(visitor);
-    if (body_)
-        body_->accept(visitor);
 }
 void Case::accept(ConstVisitor* visitor) const
 {
     visitor->visitCase(this);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Case::children()
+{
     if (body_)
-        body_->accept(visitor);
+    {
+        return {expr_, body_};
+    }
+    else
+    {
+        return {expr_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -339,14 +360,23 @@ std::string DefaultCase::toString() const
 void DefaultCase::accept(Visitor* visitor)
 {
     visitor->visitDefaultCase(this);
-    if (body_)
-        body_->accept(visitor);
 }
 void DefaultCase::accept(ConstVisitor* visitor) const
 {
     visitor->visitDefaultCase(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange DefaultCase::children()
+{
     if (body_)
-        body_->accept(visitor);
+    {
+        return {body_};
+    }
+    else
+    {
+        return {};
+    }
 }
 
 // ----------------------------------------------------------------------------

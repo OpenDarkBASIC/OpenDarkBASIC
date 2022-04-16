@@ -9,7 +9,7 @@ namespace odb::ast {
 class Block;
 class Expression;
 
-class ODBCOMPILER_PUBLIC_API Conditional : public Statement
+class ODBCOMPILER_PUBLIC_API Conditional final : public Statement
 {
 public:
     Conditional(Expression* condition, Block* trueBranch, Block* falseBranch, SourceLocation* location);
@@ -21,6 +21,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

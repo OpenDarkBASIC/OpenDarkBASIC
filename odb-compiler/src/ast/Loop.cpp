@@ -48,14 +48,23 @@ std::string InfiniteLoop::toString() const
 void InfiniteLoop::accept(Visitor* visitor)
 {
     visitor->visitInfiniteLoop(this);
-    if (body_)
-        body_->accept(visitor);
 }
 void InfiniteLoop::accept(ConstVisitor* visitor) const
 {
     visitor->visitInfiniteLoop(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange InfiniteLoop::children()
+{
     if (body_)
-        body_->accept(visitor);
+    {
+        return {body_};
+    }
+    else
+    {
+        return {};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -120,16 +129,23 @@ std::string WhileLoop::toString() const
 void WhileLoop::accept(Visitor* visitor)
 {
     visitor->visitWhileLoop(this);
-    continueCondition_->accept(visitor);
-    if (body_)
-        body_->accept(visitor);
 }
 void WhileLoop::accept(ConstVisitor* visitor) const
 {
     visitor->visitWhileLoop(this);
-    continueCondition_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange WhileLoop::children()
+{
     if (body_)
-        body_->accept(visitor);
+    {
+        return {continueCondition_, body_};
+    }
+    else
+    {
+        return {continueCondition_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -197,16 +213,23 @@ std::string UntilLoop::toString() const
 void UntilLoop::accept(Visitor* visitor)
 {
     visitor->visitUntilLoop(this);
-    exitCondition_->accept(visitor);
-    if (body_)
-        body_->accept(visitor);
 }
 void UntilLoop::accept(ConstVisitor* visitor) const
 {
     visitor->visitUntilLoop(this);
-    exitCondition_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UntilLoop::children()
+{
     if (body_)
-        body_->accept(visitor);
+    {
+        return {exitCondition_, body_};
+    }
+    else
+    {
+        return {exitCondition_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -378,28 +401,31 @@ std::string ForLoop::toString() const
 void ForLoop::accept(Visitor* visitor)
 {
     visitor->visitForLoop(this);
-
-    counter_->accept(visitor);
-    endValue_->accept(visitor);
-    if (stepValue_)
-        stepValue_->accept(visitor);
-    if (nextSymbol_)
-        nextSymbol_->accept(visitor);
-    if (body_)
-        body_->accept(visitor);
 }
 void ForLoop::accept(ConstVisitor* visitor) const
 {
     visitor->visitForLoop(this);
+}
 
-    counter_->accept(visitor);
-    endValue_->accept(visitor);
+// ----------------------------------------------------------------------------
+Node::ChildRange ForLoop::children()
+{
+    ChildRange children;
+    children.push_back(counter_);
+    children.push_back(endValue_);
     if (stepValue_)
-        stepValue_->accept(visitor);
+    {
+        children.push_back(stepValue_);
+    }
     if (nextSymbol_)
-        nextSymbol_->accept(visitor);
+    {
+        children.push_back(nextSymbol_);
+    }
     if (body_)
-        body_->accept(visitor);
+    {
+        children.push_back(body_);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

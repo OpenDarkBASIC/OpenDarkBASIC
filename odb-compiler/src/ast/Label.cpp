@@ -29,12 +29,16 @@ std::string Label::toString() const
 void Label::accept(Visitor* visitor)
 {
     visitor->visitLabel(this);
-    symbol_->accept(visitor);
 }
 void Label::accept(ConstVisitor* visitor) const
 {
     visitor->visitLabel(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Label::children()
+{
+    return {symbol_};
 }
 
 // ----------------------------------------------------------------------------

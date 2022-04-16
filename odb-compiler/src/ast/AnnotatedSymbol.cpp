@@ -33,6 +33,12 @@ void AnnotatedSymbol::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+Node::ChildRange AnnotatedSymbol::children()
+{
+    return {};
+}
+
+// ----------------------------------------------------------------------------
 void AnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);

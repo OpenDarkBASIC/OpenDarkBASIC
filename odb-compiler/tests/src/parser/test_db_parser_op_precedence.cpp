@@ -41,7 +41,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }                                                                         \
     TEST_F(NAME, op##_is_left_recursion_2)                                    \
     {                                                                         \
@@ -63,7 +63,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }
 
 #define TEST_BOP1_LOWER_PRECEDENCE_THAN_BOP2(op1, op2, tok1, tok2)            \
@@ -87,7 +87,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }                                                                         \
     TEST_F(NAME, binary_##op1##_lower_than_##op2##_2)                         \
     {                                                                         \
@@ -109,7 +109,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }                                                                         \
 
 #define TEST_UOP1_UOP2_RIGHT_RECURSION(op1, op2, tok1, tok2)                  \
@@ -129,7 +129,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }                                                                         \
     TEST_F(NAME, unary_##op1##_lower_than_##op2##_2)                          \
     {                                                                         \
@@ -147,7 +147,7 @@ using namespace ast;
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp); \
                                                                               \
-        ast->accept(&v);                                                      \
+        visitAST(ast, v);                                                      \
     }
 
 // ============================================================================

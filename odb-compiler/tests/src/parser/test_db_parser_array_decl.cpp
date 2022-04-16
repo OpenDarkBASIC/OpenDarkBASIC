@@ -117,7 +117,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 #define VALID_ALL_SCOPES(ann, type)                                           \
     VALID(none, ann, type)                                                    \
@@ -191,7 +191,7 @@ TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 #define VALID_AS_TYPE_ALL_SCOPES(ann, type)                                   \
     VALID_AS_TYPE(none, ann, type)                                            \

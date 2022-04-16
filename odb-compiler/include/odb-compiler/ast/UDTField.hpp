@@ -5,7 +5,7 @@
 
 namespace odb::ast {
 
-class UDTFieldOuter : public LValue
+class ODBCOMPILER_PUBLIC_API UDTFieldOuter final : public LValue
 {
 public:
     UDTFieldOuter(Expression* left, LValue* right, SourceLocation* location);
@@ -16,6 +16,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -26,7 +27,7 @@ private:
     Reference<LValue> right_;
 };
 
-class UDTFieldInner : public LValue
+class ODBCOMPILER_PUBLIC_API UDTFieldInner final : public LValue
 {
 public:
     UDTFieldInner(LValue* left, LValue* right, SourceLocation* location);
@@ -37,6 +38,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

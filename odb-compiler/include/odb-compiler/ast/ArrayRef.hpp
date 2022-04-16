@@ -8,7 +8,7 @@ namespace odb::ast {
 class AnnotatedSymbol;
 class ArgList;
 
-class ODBCOMPILER_PUBLIC_API ArrayRef : public LValue
+class ODBCOMPILER_PUBLIC_API ArrayRef final : public LValue
 {
 public:
     ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
@@ -19,6 +19,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

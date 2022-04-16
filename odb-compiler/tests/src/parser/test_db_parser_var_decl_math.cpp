@@ -188,7 +188,7 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
                                                                               \
-    ast->accept(&v);                                                          \
+    visitAST(ast, v);                                                         \
 }
 #define VALID_AS_TYPE_ALL_SCOPES(ann, as_type)                                \
     VALID_AS_TYPE(none, ann, as_type)                                         \
@@ -264,7 +264,7 @@ TEST_F(NAME, var_as_complex_with_complex_literal_initializer)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 TEST_F(NAME, var_as_complex_with_complex_initializer_list)
 {
@@ -284,7 +284,7 @@ TEST_F(NAME, var_as_complex_with_complex_initializer_list)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
 {
@@ -309,7 +309,7 @@ TEST_F(NAME, var_as_quat_with_quat_literal_initializer)
     exp = EXPECT_CALL(v, visitQuatLiteral(QuatLiteralEq({0, 0, 3, 0}))).After(exp);
     exp = EXPECT_CALL(v, visitQuatLiteral(QuatLiteralEq({0, 0, 0, 4}))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 TEST_F(NAME, var_as_quat_with_quat_initializer_list)
 {
@@ -331,7 +331,7 @@ TEST_F(NAME, var_as_quat_with_quat_initializer_list)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(4))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 /*
  *     local var as complex = 1+2i

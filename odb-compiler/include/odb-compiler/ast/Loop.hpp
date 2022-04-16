@@ -17,7 +17,7 @@ public:
     Loop(SourceLocation* location);
 };
 
-class ODBCOMPILER_PUBLIC_API InfiniteLoop : public Loop
+class ODBCOMPILER_PUBLIC_API InfiniteLoop final : public Loop
 {
 public:
     InfiniteLoop(Block* body, SourceLocation* location);
@@ -28,6 +28,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -37,7 +38,7 @@ private:
     Reference<Block> body_;
 };
 
-class ODBCOMPILER_PUBLIC_API WhileLoop : public Loop
+class ODBCOMPILER_PUBLIC_API WhileLoop final : public Loop
 {
 public:
     WhileLoop(Expression* continueCondition, Block* body, SourceLocation* location);
@@ -49,6 +50,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -59,7 +61,7 @@ private:
     Reference<Block> body_;
 };
 
-class ODBCOMPILER_PUBLIC_API UntilLoop : public Loop
+class ODBCOMPILER_PUBLIC_API UntilLoop final : public Loop
 {
 public:
     UntilLoop(Expression* exitCondition, Block* body, SourceLocation* location);
@@ -71,6 +73,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -81,7 +84,7 @@ private:
     Reference<Block> body_;
 };
 
-class ODBCOMPILER_PUBLIC_API ForLoop : public Loop
+class ODBCOMPILER_PUBLIC_API ForLoop final : public Loop
 {
 public:
     ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
@@ -102,6 +105,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

@@ -49,6 +49,12 @@ void ScopedAnnotatedSymbol::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+Node::ChildRange ScopedAnnotatedSymbol::children()
+{
+    return {};
+}
+
+// ----------------------------------------------------------------------------
 void ScopedAnnotatedSymbol::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);

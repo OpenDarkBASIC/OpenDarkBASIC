@@ -11,7 +11,7 @@ class Symbol;
 class UDTDeclBody;
 class VarDecl;
 
-class ODBCOMPILER_PUBLIC_API UDTDecl : public Statement
+class ODBCOMPILER_PUBLIC_API UDTDecl final : public Statement
 {
 public:
     UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location);
@@ -22,6 +22,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -33,7 +34,7 @@ private:
 
 };
 
-class ODBCOMPILER_PUBLIC_API UDTDeclBody : public Node
+class ODBCOMPILER_PUBLIC_API UDTDeclBody final : public Node
 {
 public:
     UDTDeclBody(SourceLocation* location);
@@ -49,6 +50,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

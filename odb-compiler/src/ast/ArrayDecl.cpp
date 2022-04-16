@@ -51,24 +51,25 @@ std::string ArrayDecl::toString() const
 void ArrayDecl::accept(Visitor* visitor)
 {
     visitor->visitArrayDecl(this);
-    symbol_->accept(visitor);
-    if (type_.getArrayInnerType()->isUDT())
-    {
-        (*type_.getArrayInnerType()->getUDT())->accept(visitor);
-    }
-    dims_->accept(visitor);
 }
 
 // ----------------------------------------------------------------------------
 void ArrayDecl::accept(ConstVisitor* visitor) const
 {
     visitor->visitArrayDecl(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ArrayDecl::children()
+{
+    Node::ChildRange children;
+    children.push_back(symbol_);
     if (type_.getArrayInnerType()->isUDT())
     {
-        (*type_.getArrayInnerType()->getUDT())->accept(visitor);
+        children.push_back(*type_.getArrayInnerType()->getUDT());
     }
-    dims_->accept(visitor);
+    children.push_back(dims_);
+    return children;
 }
 
 // ----------------------------------------------------------------------------

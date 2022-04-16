@@ -32,7 +32,7 @@ TEST_F(NAME, variable_with_assignment_has_default_type_integer)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_variable_with_assignment_has_type_float)
@@ -48,7 +48,7 @@ TEST_F(NAME, float_variable_with_assignment_has_type_float)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, string_variable_with_assignment_has_type_string)
@@ -64,7 +64,7 @@ TEST_F(NAME, string_variable_with_assignment_has_type_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("string"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 /* NOTE: All UDT assignment cases are covered in test_db_parser_udt_fields.cpp */

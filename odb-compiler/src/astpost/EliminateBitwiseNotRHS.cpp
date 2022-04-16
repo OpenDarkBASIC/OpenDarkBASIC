@@ -54,12 +54,12 @@ public:
 bool EliminateBitwiseNotRHS::execute(ast::Node* node)
 {
     Visitor gatherer;
-    node->accept(&gatherer);
+    visitAST(node, gatherer);
 
     for (auto& op : gatherer.ops)
     {
         SideEffectFinder finder;
-        op->rhs()->accept(&finder);
+        visitAST(op->rhs(), finder);
         if (finder.hasSideEffects)
         {
             Log::dbParserSemanticError(

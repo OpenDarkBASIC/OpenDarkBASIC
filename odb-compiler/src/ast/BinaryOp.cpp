@@ -43,14 +43,16 @@ std::string BinaryOp::toString() const
 void BinaryOp::accept(Visitor* visitor)
 {
     visitor->visitBinaryOp(this);
-    lhs_->accept(visitor);
-    rhs_->accept(visitor);
 }
 void BinaryOp::accept(ConstVisitor* visitor) const
 {
     visitor->visitBinaryOp(this);
-    lhs_->accept(visitor);
-    rhs_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange BinaryOp::children()
+{
+    return {lhs_, rhs_};
 }
 
 // ----------------------------------------------------------------------------

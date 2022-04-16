@@ -57,14 +57,19 @@ std::string Block::toString() const
 void Block::accept(Visitor* visitor)
 {
     visitor->visitBlock(this);
-    for (const auto& stmnt : statements_)
-        stmnt->accept(visitor);
 }
 void Block::accept(ConstVisitor* visitor) const
 {
     visitor->visitBlock(this);
-    for (const auto& stmnt : statements_)
-        stmnt->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Block::children()
+{
+    ChildRange children;
+    for (const auto& stmt : statements_)
+        children.push_back(stmt);
+    return children;
 }
 
 // ----------------------------------------------------------------------------

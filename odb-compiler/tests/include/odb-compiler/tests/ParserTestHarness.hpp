@@ -19,6 +19,8 @@ public:
     void SetUp() override;
     void TearDown() override;
 
+    void parse(const std::string& code);
+
     odb::cmd::CommandIndex cmdIndex;
     odb::cmd::CommandMatcher matcher;
     odb::db::StringParserDriver* driver;

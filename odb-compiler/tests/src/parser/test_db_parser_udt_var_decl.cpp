@@ -1270,7 +1270,7 @@ TEST_F(NAME, var_decl_as_double_integer)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_integer)
@@ -1293,7 +1293,7 @@ TEST_F(NAME, var_decl_as_integer)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_dword)
@@ -1316,7 +1316,7 @@ TEST_F(NAME, var_decl_as_dword)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_word)
@@ -1339,7 +1339,7 @@ TEST_F(NAME, var_decl_as_word)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_byte)
@@ -1362,7 +1362,7 @@ TEST_F(NAME, var_decl_as_byte)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_boolean)
@@ -1385,7 +1385,7 @@ TEST_F(NAME, var_decl_as_boolean)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_double_float)
@@ -1408,7 +1408,7 @@ TEST_F(NAME, var_decl_as_double_float)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_float)
@@ -1431,7 +1431,7 @@ TEST_F(NAME, var_decl_as_float)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_var_decl_as_float)
@@ -1454,7 +1454,7 @@ TEST_F(NAME, float_var_decl_as_float)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_string)
@@ -1477,7 +1477,7 @@ TEST_F(NAME, var_decl_as_string)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, string_var_decl_as_string)
@@ -1500,7 +1500,7 @@ TEST_F(NAME, string_var_decl_as_string)
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, var_decl_as_nested_udt)
@@ -1522,7 +1522,7 @@ TEST_F(NAME, var_decl_as_nested_udt)
     exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTRef(UDTRefEq("nestedudt"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_double_integer)
@@ -1546,7 +1546,7 @@ TEST_F(NAME, arr_decl_as_double_integer)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_integer)
@@ -1570,7 +1570,7 @@ TEST_F(NAME, arr_decl_as_integer)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_dword)
@@ -1594,7 +1594,7 @@ TEST_F(NAME, arr_decl_as_dword)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_word)
@@ -1618,7 +1618,7 @@ TEST_F(NAME, arr_decl_as_word)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_byte)
@@ -1642,7 +1642,7 @@ TEST_F(NAME, arr_decl_as_byte)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_boolean)
@@ -1666,7 +1666,7 @@ TEST_F(NAME, arr_decl_as_boolean)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_double_float)
@@ -1690,7 +1690,7 @@ TEST_F(NAME, arr_decl_as_double_float)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_float)
@@ -1714,7 +1714,7 @@ TEST_F(NAME, arr_decl_as_float)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_arr_decl_as_float)
@@ -1738,7 +1738,7 @@ TEST_F(NAME, float_arr_decl_as_float)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_string)
@@ -1762,7 +1762,7 @@ TEST_F(NAME, arr_decl_as_string)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, string_arr_decl_as_string)
@@ -1786,7 +1786,7 @@ TEST_F(NAME, string_arr_decl_as_string)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, arr_decl_as_nested_udt)
@@ -1811,5 +1811,5 @@ TEST_F(NAME, arr_decl_as_nested_udt)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

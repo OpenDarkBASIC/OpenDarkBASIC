@@ -8,7 +8,7 @@ namespace odb::ast {
 
 class Expression;
 
-class ODBCOMPILER_PUBLIC_API InitializerList : public Expression
+class ODBCOMPILER_PUBLIC_API InitializerList final : public Expression
 {
 public:
     InitializerList(SourceLocation* location);
@@ -21,6 +21,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

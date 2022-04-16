@@ -37,7 +37,7 @@ TEST_F(NAME, bool_constant)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mybool2"))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, integer_constant)
@@ -54,7 +54,7 @@ TEST_F(NAME, integer_constant)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "myint"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647)));
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_constant)
@@ -71,7 +71,7 @@ TEST_F(NAME, double_constant)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_constant_annotated)
@@ -88,7 +88,7 @@ TEST_F(NAME, double_constant_annotated)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "mydouble"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, string_constant)
@@ -105,7 +105,7 @@ TEST_F(NAME, string_constant)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "mystring"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, string_constant_annotated)
@@ -122,7 +122,7 @@ TEST_F(NAME, string_constant_annotated)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "mystring"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, more_than_one_value_fails)
