@@ -53,14 +53,16 @@ std::string VarAssignment::toString() const
 void VarAssignment::accept(Visitor* visitor)
 {
     visitor->visitVarAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
 }
 void VarAssignment::accept(ConstVisitor* visitor) const
 {
     visitor->visitVarAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange VarAssignment::children()
+{
+    return {lvalue_, expr_};
 }
 
 // ----------------------------------------------------------------------------
@@ -110,14 +112,16 @@ std::string ArrayAssignment::toString() const
 void ArrayAssignment::accept(Visitor* visitor)
 {
     visitor->visitArrayAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
 }
 void ArrayAssignment::accept(ConstVisitor* visitor) const
 {
     visitor->visitArrayAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ArrayAssignment::children()
+{
+    return {lvalue_, expr_};
 }
 
 // ----------------------------------------------------------------------------
@@ -167,14 +171,16 @@ std::string UDTFieldAssignment::toString() const
 void UDTFieldAssignment::accept(Visitor* visitor)
 {
     visitor->visitUDTFieldAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
 }
 void UDTFieldAssignment::accept(ConstVisitor* visitor) const
 {
     visitor->visitUDTFieldAssignment(this);
-    lvalue_->accept(visitor);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UDTFieldAssignment::children()
+{
+    return {lvalue_, expr_};
 }
 
 // ----------------------------------------------------------------------------

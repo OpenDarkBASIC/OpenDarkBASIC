@@ -30,6 +30,7 @@
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
 namespace odb::ast {
@@ -133,5 +134,21 @@ void GenericConstVisitor::visitWhileLoop(const WhileLoop* node)                 
     void GenericConstVisitor::visit##dbname##Literal(const dbname##Literal* node)         { visit(node); }
 ODB_DATATYPE_LIST
 #undef X
+
+void visitAST(Node* node, Visitor& visitor)
+{
+    for (Node* n : depthFirst(node))
+    {
+        n->accept(&visitor);
+    }
+}
+
+void visitAST(const Node* node, ConstVisitor& visitor)
+{
+    for (const Node* n : depthFirst(node))
+    {
+        n->accept(&visitor);
+    }
+}
 
 }

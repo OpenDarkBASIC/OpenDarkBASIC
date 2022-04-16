@@ -27,6 +27,12 @@ void UDTRef::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+Node::ChildRange UDTRef::children()
+{
+    return {};
+}
+
+// ----------------------------------------------------------------------------
 Node* UDTRef::duplicateImpl() const
 {
     return new UDTRef(name_, location());

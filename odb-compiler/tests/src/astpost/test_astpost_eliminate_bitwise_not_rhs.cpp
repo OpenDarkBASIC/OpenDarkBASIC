@@ -30,7 +30,7 @@ class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
     public:
         void visitFuncCallExprOrArrayRef(FuncCallExprOrArrayRef* node) override final
         {
-            nodes.push_back(node);
+            nodes.emplace_back(node);
         }
 
         void visit(ast::Node* node) override final { /* don't care */ }
@@ -42,7 +42,7 @@ public:
     bool execute(ast::Node* node)
     {
         Gatherer gatherer;
-        node->accept(&gatherer);
+        visitAST(node, gatherer);
         for (const auto& node : gatherer.nodes)
         {
             node->parent()->swapChild(node, new ArrayRef(
@@ -78,7 +78,7 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ProcessGroup post;
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
@@ -91,7 +91,7 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, no_side_effects_2)
@@ -112,7 +112,7 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ProcessGroup post;
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
@@ -125,7 +125,7 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, no_side_effects_3)
@@ -146,7 +146,7 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 
     astpost::ProcessGroup post;
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
@@ -159,7 +159,7 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 #define TEST_NO_SIDE_EFFECT(testname, expr)                                   \

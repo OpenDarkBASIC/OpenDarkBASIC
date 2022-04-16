@@ -13,7 +13,7 @@ namespace odb::ast {
 
 class ArgList;
 
-class ODBCOMPILER_PUBLIC_API CommandExpr : public Expression
+class ODBCOMPILER_PUBLIC_API CommandExpr final : public Expression
 {
 public:
     CommandExpr(const std::string& command, ArgList* args, SourceLocation* location);
@@ -25,6 +25,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

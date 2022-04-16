@@ -35,12 +35,16 @@ std::string UnaryOp::toString() const
 void UnaryOp::accept(Visitor* visitor)
 {
     visitor->visitUnaryOp(this);
-    expr_->accept(visitor);
 }
 void UnaryOp::accept(ConstVisitor* visitor) const
 {
     visitor->visitUnaryOp(this);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UnaryOp::children()
+{
+    return {expr_};
 }
 
 // ----------------------------------------------------------------------------

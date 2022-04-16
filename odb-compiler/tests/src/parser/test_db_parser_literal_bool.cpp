@@ -33,7 +33,7 @@ TEST_F(NAME, bool_true)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, bool_false)
@@ -50,5 +50,5 @@ TEST_F(NAME, bool_false)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

@@ -38,14 +38,16 @@ std::string ArrayRef::toString() const
 void ArrayRef::accept(Visitor* visitor)
 {
     visitor->visitArrayRef(this);
-    symbol_->accept(visitor);
-    args_->accept(visitor);
 }
 void ArrayRef::accept(ConstVisitor* visitor) const
 {
     visitor->visitArrayRef(this);
-    symbol_->accept(visitor);
-    args_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ArrayRef::children()
+{
+    return {symbol_, args_};
 }
 
 // ----------------------------------------------------------------------------

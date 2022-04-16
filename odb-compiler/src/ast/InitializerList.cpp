@@ -43,14 +43,21 @@ std::string InitializerList::toString() const
 void InitializerList::accept(Visitor* visitor)
 {
     visitor->visitInitializerList(this);
-    for (const auto& expr : expressions_)
-        expr->accept(visitor);
 }
 void InitializerList::accept(ConstVisitor* visitor) const
 {
     visitor->visitInitializerList(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange InitializerList::children()
+{
+    ChildRange children;
     for (const auto& expr : expressions_)
-        expr->accept(visitor);
+    {
+        children.push_back(expr);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------

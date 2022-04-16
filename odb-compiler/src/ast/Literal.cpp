@@ -81,6 +81,11 @@ Literal::Literal(SourceLocation* location) :
         visitor->visit##dbname##Literal(this);                                \
     }                                                                         \
                                                                               \
+    Node::ChildRange dbname##Literal::children()                              \
+    {                                                                         \
+        return {};                                                            \
+    }                                                                         \
+                                                                              \
     void dbname##Literal::swapChild(const Node* oldNode, Node* newNode)       \
     {                                                                         \
         assert(false);                                                        \

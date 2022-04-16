@@ -8,7 +8,7 @@ namespace odb::ast {
 class Label;
 class Symbol;
 
-class ODBCOMPILER_PUBLIC_API Goto : public Statement
+class ODBCOMPILER_PUBLIC_API Goto final : public Statement
 {
 public:
     Goto(Symbol* label, SourceLocation* location);
@@ -18,6 +18,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

@@ -8,7 +8,7 @@ namespace odb::ast {
 class Label;
 class Symbol;
 
-class ODBCOMPILER_PUBLIC_API SubCall : public Statement
+class ODBCOMPILER_PUBLIC_API SubCall final : public Statement
 {
 public:
     SubCall(Symbol* label, SourceLocation* location);
@@ -18,6 +18,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -27,7 +28,7 @@ private:
     Reference<Symbol> label_;
 };
 
-class ODBCOMPILER_PUBLIC_API SubReturn : public Statement
+class ODBCOMPILER_PUBLIC_API SubReturn final : public Statement
 {
 public:
     SubReturn(SourceLocation* location);
@@ -35,6 +36,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

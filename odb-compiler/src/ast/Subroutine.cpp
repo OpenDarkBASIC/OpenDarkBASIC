@@ -30,12 +30,16 @@ std::string SubCall::toString() const
 void SubCall::accept(Visitor* visitor)
 {
     visitor->visitSubCall(this);
-    label_->accept(visitor);
 }
 void SubCall::accept(ConstVisitor* visitor) const
 {
     visitor->visitSubCall(this);
-    label_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange SubCall::children()
+{
+    return {label_};
 }
 
 // ----------------------------------------------------------------------------
@@ -80,6 +84,12 @@ void SubReturn::accept(Visitor* visitor)
 void SubReturn::accept(ConstVisitor* visitor) const
 {
     visitor->visitSubReturn(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange SubReturn::children()
+{
+    return {};
 }
 
 // ----------------------------------------------------------------------------

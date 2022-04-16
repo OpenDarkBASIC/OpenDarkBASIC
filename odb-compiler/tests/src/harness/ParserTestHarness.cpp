@@ -9,7 +9,7 @@
 void ParserTestHarness::checkParentConnectionConsistencies(const odb::ast::Block* ast)
 {
     ASTParentConsistenciesChecker checker;
-    ast->accept(&checker);
+    visitAST(ast, checker);
 }
 
 void ParserTestHarness::SetUp()
@@ -37,4 +37,9 @@ void ParserTestHarness::TearDown()
     }
 
     delete driver;
+}
+
+void ParserTestHarness::parse(const std::string& code)
+{
+    ast = driver->parse("test", code, matcher);
 }

@@ -30,12 +30,16 @@ std::string Goto::toString() const
 void Goto::accept(Visitor* visitor)
 {
     visitor->visitGoto(this);
-    label_->accept(visitor);
 }
 void Goto::accept(ConstVisitor* visitor) const
 {
     visitor->visitGoto(this);
-    label_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange Goto::children()
+{
+    return {label_};
 }
 
 // ----------------------------------------------------------------------------

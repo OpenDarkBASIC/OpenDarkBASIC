@@ -55,7 +55,7 @@ void Visitor::visitSelect(const ast::Select* select)
 bool EnforceSingleDefaultCase::execute(ast::Node* root)
 {
     Visitor visitor;
-    root->accept(&visitor);
+    visitAST(root, visitor);
     return visitor.success;
 }
 

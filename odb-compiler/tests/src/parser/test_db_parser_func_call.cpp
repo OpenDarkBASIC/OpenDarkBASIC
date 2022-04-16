@@ -34,7 +34,7 @@ TEST_F(NAME, function_call_no_args)
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, function_call_no_args_string_return_type)
@@ -48,7 +48,7 @@ TEST_F(NAME, function_call_no_args_string_return_type)
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "foo"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, function_call_no_args_float_return_type)
@@ -62,7 +62,7 @@ TEST_F(NAME, function_call_no_args_float_return_type)
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "foo"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, function_call_one_arg)
@@ -78,7 +78,7 @@ TEST_F(NAME, function_call_one_arg)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, function_call_multiple_args)
@@ -96,7 +96,7 @@ TEST_F(NAME, function_call_multiple_args)
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4.5))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, nested_function_calls)
@@ -128,5 +128,5 @@ TEST_F(NAME, nested_function_calls)
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

@@ -9,7 +9,7 @@ namespace odb::ast {
 class Statement;
 
 /*! A sequence of one or more statements */
-class ODBCOMPILER_PUBLIC_API Block : public Node
+class ODBCOMPILER_PUBLIC_API Block final : public Node
 {
 public:
     Block(SourceLocation* location);
@@ -23,6 +23,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

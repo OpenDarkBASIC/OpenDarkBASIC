@@ -13,7 +13,7 @@ class CaseList;
 class DefaultCase;
 class Expression;
 
-class Select : public Statement
+class ODBCOMPILER_PUBLIC_API Select final : public Statement
 {
 public:
     Select(Expression* expr, CaseList* cases, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect);
@@ -27,6 +27,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -39,7 +40,7 @@ private:
     Reference<SourceLocation> endLoc_;
 };
 
-class CaseList : public Node
+class ODBCOMPILER_PUBLIC_API CaseList final : public Node
 {
 public:
     CaseList(Case* case_, SourceLocation* location);
@@ -56,6 +57,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -66,7 +68,7 @@ private:
     std::vector<Reference<DefaultCase>> defaults_;
 };
 
-class Case : public Node
+class ODBCOMPILER_PUBLIC_API Case final : public Node
 {
 public:
     Case(Expression* expr, Block* body, SourceLocation* location);
@@ -78,6 +80,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -88,7 +91,7 @@ private:
     Reference<Block> body_;
 };
 
-class DefaultCase : public Node
+class ODBCOMPILER_PUBLIC_API DefaultCase final : public Node
 {
 public:
     DefaultCase(Block* body, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
@@ -101,6 +104,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

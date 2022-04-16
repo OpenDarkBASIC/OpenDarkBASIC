@@ -12,7 +12,7 @@ class UDTRef;
 class ScopedAnnotatedSymbol;
 class Symbol;
 
-class ODBCOMPILER_PUBLIC_API VarDecl : public Statement
+class ODBCOMPILER_PUBLIC_API VarDecl final : public Statement
 {
 public:
     VarDecl(ScopedAnnotatedSymbol* symbol, Type type, InitializerList* initializer, SourceLocation* location);
@@ -27,6 +27,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

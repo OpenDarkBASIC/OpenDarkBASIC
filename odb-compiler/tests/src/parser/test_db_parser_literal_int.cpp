@@ -37,7 +37,7 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, byte_literal)
@@ -58,7 +58,7 @@ TEST_F(NAME, byte_literal)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(255))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, word_literal)
@@ -79,7 +79,7 @@ TEST_F(NAME, word_literal)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(65535))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, integer_literal)
@@ -100,7 +100,7 @@ TEST_F(NAME, integer_literal)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, dword_literal)
@@ -121,7 +121,7 @@ TEST_F(NAME, dword_literal)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(4294967295))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_integer_literal)
@@ -142,7 +142,7 @@ TEST_F(NAME, double_integer_literal)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(9223372036854775807))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, hex_literals)
@@ -175,7 +175,7 @@ TEST_F(NAME, hex_literals)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "e"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, binary_literals)
@@ -208,5 +208,5 @@ TEST_F(NAME, binary_literals)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "e"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

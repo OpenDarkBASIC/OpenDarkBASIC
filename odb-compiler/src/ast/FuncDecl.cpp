@@ -130,24 +130,30 @@ std::string FuncDecl::toString() const
 void FuncDecl::accept(Visitor* visitor)
 {
     visitor->visitFuncDecl(this);
-    symbol_->accept(visitor);
-    if (args_)
-        args_->accept(visitor);
-    if (body_)
-        body_->accept(visitor);
-    if (returnValue_)
-        returnValue_->accept(visitor);
 }
 void FuncDecl::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncDecl(this);
-    symbol_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncDecl::children()
+{
+    ChildRange children;
+    children.push_back(symbol_);
     if (args_)
-        args_->accept(visitor);
+    {
+        children.push_back(args_);
+    }
     if (body_)
-        body_->accept(visitor);
+    {
+        children.push_back(body_);
+    }
     if (returnValue_)
-        returnValue_->accept(visitor);
+    {
+        children.push_back(returnValue_);
+    }
+    return children;
 }
 
 // ----------------------------------------------------------------------------
@@ -209,14 +215,23 @@ std::string FuncExit::toString() const
 void FuncExit::accept(Visitor* visitor)
 {
     visitor->visitFuncExit(this);
-    if (returnValue_)
-        returnValue_->accept(visitor);
 }
 void FuncExit::accept(ConstVisitor* visitor) const
 {
     visitor->visitFuncExit(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncExit::children()
+{
     if (returnValue_)
-        returnValue_->accept(visitor);
+    {
+        return {returnValue_};
+    }
+    else
+    {
+        return {};
+    }
 }
 
 // ----------------------------------------------------------------------------

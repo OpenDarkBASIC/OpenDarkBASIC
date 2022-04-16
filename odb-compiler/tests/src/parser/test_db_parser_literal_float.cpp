@@ -32,7 +32,7 @@ TEST_F(NAME, double_1_notation)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(53))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_2_notation)
@@ -49,7 +49,7 @@ TEST_F(NAME, double_2_notation)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(.53))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_1_notation)
@@ -66,7 +66,7 @@ TEST_F(NAME, float_1_notation)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(53))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_2_notation)
@@ -83,7 +83,7 @@ TEST_F(NAME, float_2_notation)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(.53))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_3_notation)
@@ -100,7 +100,7 @@ TEST_F(NAME, float_3_notation)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(53))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_1)
@@ -117,7 +117,7 @@ TEST_F(NAME, double_exponential_notation_1)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_2)
@@ -134,7 +134,7 @@ TEST_F(NAME, double_exponential_notation_2)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12.4e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_3)
@@ -151,7 +151,7 @@ TEST_F(NAME, double_exponential_notation_3)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(40))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_4)
@@ -168,7 +168,7 @@ TEST_F(NAME, double_exponential_notation_4)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4300))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_5)
@@ -185,7 +185,7 @@ TEST_F(NAME, double_exponential_notation_5)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0.12))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_6)
@@ -202,7 +202,7 @@ TEST_F(NAME, double_exponential_notation_6)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0.124))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_7)
@@ -219,7 +219,7 @@ TEST_F(NAME, double_exponential_notation_7)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0.004))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_8)
@@ -236,7 +236,7 @@ TEST_F(NAME, double_exponential_notation_8)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0.43))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_9)
@@ -253,7 +253,7 @@ TEST_F(NAME, double_exponential_notation_9)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_10)
@@ -270,7 +270,7 @@ TEST_F(NAME, double_exponential_notation_10)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(12.4e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_11)
@@ -287,7 +287,7 @@ TEST_F(NAME, double_exponential_notation_11)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(40))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, double_exponential_notation_12)
@@ -304,7 +304,7 @@ TEST_F(NAME, double_exponential_notation_12)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(4300))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_1)
@@ -321,7 +321,7 @@ TEST_F(NAME, float_exponential_notation_1)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(12e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_2)
@@ -338,7 +338,7 @@ TEST_F(NAME, float_exponential_notation_2)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(12.4e2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_3)
@@ -355,7 +355,7 @@ TEST_F(NAME, float_exponential_notation_3)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(40))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_4)
@@ -372,7 +372,7 @@ TEST_F(NAME, float_exponential_notation_4)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(4300))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_5)
@@ -389,7 +389,7 @@ TEST_F(NAME, float_exponential_notation_5)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0.12))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_6)
@@ -406,7 +406,7 @@ TEST_F(NAME, float_exponential_notation_6)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0.124))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_7)
@@ -423,7 +423,7 @@ TEST_F(NAME, float_exponential_notation_7)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0.004))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, float_exponential_notation_8)
@@ -440,5 +440,5 @@ TEST_F(NAME, float_exponential_notation_8)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0.43))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

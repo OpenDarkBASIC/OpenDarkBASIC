@@ -35,14 +35,16 @@ std::string UDTFieldOuter::toString() const
 void UDTFieldOuter::accept(Visitor* visitor)
 {
     visitor->visitUDTFieldOuter(this);
-    left_->accept(visitor);
-    right_->accept(visitor);
 }
 void UDTFieldOuter::accept(ConstVisitor* visitor) const
 {
     visitor->visitUDTFieldOuter(this);
-    left_->accept(visitor);
-    right_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UDTFieldOuter::children()
+{
+    return {left_, right_};
 }
 
 // ----------------------------------------------------------------------------
@@ -102,14 +104,16 @@ std::string UDTFieldInner::toString() const
 void UDTFieldInner::accept(Visitor* visitor)
 {
     visitor->visitUDTFieldInner(this);
-    left_->accept(visitor);
-    right_->accept(visitor);
 }
 void UDTFieldInner::accept(ConstVisitor* visitor) const
 {
     visitor->visitUDTFieldInner(this);
-    left_->accept(visitor);
-    right_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UDTFieldInner::children()
+{
+    return {left_, right_};
 }
 
 // ----------------------------------------------------------------------------

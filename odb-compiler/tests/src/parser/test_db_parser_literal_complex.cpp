@@ -42,7 +42,7 @@ TEST_F(NAME, real_plus_imag)
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, real_minus_imag)
@@ -66,7 +66,7 @@ TEST_F(NAME, real_minus_imag)
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, imag_only)
@@ -90,7 +90,7 @@ TEST_F(NAME, imag_only)
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, negative_imag_only)
@@ -115,5 +115,5 @@ TEST_F(NAME, negative_imag_only)
         exp = EXPECT_CALL(v, visitComplexLiteral(ComplexLiteralEq({0, 2}))).After(exp);
     }
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

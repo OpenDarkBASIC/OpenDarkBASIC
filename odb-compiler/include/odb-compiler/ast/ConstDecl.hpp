@@ -14,7 +14,7 @@ class Literal;
  * grammar. This class represents this. In a second pass, though, all constant
  * expressions must be converted into literals (ConstDecl).
  */
-class ODBCOMPILER_PUBLIC_API ConstDeclExpr : public Statement
+class ODBCOMPILER_PUBLIC_API ConstDeclExpr final : public Statement
 {
 public:
     ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLocation* location);
@@ -25,6 +25,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:
@@ -35,7 +36,7 @@ private:
     Reference<Expression> expr_;
 };
 
-class ODBCOMPILER_PUBLIC_API ConstDecl : public Statement
+class ODBCOMPILER_PUBLIC_API ConstDecl final : public Statement
 {
 public:
     ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location);
@@ -46,6 +47,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

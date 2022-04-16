@@ -23,5 +23,5 @@ TEST_F(NAME, variable_with_assignment_has_default_type_integer)
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
 
-    ast->accept(&v);*/
+    visitAST(ast, v);*/
 }

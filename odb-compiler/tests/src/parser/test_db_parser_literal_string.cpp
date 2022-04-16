@@ -65,5 +65,5 @@ TEST_F(NAME, empty_string)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }

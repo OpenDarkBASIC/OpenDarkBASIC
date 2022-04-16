@@ -133,7 +133,7 @@ void Visitor::checkAnnotation(const ast::AnnotatedSymbol* sym)
 bool ValidateUDTFieldNames::execute(ast::Node* node)
 {
     Visitor visitor;
-    node->accept(&visitor);
+    visitAST(node, visitor);
     return visitor.success;
 }
 

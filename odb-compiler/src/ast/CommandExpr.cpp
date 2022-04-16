@@ -44,14 +44,23 @@ std::string CommandExpr::toString() const
 void CommandExpr::accept(Visitor* visitor)
 {
     visitor->visitCommandExpr(this);
-    if (args_)
-        args_->accept(visitor);
 }
 void CommandExpr::accept(ConstVisitor* visitor) const
 {
     visitor->visitCommandExpr(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange CommandExpr::children()
+{
     if (args_)
-        args_->accept(visitor);
+    {
+        return {args_};
+    }
+    else
+    {
+        return {};
+    }
 }
 
 // ----------------------------------------------------------------------------

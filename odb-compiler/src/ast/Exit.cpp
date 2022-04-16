@@ -27,6 +27,12 @@ void Exit::accept(ConstVisitor* visitor) const
 }
 
 // ----------------------------------------------------------------------------
+Node::ChildRange Exit::children()
+{
+    return {};
+}
+
+// ----------------------------------------------------------------------------
 void Exit::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);

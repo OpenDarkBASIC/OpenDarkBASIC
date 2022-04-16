@@ -51,7 +51,7 @@ TEST_F(NAME, print_command)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_with_spaces)
@@ -71,7 +71,7 @@ TEST_F(NAME, command_with_spaces)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, randomize_timer)
@@ -91,7 +91,7 @@ TEST_F(NAME, randomize_timer)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("timer"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, randomize_timer_args)
@@ -113,7 +113,7 @@ TEST_F(NAME, randomize_timer_args)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_with_string_annotation)
@@ -135,7 +135,7 @@ TEST_F(NAME, command_with_string_annotation)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_with_float_annotation)
@@ -157,7 +157,7 @@ TEST_F(NAME, command_with_float_annotation)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(5))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, load_3d_sound)
@@ -178,7 +178,7 @@ TEST_F(NAME, load_3d_sound)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_with_variable_args)
@@ -199,7 +199,7 @@ TEST_F(NAME, command_with_variable_args)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
@@ -226,7 +226,7 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_starting_with_builtin)
@@ -247,7 +247,7 @@ TEST_F(NAME, command_starting_with_builtin)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, builtin_shadowing_command)
@@ -269,7 +269,7 @@ TEST_F(NAME, builtin_shadowing_command)
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, multiple_similar_commands_with_spaces)
@@ -290,7 +290,7 @@ TEST_F(NAME, multiple_similar_commands_with_spaces)
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, multiple_similar_commands_with_spaces_2)
@@ -313,7 +313,7 @@ TEST_F(NAME, multiple_similar_commands_with_spaces_2)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(1))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, incomplete_command_at_end_of_file)
@@ -340,7 +340,7 @@ TEST_F(NAME, incomplete_command_at_end_of_file)
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "color"))).After(exp);
 
-    ast->accept(&v);
+    visitAST(ast, v);
 }
 
 TEST_F(NAME, command_containing_builtin_in_middle)

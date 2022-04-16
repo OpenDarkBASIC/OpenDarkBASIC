@@ -56,7 +56,7 @@ class WhileLoop;
 ODB_DATATYPE_LIST
 #undef X
 
-class Visitor
+class ODBCOMPILER_PUBLIC_API Visitor
 {
 public:
     virtual ~Visitor() = default;
@@ -111,7 +111,7 @@ public:
 #undef X
 };
 
-class ConstVisitor
+class ODBCOMPILER_PUBLIC_API ConstVisitor
 {
 public:
     virtual ~ConstVisitor() = default;
@@ -166,7 +166,7 @@ public:
 #undef X
 };
 
-class GenericVisitor : public Visitor
+class ODBCOMPILER_PUBLIC_API GenericVisitor : public Visitor
 {
 public:
     void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
@@ -221,7 +221,7 @@ public:
     virtual void visit(Node* node) = 0;
 };
 
-class GenericConstVisitor : public ConstVisitor
+class ODBCOMPILER_PUBLIC_API GenericConstVisitor : public ConstVisitor
 {
 public:
     void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
@@ -275,5 +275,8 @@ public:
 
     virtual void visit(const Node* node) = 0;
 };
+
+void visitAST(Node* node, Visitor& visitor);
+void visitAST(const Node* node, ConstVisitor& visitor);
 
 }

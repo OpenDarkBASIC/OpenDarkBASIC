@@ -44,7 +44,7 @@ public:
             exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
             exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
 
-            ast->accept(&v);
+            visitAST(ast, v);
         }
     }
 };

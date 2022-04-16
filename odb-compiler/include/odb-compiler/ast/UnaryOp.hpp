@@ -6,7 +6,7 @@
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API UnaryOp : public Expression
+class ODBCOMPILER_PUBLIC_API UnaryOp final : public Expression
 {
 public:
     UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location);
@@ -17,6 +17,7 @@ public:
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
+    ChildRange children() override;
     void swapChild(const Node* oldNode, Node* newNode) override;
 
 protected:

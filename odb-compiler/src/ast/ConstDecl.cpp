@@ -38,14 +38,16 @@ std::string ConstDeclExpr::toString() const
 void ConstDeclExpr::accept(Visitor* visitor)
 {
     visitor->visitConstDeclExpr(this);
-    symbol_->accept(visitor);
-    expr_->accept(visitor);
 }
 void ConstDeclExpr::accept(ConstVisitor* visitor) const
 {
     visitor->visitConstDeclExpr(this);
-    symbol_->accept(visitor);
-    expr_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ConstDeclExpr::children()
+{
+    return {symbol_, expr_};
 }
 
 // ----------------------------------------------------------------------------
@@ -105,14 +107,16 @@ std::string ConstDecl::toString() const
 void ConstDecl::accept(Visitor* visitor)
 {
     visitor->visitConstDecl(this);
-    symbol_->accept(visitor);
-    literal_->accept(visitor);
 }
 void ConstDecl::accept(ConstVisitor* visitor) const
 {
     visitor->visitConstDecl(this);
-    symbol_->accept(visitor);
-    literal_->accept(visitor);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange ConstDecl::children()
+{
+    return {symbol_, literal_};
 }
 
 // ----------------------------------------------------------------------------
