@@ -1,8 +1,9 @@
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
-#include "odb-compiler/ast/UnaryOp.hpp"
+#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/ast/ParentMap.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-sdk/Log.hpp"
 
 #define NO_SIDE_EFFECTS       \
@@ -20,20 +21,6 @@
 namespace odb::astpost {
 
 namespace {
-class Gatherer : public ast::GenericVisitor
-{
-public:
-    void visitBinaryOp(ast::BinaryOp* node) override final {
-        if (node->op() == ast::BinaryOpType::BITWISE_NOT)
-            ops.push_back(node);
-    }
-
-    void visit(ast::Node* node) override final { /* don't care */ }
-
-public:
-    std::vector<Reference<ast::BinaryOp>> ops;
-};
-
 class SideEffectFinder : public ast::GenericConstVisitor
 {
 public:
@@ -54,12 +41,15 @@ public:
 // ----------------------------------------------------------------------------
 bool EliminateBitwiseNotRHS::execute(ast::Node* root)
 {
-    Gatherer gatherer;
-    visitAST(root, gatherer);
-
-    ast::ParentMap parents(root);
-    for (auto& op : gatherer.ops)
+    auto range = ast::depthFirst(root);
+    for (auto it = range.begin(); it != range.end(); ++it)
     {
+        auto* op = dynamic_cast<ast::BinaryOp*>(static_cast<ast::Node*>(*it));
+        if (!op || op->op() != ast::BinaryOpType::BITWISE_NOT)
+        {
+            continue;
+        }
+
         SideEffectFinder finder;
         visitAST(op->rhs(), finder);
         if (finder.hasSideEffects)
@@ -71,11 +61,9 @@ bool EliminateBitwiseNotRHS::execute(ast::Node* root)
             return false;
         }
 
-        ast::Node* parent = parents.parent(op);
-        parent->swapChild(op, new ast::UnaryOp(
+        it.replaceNode(new ast::UnaryOp(
             ast::UnaryOpType::BITWISE_NOT, op->lhs(), op->location()
         ));
-        parents.updateFrom(parent);
     }
 
     return true;
