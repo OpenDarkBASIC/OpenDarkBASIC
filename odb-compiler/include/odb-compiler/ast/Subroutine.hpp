@@ -6,14 +6,14 @@
 namespace odb::ast {
 
 class Label;
-class Symbol;
+class Identifier;
 
 class ODBCOMPILER_PUBLIC_API SubCall final : public Statement
 {
 public:
-    SubCall(Symbol* label, SourceLocation* location);
+    SubCall(Identifier* label, SourceLocation* location);
 
-    Symbol* label() const;
+    Identifier* label() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -25,7 +25,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<Symbol> label_;
+    Reference<Identifier> label_;
 };
 
 class ODBCOMPILER_PUBLIC_API SubReturn final : public Statement

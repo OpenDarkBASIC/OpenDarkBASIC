@@ -1,12 +1,12 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
-#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/matchers/ScopedIdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/VarDeclEq.hpp"
-#include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
 
 #define NAME db_parser_var_decl
 
@@ -153,8 +153,8 @@ TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, type##_literal_visitor(type##_literal_eq(type##_initial_value))).After(exp);\
                                                                               \
@@ -196,8 +196,8 @@ TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp);\
                                                                               \
@@ -271,8 +271,8 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);\
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, as_type##_literal_visitor(as_type##_literal_eq(as_type##_initial_value))).After(exp);\
                                                                               \
@@ -357,8 +357,8 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);               \
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "var"))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);\
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.4))).After(exp); \
                                                                               \

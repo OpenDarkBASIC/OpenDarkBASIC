@@ -1,23 +1,22 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayRef::ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
-    LValue(location),
-    symbol_(symbol),
+ArrayRef::ArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
+    LValue(location), identifier_(identifier),
     args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* ArrayRef::symbol() const
+Identifier* ArrayRef::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -45,14 +44,14 @@ void ArrayRef::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange ArrayRef::children()
 {
-    return {symbol_, args_};
+    return {identifier_, args_};
 }
 
 // ----------------------------------------------------------------------------
 void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (args_ == oldNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
@@ -62,8 +61,7 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* ArrayRef::duplicateImpl() const
 {
-    return new ArrayRef(
-        symbol_->duplicate<AnnotatedSymbol>(),
+    return new ArrayRef(identifier_->duplicate<Identifier>(),
         args_->duplicate<ArgList>(),
         location());
 }

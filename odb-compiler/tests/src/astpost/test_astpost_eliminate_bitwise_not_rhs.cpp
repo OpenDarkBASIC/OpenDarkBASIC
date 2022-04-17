@@ -7,9 +7,9 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/matchers/BinaryOpEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
 #include "odb-compiler/tests/matchers/UnaryOpEq.hpp"
 
@@ -37,7 +37,7 @@ public:
                 continue;
 
             it.replaceNode(new ArrayRef(
-                node->symbol(),
+                node->identifier(),
                 node->args().notNull() ? node->args() : nullptr,
                 node->location()
             ));
@@ -64,10 +64,10 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
     visitAST(ast, v);
 
@@ -78,10 +78,10 @@ TEST_F(NAME, no_side_effects_1)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 }
 
@@ -97,12 +97,12 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("y", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ProcessGroup post;
@@ -112,10 +112,10 @@ TEST_F(NAME, no_side_effects_2)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 }
 
@@ -131,12 +131,12 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBinaryOp(BinaryOpEq(BinaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("y", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ProcessGroup post;
@@ -146,10 +146,10 @@ TEST_F(NAME, no_side_effects_3)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "result"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUnaryOp(UnaryOpEq(UnaryOpType::BITWISE_NOT))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 }
 

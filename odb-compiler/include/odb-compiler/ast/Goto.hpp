@@ -6,14 +6,14 @@
 namespace odb::ast {
 
 class Label;
-class Symbol;
+class Identifier;
 
 class ODBCOMPILER_PUBLIC_API Goto final : public Statement
 {
 public:
-    Goto(Symbol* label, SourceLocation* location);
+    Goto(Identifier* label, SourceLocation* location);
 
-    Symbol* label() const;
+    Identifier* label() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -25,7 +25,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<Symbol> label_;
+    Reference<Identifier> label_;
 };
 
 }

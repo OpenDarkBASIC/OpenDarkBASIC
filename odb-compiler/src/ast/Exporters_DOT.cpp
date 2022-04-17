@@ -1,5 +1,3 @@
-#include "odb-compiler/ast/Exporters.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
@@ -11,23 +9,23 @@
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
+#include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -75,7 +73,6 @@ private:
                 guids_->get(to), guids_->get(to->parent()));*/
     }
 
-    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override {}
     void visitArgList(const ArgList* node) override
     {
         int i = 0;
@@ -86,14 +83,12 @@ private:
     }
     void visitArrayDecl(const ArrayDecl* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        if (node->type().isUDT())
-            writeNamedConnection(node, *node->type().getUDT(), "udt");
+        writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->dims(), "dims");
     }
     void visitArrayRef(const ArrayRef* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->args(), "args");
     }
     void visitArrayAssignment(const ArrayAssignment* node) override
@@ -147,12 +142,12 @@ private:
     }
     void visitConstDecl(const ConstDecl* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->literal(), "literal");
     }
     void visitConstDeclExpr(const ConstDeclExpr* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->expression(), "expr");
     }
     void visitDefaultCase(const DefaultCase* node) override
@@ -167,31 +162,31 @@ private:
 
         if (node->stepValue().notNull())
             writeNamedConnection(node, node->stepValue(), "stepValue");
-        if (node->nextSymbol().notNull())
-            writeNamedConnection(node, node->nextSymbol(), "nextSymbol");
+        if (node->nextIdentifier().notNull())
+            writeNamedConnection(node, node->nextIdentifier(), "nextSymbol");
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
     }
     void visitFuncCallExpr(const FuncCallExpr* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
     void visitFuncCallExprOrArrayRef(const FuncCallExprOrArrayRef* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         writeNamedConnection(node, node->args(), "args");
     }
     void visitFuncCallStmnt(const FuncCallStmnt* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
     }
     void visitFuncDecl(const FuncDecl* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
         if (node->args().notNull())
             writeNamedConnection(node, node->args(), "args");
         if (node->body().notNull())
@@ -208,6 +203,7 @@ private:
     {
         writeNamedConnection(node, node->label(), "label");
     }
+    void visitIdentifier(const Identifier* node) override {}
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
         if (node->body().notNull())
@@ -223,9 +219,9 @@ private:
     }
     void visitLabel(const Label* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
     }
-    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override {}
+    void visitScopedIdentifier(const ScopedIdentifier* node) override {}
     void visitSelect(const Select* node) override
     {
         writeNamedConnection(node, node->expression(), "expr");
@@ -237,12 +233,9 @@ private:
         writeNamedConnection(node, node->label(), "label");
     }
     void visitSubReturn(const SubReturn* node) override {}
-    void visitSymbol(const Symbol* node) override {}
     void visitVarDecl(const VarDecl* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
-        if (node->type().isUDT())
-            writeNamedConnection(node, *node->type().getUDT(), "udt");
+        writeNamedConnection(node, node->identifier(), "identifier");
         if (node->initializer().notNull())
             writeNamedConnection(node, node->initializer(), "initializer");
     }
@@ -276,7 +269,6 @@ private:
         writeNamedConnection(node, node->field(), "field");
         writeNamedConnection(node, node->expression(), "expr");
     }
-    void visitUDTRef(const UDTRef* node) override {}
     void visitUnaryOp(const UnaryOp* node) override
     {
         writeNamedConnection(node, node->expr(), "expr");
@@ -294,7 +286,7 @@ private:
     }
     void visitVarRef(const VarRef* node) override
     {
-        writeNamedConnection(node, node->symbol(), "symbol");
+        writeNamedConnection(node, node->identifier(), "identifier");
     }
     void visitWhileLoop(const WhileLoop* node) override
     {

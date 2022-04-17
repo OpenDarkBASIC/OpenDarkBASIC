@@ -2,12 +2,12 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-compiler/tests/matchers/CommandExprEq.hpp"
-#include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 
 #define NAME db_parser_udt_fields
 
@@ -90,14 +90,14 @@ TEST_F(NAME, udt_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -115,14 +115,14 @@ TEST_F(NAME, udt_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -140,14 +140,14 @@ TEST_F(NAME, udt_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -165,17 +165,17 @@ TEST_F(NAME, udt_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -193,17 +193,17 @@ TEST_F(NAME, udt_arr_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -221,17 +221,17 @@ TEST_F(NAME, udt_arr_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -249,17 +249,17 @@ TEST_F(NAME, udt_inner_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -277,17 +277,17 @@ TEST_F(NAME, udt_outer_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -304,15 +304,15 @@ TEST_F(NAME, value_ass_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -329,15 +329,15 @@ TEST_F(NAME, value_ass_udt_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::FLOAT))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -354,15 +354,15 @@ TEST_F(NAME, value_ass_udt_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::STRING))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -379,18 +379,18 @@ TEST_F(NAME, value_ass_udt_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -407,18 +407,18 @@ TEST_F(NAME, value_ass_udt_arr_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -435,18 +435,18 @@ TEST_F(NAME, value_ass_udt_arr_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -463,18 +463,18 @@ TEST_F(NAME, value_ass_udt_inner_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -491,18 +491,18 @@ TEST_F(NAME, value_ass_udt_outer_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -519,15 +519,15 @@ TEST_F(NAME, value_ass_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("func_expr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -546,14 +546,14 @@ TEST_F(NAME, value_ass_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -571,14 +571,14 @@ TEST_F(NAME, udt_inner_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -596,14 +596,14 @@ TEST_F(NAME, udt_inner_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -621,14 +621,14 @@ TEST_F(NAME, udt_outer_float_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -646,14 +646,14 @@ TEST_F(NAME, udt_outer_string_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -671,17 +671,17 @@ TEST_F(NAME, udt_inner_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -699,17 +699,17 @@ TEST_F(NAME, udt_inner_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -727,17 +727,17 @@ TEST_F(NAME, udt_outer_float_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -755,17 +755,17 @@ TEST_F(NAME, udt_outer_string_arr_ass_value)
     exp = EXPECT_CALL(v, visitUDTFieldAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -824,15 +824,15 @@ TEST_F(NAME, value_ass_udt_inner_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -849,15 +849,15 @@ TEST_F(NAME, value_ass_udt_outer_float)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -874,15 +874,15 @@ TEST_F(NAME, value_ass_udt_inner_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -899,15 +899,15 @@ TEST_F(NAME, value_ass_udt_outer_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -924,18 +924,18 @@ TEST_F(NAME, value_ass_udt_inner_float_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -952,18 +952,18 @@ TEST_F(NAME, value_ass_udt_inner_string_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -980,18 +980,18 @@ TEST_F(NAME, value_ass_udt_outer_float_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1008,18 +1008,18 @@ TEST_F(NAME, value_ass_udt_outer_string_arr)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExprOrArrayRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1036,15 +1036,15 @@ TEST_F(NAME, value_ass_float_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::FLOAT, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("func_expr", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1063,14 +1063,14 @@ TEST_F(NAME, value_ass_float_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr#"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1087,15 +1087,15 @@ TEST_F(NAME, value_ass_string_func_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::STRING, "func_expr"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("func_expr", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;
@@ -1114,14 +1114,14 @@ TEST_F(NAME, value_ass_string_command_returning_udt)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "value"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("value", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldOuter(_)).After(exp);
     exp = EXPECT_CALL(v, visitCommandExpr(CommandExprEq("cmd expr$"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTFieldInner(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "b"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "c"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
     visitAST(ast, v);
 
     astpost::ValidateUDTFieldNames post;

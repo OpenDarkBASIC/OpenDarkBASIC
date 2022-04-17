@@ -1,17 +1,17 @@
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     args_(args),
     body_(body),
     returnValue_(returnValue)
@@ -19,67 +19,67 @@ FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expressi
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Expression* returnValue, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     args_(args),
     returnValue_(returnValue)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Block* body, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, Block* body, Expression* returnValue, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     body_(body),
     returnValue_(returnValue)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     returnValue_(returnValue)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     args_(args),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, Block* body, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, Block* body, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol)
+    identifier_(identifier)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* FuncDecl::symbol() const
+Identifier* FuncDecl::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -120,7 +120,7 @@ void FuncDecl::accept(ConstVisitor* visitor) const
 Node::ChildRange FuncDecl::children()
 {
     ChildRange children;
-    children.push_back(symbol_);
+    children.push_back(identifier_);
     if (args_)
     {
         children.push_back(args_);
@@ -139,8 +139,8 @@ Node::ChildRange FuncDecl::children()
 // ----------------------------------------------------------------------------
 void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (body_ == oldNode)
         body_ = dynamic_cast<Block*>(newNode);
     else if (returnValue_ == oldNode)
@@ -153,7 +153,7 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* FuncDecl::duplicateImpl() const
 {
     return new FuncDecl(
-        symbol_->duplicate<AnnotatedSymbol>(),
+        identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
         returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,

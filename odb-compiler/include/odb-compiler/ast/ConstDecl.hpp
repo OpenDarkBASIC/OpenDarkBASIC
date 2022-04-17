@@ -5,7 +5,7 @@
 
 namespace odb::ast {
 
-class AnnotatedSymbol;
+class Identifier;
 class Expression;
 class Literal;
 
@@ -17,9 +17,9 @@ class Literal;
 class ODBCOMPILER_PUBLIC_API ConstDeclExpr final : public Statement
 {
 public:
-    ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLocation* location);
+    ConstDeclExpr(Identifier* identifier, Expression* expr, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     Expression* expression() const;
 
     std::string toString() const override;
@@ -32,16 +32,16 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<Expression> expr_;
 };
 
 class ODBCOMPILER_PUBLIC_API ConstDecl final : public Statement
 {
 public:
-    ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location);
+    ConstDecl(Identifier* identifier, Literal* literal, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     Literal* literal() const;
 
     std::string toString() const override;
@@ -54,7 +54,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<Literal> literal_;
 };
 

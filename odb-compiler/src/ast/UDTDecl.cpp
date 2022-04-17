@@ -3,16 +3,15 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UDTDecl::UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location) :
+UDTDecl::UDTDecl(Identifier* typeName, UDTDeclBody* udtBody, SourceLocation* location) :
     Statement(location),
     typeName_(typeName),
     body_(udtBody)
@@ -20,7 +19,7 @@ UDTDecl::UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* locatio
 }
 
 // ----------------------------------------------------------------------------
-Symbol* UDTDecl::typeName() const
+Identifier* UDTDecl::typeName() const
 {
     return typeName_;
 }
@@ -57,7 +56,7 @@ Node::ChildRange UDTDecl::children()
 void UDTDecl::swapChild(const Node* oldNode, Node* newNode)
 {
     if (typeName_ == oldNode)
-        typeName_ = dynamic_cast<Symbol*>(newNode);
+        typeName_ = dynamic_cast<Identifier*>(newNode);
     else if (body_ == oldNode)
         body_ = dynamic_cast<UDTDeclBody*>(newNode);
     else
@@ -68,7 +67,7 @@ void UDTDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* UDTDecl::duplicateImpl() const
 {
     return new UDTDecl(
-        typeName_->duplicate<Symbol>(),
+        typeName_->duplicate<Identifier>(),
         body_->duplicate<UDTDeclBody>(),
         location());
 }

@@ -1,9 +1,8 @@
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
@@ -33,24 +32,24 @@ InitializerList* defaultInitializer(const Type& type, SourceLocation* location)
 }
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, Type type, InitializerList* initializer, SourceLocation* location) :
+VarDecl::VarDecl(ScopedIdentifier* identifier, Type type, InitializerList* initializer, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     type_(std::move(type)),
     initializer_(initializer)
 {
 }
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedAnnotatedSymbol* symbol, Type type, SourceLocation* location) :
-    VarDecl(symbol, std::move(type), defaultInitializer(type, location), location)
+VarDecl::VarDecl(ScopedIdentifier* identifier, Type type, SourceLocation* location) :
+    VarDecl(identifier, std::move(type), defaultInitializer(type, location), location)
 {
 }
 
 // ----------------------------------------------------------------------------
-ScopedAnnotatedSymbol* VarDecl::symbol() const
+ScopedIdentifier* VarDecl::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -93,11 +92,7 @@ void VarDecl::accept(ConstVisitor* visitor) const
 Node::ChildRange VarDecl::children()
 {
     ChildRange children;
-    children.push_back(symbol_);
-    if (type_.isUDT())
-    {
-        children.push_back(*type_.getUDT());
-    }
+    children.push_back(identifier_);
     if (initializer_)
     {
         children.push_back(initializer_);
@@ -108,10 +103,8 @@ Node::ChildRange VarDecl::children()
 // ----------------------------------------------------------------------------
 void VarDecl::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<ScopedAnnotatedSymbol*>(newNode);
-    else if (type_.isUDT() && *type_.getUDT() == oldNode)
-        type_ = Type::getUDT(dynamic_cast<UDTRef*>(newNode));
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<ScopedIdentifier*>(newNode);
     else if (initializer_ == oldNode)
         initializer_ = dynamic_cast<InitializerList*>(newNode);
     else
@@ -122,8 +115,8 @@ void VarDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* VarDecl::duplicateImpl() const
 {
     return new VarDecl(
-        symbol_->duplicate<ScopedAnnotatedSymbol>(),
-        type_.isUDT() ? Type::getUDT((*type_.getUDT())->duplicate<UDTRef>()) : type_,
+        identifier_->duplicate<ScopedIdentifier>(),
+        type_,
         initializer_->duplicate<InitializerList>(),
         location());
 }

@@ -1,9 +1,9 @@
+#include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -245,23 +245,23 @@ Node* UntilLoop::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue),
-    nextSymbol_(nextSymbol),
+    nextIdentifier_(nextIdentifier),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue),
-    nextSymbol_(nextSymbol)
+    nextIdentifier_(nextIdentifier)
 {
 }
 
@@ -285,21 +285,21 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
-    nextSymbol_(nextSymbol),
+    nextIdentifier_(nextIdentifier),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location) :
+ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, SourceLocation* location) :
     Loop(location),
     counter_(counter),
     endValue_(endValue),
-    nextSymbol_(nextSymbol)
+    nextIdentifier_(nextIdentifier)
 {
 }
 
@@ -339,9 +339,9 @@ MaybeNull<Expression> ForLoop::stepValue() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<AnnotatedSymbol> ForLoop::nextSymbol() const
+MaybeNull<Identifier> ForLoop::nextIdentifier() const
 {
-    return nextSymbol_.get();
+    return nextIdentifier_.get();
 }
 
 // ----------------------------------------------------------------------------
@@ -376,9 +376,9 @@ Node::ChildRange ForLoop::children()
     {
         children.push_back(stepValue_);
     }
-    if (nextSymbol_)
+    if (nextIdentifier_)
     {
-        children.push_back(nextSymbol_);
+        children.push_back(nextIdentifier_);
     }
     if (body_)
     {
@@ -396,8 +396,8 @@ void ForLoop::swapChild(const Node* oldNode, Node* newNode)
         endValue_ = dynamic_cast<Expression*>(newNode);
     else if (stepValue_ == oldNode)
         stepValue_ = dynamic_cast<Expression*>(newNode);
-    else if (nextSymbol_ == oldNode)
-        nextSymbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    else if (nextIdentifier_ == oldNode)
+        nextIdentifier_ = dynamic_cast<Identifier*>(newNode);
     else if (body_ == oldNode)
         body_ = dynamic_cast<Block*>(newNode);
     else
@@ -411,7 +411,7 @@ Node* ForLoop::duplicateImpl() const
         counter_->duplicate<Assignment>(),
         endValue_->duplicate<Expression>(),
         stepValue_ ? stepValue_->duplicate<Expression>() : nullptr,
-        nextSymbol_ ? nextSymbol_->duplicate<AnnotatedSymbol>() : nullptr,
+        nextIdentifier_ ? nextIdentifier_->duplicate<Identifier>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
         location());
 }

@@ -4,6 +4,8 @@
 #include <memory>
 #include <optional>
 
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/config.hpp"
 #include "odb-sdk/Reference.hpp"
 
@@ -37,8 +39,6 @@
     X(Vec4,          odb::ast::Vec4<float>)
 
 namespace odb::ast {
-
-class UDTRef;
 
 // An enum of builtin datatypes i.e. not user defined types.
 enum class BuiltinType
@@ -86,8 +86,10 @@ class ODBCOMPILER_PUBLIC_API Type
 public:
     static Type getVoid();
     static Type getBuiltin(BuiltinType builtin);
-    static Type getUDT(UDTRef* udt);
+    static Type getUDT(std::string name);
     static Type getArray(Type inner);
+    static Type getFromAnnotation(ast::Annotation annotation);
+    static Type getFromCommandType(cmd::Command::Type commandType);
 
     bool isVoid() const;
     bool isBuiltinType() const;
@@ -96,18 +98,20 @@ public:
 
     size_t size() const;
 
-    std::optional<UDTRef*> getUDT() const;
+    std::optional<std::string> getUDT() const;
     std::optional<BuiltinType> getBuiltinType() const;
     std::optional<Type> getArrayInnerType() const;
 
     std::string toString() const;
+
+    bool isConvertibleTo(Type other) const;
 
     bool operator==(const Type& other) const;
     bool operator!=(const Type& other) const;
 
 private:
     struct VoidType {};
-    struct UDTType { Reference<UDTRef> udt; };
+    struct UDTType { std::string udt; };
     struct ArrayType
     {
         explicit ArrayType(Type type);

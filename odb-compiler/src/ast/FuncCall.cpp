@@ -1,30 +1,28 @@
 #include "odb-compiler/ast/FuncCall.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
-    Expression(location),
-    symbol_(symbol),
+FuncCallExpr::FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation* location) :
+    Expression(location), identifier_(identifier),
     args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncCallExpr::FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location) :
-    Expression(location),
-    symbol_(symbol)
+FuncCallExpr::FuncCallExpr(Identifier* identifier, SourceLocation* location) :
+    Expression(location), identifier_(identifier)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* FuncCallExpr::symbol() const
+Identifier* FuncCallExpr::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -54,19 +52,19 @@ Node::ChildRange FuncCallExpr::children()
 {
     if (args_)
     {
-        return {symbol_, args_};
+        return {identifier_, args_};
     }
     else
     {
-        return {symbol_};
+        return {identifier_};
     }
 }
 
 // ----------------------------------------------------------------------------
 void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (args_ == oldNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
@@ -76,8 +74,7 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallExpr::duplicateImpl() const
 {
-    return new FuncCallExpr(
-        symbol_->duplicate<AnnotatedSymbol>(),
+    return new FuncCallExpr(identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }
@@ -86,17 +83,16 @@ Node* FuncCallExpr::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
-    Expression(location),
-    symbol_(symbol),
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
+    Expression(location), identifier_(identifier),
     args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* FuncCallExprOrArrayRef::symbol() const
+Identifier* FuncCallExprOrArrayRef::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -126,19 +122,19 @@ Node::ChildRange FuncCallExprOrArrayRef::children()
 {
     if (args_)
     {
-        return {symbol_, args_};
+        return {identifier_, args_};
     }
     else
     {
-        return {symbol_};
+        return {identifier_};
     }
 }
 
 // ----------------------------------------------------------------------------
 void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (args_ == oldNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
@@ -148,8 +144,7 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallExprOrArrayRef::duplicateImpl() const
 {
-    return new FuncCallExprOrArrayRef(
-        symbol_->duplicate<AnnotatedSymbol>(),
+    return new FuncCallExprOrArrayRef(identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }
@@ -158,24 +153,20 @@ Node* FuncCallExprOrArrayRef::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location) :
-    Statement(location),
-    symbol_(symbol),
-    args_(args)
+FuncCallStmnt::FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocation* location)
+    : Statement(location), identifier_(identifier), args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location) :
-    Statement(location),
-    symbol_(symbol)
+FuncCallStmnt::FuncCallStmnt(Identifier* symbol, SourceLocation* location) : Statement(location), identifier_(symbol)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* FuncCallStmnt::symbol() const
+Identifier* FuncCallStmnt::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -205,19 +196,19 @@ Node::ChildRange FuncCallStmnt::children()
 {
     if (args_)
     {
-        return {symbol_, args_};
+        return {identifier_, args_};
     }
     else
     {
-        return {symbol_};
+        return {identifier_};
     }
 }
 
 // ----------------------------------------------------------------------------
 void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (args_ == oldNode)
         args_ = dynamic_cast<ArgList*>(newNode);
     else
@@ -227,8 +218,7 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallStmnt::duplicateImpl() const
 {
-    return new FuncCallStmnt(
-        symbol_->duplicate<AnnotatedSymbol>(),
+    return new FuncCallStmnt(identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
 }

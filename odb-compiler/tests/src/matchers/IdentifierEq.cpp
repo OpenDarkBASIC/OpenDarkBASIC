@@ -1,14 +1,16 @@
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
+#include <utility>
+
+#include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbolEqMatcher::AnnotatedSymbolEqMatcher(odb::ast::Annotation annotation, const std::string& name)
-    : expectedAnnotation_(annotation)
-    , expectedName_(name)
+IdentifierEqMatcher::IdentifierEqMatcher(std::string name, odb::ast::Annotation annotation)
+    : expectedName_(std::move(name))
+    , expectedAnnotation_(annotation)
 {}
 
 // ----------------------------------------------------------------------------
-bool AnnotatedSymbolEqMatcher::MatchAndExplain(const odb::ast::AnnotatedSymbol* node, testing::MatchResultListener* listener) const
+bool IdentifierEqMatcher::MatchAndExplain(const odb::ast::Identifier* node, testing::MatchResultListener* listener) const
 {
     *listener
         << "node->annotation() == " << odb::ast::typeAnnotationEnumString(node->annotation())
@@ -18,14 +20,14 @@ bool AnnotatedSymbolEqMatcher::MatchAndExplain(const odb::ast::AnnotatedSymbol* 
 }
 
 // ----------------------------------------------------------------------------
-void AnnotatedSymbolEqMatcher::DescribeTo(std::ostream* os) const
+void IdentifierEqMatcher::DescribeTo(std::ostream* os) const
 {
     *os << "node->annotation() equals " << odb::ast::typeAnnotationEnumString(expectedAnnotation_)
         << ", node->name() equals " << expectedName_;
 }
 
 // ----------------------------------------------------------------------------
-void AnnotatedSymbolEqMatcher::DescribeNegationTo(std::ostream* os) const
+void IdentifierEqMatcher::DescribeNegationTo(std::ostream* os) const
 {
     *os << "node->annotation() does not equal " << odb::ast::typeAnnotationEnumString(expectedAnnotation_)
         << "node->name() does not equal " << expectedName_;

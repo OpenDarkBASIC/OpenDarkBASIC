@@ -1,7 +1,6 @@
 %require "3.7"
 %code top
 {
-    #include "odb-compiler/ast/AnnotatedSymbol.hpp"
     #include "odb-compiler/ast/ArgList.hpp"
     #include "odb-compiler/ast/ArrayDecl.hpp"
     #include "odb-compiler/ast/ArrayRef.hpp"
@@ -17,19 +16,18 @@
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
     #include "odb-compiler/ast/Goto.hpp"
+    #include "odb-compiler/ast/Identifier.hpp"
     #include "odb-compiler/ast/InitializerList.hpp"
     #include "odb-compiler/ast/Label.hpp"
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/LValue.hpp"
-    #include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
+    #include "odb-compiler/ast/ScopedIdentifier.hpp"
     #include "odb-compiler/ast/SelectCase.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
     #include "odb-compiler/ast/Subroutine.hpp"
-    #include "odb-compiler/ast/Symbol.hpp"
     #include "odb-compiler/ast/UDTDecl.hpp"
     #include "odb-compiler/ast/UDTField.hpp"
-    #include "odb-compiler/ast/UDTRef.hpp"
     #include "odb-compiler/ast/UnaryOp.hpp"
     #include "odb-compiler/ast/VarDecl.hpp"
     #include "odb-compiler/ast/VarRef.hpp"
@@ -60,7 +58,6 @@
             class Driver;
         }
         namespace ast {
-            class AnnotatedSymbol;
             class ArgList;
             class ArrayDecl;
             class ArrayRef;
@@ -81,6 +78,7 @@
             class FuncExit;
             class Expression;
             class Goto;
+            class Identifier;
             class InfiniteLoop;
             class InitializerList;
             class Label;
@@ -88,18 +86,16 @@
             class LValue;
             class Loop;
             class Node;
-            class ScopedAnnotatedSymbol;
+            class ScopedIdentifier;
             class Select;
             class Statement;
             class SubCall;
             class SubReturn;
-            class Symbol;
             class UDTDecl;
             class UDTDeclBody;
             class UDTFieldOuter;
             class UDTFieldInner;
             class UDTFieldAssignment;
-            class UDTRef;
             class UntilLoop;
             class VarAssignment;
             class VarDecl;
@@ -156,7 +152,6 @@
     char* string;
     char scope;
 
-    odb::ast::AnnotatedSymbol* annotated_symbol;
     odb::ast::ArrayDecl* array_decl;
     odb::ast::ArrayRef* array_ref;
     odb::ast::Assignment* assignment;
@@ -176,23 +171,22 @@
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
     odb::ast::Goto* goto_symbol;
+    odb::ast::Identifier* identifier;
     odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::InitializerList* initializer_list;
     odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
     odb::ast::LValue* lvalue;
-    odb::ast::ScopedAnnotatedSymbol* var_annotated_symbol;
+    odb::ast::ScopedIdentifier* scoped_identifier;
     odb::ast::Select* select;
     odb::ast::Statement* stmnt;
     odb::ast::SubCall* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
-    odb::ast::Symbol* symbol;
     odb::ast::UDTDecl* udt_decl;
     odb::ast::UDTDeclBody* udt_decl_body;
     odb::ast::UDTFieldOuter* udt_field_outer;
     odb::ast::UDTFieldInner* udt_field_inner;
-    odb::ast::UDTRef* udt_ref;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
@@ -200,8 +194,6 @@
 }
 
 %destructor { str::deleteCStr($$); } <string>
-%destructor { TouchRef($$); } <symbol>
-%destructor { TouchRef($$); } <annotated_symbol>
 %destructor { TouchRef($$); } <array_decl>
 %destructor { TouchRef($$); } <array_ref>
 %destructor { TouchRef($$); } <assignment>
@@ -218,19 +210,19 @@
 %destructor { TouchRef($$); } <func_call_stmnt>
 %destructor { TouchRef($$); } <func_decl>
 %destructor { TouchRef($$); } <func_exit>
+%destructor { TouchRef($$); } <identifier>
 %destructor { TouchRef($$); } <infinite_loop>
 %destructor { TouchRef($$); } <command_expr>
 %destructor { TouchRef($$); } <command_stmnt>
 %destructor { TouchRef($$); } <literal>
 %destructor { TouchRef($$); } <loop>
 %destructor { TouchRef($$); } <lvalue>
-%destructor { TouchRef($$); } <var_annotated_symbol>
+%destructor { TouchRef($$); } <scoped_identifier>
 %destructor { TouchRef($$); } <select>
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <udt_decl>
 %destructor { TouchRef($$); } <udt_decl_body>
 %destructor { TouchRef($$); } <udt_field_outer>
-%destructor { TouchRef($$); } <udt_ref>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
@@ -342,7 +334,7 @@
 %token LAND "and"
 %token LNOT "not"
 
-%token<string> SYMBOL "symbol"
+%token<string> IDENTIFIER "identifier"
 %token<string> COMMAND "command"
 
 %type<assignment> assignment
@@ -364,14 +356,14 @@
 %type<var_decl> var_decl_as_type
 %type<var_decl> var_decl_no_as_type
 %type<literal> literal
-%type<annotated_symbol> annotated_symbol
-%type<annotated_symbol> loop_next_sym
-%type<var_annotated_symbol> var_int_sym
-%type<var_annotated_symbol> var_word_sym
-%type<var_annotated_symbol> var_double_int_sym
-%type<var_annotated_symbol> var_float_sym
-%type<var_annotated_symbol> var_double_float_sym
-%type<var_annotated_symbol> var_str_sym
+%type<identifier> annotated_identifier
+%type<identifier> loop_next_sym
+%type<scoped_identifier> var_int_sym
+%type<scoped_identifier> var_word_sym
+%type<scoped_identifier> var_double_int_sym
+%type<scoped_identifier> var_float_sym
+%type<scoped_identifier> var_double_float_sym
+%type<scoped_identifier> var_str_sym
 %type<var_ref> var_ref
 %type<loop> loop
 %type<infinite_loop> loop_do
@@ -383,7 +375,7 @@
 %type<func_exit> func_exit
 %type<select> select
 %type<stmnt> incdec
-%type<symbol> symbol
+%type<identifier> identifier
 %type<sub_call_symbol> sub_call
 %type<sub_return> sub_return
 %type<goto_symbol> goto_label
@@ -401,7 +393,7 @@
 %type<udt_field_outer> udt_field_lvalue
 %type<udt_field_outer> udt_field_rvalue
 %type<lvalue> udt_field_inner
-%type<udt_ref> udt_ref
+%type<identifier> udt_ref
 %type<scope> scope
 
 /* precedence rules */
@@ -518,19 +510,19 @@ expr
  * brackets, but it is valid to call a command with brackets as a statement */
 command_stmnt
   : COMMAND                                                   { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND arg_list                                         { $$ = new CommandStmnt($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND arg_list                                          { $$ = new CommandStmnt($1, $2, driver->newLocation(&@$)); str::deleteCStr($1); }
   | COMMAND '(' ')'                                           { $$ = new CommandStmnt($1, driver->newLocation(&@$)); str::deleteCStr($1); }
 /* This case is already handled by expr
-  | COMMAND '(' arg_list ')'                                 { $$ = new CommandStmnt($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
+  | COMMAND '(' arg_list ')'                                  { $$ = new CommandStmnt($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); } */
   ;
 
 /* Commands appearing in expressions must be called with arguments in brackets */
 command_expr
   : COMMAND '(' ')'                                           { $$ = new CommandExpr($1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | COMMAND '(' arg_list ')'                                 { $$ = new CommandExpr($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | COMMAND '(' arg_list ')'                                  { $$ = new CommandExpr($1, $3, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 const_decl
-  : CONSTANT annotated_symbol expr                            { $$ = new ConstDeclExpr($2, $3, driver->newLocation(&@$)); }
+  : CONSTANT annotated_identifier expr                        { $$ = new ConstDeclExpr($2, $3, driver->newLocation(&@$)); }
   ;
 incdec
   : INC var_ref ',' expr                                      { $$ = driver->newIncDecVar($2, $4, odb::db::Driver::INC, &@$); }
@@ -552,13 +544,13 @@ assignment
   | udt_field_lvalue '=' expr                                 { $$ = new UDTFieldAssignment($1, $3, driver->newLocation(&@$)); }
   ;
 var_ref
-  : annotated_symbol                                          { $$ = new VarRef($1, driver->newLocation(&@$)); }
+  : annotated_identifier                                      { $$ = new VarRef($1, driver->newLocation(&@$)); }
   ;
 var_decl
-  : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
-  | scope var_decl_no_as_type                                 { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
-  | scope var_decl_as_type '=' initializer_list               { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
-  | scope var_decl_as_type                                    { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
+  : scope var_decl_no_as_type '=' initializer_list            { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
+  | scope var_decl_no_as_type                                 { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
+  | scope var_decl_as_type '=' initializer_list               { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); $$->setInitializer($4); }
+  | scope var_decl_as_type                                    { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
   | var_decl_as_type '=' initializer_list                     { $$ = $1; $$->setInitializer($3); }
   | var_decl_as_type                                          { $$ = $1; }
   ;
@@ -585,7 +577,7 @@ var_decl_as_type
   | var_double_float_sym AS DOUBLE FLOAT                      { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::DoubleFloat), driver->newLocation(&@$)); }
   | var_float_sym        AS FLOAT                             { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::Float), driver->newLocation(&@$)); }
   | var_str_sym          AS STRING                            { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::String), driver->newLocation(&@$)); }
-  | var_int_sym          AS udt_ref                           { $$ = new VarDecl($1, Type::getUDT($3), driver->newLocation(&@$)); }
+  | var_int_sym          AS udt_ref                           { $$ = new VarDecl($1, Type::getUDT($3->name()), driver->newLocation(&@$)); }
   | var_int_sym          AS COMPLEX                           { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::Complex), driver->newLocation(&@$)); }
   | var_int_sym          AS MAT2X2                            { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::Mat2x2), driver->newLocation(&@$)); }
   | var_int_sym          AS MAT2X3                            { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::Mat2x3), driver->newLocation(&@$)); }
@@ -602,11 +594,11 @@ var_decl_as_type
   | var_int_sym          AS VEC4                              { $$ = new VarDecl($1, Type::getBuiltin(BuiltinType::Vec4), driver->newLocation(&@$)); }
   ;
 array_ref
-  : annotated_symbol '(' arg_list ')'                        { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
+  : annotated_identifier '(' arg_list ')'                     { $$ = new ArrayRef($1, $3, driver->newLocation(&@$)); }
   ;
 array_decl
-  : scope array_decl_as_type                                  { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
-  | scope array_decl_no_as_type                               { $$ = $2; $$->symbol()->setScope(static_cast<Scope>($1)); }
+  : scope array_decl_as_type                                  { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
+  | scope array_decl_no_as_type                               { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
   | array_decl_as_type                                        { $$ = $1; }
   | array_decl_no_as_type                                     { $$ = $1; }
   ;
@@ -632,8 +624,8 @@ array_decl_as_type
   | DIM var_word_sym         '(' arg_list ')' AS WORD           { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $4, driver->newLocation(&@$)); }
   | DIM var_double_float_sym '(' arg_list ')' AS DOUBLE FLOAT   { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $4, driver->newLocation(&@$)); }
   | DIM var_float_sym        '(' arg_list ')' AS FLOAT          { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $4, driver->newLocation(&@$)); }
-  | DIM var_str_sym          '(' arg_list ')'AS STRING          { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $4, driver->newLocation(&@$)); }
-  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = new ArrayDecl($2, Type::getArray(Type::getUDT($7)), $4, driver->newLocation(&@$)); }
+  | DIM var_str_sym          '(' arg_list ')' AS STRING         { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $4, driver->newLocation(&@$)); }
+  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = new ArrayDecl($2, Type::getArray(Type::getUDT($7->name())), $4, driver->newLocation(&@$)); }
   | DIM var_int_sym          '(' arg_list ')' AS COMPLEX        { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Complex)), $4, driver->newLocation(&@$)); }
   | DIM var_int_sym          '(' arg_list ')' AS MAT2X2         { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x2)), $4, driver->newLocation(&@$)); }
   | DIM var_int_sym          '(' arg_list ')' AS MAT2X3         { $$ = new ArrayDecl($2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x3)), $4, driver->newLocation(&@$)); }
@@ -653,15 +645,15 @@ scope
   : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
   | LOCAL                                                     { $$ = static_cast<char>(Scope::LOCAL); }
   ;
-var_int_sym          : SYMBOL %prec NO_ANNOTATION             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_int_sym   : SYMBOL '&'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_word_sym         : SYMBOL '%'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_float_sym : SYMBOL '!'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_float_sym        : SYMBOL '#'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_str_sym          : SYMBOL '$'                             { $$ = new ScopedAnnotatedSymbol(Scope::LOCAL, Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_int_sym          : IDENTIFIER %prec NO_ANNOTATION         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::NONE, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_int_sym   : IDENTIFIER '&'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::DOUBLE_INTEGER, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_word_sym         : IDENTIFIER '%'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::WORD, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_float_sym : IDENTIFIER '!'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::DOUBLE_FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_float_sym        : IDENTIFIER '#'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_str_sym          : IDENTIFIER '$'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::STRING, driver->newLocation(&@$)); str::deleteCStr($1); };
 
 udt_decl
-  : TYPE symbol seps udt_body_decl seps ENDTYPE               { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
+  : TYPE identifier seps udt_body_decl seps ENDTYPE           { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
   ;
 udt_body_decl
   : udt_body_decl seps var_decl_as_type '=' initializer_list  { $$ = $1; $$->appendVarDecl($3); $3->setInitializer($5); }
@@ -672,7 +664,7 @@ udt_body_decl
   | array_decl_as_type                                        { $$ = new UDTDeclBody($1, driver->newLocation(&@$)); }
   ;
 udt_ref
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new UDTRef($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : IDENTIFIER %prec NO_ANNOTATION                            { $$ = new Identifier($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 udt_field_lvalue
   : var_ref '.' udt_field_inner                               { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
@@ -691,38 +683,38 @@ udt_field_inner
   ;
 
 func_decl
-  : FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION expr          { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION expr                     { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps block seps ENDFUNCTION               { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
-  | FUNCTION annotated_symbol '(' ')' seps ENDFUNCTION                          { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
+  : FUNCTION annotated_identifier '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION expr          { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION expr                     { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION               { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION                          { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
   ;
 func_exit
   : EXITFUNCTION expr                                         { $$ = new FuncExit($2, driver->newLocation(&@$)); }
   | EXITFUNCTION                                              { $$ = new FuncExit(driver->newLocation(&@$)); }
   ;
 func_call_expr_or_array_ref
-  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&@$)); }
-  | annotated_symbol '(' ')'                                  { $$ = new FuncCallExpr($1, driver->newLocation(&@$)); }
+  : annotated_identifier '(' arg_list ')'                     { $$ = new FuncCallExprOrArrayRef($1, $3, driver->newLocation(&@$)); }
+  | annotated_identifier '(' ')'                              { $$ = new FuncCallExpr($1, driver->newLocation(&@$)); }
   ;
 func_call_stmnt
-  : annotated_symbol '(' arg_list ')'                         { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&@$)); }
-  | annotated_symbol '(' ')'                                  { $$ = new FuncCallStmnt($1, driver->newLocation(&@$)); }
+  : annotated_identifier '(' arg_list ')'                     { $$ = new FuncCallStmnt($1, $3, driver->newLocation(&@$)); }
+  | annotated_identifier '(' ')'                              { $$ = new FuncCallStmnt($1, driver->newLocation(&@$)); }
   ;
 sub_call
-  : GOSUB symbol                                              { $$ = new SubCall($2, driver->newLocation(&@$)); }
+  : GOSUB identifier                                          { $$ = new SubCall($2, driver->newLocation(&@$)); }
   ;
 sub_return
   : RETURN                                                    { $$ = new SubReturn(driver->newLocation(&@$)); }
   ;
 label_decl
-  : symbol ':'                                                { $$ = new Label($1, driver->newLocation(&@$)); }
+  : identifier ':'                                            { $$ = new Label($1, driver->newLocation(&@$)); }
   ;
 goto_label
-  : GOTO symbol                                               { $$ = new Goto($2, driver->newLocation(&@$)); }
+  : GOTO identifier                                           { $$ = new Goto($2, driver->newLocation(&@$)); }
   ;
 literal
   : BOOLEAN_LITERAL                                           { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&@$)); }
@@ -734,16 +726,16 @@ literal
   | IMAG_J                                                    { $$ = new QuatLiteral({0, 0, $1, 0}, driver->newLocation(&@$)); }
   | IMAG_K                                                    { $$ = new QuatLiteral({0, 0, 0, $1}, driver->newLocation(&@$)); }
   ;
-annotated_symbol
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '&'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_INTEGER, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '%'                                                { $$ = new AnnotatedSymbol(Annotation::WORD, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '!'                                                { $$ = new AnnotatedSymbol(Annotation::DOUBLE_FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '$'                                                { $$ = new AnnotatedSymbol(Annotation::STRING, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+annotated_identifier
+  : IDENTIFIER %prec NO_ANNOTATION                                { $$ = new Identifier($1, Annotation::NONE, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '&'                                                { $$ = new Identifier($1, Annotation::DOUBLE_INTEGER, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '%'                                                { $$ = new Identifier($1, Annotation::WORD, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '!'                                                { $$ = new Identifier($1, Annotation::DOUBLE_FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '#'                                                { $$ = new Identifier($1, Annotation::FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '$'                                                { $$ = new Identifier($1, Annotation::STRING, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
-symbol
-  : SYMBOL                                                    { $$ = new Symbol($1, driver->newLocation(&@$)); str::deleteCStr($1); }
+identifier
+  : IDENTIFIER                                                    { $$ = new Identifier($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 conditional
   : cond_oneline                                              { $$ = $1; }
@@ -830,8 +822,8 @@ loop_for
   | FOR assignment TO expr seps NEXT                          { $$ = new ForLoop($2, $4, driver->newLocation(&@$)); }
   ;
 loop_next_sym
-  : SYMBOL %prec NO_ANNOTATION                                { $$ = new AnnotatedSymbol(Annotation::NONE, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
-  | SYMBOL '#'                                                { $$ = new AnnotatedSymbol(Annotation::FLOAT, $1, driver->newLocation(&@$)); str::deleteCStr($1); }
+  : IDENTIFIER %prec NO_ANNOTATION                                { $$ = new Identifier($1, Annotation::NONE, driver->newLocation(&@$)); str::deleteCStr($1); }
+  | IDENTIFIER '#'                                                { $$ = new Identifier($1, Annotation::FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 exit
   : EXIT                                                      { $$ = new Exit(driver->newLocation(&@$)); }

@@ -1,9 +1,11 @@
+#include <utility>
+
 #include "odb-compiler/tests/matchers/GotoEqMatcher.hpp"
 #include "odb-compiler/ast/Goto.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 
-GotoEqMatcher::GotoEqMatcher(const std::string& labelName)
-    : expectedLabel_(labelName)
+GotoEqMatcher::GotoEqMatcher(std::string labelName)
+    : expectedLabel_(std::move(labelName))
 {}
 
 bool GotoEqMatcher::MatchAndExplain(const odb::ast::Goto* node, testing::MatchResultListener* listener) const
@@ -14,10 +16,10 @@ bool GotoEqMatcher::MatchAndExplain(const odb::ast::Goto* node, testing::MatchRe
 
 void GotoEqMatcher::DescribeTo(::std::ostream* os) const
 {
-    *os << "node->label()->symbol()->name() equals " << expectedLabel_;
+    *os << "node->label()->identifier()->name() equals " << expectedLabel_;
 }
 
 void GotoEqMatcher::DescribeNegationTo(::std::ostream* os) const
 {
-    *os << "node->label()->symbol()->name() does not equal " << expectedLabel_;
+    *os << "node->label()->identifier()->name() does not equal " << expectedLabel_;
 }
