@@ -7,16 +7,16 @@
 namespace odb::ast {
 
 class ArrayDecl;
-class Symbol;
+class Identifier;
 class UDTDeclBody;
 class VarDecl;
 
 class ODBCOMPILER_PUBLIC_API UDTDecl final : public Statement
 {
 public:
-    UDTDecl(Symbol* typeName, UDTDeclBody* udtBody, SourceLocation* location);
+    UDTDecl(Identifier* typeName, UDTDeclBody* udtBody, SourceLocation* location);
 
-    Symbol* typeName() const;
+    Identifier* typeName() const;
     UDTDeclBody* body() const;
 
     std::string toString() const override;
@@ -29,7 +29,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<Symbol> typeName_;
+    Reference<Identifier> typeName_;
     Reference<UDTDeclBody> body_;
 
 };

@@ -7,15 +7,14 @@
 namespace odb::ast {
 
 class ArgList;
-class ScopedAnnotatedSymbol;
-class Symbol;
+class ScopedIdentifier;
 
 class ODBCOMPILER_PUBLIC_API ArrayDecl final : public Statement
 {
 public:
-    ArrayDecl(ScopedAnnotatedSymbol* symbol, Type type, ArgList* dims, SourceLocation* location);
+    ArrayDecl(ScopedIdentifier* identifier, Type type, ArgList* dims, SourceLocation* location);
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedIdentifier* identifier() const;
     Type type() const;
     ArgList* dims() const;
 
@@ -29,7 +28,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<ScopedIdentifier> identifier_;
     Type type_;
     Reference<ArgList> dims_;
 };

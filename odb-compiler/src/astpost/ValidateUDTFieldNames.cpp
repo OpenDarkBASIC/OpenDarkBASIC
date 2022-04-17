@@ -1,14 +1,14 @@
+#include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
+#include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/CommandExpr.hpp"
 #include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/ArgList.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
-#include "odb-compiler/ast/Annotation.hpp"
-#include "odb-compiler/astpost/ValidateUDTFieldNames.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/Log.hpp"
 
@@ -32,7 +32,7 @@ public:
     bool check(const ast::CommandStmnt* cmd);
 
     void checkExpr(const ast::Expression* node);
-    void checkAnnotation(const ast::AnnotatedSymbol* sym);
+    void checkAnnotation(const ast::Identifier* sym);
 
     bool success = true;
 };
@@ -41,31 +41,31 @@ public:
 bool Visitor::check(const ast::VarRef* varRef)
 {
     if (varRef)
-        return checkAnnotation(varRef->symbol()), true;
+        return checkAnnotation(varRef->identifier()), true;
     return false;
 }
 bool Visitor::check(const ast::ArrayRef* arrRef)
 {
     if (arrRef)
-        return checkAnnotation(arrRef->symbol()), true;
+        return checkAnnotation(arrRef->identifier()), true;
     return false;
 }
 bool Visitor::check(const ast::FuncCallExpr* func)
 {
     if (func)
-        return checkAnnotation(func->symbol()), true;
+        return checkAnnotation(func->identifier()), true;
     return false;
 }
 bool Visitor::check(const ast::FuncCallStmnt* func)
 {
     if (func)
-        return checkAnnotation(func->symbol()), true;
+        return checkAnnotation(func->identifier()), true;
     return false;
 }
 bool Visitor::check(const ast::FuncCallExprOrArrayRef* func)
 {
     if (func)
-        return checkAnnotation(func->symbol()), true;
+        return checkAnnotation(func->identifier()), true;
     return false;
 }
 bool Visitor::check(const ast::CommandExpr* cmd)
@@ -116,7 +116,7 @@ void Visitor::checkExpr(const ast::Expression* node)
 }
 
 // ----------------------------------------------------------------------------
-void Visitor::checkAnnotation(const ast::AnnotatedSymbol* sym)
+void Visitor::checkAnnotation(const ast::Identifier* sym)
 {
     if (sym->annotation() != ast::Annotation::NONE)
     {

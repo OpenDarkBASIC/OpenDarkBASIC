@@ -62,7 +62,7 @@ INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0[xX][0-9a-fA-F]+
 INTEGER         [0-9]+
 IMAG            {DOUBLE}[iIjJkK]|{INTEGER_BASE2}[iIjJkK]|{INTEGER_BASE16}[iIjJkK]|{INTEGER}[iIjJkK]
-SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
+IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
 %x MULTI_COMMENT
 %x MULTI_COMMENT_C
@@ -136,7 +136,7 @@ SYMBOL          [a-zA-Z_][a-zA-Z0-9_]+?
     "<"                   { RETURN_TOKEN('<'); }
     ">"                   { RETURN_TOKEN('>'); }
 
-    {SYMBOL}              { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(TOK_SYMBOL); }
+    {IDENTIFIER}          { yylval->string = odb::str::newCStr(yytext); RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                   { RETURN_TOKEN('#'); }
     "$"                   { RETURN_TOKEN('$'); }

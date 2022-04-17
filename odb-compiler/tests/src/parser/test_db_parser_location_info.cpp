@@ -3,8 +3,8 @@
 #include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/commands/Command.hpp"
@@ -34,11 +34,11 @@ TEST_F(NAME, oneline_function_call)
     ASSERT_THAT(ass, NotNull());
     ast::VarRef* result = dynamic_cast<ast::VarRef*>(ass->variable());
     ASSERT_THAT(result, NotNull());
-    ast::AnnotatedSymbol* resultSym = dynamic_cast<ast::AnnotatedSymbol*>(result->symbol());
+    ast::Identifier* resultSym = dynamic_cast<ast::Identifier*>(result->identifier());
     ASSERT_THAT(resultSym, NotNull());
     ast::FuncCallExpr* foo = dynamic_cast<ast::FuncCallExpr*>(ass->expression());
     ASSERT_THAT(foo, NotNull());
-    ast::AnnotatedSymbol* fooSym = dynamic_cast<ast::AnnotatedSymbol*>(foo->symbol());
+    ast::Identifier* fooSym = dynamic_cast<ast::Identifier*>(foo->identifier());
     ASSERT_THAT(fooSym, NotNull());
 
     EXPECT_THAT(ast->location()->firstLine(), Eq(1));
@@ -88,7 +88,7 @@ TEST_F(NAME, print_command)
     ASSERT_THAT(cond, NotNull());
     ast::VarRef* x = dynamic_cast<ast::VarRef*>(cond->condition());
     ASSERT_THAT(x, NotNull());
-    ast::AnnotatedSymbol* xSym = dynamic_cast<ast::AnnotatedSymbol*>(x->symbol());
+    ast::Identifier* xSym = dynamic_cast<ast::Identifier*>(x->identifier());
     ASSERT_THAT(xSym, NotNull());
     ast::Block* trueBranch = dynamic_cast<ast::Block*>(cond->trueBranch().get());
     ASSERT_THAT(trueBranch, NotNull());
@@ -96,11 +96,11 @@ TEST_F(NAME, print_command)
     ASSERT_THAT(trueStmnts.size(), Eq(2));
     ast::FuncCallStmnt* foo = dynamic_cast<ast::FuncCallStmnt*>(trueStmnts[0].get());
     ASSERT_THAT(foo, NotNull());
-    ast::AnnotatedSymbol* fooSym = dynamic_cast<ast::AnnotatedSymbol*>(foo->symbol());
+    ast::Identifier* fooSym = dynamic_cast<ast::Identifier*>(foo->identifier());
     ASSERT_THAT(fooSym, NotNull());
     ast::FuncCallStmnt* bar = dynamic_cast<ast::FuncCallStmnt*>(trueStmnts[1].get());
     ASSERT_THAT(bar, NotNull());
-    ast::AnnotatedSymbol* barSym = dynamic_cast<ast::AnnotatedSymbol*>(bar->symbol());
+    ast::Identifier* barSym = dynamic_cast<ast::Identifier*>(bar->identifier());
     ASSERT_THAT(barSym, NotNull());
 
     EXPECT_THAT(ast->location()->firstLine(), Eq(1));

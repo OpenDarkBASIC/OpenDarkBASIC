@@ -9,16 +9,15 @@ namespace odb::ast {
 
 class InitializerList;
 class UDTRef;
-class ScopedAnnotatedSymbol;
-class Symbol;
+class ScopedIdentifier;
 
 class ODBCOMPILER_PUBLIC_API VarDecl final : public Statement
 {
 public:
-    VarDecl(ScopedAnnotatedSymbol* symbol, Type type, InitializerList* initializer, SourceLocation* location);
-    VarDecl(ScopedAnnotatedSymbol* symbol, Type type, SourceLocation* location);
+    VarDecl(ScopedIdentifier* identifier, Type type, InitializerList* initializer, SourceLocation* location);
+    VarDecl(ScopedIdentifier* identifier, Type type, SourceLocation* location);
 
-    ScopedAnnotatedSymbol* symbol() const;
+    ScopedIdentifier* identifier() const;
     Type type() const;
     MaybeNull<InitializerList> initializer() const;
 
@@ -34,7 +33,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<ScopedAnnotatedSymbol> symbol_;
+    Reference<ScopedIdentifier> identifier_;
     Type type_;
     Reference<InitializerList> initializer_;
 };

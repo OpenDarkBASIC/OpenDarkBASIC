@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/Type.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 
 namespace odb::ast
 {
@@ -36,12 +35,56 @@ Type Type::getBuiltin(BuiltinType builtin) {
     return Type(builtin);
 }
 
-Type Type::getUDT(UDTRef* udt) {
-    return Type(UDTType{udt});
+Type Type::getUDT(std::string name) {
+    return Type(UDTType{std::move(name)});
 }
 
 Type Type::getArray(Type inner) {
     return Type(ArrayType{inner});
+}
+
+Type Type::getFromAnnotation(ast::Annotation annotation)
+{
+    switch (annotation)
+    {
+    case ast::Annotation::NONE:
+        return Type::getBuiltin(BuiltinType::Integer);
+    case ast::Annotation::DOUBLE_INTEGER:
+        return Type::getBuiltin(BuiltinType::DoubleInteger);
+    case ast::Annotation::WORD:
+        return Type::getBuiltin(BuiltinType::Word);
+    case ast::Annotation::DOUBLE_FLOAT:
+        return Type::getBuiltin(BuiltinType::DoubleFloat);
+    case ast::Annotation::STRING:
+        return Type::getBuiltin(BuiltinType::String);
+    case ast::Annotation::FLOAT:
+        return Type::getBuiltin(BuiltinType::Float);
+    default:
+        assert(false && "getFromAnnotation encountered unknown type.");
+    }
+}
+
+Type Type::getFromCommandType(cmd::Command::Type commandType)
+{
+    switch (commandType)
+    {
+    case cmd::Command::Type::Integer:
+        return Type::getBuiltin(BuiltinType::Integer);
+    case cmd::Command::Type::Float:
+        return Type::getBuiltin(BuiltinType::Float);
+    case cmd::Command::Type::String:
+        return Type::getBuiltin(BuiltinType::String);
+    case cmd::Command::Type::Double:
+        return Type::getBuiltin(BuiltinType::DoubleFloat);
+    case cmd::Command::Type::Long:
+        return Type::getBuiltin(BuiltinType::DoubleInteger);
+    case cmd::Command::Type::Dword:
+        return Type::getBuiltin(BuiltinType::Dword);
+    case cmd::Command::Type::Void:
+        return Type::getVoid();
+    default:
+        assert(false && "Unknown keyword type");
+    }
 }
 
 bool Type::isVoid() const
@@ -129,9 +172,9 @@ size_t Type::size() const
     }
 }
 
-std::optional<UDTRef*> Type::getUDT() const
+std::optional<std::string> Type::getUDT() const
 {
-    return isUDT() ? std::optional<UDTRef*>{std::get_if<UDTType>(&variant_)->udt} : std::nullopt;
+    return isUDT() ? std::optional<std::string>{std::get_if<UDTType>(&variant_)->udt} : std::nullopt;
 }
 
 std::optional<BuiltinType> Type::getBuiltinType() const
@@ -192,6 +235,41 @@ std::string Type::toString() const
     {
         return "void";
     }
+}
+
+bool Type::isConvertibleTo(Type other) const
+{
+    if (*this == other)
+    {
+        return true;
+    }
+    if (isBuiltinType() && other.isBuiltinType())
+    {
+        // int -> int casts.
+        if (isIntegralType(*getBuiltinType()) && isIntegralType(*other.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // fp -> fp casts.
+        if (isFloatingPointType(*getBuiltinType()) && isFloatingPointType(*other.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // int -> fp casts.
+        if (isIntegralType(*getBuiltinType()) && isFloatingPointType(*other.getBuiltinType()))
+        {
+            return true;
+        }
+
+        // fp -> int casts.
+        if (isFloatingPointType(*getBuiltinType()) && isIntegralType(*other.getBuiltinType()))
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 Type::ArrayType::ArrayType(Type inner) : inner(std::make_unique<Type>(inner)) {

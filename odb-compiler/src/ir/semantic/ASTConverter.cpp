@@ -3,7 +3,6 @@
 #include "odb-compiler/ir/Node.hpp"
 #include "odb-compiler/ir/Error.hpp"
 
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
@@ -21,18 +20,17 @@
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/Type.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -104,13 +102,13 @@ Type ASTConverter::getBinaryOpCommonType(BinaryOp op, Expression* left, Expressi
 
 Reference<Variable> ASTConverter::resolveVariableRef(const ast::VarRef* varRef)
 {
-    auto annotation = getAnnotation(varRef->symbol()->annotation());
+    auto annotation = getAnnotation(varRef->identifier()->annotation());
     // TODO: This should take arguments into account as well.
-    Reference<Variable> variable = currentFunction_->variables().lookup(varRef->symbol()->name(), annotation);
+    Reference<Variable> variable = currentFunction_->variables().lookup(varRef->identifier()->name(), annotation);
     if (!variable)
     {
         // If the variable doesn't exist, it gets implicitly declared with the annotation type.
-        variable = new Variable(varRef->symbol()->location(), varRef->symbol()->name(), annotation,
+        variable = new Variable(varRef->identifier()->location(), varRef->identifier()->name(), annotation,
                                 getTypeFromAnnotation(annotation));
         currentFunction_->variables().add(variable);
     }
@@ -287,11 +285,11 @@ FunctionCallExpression ASTConverter::convertCommandCallExpression(ast::SourceLoc
 }
 
 FunctionCallExpression ASTConverter::convertFunctionCallExpression(ast::SourceLocation* location,
-                                                                   ast::AnnotatedSymbol* symbol,
+                                                                   ast::Identifier* identifier,
                                                                    const MaybeNull<ast::ArgList>& astArgs)
 {
     // Lookup function.
-    auto functionName = symbol->name();
+    auto functionName = identifier->name();
     auto functionEntry = functionMap_.find(functionName);
     if (functionEntry == functionMap_.end())
     {
@@ -371,7 +369,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     else if (auto* funcCall = dynamic_cast<const ast::FuncCallExpr*>(expression))
     {
         return std::make_unique<FunctionCallExpression>(
-            convertFunctionCallExpression(location, funcCall->symbol(), funcCall->args()));
+            convertFunctionCallExpression(location, funcCall->identifier(), funcCall->args()));
     }
     fatalError("Unknown expression type: %s", typeid(*expression).name());
 }
@@ -400,18 +398,18 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         //           specifically. In all other cases it should not be null.
 
         // If we're declaring a new variable, it must not exist already.
-        auto annotation = getAnnotation(varDeclSt->symbol()->annotation());
-        Reference<Variable> variable = currentFunction_->variables().lookup(varDeclSt->symbol()->name(), annotation);
+        auto annotation = getAnnotation(varDeclSt->identifier()->annotation());
+        Reference<Variable> variable = currentFunction_->variables().lookup(varDeclSt->identifier()->name(), annotation);
         if (variable)
         {
-            semanticError(varDeclSt->symbol()->location(), "Variable %s has already been declared as type %s.",
-                          varDeclSt->symbol()->name().c_str(), variable->type().toString().c_str());
+            semanticError(varDeclSt->identifier()->location(), "Variable %s has already been declared as type %s.",
+                          varDeclSt->identifier()->name().c_str(), variable->type().toString().c_str());
             semanticError(variable->location(), "See last declaration.");
             return nullptr;
         }
 
         // Declare new variable.
-        variable = new Variable(varDeclSt->symbol()->location(), varDeclSt->symbol()->name(), annotation, varType);
+        variable = new Variable(varDeclSt->identifier()->location(), varDeclSt->identifier()->name(), annotation, varType);
         currentFunction_->variables().add(variable);
 
         return std::make_unique<VarAssignment>(location, currentFunction_, variable,
@@ -495,7 +493,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {
-        auto labelName = labelSt->symbol()->name();
+        auto labelName = labelSt->identifier()->name();
         auto irLabel = std::make_unique<Label>(location, currentFunction_, labelName);
         auto pendingGotoStatements = pendingGotoStatements_.equal_range(labelName);
         auto pendingGosubStatements = pendingGosubStatements_.equal_range(labelName);
@@ -516,7 +514,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     {
         return std::make_unique<FunctionCall>(
             location, currentFunction_,
-            convertFunctionCallExpression(funcCallSt->location(), funcCallSt->symbol(), funcCallSt->args()));
+            convertFunctionCallExpression(funcCallSt->location(), funcCallSt->identifier(), funcCallSt->args()));
     }
     else if (auto* gotoSt = dynamic_cast<ast::Goto*>(statement))
     {
@@ -589,13 +587,13 @@ std::unique_ptr<FunctionDefinition> ASTConverter::convertFunctionWithoutBody(ast
             assert(varRef);
             FunctionDefinition::Argument arg
             {
-                varRef->symbol()->name(),
-                getTypeFromAnnotation(getAnnotation(varRef->symbol()->annotation()))
+                varRef->identifier()->name(),
+                getTypeFromAnnotation(getAnnotation(varRef->identifier()->annotation()))
             };
             args.emplace_back(arg);
         }
     }
-    return std::make_unique<FunctionDefinition>(funcDecl->location(), funcDecl->symbol()->name(), std::move(args));
+    return std::make_unique<FunctionDefinition>(funcDecl->location(), funcDecl->identifier()->name(), std::move(args));
 }
 
 std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
@@ -632,7 +630,7 @@ std::unique_ptr<Program> ASTConverter::generateProgram(const ast::Block* ast)
 
             // Generate function definition.
             functionDefinitions.emplace_back(convertFunctionWithoutBody(astFuncDecl));
-            functionMap_.emplace(astFuncDecl->symbol()->name(),
+            functionMap_.emplace(astFuncDecl->identifier()->name(),
                                  Function{astFuncDecl, functionDefinitions.back().get()});
         }
     }

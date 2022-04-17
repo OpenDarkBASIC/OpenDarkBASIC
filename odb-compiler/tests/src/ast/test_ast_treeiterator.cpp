@@ -1,6 +1,6 @@
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
@@ -95,7 +95,7 @@ TEST_F(ASTPreOrderIteratorTest, TraversalWithParents)
     EXPECT_EQ(it.parent(), ast->statements()[0]);
     it++;
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     it++;
 
@@ -125,18 +125,18 @@ TEST_F(ASTPreOrderIteratorTest, ReplaceNodeWhilstIterating)
 
     // Replace the VarRef with a different VarRef. That way, we can be sure we traverse into the _new_ children.
     Node* previousNode = *it;
-    it.replaceNode(new VarRef(new AnnotatedSymbol(Annotation::FLOAT, "someFloat", (*it)->children()[0]->location()),
+    it.replaceNode(new VarRef(new Identifier("someFloat", Annotation::FLOAT, (*it)->children()[0]->location()),
                               (*it)->location()));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
     EXPECT_EQ(it.parent(), ast->statements()[0]);
     it++;
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     // Ensure we traversed over the new child of the replacement VarRef.
-    EXPECT_EQ(dynamic_cast<AnnotatedSymbol*>(*it)->annotation(), Annotation::FLOAT);
-    EXPECT_EQ(dynamic_cast<AnnotatedSymbol*>(*it)->name(), "someFloat");
+    EXPECT_EQ(dynamic_cast<Identifier*>(*it)->name(), "someFloat");
+    EXPECT_EQ(dynamic_cast<Identifier*>(*it)->annotation(), Annotation::FLOAT);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
@@ -165,16 +165,16 @@ TEST_F(ASTPreOrderIteratorTest, ModifyChildrenWhilstIterating)
 
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly (which may
     // affect iteration).
-    Node* childToReplace = dynamic_cast<VarRef*>(*it)->symbol();
-    (*it)->swapChild(childToReplace, new AnnotatedSymbol(Annotation::FLOAT, "someFloat", childToReplace->location()));
+    Node* childToReplace = dynamic_cast<VarRef*>(*it)->identifier();
+    (*it)->swapChild(childToReplace, new Identifier("someFloat", Annotation::FLOAT, childToReplace->location()));
 
     it++;
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     // Ensure we traversed over the replacement child of the VarRef.
-    EXPECT_EQ(dynamic_cast<AnnotatedSymbol*>(*it)->annotation(), Annotation::FLOAT);
-    EXPECT_EQ(dynamic_cast<AnnotatedSymbol*>(*it)->name(), "someFloat");
+    EXPECT_EQ(dynamic_cast<Identifier*>(*it)->name(), "someFloat");
+    EXPECT_EQ(dynamic_cast<Identifier*>(*it)->annotation(), Annotation::FLOAT);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
@@ -235,7 +235,7 @@ TEST_F(ASTPostOrderIteratorTest, TraversalWithParents)
     auto range = postOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     it++;
 
@@ -264,7 +264,7 @@ TEST_F(ASTPostOrderIteratorTest, ReplaceNodeWhilstIterating)
     auto range = postOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     it++;
 
@@ -274,7 +274,7 @@ TEST_F(ASTPostOrderIteratorTest, ReplaceNodeWhilstIterating)
     // Replace the VarRef with a different VarRef. At this point, we've already traversed into the children, so this
     // shouldn't change anything except what the iterator points to.
     Node* previousNode = *it;
-    it.replaceNode(new VarRef(new AnnotatedSymbol(Annotation::FLOAT, "someFloat", (*it)->children()[0]->location()),
+    it.replaceNode(new VarRef(new Identifier("someFloat", Annotation::FLOAT, (*it)->children()[0]->location()),
                               (*it)->location()));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
@@ -302,7 +302,7 @@ TEST_F(ASTPostOrderIteratorTest, ModifyChildrenWhilstIterating)
     auto range = postOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<AnnotatedSymbol*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
     it++;
 
@@ -311,8 +311,8 @@ TEST_F(ASTPostOrderIteratorTest, ModifyChildrenWhilstIterating)
 
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly. This
     // should not affect iteration.
-    Node* childToReplace = dynamic_cast<VarRef*>(*it)->symbol();
-    (*it)->swapChild(childToReplace, new AnnotatedSymbol(Annotation::FLOAT, "someFloat", childToReplace->location()));
+    Node* childToReplace = dynamic_cast<VarRef*>(*it)->identifier();
+    (*it)->swapChild(childToReplace, new Identifier("someFloat", Annotation::FLOAT, childToReplace->location()));
 
     it++;
 

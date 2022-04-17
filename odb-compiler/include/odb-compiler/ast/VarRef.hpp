@@ -6,14 +6,14 @@
 namespace odb {
 namespace ast {
 
-class AnnotatedSymbol;
+class Identifier;
 
 class ODBCOMPILER_PUBLIC_API VarRef final : public LValue
 {
 public:
-    VarRef(AnnotatedSymbol* symbol, SourceLocation* location);
+    VarRef(Identifier* identifier, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -25,7 +25,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
 };
 
 }

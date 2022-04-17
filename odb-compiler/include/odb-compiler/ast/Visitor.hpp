@@ -7,7 +7,6 @@ namespace odb::ast {
 
 class Node;
 
-class AnnotatedSymbol;
 class ArgList;
 class ArrayAssignment;
 class ArrayDecl;
@@ -30,18 +29,17 @@ class FuncCallStmnt;
 class FuncDecl;
 class FuncExit;
 class Goto;
+class Identifier;
 class InfiniteLoop;
 class InitializerList;
 class Label;
-class ScopedAnnotatedSymbol;
+class ScopedIdentifier;
 class Select;
 class SubCall;
 class SubReturn;
-class Symbol;
 class VarDecl;
 class UDTDecl;
 class UDTDeclBody;
-class UDTRef;
 class UDTFieldOuter;
 class UDTFieldInner;
 class UDTFieldAssignment;
@@ -61,7 +59,6 @@ class ODBCOMPILER_PUBLIC_API Visitor
 public:
     virtual ~Visitor() = default;
 
-    virtual void visitAnnotatedSymbol(AnnotatedSymbol* node) = 0;
     virtual void visitArgList(ArgList* node) = 0;
     virtual void visitArrayAssignment(ArrayAssignment* node) = 0;
     virtual void visitArrayDecl(ArrayDecl* node) = 0;
@@ -84,21 +81,20 @@ public:
     virtual void visitFuncDecl(FuncDecl* node) = 0;
     virtual void visitFuncExit(FuncExit* node) = 0;
     virtual void visitGoto(Goto* node) = 0;
+    virtual void visitIdentifier(Identifier* node) = 0;
     virtual void visitInfiniteLoop(InfiniteLoop* node) = 0;
     virtual void visitInitializerList(InitializerList* node) = 0;
     virtual void visitLabel(Label* node) = 0;
-    virtual void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) = 0;
+    virtual void visitScopedIdentifier(ScopedIdentifier* node) = 0;
     virtual void visitSelect(Select* node) = 0;
     virtual void visitSubCall(SubCall* node) = 0;
     virtual void visitSubReturn(SubReturn* node) = 0;
-    virtual void visitSymbol(Symbol* node) = 0;
     virtual void visitVarDecl(VarDecl* node) = 0;
     virtual void visitUDTDecl(UDTDecl* node) = 0;
     virtual void visitUDTDeclBody(UDTDeclBody* node) = 0;
     virtual void visitUDTFieldAssignment(UDTFieldAssignment* node) = 0;
     virtual void visitUDTFieldOuter(UDTFieldOuter* node) = 0;
     virtual void visitUDTFieldInner(UDTFieldInner* node) = 0;
-    virtual void visitUDTRef(UDTRef* node) = 0;
     virtual void visitUnaryOp(UnaryOp* node) = 0;
     virtual void visitUntilLoop(UntilLoop* node) = 0;
     virtual void visitVarAssignment(VarAssignment* node) = 0;
@@ -116,7 +112,6 @@ class ODBCOMPILER_PUBLIC_API ConstVisitor
 public:
     virtual ~ConstVisitor() = default;
 
-    virtual void visitAnnotatedSymbol(const AnnotatedSymbol* node) = 0;
     virtual void visitArgList(const ArgList* node) = 0;
     virtual void visitArrayAssignment(const ArrayAssignment* node) = 0;
     virtual void visitArrayDecl(const ArrayDecl* node) = 0;
@@ -139,21 +134,20 @@ public:
     virtual void visitFuncDecl(const FuncDecl* node) = 0;
     virtual void visitFuncExit(const FuncExit* node) = 0;
     virtual void visitGoto(const Goto* node) = 0;
+    virtual void visitIdentifier(const Identifier* node) = 0;
     virtual void visitInfiniteLoop(const InfiniteLoop* node) = 0;
     virtual void visitInitializerList(const InitializerList* node) = 0;
     virtual void visitLabel(const Label* node) = 0;
-    virtual void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) = 0;
+    virtual void visitScopedIdentifier(const ScopedIdentifier* node) = 0;
     virtual void visitSelect(const Select* node) = 0;
     virtual void visitSubCall(const SubCall* node) = 0;
     virtual void visitSubReturn(const SubReturn* node) = 0;
-    virtual void visitSymbol(const Symbol* node) = 0;
     virtual void visitVarDecl(const VarDecl* node) = 0;
     virtual void visitUDTDecl(const UDTDecl* node) = 0;
     virtual void visitUDTDeclBody(const UDTDeclBody* node) = 0;
     virtual void visitUDTFieldAssignment(const UDTFieldAssignment* node) = 0;
     virtual void visitUDTFieldOuter(const UDTFieldOuter* node) = 0;
     virtual void visitUDTFieldInner(const UDTFieldInner* node) = 0;
-    virtual void visitUDTRef(const UDTRef* node) = 0;
     virtual void visitUnaryOp(const UnaryOp* node) = 0;
     virtual void visitUntilLoop(const UntilLoop* node) = 0;
     virtual void visitVarAssignment(const VarAssignment* node) = 0;
@@ -169,7 +163,6 @@ public:
 class ODBCOMPILER_PUBLIC_API GenericVisitor : public Visitor
 {
 public:
-    void visitAnnotatedSymbol(AnnotatedSymbol* node) override;
     void visitArgList(ArgList* node) override;
     void visitArrayAssignment(ArrayAssignment* node) override;
     void visitArrayDecl(ArrayDecl* node) override;
@@ -192,21 +185,20 @@ public:
     void visitFuncDecl(FuncDecl* node) override;
     void visitFuncExit(FuncExit* node) override;
     void visitGoto(Goto* node) override;
+    void visitIdentifier(Identifier* node) override;
     void visitInfiniteLoop(InfiniteLoop* node) override;
     void visitInitializerList(InitializerList* node) override;
     void visitLabel(Label* node) override;
-    void visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node) override;
+    void visitScopedIdentifier(ScopedIdentifier* node) override;
     void visitSelect(Select* node) override;
     void visitSubCall(SubCall* node) override;
     void visitSubReturn(SubReturn* node) override;
-    void visitSymbol(Symbol* node) override;
     void visitVarDecl(VarDecl* node) override;
     void visitUDTDecl(UDTDecl* node) override;
     void visitUDTDeclBody(UDTDeclBody* node) override;
     void visitUDTFieldAssignment(UDTFieldAssignment* node) override;
     void visitUDTFieldOuter(UDTFieldOuter* node) override;
     void visitUDTFieldInner(UDTFieldInner* node) override;
-    void visitUDTRef(UDTRef* node) override;
     void visitUnaryOp(UnaryOp* node) override;
     void visitUntilLoop(UntilLoop* node) override;
     void visitVarAssignment(VarAssignment* node) override;
@@ -224,7 +216,6 @@ public:
 class ODBCOMPILER_PUBLIC_API GenericConstVisitor : public ConstVisitor
 {
 public:
-    void visitAnnotatedSymbol(const AnnotatedSymbol* node) override;
     void visitArgList(const ArgList* node) override;
     void visitArrayAssignment(const ArrayAssignment* node) override;
     void visitArrayDecl(const ArrayDecl* node) override;
@@ -247,21 +238,20 @@ public:
     void visitFuncDecl(const FuncDecl* node) override;
     void visitFuncExit(const FuncExit* node) override;
     void visitGoto(const Goto* node) override;
+    void visitIdentifier(const Identifier* node) override;
     void visitInfiniteLoop(const InfiniteLoop* node) override;
     void visitInitializerList(const InitializerList* node) override;
     void visitLabel(const Label* node) override;
-    void visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node) override;
+    void visitScopedIdentifier(const ScopedIdentifier* node) override;
     void visitSelect(const Select* node) override;
     void visitSubCall(const SubCall* node) override;
     void visitSubReturn(const SubReturn* node) override;
-    void visitSymbol(const Symbol* node) override;
     void visitVarDecl(const VarDecl* node) override;
     void visitUDTDecl(const UDTDecl* node) override;
     void visitUDTDeclBody(const UDTDeclBody* node) override;
     void visitUDTFieldOuter(const UDTFieldOuter* node) override;
     void visitUDTFieldInner(const UDTFieldInner* node) override;
     void visitUDTFieldAssignment(const UDTFieldAssignment* node) override;
-    void visitUDTRef(const UDTRef* node) override;
     void visitUnaryOp(const UnaryOp* node) override;
     void visitUntilLoop(const UntilLoop* node) override;
     void visitVarAssignment(const VarAssignment* node) override;

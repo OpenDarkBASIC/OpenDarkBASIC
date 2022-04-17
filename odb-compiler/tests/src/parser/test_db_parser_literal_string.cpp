@@ -3,8 +3,8 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
 
 #define NAME db_parser_literal_string
@@ -62,7 +62,7 @@ TEST_F(NAME, empty_string)
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
     visitAST(ast, v);

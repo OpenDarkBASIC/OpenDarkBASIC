@@ -12,7 +12,7 @@ class Data;
 class ArgList;
 class Label;
 class LValue;
-class Symbol;
+class Identifier;
 
 class ODBCOMPILER_PUBLIC_API DataBlock : public Node
 {

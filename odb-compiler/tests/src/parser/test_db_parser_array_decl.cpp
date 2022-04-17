@@ -2,13 +2,13 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Scope.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
 #include "odb-compiler/tests/matchers/ArrayDeclEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
-#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
-#include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
+#include "odb-compiler/tests/matchers/ScopedIdentifierEq.hpp"
 
 #define NAME db_parser_array_decl
 
@@ -111,9 +111,9 @@ TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
-    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "arr", ann##_ann))).After(exp);     \
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);         \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \
@@ -185,9 +185,9 @@ TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
     Expectation exp;                                                          \
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(                          \
-        ScopedAnnotatedSymbolEq(scope##_scope, ann##_ann, "arr"))).After(exp);\
-    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);\
+    exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
+        ScopedIdentifierEq(scope##_scope, "arr", ann##_ann))).After(exp);     \
+    exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);         \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);      \
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);      \
                                                                               \

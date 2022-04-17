@@ -1,21 +1,20 @@
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Label::Label(Symbol* symbol, SourceLocation* location) :
-    Statement(location),
-    symbol_(symbol)
+Label::Label(Identifier* identifier, SourceLocation* location) :
+    Statement(location), identifier_(identifier)
 {
 }
 
 // ----------------------------------------------------------------------------
-Symbol* Label::symbol() const
+Identifier* Label::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -37,14 +36,14 @@ void Label::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange Label::children()
 {
-    return {symbol_};
+    return {identifier_};
 }
 
 // ----------------------------------------------------------------------------
 void Label::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<Symbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else
         assert(false);
 }
@@ -52,8 +51,7 @@ void Label::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Label::duplicateImpl() const
 {
-    return new Label(
-        symbol_->duplicate<Symbol>(),
+    return new Label(identifier_->duplicate<Identifier>(),
         location());
 }
 

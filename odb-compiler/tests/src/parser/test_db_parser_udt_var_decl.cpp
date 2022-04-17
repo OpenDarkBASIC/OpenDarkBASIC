@@ -2,17 +2,16 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Scope.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
 #include "odb-compiler/tests/matchers/ArrayDeclEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/InitializerListCountEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
-#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
-#include "odb-compiler/tests/matchers/SymbolEq.hpp"
-#include "odb-compiler/tests/matchers/UDTRefEq.hpp"
+#include "odb-compiler/tests/matchers/ScopedIdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/VarDeclEq.hpp"
-#include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
 
 #define NAME db_parser_udt_var_decl
 
@@ -1263,10 +1262,10 @@ TEST_F(NAME, var_decl_as_double_integer)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::DoubleInteger))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0))).After(exp);
 
@@ -1286,10 +1285,10 @@ TEST_F(NAME, var_decl_as_integer)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Integer))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0))).After(exp);
 
@@ -1309,10 +1308,10 @@ TEST_F(NAME, var_decl_as_dword)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Dword))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0))).After(exp);
 
@@ -1332,10 +1331,10 @@ TEST_F(NAME, var_decl_as_word)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Word))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0))).After(exp);
 
@@ -1355,10 +1354,10 @@ TEST_F(NAME, var_decl_as_byte)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Byte))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
 
@@ -1378,10 +1377,10 @@ TEST_F(NAME, var_decl_as_boolean)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Boolean))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(0))).After(exp);
 
@@ -1401,10 +1400,10 @@ TEST_F(NAME, var_decl_as_double_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::DoubleFloat))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(0))).After(exp);
 
@@ -1424,10 +1423,10 @@ TEST_F(NAME, var_decl_as_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Float))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0))).After(exp);
 
@@ -1447,10 +1446,10 @@ TEST_F(NAME, float_var_decl_as_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::Float))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFloatLiteral(FloatLiteralEq(0))).After(exp);
 
@@ -1470,10 +1469,10 @@ TEST_F(NAME, var_decl_as_string)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::String))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
@@ -1493,10 +1492,10 @@ TEST_F(NAME, string_var_decl_as_string)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::String))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "var"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitInitializerList(InitializerListCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq(""))).After(exp);
 
@@ -1516,11 +1515,10 @@ TEST_F(NAME, var_decl_as_nested_udt)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "var"))).After(exp);
-    exp = EXPECT_CALL(v, visitUDTRef(UDTRefEq("nestedudt"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "var", Annotation::NONE))).After(exp);
 
     visitAST(ast, v);
 }
@@ -1538,10 +1536,10 @@ TEST_F(NAME, arr_decl_as_double_integer)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::DoubleInteger))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1562,10 +1560,10 @@ TEST_F(NAME, arr_decl_as_integer)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Integer))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1586,10 +1584,10 @@ TEST_F(NAME, arr_decl_as_dword)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Dword))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1610,10 +1608,10 @@ TEST_F(NAME, arr_decl_as_word)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Word))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1634,10 +1632,10 @@ TEST_F(NAME, arr_decl_as_byte)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Byte))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1658,10 +1656,10 @@ TEST_F(NAME, arr_decl_as_boolean)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Boolean))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1682,10 +1680,10 @@ TEST_F(NAME, arr_decl_as_double_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::DoubleFloat))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1706,10 +1704,10 @@ TEST_F(NAME, arr_decl_as_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Float))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1730,10 +1728,10 @@ TEST_F(NAME, float_arr_decl_as_float)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::Float))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::FLOAT, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1754,10 +1752,10 @@ TEST_F(NAME, arr_decl_as_string)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::String))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1778,10 +1776,10 @@ TEST_F(NAME, string_arr_decl_as_string)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::String))).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::STRING, "arr"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);
@@ -1802,11 +1800,10 @@ TEST_F(NAME, arr_decl_as_nested_udt)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitSymbol(SymbolEq("udt"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
     exp = EXPECT_CALL(v, visitArrayDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitScopedAnnotatedSymbol(ScopedAnnotatedSymbolEq(Scope::LOCAL, Annotation::NONE, "arr"))).After(exp);
-    exp = EXPECT_CALL(v, visitUDTRef(UDTRefEq("nestedudt"))).After(exp);
+    exp = EXPECT_CALL(v, visitScopedIdentifier(ScopedIdentifierEq(Scope::LOCAL, "arr", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(3))).After(exp);

@@ -6,7 +6,7 @@
 
 namespace odb::ast {
 
-class AnnotatedSymbol;
+class Identifier;
 class Block;
 class Expression;
 class Assignment;
@@ -87,19 +87,19 @@ private:
 class ODBCOMPILER_PUBLIC_API ForLoop final : public Loop
 {
 public:
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, SourceLocation* location);
     ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location);
     ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, AnnotatedSymbol* nextSymbol, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body, SourceLocation* location);
+    ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, SourceLocation* location);
     ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceLocation* location);
     ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location);
 
     Assignment* counter() const;
     Expression* endValue() const;
     MaybeNull<Expression> stepValue() const;
-    MaybeNull<AnnotatedSymbol> nextSymbol() const;
+    MaybeNull<Identifier> nextIdentifier() const;
     MaybeNull<Block> body() const;
 
     std::string toString() const override;
@@ -115,7 +115,7 @@ private:
     Reference<Assignment> counter_;
     Reference<Expression> endValue_;
     Reference<Expression> stepValue_;
-    Reference<AnnotatedSymbol> nextSymbol_;
+    Reference<Identifier> nextIdentifier_;
     Reference<Block> body_;
 };
 

@@ -1,18 +1,16 @@
 #pragma once
 
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Scope.hpp"
-#include "odb-compiler/ast/Annotation.hpp"
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API ScopedAnnotatedSymbol final : public Symbol
+class ODBCOMPILER_PUBLIC_API ScopedIdentifier final : public Identifier
 {
 public:
-    ScopedAnnotatedSymbol(Scope scope, Annotation annotation, const std::string& name, SourceLocation* location);
+    ScopedIdentifier(Scope scope, std::string name, Annotation annotation, SourceLocation* location);
 
     Scope scope() const;
-    Annotation annotation() const;
 
     void setScope(Scope scope);
 
@@ -27,7 +25,6 @@ protected:
 
 private:
     Scope scope_;
-    Annotation annotation_;
 };
 
 }

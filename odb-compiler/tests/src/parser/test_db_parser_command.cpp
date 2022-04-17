@@ -2,14 +2,14 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
+#include "odb-compiler/tests/ASTMockVisitor.hpp"
+#include "odb-compiler/tests/ParserTestHarness.hpp"
 #include "odb-compiler/tests/matchers/ArgListCountEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
 #include "odb-compiler/tests/matchers/CommandExprEq.hpp"
 #include "odb-compiler/tests/matchers/CommandStmntEq.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 #include "odb-compiler/tests/matchers/LiteralEq.hpp"
-#include "odb-compiler/tests/ASTMockVisitor.hpp"
-#include "odb-compiler/tests/ParserTestHarness.hpp"
 
 #define NAME db_parser_command
 
@@ -176,7 +176,7 @@ TEST_F(NAME, load_3d_sound)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("howl.wav"))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("s", Annotation::NONE))).After(exp);
 
     visitAST(ast, v);
 }
@@ -196,7 +196,7 @@ TEST_F(NAME, command_with_variable_args)
     exp = EXPECT_CALL(v, visitCommandStmnt(CommandStmntEq("clone sound"))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "s"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("s", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
 
     visitAST(ast, v);
@@ -221,9 +221,9 @@ TEST_F(NAME, command_with_spaces_as_argument_to_command_with_spaces)
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(3))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "x"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "y"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("y", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(10))).After(exp);
 
     visitAST(ast, v);
@@ -267,7 +267,7 @@ TEST_F(NAME, builtin_shadowing_command)
     exp = EXPECT_CALL(v, visitInfiniteLoop(_)).After(exp);
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
 
     visitAST(ast, v);
 }
@@ -331,14 +331,14 @@ TEST_F(NAME, incomplete_command_at_end_of_file)
     Expectation exp;
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
     exp = EXPECT_CALL(v, visitFuncDecl(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "a"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
-    exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "color"))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("color", Annotation::NONE))).After(exp);
 
     visitAST(ast, v);
 }

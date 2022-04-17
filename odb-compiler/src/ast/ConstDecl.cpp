@@ -1,5 +1,5 @@
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
@@ -7,17 +7,17 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ConstDeclExpr::ConstDeclExpr(AnnotatedSymbol* symbol, Expression* expr, SourceLocation* location) :
+ConstDeclExpr::ConstDeclExpr(Identifier* identifier, Expression* expr, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     expr_(expr)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* ConstDeclExpr::symbol() const
+Identifier* ConstDeclExpr::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -45,14 +45,14 @@ void ConstDeclExpr::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange ConstDeclExpr::children()
 {
-    return {symbol_, expr_};
+    return {identifier_, expr_};
 }
 
 // ----------------------------------------------------------------------------
 void ConstDeclExpr::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (expr_ == oldNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
@@ -63,7 +63,7 @@ void ConstDeclExpr::swapChild(const Node* oldNode, Node* newNode)
 Node* ConstDeclExpr::duplicateImpl() const
 {
     return new ConstDeclExpr(
-        symbol_->duplicate<AnnotatedSymbol>(),
+        identifier_->duplicate<Identifier>(),
         expr_->duplicate<Expression>(),
         location());
 }
@@ -72,17 +72,17 @@ Node* ConstDeclExpr::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ConstDecl::ConstDecl(AnnotatedSymbol* symbol, Literal* literal, SourceLocation* location) :
+ConstDecl::ConstDecl(Identifier* identifier, Literal* literal, SourceLocation* location) :
     Statement(location),
-    symbol_(symbol),
+    identifier_(identifier),
     literal_(literal)
 {
 }
 
 // ----------------------------------------------------------------------------
-AnnotatedSymbol* ConstDecl::symbol() const
+Identifier* ConstDecl::identifier() const
 {
-    return symbol_;
+    return identifier_;
 }
 
 // ----------------------------------------------------------------------------
@@ -110,14 +110,14 @@ void ConstDecl::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange ConstDecl::children()
 {
-    return {symbol_, literal_};
+    return {identifier_, literal_};
 }
 
 // ----------------------------------------------------------------------------
 void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (symbol_ == oldNode)
-        symbol_ = dynamic_cast<AnnotatedSymbol*>(newNode);
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
     else if (literal_ == oldNode)
         literal_ = dynamic_cast<Literal*>(newNode);
     else
@@ -128,7 +128,7 @@ void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* ConstDecl::duplicateImpl() const
 {
     return new ConstDecl(
-        symbol_->duplicate<AnnotatedSymbol>(),
+        identifier_->duplicate<Identifier>(),
         literal_->duplicate<Literal>(),
         location());
 }

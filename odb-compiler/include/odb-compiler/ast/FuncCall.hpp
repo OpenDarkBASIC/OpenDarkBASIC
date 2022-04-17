@@ -7,16 +7,16 @@
 
 namespace odb::ast {
 
-class AnnotatedSymbol;
+class Identifier;
 class ArgList;
 
 class ODBCOMPILER_PUBLIC_API FuncCallExpr final : public Expression
 {
 public:
-    FuncCallExpr(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
-    FuncCallExpr(AnnotatedSymbol* symbol, SourceLocation* location);
+    FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation* location);
+    FuncCallExpr(Identifier* identifier, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
 
     std::string toString() const override;
@@ -29,17 +29,17 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<ArgList> args_;
 };
 
 class ODBCOMPILER_PUBLIC_API FuncCallStmnt final : public Statement
 {
 public:
-    FuncCallStmnt(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
-    FuncCallStmnt(AnnotatedSymbol* symbol, SourceLocation* location);
+    FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocation* location);
+    FuncCallStmnt(Identifier* identifier, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
 
     std::string toString() const override;
@@ -52,7 +52,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<ArgList> args_;
 };
 
@@ -67,9 +67,9 @@ private:
 class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef final : public Expression
 {
 public:
-    FuncCallExprOrArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
+    FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
 
     std::string toString() const override;
@@ -82,7 +82,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<ArgList> args_;
 };
 

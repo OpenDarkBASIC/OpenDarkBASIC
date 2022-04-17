@@ -1,5 +1,4 @@
 #include "odb-compiler/ast/Visitor.hpp"
-#include "odb-compiler/ast/AnnotatedSymbol.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
 #include "odb-compiler/ast/ArrayRef.hpp"
@@ -14,20 +13,19 @@
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
-#include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
@@ -36,7 +34,6 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-void GenericVisitor::visitAnnotatedSymbol(AnnotatedSymbol* node)               { visit(node); }
 void GenericVisitor::visitArgList(ArgList* node)                               { visit(node); }
 void GenericVisitor::visitArrayAssignment(ArrayAssignment* node)               { visit(node); }
 void GenericVisitor::visitArrayDecl(ArrayDecl* node)                           { visit(node); }
@@ -59,21 +56,20 @@ void GenericVisitor::visitFuncCallStmnt(FuncCallStmnt* node)                   {
 void GenericVisitor::visitFuncDecl(FuncDecl* node)                             { visit(node); }
 void GenericVisitor::visitFuncExit(FuncExit* node)                             { visit(node); }
 void GenericVisitor::visitGoto(Goto* node)                                     { visit(node); }
+void GenericVisitor::visitIdentifier(Identifier* node)                         { visit(node); }
 void GenericVisitor::visitInfiniteLoop(InfiniteLoop* node)                     { visit(node); }
 void GenericVisitor::visitInitializerList(InitializerList* node)               { visit(node); }
 void GenericVisitor::visitLabel(Label* node)                                   { visit(node); }
-void GenericVisitor::visitScopedAnnotatedSymbol(ScopedAnnotatedSymbol* node)   { visit(node); }
+void GenericVisitor::visitScopedIdentifier(ScopedIdentifier* node)             { visit(node); }
 void GenericVisitor::visitSelect(Select* node)                                 { visit(node); }
 void GenericVisitor::visitSubCall(SubCall* node)                               { visit(node); }
 void GenericVisitor::visitSubReturn(SubReturn* node)                           { visit(node); }
-void GenericVisitor::visitSymbol(Symbol* node)                                 { visit(node); }
 void GenericVisitor::visitVarDecl(VarDecl* node)                               { visit(node); }
 void GenericVisitor::visitUDTDecl(UDTDecl* node)                               { visit(node); }
 void GenericVisitor::visitUDTDeclBody(UDTDeclBody* node)                       { visit(node); }
 void GenericVisitor::visitUDTFieldOuter(UDTFieldOuter* node)                   { visit(node); }
 void GenericVisitor::visitUDTFieldInner(UDTFieldInner* node)                   { visit(node); }
 void GenericVisitor::visitUDTFieldAssignment(UDTFieldAssignment* node)         { visit(node); }
-void GenericVisitor::visitUDTRef(UDTRef* node)                                 { visit(node); }
 void GenericVisitor::visitUnaryOp(UnaryOp* node)                               { visit(node); }
 void GenericVisitor::visitUntilLoop(UntilLoop* node)                           { visit(node); }
 void GenericVisitor::visitVarAssignment(VarAssignment* node)                   { visit(node); }
@@ -86,7 +82,6 @@ ODB_DATATYPE_LIST
 #undef X
 
 // ----------------------------------------------------------------------------
-void GenericConstVisitor::visitAnnotatedSymbol(const AnnotatedSymbol* node)               { visit(node); }
 void GenericConstVisitor::visitArgList(const ArgList* node)                               { visit(node); }
 void GenericConstVisitor::visitArrayAssignment(const ArrayAssignment* node)               { visit(node); }
 void GenericConstVisitor::visitArrayDecl(const ArrayDecl* node)                           { visit(node); }
@@ -109,21 +104,20 @@ void GenericConstVisitor::visitFuncCallStmnt(const FuncCallStmnt* node)         
 void GenericConstVisitor::visitFuncDecl(const FuncDecl* node)                             { visit(node); }
 void GenericConstVisitor::visitFuncExit(const FuncExit* node)                             { visit(node); }
 void GenericConstVisitor::visitGoto(const Goto* node)                                     { visit(node); }
+void GenericConstVisitor::visitIdentifier(const Identifier* node)                         { visit(node); }
 void GenericConstVisitor::visitInfiniteLoop(const InfiniteLoop* node)                     { visit(node); }
 void GenericConstVisitor::visitInitializerList(const InitializerList* node)               { visit(node); }
 void GenericConstVisitor::visitLabel(const Label* node)                                   { visit(node); }
-void GenericConstVisitor::visitScopedAnnotatedSymbol(const ScopedAnnotatedSymbol* node)   { visit(node); }
+void GenericConstVisitor::visitScopedIdentifier(const ScopedIdentifier* node)             { visit(node); }
 void GenericConstVisitor::visitSelect(const Select* node)                                 { visit(node); }
 void GenericConstVisitor::visitSubCall(const SubCall* node)                               { visit(node); }
 void GenericConstVisitor::visitSubReturn(const SubReturn* node)                           { visit(node); }
-void GenericConstVisitor::visitSymbol(const Symbol* node)                                 { visit(node); }
 void GenericConstVisitor::visitVarDecl(const VarDecl* node)                               { visit(node); }
 void GenericConstVisitor::visitUDTDecl(const UDTDecl* node)                               { visit(node); }
 void GenericConstVisitor::visitUDTDeclBody(const UDTDeclBody* node)                       { visit(node); }
 void GenericConstVisitor::visitUDTFieldOuter(const UDTFieldOuter* node)                   { visit(node); }
 void GenericConstVisitor::visitUDTFieldInner(const UDTFieldInner* node)                   { visit(node); }
 void GenericConstVisitor::visitUDTFieldAssignment(const UDTFieldAssignment* node)         { visit(node); }
-void GenericConstVisitor::visitUDTRef(const UDTRef* node)                                 { visit(node); }
 void GenericConstVisitor::visitUnaryOp(const UnaryOp* node)                               { visit(node); }
 void GenericConstVisitor::visitUntilLoop(const UntilLoop* node)                           { visit(node); }
 void GenericConstVisitor::visitVarAssignment(const VarAssignment* node)                   { visit(node); }

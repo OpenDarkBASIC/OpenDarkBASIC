@@ -6,7 +6,7 @@
 
 namespace odb::ast {
 
-class AnnotatedSymbol;
+class Identifier;
 class Block;
 class Expression;
 class ArgList;
@@ -14,16 +14,16 @@ class ArgList;
 class ODBCOMPILER_PUBLIC_API FuncDecl final : public Statement
 {
 public:
-    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, Expression* returnValue, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, Block* body, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, Block* body, SourceLocation* location);
-    FuncDecl(AnnotatedSymbol* symbol, SourceLocation* location);
+    FuncDecl(Identifier* identifier, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, ArgList* args, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, Block* body, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, ArgList* args, Block* body, SourceLocation* location);
+    FuncDecl(Identifier* identifier, ArgList* args, SourceLocation* location);
+    FuncDecl(Identifier* identifier, Block* body, SourceLocation* location);
+    FuncDecl(Identifier* identifier, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
     MaybeNull<Block> body() const;
     MaybeNull<Expression> returnValue() const;
@@ -38,7 +38,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<ArgList> args_;
     Reference<Block> body_;
     Reference<Expression> returnValue_;

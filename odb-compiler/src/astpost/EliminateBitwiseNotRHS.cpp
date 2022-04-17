@@ -6,16 +6,14 @@
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-sdk/Log.hpp"
 
-#define NO_SIDE_EFFECTS       \
-    X(AnnotatedSymbol)        \
-    X(ArrayRef)               \
-    X(BinaryOp)               \
-    X(Conditional)            \
-    X(ArgList)                \
-    X(ScopedAnnotatedSymbol)  \
-    X(Symbol)                 \
-    X(UDTRef)                 \
-    X(UnaryOp)                \
+#define NO_SIDE_EFFECTS  \
+    X(ArrayRef)          \
+    X(BinaryOp)          \
+    X(Conditional)       \
+    X(ArgList)           \
+    X(Identifier)        \
+    X(ScopedIdentifier)  \
+    X(UnaryOp)           \
     X(VarRef)
 
 namespace odb::astpost {

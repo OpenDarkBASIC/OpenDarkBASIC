@@ -1,16 +1,18 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Annotation.hpp"
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API AnnotatedSymbol final : public Symbol
+class ODBCOMPILER_PUBLIC_API Identifier : public Expression
 {
 public:
-    AnnotatedSymbol(Annotation annotation, const std::string& name, SourceLocation* location);
+    Identifier(std::string name, SourceLocation* location);
+    Identifier(std::string name, Annotation annotation, SourceLocation* location);
 
+    const std::string& name() const;
     Annotation annotation() const;
 
     std::string toString() const override;
@@ -22,7 +24,8 @@ public:
 protected:
     Node* duplicateImpl() const override;
 
-private:
+protected:
+    const std::string name_;
     Annotation annotation_;
 };
 

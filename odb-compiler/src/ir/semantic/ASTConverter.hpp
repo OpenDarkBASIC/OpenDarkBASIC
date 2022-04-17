@@ -2,7 +2,7 @@
 
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ir/Node.hpp"
 
@@ -68,7 +68,7 @@ private:
 
     FunctionCallExpression convertCommandCallExpression(SourceLocation* location, const std::string& commandName,
                                                         const MaybeNull<ast::ArgList>& astArgs);
-    FunctionCallExpression convertFunctionCallExpression(SourceLocation* location, ast::AnnotatedSymbol* symbol,
+    FunctionCallExpression convertFunctionCallExpression(SourceLocation* location, ast::Identifier* identifier,
                                                          const MaybeNull<ast::ArgList>& astArgs);
     Ptr<Expression> convertExpression(const ast::Expression* expression);
 

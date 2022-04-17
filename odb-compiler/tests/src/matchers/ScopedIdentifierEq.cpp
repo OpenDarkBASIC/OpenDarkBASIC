@@ -1,13 +1,15 @@
-#include "odb-compiler/tests/matchers/ScopedAnnotatedSymbolEq.hpp"
-#include "odb-compiler/ast/ScopedAnnotatedSymbol.hpp"
+#include <utility>
 
-ScopedAnnotatedSymbolEqMatcher::ScopedAnnotatedSymbolEqMatcher(odb::ast::Scope scope, odb::ast::Annotation annotation, const std::string& name)
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
+#include "odb-compiler/tests/matchers/ScopedIdentifierEq.hpp"
+
+ScopedIdentifierEqMatcher::ScopedIdentifierEqMatcher(odb::ast::Scope scope, std::string name, odb::ast::Annotation annotation)
     : expectedScope_(scope)
+    , expectedName_(std::move(name))
     , expectedAnnotation_(annotation)
-    , expectedName_(name)
 {}
 
-bool ScopedAnnotatedSymbolEqMatcher::MatchAndExplain(const odb::ast::ScopedAnnotatedSymbol* node, testing::MatchResultListener* listener) const
+bool ScopedIdentifierEqMatcher::MatchAndExplain(const odb::ast::ScopedIdentifier* node, testing::MatchResultListener* listener) const
 {
     *listener
         << "node->scope() == " << odb::ast::scopeEnumString(node->scope())
@@ -17,7 +19,7 @@ bool ScopedAnnotatedSymbolEqMatcher::MatchAndExplain(const odb::ast::ScopedAnnot
         && node->name() == expectedName_;
 }
 
-void ScopedAnnotatedSymbolEqMatcher::DescribeTo(::std::ostream* os) const
+void ScopedIdentifierEqMatcher::DescribeTo(::std::ostream* os) const
 {
     *os
         << "node->scope() equals" << odb::ast::scopeEnumString(expectedScope_)
@@ -25,7 +27,7 @@ void ScopedAnnotatedSymbolEqMatcher::DescribeTo(::std::ostream* os) const
         << ", node->name() equals " << expectedName_;
 }
 
-void ScopedAnnotatedSymbolEqMatcher::DescribeNegationTo(::std::ostream* os) const
+void ScopedIdentifierEqMatcher::DescribeNegationTo(::std::ostream* os) const
 {
     *os
         << "node->scope() does not equal " << odb::ast::scopeEnumString(expectedScope_)

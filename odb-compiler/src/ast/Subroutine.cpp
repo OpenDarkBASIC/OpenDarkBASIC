@@ -1,20 +1,20 @@
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-SubCall::SubCall(Symbol* label, SourceLocation* location) :
+SubCall::SubCall(Identifier* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
 }
 
 // ----------------------------------------------------------------------------
-Symbol* SubCall::label() const
+Identifier* SubCall::label() const
 {
     return label_;
 }
@@ -45,7 +45,7 @@ Node::ChildRange SubCall::children()
 void SubCall::swapChild(const Node* oldNode, Node* newNode)
 {
     if (label_ == oldNode)
-        label_ = dynamic_cast<Symbol*>(newNode);
+        label_ = dynamic_cast<Identifier*>(newNode);
     else
         assert(false);
 }
@@ -54,7 +54,7 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
 Node* SubCall::duplicateImpl() const
 {
     return new SubCall(
-        label_->duplicate<Symbol>(),
+        label_->duplicate<Identifier>(),
         location());
 }
 

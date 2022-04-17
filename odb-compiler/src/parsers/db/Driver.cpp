@@ -5,7 +5,7 @@
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Literal.hpp"
-#include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
@@ -35,7 +35,7 @@ static bool tokenHasFreeableString(int pushedChar)
     switch (pushedChar)
     {
         case TOK_STRING_LITERAL:
-        case TOK_SYMBOL:
+        case TOK_IDENTIFIER:
         case TOK_COMMAND:
             return true;
 
@@ -85,7 +85,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
         tokens.push_back({pushedChar, pushedValue, loc, ""});
     };
 
-    // Scans ahead to get as many TOK_SYMBOL type tokens
+    // Scans ahead to get as many TOK_IDENTIFIER type tokens
     auto scanAheadForPossibleCommand = [&]() {
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
         fprintf(stderr, "Scanning ahead for possible command match\n");
@@ -191,37 +191,37 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
         // such as "load 3dsound".
         //
         // The solution used here is for the lexer to return every word as a
-        // TOK_SYMBOL by default. If we encounter this token, we must scan
-        // ahead to see how many TOK_SYMBOL tokens we can assemble into a valid
-        // command string. If we succeed, then the longest sequence of TOK_SYMBOL
-        // tokens matching a command will be combined into a single TOK_COMMAND
-        // token before being pushed to the parser.
+        // TOK_IDENTIFIER by default. If we encounter this token, we must scan
+        // ahead to see how many TOK_IDENTIFIER tokens we can assemble into a
+        // valid command string. If we succeed, then the longest sequence of
+        // TOK_IDENTIFIER tokens matching a command will be combined into a
+        // single TOK_COMMAND token before being pushed to the parser.
         //
         // If we fail to identify a valid command, then the next step is to
-        // determine if this TOK_SYMBOL is a builtin keyword. We do this by
-        // looking up the string associated with each TOK_SYMBOL in a hashtable
+        // determine if this TOK_IDENTIFIER is a builtin keyword. We do this by
+        // looking up the string associated with each TOK_IDENTIFIER in a hashtable
         // (generated using gperf). If this succeeds, then we convert the token
         // into a TOK_KEYWORD.
         //
-        // If neither of these steps succeed, then we leave it as a TOK_SYMBOL.
+        // If neither of these steps succeed, then we leave it as a TOK_IDENTIFIER.
         switch (tokens[0].pushedChar)
         {
             // commands can start with an integer literal or with a string
             case TOK_INTEGER_LITERAL:
-            case TOK_SYMBOL: {
+            case TOK_IDENTIFIER: {
                 scanAheadForPossibleCommand();
             } break;
             default: break;
         }
         switch (tokens[0].pushedChar)
         {
-            case TOK_SYMBOL: {
+            case TOK_IDENTIFIER: {
                 // This is to fix another special case:
                 //
                 //    string$ as string
                 //
                 // In order to parse this properly, we must avoid changing a
-                // TOK_SYMBOL into a TOK_KEYWORD if the next token is a type
+                // TOK_IDENTIFIER into a TOK_KEYWORD if the next token is a type
                 // annotation character
                 if (tokens.size() < 2)
                     scanNextToken();

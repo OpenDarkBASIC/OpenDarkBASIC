@@ -3,8 +3,8 @@
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ASTMockVisitor.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
-#include "odb-compiler/tests/matchers/AnnotatedSymbolEq.hpp"
 #include "odb-compiler/tests/matchers/BlockStmntCountEq.hpp"
+#include "odb-compiler/tests/matchers/IdentifierEq.hpp"
 #include "odb-sdk/Str.hpp"
 
 #define NAME db_parser_remarks
@@ -42,7 +42,7 @@ public:
             Expectation exp;
             exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
             exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
-            exp = EXPECT_CALL(v, visitAnnotatedSymbol(AnnotatedSymbolEq(Annotation::NONE, "foo"))).After(exp);
+            exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
 
             visitAST(ast, v);
         }

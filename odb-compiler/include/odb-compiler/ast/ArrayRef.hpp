@@ -5,15 +5,15 @@
 
 namespace odb::ast {
 
-class AnnotatedSymbol;
+class Identifier;
 class ArgList;
 
 class ODBCOMPILER_PUBLIC_API ArrayRef final : public LValue
 {
 public:
-    ArrayRef(AnnotatedSymbol* symbol, ArgList* args, SourceLocation* location);
+    ArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location);
 
-    AnnotatedSymbol* symbol() const;
+    Identifier* identifier() const;
     ArgList* args() const;
 
     std::string toString() const override;
@@ -26,7 +26,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<AnnotatedSymbol> symbol_;
+    Reference<Identifier> identifier_;
     Reference<ArgList> args_;
 };
 
