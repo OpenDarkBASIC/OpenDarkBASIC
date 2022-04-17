@@ -8,44 +8,84 @@
 
 namespace odb::ast {
 
-// An iterator which performs a depth first traversal on an AST from a specific node.
+namespace detail {
+
+// Base class for the iterators below. Provides the stack, advance() and retrieval of the current node and current
+// parent node.
+template <typename T> class DepthFirstIteratorBase
+{
+public:
+    // An iterator pointing to one past the end (the end of the traversal, stack is empty).
+    DepthFirstIteratorBase() = default;
+
+    // An iterator representing the beginning of a traversal starting at a specific node.
+    explicit DepthFirstIteratorBase(T* node)
+    {
+        if (node)
+        {
+            // Initialize the stack with the starting node.
+            stack_.emplace(node, nullptr);
+        }
+    }
+
+protected:
+    // The advance operation removes the current node from the stack, then appends the children of that node to the
+    // stack. This is executed _after_ the node has been visited.
+    void advance()
+    {
+        // If no elements are left, nothing to do.
+        if (stack_.empty())
+        {
+            return;
+        }
+
+        // Take off the top of the stack (containing the current node)
+        auto [current, _] = stack_.top();
+        stack_.pop();
+
+        // Populate children. The new top of the stack becomes the next node. Note that we need to add children to the
+        // stack in reverse to make sure that the new top() is the first child, due to LIFO semantics.
+        auto childrenRange = current->children();
+        for (auto it = childrenRange.rbegin(); it != childrenRange.rend(); ++it)
+        {
+            stack_.emplace(*it, current);
+        }
+    }
+
+    T* currentImpl() const { return stack_.empty() ? nullptr : stack_.top().first; }
+    T* const* currentPtrImpl() const { return stack_.empty() ? nullptr : &stack_.top().first; }
+    T* parentImpl() const { return stack_.empty() ? nullptr : stack_.top().second; }
+
+    std::stack<std::pair<T*, T*>> stack_;
+};
+
+} // namespace detail
+
+// An iterator which performs a depth first traversal on an AST from a specific node. This iterator can also replace the
+// current node using the replaceNode function.
 //
 // This iterator satisfies the requirements of ForwardIterator but not OutputIterator.
-template <typename T = Node>
-class DepthFirstIterator
+class DepthFirstIterator : public detail::DepthFirstIteratorBase<Node>
 {
 public:
     using iterator_category = std::forward_iterator_tag;
     using difference_type = std::ptrdiff_t;
-    using value_type = T*;
+    using value_type = Node*;
     using pointer = const value_type*;
-    using reference = const value_type&;
+    using reference = value_type;
 
-    // An iterator pointing to one past the end (the end of the traversal, stack is empty).
-    DepthFirstIterator() : current_(nullptr), parent_(nullptr) {}
+    DepthFirstIterator() = default;
+    explicit DepthFirstIterator(Node* node) : detail::DepthFirstIteratorBase<Node>(node) {}
 
-    DepthFirstIterator(T* node) : current_(nullptr), parent_(nullptr)
-    {
-        if (node)
-        {
-            // Initialize the stack.
-            stack_.emplace(node, nullptr);
-            // Advance to first iteration.
-            advance();
-        }
-    }
+    reference operator*() const { return currentImpl(); }
+    pointer operator->() const { return currentPtrImpl(); }
 
-    reference operator*() const { return current_; }
-    pointer operator->() { return &current_; }
-
-    // Prefix increment
     DepthFirstIterator& operator++()
     {
         advance();
         return *this;
     }
 
-    // Postfix increment
     DepthFirstIterator operator++(int)
     {
         DepthFirstIterator tmp = *this;
@@ -55,51 +95,77 @@ public:
 
     friend bool operator==(const DepthFirstIterator& a, const DepthFirstIterator& b)
     {
-        return a.current_ == b.current_;
+        return a.currentImpl() == b.currentImpl();
     };
     friend bool operator!=(const DepthFirstIterator& a, const DepthFirstIterator& b)
     {
-        return a.current_ != b.current_;
+        return a.currentImpl() != b.currentImpl();
     };
 
-    void advance()
+    void replaceNode(Node* newNode)
     {
-        // If no elements are left, "break" from the iteration loop by turning this into an end iterator (where current_
-        // == nullptr).
-        if (stack_.empty())
-        {
-            current_ = nullptr;
-            parent_ = nullptr;
-            return;
-        }
-
-        std::tie(current_, parent_) = stack_.top();
+        // We need to replace the node in the tree (by using the parents swapChild method), then modify the stack so the
+        // next advance() call is correct.
+        Node* curParent = parent();
+        curParent->swapChild(currentImpl(), newNode);
         stack_.pop();
-
-        // Need to add children to the stack in reverse so the next one we pop is the first child, due to LIFO.
-        auto childrenRange = current_->children();
-        for (auto it = childrenRange.rbegin(); it != childrenRange.rend(); ++it)
-        {
-            stack_.emplace(*it, current_);
-        }
+        stack_.emplace(newNode, curParent);
     }
 
-    T* parent() const { return parent_; }
-
-private:
-    T* current_;
-    T* parent_;
-    std::stack<std::pair<T*, T*>> stack_;
+    Node* parent() const { return parentImpl(); }
 };
 
-inline IteratorRange<DepthFirstIterator<Node>> depthFirst(Node* node)
+// An iterator which performs a depth first traversal on a read-only AST from a specific node.
+//
+// This iterator satisfies the requirements of ForwardIterator but not OutputIterator.
+class ConstDepthFirstIterator : public detail::DepthFirstIteratorBase<const Node>
 {
-    return makeRange(DepthFirstIterator<Node>(node), DepthFirstIterator<Node>());
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = const Node*;
+    using pointer = const value_type*;
+    using reference = value_type;
+
+    ConstDepthFirstIterator() = default;
+    explicit ConstDepthFirstIterator(const Node* node) : detail::DepthFirstIteratorBase<const Node>(node) {}
+
+    reference operator*() const { return currentImpl(); }
+    pointer operator->() const { return currentPtrImpl(); }
+
+    ConstDepthFirstIterator& operator++()
+    {
+        advance();
+        return *this;
+    }
+
+    ConstDepthFirstIterator operator++(int)
+    {
+        ConstDepthFirstIterator tmp = *this;
+        advance();
+        return tmp;
+    }
+
+    friend bool operator==(const ConstDepthFirstIterator& a, const ConstDepthFirstIterator& b)
+    {
+        return a.currentImpl() == b.currentImpl();
+    };
+    friend bool operator!=(const ConstDepthFirstIterator& a, const ConstDepthFirstIterator& b)
+    {
+        return a.currentImpl() != b.currentImpl();
+    };
+
+    const Node* parent() const { return parentImpl(); }
+};
+
+inline IteratorRange<DepthFirstIterator> depthFirst(Node* node)
+{
+    return makeRange(DepthFirstIterator(node), DepthFirstIterator());
 }
 
-inline IteratorRange<DepthFirstIterator<const Node>> depthFirst(const Node* node)
+inline IteratorRange<ConstDepthFirstIterator> depthFirst(const Node* node)
 {
-    return makeRange(DepthFirstIterator<const Node>(node), DepthFirstIterator<const Node>());
+    return makeRange(ConstDepthFirstIterator(node), ConstDepthFirstIterator());
 }
 
 } // namespace odb::ast

@@ -26,19 +26,6 @@ using namespace ast;
 // ----------------------------------------------------------------------------
 class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
 {
-    class Gatherer : public GenericVisitor
-    {
-    public:
-        void visitFuncCallExprOrArrayRef(FuncCallExprOrArrayRef* node) override final
-        {
-            nodes.emplace_back(node);
-        }
-
-        void visit(ast::Node* node) override final { /* don't care */ }
-
-        std::vector<Reference<FuncCallExprOrArrayRef>> nodes;
-    };
-
 public:
     bool execute(ast::Node* root) override
     {
@@ -49,7 +36,7 @@ public:
             if (!node)
                 continue;
 
-            it.parent()->swapChild(node, new ArrayRef(
+            it.replaceNode(new ArrayRef(
                 node->symbol(),
                 node->args().notNull() ? node->args() : nullptr,
                 node->location()
