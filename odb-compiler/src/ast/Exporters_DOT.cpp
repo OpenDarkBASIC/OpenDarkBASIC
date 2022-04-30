@@ -19,6 +19,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
@@ -220,6 +221,10 @@ private:
     void visitLabel(const Label* node) override
     {
         writeNamedConnection(node, node->identifier(), "identifier");
+    }
+    void visitProgram(const Program* node) override
+    {
+        writeNamedConnection(node, node->body(), "body");
     }
     void visitScopedIdentifier(const ScopedIdentifier* node) override {}
     void visitSelect(const Select* node) override

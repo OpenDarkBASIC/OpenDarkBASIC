@@ -28,7 +28,8 @@ TEST_F(NAME, bool_true)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
@@ -45,7 +46,8 @@ TEST_F(NAME, bool_false)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(false))).After(exp);

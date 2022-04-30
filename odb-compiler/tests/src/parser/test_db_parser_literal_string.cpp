@@ -59,7 +59,8 @@ TEST_F(NAME, empty_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);

@@ -109,7 +109,8 @@ TEST_F(NAME, scope##_dim_arr_##ann##_defaults_to_##type)                      \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "arr", ann##_ann))).After(exp);     \
@@ -183,7 +184,8 @@ TEST_F(NAME, scope##_dim_arr_##ann##_as_##type)                               \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitArrayDecl(ArrayDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "arr", ann##_ann))).After(exp);     \

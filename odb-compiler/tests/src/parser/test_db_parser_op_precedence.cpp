@@ -28,7 +28,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \
@@ -50,7 +51,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \
@@ -74,7 +76,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \
@@ -96,7 +99,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \
@@ -120,7 +124,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \
@@ -138,7 +143,8 @@ using namespace ast;
                                                                               \
         StrictMock<ASTMockVisitor> v;                                         \
         Expectation exp;                                                      \
-        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));               \
+        exp = EXPECT_CALL(v, visitProgram(_));                                \
+        exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);    \
         exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);               \
         exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);                      \
         exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp); \

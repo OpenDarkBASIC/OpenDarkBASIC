@@ -83,24 +83,28 @@ TEST_F(ASTPreOrderIteratorTest, TraversalWithParents)
     auto range = preOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 
-    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast);
     it++;
 
+    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast->body());
+    it++;
+
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_EQ(it, range.end());
@@ -112,16 +116,20 @@ TEST_F(ASTPreOrderIteratorTest, ReplaceNodeWhilstIterating)
     auto range = preOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 
-    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast);
     it++;
 
+    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast->body());
+    it++;
+
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
 
     // Replace the VarRef with a different VarRef. That way, we can be sure we traverse into the _new_ children.
     Node* previousNode = *it;
@@ -129,18 +137,18 @@ TEST_F(ASTPreOrderIteratorTest, ReplaceNodeWhilstIterating)
                               (*it)->location()));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     // Ensure we traversed over the new child of the replacement VarRef.
     EXPECT_EQ(dynamic_cast<Identifier*>(*it)->name(), "someFloat");
     EXPECT_EQ(dynamic_cast<Identifier*>(*it)->annotation(), Annotation::FLOAT);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_EQ(it, range.end());
@@ -152,16 +160,20 @@ TEST_F(ASTPreOrderIteratorTest, ModifyChildrenWhilstIterating)
     auto range = preOrderTraversal(ast);
     auto it = range.begin();
 
-    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 
-    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
     EXPECT_EQ(it.parent(), ast);
     it++;
 
+    ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast->body());
+    it++;
+
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
 
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly (which may
     // affect iteration).
@@ -171,14 +183,14 @@ TEST_F(ASTPreOrderIteratorTest, ModifyChildrenWhilstIterating)
     it++;
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     // Ensure we traversed over the replacement child of the VarRef.
     EXPECT_EQ(dynamic_cast<Identifier*>(*it)->name(), "someFloat");
     EXPECT_EQ(dynamic_cast<Identifier*>(*it)->annotation(), Annotation::FLOAT);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_EQ(it, range.end());
@@ -236,22 +248,26 @@ TEST_F(ASTPostOrderIteratorTest, TraversalWithParents)
     auto it = range.begin();
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast);
+    EXPECT_EQ(it.parent(), ast->body());
     it++;
 
     ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast);
+    it++;
+
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 
@@ -265,11 +281,11 @@ TEST_F(ASTPostOrderIteratorTest, ReplaceNodeWhilstIterating)
     auto it = range.begin();
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
 
     // Replace the VarRef with a different VarRef. At this point, we've already traversed into the children, so this
     // shouldn't change anything except what the iterator points to.
@@ -278,18 +294,22 @@ TEST_F(ASTPostOrderIteratorTest, ReplaceNodeWhilstIterating)
                               (*it)->location()));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast);
+    EXPECT_EQ(it.parent(), ast->body());
     it++;
 
     ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast);
+    it++;
+
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 
@@ -303,11 +323,11 @@ TEST_F(ASTPostOrderIteratorTest, ModifyChildrenWhilstIterating)
     auto it = range.begin();
 
     ASSERT_NE(dynamic_cast<Identifier*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]->children()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]->children()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
 
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly. This
     // should not affect iteration.
@@ -317,14 +337,18 @@ TEST_F(ASTPostOrderIteratorTest, ModifyChildrenWhilstIterating)
     it++;
 
     ASSERT_NE(dynamic_cast<ByteLiteral*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast->statements()[0]);
+    EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
     it++;
 
     ASSERT_NE(dynamic_cast<VarAssignment*>(*it), nullptr);
-    EXPECT_EQ(it.parent(), ast);
+    EXPECT_EQ(it.parent(), ast->body());
     it++;
 
     ASSERT_NE(dynamic_cast<Block*>(*it), nullptr);
+    EXPECT_EQ(it.parent(), ast);
+    it++;
+
+    ASSERT_NE(dynamic_cast<Program*>(*it), nullptr);
     EXPECT_EQ(it.parent(), nullptr);
     it++;
 

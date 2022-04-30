@@ -2,6 +2,7 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ir/Codegen.hpp"
 #include "odb-compiler/ir/Node.hpp"
 #include "odb-compiler/ir/SemanticChecker.hpp"
@@ -119,7 +120,7 @@ bool output(const std::vector<std::string>& args)
     odb::ir::TargetTriple targetTriple{*targetTripleArch_, *targetTriplePlatform_};
 
     // Run semantic checks and generate IR.
-    auto program = odb::ir::runSemanticChecks(ast, *cmdIndex);
+    auto program = odb::ir::runSemanticChecks(ast->body(), *cmdIndex);
     if (!program)
     {
         return false;

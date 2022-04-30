@@ -61,7 +61,8 @@ TEST_F(NAME, no_side_effects_1)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
@@ -75,7 +76,8 @@ TEST_F(NAME, no_side_effects_1)
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
     ASSERT_THAT(post.execute(ast), IsTrue());
 
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
@@ -94,7 +96,8 @@ TEST_F(NAME, no_side_effects_2)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
@@ -109,7 +112,8 @@ TEST_F(NAME, no_side_effects_2)
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
     ASSERT_THAT(post.execute(ast), IsTrue());
 
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
@@ -128,7 +132,8 @@ TEST_F(NAME, no_side_effects_3)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);
@@ -143,7 +148,8 @@ TEST_F(NAME, no_side_effects_3)
     post.addProcess(std::make_unique<astpost::EliminateBitwiseNotRHS>());
     ASSERT_THAT(post.execute(ast), IsTrue());
 
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("result", Annotation::NONE))).After(exp);

@@ -11,7 +11,7 @@ namespace odb {
 namespace ast {
     class ArrayRef;
     class Assignment;
-    class Block;
+    class Program;
     class Expression;
     class Literal;
     class SourceLocation;
@@ -44,7 +44,7 @@ public:
      * It's not possible to retrieve the root node from the dbpush_parse() so
      * we instead have bison pass in the root node to the driver
      */
-    ODBCOMPILER_PRIVATE_API void giveProgram(ast::Block* program);
+    ODBCOMPILER_PRIVATE_API void giveProgram(ast::Program* program);
 
     /*!
      * Attempts to create the smallest possible literal type based on the value
@@ -82,16 +82,16 @@ public:
     // ------------------------------------------------------------------------
 
 protected:
-    ast::Block* doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher);
+    ast::Program* doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher);
 
 private:
-    odb::Reference<ast::Block> program_;
+    odb::Reference<ast::Program> program_;
 };
 
 class ODBCOMPILER_PUBLIC_API FileParserDriver : public Driver
 {
 public:
-    ast::Block* parse(const std::string& fileName, const cmd::CommandMatcher& commandMatcher);
+    ast::Program* parse(const std::string& fileName, const cmd::CommandMatcher& commandMatcher);
 
 protected:
     virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const override;
@@ -103,7 +103,7 @@ private:
 class ODBCOMPILER_PUBLIC_API StringParserDriver : public Driver
 {
 public:
-    ast::Block* parse(const std::string& sourceName, const std::string& str, const cmd::CommandMatcher& commandMatcher);
+    ast::Program* parse(const std::string& sourceName, const std::string& str, const cmd::CommandMatcher& commandMatcher);
 
 protected:
     virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const override;

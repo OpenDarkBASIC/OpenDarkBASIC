@@ -34,6 +34,7 @@
     X(InfiniteLoop)                     \
     X(InitializerList)                  \
     X(Label)                            \
+    X(Program)                          \
     X(ScopedIdentifier)                 \
     X(Select)                           \
     X(SubCall)                          \

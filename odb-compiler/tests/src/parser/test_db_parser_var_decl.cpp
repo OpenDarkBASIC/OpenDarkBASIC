@@ -151,7 +151,8 @@ TEST_F(NAME, scope##_var_##ann##_defaults_to_##type)                          \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
@@ -194,7 +195,8 @@ TEST_F(NAME, scope##_var_##ann##_with_assignment_defaults_to_##type)          \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
@@ -269,7 +271,8 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type)                                \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);\
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \
@@ -355,7 +358,8 @@ TEST_F(NAME, scope##_var_##ann##_as_##as_type##_with_initial_value)           \
                                                                               \
     StrictMock<ASTMockVisitor> v;                                             \
     Expectation exp;                                                          \
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));                   \
+    exp = EXPECT_CALL(v, visitProgram(_));                                    \
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);        \
     exp = EXPECT_CALL(v, visitVarDecl(VarDeclEq(BuiltinType::as_type##_type))).After(exp);               \
     exp = EXPECT_CALL(v, visitScopedIdentifier(                               \
         ScopedIdentifierEq(scope##_scope, "var", ann##_ann))).After(exp);     \

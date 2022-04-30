@@ -45,7 +45,7 @@ static bool tokenHasFreeableString(int pushedChar)
 }
 
 // ----------------------------------------------------------------------------
-ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher)
+ast::Program* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::CommandMatcher& commandMatcher)
 {
     int parseResult;
     DBLTYPE loc = {1, 1, 1, 1};
@@ -278,7 +278,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
 
     if (parseResult == 0)
     {
-        ast::Block* program = program_;
+        ast::Program* program = program_;
         program_.detach();
         return program;
     }
@@ -287,7 +287,7 @@ ast::Block* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Comma
 }
 
 // ----------------------------------------------------------------------------
-void Driver::giveProgram(ast::Block* program)
+void Driver::giveProgram(ast::Program* program)
 {
     if (program_.notNull())
     {
@@ -390,7 +390,7 @@ ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir 
 }
 
 // ----------------------------------------------------------------------------
-ast::Block* FileParserDriver::parse(const std::string& fileName,
+ast::Program* FileParserDriver::parse(const std::string& fileName,
                                     const cmd::CommandMatcher& commandMatcher)
 {
     FILE* fp = fopen(fileName.c_str(), "r");
@@ -408,7 +408,7 @@ ast::Block* FileParserDriver::parse(const std::string& fileName,
     dbset_in(fp, scanner);
 
     fileName_ = &fileName;
-    ast::Block* program = doParse(scanner, parser, commandMatcher);
+    ast::Program* program = doParse(scanner, parser, commandMatcher);
     fileName_ = nullptr;
 
     // Destroy parser and lexer
@@ -420,7 +420,7 @@ ast::Block* FileParserDriver::parse(const std::string& fileName,
 }
 
 // ----------------------------------------------------------------------------
-ast::Block* StringParserDriver::parse(const std::string& sourceName,
+ast::Program* StringParserDriver::parse(const std::string& sourceName,
                                       const std::string& str,
                                       const cmd::CommandMatcher& commandMatcher)
 {
@@ -433,7 +433,7 @@ ast::Block* StringParserDriver::parse(const std::string& sourceName,
 
     code_ = &str;
     sourceName_ = &sourceName;
-    ast::Block* program = doParse(scanner, parser, commandMatcher);
+    ast::Program* program = doParse(scanner, parser, commandMatcher);
     sourceName_ = nullptr;
     code_ = nullptr;
 

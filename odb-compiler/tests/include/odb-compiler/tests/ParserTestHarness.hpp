@@ -2,12 +2,10 @@
 
 #include "odb-compiler/commands/CommandMatcher.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-sdk/Reference.hpp"
 #include "gmock/gmock.h"
 
-namespace odb::ast {
-    class Block;
-}
 namespace odb::db {
     class FileParserDriver;
 }
@@ -23,5 +21,5 @@ public:
     odb::cmd::CommandIndex cmdIndex;
     odb::cmd::CommandMatcher matcher;
     odb::db::StringParserDriver* driver;
-    odb::Reference<odb::ast::Block> ast;
+    odb::Reference<odb::ast::Program> ast;
 };

@@ -28,7 +28,7 @@ TEST_F(NAME, oneline_function_call)
         matcher);
     ASSERT_THAT(ast, NotNull());
 
-    const auto& stmnts = ast->statements();
+    const auto& stmnts = ast->body()->statements();
     ASSERT_THAT(stmnts.size(), Eq(1));
     ast::VarAssignment* ass = dynamic_cast<ast::VarAssignment*>(stmnts[0].get());
     ASSERT_THAT(ass, NotNull());
@@ -82,7 +82,7 @@ TEST_F(NAME, print_command)
         matcher);
     ASSERT_THAT(ast, NotNull());
 
-    const auto& stmnts = ast->statements();
+    const auto& stmnts = ast->body()->statements();
     ASSERT_THAT(stmnts.size(), Eq(1));
     ast::Conditional* cond = dynamic_cast<ast::Conditional*>(stmnts[0].get());
     ASSERT_THAT(cond, NotNull());

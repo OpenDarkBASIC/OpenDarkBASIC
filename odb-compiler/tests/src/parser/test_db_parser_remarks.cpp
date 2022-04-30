@@ -40,7 +40,8 @@ public:
 
             StrictMock<ASTMockVisitor> v;
             Expectation exp;
-            exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+            exp = EXPECT_CALL(v, visitProgram(_));
+            exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
             exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
             exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
 

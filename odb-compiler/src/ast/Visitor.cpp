@@ -19,6 +19,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 #include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"

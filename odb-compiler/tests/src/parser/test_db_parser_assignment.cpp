@@ -26,7 +26,8 @@ TEST_F(NAME, variable_with_assignment_has_default_type_integer)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("var", Annotation::NONE))).After(exp);
@@ -42,7 +43,8 @@ TEST_F(NAME, float_variable_with_assignment_has_type_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("var", Annotation::FLOAT))).After(exp);
@@ -58,7 +60,8 @@ TEST_F(NAME, string_variable_with_assignment_has_type_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitVarAssignment(_)).After(exp);
     exp = EXPECT_CALL(v, visitVarRef(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("var", Annotation::STRING))).After(exp);

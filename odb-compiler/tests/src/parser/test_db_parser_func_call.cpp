@@ -30,7 +30,8 @@ TEST_F(NAME, function_call_no_args)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
 
@@ -44,7 +45,8 @@ TEST_F(NAME, function_call_no_args_string_return_type)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::STRING))).After(exp);
 
@@ -58,7 +60,8 @@ TEST_F(NAME, function_call_no_args_float_return_type)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::FLOAT))).After(exp);
 
@@ -72,7 +75,8 @@ TEST_F(NAME, function_call_one_arg)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(1))).After(exp);
@@ -88,7 +92,8 @@ TEST_F(NAME, function_call_multiple_args)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(3))).After(exp);
@@ -106,7 +111,8 @@ TEST_F(NAME, nested_function_calls)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitFuncCallStmnt(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("foo", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitArgList(ArgListCountEq(3))).After(exp);

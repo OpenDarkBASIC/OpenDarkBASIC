@@ -1,4 +1,4 @@
-#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/tests/ParserTestHarness.hpp"
