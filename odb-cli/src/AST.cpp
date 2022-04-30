@@ -1,6 +1,7 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
 #include "odb-compiler/commands/CommandMatcher.hpp"
@@ -9,7 +10,7 @@
 using namespace odb;
 
 static cmd::CommandMatcher cmdMatcher_;
-static Reference<ast::Block> ast_;
+static Reference<ast::Program> ast_;
 
 // ----------------------------------------------------------------------------
 bool initCommandMatcher(const std::vector<std::string>& args)
@@ -27,14 +28,14 @@ bool parseDBA(const std::vector<std::string>& args)
     for (const auto& arg : args)
     {
         Log::ast(Log::INFO, "Parsing file `%s`\n", arg.c_str());
-        Reference<ast::Block> block = driver.parse(arg, cmdMatcher_);
-        if (block == nullptr)
+        Reference<ast::Program> program = driver.parse(arg, cmdMatcher_);
+        if (program == nullptr)
             return false;
 
         if (ast_.isNull())
-            ast_ = block;
+            ast_ = program;
         else
-            ast_->merge(block);
+            ast_->body()->merge(program->body());
     }
 
     return true;
@@ -120,6 +121,6 @@ bool dumpASTJSON(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-const odb::ast::Block* getAST() {
+odb::ast::Program* getAST() {
     return ast_;
 }

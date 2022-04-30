@@ -192,6 +192,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Node.cpp"
     "src/ast/Operator.cpp"
     "src/ast/ParentMap.cpp"
+    "src/ast/Program.cpp"
     "src/ast/Scope.cpp"
     "src/ast/ScopedIdentifier.cpp"
     "src/ast/SelectCase.cpp"

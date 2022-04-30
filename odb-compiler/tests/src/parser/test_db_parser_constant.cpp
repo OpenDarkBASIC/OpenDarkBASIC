@@ -29,7 +29,8 @@ TEST_F(NAME, bool_constant)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("mybool1", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitBooleanLiteral(BooleanLiteralEq(true))).After(exp);
@@ -49,7 +50,8 @@ TEST_F(NAME, integer_constant)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("myint", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(2147483647)));
@@ -66,7 +68,8 @@ TEST_F(NAME, double_constant)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("mydouble", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
@@ -83,7 +86,8 @@ TEST_F(NAME, double_constant_annotated)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("mydouble", Annotation::FLOAT))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleFloatLiteral(DoubleFloatLiteralEq(5.2)));
@@ -100,7 +104,8 @@ TEST_F(NAME, string_constant)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("mystring", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));
@@ -117,7 +122,8 @@ TEST_F(NAME, string_constant_annotated)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("mystring", Annotation::STRING))).After(exp);
     exp = EXPECT_CALL(v, visitStringLiteral(StringLiteralEq("hello world!")));

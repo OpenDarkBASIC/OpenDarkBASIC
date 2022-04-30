@@ -22,6 +22,7 @@
     #include "odb-compiler/ast/Literal.hpp"
     #include "odb-compiler/ast/Loop.hpp"
     #include "odb-compiler/ast/LValue.hpp"
+    #include "odb-compiler/ast/Program.hpp"
     #include "odb-compiler/ast/ScopedIdentifier.hpp"
     #include "odb-compiler/ast/SelectCase.hpp"
     #include "odb-compiler/ast/SourceLocation.hpp"
@@ -433,7 +434,7 @@
 
 %%
 program
-  : seps_maybe block seps_maybe                               { $$ = $2; driver->giveProgram($2); }
+  : seps_maybe block seps_maybe                               { $$ = $2; driver->giveProgram(new Program($2, $2->location())); }
   | seps_maybe                                                { $$ = nullptr; }
   ;
 sep : '\n' | ':' | ';' ;

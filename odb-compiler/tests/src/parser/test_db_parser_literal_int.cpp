@@ -29,7 +29,8 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0))).After(exp);
@@ -50,7 +51,8 @@ TEST_F(NAME, byte_literal)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(2))).After(exp);
@@ -71,7 +73,8 @@ TEST_F(NAME, word_literal)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(256))).After(exp);
@@ -92,7 +95,8 @@ TEST_F(NAME, integer_literal)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(65536))).After(exp);
@@ -113,7 +117,8 @@ TEST_F(NAME, dword_literal)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(2147483648))).After(exp);
@@ -134,7 +139,8 @@ TEST_F(NAME, double_integer_literal)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("x", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(4294967296))).After(exp);
@@ -158,7 +164,8 @@ TEST_F(NAME, hex_literals)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);
@@ -191,7 +198,8 @@ TEST_F(NAME, binary_literals)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
     exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);

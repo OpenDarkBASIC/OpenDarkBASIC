@@ -31,7 +31,8 @@ TEST_F(NAME, real_plus_imag)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     for (int i = 0; i != 2; ++i)
     {
         const char* vars[] = {"a", "b"};
@@ -55,7 +56,8 @@ TEST_F(NAME, real_minus_imag)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(2))).After(exp);
     for (int i = 0; i != 2; ++i)
     {
         const char* vars[] = {"a", "b"};
@@ -81,7 +83,8 @@ TEST_F(NAME, imag_only)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(4)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(4))).After(exp);
     for (int i = 0; i != 4; ++i)
     {
         const char* vars[] = {"a", "b", "c", "d"};
@@ -105,7 +108,8 @@ TEST_F(NAME, negative_imag_only)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(4)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(4))).After(exp);
     for (int i = 0; i != 4; ++i)
     {
         const char* vars[] = {"a", "b", "c", "d"};

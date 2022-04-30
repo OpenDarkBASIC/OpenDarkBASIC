@@ -1260,7 +1260,8 @@ TEST_F(NAME, var_decl_as_double_integer)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1283,7 +1284,8 @@ TEST_F(NAME, var_decl_as_integer)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1306,7 +1308,8 @@ TEST_F(NAME, var_decl_as_dword)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1329,7 +1332,8 @@ TEST_F(NAME, var_decl_as_word)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1352,7 +1356,8 @@ TEST_F(NAME, var_decl_as_byte)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1375,7 +1380,8 @@ TEST_F(NAME, var_decl_as_boolean)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1398,7 +1404,8 @@ TEST_F(NAME, var_decl_as_double_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1421,7 +1428,8 @@ TEST_F(NAME, var_decl_as_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1444,7 +1452,8 @@ TEST_F(NAME, float_var_decl_as_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1467,7 +1476,8 @@ TEST_F(NAME, var_decl_as_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1490,7 +1500,8 @@ TEST_F(NAME, string_var_decl_as_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1513,7 +1524,8 @@ TEST_F(NAME, var_decl_as_nested_udt)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1534,7 +1546,8 @@ TEST_F(NAME, arr_decl_as_double_integer)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1558,7 +1571,8 @@ TEST_F(NAME, arr_decl_as_integer)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1582,7 +1596,8 @@ TEST_F(NAME, arr_decl_as_dword)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1606,7 +1621,8 @@ TEST_F(NAME, arr_decl_as_word)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1630,7 +1646,8 @@ TEST_F(NAME, arr_decl_as_byte)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1654,7 +1671,8 @@ TEST_F(NAME, arr_decl_as_boolean)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1678,7 +1696,8 @@ TEST_F(NAME, arr_decl_as_double_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1702,7 +1721,8 @@ TEST_F(NAME, arr_decl_as_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1726,7 +1746,8 @@ TEST_F(NAME, float_arr_decl_as_float)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1750,7 +1771,8 @@ TEST_F(NAME, arr_decl_as_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1774,7 +1796,8 @@ TEST_F(NAME, string_arr_decl_as_string)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
@@ -1798,7 +1821,8 @@ TEST_F(NAME, arr_decl_as_nested_udt)
 
     StrictMock<ASTMockVisitor> v;
     Expectation exp;
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1)));
+    exp = EXPECT_CALL(v, visitProgram(_));
+    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(1))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDecl(_)).After(exp);
     exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("udt"))).After(exp);
     exp = EXPECT_CALL(v, visitUDTDeclBody(_)).After(exp);
