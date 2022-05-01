@@ -13,7 +13,7 @@
  * @brief All of the DarkBASIC primitive types that can exist and what types
  * they map to in C++
  */
-#define ODB_DATATYPE_LIST                       \
+#define ODB_DATATYPE_LIST_IMPL(X)               \
     X(DoubleInteger, int64_t)                   \
     X(Integer,       int32_t)                   \
     X(Dword,         uint32_t)                  \
@@ -37,6 +37,9 @@
     X(Vec2,          odb::ast::Vec2<float>)     \
     X(Vec3,          odb::ast::Vec3<float>)     \
     X(Vec4,          odb::ast::Vec4<float>)
+
+#define ODB_DATATYPE_LIST \
+    ODB_DATATYPE_LIST_IMPL(X)
 
 namespace odb::ast {
 
