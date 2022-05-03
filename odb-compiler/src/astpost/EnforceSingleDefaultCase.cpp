@@ -52,7 +52,7 @@ void Visitor::visitSelect(const ast::Select* select)
 }
 
 // ----------------------------------------------------------------------------
-bool EnforceSingleDefaultCase::execute(ast::Node* root)
+bool EnforceSingleDefaultCase::execute(ast::Program* root)
 {
     Visitor visitor;
     visitAST(root, visitor);

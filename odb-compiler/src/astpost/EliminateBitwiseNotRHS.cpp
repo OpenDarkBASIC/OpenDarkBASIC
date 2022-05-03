@@ -37,7 +37,7 @@ public:
 }
 
 // ----------------------------------------------------------------------------
-bool EliminateBitwiseNotRHS::execute(ast::Node* root)
+bool EliminateBitwiseNotRHS::execute(ast::Program* root)
 {
     auto range = ast::preOrderTraversal(root);
     for (auto it = range.begin(); it != range.end(); ++it)
