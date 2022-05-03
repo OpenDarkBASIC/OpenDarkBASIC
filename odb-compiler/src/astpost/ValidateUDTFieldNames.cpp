@@ -130,7 +130,7 @@ void Visitor::checkAnnotation(const ast::Identifier* sym)
 }
 
 // ----------------------------------------------------------------------------
-bool ValidateUDTFieldNames::execute(ast::Node* node)
+bool ValidateUDTFieldNames::execute(ast::Program* node)
 {
     Visitor visitor;
     visitAST(node, visitor);

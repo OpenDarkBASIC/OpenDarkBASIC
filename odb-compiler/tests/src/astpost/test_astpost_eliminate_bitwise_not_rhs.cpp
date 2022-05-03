@@ -27,7 +27,7 @@ using namespace ast;
 class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
 {
 public:
-    bool execute(ast::Node* root) override
+    bool execute(ast::Program* root) override
     {
         auto range = ast::preOrderTraversal(root);
         for (auto it = range.begin(); it != range.end(); ++it)

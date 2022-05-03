@@ -9,7 +9,7 @@ void ProcessGroup::addProcess(std::unique_ptr<Process> process)
 }
 
 // ----------------------------------------------------------------------------
-bool ProcessGroup::execute(ast::Node* root)
+bool ProcessGroup::execute(ast::Program* root)
 {
     for (const auto& process : processes_)
         if (process->execute(root) == false)
