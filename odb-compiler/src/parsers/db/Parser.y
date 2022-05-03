@@ -78,7 +78,6 @@
             class FuncDecl;
             class FuncExit;
             class Expression;
-            class Goto;
             class Identifier;
             class InfiniteLoop;
             class InitializerList;
@@ -90,13 +89,14 @@
             class ScopedIdentifier;
             class Select;
             class Statement;
-            class SubCall;
             class SubReturn;
             class UDTDecl;
             class UDTDeclBody;
             class UDTFieldOuter;
             class UDTFieldInner;
             class UDTFieldAssignment;
+            class UnresolvedGoto;
+            class UnresolvedSubCall;
             class UntilLoop;
             class VarAssignment;
             class VarDecl;
@@ -171,7 +171,7 @@
     odb::ast::FuncCallStmnt* func_call_stmnt;
     odb::ast::FuncDecl* func_decl;
     odb::ast::FuncExit* func_exit;
-    odb::ast::Goto* goto_symbol;
+    odb::ast::UnresolvedGoto* goto_symbol;
     odb::ast::Identifier* identifier;
     odb::ast::InfiniteLoop* infinite_loop;
     odb::ast::InitializerList* initializer_list;
@@ -182,7 +182,7 @@
     odb::ast::ScopedIdentifier* scoped_identifier;
     odb::ast::Select* select;
     odb::ast::Statement* stmnt;
-    odb::ast::SubCall* sub_call_symbol;
+    odb::ast::UnresolvedSubCall* sub_call_symbol;
     odb::ast::SubReturn* sub_return;
     odb::ast::UDTDecl* udt_decl;
     odb::ast::UDTDeclBody* udt_decl_body;
@@ -706,7 +706,7 @@ func_call_stmnt
   | annotated_identifier '(' ')'                              { $$ = new FuncCallStmnt($1, driver->newLocation(&@$)); }
   ;
 sub_call
-  : GOSUB identifier                                          { $$ = new SubCall($2, driver->newLocation(&@$)); }
+  : GOSUB identifier                                          { $$ = new UnresolvedSubCall($2, driver->newLocation(&@$)); }
   ;
 sub_return
   : RETURN                                                    { $$ = new SubReturn(driver->newLocation(&@$)); }
@@ -715,7 +715,7 @@ label_decl
   : identifier ':'                                            { $$ = new Label($1, driver->newLocation(&@$)); }
   ;
 goto_label
-  : GOTO identifier                                           { $$ = new Goto($2, driver->newLocation(&@$)); }
+  : GOTO identifier                                           { $$ = new UnresolvedGoto($2, driver->newLocation(&@$)); }
   ;
 literal
   : BOOLEAN_LITERAL                                           { $$ = new BooleanLiteral(yylval.boolean_value, driver->newLocation(&@$)); }

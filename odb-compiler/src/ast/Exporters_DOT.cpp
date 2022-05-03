@@ -284,6 +284,14 @@ private:
     {
         writeNamedConnection(node, node->expr(), "expr");
     }
+    void visitUnresolvedGoto(const UnresolvedGoto* node) override
+    {
+        writeNamedConnection(node, node->label(), "label");
+    }
+    void visitUnresolvedSubCall(const UnresolvedSubCall* node) override
+    {
+        writeNamedConnection(node, node->label(), "label");
+    }
     void visitUntilLoop(const UntilLoop* node) override
     {
         writeNamedConnection(node, node->exitCondition(), "exitCondition");

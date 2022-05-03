@@ -32,6 +32,7 @@
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
 namespace odb::ast {
