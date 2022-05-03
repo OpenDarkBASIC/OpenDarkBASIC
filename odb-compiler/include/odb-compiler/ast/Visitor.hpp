@@ -5,6 +5,17 @@
 #include "odb-compiler/ast/Nodes.hpp"
 
 namespace odb::ast {
+namespace detail {
+template <typename Callable, typename T, typename = void>
+struct can_receive_t : std::false_type
+{
+};
+
+template <typename Callable, typename T>
+struct can_receive_t<Callable, T, std::void_t<decltype((std::declval<Callable>())(std::declval<T>()))>> : std::true_type
+{
+};
+} // namespace detail
 
 class Node;
 
@@ -51,6 +62,36 @@ public:
 
     virtual void visit(const Node* node) = 0;
 };
+
+template <typename... Ts> struct FunctorVisitor : Visitor, Ts... {
+    explicit FunctorVisitor(Ts... ts) : Ts(std::move(ts))... {}
+
+    using Ts::operator()...;
+
+#define X(nodeType) void visit##nodeType(nodeType* node) override {                     \
+        if constexpr (detail::can_receive_t<FunctorVisitor<Ts...>, nodeType*>::value) { \
+            (*this)(node);                                                              \
+        }                                                                               \
+    }
+    ODB_AST_NODE_TYPE_LIST
+#undef X
+};
+template <typename... Ts> FunctorVisitor(Ts...) -> FunctorVisitor<Ts...>;
+
+template <typename... Ts> struct FunctorConstVisitor : ConstVisitor, Ts... {
+    explicit FunctorConstVisitor(Ts... ts) : Ts(std::move(ts))... {}
+
+    using Ts::operator()...;
+
+#define X(nodeType) void visit##nodeType(const nodeType* node) override {                     \
+        if constexpr (detail::can_receive_t<FunctorVisitor<Ts...>, const nodeType*>::value) { \
+            (*this)(node);                                                                    \
+        }                                                                                     \
+    }
+    ODB_AST_NODE_TYPE_LIST
+#undef X
+};
+template <typename... Ts> FunctorConstVisitor(Ts...) -> FunctorConstVisitor<Ts...>;
 
 enum class Traversal
 {

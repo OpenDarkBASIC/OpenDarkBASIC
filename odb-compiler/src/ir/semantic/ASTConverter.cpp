@@ -493,6 +493,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* labelSt = dynamic_cast<ast::Label*>(statement))
     {
+        // TODO: This is also implemented by astpost::ResolveLabels.
         auto labelName = labelSt->identifier()->name();
         auto irLabel = std::make_unique<Label>(location, currentFunction_, labelName);
         auto pendingGotoStatements = pendingGotoStatements_.equal_range(labelName);
@@ -516,8 +517,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
             location, currentFunction_,
             convertFunctionCallExpression(funcCallSt->location(), funcCallSt->identifier(), funcCallSt->args()));
     }
-    else if (auto* gotoSt = dynamic_cast<ast::Goto*>(statement))
+    else if (auto* gotoSt = dynamic_cast<ast::UnresolvedGoto*>(statement))
     {
+        // TODO: This is also implemented by astpost::ResolveLabels.
         std::string labelName = gotoSt->label()->name();
         auto labelIt = labels_.find(labelName);
         Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;
@@ -528,8 +530,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
         }
         return irGotoSt;
     }
-    else if (auto* subCallSt = dynamic_cast<ast::SubCall*>(statement))
+    else if (auto* subCallSt = dynamic_cast<ast::UnresolvedSubCall*>(statement))
     {
+        // TODO: This is also implemented by astpost::ResolveLabels.
         std::string labelName = subCallSt->label()->name();
         auto labelIt = labels_.find(labelName);
         Label* label = labelIt != labels_.end() ? labelIt->second : nullptr;

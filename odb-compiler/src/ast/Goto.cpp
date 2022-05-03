@@ -7,14 +7,69 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Goto::Goto(Identifier* label, SourceLocation* location) :
+UnresolvedGoto::UnresolvedGoto(Identifier* label, SourceLocation* location) :
     Statement(location),
     label_(label)
 {
 }
 
 // ----------------------------------------------------------------------------
-Identifier* Goto::label() const
+Identifier* UnresolvedGoto::label() const
+{
+    return label_;
+}
+
+// ----------------------------------------------------------------------------
+std::string UnresolvedGoto::toString() const
+{
+    return "UnresolvedGoto";
+}
+
+// ----------------------------------------------------------------------------
+void UnresolvedGoto::accept(Visitor* visitor)
+{
+    visitor->visitUnresolvedGoto(this);
+}
+void UnresolvedGoto::accept(ConstVisitor* visitor) const
+{
+    visitor->visitUnresolvedGoto(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange UnresolvedGoto::children()
+{
+    return {label_};
+}
+
+// ----------------------------------------------------------------------------
+void UnresolvedGoto::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (label_ == oldNode)
+        label_ = dynamic_cast<Identifier*>(newNode);
+    else
+        assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* UnresolvedGoto::duplicateImpl() const
+{
+    return new UnresolvedGoto(
+        label_->duplicate<Identifier>(),
+        location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+Goto::Goto(Label* label, SourceLocation* location) :
+    Statement(location),
+    label_(label)
+{
+}
+
+// ----------------------------------------------------------------------------
+Label* Goto::label() const
 {
     return label_;
 }
@@ -38,24 +93,23 @@ void Goto::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange Goto::children()
 {
-    return {label_};
+    // The label is not a child, to avoid creating a cycle in the AST.
+    return {};
 }
 
 // ----------------------------------------------------------------------------
 void Goto::swapChild(const Node* oldNode, Node* newNode)
 {
-    if (label_ == oldNode)
-        label_ = dynamic_cast<Identifier*>(newNode);
-    else
-        assert(false);
+    assert(false);
 }
 
 // ----------------------------------------------------------------------------
 Node* Goto::duplicateImpl() const
 {
     return new Goto(
-        label_->duplicate<Identifier>(),
+        label_,
         location());
 }
+
 
 }

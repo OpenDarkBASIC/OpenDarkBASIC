@@ -47,6 +47,8 @@
     X(UDTFieldOuter)                    \
     X(UDTFieldInner)                    \
     X(UnaryOp)                          \
+    X(UnresolvedGoto)                   \
+    X(UnresolvedSubCall)                \
     X(UntilLoop)                        \
     X(VarAssignment)                    \
     X(Variable)                         \
@@ -54,5 +56,4 @@
     X(WhileLoop)                        \
     ODB_DATATYPE_LIST_IMPL(ODB_LITERAL_AST_NODE)
 
-#define ODB_AST_NODE_TYPE_LIST \
-    ODB_AST_NODE_TYPE_LIST_IMPL(X)
+#define ODB_AST_NODE_TYPE_LIST ODB_AST_NODE_TYPE_LIST_IMPL(X)

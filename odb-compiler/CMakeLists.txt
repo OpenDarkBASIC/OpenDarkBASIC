@@ -211,6 +211,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/astpost/EliminateBitwiseNotRHS.cpp"
     "src/astpost/EnforceSingleDefaultCase.cpp"
     "src/astpost/Process.cpp"
+    "src/astpost/ResolveLabels.cpp"
     "src/astpost/ValidateUDTFieldNames.cpp"
     "src/commands/CommandLoader.cpp"
     "src/commands/ODBCommandLoader.cpp"
@@ -332,6 +333,7 @@ if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
         "tests/src/ast/test_ast_treeiterator.cpp"
         "tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
+        "tests/src/astpost/test_astpost_resolve_labels.cpp"
         "tests/src/astpost/test_astpost_validate_udt_field_names.cpp"
         "tests/src/commands/test_cmd_matcher.cpp"
         "tests/src/harness/ParserTestHarness.cpp"
@@ -346,6 +348,7 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/matchers/InitializerListCountEq.cpp"
         "tests/src/matchers/LiteralEq.cpp"
         "tests/src/matchers/ScopedIdentifierEq.cpp"
+        "tests/src/matchers/SubCallEq.cpp"
         "tests/src/matchers/UnaryOpEq.cpp"
         "tests/src/matchers/VarDeclEq.cpp"
         "tests/src/parser/test_db_parser_array_decl.cpp"
