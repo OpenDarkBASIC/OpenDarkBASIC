@@ -1,6 +1,39 @@
 #include "CodeGenerator.hpp"
 #include "odb-compiler/ir/Error.hpp"
 
+#include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/ArrayDecl.hpp"
+#include "odb-compiler/ast/ArrayRef.hpp"
+#include "odb-compiler/ast/Assignment.hpp"
+#include "odb-compiler/ast/BinaryOp.hpp"
+#include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/CommandExpr.hpp"
+#include "odb-compiler/ast/CommandStmnt.hpp"
+#include "odb-compiler/ast/Conditional.hpp"
+#include "odb-compiler/ast/ConstDecl.hpp"
+#include "odb-compiler/ast/Exit.hpp"
+#include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
+#include "odb-compiler/ast/Goto.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/ImplicitCast.hpp"
+#include "odb-compiler/ast/InitializerList.hpp"
+#include "odb-compiler/ast/Label.hpp"
+#include "odb-compiler/ast/Literal.hpp"
+#include "odb-compiler/ast/Loop.hpp"
+#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/Program.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
+#include "odb-compiler/ast/Subroutine.hpp"
+#include "odb-compiler/ast/TreeIterator.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
+#include "odb-compiler/ast/VarDecl.hpp"
+#include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/Variable.hpp"
+
 namespace odb::ir {
 namespace {
 llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
@@ -25,7 +58,7 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
     std::terminate();
 }
 
-llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type)
+llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast::Type& type)
 {
     if (type.isUDT())
     {
@@ -36,23 +69,23 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const Type& type)
     {
         switch (*type.getBuiltinType())
         {
-        case BuiltinType::Boolean:
+        case ast::BuiltinType::Boolean:
             return llvm::Type::getInt1Ty(ctx);
-        case BuiltinType::Integer:
+        case ast::BuiltinType::Integer:
             return llvm::Type::getInt32Ty(ctx);
-        case BuiltinType::DoubleInteger:
+        case ast::BuiltinType::DoubleInteger:
             return llvm::Type::getInt64Ty(ctx);
-        case BuiltinType::Dword:
+        case ast::BuiltinType::Dword:
             return llvm::Type::getInt32Ty(ctx);
-        case BuiltinType::Word:
+        case ast::BuiltinType::Word:
             return llvm::Type::getInt16Ty(ctx);
-        case BuiltinType::Byte:
+        case ast::BuiltinType::Byte:
             return llvm::Type::getInt8Ty(ctx);
-        case BuiltinType::Float:
+        case ast::BuiltinType::Float:
             return llvm::Type::getFloatTy(ctx);
-        case BuiltinType::DoubleFloat:
+        case ast::BuiltinType::DoubleFloat:
             return llvm::Type::getDoubleTy(ctx);
-        case BuiltinType::String:
+        case ast::BuiltinType::String:
             return llvm::Type::getInt8PtrTy(ctx);
         default:
             std::terminate();
@@ -117,25 +150,25 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     return function;
 }
 
-llvm::Function* CodeGenerator::GlobalSymbolTable::getFunction(const FunctionDefinition& function)
+llvm::Function* CodeGenerator::GlobalSymbolTable::getFunction(const ast::FuncDecl* function)
 {
-    auto entry = functionDefinitions.find(&function);
+    auto entry = functionDefinitions.find(function);
     assert(entry != functionDefinitions.end());
     return entry->second;
 }
 
-void CodeGenerator::GlobalSymbolTable::addFunctionToTable(const FunctionDefinition& definition,
+void CodeGenerator::GlobalSymbolTable::addFunctionToTable(const ast::FuncDecl* definition,
                                                           llvm::Function* function)
 {
-    functionDefinitions.emplace(&definition, function);
+    functionDefinitions.emplace(definition, function);
 }
 
-void CodeGenerator::SymbolTable::addVar(const Variable* variable, llvm::Value* location)
+void CodeGenerator::SymbolTable::addVar(const ast::Variable* variable, llvm::Value* location)
 {
     variableTable.emplace(variable, location);
 }
 
-llvm::Value* CodeGenerator::SymbolTable::getVar(const Variable* variable)
+llvm::Value* CodeGenerator::SymbolTable::getVar(const ast::Variable* variable)
 {
     auto entry = variableTable.find(variable);
     if (entry != variableTable.end())
@@ -161,7 +194,7 @@ llvm::Value* CodeGenerator::SymbolTable::getOrAddStrLiteral(const std::string& l
     return literalStorage;
 }
 
-llvm::BasicBlock* CodeGenerator::SymbolTable::getOrAddLabelBlock(const Label* label)
+llvm::BasicBlock* CodeGenerator::SymbolTable::getOrAddLabelBlock(const ast::Label* label)
 {
     auto entry = labelBlocks.find(label);
     if (entry != labelBlocks.end())
@@ -169,7 +202,7 @@ llvm::BasicBlock* CodeGenerator::SymbolTable::getOrAddLabelBlock(const Label* la
         return entry->second;
     }
 
-    llvm::BasicBlock* block = llvm::BasicBlock::Create(parent->getContext(), "label_" + label->name());
+    llvm::BasicBlock* block = llvm::BasicBlock::Create(parent->getContext(), "label_" + label->identifier()->name());
     labelBlocks.emplace(label, block);
     return block;
 }
@@ -196,20 +229,14 @@ void CodeGenerator::SymbolTable::addGosubIndirectBr(llvm::IndirectBrInst* indire
     }
 }
 
-llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder,
-                                               const Ptr<Expression>& expression)
+llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* e)
 {
-    return generateExpression(symtab, builder, expression.get());
-}
-
-llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const Expression* e)
-{
-    if (auto* cast = dynamic_cast<const CastExpression*>(e))
+    if (auto* cast = dynamic_cast<const ast::ImplicitCast*>(e))
     {
-        llvm::Type* expressionType = getLLVMType(ctx, cast->expression()->getType());
-        llvm::Type* targetType = getLLVMType(ctx, cast->targetType());
+        llvm::Type* expressionType = getLLVMType(ctx, cast->expr()->getType());
+        llvm::Type* targetType = getLLVMType(ctx, cast->getType());
 
-        llvm::Value* innerExpression = generateExpression(symtab, builder, cast->expression());
+        llvm::Value* innerExpression = generateExpression(symtab, builder, cast->expr());
 
         if (expressionType == targetType)
         {
@@ -251,12 +278,12 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                      targetTypeStr.c_str());
         return nullptr;
     }
-    else if (auto* unary = dynamic_cast<const UnaryExpression*>(e))
+    else if (auto* unary = dynamic_cast<const ast::UnaryOp*>(e))
     {
-        llvm::Value* inner = generateExpression(symtab, builder, unary->expression());
+        llvm::Value* inner = generateExpression(symtab, builder, unary->expr());
         switch (unary->op())
         {
-        case UnaryOp::NEGATE:
+        case ast::UnaryOpType::NEGATE:
             if (inner->getType()->isIntegerTy())
             {
                 return builder.CreateNeg(inner);
@@ -275,16 +302,16 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return nullptr;
         }
     }
-    else if (auto* binary = dynamic_cast<const BinaryExpression*>(e))
+    else if (auto* binary = dynamic_cast<const ast::BinaryOp*>(e))
     {
-        llvm::Value* left = generateExpression(symtab, builder, binary->left());
-        llvm::Value* right = generateExpression(symtab, builder, binary->right());
-        assert(binary->left()->getType() == binary->right()->getType() &&
+        llvm::Value* left = generateExpression(symtab, builder, binary->lhs());
+        llvm::Value* right = generateExpression(symtab, builder, binary->rhs());
+        assert(binary->lhs()->getType() == binary->rhs()->getType() &&
                "Binary expression should have matching types.");
 
         switch (binary->op())
         {
-        case BinaryOp::ADD:
+        case ast::BinaryOpType::ADD:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateAdd(left, right);
@@ -304,7 +331,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in add binary op.");
                 return nullptr;
             }
-        case BinaryOp::SUB:
+        case ast::BinaryOpType::SUB:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSub(left, right);
@@ -318,7 +345,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in sub binary op.");
                 return nullptr;
             }
-        case BinaryOp::MUL:
+        case ast::BinaryOpType::MUL:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateMul(left, right);
@@ -332,7 +359,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in mul binary op.");
                 return nullptr;
             }
-        case BinaryOp::DIV:
+        case ast::BinaryOpType::DIV:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSDiv(left, right);
@@ -346,7 +373,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.");
                 return nullptr;
             }
-        case BinaryOp::MOD:
+        case ast::BinaryOpType::MOD:
             if (left->getType()->isIntegerTy())
             {
                 return builder.CreateSRem(left, right);
@@ -360,63 +387,63 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 Log::codegen(Log::Severity::FATAL, "Unknown type in modulo binary op.");
                 return nullptr;
             }
-        case BinaryOp::POW:
+        case ast::BinaryOpType::POW:
             // TODO: implement
             Log::codegen(Log::Severity::FATAL, "Pow binary op unimplemented.");
             return nullptr;
-        case BinaryOp::SHIFT_LEFT:
+        case ast::BinaryOpType::SHIFT_LEFT:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateShl(left, right);
-        case BinaryOp::SHIFT_RIGHT:
+        case ast::BinaryOpType::SHIFT_RIGHT:
             // TODO: Arithmetic shift right (sign extension), or logical shift right (zero
             // bits)?
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAShr(left, right);
-        case BinaryOp::BITWISE_OR:
+        case ast::BinaryOpType::BITWISE_OR:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateOr(left, right);
-        case BinaryOp::BITWISE_AND:
+        case ast::BinaryOpType::BITWISE_AND:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateAnd(left, right);
-        case BinaryOp::BITWISE_XOR:
+        case ast::BinaryOpType::BITWISE_XOR:
             assert(left->getType()->isIntegerTy());
             assert(right->getType()->isIntegerTy());
             return builder.CreateXor(left, right);
-        case BinaryOp::BITWISE_NOT:
+        case ast::BinaryOpType::BITWISE_NOT:
             assert(left->getType()->isIntegerTy());
             return builder.CreateNot(left);
-        case BinaryOp::LESS_THAN:
-        case BinaryOp::LESS_EQUAL:
-        case BinaryOp::GREATER_THAN:
-        case BinaryOp::GREATER_EQUAL:
-        case BinaryOp::EQUAL:
-        case BinaryOp::NOT_EQUAL:
+        case ast::BinaryOpType::LESS_THAN:
+        case ast::BinaryOpType::LESS_EQUAL:
+        case ast::BinaryOpType::GREATER_THAN:
+        case ast::BinaryOpType::GREATER_EQUAL:
+        case ast::BinaryOpType::EQUAL:
+        case ast::BinaryOpType::NOT_EQUAL:
         {
             if (left->getType()->isIntegerTy())
             {
                 llvm::CmpInst::Predicate cmpPredicate;
                 switch (binary->op())
                 {
-                case BinaryOp::LESS_THAN:
+                case ast::BinaryOpType::LESS_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SLT;
                     break;
-                case BinaryOp::LESS_EQUAL:
+                case ast::BinaryOpType::LESS_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SLE;
                     break;
-                case BinaryOp::GREATER_THAN:
+                case ast::BinaryOpType::GREATER_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SGT;
                     break;
-                case BinaryOp::GREATER_EQUAL:
+                case ast::BinaryOpType::GREATER_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_SGE;
                     break;
-                case BinaryOp::EQUAL:
+                case ast::BinaryOpType::EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_EQ;
                     break;
-                case BinaryOp::NOT_EQUAL:
+                case ast::BinaryOpType::NOT_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_NE;
                     break;
                 default:
@@ -430,22 +457,22 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 llvm::CmpInst::Predicate cmpPredicate;
                 switch (binary->op())
                 {
-                case BinaryOp::LESS_THAN:
+                case ast::BinaryOpType::LESS_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OLT;
                     break;
-                case BinaryOp::LESS_EQUAL:
+                case ast::BinaryOpType::LESS_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OLE;
                     break;
-                case BinaryOp::GREATER_THAN:
+                case ast::BinaryOpType::GREATER_THAN:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OGT;
                     break;
-                case BinaryOp::GREATER_EQUAL:
+                case ast::BinaryOpType::GREATER_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OGE;
                     break;
-                case BinaryOp::EQUAL:
+                case ast::BinaryOpType::EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_OEQ;
                     break;
-                case BinaryOp::NOT_EQUAL:
+                case ast::BinaryOpType::NOT_EQUAL:
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_ONE;
                     break;
                 default:
@@ -463,74 +490,84 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return nullptr;
         }
         break;
-        case BinaryOp::LOGICAL_OR:
+        case ast::BinaryOpType::LOGICAL_OR:
             return builder.CreateOr(left, right);
-        case BinaryOp::LOGICAL_AND:
+        case ast::BinaryOpType::LOGICAL_AND:
             return builder.CreateAnd(left, right);
-        case BinaryOp::LOGICAL_XOR:
+        case ast::BinaryOpType::LOGICAL_XOR:
             return builder.CreateXor(left, right);
         default:
             Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
             return nullptr;
         }
     }
-    else if (auto* varRef = dynamic_cast<const VarRefExpression*>(e))
+    else if (auto* varRef = dynamic_cast<const ast::VarRef*>(e))
     {
+        assert(varRef->variable());
         llvm::Value* variableInst = symtab.getVar(varRef->variable());
         return builder.CreateLoad(variableInst, "");
     }
-    else if (auto* doubleIntegerLiteral = dynamic_cast<const DoubleIntegerLiteral*>(e))
+    else if (auto* doubleIntegerLiteral = dynamic_cast<const ast::DoubleIntegerLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), std::uint64_t(doubleIntegerLiteral->value()));
     }
-    else if (auto* integerLiteral = dynamic_cast<const IntegerLiteral*>(e))
+    else if (auto* integerLiteral = dynamic_cast<const ast::IntegerLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), std::uint64_t(integerLiteral->value()));
     }
-    else if (auto* dwordLiteral = dynamic_cast<const DwordLiteral*>(e))
+    else if (auto* dwordLiteral = dynamic_cast<const ast::DwordLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), std::uint64_t(dwordLiteral->value()));
     }
-    else if (auto* wordLiteral = dynamic_cast<const WordLiteral*>(e))
+    else if (auto* wordLiteral = dynamic_cast<const ast::WordLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt16Ty(ctx), std::uint64_t(wordLiteral->value()));
     }
-    else if (auto* byteLiteral = dynamic_cast<const ByteLiteral*>(e))
+    else if (auto* byteLiteral = dynamic_cast<const ast::ByteLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt8Ty(ctx), std::uint64_t(byteLiteral->value()));
     }
-    else if (auto* booleanLiteral = dynamic_cast<const BooleanLiteral*>(e))
+    else if (auto* booleanLiteral = dynamic_cast<const ast::BooleanLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx), booleanLiteral->value() ? 1 : 0);
     }
-    else if (auto* doubleFloatLiteral = dynamic_cast<const DoubleFloatLiteral*>(e))
+    else if (auto* doubleFloatLiteral = dynamic_cast<const ast::DoubleFloatLiteral*>(e))
     {
         return llvm::ConstantFP::get(llvm::Type::getDoubleTy(ctx), llvm::APFloat(doubleFloatLiteral->value()));
     }
-    else if (auto* floatLiteral = dynamic_cast<const FloatLiteral*>(e))
+    else if (auto* floatLiteral = dynamic_cast<const ast::FloatLiteral*>(e))
     {
         return llvm::ConstantFP::get(llvm::Type::getFloatTy(ctx), llvm::APFloat(floatLiteral->value()));
     }
-    else if (auto* stringLiteral = dynamic_cast<const StringLiteral*>(e))
+    else if (auto* stringLiteral = dynamic_cast<const ast::StringLiteral*>(e))
     {
         return builder.CreateBitCast(symtab.getOrAddStrLiteral(stringLiteral->value()), llvm::Type::getInt8PtrTy(ctx));
     }
-    else if (auto* call = dynamic_cast<const FunctionCallExpression*>(e))
+    else if (auto* call = dynamic_cast<const ast::FuncCallExpr*>(e))
     {
-        llvm::Function* func = nullptr;
-        if (call->isUserFunction())
-        {
-            func = symtab.getGlobalTable().getFunction(*call->userFunction());
-        }
-        else
-        {
-            func = symtab.getGlobalTable().getOrCreateCommandThunk(call->command());
-        }
-
+        assert(call->function());
+        llvm::Function* func = symtab.getGlobalTable().getFunction(call->function());
         std::vector<llvm::Value*> args;
-        for (const auto& astArg : call->arguments())
+        if (call->args())
         {
-            args.emplace_back(generateExpression(symtab, builder, astArg));
+            for (const auto& arg : call->args()->expressions())
+            {
+                args.emplace_back(generateExpression(symtab, builder, arg));
+            }
+        }
+        return builder.CreateCall(func, args);
+    }
+    else if (auto* commandCall = dynamic_cast<const ast::CommandExpr*>(e))
+    {
+        assert(commandCall->command());
+        llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
+        std::vector<llvm::Value*> args;
+        if (commandCall->args())
+        {
+            for (const auto& arg : commandCall->args()->expressions())
+            {
+                args.emplace_back(generateExpression(symtab, builder, arg));
+            }
         }
         return builder.CreateCall(func, args);
     }
@@ -541,7 +578,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 }
 
 llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock,
-                                               const StatementBlock& statements)
+                                               const ast::Block* statements)
 {
     llvm::Function* parent = initialBlock->getParent();
 
@@ -549,10 +586,14 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
     llvm::IRBuilder<> builder(ctx);
     builder.SetInsertPoint(initialBlock);
 
-    for (const auto& statementPtr : statements)
+    // Iterate over the block.
+    if (!statements)
     {
-        Statement* s = statementPtr.get();
-        if (auto* label = dynamic_cast<const Label*>(s))
+        return builder.GetInsertBlock();
+    }
+    for (ast::Statement* s : statements->statements())
+    {
+        if (auto* label = dynamic_cast<const ast::Label*>(s))
         {
             auto* labelBlock = symtab.getOrAddLabelBlock(label);
 
@@ -563,26 +604,26 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             builder.CreateBr(labelBlock);
             builder.SetInsertPoint(labelBlock);
         }
-        else if (auto* goto_ = dynamic_cast<const Goto*>(s))
+        else if (auto* goto_ = dynamic_cast<const ast::Goto*>(s))
         {
-            printString(builder, builder.CreateGlobalStringPtr("Jumping to " + goto_->label()->name()));
+            printString(builder, builder.CreateGlobalStringPtr("Jumping to " + goto_->label()->identifier()->name()));
             builder.CreateBr(symtab.getOrAddLabelBlock(goto_->label()));
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterGoto", parent));
         }
-        else if (auto* gosub_ = dynamic_cast<const Gosub*>(s))
+        else if (auto* gosub_ = dynamic_cast<const ast::SubCall*>(s))
         {
             auto* labelBlock = symtab.getOrAddLabelBlock(gosub_->label());
-            auto* continuationBlock = llvm::BasicBlock::Create(ctx, "return_gosub_" + gosub_->label()->name(), parent);
+            auto* continuationBlock = llvm::BasicBlock::Create(ctx, "return_gosub_" + gosub_->label()->identifier()->name(), parent);
 
             symtab.addGosubReturnPoint(continuationBlock);
             builder.CreateCall(gosubPushAddress, {symtab.gosubStack, symtab.gosubStackPointer,
                                                   llvm::BlockAddress::get(continuationBlock)});
             printString(builder,
-                        builder.CreateGlobalStringPtr("Pushed address. Jumping to " + gosub_->label()->name()));
+                        builder.CreateGlobalStringPtr("Pushed address. Jumping to " + gosub_->label()->identifier()->name()));
             builder.CreateBr(labelBlock);
             builder.SetInsertPoint(continuationBlock);
         }
-        else if (auto* branch = dynamic_cast<const Conditional*>(s))
+        else if (auto* branch = dynamic_cast<const ast::Conditional*>(s))
         {
             // Generate true and false branches.
             llvm::BasicBlock* trueBlock = llvm::BasicBlock::Create(ctx, "if", parent);
@@ -592,7 +633,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             llvm::BasicBlock* continueBlock = llvm::BasicBlock::Create(ctx, "endif", parent);
 
             // Add conditional branch.
-            builder.CreateCondBr(generateExpression(symtab, builder, branch->expression()), trueBlock, falseBlock);
+            builder.CreateCondBr(generateExpression(symtab, builder, branch->condition()), trueBlock, falseBlock);
 
             // Add branches to the continue section.
             builder.SetInsertPoint(trueBlockEnd);
@@ -606,21 +647,21 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         //        else if (auto* select = dynamic_cast<const Select*>(s))
         //        {
         //        }
-        else if (auto* exit = dynamic_cast<const Exit*>(s))
-        {
-            auto loopExitBlockIt = symtab.loopExitBlocks.find(exit->loopToBreak());
-            if (loopExitBlockIt == symtab.loopExitBlocks.end())
-            {
-                Log::codegen(Log::Severity::FATAL, "'exit' statement matched with unknown loop.");
-                return nullptr;
-            }
-
-            // Branch to the loops exit block.
-            builder.CreateBr(loopExitBlockIt->second);
-            // Add a dead block for any statements inserted after this point in this block.
-            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterEnd", parent));
-        }
-        else if (auto* infiniteLoop = dynamic_cast<const InfiniteLoop*>(s))
+//        else if (auto* exit = dynamic_cast<const ast::Exit*>(s))
+//        {
+//            auto loopExitBlockIt = symtab.loopExitBlocks.find(exit->loopToBreak());
+//            if (loopExitBlockIt == symtab.loopExitBlocks.end())
+//            {
+//                Log::codegen(Log::Severity::FATAL, "'exit' statement matched with unknown loop.");
+//                return nullptr;
+//            }
+//
+//            // Branch to the loops exit block.
+//            builder.CreateBr(loopExitBlockIt->second);
+//            // Add a dead block for any statements inserted after this point in this block.
+//            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterEnd", parent));
+//        }
+        else if (auto* infiniteLoop = dynamic_cast<const ast::InfiniteLoop*>(s))
         {
             // Create blocks.
             llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
@@ -636,7 +677,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             builder.CreateCondBr(engineInterface.generateMainLoopCondition(builder), loopBodyBlock, endBlock);
 
             // Generate loop body.
-            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, infiniteLoop->statements());
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, infiniteLoop->body());
             loopBodyBlock->moveAfter(loopBlock);
             endBlock->moveAfter(statementsEndBlock);
 
@@ -647,11 +688,14 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set loop end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
-        else if (auto* forLoop = dynamic_cast<const ForLoop*>(s))
+        else if (auto* forLoop = dynamic_cast<const ast::ForLoop*>(s))
         {
             // Generate initialisation.
-            llvm::Value* variableStorage = symtab.getVar(forLoop->assignment().variable());
-            builder.CreateStore(generateExpression(symtab, builder, forLoop->assignment().expression()),
+            auto* varAssignment = dynamic_cast<ast::VarAssignment*>(forLoop->counter());
+            assert(varAssignment);
+            assert(varAssignment->variable());
+            llvm::Value* variableStorage = symtab.getVar(varAssignment->variable());
+            builder.CreateStore(generateExpression(symtab, builder, forLoop->counter()->expression()),
                                 variableStorage);
 
             // Create blocks.
@@ -686,7 +730,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             builder.CreateCondBr(builder.CreateICmpSGE(valueOnCondition, endValueOnCondition), loopBlock, endBlock);
 
             // Generate loop body.
-            llvm::BasicBlock* loopEndBlock = generateBlock(symtab, loopBlock, forLoop->statements());
+            llvm::BasicBlock* loopEndBlock = generateBlock(symtab, loopBlock, forLoop->body());
             builder.SetInsertPoint(loopEndBlock);
 
             // Generate increment block.
@@ -701,37 +745,65 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
-        else if (auto* assignment = dynamic_cast<const VarAssignment*>(s))
+        else if (auto* assignment = dynamic_cast<const ast::VarAssignment*>(s))
         {
+            assert(assignment->variable());
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression());
             llvm::Value* storeTarget = symtab.getVar(assignment->variable());
             builder.CreateStore(expression, storeTarget);
         }
-        else if (auto* call = dynamic_cast<const FunctionCall*>(s))
+        else if (auto* call = dynamic_cast<const ast::FuncCallStmnt*>(s))
         {
-            if (!call->expression().isUserFunction() && call->expression().command()->dbSymbol() == "end" &&
-                parent->getName() == "__DBmain")
+            assert(call->function());
+            llvm::Function* func = symtab.getGlobalTable().getFunction(call->function());
+            std::vector<llvm::Value*> args;
+            if (call->args())
+            {
+                for (const auto& arg : call->args()->expressions())
+                {
+                    args.emplace_back(generateExpression(symtab, builder, arg));
+                }
+            }
+            builder.CreateCall(func, args);
+        }
+        else if (auto* commandCall = dynamic_cast<const ast::CommandStmnt*>(s))
+        {
+            if (commandCall->commandName() == "end" && parent->getName() == "__DBmain")
             {
                 builder.CreateRetVoid();
                 builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterEnd", parent));
             }
             else
             {
-                // Generate the expression, but discard the result.
-                generateExpression(symtab, builder, &call->expression());
+                assert(commandCall->command());
+                llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
+                std::vector<llvm::Value*> args;
+                if (commandCall->args())
+                {
+                    for (const auto& arg : commandCall->args()->expressions())
+                    {
+                        args.emplace_back(generateExpression(symtab, builder, arg));
+                    }
+                }
+                builder.CreateCall(func, args);
             }
         }
-        else if (auto* endfunction = dynamic_cast<const ExitFunction*>(s))
-        {
-            builder.CreateRet(generateExpression(symtab, builder, endfunction->expression()));
-        }
-        else if (auto* subReturn = dynamic_cast<const SubReturn*>(s))
+//        else if (auto* endfunction = dynamic_cast<const ExitFunction*>(s))
+//        {
+//            builder.CreateRet(generateExpression(symtab, builder, endfunction->expression()));
+//        }
+        else if (auto* subReturn = dynamic_cast<const ast::SubReturn*>(s))
         {
             (void)subReturn; // SubReturn has no useful data members.
             auto* returnAddr = builder.CreateCall(gosubPopAddress, {symtab.gosubStack, symtab.gosubStackPointer});
             printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
             symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
+        }
+        else if (dynamic_cast<const ast::FuncDecl*>(s))
+        {
+            // End of main function.
+            break;
         }
         else
         {
@@ -742,20 +814,29 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
     return builder.GetInsertBlock();
 }
 
-llvm::Function* CodeGenerator::generateFunctionPrototype(const FunctionDefinition& irFunction)
+llvm::Function* CodeGenerator::generateFunctionPrototype(const ast::FuncDecl* astFunction)
 {
-    std::string functionName = "__DB" + irFunction.name();
+    std::string functionName = "__DB" + astFunction->identifier()->name();
     llvm::Type* returnTy = llvm::Type::getVoidTy(ctx);
-    //        returnTy = getLLVMType(ctx, irFunction.returnType());
+    if (astFunction->returnValue().notNull())
+    {
+        returnTy = getLLVMType(ctx, astFunction->returnValue()->getType());
+    }
 
     // Create argument list.
     std::vector<std::pair<std::string, llvm::Type*>> args;
-    for (const auto& arg : irFunction.arguments())
+    if (astFunction->args().notNull())
     {
-        std::pair<std::string, llvm::Type*> argPair;
-        argPair.first = arg.name;
-        argPair.second = getLLVMType(ctx, arg.type);
-        args.emplace_back(argPair);
+        for (const ast::Expression* arg : astFunction->args()->expressions())
+        {
+            // TODO: What happens in the case where we have a function with an explicit type?
+            auto* varRef = dynamic_cast<const ast::VarRef*>(arg);
+            assert(varRef);
+            std::pair<std::string, llvm::Type*> argPair;
+            argPair.first = varRef->identifier()->name();
+            argPair.second = getLLVMType(ctx, ast::Type::getFromAnnotation(varRef->identifier()->annotation()));
+            args.emplace_back(argPair);
+        }
     }
 
     std::vector<llvm::Type*> argTypes;
@@ -778,8 +859,8 @@ llvm::Function* CodeGenerator::generateFunctionPrototype(const FunctionDefinitio
     return function;
 }
 
-void CodeGenerator::generateFunctionBody(llvm::Function* function, const FunctionDefinition& irFunction,
-                                         bool isMainFunction)
+void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
+                                         const ast::Block* block, bool isMainFunction)
 {
     auto& symtab = *symbolTables[function];
 
@@ -794,9 +875,9 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), symtab.gosubStackPointer);
 
     // Variables.
-    for (Variable* var : irFunction.variables().list())
+    for (ast::Variable* var : variables.list())
     {
-        auto type = var->type();
+        auto type = var->getType();
         auto* llvmType = getLLVMType(ctx, type);
         auto* variableStorage = builder.CreateAlloca(llvmType, nullptr, var->name());
 
@@ -812,7 +893,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
             {
                 initialiser = llvm::ConstantFP::get(llvmType, 0.0);
             }
-            else if (*type.getBuiltinType() == BuiltinType::String)
+            else if (*type.getBuiltinType() == ast::BuiltinType::String)
             {
                 initialiser = builder.CreateGlobalStringPtr("");
             }
@@ -831,49 +912,89 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const Functio
     }
 
     // Statements.
-    auto* lastBlock = generateBlock(symtab, initialBlock, irFunction.statements());
+    auto* lastBlock = generateBlock(symtab, initialBlock, block);
 
     // Insert a return to the function if the last block does not have a terminator.
-    if (lastBlock->getTerminator() == nullptr)
+    if (!lastBlock->getTerminator())
     {
         builder.SetInsertPoint(lastBlock);
         builder.CreateRetVoid();
     }
 }
 
-bool CodeGenerator::generateModule(const Program& program, std::vector<PluginInfo*> pluginsToLoad)
+bool CodeGenerator::generateModule(const ast::Program* program, std::vector<PluginInfo*> pluginsToLoad)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 
     gosubStackType = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(ctx), 32);
     generateGosubHelperFunctions();
 
-    // Generate main function.
-    llvm::Function* gameEntryPointFunc = generateFunctionPrototype(program.mainFunction());
+    // First pass: Discover functions.
+    std::vector<const ast::FuncDecl*> functions;
+    bool foundStartOfFunctions = false;
+    // Expected structure: All statements belong to the main function until we find a function. From then, all
+    // statements should be funcDecl's.
+    for (const ast::Statement* s : program->body()->statements())
+    {
+        const auto* funcDecl = dynamic_cast<const ast::FuncDecl*>(s);
+        if (funcDecl)
+        {
+            foundStartOfFunctions = true;
+            functions.emplace_back(funcDecl);
+        }
+        else if (foundStartOfFunctions)
+        {
+            Log::codegen(Log::Severity::FATAL, "Found a statement after a function declaration.");
+            return false;
+        }
+    }
+
+    // Generate main function prototype.
+    llvm::Function* gameEntryPointFunc =
+        llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
+                               llvm::Function::InternalLinkage, "__DBmain", module);
     symbolTables.emplace(gameEntryPointFunc, std::make_unique<SymbolTable>(gameEntryPointFunc, globalSymbolTable));
 
-    // Generate user defined functions.
-    for (const auto& function : program.functions())
+    // Generate user defined function prototypes.
+    for (const ast::FuncDecl* function : functions)
     {
-        llvm::Function* llvmFunc = generateFunctionPrototype(*function);
-        globalSymbolTable.addFunctionToTable(*function, llvmFunc);
+        llvm::Function* llvmFunc = generateFunctionPrototype(function);
+        globalSymbolTable.addFunctionToTable(function, llvmFunc);
         symbolTables.emplace(llvmFunc, std::make_unique<SymbolTable>(llvmFunc, globalSymbolTable));
     }
 
-    // Generate function bodies.
-    generateFunctionBody(gameEntryPointFunc, program.mainFunction(), true);
-    for (const auto& function : program.functions())
+    // Second pass: generate function bodies.
+    generateFunctionBody(gameEntryPointFunc, program->scope(), program->body(), true);
+    for (const auto& function : functions)
     {
-        generateFunctionBody(globalSymbolTable.getFunction(*function), *function, false);
+        generateFunctionBody(globalSymbolTable.getFunction(function), function->scope(), function->body(), false);
     }
 
     // Generate executable entry point that initialises the DBP engine and calls the games entry
     // point.
     engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
 
-    // #ifndef NDEBUG
-    //     module.print(llvm::errs(), nullptr);
-    // #endif
+    // Dump AST.
+    std::stack<std::pair<const ast::Node*, int>> stack;
+    stack.emplace(program, 0);
+    while (!stack.empty())
+    {
+        auto [node, indentation] = stack.top();
+        stack.pop();
+
+        std::string message = std::string(indentation, ' ') + node->toString();
+        fprintf(stderr, "%s\n", message.c_str());
+
+        auto children = node->children();
+        for (auto it = children.rbegin(); it != children.rend(); ++it)
+        {
+            stack.emplace(*it, indentation + 2);
+        }
+    }
+
+    #ifndef NDEBUG
+    module.print(llvm::errs(), nullptr);
+    #endif
 
     // Verify module.
     bool brokenDebugInfo;

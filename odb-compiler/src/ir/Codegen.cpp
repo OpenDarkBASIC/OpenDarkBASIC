@@ -11,7 +11,7 @@
 
 namespace odb::ir {
 bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple, std::ostream& output,
-                  const std::string& moduleName, Program& program, const cmd::CommandIndex& cmdIndex)
+                  const std::string& moduleName, const ast::Program* program, const cmd::CommandIndex& cmdIndex)
 {
     llvm::LLVMContext context;
     llvm::Module module(moduleName, context);

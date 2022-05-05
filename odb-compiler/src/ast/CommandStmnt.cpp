@@ -53,7 +53,7 @@ void CommandStmnt::setCommand(const cmd::Command* command)
 // ----------------------------------------------------------------------------
 std::string CommandStmnt::toString() const
 {
-    return "CommandStmnt: \"" + commandName_ + "\"";
+    return "CommandStmnt \"" + commandName_ + "\" \"" + (command_ ? command_->cppSymbol() : std::string("<unresolved>")) + "\"";
 }
 
 // ----------------------------------------------------------------------------

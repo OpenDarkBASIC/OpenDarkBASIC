@@ -63,7 +63,7 @@ Type CommandExpr::getType() const
 // ----------------------------------------------------------------------------
 std::string CommandExpr::toString() const
 {
-    return "CommandExpr: \"" + commandName_ + "\"";
+    return "CommandExpr \"" + commandName_ + "\" \"" + (command_ ? command_->cppSymbol() : std::string("<unresolved>")) + "\"";
 }
 
 // ----------------------------------------------------------------------------
