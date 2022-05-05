@@ -75,7 +75,7 @@ private:
 class ResolverVisitor : public ast::GenericVisitor
 {
 public:
-    ResolverVisitor(cmd::CommandIndex& cmdIndex, FunctionInfo& info,
+    ResolverVisitor(const cmd::CommandIndex& cmdIndex, FunctionInfo& info,
                    ast::Node* current, ast::Node* parent)
         : cmdIndex_(cmdIndex), info_(info), current_(current), parent_(parent)
     {
@@ -369,7 +369,7 @@ private:
     // Given a command name and a list of arguments, perform overload resolution and return the correct command. This
     // function assumes that commandName is a valid command, and at least one command will be returned from the index.
     //
-    // This function assumes that `args` has already been type checked (the `AddImplicitCasts` pass has been run).
+    // This function assumes that `args` has already been type checked.
     const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args, ast::SourceLocation* location)
     {
         // Extract arguments.
@@ -470,11 +470,22 @@ private:
             command = candidates.back();
         }
 
+        // Now we have selected an overload, we may need to insert cast operations when passing arguments (in case the
+        // overload is not perfect). Do that now.
+        if (args.notNull())
+        {
+            for (std::size_t i = 0; i < args->expressions().size(); ++i)
+            {
+                ast::Expression* arg = args->expressions()[i];
+                args->swapChild(arg, ensureType(arg, ast::Type::getFromCommandType(command->args()[i].type)));
+            }
+        }
+
         assert(command);
         return command;
     }
 
-    cmd::CommandIndex& cmdIndex_;
+    const cmd::CommandIndex& cmdIndex_;
     const FunctionInfo& info_;
     ast::Node* current_;
     ast::Node* parent_;
@@ -483,7 +494,7 @@ private:
 }
 
 // ----------------------------------------------------------------------------
-ResolveAndCheckTypes::ResolveAndCheckTypes(cmd::CommandIndex& cmdIndex) : cmdIndex_(cmdIndex)
+ResolveAndCheckTypes::ResolveAndCheckTypes(const cmd::CommandIndex& cmdIndex) : cmdIndex_(cmdIndex)
 {
 }
 

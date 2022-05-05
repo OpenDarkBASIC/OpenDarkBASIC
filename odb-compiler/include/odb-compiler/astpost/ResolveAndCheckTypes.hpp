@@ -8,12 +8,12 @@ namespace odb::astpost {
 class ODBCOMPILER_PUBLIC_API ResolveAndCheckTypes : public Process
 {
 public:
-    explicit ResolveAndCheckTypes(cmd::CommandIndex& cmdIndex);
+    explicit ResolveAndCheckTypes(const cmd::CommandIndex& cmdIndex);
 
     bool execute(ast::Program* root) override final;
 
 private:
-    cmd::CommandIndex& cmdIndex_;
+    const cmd::CommandIndex& cmdIndex_;
 };
 
 }

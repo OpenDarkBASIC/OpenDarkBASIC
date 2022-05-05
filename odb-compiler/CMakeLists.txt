@@ -224,10 +224,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ir/codegen/CodeGenerator.cpp"
     "src/ir/codegen/ODBEngineInterface.cpp"
     "src/ir/codegen/DBPEngineInterface.cpp"
-    "src/ir/semantic/ASTConverter.cpp"
     "src/ir/Codegen.cpp"
-    "src/ir/Node.cpp"
-    "src/ir/SemanticChecker.cpp"
     "src/parsers/db/Driver.cpp"
     "src/parsers/PluginInfo.cpp")
 target_include_directories (odb-compiler

@@ -4,8 +4,9 @@
 #include "odb-cli/SDK.hpp"
 #include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ir/Codegen.hpp"
-#include "odb-compiler/ir/Node.hpp"
-#include "odb-compiler/ir/SemanticChecker.hpp"
+#include "odb-compiler/astpost/ResolveAndCheckTypes.hpp"
+#include "odb-compiler/astpost/ResolveLabels.hpp"
+#include "odb-compiler/astpost/Process.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/FileSystem.hpp"
 
@@ -119,14 +120,17 @@ bool output(const std::vector<std::string>& args)
 
     odb::ir::TargetTriple targetTriple{*targetTripleArch_, *targetTriplePlatform_};
 
-    // Run semantic checks and generate IR.
-    auto program = odb::ir::runSemanticChecks(ast->body(), *cmdIndex);
-    if (!program)
+    // Run AST post-processing (such as type checking, label resolution, etc).
+    odb::astpost::ProcessGroup post;
+    post.addProcess(std::make_unique<odb::astpost::ResolveAndCheckTypes>(*cmdIndex));
+    post.addProcess(std::make_unique<odb::astpost::ResolveLabels>());
+    if (!post.execute(ast))
     {
         return false;
     }
 
     // Ensure that the executable extension is .exe if Windows is the target platform.
+    // TODO: Move odb::ir to odb::codegen
     if (outputIsExecutable_ && targetTriplePlatform_ == odb::ir::TargetTriple::Platform::Windows)
     {
         if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
@@ -149,7 +153,7 @@ bool output(const std::vector<std::string>& args)
         odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", outputName.c_str());
     }
     std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
-    if (!odb::ir::generateCode(getSDKType(), outputType_, targetTriple, outputStream, "input.dba", *program, *cmdIndex))
+    if (!odb::ir::generateCode(getSDKType(), outputType_, targetTriple, outputStream, "input.dba", ast, *cmdIndex))
     {
         return false;
     }

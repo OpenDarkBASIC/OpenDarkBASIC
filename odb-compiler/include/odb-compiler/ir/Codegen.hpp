@@ -7,7 +7,7 @@
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/commands/SDKType.hpp"
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ir/Node.hpp"
+#include "odb-compiler/ast/Program.hpp"
 
 namespace odb::ir {
 enum class OutputType
@@ -72,8 +72,8 @@ struct TargetTriple
 };
 
 ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple,
-                                         std::ostream& output, const std::string& moduleName, Program& program,
-                                         const cmd::CommandIndex& cmdIndex);
+                                         std::ostream& output, const std::string& moduleName,
+                                         const ast::Program* program, const cmd::CommandIndex& cmdIndex);
 ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
                                            const std::filesystem::path& linker, TargetTriple targetTriple,
                                            std::vector<std::string> inputFilenames, std::string& outputFilename);

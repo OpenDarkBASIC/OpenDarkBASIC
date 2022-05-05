@@ -27,7 +27,7 @@ Type ImplicitCast::getType() const
 // ----------------------------------------------------------------------------
 std::string ImplicitCast::toString() const
 {
-    return "ImplicitCast";
+    return "ImplicitCast " + targetType_.toString();
 }
 
 // ----------------------------------------------------------------------------
