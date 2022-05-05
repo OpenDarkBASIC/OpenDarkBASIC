@@ -4,6 +4,7 @@
 #include "odb-sdk/Reference.hpp"
 #include <string>
 #include <vector>
+#include <algorithm>
 
 namespace odb::ast {
 
