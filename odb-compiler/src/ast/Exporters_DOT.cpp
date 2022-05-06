@@ -14,6 +14,7 @@
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/ImplicitCast.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
@@ -206,6 +207,10 @@ private:
         writeNamedConnection(node, node->label(), "label");
     }
     void visitIdentifier(const Identifier* node) override {}
+    void visitImplicitCast(const ImplicitCast* node) override
+    {
+        writeNamedConnection(node, node->expr(), "expr");
+    }
     void visitInfiniteLoop(const InfiniteLoop* node) override
     {
         if (node->body().notNull())

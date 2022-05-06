@@ -31,6 +31,7 @@
     X(FuncExit)                         \
     X(Goto)                             \
     X(Identifier)                       \
+    X(ImplicitCast)                     \
     X(InfiniteLoop)                     \
     X(InitializerList)                  \
     X(Label)                            \
