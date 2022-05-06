@@ -1,19 +1,22 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/Annotation.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Type.hpp"
+#include "odb-compiler/ast/Node.hpp"
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API Identifier : public Node
+class ODBCOMPILER_PUBLIC_API Variable final : public Node
 {
 public:
-    Identifier(std::string name, SourceLocation* location);
-    Identifier(std::string name, Annotation annotation, SourceLocation* location);
+    Variable(SourceLocation* location, std::string name, Type type);
+    Variable(SourceLocation* location, std::string name, Annotation annotation, Type type);
 
     const std::string& name() const;
     Annotation annotation() const;
+    Type type() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -24,9 +27,9 @@ public:
 protected:
     Node* duplicateImpl() const override;
 
-protected:
     const std::string name_;
     Annotation annotation_;
+    Type type_;
 };
 
 }

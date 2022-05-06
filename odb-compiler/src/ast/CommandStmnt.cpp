@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
@@ -7,24 +9,26 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-CommandStmnt::CommandStmnt(const std::string& command, ArgList* args, SourceLocation* location) :
+CommandStmnt::CommandStmnt(std::string commandName, ArgList* args, SourceLocation* location) :
     Statement(location),
+    commandName_(std::move(commandName)),
     args_(args),
-    command_(command)
+    command_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
-CommandStmnt::CommandStmnt(const std::string& command, SourceLocation* location) :
+CommandStmnt::CommandStmnt(std::string commandName, SourceLocation* location) :
     Statement(location),
-    command_(command)
+    commandName_(std::move(commandName)),
+    command_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
-const std::string& CommandStmnt::command() const
+const std::string& CommandStmnt::commandName() const
 {
-    return command_;
+    return commandName_;
 }
 
 // ----------------------------------------------------------------------------
@@ -34,9 +38,22 @@ MaybeNull<ArgList> CommandStmnt::args() const
 }
 
 // ----------------------------------------------------------------------------
+const cmd::Command* CommandStmnt::command() const
+{
+    assert(command_ && command_->dbSymbol() == commandName_);
+    return command_;
+}
+
+// ----------------------------------------------------------------------------
+void CommandStmnt::setCommand(const cmd::Command* command)
+{
+    command_ = command;
+}
+
+// ----------------------------------------------------------------------------
 std::string CommandStmnt::toString() const
 {
-    return "CommandStmnt: \"" + command_ + "\"";
+    return "CommandStmnt: \"" + commandName_ + "\"";
 }
 
 // ----------------------------------------------------------------------------
@@ -74,10 +91,12 @@ void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* CommandStmnt::duplicateImpl() const
 {
-    return new CommandStmnt(
-        command_,
+    auto* newCommand = new CommandStmnt(
+        commandName_,
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
+    newCommand->command_ = command_;
+    return newCommand;
 }
 
 }

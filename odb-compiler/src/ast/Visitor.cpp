@@ -29,6 +29,7 @@
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/commands/Command.hpp"
 

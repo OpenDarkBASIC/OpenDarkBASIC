@@ -13,6 +13,8 @@ public:
     Expression* left() const;
     LValue* right() const;
 
+    Type getType() const override;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -34,6 +36,8 @@ public:
 
     LValue* left() const;
     LValue* right() const;
+
+    Type getType() const override;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

@@ -32,6 +32,21 @@ Expression* BinaryOp::rhs() const
 }
 
 // ----------------------------------------------------------------------------
+Type BinaryOp::getType() const
+{
+    if (lhs_->getType() == rhs_->getType())
+    {
+        // Types should've been unified by adding implicit casts.
+        return lhs_->getType();
+    }
+    else
+    {
+        // Until we've unified the types, we don't know which is the right one.
+        return Type::getUnknown();
+    }
+}
+
+// ----------------------------------------------------------------------------
 std::string BinaryOp::toString() const
 {
     return std::string("BinaryOp(") + binaryOpTypeEnumString(op_) + ")";

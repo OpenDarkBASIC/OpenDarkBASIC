@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "odb-compiler/ast/Type.hpp"
 
 namespace odb::ast
@@ -27,6 +29,11 @@ case BuiltinType::dbname:                                                       
     }
 }
 
+Type Type::getUnknown()
+{
+    return Type(UnknownType{});
+}
+
 Type Type::getVoid() {
     return Type(VoidType{});
 }
@@ -40,7 +47,7 @@ Type Type::getUDT(std::string name) {
 }
 
 Type Type::getArray(Type inner) {
-    return Type(ArrayType{inner});
+    return Type(ArrayType{std::move(inner)});
 }
 
 Type Type::getFromAnnotation(ast::Annotation annotation)
@@ -85,6 +92,11 @@ Type Type::getFromCommandType(cmd::Command::Type commandType)
     default:
         assert(false && "Unknown keyword type");
     }
+}
+
+bool Type::isUnknown() const
+{
+    return std::holds_alternative<UnknownType>(variant_);
 }
 
 bool Type::isVoid() const
@@ -200,15 +212,19 @@ bool Type::operator==(const Type& other) const
     }
     else if (isUDT())
     {
-        return false; // udt_->get == other.udt_->name;
+        return std::get_if<UDTType>(&variant_)->udt == std::get_if<UDTType>(&other.variant_)->udt;
     }
     else if (isArray())
     {
         return *std::get_if<ArrayType>(&variant_)->inner == *std::get_if<ArrayType>(&other.variant_)->inner;
     }
-    else
+    else if (isBuiltinType())
     {
         return *std::get_if<BuiltinType>(&variant_) == *std::get_if<BuiltinType>(&other.variant_);
+    }
+    else
+    {
+        return false;
     }
 }
 

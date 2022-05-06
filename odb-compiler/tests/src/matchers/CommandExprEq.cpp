@@ -1,22 +1,22 @@
 #include "odb-compiler/tests/matchers/CommandExprEq.hpp"
 #include "odb-compiler/ast/CommandExpr.hpp"
 
-CommandExprEqMatcher::CommandExprEqMatcher(const std::string& name)
-    : expectedCommand_(name)
+CommandExprEqMatcher::CommandExprEqMatcher(std::string name)
+    : expectedCommandName_(std::move(name))
 {}
 
 bool CommandExprEqMatcher::MatchAndExplain(const odb::ast::CommandExpr* node, testing::MatchResultListener* listener) const
 {
-    *listener << "node->command() == " << node->command();
-    return node->command() == expectedCommand_;
+    *listener << "node->commandName() == " << node->commandName();
+    return node->commandName() == expectedCommandName_;
 }
 
 void CommandExprEqMatcher::DescribeTo(::std::ostream* os) const
 {
-    *os << "node->command() equals " << expectedCommand_;
+    *os << "node->command() equals " << expectedCommandName_;
 }
 
 void CommandExprEqMatcher::DescribeNegationTo(::std::ostream* os) const
 {
-    *os << "node->command() does not equal " << expectedCommand_;
+    *os << "node->command() does not equal " << expectedCommandName_;
 }

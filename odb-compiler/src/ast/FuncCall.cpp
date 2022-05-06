@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -8,14 +9,18 @@ namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 FuncCallExpr::FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    Expression(location), identifier_(identifier),
-    args_(args)
+    Expression(location),
+    identifier_(identifier),
+    args_(args),
+    function_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
 FuncCallExpr::FuncCallExpr(Identifier* identifier, SourceLocation* location) :
-    Expression(location), identifier_(identifier)
+    Expression(location),
+    identifier_(identifier),
+    function_(nullptr)
 {
 }
 
@@ -29,6 +34,30 @@ Identifier* FuncCallExpr::identifier() const
 MaybeNull<ArgList> FuncCallExpr::args() const
 {
     return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+FuncDecl* FuncCallExpr::function() const
+{
+    assert(function_ && function_->identifier()->name() == identifier_->name());
+    return function_;
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallExpr::setFunction(FuncDecl* func)
+{
+    assert(func->identifier()->name() == identifier_->name());
+    function_ = func;
+}
+
+// ----------------------------------------------------------------------------
+Type FuncCallExpr::getType() const
+{
+    if (!function_)
+    {
+        return Type::getUnknown();
+    }
+    return function_->returnValue() ? function_->returnValue()->getType() : Type::getVoid();
 }
 
 // ----------------------------------------------------------------------------
@@ -83,83 +112,19 @@ Node* FuncCallExpr::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    Expression(location), identifier_(identifier),
-    args_(args)
-{
-}
-
-// ----------------------------------------------------------------------------
-Identifier* FuncCallExprOrArrayRef::identifier() const
-{
-    return identifier_;
-}
-
-// ----------------------------------------------------------------------------
-MaybeNull<ArgList> FuncCallExprOrArrayRef::args() const
-{
-    return args_.get();
-}
-
-// ----------------------------------------------------------------------------
-std::string FuncCallExprOrArrayRef::toString() const
-{
-    return "FuncCallExprOrArrayRef";
-}
-
-// ----------------------------------------------------------------------------
-void FuncCallExprOrArrayRef::accept(Visitor* visitor)
-{
-    visitor->visitFuncCallExprOrArrayRef(this);
-}
-void FuncCallExprOrArrayRef::accept(ConstVisitor* visitor) const
-{
-    visitor->visitFuncCallExprOrArrayRef(this);
-}
-
-// ----------------------------------------------------------------------------
-Node::ChildRange FuncCallExprOrArrayRef::children()
-{
-    if (args_)
-    {
-        return {identifier_, args_};
-    }
-    else
-    {
-        return {identifier_};
-    }
-}
-
-// ----------------------------------------------------------------------------
-void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (identifier_ == oldNode)
-        identifier_ = dynamic_cast<Identifier*>(newNode);
-    else if (args_ == oldNode)
-        args_ = dynamic_cast<ArgList*>(newNode);
-    else
-        assert(false);
-}
-
-// ----------------------------------------------------------------------------
-Node* FuncCallExprOrArrayRef::duplicateImpl() const
-{
-    return new FuncCallExprOrArrayRef(identifier_->duplicate<Identifier>(),
-        args_ ? args_->duplicate<ArgList>() : nullptr,
-        location());
-}
-
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
 FuncCallStmnt::FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocation* location)
-    : Statement(location), identifier_(identifier), args_(args)
+    : Statement(location),
+      identifier_(identifier),
+      args_(args),
+      function_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(Identifier* symbol, SourceLocation* location) : Statement(location), identifier_(symbol)
+FuncCallStmnt::FuncCallStmnt(Identifier* symbol, SourceLocation* location)
+    : Statement(location),
+      identifier_(symbol),
+      function_(nullptr)
 {
 }
 
@@ -173,6 +138,20 @@ Identifier* FuncCallStmnt::identifier() const
 MaybeNull<ArgList> FuncCallStmnt::args() const
 {
     return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+FuncDecl* FuncCallStmnt::function() const
+{
+    assert(function_ && function_->identifier()->name() == identifier_->name());
+    return function_;
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallStmnt::setFunction(FuncDecl* func)
+{
+    assert(func->identifier()->name() == identifier_->name());
+    function_ = func;
 }
 
 // ----------------------------------------------------------------------------
@@ -221,6 +200,83 @@ Node* FuncCallStmnt::duplicateImpl() const
     return new FuncCallStmnt(identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
+}
+
+// ============================================================================
+// ============================================================================
+
+// ----------------------------------------------------------------------------
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
+    Expression(location),
+    identifier_(identifier),
+    args_(args)
+{
+}
+
+// ----------------------------------------------------------------------------
+Identifier* FuncCallExprOrArrayRef::identifier() const
+{
+    return identifier_;
+}
+
+// ----------------------------------------------------------------------------
+MaybeNull<ArgList> FuncCallExprOrArrayRef::args() const
+{
+    return args_.get();
+}
+
+// ----------------------------------------------------------------------------
+Type FuncCallExprOrArrayRef::getType() const
+{
+    return Type::getUnknown();
+}
+
+// ----------------------------------------------------------------------------
+std::string FuncCallExprOrArrayRef::toString() const
+{
+    return "FuncCallExprOrArrayRef";
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallExprOrArrayRef::accept(Visitor* visitor)
+{
+    visitor->visitFuncCallExprOrArrayRef(this);
+}
+void FuncCallExprOrArrayRef::accept(ConstVisitor* visitor) const
+{
+    visitor->visitFuncCallExprOrArrayRef(this);
+}
+
+// ----------------------------------------------------------------------------
+Node::ChildRange FuncCallExprOrArrayRef::children()
+{
+    if (args_)
+    {
+        return {identifier_, args_};
+    }
+    else
+    {
+        return {identifier_};
+    }
+}
+
+// ----------------------------------------------------------------------------
+void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (identifier_ == oldNode)
+        identifier_ = dynamic_cast<Identifier*>(newNode);
+    else if (args_ == oldNode)
+        args_ = dynamic_cast<ArgList*>(newNode);
+    else
+        assert(false);
+}
+
+// ----------------------------------------------------------------------------
+Node* FuncCallExprOrArrayRef::duplicateImpl() const
+{
+    return new FuncCallExprOrArrayRef(identifier_->duplicate<Identifier>(),
+                                      args_ ? args_->duplicate<ArgList>() : nullptr,
+                                      location());
 }
 
 }

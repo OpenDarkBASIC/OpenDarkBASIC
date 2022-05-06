@@ -87,6 +87,7 @@ ODB_DATATYPE_LIST
 class ODBCOMPILER_PUBLIC_API Type
 {
 public:
+    static Type getUnknown();
     static Type getVoid();
     static Type getBuiltin(BuiltinType builtin);
     static Type getUDT(std::string name);
@@ -94,6 +95,7 @@ public:
     static Type getFromAnnotation(ast::Annotation annotation);
     static Type getFromCommandType(cmd::Command::Type commandType);
 
+    bool isUnknown() const;
     bool isVoid() const;
     bool isBuiltinType() const;
     bool isUDT() const;
@@ -113,6 +115,7 @@ public:
     bool operator!=(const Type& other) const;
 
 private:
+    struct UnknownType {};
     struct VoidType {};
     struct UDTType { std::string udt; };
     struct ArrayType
@@ -124,7 +127,7 @@ private:
         std::unique_ptr<Type> inner;
     };
 
-    using TypeVariant = std::variant<VoidType, BuiltinType, UDTType, ArrayType>;
+    using TypeVariant = std::variant<UnknownType, VoidType, BuiltinType, UDTType, ArrayType>;
 
     explicit Type(TypeVariant variant);
 

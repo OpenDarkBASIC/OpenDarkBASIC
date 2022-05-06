@@ -48,6 +48,7 @@
     X(UnaryOp)                          \
     X(UntilLoop)                        \
     X(VarAssignment)                    \
+    X(Variable)                         \
     X(VarRef)                           \
     X(WhileLoop)                        \
     ODB_DATATYPE_LIST_IMPL(ODB_LITERAL_AST_NODE)

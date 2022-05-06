@@ -9,6 +9,7 @@ namespace odb::ast {
 
 class Identifier;
 class ArgList;
+class FuncDecl;
 
 class ODBCOMPILER_PUBLIC_API FuncCallExpr final : public Expression
 {
@@ -18,6 +19,11 @@ public:
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
+
+    FuncDecl* function() const;
+    void setFunction(FuncDecl* func);
+
+    Type getType() const override;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -31,6 +37,9 @@ protected:
 private:
     Reference<Identifier> identifier_;
     Reference<ArgList> args_;
+
+    // Resolved in a later pass.
+    FuncDecl* function_;
 };
 
 class ODBCOMPILER_PUBLIC_API FuncCallStmnt final : public Statement
@@ -42,6 +51,9 @@ public:
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
 
+    FuncDecl* function() const;
+    void setFunction(FuncDecl* func);
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -54,6 +66,9 @@ protected:
 private:
     Reference<Identifier> identifier_;
     Reference<ArgList> args_;
+
+    // Resolved in a later pass.
+    FuncDecl* function_;
 };
 
 /*!
@@ -62,7 +77,7 @@ private:
  *   foo(3, 4)
  *
  * is a function call or an array access. This class represents such an entity.
- * This is fixed in a second stage later.
+ * This is replaced with either a FuncCallExpr or ArrayRef in a later pass.
  */
 class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef final : public Expression
 {
@@ -71,6 +86,8 @@ public:
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
+
+    Type getType() const override;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

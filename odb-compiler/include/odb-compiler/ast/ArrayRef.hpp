@@ -7,6 +7,7 @@ namespace odb::ast {
 
 class Identifier;
 class ArgList;
+class Variable;
 
 class ODBCOMPILER_PUBLIC_API ArrayRef final : public LValue
 {
@@ -15,6 +16,11 @@ public:
 
     Identifier* identifier() const;
     ArgList* args() const;
+
+    Type getType() const override;
+
+    void setVariable(Variable* variable);
+    Variable* variable() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -28,6 +34,9 @@ protected:
 private:
     Reference<Identifier> identifier_;
     Reference<ArgList> args_;
+
+    // Resolved in a later pass.
+    Reference<Variable> variable_;
 };
 
 }

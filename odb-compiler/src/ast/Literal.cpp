@@ -66,6 +66,11 @@ Literal::Literal(SourceLocation* location) :
         return value_;                                                        \
     }                                                                         \
                                                                               \
+    Type dbname##Literal::getType() const                                     \
+    {                                                                         \
+        return Type::getBuiltin(BuiltinType::dbname);                         \
+    }                                                                         \
+                                                                              \
     std::string dbname##Literal::toString() const                             \
     {                                                                         \
         return dbname##_STR;                                                  \

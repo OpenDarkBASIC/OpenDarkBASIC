@@ -16,11 +16,16 @@ class ArgList;
 class ODBCOMPILER_PUBLIC_API CommandExpr final : public Expression
 {
 public:
-    CommandExpr(const std::string& command, ArgList* args, SourceLocation* location);
-    CommandExpr(const std::string& command, SourceLocation* location);
+    CommandExpr(std::string commandName, ArgList* args, SourceLocation* location);
+    CommandExpr(std::string commandName, SourceLocation* location);
 
-    const std::string& command() const;
+    const std::string& commandName() const;
     MaybeNull<ArgList> args() const;
+
+    const cmd::Command* command() const;
+    void setCommand(const cmd::Command* command);
+
+    Type getType() const override;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -32,8 +37,11 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
+    const std::string commandName_;
     Reference<ArgList> args_;
-    const std::string command_;
+
+    // Resolved in a later pass.
+    const cmd::Command* command_;
 };
 
 }

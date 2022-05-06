@@ -7,13 +7,15 @@ namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 InitializerList::InitializerList(SourceLocation* location) :
-    Expression(location)
+    Expression(location),
+    typeBeingInitialized_(Type::getUnknown())
 {
 }
 
 // ----------------------------------------------------------------------------
 InitializerList::InitializerList(Expression* expr, SourceLocation* location) :
-    Expression(location)
+    Expression(location),
+    typeBeingInitialized_(Type::getUnknown())
 {
     appendExpression(expr);
 }
@@ -30,6 +32,16 @@ void InitializerList::appendExpression(Expression* expr)
 const std::vector<Reference<Expression>>& InitializerList::expressions() const
 {
     return expressions_;
+}
+
+void InitializerList::setTypeBeingInitialized(Type typeBeingInitialized)
+{
+    typeBeingInitialized_ = typeBeingInitialized;
+}
+
+Type InitializerList::getType() const
+{
+    return typeBeingInitialized_;
 }
 
 // ----------------------------------------------------------------------------

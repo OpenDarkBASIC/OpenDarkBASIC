@@ -364,7 +364,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     {
         // TODO: Perform type checking of arguments.
         return std::make_unique<FunctionCallExpression>(
-            convertCommandCallExpression(location, command->command(), command->args()));
+            convertCommandCallExpression(location, command->commandName(), command->args()));
     }
     else if (auto* funcCall = dynamic_cast<const ast::FuncCallExpr*>(expression))
     {
@@ -544,7 +544,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     {
         return std::make_unique<FunctionCall>(
             location, currentFunction_,
-            convertCommandCallExpression(commandSt->location(), commandSt->command(), commandSt->args()));
+            convertCommandCallExpression(commandSt->location(), commandSt->commandName(), commandSt->args()));
     }
     else
     {

@@ -12,7 +12,7 @@ class ODBCOMPILER_PUBLIC_API ArgList final : public Node
 {
 public:
     ArgList(SourceLocation* location);
-    ArgList(Expression* expr, SourceLocation* location);
+    ArgList(Expression* initialExpr, SourceLocation* location);
 
     void appendExpression(Expression* expr);
 
