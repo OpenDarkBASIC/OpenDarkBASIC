@@ -24,13 +24,13 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/Symbol.hpp"
+#include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UDTRef.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
-#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/commands/Command.hpp"
 
 namespace odb::ast {
@@ -135,19 +135,45 @@ void GenericConstVisitor::visitWhileLoop(const WhileLoop* node)                 
 ODB_DATATYPE_LIST
 #undef X
 
-void visitAST(Node* node, Visitor& visitor)
+void visitAST(Node* node, Visitor& visitor, Traversal traversal)
 {
-    for (Node* n : depthFirst(node))
+    switch (traversal)
     {
-        n->accept(&visitor);
+    case Traversal::PreOrder:
+        for (Node* n : preOrderTraversal(node))
+        {
+            n->accept(&visitor);
+        }
+        break;
+    case Traversal::PostOrder:
+        for (Node* n : postOrderTraversal(node))
+        {
+            n->accept(&visitor);
+        }
+        break;
+    default:
+        break;
     }
 }
 
-void visitAST(const Node* node, ConstVisitor& visitor)
+void visitAST(const Node* node, ConstVisitor& visitor, Traversal traversal)
 {
-    for (const Node* n : depthFirst(node))
+    switch (traversal)
     {
-        n->accept(&visitor);
+    case Traversal::PreOrder:
+        for (const Node* n : preOrderTraversal(node))
+        {
+            n->accept(&visitor);
+        }
+        break;
+    case Traversal::PostOrder:
+        for (const Node* n : postOrderTraversal(node))
+        {
+            n->accept(&visitor);
+        }
+        break;
+    default:
+        break;
     }
 }
 

@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/ParentMap.hpp"
-#include "odb-compiler/ast/DepthFirstIterator.hpp"
+#include "odb-compiler/ast/TreeIterator.hpp"
 
 namespace odb::ast {
 // ----------------------------------------------------------------------------
@@ -20,7 +20,7 @@ void ParentMap::updateFrom(Node* start)
 // ----------------------------------------------------------------------------
 void ParentMap::buildMap(Node* start)
 {
-    auto range = depthFirst(start);
+    auto range = preOrderTraversal(start);
     for (auto it = range.begin(); it != range.end(); ++it)
     {
         if (it.parent())
