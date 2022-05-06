@@ -1,7 +1,8 @@
 #pragma once
 
-#include "odb-compiler/config.hpp"
+#include "odb-compiler/ast/VariableScope.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-compiler/config.hpp"
 
 namespace odb::ast {
 
@@ -15,6 +16,9 @@ public:
 
     Block* body() const;
 
+    VariableScope& scope();
+    const VariableScope& scope() const;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -26,6 +30,7 @@ protected:
 
 private:
     Reference<Block> body_;
+    VariableScope scope_;
 };
 
 }

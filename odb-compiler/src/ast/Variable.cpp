@@ -7,7 +7,7 @@ namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 Variable::Variable(SourceLocation* location, std::string name, Type type) :
-    Node(location),
+    LValue(location),
     name_(std::move(name)),
     annotation_(Annotation::NONE),
     type_(std::move(type))
@@ -16,7 +16,7 @@ Variable::Variable(SourceLocation* location, std::string name, Type type) :
 
 // ----------------------------------------------------------------------------
 Variable::Variable(SourceLocation* location, std::string name, Annotation annotation, Type type) :
-    Node(location),
+    LValue(location),
     name_(std::move(name)),
     annotation_(annotation),
     type_(std::move(type))
@@ -36,7 +36,7 @@ Annotation Variable::annotation() const
 }
 
 // ----------------------------------------------------------------------------
-Type Variable::type() const
+Type Variable::getType() const
 {
     return type_;
 }

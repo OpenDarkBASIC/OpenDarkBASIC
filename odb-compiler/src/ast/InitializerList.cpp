@@ -74,6 +74,9 @@ Node::ChildRange InitializerList::children()
 // ----------------------------------------------------------------------------
 void InitializerList::swapChild(const Node* oldNode, Node* newNode)
 {
+    if (oldNode == newNode)
+        return;
+
     for (auto& expr : expressions_)
         if (expr == oldNode)
         {

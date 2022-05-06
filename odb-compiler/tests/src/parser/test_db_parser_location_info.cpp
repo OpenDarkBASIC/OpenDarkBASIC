@@ -32,7 +32,7 @@ TEST_F(NAME, oneline_function_call)
     ASSERT_THAT(stmnts.size(), Eq(1));
     ast::VarAssignment* ass = dynamic_cast<ast::VarAssignment*>(stmnts[0].get());
     ASSERT_THAT(ass, NotNull());
-    ast::VarRef* result = dynamic_cast<ast::VarRef*>(ass->variable());
+    ast::VarRef* result = dynamic_cast<ast::VarRef*>(ass->varRef());
     ASSERT_THAT(result, NotNull());
     ast::Identifier* resultSym = dynamic_cast<ast::Identifier*>(result->identifier());
     ASSERT_THAT(resultSym, NotNull());

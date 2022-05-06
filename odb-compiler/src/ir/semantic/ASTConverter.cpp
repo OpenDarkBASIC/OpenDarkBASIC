@@ -341,6 +341,7 @@ Ptr<Expression> ASTConverter::convertExpression(const ast::Expression* expressio
     }
     else if (auto* binaryOp = dynamic_cast<const ast::BinaryOp*>(expression))
     {
+        // DONE
         BinaryOp binaryOpType = static_cast<BinaryOp>(binaryOp->op());
         auto lhs = convertExpression(binaryOp->lhs());
         auto rhs = convertExpression(binaryOp->rhs());
@@ -384,6 +385,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* varDeclSt = dynamic_cast<ast::VarDecl*>(statement))
     {
+        // DONE
         // Get var ref and type.
         // TheComet: All initializers are now ArgList instead of Expression
         //           because the math datatypes have multiple initializer values
@@ -417,12 +419,14 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* assignmentSt = dynamic_cast<ast::VarAssignment*>(statement))
     {
-        auto variable = resolveVariableRef(assignmentSt->variable());
+        // DONE
+        auto variable = resolveVariableRef(assignmentSt->varRef());
         auto expression = ensureType(convertExpression(assignmentSt->expression()), variable->type());
         return std::make_unique<VarAssignment>(location, currentFunction_, std::move(variable), std::move(expression));
     }
     else if (auto* conditionalSt = dynamic_cast<ast::Conditional*>(statement))
     {
+        // DONE
         return std::make_unique<Conditional>(
             location, currentFunction_,
             ensureType(convertExpression(conditionalSt->condition()), Type::getBuiltin(BuiltinType::Boolean)),
@@ -440,8 +444,9 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* forLoopSt = dynamic_cast<ast::ForLoop*>(statement))
     {
+        // DONE
         auto* astVarAssignment = static_cast<ast::VarAssignment*>(forLoopSt->counter());
-        auto variable = resolveVariableRef(astVarAssignment->variable());
+        auto variable = resolveVariableRef(astVarAssignment->varRef());
         // TODO: Ensure variable is a valid for loop counter.
 
         auto initExpression = ensureType(convertExpression(astVarAssignment->expression()), variable->type());
@@ -484,6 +489,7 @@ Ptr<Statement> ASTConverter::convertStatement(ast::Statement* statement, Loop* c
     }
     else if (auto* exitSt = dynamic_cast<ast::Exit*>(statement))
     {
+        // TODO: Link exitSt to loop to break.
         if (!currentLoop)
         {
             semanticError(exitSt->location(), "Encountered 'exit' statement outside a loop body.");

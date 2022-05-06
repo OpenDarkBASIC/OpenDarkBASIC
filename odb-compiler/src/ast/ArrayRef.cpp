@@ -31,7 +31,7 @@ ArgList* ArrayRef::args() const
 // ----------------------------------------------------------------------------
 Type ArrayRef::getType() const
 {
-    return variable_ ? variable_->type() : Type::getUnknown();
+    return variable_ ? variable_->getType() : Type::getUnknown();
 }
 
 // ----------------------------------------------------------------------------
