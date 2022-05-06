@@ -1,10 +1,10 @@
 #include "DBPEngineInterface.hpp"
 #include "odb-compiler/parsers/PluginInfo.hpp"
-#include "odb-compiler/ir/Error.hpp"
+#include "odb-compiler/codegen/Error.hpp"
 
 #include <filesystem>
 
-namespace odb::ir {
+namespace odb::codegen {
 DBPEngineInterface::DBPEngineInterface(llvm::Module& module, const cmd::CommandIndex& index) : EngineInterface(module, index)
 {
     /*
@@ -239,4 +239,4 @@ llvm::FunctionCallee DBPEngineInterface::getPluginFunction(llvm::IRBuilder<>& bu
         builder.CreateCall(getFunctionAddressFunc, {pluginHandle, builder.CreateGlobalStringPtr(symbol, symbolStringName)});
     return llvm::FunctionCallee(functionTy, builder.CreateBitCast(procAddress, functionTy->getPointerTo()));
 }
-} // namespace odb::ir
+} // namespace odb::codegen

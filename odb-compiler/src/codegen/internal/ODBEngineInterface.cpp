@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <iostream>
 
-namespace odb::ir {
+namespace odb::codegen {
 ODBEngineInterface::ODBEngineInterface(llvm::Module& module, const cmd::CommandIndex& index) : EngineInterface(module, index)
 {
 }
@@ -33,4 +33,4 @@ void ODBEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     builder.CreateCall(gameEntryPoint, {});
     builder.CreateRet(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0));
 }
-} // namespace odb::ir
+} // namespace odb::codegen

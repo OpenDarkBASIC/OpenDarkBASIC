@@ -4,7 +4,7 @@
 
 #include <cstdio>
 
-namespace odb::ir {
+namespace odb::codegen {
 template <typename... Args>
 [[noreturn]] void fatalError(ast::SourceLocation* location, const char* message, Args&&... args)
 {
