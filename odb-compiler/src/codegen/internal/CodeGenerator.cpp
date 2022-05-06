@@ -1,5 +1,5 @@
 #include "CodeGenerator.hpp"
-#include "odb-compiler/ir/Error.hpp"
+#include "odb-compiler/codegen/Error.hpp"
 
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/ArrayDecl.hpp"
@@ -34,7 +34,7 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Variable.hpp"
 
-namespace odb::ir {
+namespace odb::codegen {
 namespace {
 llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
 {
@@ -1069,4 +1069,4 @@ void CodeGenerator::printString(llvm::IRBuilder<>& builder, llvm::Value* string)
     }
     builder.CreateCall(putsFunc, {string});
 }
-} // namespace odb::ir
+} // namespace odb::codegen

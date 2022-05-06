@@ -4,7 +4,7 @@
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 
-namespace odb::ir {
+namespace odb::codegen {
 class EngineInterface
 {
 public:
@@ -21,4 +21,4 @@ protected:
     llvm::LLVMContext& ctx;
     const cmd::CommandIndex& index;
 };
-} // namespace odb::ir
+} // namespace odb::codegen

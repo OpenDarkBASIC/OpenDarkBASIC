@@ -2,7 +2,7 @@
 
 #include "EngineInterface.hpp"
 
-namespace odb::ir {
+namespace odb::codegen {
 class ODBEngineInterface : public EngineInterface
 {
 public:
@@ -13,4 +13,4 @@ public:
     llvm::Value *generateMainLoopCondition(llvm::IRBuilder<>& builder) override;
     void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad) override;
 };
-} // namespace odb::ir
+} // namespace odb::codegen

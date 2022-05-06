@@ -8,7 +8,7 @@
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Loop.hpp"
 
-namespace odb::ir {
+namespace odb::codegen {
 class CodeGenerator
 {
 public:
@@ -99,4 +99,4 @@ private:
     void generateGosubHelperFunctions();
     void printString(llvm::IRBuilder<>& builder, llvm::Value* string);
 };
-} // namespace odb::ir
+} // namespace odb::codegen

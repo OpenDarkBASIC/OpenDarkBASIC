@@ -1,15 +1,15 @@
-#include "odb-compiler/ir/Codegen.hpp"
+#include "odb-compiler/codegen/Codegen.hpp"
 
-#include "codegen/CodeGenerator.hpp"
-#include "codegen/DBPEngineInterface.hpp"
-#include "codegen/LLVM.hpp"
-#include "codegen/ODBEngineInterface.hpp"
+#include "internal/CodeGenerator.hpp"
+#include "internal/DBPEngineInterface.hpp"
+#include "internal/LLVM.hpp"
+#include "internal/ODBEngineInterface.hpp"
 
 #include <iostream>
 
 #include <reproc++/run.hpp>
 
-namespace odb::ir {
+namespace odb::codegen {
 bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple, std::ostream& output,
                   const std::string& moduleName, const ast::Program* program, const cmd::CommandIndex& cmdIndex)
 {
@@ -184,4 +184,4 @@ bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, co
 
     return true;
 }
-} // namespace odb::ir
+} // namespace odb::codegen

@@ -3,7 +3,7 @@
 #include "EngineInterface.hpp"
 #include <unordered_map>
 
-namespace odb::ir {
+namespace odb::codegen {
 class DBPEngineInterface : public EngineInterface
 {
 public:
@@ -39,4 +39,4 @@ private:
         builder.CreateCall(debugPrintfFunc, {builder.CreateGlobalStringPtr(string), params...});
     }
 };
-} // namespace odb::ir
+} // namespace odb::codegen

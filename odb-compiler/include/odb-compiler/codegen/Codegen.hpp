@@ -9,7 +9,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Program.hpp"
 
-namespace odb::ir {
+namespace odb::codegen {
 enum class OutputType
 {
     LLVMIR,
@@ -77,4 +77,4 @@ ODBCOMPILER_PUBLIC_API bool generateCode(SDKType sdkType, OutputType outputType,
 ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
                                            const std::filesystem::path& linker, TargetTriple targetTriple,
                                            std::vector<std::string> inputFilenames, std::string& outputFilename);
-} // namespace odb::ir
+} // namespace odb::codegen
