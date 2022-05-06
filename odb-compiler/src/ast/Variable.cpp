@@ -1,72 +1,81 @@
-#include "odb-compiler/ast/Identifier.hpp"
-
 #include <utility>
+
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Identifier::Identifier(std::string  name, SourceLocation* location) :
+Variable::Variable(SourceLocation* location, std::string name, Type type) :
     Node(location),
     name_(std::move(name)),
-    annotation_(Annotation::NONE)
+    annotation_(Annotation::NONE),
+    type_(std::move(type))
 {
 }
 
 // ----------------------------------------------------------------------------
-Identifier::Identifier(std::string name, Annotation annotation, SourceLocation* location) :
+Variable::Variable(SourceLocation* location, std::string name, Annotation annotation, Type type) :
     Node(location),
     name_(std::move(name)),
-    annotation_(annotation)
+    annotation_(annotation),
+    type_(std::move(type))
 {
 }
 
 // ----------------------------------------------------------------------------
-const std::string& Identifier::name() const
+const std::string& Variable::name() const
 {
     return name_;
 }
 
 // ----------------------------------------------------------------------------
-Annotation Identifier::annotation() const
+Annotation Variable::annotation() const
 {
     return annotation_;
 }
 
 // ----------------------------------------------------------------------------
-std::string Identifier::toString() const
+Type Variable::type() const
 {
-    return std::string("Identifier(")
+    return type_;
+}
+
+// ----------------------------------------------------------------------------
+std::string Variable::toString() const
+{
+    return std::string("Variable(")
            + typeAnnotationEnumString(annotation_)
            + "): \"" + name_ + "\"";
 }
 
 // ----------------------------------------------------------------------------
-void Identifier::accept(Visitor* visitor)
+void Variable::accept(Visitor* visitor)
 {
-    visitor->visitIdentifier(this);
+    visitor->visitVariable(this);
 }
-void Identifier::accept(ConstVisitor* visitor) const
+void Variable::accept(ConstVisitor* visitor) const
 {
-    visitor->visitIdentifier(this);
+    visitor->visitVariable(this);
 }
 
 // ----------------------------------------------------------------------------
-Node::ChildRange Identifier::children()
+Node::ChildRange Variable::children()
 {
     return {};
 }
 
 // ----------------------------------------------------------------------------
-void Identifier::swapChild(const Node* oldNode, Node* newNode)
+void Variable::swapChild(const Node* oldNode, Node* newNode)
 {
     assert(false);
 }
 
 // ----------------------------------------------------------------------------
-Node* Identifier::duplicateImpl() const
+Node* Variable::duplicateImpl() const
 {
-    return new Identifier(name_, annotation_, location());
+    assert(false);
+    return nullptr;
 }
 
 }

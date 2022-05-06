@@ -19,6 +19,8 @@ public:                                                                       \
     dbname##Literal(const cppname& value, SourceLocation* location);          \
     const cppname& value() const;                                             \
                                                                               \
+    Type getType() const override;                                            \
+                                                                              \
     std::string toString() const override;                                    \
     void accept(Visitor* visitor) override;                                   \
     void accept(ConstVisitor* visitor) const override;                        \

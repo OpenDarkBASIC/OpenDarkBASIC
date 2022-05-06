@@ -15,6 +15,8 @@ public:
     Expression* lhs() const;
     Expression* rhs() const;
 
+    Type getType() const override;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

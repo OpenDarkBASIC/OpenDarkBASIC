@@ -2,14 +2,17 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 ArrayRef::ArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    LValue(location), identifier_(identifier),
-    args_(args)
+    LValue(location),
+    identifier_(identifier),
+    args_(args),
+    variable_(nullptr)
 {
 }
 
@@ -23,6 +26,26 @@ Identifier* ArrayRef::identifier() const
 ArgList* ArrayRef::args() const
 {
     return args_;
+}
+
+// ----------------------------------------------------------------------------
+Type ArrayRef::getType() const
+{
+    return variable_ ? variable_->type() : Type::getUnknown();
+}
+
+// ----------------------------------------------------------------------------
+void ArrayRef::setVariable(Variable* variable)
+{
+    assert(identifier_->name() == variable->name());
+    variable_ = variable;
+}
+
+// ----------------------------------------------------------------------------
+Variable* ArrayRef::variable() const
+{
+    assert(identifier_->name() == variable_->name());
+    return variable_;
 }
 
 // ----------------------------------------------------------------------------

@@ -73,7 +73,7 @@ bool Visitor::check(const ast::CommandExpr* cmd)
     if (cmd == nullptr)
         return false;
 
-    char c = cmd->command().back();
+    char c = cmd->commandName().back();
     if (ast::isAnnotation(c))
     {
         Log::dbParserSemanticError(
@@ -90,7 +90,7 @@ bool Visitor::check(const ast::CommandStmnt* cmd)
     if (cmd == nullptr)
         return false;
 
-    char c = cmd->command().back();
+    char c = cmd->commandName().back();
     if (ast::isAnnotation(c))
     {
         Log::dbParserSemanticError(

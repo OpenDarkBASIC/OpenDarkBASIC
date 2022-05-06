@@ -24,6 +24,13 @@ LValue* UDTFieldOuter::right() const
 }
 
 // ----------------------------------------------------------------------------
+Type UDTFieldOuter::getType() const
+{
+    // TODO: Implement.
+    return Type::getUnknown();
+}
+
+// ----------------------------------------------------------------------------
 std::string UDTFieldOuter::toString() const
 {
     return "UDTFieldOuter";
@@ -86,6 +93,13 @@ LValue* UDTFieldInner::left() const
 LValue* UDTFieldInner::right() const
 {
     return right_;
+}
+
+// ----------------------------------------------------------------------------
+Type UDTFieldInner::getType() const
+{
+    // TODO: Implement.
+    return Type::getUnknown();
 }
 
 // ----------------------------------------------------------------------------

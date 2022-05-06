@@ -9,15 +9,15 @@ namespace odb::ast {
 class CommandStmntEqMatcher : public testing::MatcherInterface<const odb::ast::CommandStmnt*>
 {
 public:
-    explicit CommandStmntEqMatcher(const std::string& name);
+    explicit CommandStmntEqMatcher(std::string name);
     bool MatchAndExplain(const odb::ast::CommandStmnt* node, testing::MatchResultListener* listener) const override;
     void DescribeTo(::std::ostream* os) const override;
     void DescribeNegationTo(::std::ostream* os) const override;
 
 private:
-    const std::string expectedCommand_;
+    const std::string expectedCommandName_;
 };
 
-inline testing::Matcher<const odb::ast::CommandStmnt*> CommandStmntEq(const std::string& name) {
-    return testing::MakeMatcher(new CommandStmntEqMatcher(name));
+inline testing::Matcher<const odb::ast::CommandStmnt*> CommandStmntEq(std::string name) {
+    return testing::MakeMatcher(new CommandStmntEqMatcher(std::move(name)));
 }

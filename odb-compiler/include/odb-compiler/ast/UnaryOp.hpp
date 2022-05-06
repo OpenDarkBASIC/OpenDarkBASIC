@@ -14,6 +14,8 @@ public:
     UnaryOpType op() const;
     Expression* expr() const;
 
+    Type getType() const override;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

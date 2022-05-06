@@ -18,6 +18,9 @@ public:
 
     const std::vector<Reference<Expression>>& expressions() const;
 
+    void setTypeBeingInitialized(Type typeBeingInitialized);
+    Type getType() const override;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -29,6 +32,7 @@ protected:
 
 private:
     std::vector<Reference<Expression>> expressions_;
+    Type typeBeingInitialized_;
 };
 
 }

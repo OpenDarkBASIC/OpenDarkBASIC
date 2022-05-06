@@ -204,6 +204,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/UDTField.cpp"
     "src/ast/UnaryOp.cpp"
     "src/ast/VarDecl.cpp"
+    "src/ast/Variable.cpp"
     "src/ast/VarRef.cpp"
     "src/ast/Visitor.cpp"
     "src/astpost/EliminateBitwiseNotRHS.cpp"

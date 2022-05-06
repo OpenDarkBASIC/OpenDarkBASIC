@@ -7,6 +7,7 @@ namespace odb {
 namespace ast {
 
 class Identifier;
+class Variable;
 
 class ODBCOMPILER_PUBLIC_API VarRef final : public LValue
 {
@@ -14,6 +15,11 @@ public:
     VarRef(Identifier* identifier, SourceLocation* location);
 
     Identifier* identifier() const;
+
+    Type getType() const override;
+
+    void setVariable(Variable* variable);
+    Variable* variable() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -26,6 +32,9 @@ protected:
 
 private:
     Reference<Identifier> identifier_;
+
+    // Resolved in a later pass.
+    Reference<Variable> variable_;
 };
 
 }

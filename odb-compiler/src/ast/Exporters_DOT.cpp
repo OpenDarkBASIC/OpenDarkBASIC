@@ -29,6 +29,7 @@
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
@@ -289,6 +290,7 @@ private:
         writeNamedConnection(node, node->variable(), "var");
         writeNamedConnection(node, node->expression(), "expr");
     }
+    void visitVariable(const Variable* node) override {}
     void visitVarRef(const VarRef* node) override
     {
         writeNamedConnection(node, node->identifier(), "identifier");

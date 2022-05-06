@@ -16,11 +16,14 @@ class ArgList;
 class ODBCOMPILER_PUBLIC_API CommandStmnt final : public Statement
 {
 public:
-    CommandStmnt(const std::string& command, ArgList* args, SourceLocation* location);
-    CommandStmnt(const std::string& command, SourceLocation* location);
+    CommandStmnt(std::string commandName, ArgList* args, SourceLocation* location);
+    CommandStmnt(std::string commandName, SourceLocation* location);
 
-    const std::string& command() const;
+    const std::string& commandName() const;
     MaybeNull<ArgList> args() const;
+
+    const cmd::Command* command() const;
+    void setCommand(const cmd::Command* command);
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -32,8 +35,11 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
+    const std::string commandName_;
     Reference<ArgList> args_;
-    const std::string command_;
+
+    // Resolved in a later pass.
+    const cmd::Command* command_;
 };
 
 }

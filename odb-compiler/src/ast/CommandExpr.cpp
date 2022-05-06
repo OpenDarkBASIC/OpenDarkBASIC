@@ -1,3 +1,5 @@
+#include <utility>
+
 #include "odb-compiler/ast/CommandExpr.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
@@ -7,24 +9,26 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-CommandExpr::CommandExpr(const std::string& command, ArgList* args, SourceLocation* location) :
+CommandExpr::CommandExpr(std::string commandName, ArgList* args, SourceLocation* location) :
     Expression(location),
+    commandName_(std::move(commandName)),
     args_(args),
-    command_(command)
+    command_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
-CommandExpr::CommandExpr(const std::string& command, SourceLocation* location) :
+CommandExpr::CommandExpr(std::string commandName, SourceLocation* location) :
     Expression(location),
-    command_(command)
+    commandName_(std::move(commandName)),
+    command_(nullptr)
 {
 }
 
 // ----------------------------------------------------------------------------
-const std::string& CommandExpr::command() const
+const std::string& CommandExpr::commandName() const
 {
-    return command_;
+    return commandName_;
 }
 
 // ----------------------------------------------------------------------------
@@ -34,9 +38,32 @@ MaybeNull<ArgList> CommandExpr::args() const
 }
 
 // ----------------------------------------------------------------------------
+const cmd::Command* CommandExpr::command() const
+{
+    assert(command_ && command_->dbSymbol() == commandName_);
+    return command_;
+}
+
+// ----------------------------------------------------------------------------
+void CommandExpr::setCommand(const cmd::Command* command)
+{
+    command_ = command;
+}
+
+// ----------------------------------------------------------------------------
+Type CommandExpr::getType() const
+{
+    if (!command_)
+    {
+        return Type::getUnknown();
+    }
+    return Type::getFromCommandType(command_->returnType());
+}
+
+// ----------------------------------------------------------------------------
 std::string CommandExpr::toString() const
 {
-    return "CommandExpr: \"" + command_ + "\"";
+    return "CommandExpr: \"" + commandName_ + "\"";
 }
 
 // ----------------------------------------------------------------------------
@@ -74,10 +101,12 @@ void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* CommandExpr::duplicateImpl() const
 {
-    return new CommandExpr(
-        command_,
+    auto* newCommand = new CommandExpr(
+        commandName_,
         args_ ? args_->duplicate<ArgList>() : nullptr,
         location());
+    newCommand->command_ = command_;
+    return newCommand;
 }
 
 }

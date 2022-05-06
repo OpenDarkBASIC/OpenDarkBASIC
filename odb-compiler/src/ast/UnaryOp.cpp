@@ -25,6 +25,12 @@ Expression* UnaryOp::expr() const
 }
 
 // ----------------------------------------------------------------------------
+Type UnaryOp::getType() const
+{
+    return expr_->getType();
+}
+
+// ----------------------------------------------------------------------------
 std::string UnaryOp::toString() const
 {
     return std::string("UnaryOp(") + unaryOpTypeEnumString(op_) + ")";
