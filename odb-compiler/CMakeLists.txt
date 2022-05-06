@@ -184,6 +184,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/FuncDecl.cpp"
     "src/ast/Goto.cpp"
     "src/ast/Identifier.cpp"
+    "src/ast/ImplicitCast.cpp"
     "src/ast/InitializerList.cpp"
     "src/ast/Label.cpp"
     "src/ast/Literal.cpp"

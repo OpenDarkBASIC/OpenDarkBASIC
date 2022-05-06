@@ -14,6 +14,7 @@
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/ImplicitCast.hpp"
 #include "odb-compiler/ast/InitializerList.hpp"
 #include "odb-compiler/ast/Label.hpp"
 #include "odb-compiler/ast/Literal.hpp"
