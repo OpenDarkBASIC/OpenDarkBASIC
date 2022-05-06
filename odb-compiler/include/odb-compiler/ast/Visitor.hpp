@@ -276,7 +276,13 @@ public:
     virtual void visit(const Node* node) = 0;
 };
 
-void visitAST(Node* node, Visitor& visitor);
-void visitAST(const Node* node, ConstVisitor& visitor);
+enum class Traversal
+{
+    PreOrder,
+    PostOrder
+};
 
-}
+void visitAST(Node* node, Visitor& visitor, Traversal traversal = Traversal::PreOrder);
+void visitAST(const Node* node, ConstVisitor& visitor, Traversal traversal = Traversal::PreOrder);
+
+} // namespace odb::ast

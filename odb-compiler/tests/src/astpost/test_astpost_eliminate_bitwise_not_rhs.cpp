@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
+#include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/astpost/Process.hpp"
 #include "odb-compiler/parsers/db/Driver.hpp"
@@ -29,7 +29,7 @@ class ReplaceAmbiguousFuncCallOrArrayRefWithArrayRef : public astpost::Process
 public:
     bool execute(ast::Node* root) override
     {
-        auto range = ast::depthFirst(root);
+        auto range = ast::preOrderTraversal(root);
         for (auto it = range.begin(); it != range.end(); ++it)
         {
             auto* node = dynamic_cast<ast::FuncCallExprOrArrayRef*>(*it);

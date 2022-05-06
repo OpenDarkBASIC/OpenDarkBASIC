@@ -1,8 +1,8 @@
 #include "odb-compiler/astpost/EliminateBitwiseNotRHS.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
-#include "odb-compiler/ast/DepthFirstIterator.hpp"
 #include "odb-compiler/ast/ParentMap.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-sdk/Log.hpp"
 
@@ -41,7 +41,7 @@ public:
 // ----------------------------------------------------------------------------
 bool EliminateBitwiseNotRHS::execute(ast::Node* root)
 {
-    auto range = ast::depthFirst(root);
+    auto range = ast::preOrderTraversal(root);
     for (auto it = range.begin(); it != range.end(); ++it)
     {
         auto* op = dynamic_cast<ast::BinaryOp*>(static_cast<ast::Node*>(*it));

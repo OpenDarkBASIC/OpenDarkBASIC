@@ -329,7 +329,7 @@ set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
 
 if (${ODBCOMPILER_TESTS})
     add_executable (odbc_tests
-        "tests/src/ast/test_ast_depthfirstiterator.cpp"
+        "tests/src/ast/test_ast_treeiterator.cpp"
         "tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
         "tests/src/astpost/test_astpost_validate_udt_field_names.cpp"
         "tests/src/commands/test_cmd_matcher.cpp"
