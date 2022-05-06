@@ -3,6 +3,7 @@
 #include "odb-compiler/ast/ArgList.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
+#include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -35,9 +36,15 @@ VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* loca
 }
 
 // ----------------------------------------------------------------------------
-VarRef* VarAssignment::variable() const
+VarRef* VarAssignment::varRef() const
 {
-    return static_cast<VarRef*>(lvalue_.get());
+    return dynamic_cast<VarRef*>(lvalue_.get());
+}
+
+// ----------------------------------------------------------------------------
+Variable* VarAssignment::variable() const
+{
+    return dynamic_cast<Variable*>(lvalue_.get());
 }
 
 // ----------------------------------------------------------------------------

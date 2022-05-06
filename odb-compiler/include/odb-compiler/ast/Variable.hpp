@@ -4,11 +4,11 @@
 #include "odb-compiler/ast/Annotation.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Type.hpp"
-#include "odb-compiler/ast/Node.hpp"
+#include "odb-compiler/ast/LValue.hpp"
 
 namespace odb::ast {
 
-class ODBCOMPILER_PUBLIC_API Variable final : public Node
+class ODBCOMPILER_PUBLIC_API Variable final : public LValue
 {
 public:
     Variable(SourceLocation* location, std::string name, Type type);
@@ -16,7 +16,7 @@ public:
 
     const std::string& name() const;
     Annotation annotation() const;
-    Type type() const;
+    Type getType() const override;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

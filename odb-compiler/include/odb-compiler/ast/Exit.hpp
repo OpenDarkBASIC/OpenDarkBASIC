@@ -10,6 +10,8 @@ class ODBCOMPILER_PUBLIC_API Exit final : public Statement
 public:
     Exit(SourceLocation* location);
 
+    // TODO: Add loopToBreak member, set in an astpost pass.
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

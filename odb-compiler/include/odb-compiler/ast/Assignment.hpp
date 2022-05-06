@@ -9,6 +9,7 @@ class ArrayRef;
 class Expression;
 class LValue;
 class UDTFieldOuter;
+class Variable;
 class VarRef;
 
 class ODBCOMPILER_PUBLIC_API Assignment : public Statement
@@ -29,7 +30,8 @@ class ODBCOMPILER_PUBLIC_API VarAssignment final : public Assignment
 public:
     VarAssignment(VarRef* var, Expression* expr, SourceLocation* location);
 
-    VarRef* variable() const;
+    VarRef* varRef() const;
+    Variable* variable() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

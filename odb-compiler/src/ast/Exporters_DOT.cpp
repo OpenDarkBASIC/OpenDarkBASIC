@@ -300,7 +300,7 @@ private:
     }
     void visitVarAssignment(const VarAssignment* node) override
     {
-        writeNamedConnection(node, node->variable(), "var");
+        writeNamedConnection(node, node->varRef(), "var");
         writeNamedConnection(node, node->expression(), "expr");
     }
     void visitVariable(const Variable* node) override {}

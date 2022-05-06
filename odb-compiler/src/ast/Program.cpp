@@ -19,6 +19,18 @@ Block* Program::body() const
 }
 
 // ----------------------------------------------------------------------------
+VariableScope& Program::scope()
+{
+    return scope_;
+}
+
+// ----------------------------------------------------------------------------
+const VariableScope& Program::scope() const
+{
+    return scope_;
+}
+
+// ----------------------------------------------------------------------------
 std::string Program::toString() const
 {
     return "Program";
@@ -52,9 +64,9 @@ void Program::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Program::duplicateImpl() const
 {
-    return new Program(
-        body_->duplicate<Block>(),
-        location());
+    Program* program = new Program(body_->duplicate<Block>(), location());
+    program->scope_ = scope_;
+    return program;
 }
 
 }

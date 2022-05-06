@@ -101,6 +101,18 @@ MaybeNull<Expression> FuncDecl::returnValue() const
 }
 
 // ----------------------------------------------------------------------------
+VariableScope& FuncDecl::scope()
+{
+    return scope_;
+}
+
+// ----------------------------------------------------------------------------
+const VariableScope& FuncDecl::scope() const
+{
+    return scope_;
+}
+
+// ----------------------------------------------------------------------------
 std::string FuncDecl::toString() const
 {
     return "FuncDecl";
@@ -152,12 +164,14 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncDecl::duplicateImpl() const
 {
-    return new FuncDecl(
+    FuncDecl* funcDecl = new FuncDecl(
         identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<ArgList>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
         returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
         location());
+    funcDecl->scope_ = scope_;
+    return funcDecl;
 }
 
 // ============================================================================

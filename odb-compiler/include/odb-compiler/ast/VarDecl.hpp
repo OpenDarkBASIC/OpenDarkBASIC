@@ -10,6 +10,7 @@ namespace odb::ast {
 class InitializerList;
 class UDTRef;
 class ScopedIdentifier;
+class Variable;
 
 class ODBCOMPILER_PUBLIC_API VarDecl final : public Statement
 {
@@ -18,6 +19,7 @@ public:
     VarDecl(ScopedIdentifier* identifier, Type type, SourceLocation* location);
 
     ScopedIdentifier* identifier() const;
+    Variable* variable() const;
     Type type() const;
     MaybeNull<InitializerList> initializer() const;
 
@@ -33,7 +35,7 @@ protected:
     Node* duplicateImpl() const override;
 
 private:
-    Reference<ScopedIdentifier> identifier_;
+    Reference<Node> identifierOrVariable_;
     Type type_;
     Reference<InitializerList> initializer_;
 };

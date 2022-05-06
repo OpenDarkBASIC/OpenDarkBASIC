@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
+#include "odb-compiler/ast/VariableScope.hpp"
 #include "odb-sdk/MaybeNull.hpp"
 
 namespace odb::ast {
@@ -28,6 +29,9 @@ public:
     MaybeNull<Block> body() const;
     MaybeNull<Expression> returnValue() const;
 
+    VariableScope& scope();
+    const VariableScope& scope() const;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;
@@ -42,6 +46,8 @@ private:
     Reference<ArgList> args_;
     Reference<Block> body_;
     Reference<Expression> returnValue_;
+
+    VariableScope scope_;
 };
 
 class ODBCOMPILER_PUBLIC_API FuncExit final : public Statement
