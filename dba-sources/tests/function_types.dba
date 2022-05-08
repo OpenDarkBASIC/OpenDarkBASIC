@@ -2,7 +2,7 @@ print test()
 
 function testInner()
   y# = 0.2
-  REM exitfunction y#
+  exitfunction y#
 endfunction y#
 
 function test()

@@ -867,6 +867,17 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
         }
+        else if (auto* exit = dynamic_cast<const ast::FuncExit*>(s))
+        {
+            if (exit->returnValue())
+            {
+                builder.CreateRet(generateExpression(symtab, builder, exit->returnValue()));
+            }
+            else
+            {
+                builder.CreateRetVoid();
+            }
+        }
         else if (dynamic_cast<const ast::FuncDecl*>(s))
         {
             // End of main function.
