@@ -1,0 +1,11 @@
+print test()
+
+function testInner()
+  y# = 0.2
+  exitfunction y#
+endfunction y#
+
+function test()
+  x as float = 0.5
+  x = x + testInner()
+endfunction x

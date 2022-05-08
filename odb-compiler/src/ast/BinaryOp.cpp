@@ -34,15 +34,29 @@ Expression* BinaryOp::rhs() const
 // ----------------------------------------------------------------------------
 Type BinaryOp::getType() const
 {
-    if (lhs_->getType() == rhs_->getType())
+    switch (op_)
     {
-        // Types should've been unified by adding implicit casts.
-        return lhs_->getType();
-    }
-    else
-    {
-        // Until we've unified the types, we don't know which is the right one.
-        return Type::getUnknown();
+    // Comparison operators are always boolean.
+    case ast::BinaryOpType::LESS_THAN:
+    case ast::BinaryOpType::LESS_EQUAL:
+    case ast::BinaryOpType::GREATER_THAN:
+    case ast::BinaryOpType::GREATER_EQUAL:
+    case ast::BinaryOpType::EQUAL:
+    case ast::BinaryOpType::NOT_EQUAL:
+        return Type::getBuiltin(BuiltinType::Boolean);
+
+    // Otherwise, they are the common type of the LHS and RHS.
+    default:
+        if (lhs_->getType() == rhs_->getType())
+        {
+            // Types should've been unified by adding implicit casts.
+            return lhs_->getType();
+        }
+        else
+        {
+            // Until we've unified the types, we don't know which is the right one.
+            return Type::getUnknown();
+        }
     }
 }
 

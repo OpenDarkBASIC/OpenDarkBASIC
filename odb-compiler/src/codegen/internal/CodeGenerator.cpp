@@ -707,8 +707,8 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Generate initialisation.
             auto* varAssignment = dynamic_cast<ast::VarAssignment*>(forLoop->counter());
             assert(varAssignment);
-            assert(varAssignment->variable());
-            llvm::Value* variableStorage = symtab.getVar(varAssignment->variable());
+            assert(varAssignment->varRef()->variable());
+            llvm::Value* variableStorage = symtab.getVar(varAssignment->varRef()->variable());
             builder.CreateStore(generateExpression(symtab, builder, forLoop->counter()->expression()),
                                 variableStorage);
 

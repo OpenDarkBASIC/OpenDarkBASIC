@@ -27,6 +27,7 @@
 #include "odb-sdk/Log.hpp"
 
 #include <unordered_map>
+#include <iostream>
 
 namespace odb::astpost {
 
@@ -342,12 +343,13 @@ public:
         // TODO: Make the step value not optional.
 
         // counterAssignment should already be resolved at this point (due to post-order traversal).
-        assert(counterAssignment->variable());
+        auto* variable = counterAssignment->varRef()->variable();
+        assert(variable);
 
-        node->swapChild(node->endValue(), ensureType(node->endValue(), counterAssignment->variable()->getType()));
+        node->swapChild(node->endValue(), ensureType(node->endValue(), variable->getType()));
         if (node->stepValue())
         {
-            node->swapChild(node->stepValue(), ensureType(node->stepValue(), counterAssignment->variable()->getType()));
+            node->swapChild(node->stepValue(), ensureType(node->stepValue(), variable->getType()));
         }
     }
 
@@ -659,6 +661,7 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
     auto range = ast::postOrderTraversal(root);
     for (auto it = range.begin(); it != range.end(); ++it)
     {
+//        std::cout << "Processing " << (*it)->toString() << std::endl;
         ResolverVisitor resolver{cmdIndex_, functionInfo, *it, it.parent()};
         (*it)->accept(&resolver);
         if (resolver.fail)

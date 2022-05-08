@@ -1,7 +1,6 @@
-sync on
 
-make object cube 1, 20
-do
-    yrotate object 1, object angle y(1) + 0.1
-    sync
-loop
+for a=1 to 255 step 5
+   print a
+   sleep 100
+next a
+wait key
