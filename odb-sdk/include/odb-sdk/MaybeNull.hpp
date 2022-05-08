@@ -25,6 +25,7 @@ public:
     }
 
     operator T*() const {
+        assert(ptr_ != nullptr);
         return ptr_;
     }
 

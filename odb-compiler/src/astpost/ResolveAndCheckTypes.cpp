@@ -433,10 +433,7 @@ public:
         assert(variable);
 
         node->swapChild(node->endValue(), ensureType(node->endValue(), variable->getType()));
-        if (node->stepValue())
-        {
-            node->swapChild(node->stepValue(), ensureType(node->stepValue(), variable->getType()));
-        }
+        node->swapChild(node->stepValue(), ensureType(node->stepValue(), variable->getType()));
     }
 
     void visitCommandExpr(ast::CommandExpr* node) override

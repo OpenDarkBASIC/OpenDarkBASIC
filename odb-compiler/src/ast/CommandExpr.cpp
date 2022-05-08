@@ -1,17 +1,18 @@
 #include <utility>
 
-#include "odb-compiler/ast/CommandExpr.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/CommandExpr.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
+#include "odb-sdk/Str.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 CommandExpr::CommandExpr(std::string commandName, ArgList* args, SourceLocation* location) :
     Expression(location),
-    commandName_(std::move(commandName)),
+    commandName_(str::toLower(commandName)),
     args_(args),
     command_(nullptr)
 {
@@ -20,7 +21,7 @@ CommandExpr::CommandExpr(std::string commandName, ArgList* args, SourceLocation*
 // ----------------------------------------------------------------------------
 CommandExpr::CommandExpr(std::string commandName, SourceLocation* location) :
     Expression(location),
-    commandName_(std::move(commandName)),
+    commandName_(str::toLower(commandName)),
     command_(nullptr)
 {
 }

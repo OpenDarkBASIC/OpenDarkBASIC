@@ -98,7 +98,7 @@ public:
 
     Assignment* counter() const;
     Expression* endValue() const;
-    MaybeNull<Expression> stepValue() const;
+    Expression* stepValue() const;
     MaybeNull<Identifier> nextIdentifier() const;
     MaybeNull<Block> body() const;
 

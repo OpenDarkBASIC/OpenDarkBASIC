@@ -230,6 +230,14 @@ void CodeGenerator::SymbolTable::addGosubIndirectBr(llvm::IndirectBrInst* indire
     }
 }
 
+//llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, MaybeNull<ast::Expression> e)
+//{
+//    if (e.isNull())
+//    {
+//        return nullptr;
+//    }
+//}
+
 llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* e)
 {
     if (auto* cast = dynamic_cast<const ast::ImplicitCast*>(e))
@@ -275,7 +283,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         llvm::raw_string_ostream targetTypeStrStream{targetTypeStr};
         innerExpression->getType()->print(sourceTypeStrStream);
         targetType->print(targetTypeStrStream);
-        Log::codegen(Log::Severity::FATAL, "Unhandled LLVM cast from %s to %s", sourceTypeStr.c_str(),
+        Log::codegen(Log::Severity::FATAL, "Unhandled LLVM cast from %s to %s.\n", sourceTypeStr.c_str(),
                      targetTypeStr.c_str());
         return nullptr;
     }
@@ -295,11 +303,11 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Invalid inner type in negate unary op.");
+                Log::codegen(Log::Severity::FATAL, "Invalid inner type in negate unary op.\n");
                 return nullptr;
             }
         default:
-            Log::codegen(Log::Severity::FATAL, "Unimplemented unary op.");
+            Log::codegen(Log::Severity::FATAL, "Unimplemented unary op %s.\n", unaryOpTypeEnumString(unary->op()));
             return nullptr;
         }
     }
@@ -324,12 +332,12 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
                 // TODO: add string.
-                Log::codegen(Log::Severity::FATAL, "Unimplemented string concatenation.");
-                return nullptr;
+                Log::codegen(Log::Severity::FATAL, "Unimplemented string concatenation.\n");
+                return symtab.getOrAddStrLiteral("UNIMPLEMENTED STRING CONCAT");
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in add binary op.");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in add binary op.\n");
                 return nullptr;
             }
         case ast::BinaryOpType::SUB:
@@ -343,7 +351,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in sub binary op.");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in sub binary op.\n");
                 return nullptr;
             }
         case ast::BinaryOpType::MUL:
@@ -357,7 +365,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in mul binary op.");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in mul binary op.\n");
                 return nullptr;
             }
         case ast::BinaryOpType::DIV:
@@ -371,7 +379,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.\n");
                 return nullptr;
             }
         case ast::BinaryOpType::MOD:
@@ -385,7 +393,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in modulo binary op.");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in modulo binary op.\n");
                 return nullptr;
             }
         case ast::BinaryOpType::POW:
@@ -448,7 +456,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     cmpPredicate = llvm::CmpInst::Predicate::ICMP_NE;
                     break;
                 default:
-                    Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+                    Log::codegen(Log::Severity::FATAL, "Unknown integer cmp binary op %s.\n", binaryOpTypeEnumString(binary->op()));
                     return nullptr;
                 }
                 return builder.CreateICmp(cmpPredicate, left, right);
@@ -477,17 +485,17 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     cmpPredicate = llvm::CmpInst::Predicate::FCMP_ONE;
                     break;
                 default:
-                    Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+                    Log::codegen(Log::Severity::FATAL, "Unknown float cmp binary op %s.\n", binaryOpTypeEnumString(binary->op()));
                     return nullptr;
                 }
                 return builder.CreateFCmp(cmpPredicate, left, right);
             }
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
-                Log::codegen(Log::Severity::FATAL, "Unimplemented string compare.");
+                Log::codegen(Log::Severity::FATAL, "Unimplemented string compare.\n");
                 return nullptr;
             }
-            Log::codegen(Log::Severity::FATAL, "Unimplemented compare operator.");
+            Log::codegen(Log::Severity::FATAL, "Unimplemented compare operator.\n");
             return nullptr;
         }
         break;
@@ -498,7 +506,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         case ast::BinaryOpType::LOGICAL_XOR:
             return builder.CreateXor(left, right);
         default:
-            Log::codegen(Log::Severity::FATAL, "Unknown binary op.");
+            Log::codegen(Log::Severity::FATAL, "Unknown binary op %s.\n", binaryOpTypeEnumString(binary->op()));
             return nullptr;
         }
     }
@@ -564,7 +572,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         std::vector<llvm::Value*> args;
         if (call->args())
         {
-            for (const auto& arg : call->args()->expressions())
+            for (const ast::Expression* arg : call->args()->expressions())
             {
                 args.emplace_back(generateExpression(symtab, builder, arg));
             }
@@ -576,9 +584,9 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         assert(commandCall->command());
         llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
         std::vector<llvm::Value*> args;
-        if (commandCall->args())
+        if (commandCall->args().notNull())
         {
-            for (const auto& arg : commandCall->args()->expressions())
+            for (const ast::Expression* arg : commandCall->args()->expressions())
             {
                 args.emplace_back(generateExpression(symtab, builder, arg));
             }
@@ -592,6 +600,16 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 }
 
 llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock,
+                                               MaybeNull<ast::Block> statements)
+{
+    if (statements.isNull())
+    {
+        return initialBlock;
+    }
+    return generateBlock(symtab, initialBlock, statements.get());
+}
+
+llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock,
                                                const ast::Block* statements)
 {
     llvm::Function* parent = initialBlock->getParent();
@@ -601,10 +619,6 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
     builder.SetInsertPoint(initialBlock);
 
     // Iterate over the block.
-    if (!statements)
-    {
-        return builder.GetInsertBlock();
-    }
     for (ast::Statement* s : statements->statements())
     {
         if (auto* label = dynamic_cast<const ast::Label*>(s))
@@ -759,6 +773,33 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
+        else if (auto* whileLoop = dynamic_cast<const ast::WhileLoop*>(s))
+        {
+            // Create blocks.
+            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
+            llvm::BasicBlock* loopBodyBlock = llvm::BasicBlock::Create(ctx, "loopBody", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
+            symtab.loopExitBlocks[whileLoop] = endBlock;
+
+            // Jump into initial loop entry.
+            builder.CreateBr(loopBlock);
+
+            // Evaluate main loop condition.
+            builder.SetInsertPoint(loopBlock);
+            builder.CreateCondBr(generateExpression(symtab, builder, whileLoop->continueCondition()), loopBodyBlock, endBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, whileLoop->body());
+            loopBodyBlock->moveAfter(loopBlock);
+            endBlock->moveAfter(statementsEndBlock);
+
+            // Add a branch back to the beginning of the loop.
+            builder.SetInsertPoint(statementsEndBlock);
+            builder.CreateBr(loopBlock);
+
+            // Set loop end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
+        }
         else if (auto* varDecl = dynamic_cast<const ast::VarDecl*>(s))
         {
             assert(varDecl->variable());
@@ -824,9 +865,9 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             assert(call->function());
             llvm::Function* func = symtab.getGlobalTable().getFunction(call->function());
             std::vector<llvm::Value*> args;
-            if (call->args())
+            if (call->args().notNull())
             {
-                for (const auto& arg : call->args()->expressions())
+                for (const ast::Expression* arg : call->args()->expressions())
                 {
                     args.emplace_back(generateExpression(symtab, builder, arg));
                 }
@@ -845,7 +886,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
                 assert(commandCall->command());
                 llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
                 std::vector<llvm::Value*> args;
-                if (commandCall->args())
+                if (commandCall->args().notNull())
                 {
                     for (const auto& arg : commandCall->args()->expressions())
                     {

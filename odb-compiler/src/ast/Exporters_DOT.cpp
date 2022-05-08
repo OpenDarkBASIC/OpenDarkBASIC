@@ -168,9 +168,7 @@ private:
     {
         writeNamedConnection(node, node->counter(), "counter");
         writeNamedConnection(node, node->endValue(), "endValue");
-
-        if (node->stepValue().notNull())
-            writeNamedConnection(node, node->stepValue(), "stepValue");
+        writeNamedConnection(node, node->stepValue(), "stepValue");
         if (node->nextIdentifier().notNull())
             writeNamedConnection(node, node->nextIdentifier(), "nextSymbol");
         if (node->body().notNull())

@@ -1,17 +1,18 @@
 #include <utility>
 
-#include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
+#include "odb-sdk/Str.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
 CommandStmnt::CommandStmnt(std::string commandName, ArgList* args, SourceLocation* location) :
     Statement(location),
-    commandName_(std::move(commandName)),
+    commandName_(str::toLower(commandName)),
     args_(args),
     command_(nullptr)
 {
@@ -20,7 +21,7 @@ CommandStmnt::CommandStmnt(std::string commandName, ArgList* args, SourceLocatio
 // ----------------------------------------------------------------------------
 CommandStmnt::CommandStmnt(std::string commandName, SourceLocation* location) :
     Statement(location),
-    commandName_(std::move(commandName)),
+    commandName_(str::toLower(commandName)),
     command_(nullptr)
 {
 }

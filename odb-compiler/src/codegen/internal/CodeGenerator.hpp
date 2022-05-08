@@ -76,6 +76,7 @@ public:
     llvm::Value* generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* expression);
 
     // Returns the last basic block that this block of statements generated.
+    llvm::BasicBlock* generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock, MaybeNull<ast::Block> statements);
     llvm::BasicBlock* generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock, const ast::Block* statements);
 
     llvm::Function* generateFunctionPrototype(const ast::FuncDecl* astFunction);

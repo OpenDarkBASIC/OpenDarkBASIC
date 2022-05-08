@@ -4,6 +4,7 @@
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
@@ -289,6 +290,7 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIden
     Loop(location),
     counter_(counter),
     endValue_(endValue),
+    stepValue_(new ast::ByteLiteral(1, endValue->location())),
     nextIdentifier_(nextIdentifier),
     body_(body)
 {
@@ -299,6 +301,7 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIden
     Loop(location),
     counter_(counter),
     endValue_(endValue),
+    stepValue_(new ast::ByteLiteral(1, endValue->location())),
     nextIdentifier_(nextIdentifier)
 {
 }
@@ -308,6 +311,7 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceL
     Loop(location),
     counter_(counter),
     endValue_(endValue),
+    stepValue_(new ast::ByteLiteral(1, endValue->location())),
     body_(body)
 {
 }
@@ -316,7 +320,8 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceL
 ForLoop::ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location) :
     Loop(location),
     counter_(counter),
-    endValue_(endValue)
+    endValue_(endValue),
+    stepValue_(new ast::ByteLiteral(1, endValue->location()))
 {
 }
 
@@ -333,9 +338,9 @@ Expression* ForLoop::endValue() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<Expression> ForLoop::stepValue() const
+Expression* ForLoop::stepValue() const
 {
-    return stepValue_.get();
+    return stepValue_;
 }
 
 // ----------------------------------------------------------------------------
