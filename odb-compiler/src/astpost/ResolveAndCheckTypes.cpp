@@ -441,12 +441,12 @@ public:
 
     void visitCommandExpr(ast::CommandExpr* node) override
     {
-        node->setCommand(resolveCommand(node->commandName(), node->args(), node->location()));
+        node->setCommand(resolveCommand(node->commandName(), node->args(), true, node->location()));
     }
 
     void visitCommandStmnt(ast::CommandStmnt* node) override
     {
-        node->setCommand(resolveCommand(node->commandName(), node->args(), node->location()));
+        node->setCommand(resolveCommand(node->commandName(), node->args(), false, node->location()));
     }
 
     void visitFuncCallExpr(ast::FuncCallExpr* node) override
@@ -492,7 +492,7 @@ private:
     // function assumes that commandName is a valid command, and at least one command will be returned from the index.
     //
     // This function assumes that `args` has already been type checked.
-    const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args,
+    const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args, bool functionStyle,
                                        ast::SourceLocation* location)
     {
         // Extract arguments.
@@ -506,7 +506,7 @@ private:
             auto candidates = overloads;
 
             // Remove candidates which don't have the correct number of arguments.
-            auto differentArgumentCountPrecondition = [&](const Reference<cmd::Command>& candidate)
+            auto differentArgumentCountPrecondition = [&](const cmd::Command* candidate)
             {
                 size_t numArgs = args.notNull() ? args->expressions().size() : 0;
                 return candidate->args().size() != numArgs;
@@ -514,8 +514,24 @@ private:
             candidates.erase(std::remove_if(candidates.begin(), candidates.end(), differentArgumentCountPrecondition),
                              candidates.end());
 
+            // In the case of a function style command, remove all commands returning void. In the case of a normal
+            // command, remove all commands returning anything other than void.
+            auto returnTypePrecondition = [&](const cmd::Command* candidate)
+            {
+                if (functionStyle)
+                {
+                    return candidate->returnType() == cmd::Command::Type::Void;
+                }
+                else
+                {
+                    return candidate->returnType() != cmd::Command::Type::Void;
+                }
+            };
+            candidates.erase(std::remove_if(candidates.begin(), candidates.end(), returnTypePrecondition),
+                             candidates.end());
+
             // Remove candidates where arguments can not be converted.
-            auto convertArgumentsNotPossiblePrecondition = [&](const Reference<cmd::Command>& candidate) -> bool
+            auto convertArgumentsNotPossiblePrecondition = [&](const cmd::Command* candidate) -> bool
             {
                 for (std::size_t i = 0; i < candidate->args().size(); ++i)
                 {
