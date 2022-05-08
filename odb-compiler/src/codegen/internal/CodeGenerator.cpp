@@ -759,6 +759,14 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
+        else if (auto* varDecl = dynamic_cast<const ast::VarDecl*>(s))
+        {
+            assert(varDecl->variable());
+            // TODO: Handle initializer lists properly.
+            llvm::Value* expression = generateExpression(symtab, builder, varDecl->initializer()->expressions()[0]);
+            llvm::Value* storeTarget = symtab.getVar(varDecl->variable());
+            builder.CreateStore(expression, storeTarget);
+        }
         else if (auto* arrayDecl = dynamic_cast<const ast::ArrayDecl*>(s))
         {
             assert(arrayDecl->variable());
@@ -919,8 +927,9 @@ llvm::Function* CodeGenerator::generateFunctionPrototype(const ast::FuncDecl* as
 }
 
 void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
-                                         const ast::Block* block, bool isMainFunction)
+                                         const ast::Block* block, const ast::FuncDecl* funcDecl)
 {
+    bool isMainFunction = funcDecl == nullptr;
     auto& symtab = *symbolTables[function];
 
     auto* initialBlock = llvm::BasicBlock::Create(ctx, "entry", function);
@@ -981,7 +990,14 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
     if (!lastBlock->getTerminator())
     {
         builder.SetInsertPoint(lastBlock);
-        builder.CreateRetVoid();
+        if (funcDecl && funcDecl->returnValue().notNull())
+        {
+            builder.CreateRet(generateExpression(symtab, builder, funcDecl->returnValue()));
+        }
+        else
+        {
+            builder.CreateRetVoid();
+        }
     }
 }
 
@@ -1027,10 +1043,10 @@ bool CodeGenerator::generateModule(const ast::Program* program, std::vector<Plug
     }
 
     // Second pass: generate function bodies.
-    generateFunctionBody(gameEntryPointFunc, program->scope(), program->body(), true);
-    for (const auto& function : functions)
+    generateFunctionBody(gameEntryPointFunc, program->scope(), program->body(), nullptr);
+    for (const ast::FuncDecl* function : functions)
     {
-        generateFunctionBody(globalSymbolTable.getFunction(function), function->scope(), function->body(), false);
+        generateFunctionBody(globalSymbolTable.getFunction(function), function->scope(), function->body(), function);
     }
 
 #ifndef NDEBUG

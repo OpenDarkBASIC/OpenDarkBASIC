@@ -26,8 +26,8 @@
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-sdk/Log.hpp"
 
-#include <unordered_map>
 #include <iostream>
+#include <unordered_map>
 
 namespace odb::astpost {
 
@@ -100,7 +100,8 @@ public:
 
     void visit(ast::Node* node) override
     {
-        // The local scope of a node is equal to the scope of it's parent (in the case where we're not a FuncDecl or Program node).
+        // The local scope of a node is equal to the scope of it's parent (in the case where we're not a FuncDecl or
+        // Program node).
         info_.localScopeForNode[node] = info_.localScopeForNode[parent_];
     }
 
@@ -109,13 +110,145 @@ private:
     ast::Node* parent_;
 };
 
-
-class ResolverVisitor : public ast::GenericVisitor
+class VariableResolverVisitor : public ast::GenericVisitor
 {
 public:
-    ResolverVisitor(const cmd::CommandIndex& cmdIndex, FunctionInfo& info,
-                   ast::Node* current, ast::Node* parent)
-        : cmdIndex_(cmdIndex), info_(info), current_(current), parent_(parent)
+    VariableResolverVisitor(FunctionInfo& info, ast::Node* current, ast::Node* parent)
+        : info_(info), current_(current), parent_(parent)
+    {
+    }
+
+    void visitVarDecl(ast::VarDecl* node) override
+    {
+        // If we're declaring a new variable, it must not exist already.
+        auto annotation = node->identifier()->annotation();
+        ast::Variable* variable =
+            info_.localScopeForNode.at(node)->lookup(node->identifier()->name(), annotation, false);
+        if (variable)
+        {
+            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                       "Variable %s has already been declared as type %s.",
+                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
+            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
+            fail = true;
+            return;
+        }
+
+        // Declare new variable and replace the identifier node with this node.
+        variable =
+            new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
+        info_.localScopeForNode.at(node)->add(variable);
+        node->swapChild(node->identifier(), variable);
+    }
+
+    void visitArrayDecl(ast::ArrayDecl* node) override
+    {
+        // If we're declaring a new array, it either must not exist, or if it does, it should have the same type.
+        auto annotation = node->identifier()->annotation();
+        auto* scope = info_.localScopeForNode.at(node);
+        ast::Variable* variable = scope->lookup(node->identifier()->name(), annotation, true);
+        if (variable && variable->getType() != node->type())
+        {
+            Log::dbParserSemanticError(node->identifier()->location()->getFileLineColumn().c_str(),
+                                       "Array '%s' has already been declared as type %s.",
+                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
+            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
+            fail = true;
+            return;
+        }
+        else if (!variable)
+        {
+            // Declare new variable.
+            variable =
+                new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
+            scope->add(variable);
+        }
+
+        node->setVariable(resolveVariable(node->identifier(), true));
+    }
+
+    void visitVarRef(ast::VarRef* node) override
+    {
+        node->setVariable(resolveVariable(node->identifier(), false));
+    }
+
+    void visitArrayUndim(ast::ArrayUndim* node) override
+    {
+        node->setVariable(resolveVariable(node->identifier(), true));
+    }
+
+    void visitArrayRef(ast::ArrayRef* node) override
+    {
+        node->setVariable(resolveVariable(node->identifier(), true));
+    }
+
+    void visitFuncCallExprOrArrayRef(ast::FuncCallExprOrArrayRef* node) override
+    {
+        // Try to find the function first.
+        auto func = info_.functionsByName.find(node->identifier()->name());
+        if (func != info_.functionsByName.end())
+        {
+            // Check that the number of arguments is correct.
+            size_t currentArgCount = node->args().notNull() ? node->args()->expressions().size() : 0;
+            size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->expressions().size() : 0;
+            if (currentArgCount == expectedArgCount)
+            {
+                // We have a func call expr. The next pass will perform type checking.
+                auto* newFuncCallExpr = new ast::FuncCallExpr(node->identifier(), node->args(), node->location());
+                replaceNode(newFuncCallExpr);
+                return;
+            }
+        }
+
+        // Turn this into an ArrayRef, then call visitArrayRef to do the usual argument processing.
+        auto* newArrayRef = new ast::ArrayRef(node->identifier(), node->args(), node->location());
+        newArrayRef->accept(this);
+        replaceNode(newArrayRef);
+    }
+
+    void visit(ast::Node* node) override {}
+
+    bool fail = false;
+
+private:
+    void replaceNode(ast::Node* newNode) { parent_->swapChild(current_, newNode); }
+
+    ast::Variable* resolveVariable(const ast::Identifier* identifier, bool isArray)
+    {
+        auto annotation = identifier->annotation();
+        auto* scope = info_.localScopeForNode.at(identifier);
+        // TODO: This should take arguments into account as well.
+        ast::Variable* variable = scope->lookup(identifier->name(), annotation, isArray);
+        if (!variable)
+        {
+            if (isArray)
+            {
+                // Arrays are not implicitly declared.
+                Log::dbParserSemanticError(identifier->location()->getFileLineColumn().c_str(),
+                                           "Array '%s' does not exist in this scope.", identifier->name().c_str());
+                fail = true;
+            }
+            else
+            {
+                // If the variable doesn't exist, it gets implicitly declared with the annotation type.
+                variable = new ast::Variable(identifier->location(), identifier->name(), annotation,
+                                             ast::Type::getFromAnnotation(annotation));
+                scope->add(variable);
+            }
+        }
+        return variable;
+    }
+
+    const FunctionInfo& info_;
+    ast::Node* current_;
+    ast::Node* parent_;
+};
+
+class ResolveFunctionsAndCheckTypesVisitor : public ast::GenericVisitor
+{
+public:
+    ResolveFunctionsAndCheckTypesVisitor(const cmd::CommandIndex& cmdIndex, FunctionInfo& info)
+        : cmdIndex_(cmdIndex), info_(info)
     {
     }
 
@@ -161,39 +294,39 @@ public:
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat2x2:
-                    expectedInitListLength = 2*2;
+                    expectedInitListLength = 2 * 2;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat2x3:
-                    expectedInitListLength = 2*3;
+                    expectedInitListLength = 2 * 3;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat2x4:
-                    expectedInitListLength = 2*4;
+                    expectedInitListLength = 2 * 4;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat3x2:
-                    expectedInitListLength = 3*2;
+                    expectedInitListLength = 3 * 2;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat3x3:
-                    expectedInitListLength = 3*3;
+                    expectedInitListLength = 3 * 3;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat3x4:
-                    expectedInitListLength = 3*4;
+                    expectedInitListLength = 3 * 4;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat4x2:
-                    expectedInitListLength = 4*2;
+                    expectedInitListLength = 4 * 2;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat4x3:
-                    expectedInitListLength = 4*3;
+                    expectedInitListLength = 4 * 3;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Mat4x4:
-                    expectedInitListLength = 4*4;
+                    expectedInitListLength = 4 * 4;
                     expectedInitListType = ast::Type::getBuiltin(ast::BuiltinType::Float);
                     break;
                 case ast::BuiltinType::Quat:
@@ -227,8 +360,9 @@ public:
             }
             if (expectedInitListLength > 1 && initListLength != expectedInitListLength)
             {
-                Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
-                                           "An initializer list must be of length %d to initialize a variable of type %s.",
+                Log::dbParserSemanticError(
+                    node->location()->getFileLineColumn().c_str(),
+                    "An initializer list must be of length %d to initialize a variable of type %s.",
                     expectedInitListLength, varType.toString().c_str());
                 fail = true;
                 return;
@@ -240,55 +374,14 @@ public:
                 node->initializer()->swapChild(expression, ensureType(expression, expectedInitListType));
             }
         }
-
-        // If we're declaring a new variable, it must not exist already.
-        auto annotation = node->identifier()->annotation();
-        ast::Variable* variable = info_.localScopeForNode.at(node)->lookup(node->identifier()->name(), annotation, false);
-        if (variable)
-        {
-            Log::dbParserSemanticError(
-                node->location()->getFileLineColumn().c_str(), "Variable %s has already been declared as type %s.",
-                node->identifier()->name().c_str(), variable->getType().toString().c_str());
-            Log::dbParserSemanticError(
-                variable->location()->getFileLineColumn().c_str(), "See last declaration.");
-            fail = true;
-            return;
-        }
-
-        // Declare new variable and replace the identifier node with this node.
-        variable = new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, varType);
-        info_.localScopeForNode.at(node)->add(variable);
-        node->swapChild(node->identifier(), variable);
     }
 
     void visitArrayDecl(ast::ArrayDecl* node) override
     {
-        // If we're declaring a new array, it either must not exist, or if it does, it should have the same type.
-        auto annotation = node->identifier()->annotation();
-        auto* scope = info_.localScopeForNode.at(node);
-        ast::Variable* variable = scope->lookup(node->identifier()->name(), annotation, true);
-        if (variable && variable->getType() != node->type())
-        {
-            Log::dbParserSemanticError(node->identifier()->location()->getFileLineColumn().c_str(),
-                                       "Array '%s' has already been declared as type %s.",
-                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
-            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
-            fail = true;
-            return;
-        }
-        else if (!variable)
-        {
-            // Declare new variable.
-            variable =
-                new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
-            scope->add(variable);
-        }
-
         for (ast::Expression* index : node->dims()->expressions())
         {
             node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
         }
-        node->setVariable(resolveVariable(node->identifier(), true));
     }
 
     void visitVarAssignment(ast::VarAssignment* node) override
@@ -298,13 +391,7 @@ public:
 
     void visitArrayAssignment(ast::ArrayAssignment* node) override
     {
-        node->swapChild(node->expression(),
-                        ensureType(node->expression(), node->array()->getType()));
-    }
-
-    void visitVarRef(ast::VarRef* node) override
-    {
-        node->setVariable(resolveVariable(node->identifier(), false));
+        node->swapChild(node->expression(), ensureType(node->expression(), node->array()->getType()));
     }
 
     void visitArrayUndim(ast::ArrayUndim* node) override
@@ -313,7 +400,6 @@ public:
         {
             node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
         }
-        node->setVariable(resolveVariable(node->identifier(), true));
     }
 
     void visitArrayRef(ast::ArrayRef* node) override
@@ -322,12 +408,12 @@ public:
         {
             node->args()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
         }
-        node->setVariable(resolveVariable(node->identifier(), true));
     }
 
     void visitConditional(ast::Conditional* node) override
     {
-        node->swapChild(node->condition(), ensureType(node->condition(), ast::Type::getBuiltin(ast::BuiltinType::Boolean)));
+        node->swapChild(node->condition(),
+                        ensureType(node->condition(), ast::Type::getBuiltin(ast::BuiltinType::Boolean)));
     }
 
     void visitForLoop(ast::ForLoop* node) override
@@ -365,52 +451,12 @@ public:
 
     void visitFuncCallExpr(ast::FuncCallExpr* node) override
     {
-        auto func = info_.functionsByName.find(node->identifier()->name());
-        if (func == info_.functionsByName.end())
-        {
-            Log::dbParserSemanticError(
-                node->location()->getFileLineColumn().c_str(),
-                "Unknown function '%s'.\n", node->identifier()->name().c_str());
-            node->location()->printUnderlinedSection(Log::info);
-            fail = true;
-        }
-        // TODO: Consider replacing the function identifier with a pointer to the function decl.
-        node->setFunction(func->second);
-    }
-
-    void visitFuncCallExprOrArrayRef(ast::FuncCallExprOrArrayRef* node) override
-    {
-        auto func = info_.functionsByName.find(node->identifier()->name());
-        if (func == info_.functionsByName.end())
-        {
-            // Turn this into an ArrayRef, then call visitArrayRef to do the usual argument processing..
-            auto* newArrayRef = new ast::ArrayRef(node->identifier(), node->args(), node->location());
-            newArrayRef->accept(this);
-            replaceNode(newArrayRef);
-        }
-        else
-        {
-            auto* newFuncCallExpr =
-                new ast::FuncCallExpr(node->identifier(), node->args(),
-                                      node->location());
-            // TODO: Consider replacing the function identifier with a pointer to the function decl.
-            newFuncCallExpr->setFunction(func->second);
-            replaceNode(newFuncCallExpr);
-        }
+        node->setFunction(resolveFunction(node->identifier()->name(), node->args(), node->location()));
     }
 
     void visitFuncCallStmnt(ast::FuncCallStmnt* node) override
     {
-        auto func = info_.functionsByName.find(node->identifier()->name());
-        if (func == info_.functionsByName.end())
-        {
-            Log::dbParserSemanticError(
-                node->location()->getFileLineColumn().c_str(),
-                "Unknown function '%s'.\n", node->identifier()->name().c_str());
-            node->location()->printUnderlinedSection(Log::info);
-            fail = true;
-        }
-        node->setFunction(func->second);
+        node->setFunction(resolveFunction(node->identifier()->name(), node->args(), node->location()));
     }
 
     void visit(ast::Node* node) override {}
@@ -418,38 +464,6 @@ public:
     bool fail = false;
 
 private:
-    void replaceNode(ast::Node* newNode)
-    {
-        parent_->swapChild(current_, newNode);
-    }
-
-    ast::Variable* resolveVariable(const ast::Identifier* identifier, bool isArray)
-    {
-        auto annotation = identifier->annotation();
-        auto* scope = info_.localScopeForNode.at(identifier);
-        // TODO: This should take arguments into account as well.
-        ast::Variable* variable = scope->lookup(identifier->name(), annotation, isArray);
-        if (!variable)
-        {
-            if (isArray)
-            {
-                // Arrays are not implicitly declared.
-                Log::dbParserSemanticError(identifier->location()->getFileLineColumn().c_str(),
-                                           "Array '%s' does not exist in this scope.",
-                                           identifier->name().c_str());
-                fail = true;
-            }
-            else
-            {
-                // If the variable doesn't exist, it gets implicitly declared with the annotation type.
-                variable = new ast::Variable(identifier->location(), identifier->name(), annotation,
-                                             ast::Type::getFromAnnotation(annotation));
-                scope->add(variable);
-            }
-        }
-        return variable;
-    }
-
     ast::Expression* ensureType(ast::Expression* expression, ast::Type targetType)
     {
         ast::Type expressionType = expression->getType();
@@ -467,10 +481,8 @@ private:
         }
 
         // Unhandled cast.
-        Log::dbParserSemanticError(
-            expression->location()->getFileLineColumn().c_str(),
-            "Failed to convert %s to %s.\n", expressionType.toString().c_str(),
-            targetType.toString().c_str());
+        Log::dbParserSemanticError(expression->location()->getFileLineColumn().c_str(), "Failed to convert %s to %s.\n",
+                                   expressionType.toString().c_str(), targetType.toString().c_str());
         expression->location()->printUnderlinedSection(Log::info);
         fail = true;
         return expression;
@@ -480,7 +492,8 @@ private:
     // function assumes that commandName is a valid command, and at least one command will be returned from the index.
     //
     // This function assumes that `args` has already been type checked.
-    const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args, ast::SourceLocation* location)
+    const cmd::Command* resolveCommand(const std::string& commandName, MaybeNull<ast::ArgList> args,
+                                       ast::SourceLocation* location)
     {
         // Extract arguments.
         auto overloads = cmdIndex_.lookup(commandName);
@@ -520,15 +533,16 @@ private:
                 }
                 return false;
             };
-            candidates.erase(std::remove_if(candidates.begin(), candidates.end(), convertArgumentsNotPossiblePrecondition),
-                             candidates.end());
+            candidates.erase(
+                std::remove_if(candidates.begin(), candidates.end(), convertArgumentsNotPossiblePrecondition),
+                candidates.end());
 
             if (candidates.empty())
             {
                 auto types = formatArgTypes(args);
-                Log::dbParserSemanticError(
-                    location->getFileLineColumn().c_str(),
-                    "Unable to find matching overload for command '%s' matching '%s'.\n", commandName.c_str(), types.c_str());
+                Log::dbParserSemanticError(location->getFileLineColumn().c_str(),
+                                           "Unable to find matching overload for command '%s' matching '%s'.\n",
+                                           commandName.c_str(), types.c_str());
                 location->printUnderlinedSection(Log::info);
                 for (cmd::Command* cmd : overloads)
                 {
@@ -546,8 +560,8 @@ private:
                 return nullptr;
             }
 
-            // Sort candidates in ascending order by how suitable they are. The candidate at the end of the sorted list is
-            // the best match.
+            // Sort candidates in ascending order by how suitable they are. The candidate at the end of the sorted list
+            // is the best match.
             auto candidateRankFunction = [&](const Reference<cmd::Command>& candidateA,
                                              const Reference<cmd::Command>& candidateB) -> bool
             {
@@ -576,7 +590,8 @@ private:
                         }
                         else if (overloadType.isBuiltinType() && argType.isBuiltinType())
                         {
-                            if (isIntegralType(*overloadType.getBuiltinType()) && isIntegralType(*argType.getBuiltinType()))
+                            if (isIntegralType(*overloadType.getBuiltinType()) &&
+                                isIntegralType(*argType.getBuiltinType()))
                             {
                                 score += 1;
                             }
@@ -613,8 +628,6 @@ private:
             return nullptr;
         }
 
-        // Now we have selected an overload, we may need to insert cast operations when passing arguments (in case the
-        // overload is not perfect). Do that now.
         if (args.notNull())
         {
             for (std::size_t i = 0; i < args->expressions().size(); ++i)
@@ -628,13 +641,51 @@ private:
         return command;
     }
 
+    ast::FuncDecl* resolveFunction(const std::string& name, MaybeNull<ast::ArgList> args, ast::SourceLocation* location)
+    {
+        auto func = info_.functionsByName.find(name);
+        if (func == info_.functionsByName.end())
+        {
+            Log::dbParserSemanticError(location->getFileLineColumn().c_str(), "Unknown function '%s'.\n", name.c_str());
+            location->printUnderlinedSection(Log::info);
+            fail = true;
+            return nullptr;
+        }
+
+        // Check that the number of arguments is correct.
+        size_t currentArgCount = args.notNull() ? args->expressions().size() : 0;
+        size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->expressions().size() : 0;
+        if (currentArgCount != expectedArgCount)
+        {
+            std::string types;
+            if (!func->second->args().notNull())
+            {
+                types = " with signature '" + formatArgTypes(func->second->args()) + "'";
+            }
+            Log::dbParserSemanticError(
+                location->getFileLineColumn().c_str(), "Function '%s'%s expects %d arguments, but %d %s provided.\n",
+                name.c_str(), types.c_str(), expectedArgCount, currentArgCount, currentArgCount == 1 ? "was" : "were");
+            fail = true;
+            return nullptr;
+        }
+
+        if (args.notNull())
+        {
+            for (std::size_t i = 0; i < args->expressions().size(); ++i)
+            {
+                ast::Expression* arg = args->expressions()[i];
+                args->swapChild(arg, ensureType(arg, func->second->args()->expressions()[i]->getType()));
+            }
+        }
+
+        return func->second;
+    }
+
     const cmd::CommandIndex& cmdIndex_;
     const FunctionInfo& info_;
-    ast::Node* current_;
-    ast::Node* parent_;
 };
 
-}
+} // namespace
 
 // ----------------------------------------------------------------------------
 ResolveAndCheckTypes::ResolveAndCheckTypes(const cmd::CommandIndex& cmdIndex) : cmdIndex_(cmdIndex)
@@ -656,15 +707,32 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
         (*it)->accept(&visitor);
     }
 
-    // Do a post-order traversal (bottom up), resolving types, commands, functions and variables as we go.
-    // We have to go bottom up because nodes in the tree depend on their children when figuring out their type.
-    auto range = ast::postOrderTraversal(root);
-    for (auto it = range.begin(); it != range.end(); ++it)
+    // First pass, do a post-order traversal, allocate and resolve all variables.
+    auto firstPass = ast::postOrderTraversal(root);
+    for (auto it = firstPass.begin(); it != firstPass.end(); ++it)
     {
-//        std::cout << "Processing " << (*it)->toString() << std::endl;
-        ResolverVisitor resolver{cmdIndex_, functionInfo, *it, it.parent()};
+        VariableResolverVisitor resolver{functionInfo, *it, it.parent()};
         (*it)->accept(&resolver);
         if (resolver.fail)
+        {
+            fail = true;
+        }
+    }
+    if (fail)
+    {
+        return false;
+    }
+
+    // Do a post-order traversal (bottom up), resolving types, commands, and functions as we go.
+    // We have to go bottom up because nodes in the tree depend on their children when figuring out their type.
+    // We have to resolve functions here because function and command resolution depends on the types of the arguments
+    // (for overload resolution).
+    auto secondPass = ast::postOrderTraversal(root);
+    for (auto it = secondPass.begin(); it != secondPass.end(); ++it)
+    {
+        ResolveFunctionsAndCheckTypesVisitor checkTypes(cmdIndex_, functionInfo);
+        (*it)->accept(&checkTypes);
+        if (checkTypes.fail)
         {
             fail = true;
         }
@@ -673,4 +741,4 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
     return !fail;
 }
 
-}
+} // namespace odb::astpost

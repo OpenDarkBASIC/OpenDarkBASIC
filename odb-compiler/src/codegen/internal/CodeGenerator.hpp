@@ -80,7 +80,7 @@ public:
 
     llvm::Function* generateFunctionPrototype(const ast::FuncDecl* astFunction);
     void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
-                              const ast::Block* block, bool isMainFunction);
+                              const ast::Block* block, const ast::FuncDecl* funcDecl);
 
     bool generateModule(const ast::Program* program, std::vector<PluginInfo*> pluginsToLoad);
 
