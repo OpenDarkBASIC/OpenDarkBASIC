@@ -83,7 +83,7 @@ public:
     void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
                               const ast::Block* block, const ast::FuncDecl* funcDecl);
 
-    bool generateModule(const ast::Program* program, std::vector<PluginInfo*> pluginsToLoad);
+    bool generateModule(const ast::Program* program);
 
 private:
     llvm::LLVMContext& ctx;

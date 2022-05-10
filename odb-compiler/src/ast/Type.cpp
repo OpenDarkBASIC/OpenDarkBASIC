@@ -15,6 +15,12 @@ bool isFloatingPointType(BuiltinType type)
     return type == BuiltinType::DoubleFloat || type == BuiltinType::Float;
 }
 
+bool isSigned(BuiltinType type)
+{
+    return type == BuiltinType::DoubleInteger || type == BuiltinType::Integer || type == BuiltinType::DoubleFloat ||
+           type == BuiltinType::Float;
+}
+
 const char* builtinTypeEnumString(BuiltinType type)
 {
     switch (type)

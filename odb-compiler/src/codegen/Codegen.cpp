@@ -31,8 +31,12 @@ bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTri
             Log::info.print("Code generation not implemented for the specified SDK type.");
             return false;
         }
+        if (!engineInterface->setPluginList(cmdIndex.librariesAsList()))
+        {
+            return false;
+        }
         CodeGenerator gen(module, *engineInterface);
-        if (!gen.generateModule(program, cmdIndex.librariesAsList()))
+        if (!gen.generateModule(program))
         {
             return false;
         }

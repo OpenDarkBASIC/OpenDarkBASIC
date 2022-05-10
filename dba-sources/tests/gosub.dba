@@ -1,0 +1,11 @@
+x = 4
+print x
+gosub setX
+print x
+wait key
+end
+
+setX:
+x = 5
+print "Updated X!"
+return

@@ -8,6 +8,8 @@ class ODBEngineInterface : public EngineInterface
 public:
     ODBEngineInterface(llvm::Module& module, const cmd::CommandIndex& index);
 
+    bool setPluginList(std::vector<PluginInfo*> pluginsToLoad) override;
+
     llvm::Function* generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                             llvm::FunctionType* functionType) override;
 
@@ -15,7 +17,12 @@ public:
     llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) override;
     void generateFreeArray(llvm::IRBuilder<>& builder, llvm::Value *arrayPtr) override;
 
+    llvm::Value* generateCopyString(llvm::IRBuilder<>& builder, llvm::Value* src) override;
+    llvm::Value* generateAddString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs) override;
+    llvm::Value* generateCompareString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs, ast::BinaryOpType op) override;
+    void generateFreeString(llvm::IRBuilder<>& builder, llvm::Value *str) override;
+
     llvm::Value *generateMainLoopCondition(llvm::IRBuilder<>& builder) override;
-    void generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad) override;
+    void generateEntryPoint(llvm::Function* gameEntryPoint) override;
 };
 } // namespace odb::codegen

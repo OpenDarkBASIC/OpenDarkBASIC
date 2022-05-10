@@ -252,10 +252,21 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return innerExpression;
         }
 
+        bool isExprTypeSigned = false;
+        bool isTargetTypeSigned = false;
+        if (cast->expr()->getType().isBuiltinType())
+        {
+            isExprTypeSigned = ast::isSigned(*cast->expr()->getType().getBuiltinType());
+        }
+        if (cast->getType().isBuiltinType())
+        {
+            isTargetTypeSigned = ast::isSigned(*cast->getType().getBuiltinType());
+        }
+
         // int -> int casts.
         if (expressionType->isIntegerTy() && targetType->isIntegerTy())
         {
-            return builder.CreateIntCast(innerExpression, targetType, true);
+            return builder.CreateIntCast(innerExpression, targetType, isExprTypeSigned);
         }
 
         // fp -> fp casts.
@@ -267,13 +278,27 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         // int -> fp casts.
         if (expressionType->isIntegerTy() && targetType->isFloatingPointTy())
         {
-            return builder.CreateSIToFP(innerExpression, targetType);
+            if (isExprTypeSigned)
+            {
+                return builder.CreateSIToFP(innerExpression, targetType);
+            }
+            else
+            {
+                return builder.CreateUIToFP(innerExpression, targetType);
+            }
         }
 
         // fp -> int casts.
         if (expressionType->isFloatingPointTy() && targetType->isIntegerTy())
         {
-            return builder.CreateFPToSI(innerExpression, targetType);
+            if (isTargetTypeSigned)
+            {
+                return builder.CreateFPToSI(innerExpression, targetType);
+            }
+            else
+            {
+                return builder.CreateFPToUI(innerExpression, targetType);
+            }
         }
 
         // Unhandled cast. Runtime error.
@@ -331,9 +356,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
-                // TODO: add string.
-                Log::codegen(Log::Severity::FATAL, "Unimplemented string concatenation.\n");
-                return symtab.getOrAddStrLiteral("UNIMPLEMENTED STRING CONCAT");
+                return engineInterface.generateAddString(builder, left, right);
             }
             else
             {
@@ -371,7 +394,14 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         case ast::BinaryOpType::DIV:
             if (left->getType()->isIntegerTy())
             {
-                return builder.CreateSDiv(left, right);
+                if (ast::isSigned(*binary->lhs()->getType().getBuiltinType()))
+                {
+                    return builder.CreateSDiv(left, right);
+                }
+                else
+                {
+                    return builder.CreateUDiv(left, right);
+                }
             }
             else if (left->getType()->isFloatTy())
             {
@@ -385,7 +415,14 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         case ast::BinaryOpType::MOD:
             if (left->getType()->isIntegerTy())
             {
-                return builder.CreateSRem(left, right);
+                if (ast::isSigned(*binary->lhs()->getType().getBuiltinType()))
+                {
+                    return builder.CreateSRem(left, right);
+                }
+                else
+                {
+                    return builder.CreateURem(left, right);
+                }
             }
             else if (left->getType()->isFloatTy())
             {
@@ -492,8 +529,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
             else if (left->getType()->isPointerTy() && left->getType()->getPointerElementType()->isIntegerTy(8))
             {
-                Log::codegen(Log::Severity::FATAL, "Unimplemented string compare.\n");
-                return nullptr;
+                return engineInterface.generateCompareString(builder, left, right, binary->op());
             }
             Log::codegen(Log::Severity::FATAL, "Unimplemented compare operator.\n");
             return nullptr;
@@ -634,7 +670,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         }
         else if (auto* goto_ = dynamic_cast<const ast::Goto*>(s))
         {
-            printString(builder, builder.CreateGlobalStringPtr("Jumping to " + goto_->label()->identifier()->name()));
+//            printString(builder, builder.CreateGlobalStringPtr("Jumping to " + goto_->label()->identifier()->name()));
             builder.CreateBr(symtab.getOrAddLabelBlock(goto_->label()));
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterGoto", parent));
         }
@@ -646,8 +682,8 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             symtab.addGosubReturnPoint(continuationBlock);
             builder.CreateCall(gosubPushAddress, {symtab.gosubStack, symtab.gosubStackPointer,
                                                   llvm::BlockAddress::get(continuationBlock)});
-            printString(builder,
-                        builder.CreateGlobalStringPtr("Pushed address. Jumping to " + gosub_->label()->identifier()->name()));
+//            printString(builder,
+//                        builder.CreateGlobalStringPtr("Pushed address. Jumping to " + gosub_->label()->identifier()->name()));
             builder.CreateBr(labelBlock);
             builder.SetInsertPoint(continuationBlock);
         }
@@ -904,7 +940,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         {
             (void)subReturn; // SubReturn has no useful data members.
             auto* returnAddr = builder.CreateCall(gosubPopAddress, {symtab.gosubStack, symtab.gosubStackPointer});
-            printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
+//            printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
             symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
         }
@@ -1053,7 +1089,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
     }
 }
 
-bool CodeGenerator::generateModule(const ast::Program* program, std::vector<PluginInfo*> pluginsToLoad)
+bool CodeGenerator::generateModule(const ast::Program* program)
 {
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 
@@ -1105,9 +1141,8 @@ bool CodeGenerator::generateModule(const ast::Program* program, std::vector<Plug
     module.print(llvm::errs(), nullptr);
 #endif
 
-    // Generate executable entry point that initialises the DBP engine and calls the games entry
-    // point.
-    engineInterface.generateEntryPoint(gameEntryPointFunc, std::move(pluginsToLoad));
+    // Generate executable entry point that initialises the engine and calls the games' entry point.
+    engineInterface.generateEntryPoint(gameEntryPointFunc);
 
     // Dump AST.
     std::stack<std::pair<const ast::Node*, int>> stack;

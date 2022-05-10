@@ -1,0 +1,9 @@
+printnum(10)
+printnum(20)
+printnum(30)
+wait key
+end
+
+function printnum(n#)
+print n#
+endfunction

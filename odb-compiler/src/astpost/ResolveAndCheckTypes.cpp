@@ -19,6 +19,7 @@
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
+#include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Variable.hpp"
@@ -250,6 +251,34 @@ public:
     ResolveFunctionsAndCheckTypesVisitor(const cmd::CommandIndex& cmdIndex, FunctionInfo& info)
         : cmdIndex_(cmdIndex), info_(info)
     {
+    }
+
+    void visitUnaryOp(ast::UnaryOp* node) override
+    {
+        auto exprType = node->expr()->getType();
+
+        // If we have a type which is not a floating point or integral type.
+        if (!(exprType.isBuiltinType() && (ast::isFloatingPointType(*exprType.getBuiltinType()) ||
+                                           ast::isIntegralType(*exprType.getBuiltinType()))))
+        {
+            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                       "The %s operator only works with numeric types.",
+                                       ast::unaryOpTypeEnumString(node->op()));
+            fail = true;
+            return;
+        }
+
+        // If we're negating an unsigned integral, we need to cast it to a large enough signed integer first.
+        auto builtinType = *exprType.getBuiltinType();
+        if (builtinType == ast::BuiltinType::Byte || builtinType == ast::BuiltinType::Word)
+        {
+            node->swapChild(node->expr(), ensureType(node->expr(), ast::Type::getBuiltin(ast::BuiltinType::Integer)));
+        }
+        if (builtinType == ast::BuiltinType::Dword)
+        {
+            node->swapChild(node->expr(),
+                            ensureType(node->expr(), ast::Type::getBuiltin(ast::BuiltinType::DoubleInteger)));
+        }
     }
 
     void visitBinaryOp(ast::BinaryOp* node) override

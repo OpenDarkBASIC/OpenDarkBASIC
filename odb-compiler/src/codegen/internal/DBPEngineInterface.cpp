@@ -108,6 +108,39 @@ DBPEngineInterface::DBPEngineInterface(llvm::Module& module, const cmd::CommandI
     exitProcessFunc->setDoesNotReturn();
 }
 
+bool DBPEngineInterface::setPluginList(std::vector<PluginInfo*> pluginsToLoad)
+{
+    if (pluginsToLoad.empty())
+    {
+        Log::codegen(Log::ERROR, "No plugins specified.");
+        return false;
+    }
+
+    // Ensuring that DBProCore is loaded first.
+    auto isCorePlugin = [](const PluginInfo* plugin) -> bool
+    {
+        return strcmp(plugin->getName(), "DBProCore") == 0;
+    };
+    for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
+    {
+        if (isCorePlugin(pluginsToLoad[i]))
+        {
+            // Swap with front.
+            std::swap(pluginsToLoad[0], pluginsToLoad[i]);
+            break;
+        }
+    }
+    if (!isCorePlugin(pluginsToLoad[0]))
+    {
+        Log::codegen(Log::ERROR, "DBProCore.dll is missing.");
+        return false;
+    }
+
+    dbproCore = pluginsToLoad[0];
+    plugins = std::move(pluginsToLoad);
+    return true;
+}
+
 llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                                            llvm::FunctionType* functionType)
 {
@@ -123,8 +156,19 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     {
         pluginReturnType = dwordTy;
     }
+
+    std::vector<llvm::Type*> pluginFunctionParams;
+    // Commands which return a string take an extra string as it's first argument (to be freed).
+    if (command.returnType() == cmd::Command::Type::String)
+    {
+        pluginFunctionParams.push_back(dwordTy);
+    }
+    for (llvm::Type* arg : functionType->params())
+    {
+        pluginFunctionParams.push_back(arg);
+    }
     llvm::FunctionType* pluginFunctionType =
-        llvm::FunctionType::get(pluginReturnType, functionType->params(), functionType->isVarArg());
+        llvm::FunctionType::get(pluginReturnType, pluginFunctionParams, functionType->isVarArg());
 
     // Obtain function ptr from the relevant plugin.
     // TODO: Call this once at the beginning of the application.
@@ -134,12 +178,17 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     //    printString(builder, builder.CreateGlobalStringPtr("Calling " + functionName));
 
     // Call it.
-    std::vector<llvm::Value*> forwardedArgs;
+    std::vector<llvm::Value*> commandArgs;
+    if (command.returnType() == cmd::Command::Type::String)
+    {
+        // Pass a nullptr to the extra string argument in functions which return a string.
+        commandArgs.emplace_back(llvm::ConstantInt::get(dwordTy, 0));
+    }
     for (llvm::Argument& arg : function->args())
     {
-        forwardedArgs.emplace_back(&arg);
+        commandArgs.emplace_back(&arg);
     }
-    llvm::CallInst* commandResult = builder.CreateCall(commandFunction, forwardedArgs);
+    llvm::CallInst* commandResult = builder.CreateCall(commandFunction, commandArgs);
     //    printString(builder, builder.CreateGlobalStringPtr("Finished calling " + functionName));
     if (functionType->getReturnType()->isVoidTy())
     {
@@ -160,18 +209,6 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
 }
 
 llvm::Value* DBPEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builder, ast::Type arrayElementTy, std::vector<llvm::Value*> dims) {
-    // Get DBProCore library.
-    const PluginInfo* dbproCore = nullptr;
-    for (const PluginInfo* plugin : index.librariesAsList()) {
-        if (strcmp(plugin->getName(), "DBProCore") == 0) {
-            dbproCore = plugin;
-            break;
-        }
-    }
-    if (!dbproCore) {
-        fatalError("DBProCore.dll missing.");
-    }
-
     // DimDDD has 11 parameters (old array ptr, type and size of element, 9 dimensions)
     std::vector<llvm::Type*> paramTypes;
     paramTypes.resize(11);
@@ -317,51 +354,80 @@ void DBPEngineInterface::generateFreeArray(llvm::IRBuilder<>& builder, llvm::Val
     (void)(builder, arrayPtr);
 }
 
-llvm::Value *DBPEngineInterface::generateMainLoopCondition(llvm::IRBuilder<>& builder) {
-    // Get DBProCore library.
-    const PluginInfo* dbproCore = nullptr;
-    for (const PluginInfo* plugin : index.librariesAsList()) {
-        if (strcmp(plugin->getName(), "DBProCore") == 0) {
-            dbproCore = plugin;
-            break;
-        }
-    }
-    if (!dbproCore) {
-        fatalError("DBProCore.dll missing.");
+llvm::Value* DBPEngineInterface::generateCopyString(llvm::IRBuilder<>& builder, llvm::Value* src)
+{
+    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {dwordTy, dwordTy}, false);
+    auto copyString = getPluginFunction(builder, functionTy, dbproCore, "?EquateSS@@YAKKK@Z", "EquateSSSymbol");
+    auto result =
+        builder.CreateCall(copyString, {llvm::ConstantInt::get(dwordTy, 0), builder.CreatePtrToInt(src, dwordTy)});
+    return builder.CreateIntToPtr(result, charPtrTy);
+}
+
+llvm::Value* DBPEngineInterface::generateAddString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs)
+{
+    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {dwordTy, dwordTy, dwordTy}, false);
+    auto addString = getPluginFunction(builder, functionTy, dbproCore, "?AddSSS@@YAKKKK@Z", "AddSSSSymbol");
+    auto result =
+        builder.CreateCall(addString, {llvm::ConstantInt::get(dwordTy, 0), builder.CreatePtrToInt(lhs, dwordTy),
+                                       builder.CreatePtrToInt(rhs, dwordTy)});
+    return builder.CreateIntToPtr(result, charPtrTy);
+}
+
+llvm::Value* DBPEngineInterface::generateCompareString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs, ast::BinaryOpType op)
+{
+    const char* symbol;
+    const char* symbolName;
+    switch (op)
+    {
+    case ast::BinaryOpType::EQUAL:
+        symbol = "?EqualLSS@@YAKKK@Z";
+        symbolName = "EqualLSSSymbol";
+        break;
+    case ast::BinaryOpType::GREATER_THAN:
+        symbol = "?GreaterLSS@@YAKKK@Z";
+        symbolName = "EqualLSSSymbol";
+        break;
+    case ast::BinaryOpType::LESS_THAN:
+        symbol = "?LessLSS@@YAKKK@Z";
+        symbolName = "LessLSSSymbol";
+        break;
+    case ast::BinaryOpType::NOT_EQUAL:
+        symbol = "?NotEqualLSS@@YAKKK@Z";
+        symbolName = "NotEqualLSSSymbol";
+        break;
+    case ast::BinaryOpType::GREATER_EQUAL:
+        symbol = "?GreaterEqualLSS@@YAKKK@Z";
+        symbolName = "GreaterEqualLSSSymbol";
+        break;
+    case ast::BinaryOpType::LESS_EQUAL:
+        symbol = "?LessEqualLSS@@YAKKK@Z";
+        symbolName = "LessEqualLSSSymbol";
+        break;
+    default:
+        fatalError("DBPEngineInterface::generateCompareString - Unknown binary op %s.", ast::binaryOpTypeEnumString(op));
     }
 
-    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {}, false);
+    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {dwordTy, dwordTy}, false);
+    auto addString = getPluginFunction(builder, functionTy, dbproCore, symbol, symbolName);
+    auto result =
+        builder.CreateCall(addString, {builder.CreatePtrToInt(lhs, dwordTy), builder.CreatePtrToInt(rhs, dwordTy)});
+    return builder.CreateICmpNE(result, llvm::ConstantInt::get(dwordTy, 0));
+}
+
+void DBPEngineInterface::generateFreeString(llvm::IRBuilder<>& builder, llvm::Value *str)
+{
+    (void)(builder, str);
+}
+
+llvm::Value *DBPEngineInterface::generateMainLoopCondition(llvm::IRBuilder<>& builder) {
     // If ProcessMessages returns 1, we exit the loop.
+    llvm::FunctionType* functionTy = llvm::FunctionType::get(dwordTy, {}, false);
     auto processMessages = getPluginFunction(builder, functionTy, dbproCore, "?ProcessMessages@@YAKXZ", "ProcessMessagesSymbol");
     return builder.CreateICmpNE(builder.CreateCall(processMessages, {}), llvm::ConstantInt::get(dwordTy, 1));
 }
 
-void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std::vector<PluginInfo*> pluginsToLoad)
+void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint)
 {
-    if (pluginsToLoad.empty())
-    {
-        fatalError("No plugins specified.");
-    }
-
-    // Ensuring that DBProCore is loaded first.
-    auto isCorePlugin = [](const PluginInfo* plugin) -> bool
-    {
-        return strcmp(plugin->getName(), "DBProCore") == 0;
-    };
-    for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
-    {
-        if (isCorePlugin(pluginsToLoad[i]))
-        {
-            // Swap with front.
-            std::swap(pluginsToLoad[0], pluginsToLoad[i]);
-            break;
-        }
-    }
-    if (!isCorePlugin(pluginsToLoad[0]))
-    {
-        fatalError("DBProCore.dll is missing");
-    }
-
     // Remove plugins that we haven't used.
     // TODO: We can't necessarily do this, as some plugins initialise different parts of the engine.
     //
@@ -377,8 +443,8 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
 
     // Initialisation blocks.
     std::vector<llvm::BasicBlock*> pluginLoadingBlocks;
-    pluginLoadingBlocks.reserve(pluginsToLoad.size());
-    for (const auto& plugin : pluginsToLoad)
+    pluginLoadingBlocks.reserve(plugins.size());
+    for (const auto& plugin : plugins)
     {
         pluginLoadingBlocks.emplace_back(llvm::BasicBlock::Create(ctx, "load" + std::string{plugin->getName()}, entryPointFunc));
     }
@@ -388,9 +454,9 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
     llvm::BasicBlock* returnFailureBlock = llvm::BasicBlock::Create(ctx, "returnFailure", entryPointFunc);
     
     // Load plugins.
-    for (std::size_t i = 0; i < pluginsToLoad.size(); ++i)
+    for (std::size_t i = 0; i < plugins.size(); ++i)
     {
-        PluginInfo* plugin = pluginsToLoad[i];
+        PluginInfo* plugin = plugins[i];
         std::string pluginName = plugin->getName();
         std::string pluginPath = std::filesystem::path{plugin->getPath()}.filename().string();
 
@@ -404,7 +470,7 @@ void DBPEngineInterface::generateEntryPoint(llvm::Function* gameEntryPoint, std:
         builder.CreateStore(libraryHandle, getOrAddPluginHandleVar(plugin));
 
         // Check if loaded successfully.
-        auto* nextBlock = i == (pluginsToLoad.size() - 1) ? initEngineBlock : pluginLoadingBlocks[i + 1];
+        auto* nextBlock = i == (plugins.size() - 1) ? initEngineBlock : pluginLoadingBlocks[i + 1];
         builder.CreateCondBr(builder.CreateICmpNE(libraryHandle, llvm::ConstantPointerNull::get(voidPtrTy)),
                              nextBlock, returnFailureBlock);
     }

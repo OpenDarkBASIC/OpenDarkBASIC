@@ -53,6 +53,7 @@ enum class BuiltinType
 
 ODBCOMPILER_PUBLIC_API bool isIntegralType(BuiltinType type);
 ODBCOMPILER_PUBLIC_API bool isFloatingPointType(BuiltinType type);
+ODBCOMPILER_PUBLIC_API bool isSigned(BuiltinType type);
 ODBCOMPILER_PUBLIC_API const char* builtinTypeEnumString(BuiltinType type);
 
 // Literal types.

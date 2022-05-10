@@ -43,7 +43,9 @@ DLLEXPORT void* loadPlugin(const char* pluginName) {
 }
 
 DLLEXPORT void* getFunctionAddress(void* plugin, const char* functionName) {
-    return reinterpret_cast<void*>(GetProcAddress(static_cast<HMODULE>(plugin), functionName));
+    auto address = GetProcAddress(static_cast<HMODULE>(plugin), functionName);
+    printf("loading %s %p in %p\n", functionName, (void*)address, plugin);
+    return reinterpret_cast<void*>(address);
 }
 
 DLLEXPORT void debugPrintf(const char* fmt, ...) {

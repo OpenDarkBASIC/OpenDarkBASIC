@@ -9,6 +9,8 @@ class DBPEngineInterface : public EngineInterface
 public:
     DBPEngineInterface(llvm::Module& module, const cmd::CommandIndex& index);
 
+    bool setPluginList(std::vector<PluginInfo*> pluginsToLoad) override;
+
     llvm::Function* generateCommandFunction(const cmd::Command& command, const std::string& functionName,
                                             llvm::FunctionType* functionType) override;
 
@@ -16,8 +18,13 @@ public:
     llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) override;
     void generateFreeArray(llvm::IRBuilder<>& builder, llvm::Value *arrayPtr) override;
 
+    llvm::Value* generateCopyString(llvm::IRBuilder<>& builder, llvm::Value* src) override;
+    llvm::Value* generateAddString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs) override;
+    llvm::Value* generateCompareString(llvm::IRBuilder<>& builder, llvm::Value* lhs, llvm::Value* rhs, ast::BinaryOpType op) override;
+    void generateFreeString(llvm::IRBuilder<>& builder, llvm::Value *str) override;
+
     llvm::Value *generateMainLoopCondition(llvm::IRBuilder<>& builder) override;
-    void generateEntryPoint(llvm::Function* plugin, std::vector<PluginInfo*> pluginsToLoad) override;
+    void generateEntryPoint(llvm::Function* gameEntryPoint) override;
 
 private:
     llvm::PointerType* voidPtrTy;
@@ -30,6 +37,9 @@ private:
     llvm::Function* initEngineFunc;
     llvm::Function* closeEngineFunc;
     llvm::Function* exitProcessFunc;
+
+    const PluginInfo* dbproCore;
+    std::vector<PluginInfo*> plugins;
 
     std::unordered_map<std::string, llvm::Value*> pluginHandlePtrs;
 
