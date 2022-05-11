@@ -19,15 +19,27 @@ Block* Program::body() const
 }
 
 // ----------------------------------------------------------------------------
-VariableScope& Program::scope()
+VariableScope& Program::mainScope()
 {
-    return scope_;
+    return mainScope_;
 }
 
 // ----------------------------------------------------------------------------
-const VariableScope& Program::scope() const
+const VariableScope& Program::mainScope() const
 {
-    return scope_;
+    return mainScope_;
+}
+
+// ----------------------------------------------------------------------------
+VariableScope& Program::globalScope()
+{
+    return globalScope_;
+}
+
+// ----------------------------------------------------------------------------
+const VariableScope& Program::globalScope() const
+{
+    return globalScope_;
 }
 
 // ----------------------------------------------------------------------------
@@ -65,7 +77,8 @@ void Program::swapChild(const Node* oldNode, Node* newNode)
 Node* Program::duplicateImpl() const
 {
     Program* program = new Program(body_->duplicate<Block>(), location());
-    program->scope_ = scope_;
+    program->mainScope_ = mainScope_;
+    program->globalScope_ = globalScope_;
     return program;
 }
 

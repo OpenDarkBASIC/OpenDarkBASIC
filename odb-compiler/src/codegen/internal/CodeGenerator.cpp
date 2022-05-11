@@ -103,6 +103,37 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast::Type& type)
         return llvm::Type::getVoidTy(ctx);
     }
 }
+
+llvm::Constant* createVariableInitializer(ast::Type type, llvm::Type* llvmType)
+{
+    if (type.isBuiltinType())
+    {
+        if (isIntegralType(*type.getBuiltinType()))
+        {
+            return llvm::ConstantInt::get(llvmType, 0);
+        }
+        else if (isFloatingPointType(*type.getBuiltinType()))
+        {
+            return llvm::ConstantFP::get(llvmType, 0.0);
+        }
+        else if (*type.getBuiltinType() == ast::BuiltinType::String)
+        {
+            return llvm::ConstantDataArray::getString(llvmType->getContext(), "", true);
+        }
+        else
+        {
+            fatalError("Unknown variable built in type to initialize");
+        }
+    }
+    else if (type.isArray())
+    {
+        return llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(llvmType));
+    }
+    else
+    {
+        fatalError("Unknown variable type to initialize");
+    }
+}
 } // namespace
 
 llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const cmd::Command* command)
@@ -158,10 +189,26 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getFunction(const ast::FuncDec
     return entry->second;
 }
 
+llvm::Value* CodeGenerator::GlobalSymbolTable::getVar(const ast::Variable* variable)
+{
+    auto entry = variableTable.find(variable);
+    if (entry != variableTable.end())
+    {
+        return entry->second;
+    }
+    Log::codegen(Log::Severity::FATAL, "Variable %s missing from global variable table.", variable->name().c_str());
+    return nullptr;
+}
+
 void CodeGenerator::GlobalSymbolTable::addFunctionToTable(const ast::FuncDecl* definition,
                                                           llvm::Function* function)
 {
     functionDefinitions.emplace(definition, function);
+}
+
+void CodeGenerator::GlobalSymbolTable::addVarToTable(const ast::Variable* variable, llvm::Value* storage)
+{
+    variableTable.emplace(variable, storage);
 }
 
 void CodeGenerator::SymbolTable::addVar(const ast::Variable* variable, llvm::Value* location)
@@ -176,8 +223,9 @@ llvm::Value* CodeGenerator::SymbolTable::getVar(const ast::Variable* variable)
     {
         return entry->second;
     }
-    Log::codegen(Log::Severity::FATAL, "Variable %s missing from variable table.", variable->name().c_str());
-    return nullptr;
+
+    // Try globals instead.
+    return globals.getVar(variable);
 }
 
 llvm::Value* CodeGenerator::SymbolTable::getOrAddStrLiteral(const std::string& literal)
@@ -1030,6 +1078,13 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
     symtab.gosubStackPointer = builder.CreateAlloca(llvm::Type::getInt64Ty(ctx), nullptr, "gosubStackPointer");
     builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), 0), symtab.gosubStackPointer);
 
+    // Function arguments.
+    std::unordered_map<std::string, llvm::Argument*> functionArgs;
+    for (llvm::Argument& arg : function->args())
+    {
+        functionArgs[arg.getName().str()] = &arg;
+    }
+
     // Variables.
     for (ast::Variable* var : variables.list())
     {
@@ -1037,36 +1092,17 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
         auto* llvmType = getLLVMType(ctx, type);
         auto* variableStorage = builder.CreateAlloca(llvmType, nullptr, var->name());
 
-        // Create initialiser depending on the type.
-        llvm::Value* initialiser;
-        if (type.isBuiltinType())
+        // Create initializer depending on the type.
+        llvm::Value* initializer;
+        if (functionArgs.count(var->name()))
         {
-            if (isIntegralType(*type.getBuiltinType()))
-            {
-                initialiser = llvm::ConstantInt::get(llvmType, 0);
-            }
-            else if (isFloatingPointType(*type.getBuiltinType()))
-            {
-                initialiser = llvm::ConstantFP::get(llvmType, 0.0);
-            }
-            else if (*type.getBuiltinType() == ast::BuiltinType::String)
-            {
-                initialiser = builder.CreateGlobalStringPtr("");
-            }
-            else
-            {
-                fatalError("Unknown variable built in type to initialize");
-            }
-        }
-        else if (type.isArray())
-        {
-            initialiser = llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(llvmType));
+            initializer = functionArgs[var->name()];
         }
         else
         {
-            fatalError("Unknown variable type to initialize");
+            initializer = createVariableInitializer(type, llvmType);
         }
-        builder.CreateStore(initialiser, variableStorage);
+        builder.CreateStore(initializer, variableStorage);
 
         symtab.addVar(var, variableStorage);
     }
@@ -1130,16 +1166,27 @@ bool CodeGenerator::generateModule(const ast::Program* program)
         symbolTables.emplace(llvmFunc, std::make_unique<SymbolTable>(llvmFunc, globalSymbolTable));
     }
 
+    // Generate global variables.
+    for (const ast::Variable* global : program->globalScope().list())
+    {
+        ast::Type type = global->getType();
+        llvm::Type* llvmType = getLLVMType(ctx, type);
+        llvm::Constant* initializer = createVariableInitializer(type, llvmType);
+        llvm::Value* storage =
+            new llvm::GlobalVariable(module, llvmType, false, llvm::GlobalValue::PrivateLinkage, initializer);
+        globalSymbolTable.addVarToTable(global, storage);
+    }
+
     // Second pass: generate function bodies.
-    generateFunctionBody(gameEntryPointFunc, program->scope(), program->body(), nullptr);
+    generateFunctionBody(gameEntryPointFunc, program->mainScope(), program->body(), nullptr);
     for (const ast::FuncDecl* function : functions)
     {
         generateFunctionBody(globalSymbolTable.getFunction(function), function->scope(), function->body(), function);
     }
 
-#ifndef NDEBUG
-    module.print(llvm::errs(), nullptr);
-#endif
+//#ifndef NDEBUG
+//    module.print(llvm::errs(), nullptr);
+//#endif
 
     // Generate executable entry point that initialises the engine and calls the games' entry point.
     engineInterface.generateEntryPoint(gameEntryPointFunc);

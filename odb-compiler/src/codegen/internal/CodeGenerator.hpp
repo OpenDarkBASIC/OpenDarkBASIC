@@ -22,8 +22,10 @@ public:
 
         llvm::Function* getOrCreateCommandThunk(const cmd::Command* command);
         llvm::Function* getFunction(const ast::FuncDecl* function);
+        llvm::Value* getVar(const ast::Variable* variable);
 
         void addFunctionToTable(const ast::FuncDecl* definition, llvm::Function* function);
+        void addVarToTable(const ast::Variable* variable, llvm::Value* storage);
 
         llvm::Module& getModule() { return module; }
 
@@ -34,6 +36,7 @@ public:
 
         std::unordered_map<std::string, llvm::Function*> commandThunks;
         std::unordered_map<const ast::FuncDecl*, llvm::Function*> functionDefinitions;
+        std::unordered_map<const ast::Variable*, llvm::Value*> variableTable;
     };
 
     class SymbolTable

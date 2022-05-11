@@ -5,6 +5,7 @@
 namespace odb::ast {
 
 enum class Scope : char {
+    DEFAULT,
     LOCAL,
     GLOBAL
 };

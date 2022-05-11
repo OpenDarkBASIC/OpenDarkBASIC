@@ -16,8 +16,11 @@ public:
 
     Block* body() const;
 
-    VariableScope& scope();
-    const VariableScope& scope() const;
+    VariableScope& mainScope();
+    const VariableScope& mainScope() const;
+
+    VariableScope& globalScope();
+    const VariableScope& globalScope() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -30,7 +33,8 @@ protected:
 
 private:
     Reference<Block> body_;
-    VariableScope scope_;
+    VariableScope mainScope_;
+    VariableScope globalScope_;
 };
 
 }

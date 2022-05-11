@@ -80,6 +80,39 @@ struct FunctionInfo
     std::unordered_map<std::string, ast::FuncDecl*> functionsByName;
     std::unordered_map<const ast::Node*, ast::VariableScope*> localScopeForNode;
     ast::VariableScope* globalScope;
+
+    ast::VariableScope& scope(const ast::ScopedIdentifier* identifier, bool isArray) const
+    {
+        if (identifier->scope() == ast::Scope::GLOBAL)
+        {
+            return *globalScope;
+        }
+        else if (identifier->scope() == ast::Scope::LOCAL)
+        {
+            return localScope(identifier);
+        }
+        else
+        {
+            // By default, arrays are globally scoped, but other variables are locally scoped.
+            return isArray ? *globalScope : localScope(identifier);
+        }
+    }
+
+    ast::VariableScope& localScope(const ast::Identifier* identifier) const
+    {
+        return *localScopeForNode.at(identifier);
+    }
+
+    ast::Variable* lookup(const ast::Identifier* identifier, bool isArray) const
+    {
+        // Try local scope.
+        ast::Variable* var = localScope(identifier).lookup(identifier->name(), identifier->annotation(), isArray);
+        if (var)
+        {
+            return var;
+        }
+        return globalScope->lookup(identifier->name(), identifier->annotation(), isArray);
+    }
 };
 
 class GatherFunctionsVisitor : public ast::GenericVisitor
@@ -89,8 +122,8 @@ public:
 
     void visitProgram(ast::Program* node) override
     {
-        info_.globalScope = &node->scope();
-        info_.localScopeForNode[node] = info_.globalScope;
+        info_.globalScope = &node->globalScope();
+        info_.localScopeForNode[node] = &node->mainScope();
     }
 
     void visitFuncDecl(ast::FuncDecl* node) override
@@ -117,55 +150,6 @@ public:
     VariableResolverVisitor(FunctionInfo& info, ast::Node* current, ast::Node* parent)
         : info_(info), current_(current), parent_(parent)
     {
-    }
-
-    void visitVarDecl(ast::VarDecl* node) override
-    {
-        // If we're declaring a new variable, it must not exist already.
-        auto annotation = node->identifier()->annotation();
-        ast::Variable* variable =
-            info_.localScopeForNode.at(node)->lookup(node->identifier()->name(), annotation, false);
-        if (variable)
-        {
-            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
-                                       "Variable %s has already been declared as type %s.",
-                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
-            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
-            fail = true;
-            return;
-        }
-
-        // Declare new variable and replace the identifier node with this node.
-        variable =
-            new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
-        info_.localScopeForNode.at(node)->add(variable);
-        node->swapChild(node->identifier(), variable);
-    }
-
-    void visitArrayDecl(ast::ArrayDecl* node) override
-    {
-        // If we're declaring a new array, it either must not exist, or if it does, it should have the same type.
-        auto annotation = node->identifier()->annotation();
-        auto* scope = info_.localScopeForNode.at(node);
-        ast::Variable* variable = scope->lookup(node->identifier()->name(), annotation, true);
-        if (variable && variable->getType() != node->type())
-        {
-            Log::dbParserSemanticError(node->identifier()->location()->getFileLineColumn().c_str(),
-                                       "Array '%s' has already been declared as type %s.",
-                                       node->identifier()->name().c_str(), variable->getType().toString().c_str());
-            Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
-            fail = true;
-            return;
-        }
-        else if (!variable)
-        {
-            // Declare new variable.
-            variable =
-                new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
-            scope->add(variable);
-        }
-
-        node->setVariable(resolveVariable(node->identifier(), true));
     }
 
     void visitVarRef(ast::VarRef* node) override
@@ -217,24 +201,24 @@ private:
     ast::Variable* resolveVariable(const ast::Identifier* identifier, bool isArray)
     {
         auto annotation = identifier->annotation();
-        auto* scope = info_.localScopeForNode.at(identifier);
-        // TODO: This should take arguments into account as well.
-        ast::Variable* variable = scope->lookup(identifier->name(), annotation, isArray);
+        ast::Variable* variable = info_.lookup(identifier, isArray);
         if (!variable)
         {
             if (isArray)
             {
                 // Arrays are not implicitly declared.
                 Log::dbParserSemanticError(identifier->location()->getFileLineColumn().c_str(),
-                                           "Array '%s' does not exist in this scope.", identifier->name().c_str());
+                                           "Array '%s' does not exist in this scope.\n", identifier->name().c_str());
+                identifier->location()->printUnderlinedSection(Log::info);
                 fail = true;
             }
             else
             {
-                // If the variable doesn't exist, it gets implicitly declared with the annotation type.
+                // If the variable doesn't exist, it gets implicitly declared with the annotation type in the local
+                // scope.
                 variable = new ast::Variable(identifier->location(), identifier->name(), annotation,
                                              ast::Type::getFromAnnotation(annotation));
-                scope->add(variable);
+                info_.localScope(identifier).add(variable);
             }
         }
         return variable;
@@ -264,6 +248,7 @@ public:
             Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
                                        "The %s operator only works with numeric types.",
                                        ast::unaryOpTypeEnumString(node->op()));
+            node->location()->printUnderlinedSection(Log::info);
             fail = true;
             return;
         }
@@ -384,6 +369,7 @@ public:
                 Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
                                            "An initializer list cannot be used to initialize a variable of type %s.",
                                            varType.toString().c_str());
+                node->location()->printUnderlinedSection(Log::info);
                 fail = true;
                 return;
             }
@@ -393,6 +379,7 @@ public:
                     node->location()->getFileLineColumn().c_str(),
                     "An initializer list must be of length %d to initialize a variable of type %s.",
                     expectedInitListLength, varType.toString().c_str());
+                node->location()->printUnderlinedSection(Log::info);
                 fail = true;
                 return;
             }
@@ -746,6 +733,78 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
     for (auto it = preOrder.begin(); it != preOrder.end(); ++it)
     {
         GatherFunctionsVisitor visitor{functionInfo, it.parent()};
+        (*it)->accept(&visitor);
+    }
+
+    // Find all variable declarations and assign them to the scopes.
+    auto firstPas = ast::preOrderTraversal(root);
+    for (auto it = firstPas.begin(); it != firstPas.end(); ++it)
+    {
+        ast::FunctorVisitor visitor {
+            [&](ast::VarDecl* node)
+            {
+                // If we're declaring a variable, it must not exist already unless it has the same type.
+                auto annotation = node->identifier()->annotation();
+                auto& scope = functionInfo.scope(node->identifier(), false);
+                ast::Variable* variable = scope.lookup(node->identifier()->name(), annotation, false);
+                if (variable)
+                {
+                    if (variable->getType() != node->type())
+                    {
+                        Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                                   "Variable %s has already been declared as type %s.\n",
+                                                   node->identifier()->name().c_str(),
+                                                   variable->getType().toString().c_str());
+                        node->location()->printUnderlinedSection(Log::info);
+                        Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(),
+                                                   "See last declaration.\n");
+                        variable->location()->printUnderlinedSection(Log::info);
+                        fail = true;
+                        return;
+                    }
+                }
+
+                // TODO: Warn if we shadow a variable in the global scope?
+
+                // Declare new variable and replace the identifier node with this node.
+                if (!variable)
+                {
+                    variable = new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation,
+                                                 node->type());
+                    scope.add(variable);
+                }
+                node->swapChild(node->identifier(), variable);
+            },
+            [&](ast::ArrayDecl* node)
+            {
+                // If we're declaring a new array, it either must not exist, or if it does, it should have the same type.
+                auto annotation = node->identifier()->annotation();
+                auto& scope = functionInfo.scope(node->identifier(), true);
+                ast::Variable* variable = scope.lookup(node->identifier()->name(), annotation, true);
+                if (variable && variable->getType() != node->type())
+                {
+                    Log::dbParserSemanticError(node->identifier()->location()->getFileLineColumn().c_str(),
+                                               "Array '%s' has already been declared as type %s.",
+                                               node->identifier()->name().c_str(), variable->getType().toString().c_str());
+                    node->location()->printUnderlinedSection(Log::info);
+                    Log::dbParserSemanticError(variable->location()->getFileLineColumn().c_str(), "See last declaration.");
+                    variable->location()->printUnderlinedSection(Log::info);
+                    fail = true;
+                    return;
+                }
+                else if (!variable)
+                {
+                    // Declare new variable.
+                    variable =
+                        new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
+                    scope.add(variable);
+
+                    // TODO: Warn if we shadow a variable in the global scope?
+                }
+
+                node->setVariable(variable);
+            }
+        };
         (*it)->accept(&visitor);
     }
 

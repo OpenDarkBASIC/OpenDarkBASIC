@@ -606,7 +606,7 @@ array_ref
   ;
 array_decl
   : scope array_decl_as_type                                  { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
-  | scope array_decl_without_type                               { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
+  | scope array_decl_without_type                             { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
   | array_decl_as_type                                        { $$ = $1; }
   | array_decl_without_type                                   { $$ = $1; }
   ;
@@ -661,12 +661,12 @@ scope
   : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
   | LOCAL                                                     { $$ = static_cast<char>(Scope::LOCAL); }
   ;
-var_int_sym          : IDENTIFIER %prec NO_ANNOTATION         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::NONE, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_int_sym   : IDENTIFIER '&'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::DOUBLE_INTEGER, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_word_sym         : IDENTIFIER '%'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::WORD, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_double_float_sym : IDENTIFIER '!'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::DOUBLE_FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_float_sym        : IDENTIFIER '#'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
-var_str_sym          : IDENTIFIER '$'                         { $$ = new ScopedIdentifier(Scope::LOCAL, $1, Annotation::STRING, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_int_sym          : IDENTIFIER %prec NO_ANNOTATION         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::NONE, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_int_sym   : IDENTIFIER '&'                         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::DOUBLE_INTEGER, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_word_sym         : IDENTIFIER '%'                         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::WORD, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_double_float_sym : IDENTIFIER '!'                         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::DOUBLE_FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_float_sym        : IDENTIFIER '#'                         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::FLOAT, driver->newLocation(&@$)); str::deleteCStr($1); };
+var_str_sym          : IDENTIFIER '$'                         { $$ = new ScopedIdentifier(Scope::DEFAULT, $1, Annotation::STRING, driver->newLocation(&@$)); str::deleteCStr($1); };
 
 udt_decl
   : TYPE identifier seps udt_body_decl seps ENDTYPE           { $$ = new UDTDecl($2, $4, driver->newLocation(&@$)); }
