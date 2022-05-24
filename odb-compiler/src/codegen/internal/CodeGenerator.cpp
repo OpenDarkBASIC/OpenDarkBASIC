@@ -441,7 +441,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             {
                 return builder.CreateSub(left, right);
             }
-            else if (left->getType()->isFloatTy())
+            else if (left->getType()->isFloatingPointTy())
             {
                 return builder.CreateFSub(left, right);
             }
@@ -455,7 +455,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             {
                 return builder.CreateMul(left, right);
             }
-            else if (left->getType()->isFloatTy())
+            else if (left->getType()->isFloatingPointTy())
             {
                 return builder.CreateFMul(left, right);
             }
@@ -497,7 +497,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     return builder.CreateURem(left, right);
                 }
             }
-            else if (left->getType()->isFloatTy())
+            else if (left->getType()->isFloatingPointTy())
             {
                 return builder.CreateFRem(left, right);
             }
@@ -571,7 +571,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 }
                 return builder.CreateICmp(cmpPredicate, left, right);
             }
-            else if (left->getType()->isFloatTy())
+            else if (left->getType()->isFloatingPointTy())
             {
                 llvm::CmpInst::Predicate cmpPredicate;
                 switch (binary->op())

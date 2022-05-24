@@ -36,8 +36,46 @@ namespace {
 
 ast::Type getBinaryOpCommonType(ast::BinaryOpType op, ast::Expression* left, ast::Expression* right)
 {
-    // TODO: Implement this properly.
-    return left->getType();
+    auto getRank = [](ast::BuiltinType type) -> int
+    {
+        switch (type)
+        {
+        case ast::BuiltinType::Boolean:
+            return 1;
+        case ast::BuiltinType::Byte:
+            return 2;
+        case ast::BuiltinType::Word:
+            return 3;
+        case ast::BuiltinType::Dword:
+            return 4;
+        case ast::BuiltinType::Integer:
+            return 5;
+        case ast::BuiltinType::DoubleInteger:
+            return 6;
+        case ast::BuiltinType::Float:
+            return 7;
+        case ast::BuiltinType::DoubleFloat:
+            return 8;
+        default:
+            return 0;
+        }
+    };
+
+    if (left->getType() == right->getType())
+    {
+        return left->getType();
+    }
+
+    if (!left->getType().isBuiltinType() || !right->getType().isBuiltinType())
+    {
+        // Give up and just take the left type if we can't rank.
+        return left->getType();
+    }
+
+    // Return the highest ranking type.
+    int leftRank = getRank(*left->getType().getBuiltinType());
+    int rightRank = getRank(*right->getType().getBuiltinType());
+    return leftRank < rightRank ? right->getType() : left->getType();
 }
 
 std::string formatArgTypes(ast::ArgList* args)
