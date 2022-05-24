@@ -118,7 +118,7 @@ llvm::Constant* createVariableInitializer(ast::Type type, llvm::Type* llvmType)
         }
         else if (*type.getBuiltinType() == ast::BuiltinType::String)
         {
-            return llvm::ConstantDataArray::getString(llvmType->getContext(), "", true);
+            return llvm::ConstantPointerNull::get(llvm::IntegerType::getInt8PtrTy(llvmType->getContext()));
         }
         else
         {
@@ -158,7 +158,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
         }
     }
 
-    auto thunkEntry = commandThunks.find(command->cppSymbol());
+    auto thunkEntry = commandThunks.find(command);
     if (thunkEntry != commandThunks.end())
     {
         return thunkEntry->second;
@@ -166,10 +166,16 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
 
     // Get argument types.
     std::vector<llvm::Type*> argTypes;
-    argTypes.reserve(command->args().size());
+    argTypes.reserve(command->args().size() + 1);
+    argTypes.emplace_back(llvm::Type::getInt32Ty(ctx));
     for (const auto& arg : command->args())
     {
-        argTypes.emplace_back(getLLVMType(module.getContext(), arg.type));
+        auto llvmType = getLLVMType(module.getContext(), arg.type);
+        if (arg.isOutParameter)
+        {
+            llvmType = llvm::PointerType::getUnqual(llvmType);
+        }
+        argTypes.emplace_back(llvmType);
     }
 
     // Get return type.
@@ -178,7 +184,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     // Generate command function.
     llvm::FunctionType* functionTy = llvm::FunctionType::get(returnTy, argTypes, false);
     llvm::Function* function = engineInterface.generateCommandFunction(*command, "DBCommand" + commandName, functionTy);
-    commandThunks.emplace(command->cppSymbol(), function);
+    commandThunks.emplace(command, function);
     return function;
 }
 
@@ -278,17 +284,36 @@ void CodeGenerator::SymbolTable::addGosubIndirectBr(llvm::IndirectBrInst* indire
     }
 }
 
-//llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, MaybeNull<ast::Expression> e)
-//{
-//    if (e.isNull())
-//    {
-//        return nullptr;
-//    }
-//}
-
-llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* e)
+llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* e, bool returnAsPointer)
 {
-    if (auto* cast = dynamic_cast<const ast::ImplicitCast*>(e))
+    if (returnAsPointer)
+    {
+        if (!dynamic_cast<const ast::VarRef*>(e) && !dynamic_cast<const ast::ArrayRef*>(e))
+        {
+            fatalError("Codegen: Only a VarRef or ArrayRef can have its pointer returned. Got %s instead.", typeid(*e).name());
+        }
+    }
+    if (auto* varRef = dynamic_cast<const ast::VarRef*>(e))
+    {
+        assert(varRef->variable());
+        llvm::Type* variableTy = getLLVMType(ctx, varRef->variable()->getType());
+        llvm::Value* variablePtr = symtab.getVar(varRef->variable());
+        return returnAsPointer ? variablePtr : builder.CreateLoad(variableTy,variablePtr);
+    }
+    else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(e))
+    {
+        llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
+        llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
+
+        std::vector<llvm::Value*> dims;
+        for (ast::Expression* dim : arrayRef->args()->expressions()) {
+            dims.push_back(generateExpression(symtab, builder, dim));
+        }
+        llvm::Type* arrayElementTy = getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
+        llvm::Value* arrayElementPtr = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
+        return returnAsPointer ? arrayElementPtr : builder.CreateLoad(arrayElementTy, arrayElementPtr);
+    }
+    else if (auto* cast = dynamic_cast<const ast::ImplicitCast*>(e))
     {
         llvm::Type* expressionType = getLLVMType(ctx, cast->expr()->getType());
         llvm::Type* targetType = getLLVMType(ctx, cast->getType());
@@ -451,13 +476,13 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                     return builder.CreateUDiv(left, right);
                 }
             }
-            else if (left->getType()->isFloatTy())
+            else if (left->getType()->isFloatingPointTy())
             {
                 return builder.CreateFDiv(left, right);
             }
             else
             {
-                Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op.\n");
+                Log::codegen(Log::Severity::FATAL, "Unknown type in div binary op at %s.\n", binary->location()->getFileLineColumn().c_str());
                 return nullptr;
             }
         case ast::BinaryOpType::MOD:
@@ -594,25 +619,6 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             return nullptr;
         }
     }
-    else if (auto* varRef = dynamic_cast<const ast::VarRef*>(e))
-    {
-        assert(varRef->variable());
-        llvm::Value* variableInst = symtab.getVar(varRef->variable());
-        return builder.CreateLoad(variableInst, "");
-    }
-    else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(e))
-    {
-        llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
-        llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
-
-        std::vector<llvm::Value*> dims;
-        for (ast::Expression* dim : arrayRef->args()->expressions()) {
-            dims.push_back(generateExpression(symtab, builder, dim));
-        }
-        llvm::Type* arrayElementTy = getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
-        llvm::Value* loadTarget = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
-        return builder.CreateLoad(arrayElementTy, loadTarget);
-    }
     else if (auto* doubleIntegerLiteral = dynamic_cast<const ast::DoubleIntegerLiteral*>(e))
     {
         return llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx), std::uint64_t(doubleIntegerLiteral->value()));
@@ -668,6 +674,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
         assert(commandCall->command());
         llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
         std::vector<llvm::Value*> args;
+        args.emplace_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), commandCall->location()->firstLine()));
         if (commandCall->args().notNull())
         {
             for (const ast::Expression* arg : commandCall->args()->expressions())
@@ -860,26 +867,53 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         else if (auto* whileLoop = dynamic_cast<const ast::WhileLoop*>(s))
         {
             // Create blocks.
-            llvm::BasicBlock* loopBlock = llvm::BasicBlock::Create(ctx, "loop", parent);
+            llvm::BasicBlock* loopCondBlock = llvm::BasicBlock::Create(ctx, "loopCond", parent);
             llvm::BasicBlock* loopBodyBlock = llvm::BasicBlock::Create(ctx, "loopBody", parent);
             llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
             symtab.loopExitBlocks[whileLoop] = endBlock;
 
             // Jump into initial loop entry.
-            builder.CreateBr(loopBlock);
+            builder.CreateBr(loopCondBlock);
 
-            // Evaluate main loop condition.
-            builder.SetInsertPoint(loopBlock);
+            // Evaluate loop condition.
+            builder.SetInsertPoint(loopCondBlock);
             builder.CreateCondBr(generateExpression(symtab, builder, whileLoop->continueCondition()), loopBodyBlock, endBlock);
 
             // Generate loop body.
             llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, whileLoop->body());
-            loopBodyBlock->moveAfter(loopBlock);
+            loopBodyBlock->moveAfter(loopCondBlock);
             endBlock->moveAfter(statementsEndBlock);
 
             // Add a branch back to the beginning of the loop.
             builder.SetInsertPoint(statementsEndBlock);
-            builder.CreateBr(loopBlock);
+            builder.CreateBr(loopCondBlock);
+
+            // Set loop end block as the insertion point for future instructions.
+            builder.SetInsertPoint(endBlock);
+        }
+        else if (auto* untilLoop = dynamic_cast<const ast::UntilLoop*>(s))
+        {
+            // Create blocks.
+            llvm::BasicBlock* loopBodyBlock = llvm::BasicBlock::Create(ctx, "loopBody", parent);
+            llvm::BasicBlock* loopCondBlock = llvm::BasicBlock::Create(ctx, "loopCond", parent);
+            llvm::BasicBlock* endBlock = llvm::BasicBlock::Create(ctx, "loopBreak", parent);
+            symtab.loopExitBlocks[untilLoop] = endBlock;
+
+            // Jump into loop body.
+            builder.CreateBr(loopBodyBlock);
+
+            // Generate loop body.
+            llvm::BasicBlock* statementsEndBlock = generateBlock(symtab, loopBodyBlock, untilLoop->body());
+            loopCondBlock->moveAfter(statementsEndBlock);
+            endBlock->moveAfter(loopCondBlock);
+
+            // Add a branch to the condition of the loop.
+            builder.SetInsertPoint(statementsEndBlock);
+            builder.CreateBr(loopCondBlock);
+
+            // Evaluate loop condition.
+            builder.SetInsertPoint(loopCondBlock);
+            builder.CreateCondBr(generateExpression(symtab, builder, untilLoop->exitCondition()), endBlock, loopBodyBlock);
 
             // Set loop end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
@@ -970,31 +1004,31 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
                 assert(commandCall->command());
                 llvm::Function* func = symtab.getGlobalTable().getOrCreateCommandThunk(commandCall->command());
                 std::vector<llvm::Value*> args;
+                args.emplace_back(llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), commandCall->location()->firstLine()));
                 if (commandCall->args().notNull())
                 {
-                    for (const auto& arg : commandCall->args()->expressions())
+                    for (size_t i = 0; i < commandCall->args()->expressions().size(); ++i)
                     {
-                        args.emplace_back(generateExpression(symtab, builder, arg));
+                        ast::Expression* arg = commandCall->args()->expressions()[i];
+                        args.emplace_back(generateExpression(symtab, builder, arg, commandCall->command()->args()[i].isOutParameter));
                     }
                 }
                 builder.CreateCall(func, args);
             }
         }
-//        else if (auto* endfunction = dynamic_cast<const ExitFunction*>(s))
-//        {
-//            builder.CreateRet(generateExpression(symtab, builder, endfunction->expression()));
-//        }
         else if (auto* subReturn = dynamic_cast<const ast::SubReturn*>(s))
         {
             (void)subReturn; // SubReturn has no useful data members.
             auto* returnAddr = builder.CreateCall(gosubPopAddress, {symtab.gosubStack, symtab.gosubStackPointer});
 //            printString(builder, builder.CreateGlobalStringPtr("Popped address. Jumping back to call site."));
             symtab.addGosubIndirectBr(builder.CreateIndirectBr(returnAddr));
+
+            // A br is a BasicBlock terminator, so we need to start a new redundant block for all dead statements.
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
         }
         else if (auto* exit = dynamic_cast<const ast::FuncExit*>(s))
         {
-            if (exit->returnValue())
+            if (exit->returnValue().notNull())
             {
                 builder.CreateRet(generateExpression(symtab, builder, exit->returnValue()));
             }
@@ -1002,11 +1036,14 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             {
                 builder.CreateRetVoid();
             }
+
+            // A ret is a BasicBlock terminator, so we need to start a new redundant block for all dead statements.
+            builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
         }
         else if (dynamic_cast<const ast::FuncDecl*>(s))
         {
-            // End of main function.
-            break;
+            // Skip function declarations.
+            continue;
         }
         else
         {
@@ -1134,21 +1171,13 @@ bool CodeGenerator::generateModule(const ast::Program* program)
 
     // First pass: Discover functions.
     std::vector<const ast::FuncDecl*> functions;
-    bool foundStartOfFunctions = false;
-    // Expected structure: All statements belong to the main function until we find a function. From then, all
-    // statements should be funcDecl's.
+    // Expected structure: All statements belong to the main function except functions.
     for (const ast::Statement* s : program->body()->statements())
     {
         const auto* funcDecl = dynamic_cast<const ast::FuncDecl*>(s);
         if (funcDecl)
         {
-            foundStartOfFunctions = true;
             functions.emplace_back(funcDecl);
-        }
-        else if (foundStartOfFunctions)
-        {
-            Log::codegen(Log::Severity::FATAL, "Found a statement after a function declaration.");
-            return false;
         }
     }
 

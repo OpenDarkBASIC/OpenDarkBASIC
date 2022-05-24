@@ -34,7 +34,7 @@ public:
         llvm::LLVMContext& ctx;
         EngineInterface& engineInterface;
 
-        std::unordered_map<std::string, llvm::Function*> commandThunks;
+        std::unordered_map<const cmd::Command*, llvm::Function*> commandThunks;
         std::unordered_map<const ast::FuncDecl*, llvm::Function*> functionDefinitions;
         std::unordered_map<const ast::Variable*, llvm::Value*> variableTable;
     };
@@ -76,7 +76,7 @@ public:
     {
     }
 
-    llvm::Value* generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* expression);
+    llvm::Value* generateExpression(SymbolTable& symtab, llvm::IRBuilder<>& builder, const ast::Expression* expression, bool returnAsPointer = false);
 
     // Returns the last basic block that this block of statements generated.
     llvm::BasicBlock* generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock, MaybeNull<ast::Block> statements);

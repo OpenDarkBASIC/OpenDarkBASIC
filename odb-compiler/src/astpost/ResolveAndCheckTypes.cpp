@@ -554,8 +554,16 @@ private:
                     {
                         return true;
                     }
-                    if (!args->expressions()[i]->getType().isConvertibleTo(
-                            ast::Type::getFromCommandType(candidateArgCommandType)))
+                    auto candidateArgType = ast::Type::getFromCommandType(candidateArgCommandType);
+                    // If an argument is an out-parameter, it must be an exact match.
+                    if (candidate->args()[i].isOutParameter)
+                    {
+                        if (args->expressions()[i]->getType() != candidateArgType)
+                        {
+                            return true;
+                        }
+                    }
+                    else if (!args->expressions()[i]->getType().isConvertibleTo(candidateArgType))
                     {
                         return true;
                     }

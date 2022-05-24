@@ -8,7 +8,6 @@
 namespace odb::ast {
 
 class InitializerList;
-class UDTRef;
 class ScopedIdentifier;
 class Variable;
 

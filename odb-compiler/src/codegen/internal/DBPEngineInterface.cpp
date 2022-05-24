@@ -98,6 +98,10 @@ DBPEngineInterface::DBPEngineInterface(llvm::Module& module, const cmd::CommandI
                                             llvm::Function::ExternalLinkage, "initEngine", module);
     initEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 
+    checkForErrorFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8PtrTy(ctx), dwordTy}, false),
+                                            llvm::Function::ExternalLinkage, "checkForError", module);
+    checkForErrorFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+
     closeEngineFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
                                              llvm::Function::ExternalLinkage, "closeEngine", module);
     closeEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
@@ -152,7 +156,20 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     builder.SetInsertPoint(basicBlock);
 
     llvm::Type* pluginReturnType = functionType->getReturnType();
-    if (functionType->getReturnType()->isFloatTy())
+
+    // If we have an out parameter, the pointed-to type will be the plugin function's return type.
+    size_t outArgIndex = static_cast<size_t>(-1);
+    for (size_t i = 0; i < command.args().size(); ++i)
+    {
+        if (command.args()[i].isOutParameter)
+        {
+            outArgIndex = i;
+            pluginReturnType = functionType->getParamType(i + 1)->getPointerElementType();
+            break;
+        }
+    }
+    // Floats are always returned as DWORDs.
+    if (pluginReturnType->isFloatTy())
     {
         pluginReturnType = dwordTy;
     }
@@ -163,9 +180,19 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     {
         pluginFunctionParams.push_back(dwordTy);
     }
-    for (llvm::Type* arg : functionType->params())
+    for (size_t i = 0; i < command.args().size(); ++i)
     {
-        pluginFunctionParams.push_back(arg);
+        // Skip the out parameter, this is returned instead.
+        if (i == outArgIndex)
+        {
+            // If this out parameter is a string, we need to pass a string to be freed (similar to a string return).
+            if (command.args()[i].type == cmd::Command::Type::String)
+            {
+                pluginFunctionParams.push_back(dwordTy);
+            }
+            continue;
+        }
+        pluginFunctionParams.push_back(functionType->getParamType(i + 1));
     }
     llvm::FunctionType* pluginFunctionType =
         llvm::FunctionType::get(pluginReturnType, pluginFunctionParams, functionType->isVarArg());
@@ -184,22 +211,57 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
         // Pass a nullptr to the extra string argument in functions which return a string.
         commandArgs.emplace_back(llvm::ConstantInt::get(dwordTy, 0));
     }
-    for (llvm::Argument& arg : function->args())
+    for (size_t i = 0; i < command.args().size(); ++i)
     {
-        commandArgs.emplace_back(&arg);
+        // Skip the out parameter, this is returned instead.
+        if (i == outArgIndex)
+        {
+            // If this out parameter is a string, we need to pass a string to be freed (similar to a string return).
+            if (command.args()[i].type == cmd::Command::Type::String)
+            {
+                // Pass a nullptr to the extra string argument in functions which return a string.
+                commandArgs.emplace_back(llvm::ConstantInt::get(dwordTy, 0));
+            }
+            continue;
+        }
+        commandArgs.emplace_back(function->getArg(i + 1));
     }
-    llvm::CallInst* commandResult = builder.CreateCall(commandFunction, commandArgs);
+    llvm::CallInst* commandCall = builder.CreateCall(commandFunction, commandArgs);
     //    printString(builder, builder.CreateGlobalStringPtr("Finished calling " + functionName));
+    llvm::Value* commandResult = commandCall;
+
+    // Cast the DWORD back to float.
+    if (functionType->getReturnType()->isFloatTy())
+    {
+        llvm::Value* dwordStoragePtr = builder.CreateAlloca(dwordTy);
+        builder.CreateStore(commandCall, dwordStoragePtr);
+        llvm::Value* dwordAsFloatStorage = builder.CreateBitCast(dwordStoragePtr, llvm::Type::getFloatPtrTy(ctx));
+        commandResult = builder.CreateLoad(llvm::Type::getFloatTy(ctx), dwordAsFloatStorage);
+    }
+
+    // If we have an out arg, assign the result to it.
+    if (outArgIndex != -1)
+    {
+        builder.CreateStore(commandResult, function->getArg(outArgIndex + 1));
+    }
+
+    // Debug dump command call.
+    if (command.dbSymbol().substr(0, strlen("make object")) == "make object")
+    {
+        generatePrintf(builder, "Calling " + command.dbSymbol() + " %d on line %d\n", function->getArg(1), function->getArg(0));
+    }
+    else
+    {
+        generatePrintf(builder, "Calling " + command.dbSymbol() + " on line %d\n", function->getArg(0));
+    }
+
+    // Check for errors.
+    llvm::Constant* commandName = builder.CreateGlobalStringPtr(command.dbSymbol(), functionName + "CommandName");
+    builder.CreateCall(checkForErrorFunc, {commandName, function->getArg(0)});
+
     if (functionType->getReturnType()->isVoidTy())
     {
         builder.CreateRetVoid();
-    }
-    else if (functionType->getReturnType()->isFloatTy())
-    {
-        llvm::Value* dwordStoragePtr = builder.CreateAlloca(dwordTy);
-        builder.CreateStore(commandResult, dwordStoragePtr);
-        llvm::Value* dwordAsFloatStorage = builder.CreateBitCast(dwordStoragePtr, llvm::Type::getFloatPtrTy(ctx));
-        builder.CreateRet(builder.CreateLoad(llvm::Type::getFloatTy(ctx), dwordAsFloatStorage));
     }
     else
     {

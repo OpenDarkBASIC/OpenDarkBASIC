@@ -126,9 +126,28 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo*
         // If a function has a single void type, represented by '0', it should be treated as having no arguments.
         if (argumentTypeList != "0")
         {
+            bool hasOutParameter = false;
             for (std::size_t typeIdx = 0; typeIdx < argumentTypeList.size(); ++typeIdx)
             {
+                if (argumentTypeList[typeIdx] == '*')
+                {
+                    if (hasOutParameter)
+                    {
+                        fprintf(stderr, "Encountered multiple out-parameter marker's '*'.");
+                        return false;
+                    }
+                    if (typeIdx == 0)
+                    {
+                        fprintf(stderr, "Encountered out-parameter marker '*' at the beginning of the argument type list.");
+                        return false;
+                    }
+                    args.back().isOutParameter = true;
+                    hasOutParameter = true;
+                    continue;
+                }
+
                 Command::Arg arg;
+                arg.isOutParameter = false;
                 arg.type = convertTypeChar(argumentTypeList[typeIdx]);
                 if (arg.type == Command::Type::Void)
                 {

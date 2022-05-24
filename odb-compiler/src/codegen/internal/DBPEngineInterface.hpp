@@ -35,6 +35,7 @@ private:
     llvm::Function* getFunctionAddressFunc;
     llvm::Function* debugPrintfFunc;
     llvm::Function* initEngineFunc;
+    llvm::Function* checkForErrorFunc;
     llvm::Function* closeEngineFunc;
     llvm::Function* exitProcessFunc;
 

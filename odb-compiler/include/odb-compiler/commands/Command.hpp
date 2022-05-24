@@ -32,6 +32,7 @@ public:
         Type type;
         std::string symName;
         std::string description;
+        bool isOutParameter;
     };
 
     Command(PluginInfo* sourceLibrary,
