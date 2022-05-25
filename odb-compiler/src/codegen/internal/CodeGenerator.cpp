@@ -13,6 +13,7 @@
 #include "odb-compiler/ast/Conditional.hpp"
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
+#include "odb-compiler/ast/FuncArgList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
@@ -1067,14 +1068,11 @@ llvm::Function* CodeGenerator::generateFunctionPrototype(const ast::FuncDecl* as
     std::vector<std::pair<std::string, llvm::Type*>> args;
     if (astFunction->args().notNull())
     {
-        for (const ast::Expression* arg : astFunction->args()->expressions())
+        for (const ast::VarDecl* arg : astFunction->args()->varDecls())
         {
-            // TODO: What happens in the case where we have a function with an explicit type?
-            auto* varRef = dynamic_cast<const ast::VarRef*>(arg);
-            assert(varRef);
             std::pair<std::string, llvm::Type*> argPair;
-            argPair.first = varRef->identifier()->name();
-            argPair.second = getLLVMType(ctx, ast::Type::getFromAnnotation(varRef->identifier()->annotation()));
+            argPair.first = arg->variable()->name();
+            argPair.second = getLLVMType(ctx, arg->type());
             args.emplace_back(argPair);
         }
     }

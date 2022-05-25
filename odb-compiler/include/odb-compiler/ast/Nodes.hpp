@@ -25,6 +25,7 @@
     X(DefaultCase)                      \
     X(Exit)                             \
     X(ForLoop)                          \
+    X(FuncArgList)                      \
     X(FuncCallExpr)                     \
     X(FuncCallExprOrArrayRef)           \
     X(FuncCallStmnt)                    \

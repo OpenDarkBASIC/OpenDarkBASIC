@@ -10,22 +10,22 @@ namespace odb::ast {
 class Identifier;
 class Block;
 class Expression;
-class ArgList;
+class FuncArgList;
 
 class ODBCOMPILER_PUBLIC_API FuncDecl final : public Statement
 {
 public:
-    FuncDecl(Identifier* identifier, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, ArgList* args, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
+    FuncDecl(Identifier* identifier, FuncArgList* args, Expression* returnValue, SourceLocation* location);
     FuncDecl(Identifier* identifier, Block* body, Expression* returnValue, SourceLocation* location);
     FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, ArgList* args, Block* body, SourceLocation* location);
-    FuncDecl(Identifier* identifier, ArgList* args, SourceLocation* location);
+    FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, SourceLocation* location);
+    FuncDecl(Identifier* identifier, FuncArgList* args, SourceLocation* location);
     FuncDecl(Identifier* identifier, Block* body, SourceLocation* location);
     FuncDecl(Identifier* identifier, SourceLocation* location);
 
     Identifier* identifier() const;
-    MaybeNull<ArgList> args() const;
+    MaybeNull<FuncArgList> args() const;
     MaybeNull<Block> body() const;
     MaybeNull<Expression> returnValue() const;
 
@@ -43,7 +43,7 @@ protected:
 
 private:
     Reference<Identifier> identifier_;
-    Reference<ArgList> args_;
+    Reference<FuncArgList> args_;
     Reference<Block> body_;
     Reference<Expression> returnValue_;
 

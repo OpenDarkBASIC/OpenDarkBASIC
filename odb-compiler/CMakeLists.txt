@@ -181,6 +181,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/Exporters_DOT.cpp"
     "src/ast/Exporters_JSON.cpp"
     "src/ast/Expression.cpp"
+    "src/ast/FuncArgList.cpp"
     "src/ast/FuncCall.cpp"
     "src/ast/FuncDecl.cpp"
     "src/ast/Goto.cpp"

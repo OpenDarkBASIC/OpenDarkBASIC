@@ -14,6 +14,7 @@
     #include "odb-compiler/ast/ConstDecl.hpp"
     #include "odb-compiler/ast/Exit.hpp"
     #include "odb-compiler/ast/Expression.hpp"
+    #include "odb-compiler/ast/FuncArgList.hpp"
     #include "odb-compiler/ast/FuncCall.hpp"
     #include "odb-compiler/ast/FuncDecl.hpp"
     #include "odb-compiler/ast/Goto.hpp"
@@ -78,6 +79,7 @@
             class FuncCallExpr;
             class FuncCallStmnt;
             class FuncDecl;
+            class FuncArgList;
             class FuncExit;
             class Expression;
             class Identifier;
@@ -173,6 +175,7 @@
     odb::ast::ForLoop* for_loop;
     odb::ast::FuncCallStmnt* func_call_stmnt;
     odb::ast::FuncDecl* func_decl;
+    odb::ast::FuncArgList* func_arg_list;
     odb::ast::FuncExit* func_exit;
     odb::ast::UnresolvedGoto* goto_symbol;
     odb::ast::Identifier* identifier;
@@ -378,6 +381,8 @@
 %type<for_loop> loop_for
 %type<exit> exit
 %type<func_decl> func_decl
+%type<func_arg_list> func_arg_list
+%type<var_decl> func_arg
 %type<func_exit> func_exit
 %type<select> select
 %type<stmnt> incdec
@@ -699,14 +704,22 @@ udt_field_inner
   ;
 
 func_decl
-  : FUNCTION annotated_identifier '(' arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION expr          { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION expr                     { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION               { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
-  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION                          { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
+  : FUNCTION annotated_identifier '(' func_arg_list ')' seps block seps ENDFUNCTION expr { $$ = new FuncDecl($2, $4, $7, $10, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' func_arg_list ')' seps ENDFUNCTION expr            { $$ = new FuncDecl($2, $4, $8, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION expr               { $$ = new FuncDecl($2, $6, $9, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION expr                          { $$ = new FuncDecl($2, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' func_arg_list ')' seps block seps ENDFUNCTION      { $$ = new FuncDecl($2, $4, $7, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' func_arg_list ')' seps ENDFUNCTION                 { $$ = new FuncDecl($2, $4, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps block seps ENDFUNCTION                    { $$ = new FuncDecl($2, $6, driver->newLocation(&@$)); }
+  | FUNCTION annotated_identifier '(' ')' seps ENDFUNCTION                               { $$ = new FuncDecl($2, driver->newLocation(&@$)); }
+  ;
+func_arg_list
+  : func_arg_list ',' func_arg                                { $$ = $1; $$->appendVarDecl($3); }
+  | func_arg                                                  { $$ = new FuncArgList($1, driver->newLocation(&@$)); }
+  ;
+func_arg
+  : var_decl_no_as_type                                       { $$ = $1; }
+  | var_decl_as_type                                          { $$ = $1; }
   ;
 func_exit
   : EXITFUNCTION expr                                         { $$ = new FuncExit($2, driver->newLocation(&@$)); }

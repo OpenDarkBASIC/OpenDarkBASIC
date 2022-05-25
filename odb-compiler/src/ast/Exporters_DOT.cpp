@@ -11,6 +11,7 @@
 #include "odb-compiler/ast/ConstDecl.hpp"
 #include "odb-compiler/ast/Exit.hpp"
 #include "odb-compiler/ast/Exporters.hpp"
+#include "odb-compiler/ast/FuncArgList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Goto.hpp"
@@ -173,6 +174,14 @@ private:
             writeNamedConnection(node, node->nextIdentifier(), "nextSymbol");
         if (node->body().notNull())
             writeNamedConnection(node, node->body(), "body");
+    }
+    void visitFuncArgList(const FuncArgList* node) override
+    {
+        int i = 0;
+        for (const auto& varDecl : node->varDecls())
+        {
+            writeNamedConnection(node, varDecl, "arglist[" + std::to_string(i++) + "]");
+        }
     }
     void visitFuncCallExpr(const FuncCallExpr* node) override
     {

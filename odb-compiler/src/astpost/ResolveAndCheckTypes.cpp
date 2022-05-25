@@ -8,6 +8,7 @@
 #include "odb-compiler/ast/CommandExpr.hpp"
 #include "odb-compiler/ast/CommandStmnt.hpp"
 #include "odb-compiler/ast/Conditional.hpp"
+#include "odb-compiler/ast/FuncArgList.hpp"
 #include "odb-compiler/ast/FuncCall.hpp"
 #include "odb-compiler/ast/FuncDecl.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
@@ -92,6 +93,25 @@ std::string formatArgTypes(ast::ArgList* args)
             }
             firstArg = false;
             types += arg->getType().toString();
+        }
+    }
+    return types;
+}
+
+std::string formatArgTypes(ast::FuncArgList* args)
+{
+    std::string types;
+    bool firstArg = true;
+    if (args)
+    {
+        for (ast::VarDecl* arg : args->varDecls())
+        {
+            if (!firstArg)
+            {
+                types += ", ";
+            }
+            firstArg = false;
+            types += arg->type().toString();
         }
     }
     return types;
@@ -213,7 +233,7 @@ public:
         {
             // Check that the number of arguments is correct.
             size_t currentArgCount = node->args().notNull() ? node->args()->expressions().size() : 0;
-            size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->expressions().size() : 0;
+            size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->varDecls().size() : 0;
             if (currentArgCount == expectedArgCount)
             {
                 // We have a func call expr. The next pass will perform type checking.
@@ -729,7 +749,7 @@ private:
 
         // Check that the number of arguments is correct.
         size_t currentArgCount = args.notNull() ? args->expressions().size() : 0;
-        size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->expressions().size() : 0;
+        size_t expectedArgCount = func->second->args().notNull() ? func->second->args()->varDecls().size() : 0;
         if (currentArgCount != expectedArgCount)
         {
             std::string types;
@@ -749,7 +769,7 @@ private:
             for (std::size_t i = 0; i < args->expressions().size(); ++i)
             {
                 ast::Expression* arg = args->expressions()[i];
-                args->swapChild(arg, ensureType(arg, func->second->args()->expressions()[i]->getType()));
+                args->swapChild(arg, ensureType(arg, func->second->args()->varDecls()[i]->type()));
             }
         }
 

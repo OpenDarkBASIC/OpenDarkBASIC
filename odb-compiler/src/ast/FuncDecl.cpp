@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/FuncDecl.hpp"
-#include "odb-compiler/ast/ArgList.hpp"
+#include "odb-compiler/ast/FuncArgList.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/Expression.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
@@ -9,7 +9,7 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
     Statement(location),
     identifier_(identifier),
     args_(args),
@@ -19,7 +19,7 @@ FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, Expressio
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Expression* returnValue, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Expression* returnValue, SourceLocation* location) :
     Statement(location),
     identifier_(identifier),
     args_(args),
@@ -45,7 +45,7 @@ FuncDecl::FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocati
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, SourceLocation* location) :
     Statement(location),
     identifier_(identifier),
     args_(args),
@@ -54,7 +54,7 @@ FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, Block* body, SourceLoc
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, ArgList* args, SourceLocation* location) :
+FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, SourceLocation* location) :
     Statement(location),
     identifier_(identifier),
     args_(args)
@@ -83,7 +83,7 @@ Identifier* FuncDecl::identifier() const
 }
 
 // ----------------------------------------------------------------------------
-MaybeNull<ArgList> FuncDecl::args() const
+MaybeNull<FuncArgList> FuncDecl::args() const
 {
     return args_.get();
 }
@@ -166,7 +166,7 @@ Node* FuncDecl::duplicateImpl() const
 {
     FuncDecl* funcDecl = new FuncDecl(
         identifier_->duplicate<Identifier>(),
-        args_ ? args_->duplicate<ArgList>() : nullptr,
+        args_ ? args_->duplicate<FuncArgList>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
         returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
         location());
