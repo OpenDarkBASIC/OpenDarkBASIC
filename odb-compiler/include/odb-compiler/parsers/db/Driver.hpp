@@ -15,7 +15,7 @@ namespace ast {
     class Expression;
     class Literal;
     class SourceLocation;
-    class UDTFieldOuter;
+    class UDTField;
     class VarRef;
 }
 
@@ -65,10 +65,10 @@ public:
      */
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTField* lvalue, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecVar(ast::VarRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecArray(ast::ArrayRef* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
-    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTFieldOuter* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
+    ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTField* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
 
     /*!
      * Factory method for converting a BISON location into a SourceLocation.

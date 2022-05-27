@@ -1,0 +1,16 @@
+type Bar
+  x as Integer
+endtype
+
+type Foo
+  Dim y(2) as Bar
+endtype
+
+r as Foo
+r.y(0).x = 2
+
+//UDTField("r", [""
+
+rem print r.x
+wait key
+end

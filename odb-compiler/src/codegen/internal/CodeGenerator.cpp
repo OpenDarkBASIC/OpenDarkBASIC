@@ -1162,6 +1162,24 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
 
 bool CodeGenerator::generateModule(const ast::Program* program)
 {
+    // Dump AST before processing.
+    std::stack<std::pair<const ast::Node*, int>> stack;
+    stack.emplace(program, 0);
+    while (!stack.empty())
+    {
+        auto [node, indentation] = stack.top();
+        stack.pop();
+
+        std::string message = std::string(indentation, ' ') + node->toString();
+        fprintf(stderr, "%s\n", message.c_str());
+
+        auto children = node->children();
+        for (auto it = children.rbegin(); it != children.rend(); ++it)
+        {
+            stack.emplace(*it, indentation + 2);
+        }
+    }
+
     GlobalSymbolTable globalSymbolTable(module, engineInterface);
 
     gosubStackType = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(ctx), 32);
@@ -1217,24 +1235,6 @@ bool CodeGenerator::generateModule(const ast::Program* program)
 
     // Generate executable entry point that initialises the engine and calls the games' entry point.
     engineInterface.generateEntryPoint(gameEntryPointFunc);
-
-    // Dump AST.
-    std::stack<std::pair<const ast::Node*, int>> stack;
-    stack.emplace(program, 0);
-    while (!stack.empty())
-    {
-        auto [node, indentation] = stack.top();
-        stack.pop();
-
-        std::string message = std::string(indentation, ' ') + node->toString();
-        fprintf(stderr, "%s\n", message.c_str());
-
-        auto children = node->children();
-        for (auto it = children.rbegin(); it != children.rend(); ++it)
-        {
-            stack.emplace(*it, indentation + 2);
-        }
-    }
 
     #ifndef NDEBUG
     module.print(llvm::errs(), nullptr);

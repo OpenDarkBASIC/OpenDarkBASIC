@@ -150,15 +150,15 @@ Node* ArrayAssignment::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UDTFieldAssignment::UDTFieldAssignment(UDTFieldOuter* field, Expression* expr, SourceLocation* location)
+UDTFieldAssignment::UDTFieldAssignment(UDTField* field, Expression* expr, SourceLocation* location)
     : Assignment(field, expr, location)
 {
 }
 
 // ----------------------------------------------------------------------------
-UDTFieldOuter* UDTFieldAssignment::field() const
+UDTField* UDTFieldAssignment::field() const
 {
-    return static_cast<UDTFieldOuter*>(lvalue_.get());
+    return static_cast<UDTField*>(lvalue_.get());
 }
 
 // ----------------------------------------------------------------------------
@@ -187,7 +187,7 @@ Node::ChildRange UDTFieldAssignment::children()
 void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
 {
     if (lvalue_ == oldNode)
-        lvalue_ = dynamic_cast<UDTFieldOuter*>(newNode);
+        lvalue_ = dynamic_cast<UDTField*>(newNode);
     else if (expr_ == oldNode)
         expr_ = dynamic_cast<Expression*>(newNode);
     else
@@ -198,7 +198,7 @@ void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
 Node* UDTFieldAssignment::duplicateImpl() const
 {
     return new UDTFieldAssignment(
-        lvalue_->duplicate<UDTFieldOuter>(),
+        lvalue_->duplicate<UDTField>(),
         expr_->duplicate<Expression>(),
         location());
 }

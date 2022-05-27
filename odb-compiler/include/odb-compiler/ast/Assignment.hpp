@@ -8,7 +8,7 @@ namespace odb::ast {
 class ArrayRef;
 class Expression;
 class LValue;
-class UDTFieldOuter;
+class UDTField;
 class Variable;
 class VarRef;
 
@@ -63,9 +63,9 @@ protected:
 class ODBCOMPILER_PUBLIC_API UDTFieldAssignment final : public Assignment
 {
 public:
-    UDTFieldAssignment(UDTFieldOuter* field, Expression* expr, SourceLocation* location);
+    UDTFieldAssignment(UDTField* field, Expression* expr, SourceLocation* location);
 
-    UDTFieldOuter* field() const;
+    UDTField* field() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

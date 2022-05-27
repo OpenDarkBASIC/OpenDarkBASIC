@@ -4,144 +4,73 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UDTFieldOuter::UDTFieldOuter(Expression* left, LValue* right, SourceLocation* location)
+UDTField::UDTField(Expression* udtExpr, LValue* field, SourceLocation* location)
     : LValue(location)
-    , left_(left)
-    , right_(right)
+    , udtExpr_(udtExpr)
+    , field_(field)
 {
 }
 
 // ----------------------------------------------------------------------------
-Expression* UDTFieldOuter::left() const
+Expression* UDTField::udtExpr() const
 {
-    return left_;
+    return udtExpr_;
 }
 
 // ----------------------------------------------------------------------------
-LValue* UDTFieldOuter::right() const
+LValue* UDTField::field() const
 {
-    return right_;
+    return field_;
 }
 
 // ----------------------------------------------------------------------------
-Type UDTFieldOuter::getType() const
+Type UDTField::getType() const
 {
     // TODO: Implement.
     return Type::getUnknown();
 }
 
 // ----------------------------------------------------------------------------
-std::string UDTFieldOuter::toString() const
+std::string UDTField::toString() const
 {
-    return "UDTFieldOuter";
+    return "UDTField";
 }
 
 // ----------------------------------------------------------------------------
-void UDTFieldOuter::accept(Visitor* visitor)
+void UDTField::accept(Visitor* visitor)
 {
-    visitor->visitUDTFieldOuter(this);
+    visitor->visitUDTField(this);
 }
-void UDTFieldOuter::accept(ConstVisitor* visitor) const
+void UDTField::accept(ConstVisitor* visitor) const
 {
-    visitor->visitUDTFieldOuter(this);
-}
-
-// ----------------------------------------------------------------------------
-Node::ChildRange UDTFieldOuter::children()
-{
-    return {left_, right_};
+    visitor->visitUDTField(this);
 }
 
 // ----------------------------------------------------------------------------
-void UDTFieldOuter::swapChild(const Node* oldNode, Node* newNode)
+Node::ChildRange UDTField::children()
 {
-    if (left_ == oldNode)
-        left_ = dynamic_cast<Expression*>(newNode);
-    else if (right_ == oldNode)
-        right_ = dynamic_cast<LValue*>(newNode);
+    return {udtExpr_, field_};
+}
+
+// ----------------------------------------------------------------------------
+void UDTField::swapChild(const Node* oldNode, Node* newNode)
+{
+    if (udtExpr_ == oldNode)
+        udtExpr_ = dynamic_cast<Expression*>(newNode);
+    else if (field_ == oldNode)
+        field_ = dynamic_cast<LValue*>(newNode);
     else
         assert(false);
 }
 
 // ----------------------------------------------------------------------------
-Node* UDTFieldOuter::duplicateImpl() const
+Node* UDTField::duplicateImpl() const
 {
-    return new UDTFieldOuter(
-        left_->duplicate<Expression>(),
-        right_->duplicate<LValue>(),
+    return new UDTField(
+        udtExpr_->duplicate<Expression>(),
+        field_->duplicate<LValue>(),
         location());
 }
 
-// ============================================================================
-// ============================================================================
-
-// ----------------------------------------------------------------------------
-UDTFieldInner::UDTFieldInner(LValue* left, LValue* right, SourceLocation* location)
-    : LValue(location)
-    , left_(left)
-    , right_(right)
-{
-}
-
-// ----------------------------------------------------------------------------
-LValue* UDTFieldInner::left() const
-{
-    return left_;
-}
-
-// ----------------------------------------------------------------------------
-LValue* UDTFieldInner::right() const
-{
-    return right_;
-}
-
-// ----------------------------------------------------------------------------
-Type UDTFieldInner::getType() const
-{
-    // TODO: Implement.
-    return Type::getUnknown();
-}
-
-// ----------------------------------------------------------------------------
-std::string UDTFieldInner::toString() const
-{
-    return "UDTFieldInner";
-}
-
-// ----------------------------------------------------------------------------
-void UDTFieldInner::accept(Visitor* visitor)
-{
-    visitor->visitUDTFieldInner(this);
-}
-void UDTFieldInner::accept(ConstVisitor* visitor) const
-{
-    visitor->visitUDTFieldInner(this);
-}
-
-// ----------------------------------------------------------------------------
-Node::ChildRange UDTFieldInner::children()
-{
-    return {left_, right_};
-}
-
-// ----------------------------------------------------------------------------
-void UDTFieldInner::swapChild(const Node* oldNode, Node* newNode)
-{
-    if (left_ == oldNode)
-        left_ = dynamic_cast<LValue*>(newNode);
-    else if (right_ == oldNode)
-        right_ = dynamic_cast<LValue*>(newNode);
-    else
-        assert(false);
-}
-
-// ----------------------------------------------------------------------------
-Node* UDTFieldInner::duplicateImpl() const
-{
-    return new UDTFieldInner(
-        left_->duplicate<LValue>(),
-        right_->duplicate<LValue>(),
-        location());
-}
 
 }

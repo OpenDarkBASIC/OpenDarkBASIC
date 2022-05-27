@@ -19,8 +19,7 @@ namespace {
 class Visitor : public ast::GenericConstVisitor
 {
 public:
-    void visitUDTFieldOuter(const ast::UDTFieldOuter* node) override final { checkExpr(node->left()); }
-    void visitUDTFieldInner(const ast::UDTFieldInner* node) override final { checkExpr(node->left()); }
+    void visitUDTField(const ast::UDTField* node) override final { checkExpr(node->udtExpr()); }
     void visit(const ast::Node* node) override final { /* don't care */ }
 
     bool check(const ast::VarRef* varRef);

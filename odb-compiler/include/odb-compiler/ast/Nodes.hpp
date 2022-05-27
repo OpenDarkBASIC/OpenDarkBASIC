@@ -46,8 +46,7 @@
     X(UDTDecl)                          \
     X(UDTDeclBody)                      \
     X(UDTFieldAssignment)               \
-    X(UDTFieldOuter)                    \
-    X(UDTFieldInner)                    \
+    X(UDTField)                         \
     X(UnaryOp)                          \
     X(UnresolvedGoto)                   \
     X(UnresolvedSubCall)                \

@@ -96,8 +96,7 @@
             class SubReturn;
             class UDTDecl;
             class UDTDeclBody;
-            class UDTFieldOuter;
-            class UDTFieldInner;
+            class UDTField;
             class UDTFieldAssignment;
             class UnresolvedGoto;
             class UnresolvedSubCall;
@@ -184,7 +183,6 @@
     odb::ast::Label* label;
     odb::ast::Literal* literal;
     odb::ast::Loop* loop;
-    odb::ast::LValue* lvalue;
     odb::ast::ScopedIdentifier* scoped_identifier;
     odb::ast::Select* select;
     odb::ast::Statement* stmnt;
@@ -192,8 +190,7 @@
     odb::ast::SubReturn* sub_return;
     odb::ast::UDTDecl* udt_decl;
     odb::ast::UDTDeclBody* udt_decl_body;
-    odb::ast::UDTFieldOuter* udt_field_outer;
-    odb::ast::UDTFieldInner* udt_field_inner;
+    odb::ast::UDTField* udt_field;
     odb::ast::UntilLoop* until_loop;
     odb::ast::VarDecl* var_decl;
     odb::ast::VarRef* var_ref;
@@ -224,13 +221,12 @@
 %destructor { TouchRef($$); } <command_stmnt>
 %destructor { TouchRef($$); } <literal>
 %destructor { TouchRef($$); } <loop>
-%destructor { TouchRef($$); } <lvalue>
 %destructor { TouchRef($$); } <scoped_identifier>
 %destructor { TouchRef($$); } <select>
 %destructor { TouchRef($$); } <stmnt>
 %destructor { TouchRef($$); } <udt_decl>
 %destructor { TouchRef($$); } <udt_decl_body>
-%destructor { TouchRef($$); } <udt_field_outer>
+%destructor { TouchRef($$); } <udt_field>
 %destructor { TouchRef($$); } <until_loop>
 %destructor { TouchRef($$); } <var_decl>
 %destructor { TouchRef($$); } <var_ref>
@@ -402,9 +398,10 @@
 %type<array_undim> array_undim
 %type<udt_decl> udt_decl
 %type<udt_decl_body> udt_body_decl
-%type<udt_field_outer> udt_field_lvalue
-%type<udt_field_outer> udt_field_rvalue
-%type<lvalue> udt_field_inner
+%type<udt_field> udt_field_lvalue
+%type<expr> udt_field_lvalue_inner
+%type<udt_field> udt_field_rvalue
+%type<expr> udt_field_rvalue_inner
 %type<identifier> udt_ref
 %type<scope> scope
 
@@ -688,19 +685,25 @@ udt_ref
   : IDENTIFIER %prec NO_ANNOTATION                            { $$ = new Identifier($1, driver->newLocation(&@$)); str::deleteCStr($1); }
   ;
 udt_field_lvalue
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | array_ref '.' udt_field_inner                             { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
+  : udt_field_lvalue_inner '.' var_ref                        { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  | udt_field_lvalue_inner '.' array_ref                      { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
   ;
-udt_field_rvalue
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | func_call_expr_or_array_ref '.' udt_field_inner           { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  | command_expr '.' udt_field_inner                          { $$ = new UDTFieldOuter($1, $3, driver->newLocation(&@$)); }
-  ;
-udt_field_inner
-  : var_ref '.' udt_field_inner                               { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
-  | array_ref '.' udt_field_inner                             { $$ = new UDTFieldInner($1, $3, driver->newLocation(&@$)); }
+udt_field_lvalue_inner
+  : udt_field_lvalue_inner '.' var_ref                        { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  | udt_field_lvalue_inner '.' array_ref                      { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
   | var_ref                                                   { $$ = $1; }
   | array_ref                                                 { $$ = $1; }
+  ;
+udt_field_rvalue
+  : udt_field_rvalue_inner '.' var_ref                        { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  | udt_field_rvalue_inner '.' array_ref                      { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  ;
+udt_field_rvalue_inner
+  : udt_field_rvalue_inner '.' var_ref                        { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  | udt_field_rvalue_inner '.' array_ref                      { $$ = new UDTField($1, $3, driver->newLocation(&@$)); }
+  | var_ref                                                   { $$ = $1; }
+  | func_call_expr_or_array_ref                               { $$ = $1; }
+  | command_expr                                              { $$ = $1; }
   ;
 
 func_decl

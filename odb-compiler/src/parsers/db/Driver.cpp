@@ -322,7 +322,7 @@ ast::Literal* Driver::newIntLikeLiteral(int64_t value, ast::SourceLocation* loca
 }
 
 // ----------------------------------------------------------------------------
-static ast::BinaryOp* newIncDecOp(ast::LValue* value, ast::Expression* expr, Driver::IncDecDir dir)
+static ast::BinaryOp* newIncDecOp(ast::Expression* value, ast::Expression* expr, Driver::IncDecDir dir)
 {
     switch (dir) {
         case Driver::INC : return new ast::BinaryOp(ast::BinaryOpType::ADD, value, expr, expr->location());
@@ -351,10 +351,10 @@ ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, ast::Expression* e
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTField* value, ast::Expression* expr, IncDecDir dir, const DBLTYPE* loc) const
 {
     return new ast::UDTFieldAssignment(
-        value->duplicate<ast::UDTFieldOuter>(),
+        value->duplicate<ast::UDTField>(),
         newIncDecOp(value, expr, dir),
         newLocation(loc));
 }
@@ -380,7 +380,7 @@ ast::Assignment* Driver::newIncDecArray(ast::ArrayRef* value, IncDecDir dir, con
 }
 
 // ----------------------------------------------------------------------------
-ast::Assignment* Driver::newIncDecUDTField(ast::UDTFieldOuter* value, IncDecDir dir, const DBLTYPE* loc) const
+ast::Assignment* Driver::newIncDecUDTField(ast::UDTField* value, IncDecDir dir, const DBLTYPE* loc) const
 {
     return newIncDecUDTField(
         value,

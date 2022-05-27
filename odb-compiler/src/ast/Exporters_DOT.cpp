@@ -278,15 +278,10 @@ private:
         for (const auto& arrayDecl : node->arrayDeclarations())
             writeNamedConnection(node, arrayDecl, "arrayDecl[" + std::to_string(i++) + "]");
     }
-    void visitUDTFieldOuter(const UDTFieldOuter* node) override
+    void visitUDTField(const UDTField* node) override
     {
-        writeNamedConnection(node, node->left(), "left");
-        writeNamedConnection(node, node->right(), "right");
-    }
-    void visitUDTFieldInner(const UDTFieldInner* node) override
-    {
-        writeNamedConnection(node, node->left(), "left");
-        writeNamedConnection(node, node->right(), "right");
+        writeNamedConnection(node, node->udtExpr(), "udtExpr");
+        writeNamedConnection(node, node->field(), "field");
     }
     void visitUDTFieldAssignment(const UDTFieldAssignment* node) override
     {
