@@ -43,7 +43,7 @@ bool ResolveLabels::execute(ast::Program* root)
                     fail = true;
                     return;
                 }
-                it.replaceNode(new ast::Goto(labelIt->second, node->location()));
+                it.replaceNode(new ast::Goto(node->program(), node->location(), labelIt->second));
             },
             [&](ast::UnresolvedSubCall* node)
             {
@@ -57,7 +57,7 @@ bool ResolveLabels::execute(ast::Program* root)
                     fail = true;
                     return;
                 }
-                it.replaceNode(new ast::SubCall(labelIt->second, node->location()));
+                it.replaceNode(new ast::SubCall(node->program(), node->location(), labelIt->second));
             }
         };
         (*it)->accept(&resolveLabels);

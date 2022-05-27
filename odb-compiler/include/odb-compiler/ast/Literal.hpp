@@ -9,14 +9,14 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API Literal : public Expression
 {
 public:
-    Literal(SourceLocation* location);
+    Literal(Program* program, SourceLocation* location);
 };
 
 #define X(dbname, cppname)                                                    \
 class ODBCOMPILER_PUBLIC_API dbname##Literal final : public Literal           \
 {                                                                             \
 public:                                                                       \
-    dbname##Literal(const cppname& value, SourceLocation* location);          \
+    dbname##Literal(Program* program, SourceLocation* location, const cppname& value); \
     const cppname& value() const;                                             \
                                                                               \
     Type getType() const override;                                            \

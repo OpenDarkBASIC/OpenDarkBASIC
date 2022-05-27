@@ -10,7 +10,7 @@ class UDTDecl;
 class ODBCOMPILER_PUBLIC_API UDTField final : public LValue
 {
 public:
-    UDTField(Expression* udtExpr, LValue* field, SourceLocation* location);
+    UDTField(Program* program, SourceLocation* location, Expression* udtExpr, LValue* field);
 
     Expression* udtExpr() const;
     LValue* field() const;

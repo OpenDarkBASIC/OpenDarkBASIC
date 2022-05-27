@@ -14,8 +14,8 @@ class FuncDecl;
 class ODBCOMPILER_PUBLIC_API FuncCallExpr final : public Expression
 {
 public:
-    FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation* location);
-    FuncCallExpr(Identifier* identifier, SourceLocation* location);
+    FuncCallExpr(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
+    FuncCallExpr(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
@@ -45,8 +45,8 @@ private:
 class ODBCOMPILER_PUBLIC_API FuncCallStmnt final : public Statement
 {
 public:
-    FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocation* location);
-    FuncCallStmnt(Identifier* identifier, SourceLocation* location);
+    FuncCallStmnt(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
+    FuncCallStmnt(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;
@@ -82,7 +82,7 @@ private:
 class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef final : public Expression
 {
 public:
-    FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location);
+    FuncCallExprOrArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;

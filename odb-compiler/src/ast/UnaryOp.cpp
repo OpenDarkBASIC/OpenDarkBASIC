@@ -5,8 +5,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UnaryOp::UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location) :
-    Expression(location),
+UnaryOp::UnaryOp(Program* program, SourceLocation* location, UnaryOpType op, Expression* expr) :
+    Expression(program, location),
     expr_(expr),
     op_(op)
 {
@@ -65,9 +65,10 @@ void UnaryOp::swapChild(const Node* oldNode, Node* newNode)
 Node* UnaryOp::duplicateImpl() const
 {
     return new UnaryOp(
+        program(),
+        location(),
         op_,
-        expr_->duplicate<Expression>(),
-        location());
+        expr_->duplicate<Expression>());
 }
 
 }

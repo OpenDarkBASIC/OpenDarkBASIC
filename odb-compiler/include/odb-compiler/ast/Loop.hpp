@@ -14,14 +14,14 @@ class Assignment;
 class ODBCOMPILER_PUBLIC_API Loop : public Statement
 {
 public:
-    Loop(SourceLocation* location);
+    Loop(Program* program, SourceLocation* location);
 };
 
 class ODBCOMPILER_PUBLIC_API InfiniteLoop final : public Loop
 {
 public:
-    InfiniteLoop(Block* body, SourceLocation* location);
-    InfiniteLoop(SourceLocation* location);
+    InfiniteLoop(Program* program, SourceLocation* location, Block* body);
+    InfiniteLoop(Program* program, SourceLocation* location);
 
     MaybeNull<Block> body() const;
 
@@ -41,8 +41,8 @@ private:
 class ODBCOMPILER_PUBLIC_API WhileLoop final : public Loop
 {
 public:
-    WhileLoop(Expression* continueCondition, Block* body, SourceLocation* location);
-    WhileLoop(Expression* continueCondition, SourceLocation* location);
+    WhileLoop(Program* program, SourceLocation* location, Expression* continueCondition, Block* body);
+    WhileLoop(Program* program, SourceLocation* location, Expression* continueCondition);
 
     Expression* continueCondition() const;
     MaybeNull<Block> body() const;
@@ -64,8 +64,8 @@ private:
 class ODBCOMPILER_PUBLIC_API UntilLoop final : public Loop
 {
 public:
-    UntilLoop(Expression* exitCondition, Block* body, SourceLocation* location);
-    UntilLoop(Expression* exitCondition, SourceLocation* location);
+    UntilLoop(Program* program, SourceLocation* location, Expression* exitCondition, Block* body);
+    UntilLoop(Program* program, SourceLocation* location, Expression* exitCondition);
 
     Expression* exitCondition() const;
     MaybeNull<Block> body() const;
@@ -87,14 +87,14 @@ private:
 class ODBCOMPILER_PUBLIC_API ForLoop final : public Loop
 {
 public:
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceLocation* location);
-    ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Block* body);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Identifier* nextIdentifier);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Block* body);
+    ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue);
 
     Assignment* counter() const;
     Expression* endValue() const;

@@ -11,7 +11,7 @@ class Identifier;
 class ODBCOMPILER_PUBLIC_API UnresolvedGoto final : public Statement
 {
 public:
-    UnresolvedGoto(Identifier* label, SourceLocation* location);
+    UnresolvedGoto(Program* program, SourceLocation* location, Identifier* label);
 
     Identifier* label() const;
 
@@ -31,7 +31,7 @@ private:
 class ODBCOMPILER_PUBLIC_API Goto final : public Statement
 {
 public:
-    Goto(Label* label, SourceLocation* location);
+    Goto(Program* program, SourceLocation* location, Label* label);
 
     Label* label() const;
 

@@ -8,7 +8,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API ScopedIdentifier final : public Identifier
 {
 public:
-    ScopedIdentifier(Scope scope, std::string name, Annotation annotation, SourceLocation* location);
+    ScopedIdentifier(Program* program, SourceLocation* location, Scope scope, std::string name, Annotation annotation);
 
     Scope scope() const;
 

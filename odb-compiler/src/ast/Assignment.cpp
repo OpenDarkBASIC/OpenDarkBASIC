@@ -10,8 +10,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Assignment::Assignment(LValue* lvalue, Expression* expr, SourceLocation* location)
-    : Statement(location)
+Assignment::Assignment(Program* program, SourceLocation* location, LValue* lvalue, Expression* expr)
+    : Statement(program, location)
     , lvalue_(lvalue)
     , expr_(expr)
 {
@@ -30,8 +30,8 @@ Expression* Assignment::expression() const
 }
 
 // ----------------------------------------------------------------------------
-VarAssignment::VarAssignment(VarRef* var, Expression* expr, SourceLocation* location)
-    : Assignment(var, expr, location)
+VarAssignment::VarAssignment(Program* program, SourceLocation* location, VarRef* var, Expression* expr)
+    : Assignment(program, location, var, expr)
 {
 }
 
@@ -84,17 +84,18 @@ void VarAssignment::swapChild(const Node* oldNode, Node* newNode)
 Node* VarAssignment::duplicateImpl() const
 {
     return new VarAssignment(
+        program(),
+        location(),
         lvalue_->duplicate<VarRef>(),
-        expr_->duplicate<Expression>(),
-        location());
+        expr_->duplicate<Expression>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ArrayAssignment::ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location)
-    : Assignment(var, expr, location)
+ArrayAssignment::ArrayAssignment(Program* program, SourceLocation* location, ArrayRef* var, Expression* expr)
+    : Assignment(program, location, var, expr)
 {
 }
 
@@ -141,17 +142,18 @@ void ArrayAssignment::swapChild(const Node* oldNode, Node* newNode)
 Node* ArrayAssignment::duplicateImpl() const
 {
     return new ArrayAssignment(
+        program(),
+        location(),
         lvalue_->duplicate<ArrayRef>(),
-        expr_->duplicate<Expression>(),
-        location());
+        expr_->duplicate<Expression>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UDTFieldAssignment::UDTFieldAssignment(UDTField* field, Expression* expr, SourceLocation* location)
-    : Assignment(field, expr, location)
+UDTFieldAssignment::UDTFieldAssignment(Program* program, SourceLocation* location, UDTField* field, Expression* expr)
+    : Assignment(program, location, field, expr)
 {
 }
 
@@ -198,9 +200,10 @@ void UDTFieldAssignment::swapChild(const Node* oldNode, Node* newNode)
 Node* UDTFieldAssignment::duplicateImpl() const
 {
     return new UDTFieldAssignment(
+        program(),
+        location(),
         lvalue_->duplicate<UDTField>(),
-        expr_->duplicate<Expression>(),
-        location());
+        expr_->duplicate<Expression>());
 }
 
 }

@@ -15,14 +15,14 @@ class FuncArgList;
 class ODBCOMPILER_PUBLIC_API FuncDecl final : public Statement
 {
 public:
-    FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, FuncArgList* args, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, Block* body, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocation* location);
-    FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, SourceLocation* location);
-    FuncDecl(Identifier* identifier, FuncArgList* args, SourceLocation* location);
-    FuncDecl(Identifier* identifier, Block* body, SourceLocation* location);
-    FuncDecl(Identifier* identifier, SourceLocation* location);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Expression* returnValue);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Block* body, Expression* returnValue);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Expression* returnValue);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Block* body);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Block* body);
+    FuncDecl(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
     MaybeNull<FuncArgList> args() const;
@@ -53,8 +53,8 @@ private:
 class ODBCOMPILER_PUBLIC_API FuncExit final : public Statement
 {
 public:
-    FuncExit(Expression* returnValue, SourceLocation* location);
-    FuncExit(SourceLocation* location);
+    FuncExit(Program* program, SourceLocation* location, Expression* returnValue);
+    FuncExit(Program* program, SourceLocation* location);
 
     MaybeNull<Expression> returnValue() const;
 

@@ -49,15 +49,15 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Literal::Literal(SourceLocation* location) :
-    Expression(location)
+Literal::Literal(Program* program, SourceLocation* location) :
+    Expression(program, location)
 {
 }
 
 // ----------------------------------------------------------------------------
 #define X(dbname, cppname)                                                    \
-    dbname##Literal::dbname##Literal(const cppname& value, SourceLocation* location) \
-        : Literal(location)                                                   \
+    dbname##Literal::dbname##Literal(Program* program, SourceLocation* location, const cppname& value) \
+        : Literal(program, location)                                          \
         , value_(value)                                                       \
     {}                                                                        \
                                                                               \
@@ -98,7 +98,7 @@ Literal::Literal(SourceLocation* location) :
                                                                               \
     Node* dbname##Literal::duplicateImpl() const                              \
     {                                                                         \
-        return new dbname##Literal(value_, location());                       \
+        return new dbname##Literal(program(), location(), value_);            \
     }
 ODB_DATATYPE_LIST
 #undef X

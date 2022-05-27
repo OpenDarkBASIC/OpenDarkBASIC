@@ -11,8 +11,8 @@ class VarDecl;
 class ODBCOMPILER_PUBLIC_API FuncArgList final : public Node
 {
 public:
-    FuncArgList(SourceLocation* location);
-    FuncArgList(VarDecl* initialVar, SourceLocation* location);
+    FuncArgList(Program* program, SourceLocation* location);
+    FuncArgList(Program* program, SourceLocation* location, VarDecl* initialVar);
 
     void appendVarDecl(VarDecl* var);
 

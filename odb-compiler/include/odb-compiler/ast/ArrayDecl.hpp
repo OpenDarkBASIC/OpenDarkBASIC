@@ -13,7 +13,7 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API ArrayDecl final : public Statement
 {
 public:
-    ArrayDecl(ScopedIdentifier* identifier, Type type, ArgList* dims, SourceLocation* location);
+    ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type, ArgList* dims);
 
     ScopedIdentifier* identifier() const;
     Type type() const;

@@ -12,8 +12,8 @@ class Statement;
 class ODBCOMPILER_PUBLIC_API Block final : public Node
 {
 public:
-    Block(SourceLocation* location);
-    Block(Statement* stmnt, SourceLocation* location);
+    Block(Program* program, SourceLocation* location);
+    Block(Program* program, SourceLocation* location, Statement* stmnt);
 
     void appendStatement(Statement* stmnt);
     void clearStatements();

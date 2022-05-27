@@ -5,8 +5,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-BinaryOp::BinaryOp(BinaryOpType op, Expression* lhs, Expression* rhs, SourceLocation* location)
-    : Expression(location)
+BinaryOp::BinaryOp(Program* program, SourceLocation* location, BinaryOpType op, Expression* lhs, Expression* rhs)
+    : Expression(program, location)
     , lhs_(lhs)
     , rhs_(rhs)
     , op_(op)
@@ -97,10 +97,11 @@ void BinaryOp::swapChild(const Node* oldNode, Node* newNode)
 Node* BinaryOp::duplicateImpl() const
 {
     return new BinaryOp(
+        program(),
+        location(),
         op_,
         lhs_->duplicate<Expression>(),
-        rhs_->duplicate<Expression>(),
-        location());
+        rhs_->duplicate<Expression>());
 }
 
 }

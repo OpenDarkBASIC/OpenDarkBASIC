@@ -4,8 +4,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Statement::Statement(SourceLocation* location) :
-    Node(location)
+Statement::Statement(Program* program, SourceLocation* location) :
+    Node(program, location)
 {
 }
 

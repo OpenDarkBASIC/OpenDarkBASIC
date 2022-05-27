@@ -12,7 +12,7 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API ArrayRef final : public LValue
 {
 public:
-    ArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location);
+    ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
 
     Identifier* identifier() const;
     ArgList* args() const;

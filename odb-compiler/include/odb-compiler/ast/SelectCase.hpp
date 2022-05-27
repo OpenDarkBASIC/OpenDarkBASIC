@@ -16,8 +16,8 @@ class Expression;
 class ODBCOMPILER_PUBLIC_API Select final : public Statement
 {
 public:
-    Select(Expression* expr, CaseList* cases, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect);
-    Select(Expression* expr, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect);
+    Select(Program* program, SourceLocation* location, Expression* expr, CaseList* cases, SourceLocation* beginSelect, SourceLocation* endSelect);
+    Select(Program* program, SourceLocation* location, Expression* expr, SourceLocation* beginSelect, SourceLocation* endSelect);
 
     Expression* expression() const;
     MaybeNull<CaseList> cases() const;
@@ -43,9 +43,9 @@ private:
 class ODBCOMPILER_PUBLIC_API CaseList final : public Node
 {
 public:
-    CaseList(Case* case_, SourceLocation* location);
-    CaseList(DefaultCase* case_, SourceLocation* location);
-    CaseList(SourceLocation* location);
+    CaseList(Program* program, SourceLocation* location, Case* case_);
+    CaseList(Program* program, SourceLocation* location, DefaultCase* case_);
+    CaseList(Program* program, SourceLocation* location);
 
     void appendCase(Case* case_);
     void appendDefaultCase(DefaultCase* case_);
@@ -71,8 +71,8 @@ private:
 class ODBCOMPILER_PUBLIC_API Case final : public Node
 {
 public:
-    Case(Expression* expr, Block* body, SourceLocation* location);
-    Case(Expression* expr, SourceLocation* location);
+    Case(Program* program, SourceLocation* location, Expression* expr, Block* body);
+    Case(Program* program, SourceLocation* location, Expression* expr);
 
     Expression* expression() const;
     MaybeNull<Block> body() const;
@@ -94,8 +94,8 @@ private:
 class ODBCOMPILER_PUBLIC_API DefaultCase final : public Node
 {
 public:
-    DefaultCase(Block* body, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
-    DefaultCase(SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
+    DefaultCase(Program* program, SourceLocation* location, Block* body, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
+    DefaultCase(Program* program, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc);
 
     MaybeNull<Block> body() const;
     SourceLocation* beginCaseLocation() const;

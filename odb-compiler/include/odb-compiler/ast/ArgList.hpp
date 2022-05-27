@@ -11,8 +11,8 @@ class Expression;
 class ODBCOMPILER_PUBLIC_API ArgList final : public Node
 {
 public:
-    ArgList(SourceLocation* location);
-    ArgList(Expression* initialExpr, SourceLocation* location);
+    ArgList(Program* program, SourceLocation* location);
+    ArgList(Program* program, SourceLocation* location, Expression* initialExpr);
 
     void appendExpression(Expression* expr);
 

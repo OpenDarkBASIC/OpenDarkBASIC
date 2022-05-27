@@ -14,7 +14,7 @@ class VarDecl;
 class ODBCOMPILER_PUBLIC_API UDTDecl final : public Statement
 {
 public:
-    UDTDecl(Identifier* typeName, UDTDeclBody* udtBody, SourceLocation* location);
+    UDTDecl(Program* program, SourceLocation* location, Identifier* typeName, UDTDeclBody* udtBody);
 
     Identifier* typeName() const;
     UDTDeclBody* body() const;
@@ -37,9 +37,9 @@ private:
 class ODBCOMPILER_PUBLIC_API UDTDeclBody final : public Node
 {
 public:
-    UDTDeclBody(SourceLocation* location);
-    UDTDeclBody(VarDecl* varDecl, SourceLocation* location);
-    UDTDeclBody(ArrayDecl* arrayDecl, SourceLocation* location);
+    UDTDeclBody(Program* program, SourceLocation* location);
+    UDTDeclBody(Program* program, SourceLocation* location, VarDecl* varDecl);
+    UDTDeclBody(Program* program, SourceLocation* location, ArrayDecl* arrayDecl);
 
     void appendVarDecl(VarDecl* varDecl);
     void appendArrayDecl(ArrayDecl* varDecl);

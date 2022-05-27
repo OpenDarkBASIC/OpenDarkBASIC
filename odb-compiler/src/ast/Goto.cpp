@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UnresolvedGoto::UnresolvedGoto(Identifier* label, SourceLocation* location) :
-    Statement(location),
+UnresolvedGoto::UnresolvedGoto(Program* program, SourceLocation* location, Identifier* label) :
+    Statement(program, location),
     label_(label)
 {
 }
@@ -54,16 +54,17 @@ void UnresolvedGoto::swapChild(const Node* oldNode, Node* newNode)
 Node* UnresolvedGoto::duplicateImpl() const
 {
     return new UnresolvedGoto(
-        label_->duplicate<Identifier>(),
-        location());
+        program(),
+        location(),
+        label_->duplicate<Identifier>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-Goto::Goto(Label* label, SourceLocation* location) :
-    Statement(location),
+Goto::Goto(Program* program, SourceLocation* location, Label* label) :
+    Statement(program, location),
     label_(label)
 {
 }
@@ -107,8 +108,9 @@ void Goto::swapChild(const Node* oldNode, Node* newNode)
 Node* Goto::duplicateImpl() const
 {
     return new Goto(
-        label_,
-        location());
+        program(),
+        location(),
+        label_);
 }
 
 

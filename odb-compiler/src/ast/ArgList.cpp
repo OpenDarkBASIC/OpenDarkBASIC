@@ -6,14 +6,14 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArgList::ArgList(SourceLocation* location) :
-    Node(location)
+ArgList::ArgList(Program* program, SourceLocation* location) :
+    Node(program, location)
 {
 }
 
 // ----------------------------------------------------------------------------
-ArgList::ArgList(Expression* expr, SourceLocation* location) :
-    Node(location)
+ArgList::ArgList(Program* program, SourceLocation* location, Expression* expr) :
+    Node(program, location)
 {
     appendExpression(expr);
 }
@@ -75,7 +75,7 @@ void ArgList::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* ArgList::duplicateImpl() const
 {
-    ArgList* el = new ArgList(location());
+    ArgList* el = new ArgList(program(), location());
     for (const auto& expr : expressions_)
         el->appendExpression(expr->duplicate<Expression>());
     return el;

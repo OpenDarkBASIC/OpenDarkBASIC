@@ -8,7 +8,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API LValue : public Expression
 {
 public:
-    LValue(SourceLocation* location);
+    LValue(Program* program, SourceLocation* location);
 };
 
 }

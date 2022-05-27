@@ -6,15 +6,15 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-InitializerList::InitializerList(SourceLocation* location) :
-    Expression(location),
+InitializerList::InitializerList(Program* program, SourceLocation* location) :
+    Expression(program, location),
     typeBeingInitialized_(Type::getUnknown())
 {
 }
 
 // ----------------------------------------------------------------------------
-InitializerList::InitializerList(Expression* expr, SourceLocation* location) :
-    Expression(location),
+InitializerList::InitializerList(Program* program, SourceLocation* location, Expression* expr) :
+    Expression(program, location),
     typeBeingInitialized_(Type::getUnknown())
 {
     appendExpression(expr);
@@ -90,7 +90,7 @@ void InitializerList::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* InitializerList::duplicateImpl() const
 {
-    InitializerList* el = new InitializerList(location());
+    InitializerList* el = new InitializerList(program(), location());
     for (const auto& expr : expressions_)
         el->appendExpression(expr->duplicate<Expression>());
     return el;

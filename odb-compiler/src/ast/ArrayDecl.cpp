@@ -9,8 +9,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayDecl::ArrayDecl(ScopedIdentifier* identifier, Type type, ArgList* dims, SourceLocation* location)
-    : Statement(location)
+ArrayDecl::ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type, ArgList* dims)
+    : Statement(program, location)
     , identifier_(identifier)
     , type_(std::move(type))
     , dims_(dims)
@@ -91,10 +91,11 @@ void ArrayDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* ArrayDecl::duplicateImpl() const
 {
     return new ArrayDecl(
+        program(),
+        location(),
         identifier_->duplicate<ScopedIdentifier>(),
         type_,
-        dims_->duplicate<ArgList>(),
-        location());
+        dims_->duplicate<ArgList>());
 }
 
 }

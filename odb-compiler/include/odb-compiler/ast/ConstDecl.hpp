@@ -17,7 +17,7 @@ class Literal;
 class ODBCOMPILER_PUBLIC_API ConstDeclExpr final : public Statement
 {
 public:
-    ConstDeclExpr(Identifier* identifier, Expression* expr, SourceLocation* location);
+    ConstDeclExpr(Program* program, SourceLocation* location, Identifier* identifier, Expression* expr);
 
     Identifier* identifier() const;
     Expression* expression() const;
@@ -39,7 +39,7 @@ private:
 class ODBCOMPILER_PUBLIC_API ConstDecl final : public Statement
 {
 public:
-    ConstDecl(Identifier* identifier, Literal* literal, SourceLocation* location);
+    ConstDecl(Program* program, SourceLocation* location, Identifier* identifier, Literal* literal);
 
     Identifier* identifier() const;
     Literal* literal() const;

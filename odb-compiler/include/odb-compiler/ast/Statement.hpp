@@ -9,7 +9,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API Statement : public Node
 {
 public:
-    Statement(SourceLocation* location);
+    Statement(Program* program, SourceLocation* location);
 };
 
 }

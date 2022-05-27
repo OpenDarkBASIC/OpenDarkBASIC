@@ -15,7 +15,7 @@ class VarRef;
 class ODBCOMPILER_PUBLIC_API Assignment : public Statement
 {
 public:
-    Assignment(LValue* lvalue, Expression* expr, SourceLocation* location);
+    Assignment(Program* program, SourceLocation* location, LValue* lvalue, Expression* expr);
 
     LValue* lvalue() const;
     Expression* expression() const;
@@ -28,7 +28,7 @@ protected:
 class ODBCOMPILER_PUBLIC_API VarAssignment final : public Assignment
 {
 public:
-    VarAssignment(VarRef* var, Expression* expr, SourceLocation* location);
+    VarAssignment(Program* program, SourceLocation* location, VarRef* var, Expression* expr);
 
     VarRef* varRef() const;
     Variable* variable() const;
@@ -46,7 +46,7 @@ protected:
 class ODBCOMPILER_PUBLIC_API ArrayAssignment final : public Assignment
 {
 public:
-    ArrayAssignment(ArrayRef* var, Expression* expr, SourceLocation* location);
+    ArrayAssignment(Program* program, SourceLocation* location, ArrayRef* var, Expression* expr);
 
     ArrayRef* array() const;
 
@@ -63,7 +63,7 @@ protected:
 class ODBCOMPILER_PUBLIC_API UDTFieldAssignment final : public Assignment
 {
 public:
-    UDTFieldAssignment(UDTField* field, Expression* expr, SourceLocation* location);
+    UDTFieldAssignment(Program* program, SourceLocation* location, UDTField* field, Expression* expr);
 
     UDTField* field() const;
 

@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Select::Select(Expression* expr, CaseList* cases, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect)
-    : Statement(location)
+Select::Select(Program* program, SourceLocation* location, Expression* expr, CaseList* cases, SourceLocation* beginSelect, SourceLocation* endSelect)
+    : Statement(program, location)
     , expr_(expr)
     , cases_(cases)
     , beginLoc_(beginSelect)
@@ -17,8 +17,8 @@ Select::Select(Expression* expr, CaseList* cases, SourceLocation* location, Sour
 }
 
 // ----------------------------------------------------------------------------
-Select::Select(Expression* expr, SourceLocation* location, SourceLocation* beginSelect, SourceLocation* endSelect)
-    : Statement(location)
+Select::Select(Program* program, SourceLocation* location, Expression* expr, SourceLocation* beginSelect, SourceLocation* endSelect)
+    : Statement(program, location)
     , expr_(expr)
     , beginLoc_(beginSelect)
     , endLoc_(endSelect)
@@ -93,9 +93,10 @@ void Select::swapChild(const Node* oldNode, Node* newNode)
 Node* Select::duplicateImpl() const
 {
     return new Select(
+        program(),
+        location(),
         expr_->duplicate<Expression>(),
         cases_ ? cases_->duplicate<CaseList>() : nullptr,
-        location(),
         beginSelectLocation(),
         endSelectLocation());
 }
@@ -104,22 +105,22 @@ Node* Select::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-CaseList::CaseList(Case* case_, SourceLocation* location)
-    : Node(location)
+CaseList::CaseList(Program* program, SourceLocation* location, Case* case_)
+    : Node(program, location)
 {
     appendCase(case_);
 }
 
 // ----------------------------------------------------------------------------
-CaseList::CaseList(DefaultCase* case_, SourceLocation* location)
-    : Node(location)
+CaseList::CaseList(Program* program, SourceLocation* location, DefaultCase* case_)
+    : Node(program, location)
 {
     appendDefaultCase(case_);
 }
 
 // ----------------------------------------------------------------------------
-CaseList::CaseList(SourceLocation* location)
-    : Node(location)
+CaseList::CaseList(Program* program, SourceLocation* location)
+    : Node(program, location)
 {
 }
 
@@ -210,7 +211,7 @@ void CaseList::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* CaseList::duplicateImpl() const
 {
-    CaseList* cl = new CaseList(location());
+    CaseList* cl = new CaseList(program(), location());
     for (const auto& case_ : cases_)
         cl->appendCase(case_->duplicate<Case>());
     for (const auto& default_ : defaults_)
@@ -222,16 +223,16 @@ Node* CaseList::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-Case::Case(Expression* expr, Block* body, SourceLocation* location)
-    : Node(location)
+Case::Case(Program* program, SourceLocation* location, Expression* expr, Block* body)
+    : Node(program, location)
     , expr_(expr)
     , body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-Case::Case(Expression* expr, SourceLocation* location)
-    : Node(location)
+Case::Case(Program* program, SourceLocation* location, Expression* expr)
+    : Node(program, location)
     , expr_(expr)
 {
 }
@@ -292,17 +293,18 @@ void Case::swapChild(const Node* oldNode, Node* newNode)
 Node* Case::duplicateImpl() const
 {
     return new Case(
+        program(),
+        location(),
         expr_->duplicate<Expression>(),
-        body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        body_ ? body_->duplicate<Block>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-DefaultCase::DefaultCase(Block* body, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
-    : Node(location)
+DefaultCase::DefaultCase(Program* program, SourceLocation* location, Block* body, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
+    : Node(program, location)
     , body_(body)
     , beginLoc_(beginCaseLoc)
     , endLoc_(endCaseLoc)
@@ -310,8 +312,8 @@ DefaultCase::DefaultCase(Block* body, SourceLocation* location, SourceLocation* 
 }
 
 // ----------------------------------------------------------------------------
-DefaultCase::DefaultCase(SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
-    : Node(location)
+DefaultCase::DefaultCase(Program* program, SourceLocation* location, SourceLocation* beginCaseLoc, SourceLocation* endCaseLoc)
+    : Node(program, location)
     , beginLoc_(beginCaseLoc)
     , endLoc_(endCaseLoc)
 {
@@ -377,8 +379,9 @@ void DefaultCase::swapChild(const Node* oldNode, Node* newNode)
 Node* DefaultCase::duplicateImpl() const
 {
     return new DefaultCase(
-        body_ ? body_->duplicate<Block>() : nullptr,
+        program(),
         location(),
+        body_ ? body_->duplicate<Block>() : nullptr,
         beginCaseLocation(),
         endCaseLocation());
 }

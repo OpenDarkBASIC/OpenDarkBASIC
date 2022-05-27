@@ -11,7 +11,7 @@ class SourceLocation;
 class ODBCOMPILER_PUBLIC_API Expression : public Node
 {
 public:
-    Expression(SourceLocation* location);
+    Expression(Program* program, SourceLocation* location);
 
     virtual Type getType() const = 0;
 };

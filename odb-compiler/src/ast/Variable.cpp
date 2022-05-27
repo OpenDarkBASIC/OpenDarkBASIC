@@ -6,8 +6,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Variable::Variable(SourceLocation* location, std::string name, Type type) :
-    LValue(location),
+Variable::Variable(Program* program, SourceLocation* location, std::string name, Type type) :
+    LValue(program, location),
     name_(std::move(name)),
     annotation_(Annotation::NONE),
     type_(std::move(type))
@@ -15,8 +15,8 @@ Variable::Variable(SourceLocation* location, std::string name, Type type) :
 }
 
 // ----------------------------------------------------------------------------
-Variable::Variable(SourceLocation* location, std::string name, Annotation annotation, Type type) :
-    LValue(location),
+Variable::Variable(Program* program, SourceLocation* location, std::string name, Annotation annotation, Type type) :
+    LValue(program, location),
     name_(std::move(name)),
     annotation_(annotation),
     type_(std::move(type))

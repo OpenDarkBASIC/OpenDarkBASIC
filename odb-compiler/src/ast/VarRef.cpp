@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-VarRef::VarRef(Identifier* identifier, SourceLocation* location) :
-    LValue(location),
+VarRef::VarRef(Program* program, SourceLocation* location, Identifier* identifier) :
+    LValue(program, location),
     identifier_(identifier),
     variable_(nullptr)
 {
@@ -75,8 +75,9 @@ void VarRef::swapChild(const Node* oldNode, Node* newNode)
 Node* VarRef::duplicateImpl() const
 {
     return new VarRef(
-        identifier_->duplicate<Identifier>(),
-        location());
+        program(),
+        location(),
+        identifier_->duplicate<Identifier>());
 }
 
 }

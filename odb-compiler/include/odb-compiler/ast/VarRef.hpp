@@ -3,8 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/LValue.hpp"
 
-namespace odb {
-namespace ast {
+namespace odb::ast {
 
 class Identifier;
 class Variable;
@@ -12,7 +11,7 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API VarRef final : public LValue
 {
 public:
-    VarRef(Identifier* identifier, SourceLocation* location);
+    VarRef(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
 
@@ -37,5 +36,4 @@ private:
     Reference<Variable> variable_;
 };
 
-}
 }

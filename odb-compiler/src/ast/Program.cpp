@@ -6,8 +6,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Program::Program(Block* body, SourceLocation* location) :
-    Node(location),
+Program::Program(SourceLocation* location, Block* body) :
+    Node(this, location),
     body_(body)
 {
 }
@@ -76,7 +76,7 @@ void Program::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Program::duplicateImpl() const
 {
-    Program* program = new Program(body_->duplicate<Block>(), location());
+    Program* program = new Program(location(), body_->duplicate<Block>());
     program->mainScope_ = mainScope_;
     program->globalScope_ = globalScope_;
     return program;

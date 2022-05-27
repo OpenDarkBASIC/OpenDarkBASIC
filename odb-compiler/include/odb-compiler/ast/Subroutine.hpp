@@ -11,7 +11,7 @@ class Identifier;
 class ODBCOMPILER_PUBLIC_API UnresolvedSubCall final : public Statement
 {
 public:
-    UnresolvedSubCall(Identifier* label, SourceLocation* location);
+    UnresolvedSubCall(Program* program, SourceLocation* location, Identifier* label);
 
     Identifier* label() const;
 
@@ -31,7 +31,7 @@ private:
 class ODBCOMPILER_PUBLIC_API SubCall final : public Statement
 {
 public:
-    SubCall(Label* label, SourceLocation* location);
+    SubCall(Program* program, SourceLocation* location, Label* label);
 
     Label* label() const;
 
@@ -51,7 +51,7 @@ private:
 class ODBCOMPILER_PUBLIC_API SubReturn final : public Statement
 {
 public:
-    SubReturn(SourceLocation* location);
+    SubReturn(Program* program, SourceLocation* location);
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

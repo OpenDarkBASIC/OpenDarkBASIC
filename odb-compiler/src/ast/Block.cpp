@@ -6,14 +6,14 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Block::Block(SourceLocation* location)
-    : Node(location)
+Block::Block(Program* program, SourceLocation* location)
+    : Node(program, location)
 {
 }
 
 // ----------------------------------------------------------------------------
-Block::Block(Statement* stmnt, SourceLocation* location)
-    : Node(location)
+Block::Block(Program* program, SourceLocation* location, Statement* stmnt)
+    : Node(program, location)
 {
     appendStatement(stmnt);
 }
@@ -87,7 +87,7 @@ void Block::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Block::duplicateImpl() const
 {
-    Block* block = new Block(location());
+    Block* block = new Block(program(), location());
     for (const auto& stmnt : statements_)
         block->appendStatement(stmnt->duplicate<Statement>());
     return block;

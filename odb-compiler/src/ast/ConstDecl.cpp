@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ConstDeclExpr::ConstDeclExpr(Identifier* identifier, Expression* expr, SourceLocation* location) :
-    Statement(location),
+ConstDeclExpr::ConstDeclExpr(Program* program, SourceLocation* location, Identifier* identifier, Expression* expr) :
+    Statement(program, location),
     identifier_(identifier),
     expr_(expr)
 {
@@ -63,17 +63,18 @@ void ConstDeclExpr::swapChild(const Node* oldNode, Node* newNode)
 Node* ConstDeclExpr::duplicateImpl() const
 {
     return new ConstDeclExpr(
+        program(),
+        location(),
         identifier_->duplicate<Identifier>(),
-        expr_->duplicate<Expression>(),
-        location());
+        expr_->duplicate<Expression>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ConstDecl::ConstDecl(Identifier* identifier, Literal* literal, SourceLocation* location) :
-    Statement(location),
+ConstDecl::ConstDecl(Program* program, SourceLocation* location, Identifier* identifier, Literal* literal) :
+    Statement(program, location),
     identifier_(identifier),
     literal_(literal)
 {
@@ -128,9 +129,10 @@ void ConstDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* ConstDecl::duplicateImpl() const
 {
     return new ConstDecl(
+        program(),
+        location(),
         identifier_->duplicate<Identifier>(),
-        literal_->duplicate<Literal>(),
-        location());
+        literal_->duplicate<Literal>());
 }
 
 }

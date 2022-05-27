@@ -10,8 +10,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-CommandExpr::CommandExpr(std::string commandName, ArgList* args, SourceLocation* location) :
-    Expression(location),
+CommandExpr::CommandExpr(Program* program, SourceLocation* location, std::string commandName, ArgList* args) :
+    Expression(program, location),
     commandName_(str::toLower(commandName)),
     args_(args),
     command_(nullptr)
@@ -19,8 +19,8 @@ CommandExpr::CommandExpr(std::string commandName, ArgList* args, SourceLocation*
 }
 
 // ----------------------------------------------------------------------------
-CommandExpr::CommandExpr(std::string commandName, SourceLocation* location) :
-    Expression(location),
+CommandExpr::CommandExpr(Program* program, SourceLocation* location, std::string commandName) :
+    Expression(program, location),
     commandName_(str::toLower(commandName)),
     command_(nullptr)
 {
@@ -103,9 +103,10 @@ void CommandExpr::swapChild(const Node* oldNode, Node* newNode)
 Node* CommandExpr::duplicateImpl() const
 {
     auto* newCommand = new CommandExpr(
+        program(),
+        location(),
         commandName_,
-        args_ ? args_->duplicate<ArgList>() : nullptr,
-        location());
+        args_ ? args_->duplicate<ArgList>() : nullptr);
     newCommand->command_ = command_;
     return newCommand;
 }

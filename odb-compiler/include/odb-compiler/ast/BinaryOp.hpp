@@ -9,7 +9,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API BinaryOp final : public Expression
 {
 public:
-    BinaryOp(BinaryOpType op, Expression* lhs, Expression* rhs, SourceLocation* location);
+    BinaryOp(Program* program, SourceLocation* location, BinaryOpType op, Expression* lhs, Expression* rhs);
 
     BinaryOpType op() const;
     Expression* lhs() const;

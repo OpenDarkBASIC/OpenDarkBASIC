@@ -11,8 +11,8 @@ class Expression;
 class ODBCOMPILER_PUBLIC_API InitializerList final : public Expression
 {
 public:
-    InitializerList(SourceLocation* location);
-    InitializerList(Expression* expr, SourceLocation* location);
+    InitializerList(Program* program, SourceLocation* location);
+    InitializerList(Program* program, SourceLocation* location, Expression* expr);
 
     void appendExpression(Expression* expr);
 

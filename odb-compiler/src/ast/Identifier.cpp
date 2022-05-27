@@ -6,16 +6,16 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Identifier::Identifier(std::string  name, SourceLocation* location) :
-    Node(location),
+Identifier::Identifier(Program* program, SourceLocation* location, std::string name) :
+    Node(program, location),
     name_(std::move(name)),
     annotation_(Annotation::NONE)
 {
 }
 
 // ----------------------------------------------------------------------------
-Identifier::Identifier(std::string name, Annotation annotation, SourceLocation* location) :
-    Node(location),
+Identifier::Identifier(Program* program, SourceLocation* location, std::string name, Annotation annotation) :
+    Node(program, location),
     name_(std::move(name)),
     annotation_(annotation)
 {
@@ -66,7 +66,7 @@ void Identifier::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Identifier::duplicateImpl() const
 {
-    return new Identifier(name_, annotation_, location());
+    return new Identifier(program(), location(), name_, annotation_);
 }
 
 }

@@ -9,6 +9,7 @@
 namespace odb::ast {
 
 class ConstVisitor;
+class Program;
 class SourceLocation;
 class Visitor;
 
@@ -18,8 +19,9 @@ public:
     using ChildRange = std::vector<Node*>;
     using ConstChildRange = std::vector<const Node*>;
 
-    Node(SourceLocation* location);
+    Node(Program* program, SourceLocation* location);
 
+    Program* program() const;
     SourceLocation* location() const;
 
     virtual std::string toString() const = 0;
@@ -51,6 +53,7 @@ protected:
     virtual Node* duplicateImpl() const = 0;
 
 private:
+    Program* program_; // weak reference
     Reference<SourceLocation> location_;
 };
 

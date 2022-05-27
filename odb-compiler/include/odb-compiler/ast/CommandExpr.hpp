@@ -16,8 +16,8 @@ class ArgList;
 class ODBCOMPILER_PUBLIC_API CommandExpr final : public Expression
 {
 public:
-    CommandExpr(std::string commandName, ArgList* args, SourceLocation* location);
-    CommandExpr(std::string commandName, SourceLocation* location);
+    CommandExpr(Program* program, SourceLocation* location, std::string commandName, ArgList* args);
+    CommandExpr(Program* program, SourceLocation* location, std::string commandName);
 
     const std::string& commandName() const;
     MaybeNull<ArgList> args() const;

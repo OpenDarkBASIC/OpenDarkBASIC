@@ -13,7 +13,7 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API ArrayUndim final : public Statement
 {
 public:
-    ArrayUndim(ScopedIdentifier* identifier, ArgList* dims, SourceLocation* location);
+    ArrayUndim(Program* program, SourceLocation* location, ScopedIdentifier* identifier, ArgList* dims);
 
     ScopedIdentifier* identifier() const;
     ArgList* dims() const;

@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Conditional::Conditional(Expression* condition, Block* trueBranch, Block* falseBranch, SourceLocation* location) :
-    Statement(location),
+Conditional::Conditional(Program* program, SourceLocation* location, Expression* condition, Block* trueBranch, Block* falseBranch) :
+    Statement(program, location),
     cond_(condition),
     true_(trueBranch),
     false_(falseBranch)
@@ -82,10 +82,11 @@ void Conditional::swapChild(const Node* oldNode, Node* newNode)
 Node* Conditional::duplicateImpl() const
 {
     return new Conditional(
+        program(),
+        location(),
         cond_->duplicate<Expression>(),
         true_ ? true_->duplicate<Block>() : nullptr,
-        false_ ? false_->duplicate<Block>() : nullptr,
-        location());
+        false_ ? false_->duplicate<Block>() : nullptr);
 }
 
 }

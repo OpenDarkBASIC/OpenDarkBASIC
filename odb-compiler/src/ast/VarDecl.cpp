@@ -8,22 +8,22 @@
 
 namespace odb::ast {
 namespace {
-InitializerList* defaultInitializer(const Type& type, SourceLocation* location)
+InitializerList* defaultInitializer(Program* program, SourceLocation* location, const Type& type)
 {
     Expression* defaultLiteral = nullptr;
     if (type.isBuiltinType()) {
         switch (*type.getBuiltinType())
         {
-#define X(dbname, cppname)                                             \
-        case BuiltinType::dbname:                                      \
-            defaultLiteral = new dbname##Literal(cppname(), location); \
+#define X(dbname, cppname)                                                      \
+        case BuiltinType::dbname:                                               \
+            defaultLiteral = new dbname##Literal(program, location, cppname()); \
             break;
             ODB_DATATYPE_LIST
 #undef X
             default:
                 return nullptr;
         }
-        return new InitializerList(defaultLiteral, location);
+        return new InitializerList(program, location, defaultLiteral);
     }
     else
     {
@@ -33,8 +33,8 @@ InitializerList* defaultInitializer(const Type& type, SourceLocation* location)
 }
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedIdentifier* identifier, Type type, InitializerList* initializer, SourceLocation* location) :
-    Statement(location),
+VarDecl::VarDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type, InitializerList* initializer) :
+    Statement(program, location),
     identifierOrVariable_(identifier),
     type_(std::move(type)),
     initializer_(initializer)
@@ -42,8 +42,8 @@ VarDecl::VarDecl(ScopedIdentifier* identifier, Type type, InitializerList* initi
 }
 
 // ----------------------------------------------------------------------------
-VarDecl::VarDecl(ScopedIdentifier* identifier, Type type, SourceLocation* location) :
-    VarDecl(identifier, std::move(type), defaultInitializer(type, location), location)
+VarDecl::VarDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type) :
+    VarDecl(program, location, identifier, std::move(type), defaultInitializer(program, location, type))
 {
 }
 
@@ -128,10 +128,11 @@ void VarDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* VarDecl::duplicateImpl() const
 {
     auto* decl = new VarDecl(
+        program(),
+        location(),
         identifier() ? identifierOrVariable_->duplicate<ScopedIdentifier>() : nullptr,
         type_,
-        initializer_->duplicate<InitializerList>(),
-        location());
+        initializer_->duplicate<InitializerList>());
     if (variable())
     {
         decl->identifierOrVariable_ = identifierOrVariable_->duplicate<Variable>();

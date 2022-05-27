@@ -9,8 +9,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayUndim::ArrayUndim(ScopedIdentifier* identifier, ArgList* dims, SourceLocation* location)
-    : Statement(location)
+ArrayUndim::ArrayUndim(Program* program, SourceLocation* location, ScopedIdentifier* identifier, ArgList* dims)
+    : Statement(program, location)
     , identifier_(identifier)
     , dims_(dims)
 {
@@ -84,9 +84,10 @@ void ArrayUndim::swapChild(const Node* oldNode, Node* newNode)
 Node* ArrayUndim::duplicateImpl() const
 {
     return new ArrayUndim(
+        program(),
+        location(),
         identifier_->duplicate<ScopedIdentifier>(),
-        dims_->duplicate<ArgList>(),
-        location());
+        dims_->duplicate<ArgList>());
 }
 
 }

@@ -60,7 +60,10 @@ bool EliminateBitwiseNotRHS::execute(ast::Program* root)
         }
 
         it.replaceNode(new ast::UnaryOp(
-            ast::UnaryOpType::BITWISE_NOT, op->lhs(), op->location()
+            op->program(),
+            op->location(),
+            ast::UnaryOpType::BITWISE_NOT,
+            op->lhs()
         ));
     }
 

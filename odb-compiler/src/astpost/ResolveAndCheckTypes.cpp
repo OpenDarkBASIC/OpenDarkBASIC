@@ -237,14 +237,14 @@ public:
             if (currentArgCount == expectedArgCount)
             {
                 // We have a func call expr. The next pass will perform type checking.
-                auto* newFuncCallExpr = new ast::FuncCallExpr(node->identifier(), node->args(), node->location());
+                auto* newFuncCallExpr = new ast::FuncCallExpr(node->program(), node->location(), node->identifier(), node->args());
                 replaceNode(newFuncCallExpr);
                 return;
             }
         }
 
         // Turn this into an ArrayRef, then call visitArrayRef to do the usual argument processing.
-        auto* newArrayRef = new ast::ArrayRef(node->identifier(), node->args(), node->location());
+        auto* newArrayRef = new ast::ArrayRef(node->program(), node->location(), node->identifier(), node->args());
         newArrayRef->accept(this);
         replaceNode(newArrayRef);
     }
@@ -274,7 +274,7 @@ private:
             {
                 // If the variable doesn't exist, it gets implicitly declared with the annotation type in the local
                 // scope.
-                variable = new ast::Variable(identifier->location(), identifier->name(), annotation,
+                variable = new ast::Variable(identifier->program(), identifier->location(), identifier->name(), annotation,
                                              ast::Type::getFromAnnotation(annotation));
                 info_.localScope(identifier).add(variable);
             }
@@ -547,8 +547,7 @@ private:
         // Handle builtin type conversions.
         if (expressionType.isConvertibleTo(targetType))
         {
-            auto* location = expression->location();
-            return new ast::ImplicitCast(expression, targetType, location);
+            return new ast::ImplicitCast(expression->program(), expression->location(), expression, targetType);
         }
 
         // Unhandled cast.
@@ -835,7 +834,7 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
                 // Declare new variable and replace the identifier node with this node.
                 if (!variable)
                 {
-                    variable = new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation,
+                    variable = new ast::Variable(node->program(), node->identifier()->location(), node->identifier()->name(), annotation,
                                                  node->type());
                     scope.add(variable);
                 }
@@ -861,8 +860,8 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
                 else if (!variable)
                 {
                     // Declare new variable.
-                    variable =
-                        new ast::Variable(node->identifier()->location(), node->identifier()->name(), annotation, node->type());
+                    variable = new ast::Variable(node->program(), node->identifier()->location(),
+                                                 node->identifier()->name(), annotation, node->type());
                     scope.add(variable);
 
                     // TODO: Warn if we shadow a variable in the global scope?

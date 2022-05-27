@@ -4,8 +4,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UDTField::UDTField(Expression* udtExpr, LValue* field, SourceLocation* location)
-    : LValue(location)
+UDTField::UDTField(Program* program, SourceLocation* location, Expression* udtExpr, LValue* field)
+    : LValue(program, location)
     , udtExpr_(udtExpr)
     , field_(field)
 {
@@ -67,9 +67,10 @@ void UDTField::swapChild(const Node* oldNode, Node* newNode)
 Node* UDTField::duplicateImpl() const
 {
     return new UDTField(
+        program(),
+        location(),
         udtExpr_->duplicate<Expression>(),
-        field_->duplicate<LValue>(),
-        location());
+        field_->duplicate<LValue>());
 }
 
 

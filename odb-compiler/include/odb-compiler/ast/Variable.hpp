@@ -11,8 +11,8 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API Variable final : public LValue
 {
 public:
-    Variable(SourceLocation* location, std::string name, Type type);
-    Variable(SourceLocation* location, std::string name, Annotation annotation, Type type);
+    Variable(Program* program, SourceLocation* location, std::string name, Type type);
+    Variable(Program* program, SourceLocation* location, std::string name, Annotation annotation, Type type);
 
     const std::string& name() const;
     Annotation annotation() const;

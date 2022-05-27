@@ -8,7 +8,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API Exit final : public Statement
 {
 public:
-    Exit(SourceLocation* location);
+    Exit(Program* program, SourceLocation* location);
 
     // TODO: Add loopToBreak member, set in an astpost pass.
 

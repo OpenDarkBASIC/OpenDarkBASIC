@@ -4,8 +4,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ScopedIdentifier::ScopedIdentifier(Scope scope, std::string name, Annotation annotation, SourceLocation* location) :
-    Identifier(std::move(name), annotation, location),
+ScopedIdentifier::ScopedIdentifier(Program* program, SourceLocation* location, Scope scope, std::string name, Annotation annotation) :
+    Identifier(program, location, std::move(name), annotation),
     scope_(scope)
 {
 }
@@ -56,7 +56,7 @@ void ScopedIdentifier::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* ScopedIdentifier::duplicateImpl() const
 {
-    return new ScopedIdentifier(scope_, name_, annotation_, location());
+    return new ScopedIdentifier(program(), location(), scope_, name_, annotation_);
 }
 
 }

@@ -8,8 +8,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncCallExpr::FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    Expression(location),
+FuncCallExpr::FuncCallExpr(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args) :
+    Expression(program, location),
     identifier_(identifier),
     args_(args),
     function_(nullptr)
@@ -17,8 +17,8 @@ FuncCallExpr::FuncCallExpr(Identifier* identifier, ArgList* args, SourceLocation
 }
 
 // ----------------------------------------------------------------------------
-FuncCallExpr::FuncCallExpr(Identifier* identifier, SourceLocation* location) :
-    Expression(location),
+FuncCallExpr::FuncCallExpr(Program* program, SourceLocation* location, Identifier* identifier) :
+    Expression(program, location),
     identifier_(identifier),
     function_(nullptr)
 {
@@ -103,17 +103,19 @@ void FuncCallExpr::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallExpr::duplicateImpl() const
 {
-    return new FuncCallExpr(identifier_->duplicate<Identifier>(),
-        args_ ? args_->duplicate<ArgList>() : nullptr,
-        location());
+    return new FuncCallExpr(
+        program(),
+        location(),
+        identifier_->duplicate<Identifier>(),
+        args_ ? args_->duplicate<ArgList>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocation* location)
-    : Statement(location),
+FuncCallStmnt::FuncCallStmnt(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args)
+    : Statement(program, location),
       identifier_(identifier),
       args_(args),
       function_(nullptr)
@@ -121,8 +123,8 @@ FuncCallStmnt::FuncCallStmnt(Identifier* identifier, ArgList* args, SourceLocati
 }
 
 // ----------------------------------------------------------------------------
-FuncCallStmnt::FuncCallStmnt(Identifier* symbol, SourceLocation* location)
-    : Statement(location),
+FuncCallStmnt::FuncCallStmnt(Program* program, SourceLocation* location, Identifier* symbol)
+    : Statement(program, location),
       identifier_(symbol),
       function_(nullptr)
 {
@@ -197,17 +199,19 @@ void FuncCallStmnt::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallStmnt::duplicateImpl() const
 {
-    return new FuncCallStmnt(identifier_->duplicate<Identifier>(),
-        args_ ? args_->duplicate<ArgList>() : nullptr,
-        location());
+    return new FuncCallStmnt(
+        program(),
+        location(),
+        identifier_->duplicate<Identifier>(),
+        args_ ? args_->duplicate<ArgList>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    Expression(location),
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args) :
+    Expression(program, location),
     identifier_(identifier),
     args_(args)
 {
@@ -274,9 +278,11 @@ void FuncCallExprOrArrayRef::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncCallExprOrArrayRef::duplicateImpl() const
 {
-    return new FuncCallExprOrArrayRef(identifier_->duplicate<Identifier>(),
-                                      args_ ? args_->duplicate<ArgList>() : nullptr,
-                                      location());
+    return new FuncCallExprOrArrayRef(
+        program(),
+        location(),
+        identifier_->duplicate<Identifier>(),
+        args_ ? args_->duplicate<ArgList>() : nullptr);
 }
 
 }

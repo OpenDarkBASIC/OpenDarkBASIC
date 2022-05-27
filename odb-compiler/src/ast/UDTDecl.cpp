@@ -11,8 +11,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UDTDecl::UDTDecl(Identifier* typeName, UDTDeclBody* udtBody, SourceLocation* location) :
-    Statement(location),
+UDTDecl::UDTDecl(Program* program, SourceLocation* location, Identifier* typeName, UDTDeclBody* udtBody) :
+    Statement(program, location),
     typeName_(typeName),
     body_(udtBody)
 {
@@ -67,30 +67,31 @@ void UDTDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* UDTDecl::duplicateImpl() const
 {
     return new UDTDecl(
+        program(),
+        location(),
         typeName_->duplicate<Identifier>(),
-        body_->duplicate<UDTDeclBody>(),
-        location());
+        body_->duplicate<UDTDeclBody>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UDTDeclBody::UDTDeclBody(SourceLocation* location) :
-    Node(location)
+UDTDeclBody::UDTDeclBody(Program* program, SourceLocation* location) :
+    Node(program, location)
 {
 }
 
 // ----------------------------------------------------------------------------
-UDTDeclBody::UDTDeclBody(VarDecl* varDecl, SourceLocation* location) :
-    Node(location)
+UDTDeclBody::UDTDeclBody(Program* program, SourceLocation* location, VarDecl* varDecl) :
+    Node(program, location)
 {
     appendVarDecl(varDecl);
 }
 
 // ----------------------------------------------------------------------------
-UDTDeclBody::UDTDeclBody(ArrayDecl* arrayDecl, SourceLocation* location) :
-    Node(location)
+UDTDeclBody::UDTDeclBody(Program* program, SourceLocation* location, ArrayDecl* arrayDecl) :
+    Node(program, location)
 {
     appendArrayDecl(arrayDecl);
 }
@@ -177,7 +178,7 @@ void UDTDeclBody::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* UDTDeclBody::duplicateImpl() const
 {
-    UDTDeclBody* body = new UDTDeclBody(location());
+    UDTDeclBody* body = new UDTDeclBody(program(), location());
     for (const auto& varDecl : varDecls_)
         body->appendVarDecl(varDecl->duplicate<VarDecl>());
     for (const auto& arrDecl : arrayDecls_)

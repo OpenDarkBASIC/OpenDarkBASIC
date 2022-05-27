@@ -9,8 +9,8 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API Identifier : public Node
 {
 public:
-    Identifier(std::string name, SourceLocation* location);
-    Identifier(std::string name, Annotation annotation, SourceLocation* location);
+    Identifier(Program* program, SourceLocation* location, std::string name);
+    Identifier(Program* program, SourceLocation* location, std::string name, Annotation annotation);
 
     const std::string& name() const;
     Annotation annotation() const;

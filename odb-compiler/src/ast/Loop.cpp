@@ -11,8 +11,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Loop::Loop(SourceLocation* location) :
-    Statement(location)
+Loop::Loop(Program* program, SourceLocation* location) :
+    Statement(program, location)
 {
 }
 
@@ -20,15 +20,15 @@ Loop::Loop(SourceLocation* location) :
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-InfiniteLoop::InfiniteLoop(Block* body, SourceLocation* location) :
-    Loop(location),
+InfiniteLoop::InfiniteLoop(Program* program, SourceLocation* location, Block* body) :
+    Loop(program, location),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-InfiniteLoop::InfiniteLoop(SourceLocation* location) :
-    Loop(location)
+InfiniteLoop::InfiniteLoop(Program* program, SourceLocation* location) :
+    Loop(program, location)
 {
 }
 
@@ -80,24 +80,25 @@ void InfiniteLoop::swapChild(const Node* oldNode, Node* newNode)
 Node* InfiniteLoop::duplicateImpl() const
 {
     return new InfiniteLoop(
-        body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        program(),
+        location(),
+        body_ ? body_->duplicate<Block>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-WhileLoop::WhileLoop(Expression* continueCondition, Block* body, SourceLocation* location) :
-    Loop(location),
+WhileLoop::WhileLoop(Program* program, SourceLocation* location, Expression* continueCondition, Block* body) :
+    Loop(program, location),
     continueCondition_(continueCondition),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-WhileLoop::WhileLoop(Expression* continueCondition, SourceLocation* location) :
-    Loop(location),
+WhileLoop::WhileLoop(Program* program, SourceLocation* location, Expression* continueCondition) :
+    Loop(program, location),
     continueCondition_(continueCondition)
 {
 }
@@ -158,25 +159,26 @@ void WhileLoop::swapChild(const Node* oldNode, Node* newNode)
 Node* WhileLoop::duplicateImpl() const
 {
     return new WhileLoop(
+        program(),
+        location(),
         continueCondition_->duplicate<Expression>(),
-        body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        body_ ? body_->duplicate<Block>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-UntilLoop::UntilLoop(Expression* exitCondition, Block* body, SourceLocation* location) :
-    Loop(location),
+UntilLoop::UntilLoop(Program* program, SourceLocation* location, Expression* exitCondition, Block* body) :
+    Loop(program, location),
     exitCondition_(exitCondition),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-UntilLoop::UntilLoop(Expression* exitCondition, SourceLocation* location) :
-    Loop(location),
+UntilLoop::UntilLoop(Program* program, SourceLocation* location, Expression* exitCondition) :
+    Loop(program, location),
     exitCondition_(exitCondition)
 {
 }
@@ -237,17 +239,18 @@ void UntilLoop::swapChild(const Node* oldNode, Node* newNode)
 Node* UntilLoop::duplicateImpl() const
 {
     return new UntilLoop(
+        program(),
+        location(),
         exitCondition_->duplicate<Expression>(),
-        body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        body_ ? body_->duplicate<Block>() : nullptr);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, Block* body) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue),
@@ -257,8 +260,8 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Identifier* nextIdentifier) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue),
@@ -267,8 +270,8 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, Block* body, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue, Block* body) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue),
@@ -277,8 +280,8 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValue, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Expression* stepValue) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
     stepValue_(stepValue)
@@ -286,42 +289,42 @@ ForLoop::ForLoop(Assignment* counter, Expression* endValue, Expression* stepValu
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Identifier* nextIdentifier, Block* body) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
-    stepValue_(new ast::ByteLiteral(1, endValue->location())),
+    stepValue_(new ast::ByteLiteral(program, endValue->location(), 1)),
     nextIdentifier_(nextIdentifier),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Identifier* nextIdentifier, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Identifier* nextIdentifier) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
-    stepValue_(new ast::ByteLiteral(1, endValue->location())),
+    stepValue_(new ast::ByteLiteral(program, endValue->location(), 1)),
     nextIdentifier_(nextIdentifier)
 {
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, Block* body, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue, Block* body) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
-    stepValue_(new ast::ByteLiteral(1, endValue->location())),
+    stepValue_(new ast::ByteLiteral(program, endValue->location(), 1)),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-ForLoop::ForLoop(Assignment* counter, Expression* endValue, SourceLocation* location) :
-    Loop(location),
+ForLoop::ForLoop(Program* program, SourceLocation* location, Assignment* counter, Expression* endValue) :
+    Loop(program, location),
     counter_(counter),
     endValue_(endValue),
-    stepValue_(new ast::ByteLiteral(1, endValue->location()))
+    stepValue_(new ast::ByteLiteral(program, endValue->location(), 1))
 {
 }
 
@@ -413,12 +416,13 @@ void ForLoop::swapChild(const Node* oldNode, Node* newNode)
 Node* ForLoop::duplicateImpl() const
 {
     return new ForLoop(
+        program(),
+        location(),
         counter_->duplicate<Assignment>(),
         endValue_->duplicate<Expression>(),
         stepValue_ ? stepValue_->duplicate<Expression>() : nullptr,
         nextIdentifier_ ? nextIdentifier_->duplicate<Identifier>() : nullptr,
-        body_ ? body_->duplicate<Block>() : nullptr,
-        location());
+        body_ ? body_->duplicate<Block>() : nullptr);
 }
 
 }

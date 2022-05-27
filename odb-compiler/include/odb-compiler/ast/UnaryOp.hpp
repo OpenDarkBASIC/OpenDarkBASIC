@@ -9,7 +9,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API UnaryOp final : public Expression
 {
 public:
-    UnaryOp(UnaryOpType op, Expression* expr, SourceLocation* location);
+    UnaryOp(Program* program, SourceLocation* location, UnaryOpType op, Expression* expr);
 
     UnaryOpType op() const;
     Expression* expr() const;

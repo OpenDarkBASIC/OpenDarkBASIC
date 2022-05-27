@@ -4,8 +4,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Expression::Expression(SourceLocation* location) :
-    Node(location)
+Expression::Expression(Program* program, SourceLocation* location) :
+    Node(program, location)
 {
 }
 

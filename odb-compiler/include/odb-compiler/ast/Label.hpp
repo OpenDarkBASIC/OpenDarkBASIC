@@ -10,7 +10,7 @@ class Identifier;
 class ODBCOMPILER_PUBLIC_API Label final : public Statement
 {
 public:
-    Label(Identifier* identifier, SourceLocation* location);
+    Label(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
 

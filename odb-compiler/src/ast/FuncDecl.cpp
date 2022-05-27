@@ -9,8 +9,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Block* body, Expression* returnValue) :
+    Statement(program, location),
     identifier_(identifier),
     args_(args),
     body_(body),
@@ -19,8 +19,8 @@ FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Expre
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Expression* returnValue, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Expression* returnValue) :
+    Statement(program, location),
     identifier_(identifier),
     args_(args),
     returnValue_(returnValue)
@@ -28,8 +28,8 @@ FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Expression* return
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, Block* body, Expression* returnValue, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Block* body, Expression* returnValue) :
+    Statement(program, location),
     identifier_(identifier),
     body_(body),
     returnValue_(returnValue)
@@ -37,16 +37,16 @@ FuncDecl::FuncDecl(Identifier* identifier, Block* body, Expression* returnValue,
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, Expression* returnValue, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Expression* returnValue) :
+    Statement(program, location),
     identifier_(identifier),
     returnValue_(returnValue)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args, Block* body) :
+    Statement(program, location),
     identifier_(identifier),
     args_(args),
     body_(body)
@@ -54,24 +54,24 @@ FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, Block* body, Sourc
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, FuncArgList* args, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, FuncArgList* args) :
+    Statement(program, location),
     identifier_(identifier),
     args_(args)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, Block* body, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier, Block* body) :
+    Statement(program, location),
     identifier_(identifier),
     body_(body)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncDecl::FuncDecl(Identifier* identifier, SourceLocation* location) :
-    Statement(location),
+FuncDecl::FuncDecl(Program* program, SourceLocation* location, Identifier* identifier) :
+    Statement(program, location),
     identifier_(identifier)
 {
 }
@@ -165,11 +165,12 @@ void FuncDecl::swapChild(const Node* oldNode, Node* newNode)
 Node* FuncDecl::duplicateImpl() const
 {
     FuncDecl* funcDecl = new FuncDecl(
+        program(),
+        location(),
         identifier_->duplicate<Identifier>(),
         args_ ? args_->duplicate<FuncArgList>() : nullptr,
         body_ ? body_->duplicate<Block>() : nullptr,
-        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
-        location());
+        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr);
     funcDecl->scope_ = scope_;
     return funcDecl;
 }
@@ -178,15 +179,15 @@ Node* FuncDecl::duplicateImpl() const
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-FuncExit::FuncExit(Expression* returnValue, SourceLocation* location) :
-    Statement(location),
+FuncExit::FuncExit(Program* program, SourceLocation* location, Expression* returnValue) :
+    Statement(program, location),
     returnValue_(returnValue)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncExit::FuncExit(SourceLocation* location) :
-    Statement(location)
+FuncExit::FuncExit(Program* program, SourceLocation* location) :
+    Statement(program, location)
 {
 }
 
@@ -238,8 +239,9 @@ void FuncExit::swapChild(const Node* oldNode, Node* newNode)
 Node* FuncExit::duplicateImpl() const
 {
     return new FuncExit(
-        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr,
-        location());
+        program(),
+        location(),
+        returnValue_ ? returnValue_->duplicate<Expression>() : nullptr);
 }
 
 }

@@ -5,8 +5,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Exit::Exit(SourceLocation* location) :
-    Statement(location)
+Exit::Exit(Program* program, SourceLocation* location) :
+    Statement(program, location)
 {
 }
 
@@ -41,7 +41,7 @@ void Exit::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Exit::duplicateImpl() const
 {
-    return new Exit(location());
+    return new Exit(program(), location());
 }
 
 }

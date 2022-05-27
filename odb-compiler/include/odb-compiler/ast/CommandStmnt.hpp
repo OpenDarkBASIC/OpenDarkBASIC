@@ -16,8 +16,8 @@ class ArgList;
 class ODBCOMPILER_PUBLIC_API CommandStmnt final : public Statement
 {
 public:
-    CommandStmnt(std::string commandName, ArgList* args, SourceLocation* location);
-    CommandStmnt(std::string commandName, SourceLocation* location);
+    CommandStmnt(Program* program, SourceLocation* location, std::string commandName, ArgList* args);
+    CommandStmnt(Program* program, SourceLocation* location, std::string commandName);
 
     const std::string& commandName() const;
     MaybeNull<ArgList> args() const;

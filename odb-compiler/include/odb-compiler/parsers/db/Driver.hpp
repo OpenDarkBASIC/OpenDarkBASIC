@@ -52,7 +52,7 @@ public:
      *
      * @note Values of 0 and 1 will still be ByteLiteral and not BooleanLiteral.
      */
-    ODBCOMPILER_PRIVATE_API ast::Literal* newIntLikeLiteral(int64_t value, ast::SourceLocation* location) const;
+    ODBCOMPILER_PRIVATE_API ast::Literal* newIntLikeLiteral(int64_t value, const DBLTYPE* loc) const;
 
     /*!
      * Helpers for converting DarkBASIC increment and decrement statements into
@@ -71,11 +71,25 @@ public:
     ODBCOMPILER_PRIVATE_API ast::Assignment* newIncDecUDTField(ast::UDTField* lvalue, IncDecDir dir, const DBLTYPE* loc) const;
 
     /*!
+     * Returns the current root program.
+     */
+     ODBCOMPILER_PRIVATE_API ast::Program* program() const;
+
+    /*!
      * Factory method for converting a BISON location into a SourceLocation.
      * Depending on whether a file is being parsed or a string is being parsed,
      * this will return a different instance (handled by derived Driver classes)
      */
     ODBCOMPILER_PRIVATE_API virtual ast::SourceLocation* newLocation(const DBLTYPE* loc) const = 0;
+
+    /*!
+     * Factory method to create a new AST node, automatically passing in the program and converted source location.
+     */
+    template <typename T, typename... Ts>
+    T* create(const DBLTYPE* loc, Ts... ts)
+    {
+        return new T(program_, newLocation(loc), std::forward<Ts>(ts)...);
+    }
 
     // ------------------------------------------------------------------------
     // Functions above used by BISON only

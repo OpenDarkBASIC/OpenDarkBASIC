@@ -10,8 +10,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-CommandStmnt::CommandStmnt(std::string commandName, ArgList* args, SourceLocation* location) :
-    Statement(location),
+CommandStmnt::CommandStmnt(Program* program, SourceLocation* location, std::string commandName, ArgList* args) :
+    Statement(program, location),
     commandName_(str::toLower(commandName)),
     args_(args),
     command_(nullptr)
@@ -19,8 +19,8 @@ CommandStmnt::CommandStmnt(std::string commandName, ArgList* args, SourceLocatio
 }
 
 // ----------------------------------------------------------------------------
-CommandStmnt::CommandStmnt(std::string commandName, SourceLocation* location) :
-    Statement(location),
+CommandStmnt::CommandStmnt(Program* program, SourceLocation* location, std::string commandName) :
+    Statement(program, location),
     commandName_(str::toLower(commandName)),
     command_(nullptr)
 {
@@ -93,9 +93,10 @@ void CommandStmnt::swapChild(const Node* oldNode, Node* newNode)
 Node* CommandStmnt::duplicateImpl() const
 {
     auto* newCommand = new CommandStmnt(
+        program(),
+        location(),
         commandName_,
-        args_ ? args_->duplicate<ArgList>() : nullptr,
-        location());
+        args_ ? args_->duplicate<ArgList>() : nullptr);
     newCommand->command_ = command_;
     return newCommand;
 }

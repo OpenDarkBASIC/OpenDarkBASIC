@@ -6,14 +6,14 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-FuncArgList::FuncArgList(SourceLocation* location) :
-    Node(location)
+FuncArgList::FuncArgList(Program* program, SourceLocation* location) :
+    Node(program, location)
 {
 }
 
 // ----------------------------------------------------------------------------
-FuncArgList::FuncArgList(VarDecl* initialVar, SourceLocation* location) :
-    Node(location)
+FuncArgList::FuncArgList(Program* program, SourceLocation* location, VarDecl* initialVar) :
+    Node(program, location)
 {
     appendVarDecl(initialVar);
 }
@@ -75,7 +75,7 @@ void FuncArgList::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* FuncArgList::duplicateImpl() const
 {
-    FuncArgList* el = new FuncArgList(location());
+    FuncArgList* el = new FuncArgList(program(), location());
     for (const auto& expr : varDecls_)
         el->appendVarDecl(expr->duplicate<VarDecl>());
     return el;

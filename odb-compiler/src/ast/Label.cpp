@@ -6,8 +6,9 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Label::Label(Identifier* identifier, SourceLocation* location) :
-    Statement(location), identifier_(identifier)
+Label::Label(Program* program, SourceLocation* location, Identifier* identifier) :
+    Statement(program, location),
+    identifier_(identifier)
 {
 }
 
@@ -51,8 +52,7 @@ void Label::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Label::duplicateImpl() const
 {
-    return new Label(identifier_->duplicate<Identifier>(),
-        location());
+    return new Label(program(), location(), identifier_->duplicate<Identifier>());
 }
 
 }

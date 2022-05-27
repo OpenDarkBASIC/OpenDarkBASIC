@@ -5,8 +5,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ImplicitCast::ImplicitCast(Expression* expr, Type targetType, SourceLocation* location) :
-    Expression(location),
+ImplicitCast::ImplicitCast(Program* program, SourceLocation* location, Expression* expr, Type targetType) :
+    Expression(program, location),
     expr_(expr),
     targetType_(targetType)
 {
@@ -59,9 +59,10 @@ void ImplicitCast::swapChild(const Node* oldNode, Node* newNode)
 Node* ImplicitCast::duplicateImpl() const
 {
     return new ImplicitCast(
+        program(),
+        location(),
         expr_->duplicate<Expression>(),
-        targetType_,
-        location());
+        targetType_);
 }
 
 }

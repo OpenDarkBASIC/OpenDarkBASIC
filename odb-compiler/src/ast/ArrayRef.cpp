@@ -8,8 +8,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayRef::ArrayRef(Identifier* identifier, ArgList* args, SourceLocation* location) :
-    LValue(location),
+ArrayRef::ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args) :
+    LValue(program, location),
     identifier_(identifier),
     args_(args),
     variable_(nullptr)
@@ -89,9 +89,11 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* ArrayRef::duplicateImpl() const
 {
-    return new ArrayRef(identifier_->duplicate<Identifier>(),
-        args_->duplicate<ArgList>(),
-        location());
+    return new ArrayRef(
+        program(),
+        location(),
+        identifier_->duplicate<Identifier>(),
+        args_->duplicate<ArgList>());
 }
 
 }

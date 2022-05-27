@@ -8,7 +8,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API ImplicitCast final : public Expression
 {
 public:
-    ImplicitCast(Expression* expr, Type targetType, SourceLocation* location);
+    ImplicitCast(Program* program, SourceLocation* location, Expression* expr, Type targetType);
 
     Expression* expr() const;
 

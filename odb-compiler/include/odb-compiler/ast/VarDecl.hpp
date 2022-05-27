@@ -14,8 +14,8 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API VarDecl final : public Statement
 {
 public:
-    VarDecl(ScopedIdentifier* identifier, Type type, InitializerList* initializer, SourceLocation* location);
-    VarDecl(ScopedIdentifier* identifier, Type type, SourceLocation* location);
+    VarDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type, InitializerList* initializer);
+    VarDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type);
 
     ScopedIdentifier* identifier() const;
     Variable* variable() const;

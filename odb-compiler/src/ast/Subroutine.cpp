@@ -7,8 +7,8 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-UnresolvedSubCall::UnresolvedSubCall(Identifier* label, SourceLocation* location) :
-    Statement(location),
+UnresolvedSubCall::UnresolvedSubCall(Program* program, SourceLocation* location, Identifier* label) :
+    Statement(program, location),
     label_(label)
 {
 }
@@ -54,16 +54,17 @@ void UnresolvedSubCall::swapChild(const Node* oldNode, Node* newNode)
 Node* UnresolvedSubCall::duplicateImpl() const
 {
     return new UnresolvedSubCall(
-        label_->duplicate<Identifier>(),
-        location());
+        program(),
+        location(),
+        label_->duplicate<Identifier>());
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-SubCall::SubCall(Label* label, SourceLocation* location) :
-    Statement(location),
+SubCall::SubCall(Program* program, SourceLocation* location, Label* label) :
+    Statement(program, location),
     label_(label)
 {
 }
@@ -107,16 +108,17 @@ void SubCall::swapChild(const Node* oldNode, Node* newNode)
 Node* SubCall::duplicateImpl() const
 {
     return new SubCall(
-        label_,
-        location());
+        program(),
+        location(),
+        label_);
 }
 
 // ============================================================================
 // ============================================================================
 
 // ----------------------------------------------------------------------------
-SubReturn::SubReturn(SourceLocation* location) :
-    Statement(location)
+SubReturn::SubReturn(Program* program, SourceLocation* location) :
+    Statement(program, location)
 {
 }
 
@@ -151,7 +153,7 @@ void SubReturn::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* SubReturn::duplicateImpl() const
 {
-    return new SubReturn(location());
+    return new SubReturn(program(), location());
 }
 
 }

@@ -7,9 +7,16 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Node::Node(SourceLocation* location) :
+Node::Node(Program* program, SourceLocation* location) :
+    program_(program),
     location_(location)
 {
+}
+
+// ----------------------------------------------------------------------------
+Program* Node::program() const
+{
+    return program_;
 }
 
 // ----------------------------------------------------------------------------

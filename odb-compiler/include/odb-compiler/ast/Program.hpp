@@ -12,7 +12,7 @@ class Expression;
 class ODBCOMPILER_PUBLIC_API Program final : public Node
 {
 public:
-    Program(Block* body, SourceLocation* location);
+    Program(SourceLocation* location, Block* body);
 
     Block* body() const;
 

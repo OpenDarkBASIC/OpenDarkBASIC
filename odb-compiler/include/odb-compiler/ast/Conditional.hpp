@@ -12,7 +12,7 @@ class Expression;
 class ODBCOMPILER_PUBLIC_API Conditional final : public Statement
 {
 public:
-    Conditional(Expression* condition, Block* trueBranch, Block* falseBranch, SourceLocation* location);
+    Conditional(Program* program, SourceLocation* location, Expression* condition, Block* trueBranch, Block* falseBranch);
 
     Expression* condition() const;
     MaybeNull<Block> trueBranch() const;
