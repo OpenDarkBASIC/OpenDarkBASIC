@@ -3,6 +3,8 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include <vector>
+#include <optional>
+#include <variant>
 
 namespace odb::ast {
 
@@ -10,6 +12,23 @@ class ArrayDecl;
 class Identifier;
 class UDTDeclBody;
 class VarDecl;
+
+class VarOrArrayDecl
+{
+public:
+    VarOrArrayDecl(VarDecl* varDecl);
+    VarOrArrayDecl(ArrayDecl* arrayDecl);
+
+    Type getType() const;
+
+    VarDecl* getAsVarDecl() const;
+    ArrayDecl* getAsArrayDecl() const;
+
+    bool isArrayDecl() const;
+
+private:
+    std::variant<VarDecl*, ArrayDecl*> variant_;
+};
 
 class ODBCOMPILER_PUBLIC_API UDTDecl final : public Statement
 {
@@ -46,6 +65,8 @@ public:
 
     const std::vector<Reference<VarDecl>>& varDeclarations() const;
     const std::vector<Reference<ArrayDecl>>& arrayDeclarations() const;
+
+    std::optional<VarOrArrayDecl> lookupField(Identifier* identifier) const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;

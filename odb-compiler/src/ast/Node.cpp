@@ -25,4 +25,11 @@ SourceLocation* Node::location() const
     return location_;
 }
 
+// ----------------------------------------------------------------------------
+void Node::updateLocation(SourceLocation* location)
+{
+    location_ = location;
+}
+
+
 }

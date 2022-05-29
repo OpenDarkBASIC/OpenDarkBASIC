@@ -3,12 +3,12 @@
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
 #include "odb-compiler/ast/Program.hpp"
-#include "odb-compiler/codegen/Codegen.hpp"
+#include "odb-compiler/astpost/Process.hpp"
 #include "odb-compiler/astpost/ResolveAndCheckTypes.hpp"
 #include "odb-compiler/astpost/ResolveLabels.hpp"
-#include "odb-compiler/astpost/Process.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-compiler/codegen/Codegen.hpp"
 #include "odb-sdk/FileSystem.hpp"
+#include "odb-sdk/Log.hpp"
 
 #include <fstream>
 #include <iostream>

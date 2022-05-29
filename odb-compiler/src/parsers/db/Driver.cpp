@@ -3,6 +3,7 @@
 #include "odb-compiler/ast/Assignment.hpp"
 #include "odb-compiler/ast/BinaryOp.hpp"
 #include "odb-compiler/ast/Block.hpp"
+#include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
@@ -174,7 +175,7 @@ ast::Program* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Com
     };
 
     // main parse loop
-    program_.reset();
+    program_ = new ast::Program;
     do {
 
         // If we've run out of tokens in the queue, scan ahead one
@@ -284,18 +285,6 @@ ast::Program* Driver::doParse(dbscan_t scanner, dbpstate* parser, const cmd::Com
     }
 
     return nullptr;
-}
-
-// ----------------------------------------------------------------------------
-void Driver::giveProgram(ast::Program* program)
-{
-    if (program_.notNull())
-    {
-        Log::dbParserError("BUG! giveProgram() was called more than once in a single run. This should never happen!\n");
-        assert(program_.isNull());
-    }
-
-    program_ = program;
 }
 
 // ----------------------------------------------------------------------------

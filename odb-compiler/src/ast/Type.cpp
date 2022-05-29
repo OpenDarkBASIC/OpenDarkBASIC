@@ -251,7 +251,7 @@ std::string Type::toString() const
     }
     else if (isUDT())
     {
-        return "!UNIMPLEMENTED UDT TYPE!";
+        return std::get_if<UDTType>(&variant_)->udt;
     }
     else if (isVoid())
     {

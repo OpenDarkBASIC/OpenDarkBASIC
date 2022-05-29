@@ -15,6 +15,9 @@ public:
     const std::string& name() const;
     Annotation annotation() const;
 
+    // Returns the name followed by the annnotation char i.e. 'foo#' or 'bar$'.
+    std::string nameWithAnnotation() const;
+
     std::string toString() const override;
     void accept(Visitor* visitor) override;
     void accept(ConstVisitor* visitor) const override;

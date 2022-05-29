@@ -36,7 +36,7 @@ Type ArrayRef::getType() const
         assert(variable_->getType().isArray());
         return *variable_->getType().getArrayInnerType();
     }
-    return Type::getUnknown();
+    return Type::getUnknown("Unresolved array");
 }
 
 // ----------------------------------------------------------------------------

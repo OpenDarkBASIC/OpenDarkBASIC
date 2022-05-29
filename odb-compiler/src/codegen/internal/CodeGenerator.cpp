@@ -38,7 +38,7 @@
 
 namespace odb::codegen {
 namespace {
-llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
+llvm::Type* getLLVMTypeFromCommandType(llvm::LLVMContext& ctx, cmd::Command::Type type)
 {
     switch (type)
     {
@@ -59,13 +59,14 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, cmd::Command::Type type)
     }
     std::terminate();
 }
+} // namespace
 
-llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast::Type& type)
+
+llvm::Type* CodeGenerator::GlobalSymbolTable::getLLVMType(const ast::Type& type)
 {
     if (type.isUDT())
     {
-        // TODO
-        fatalError("getLLVMType for UDTs not implemented yet.");
+        return getUDTStructType(program->lookupUDT(*type.getUDT()));
     }
     else if (type.isBuiltinType())
     {
@@ -105,7 +106,7 @@ llvm::Type* getLLVMType(llvm::LLVMContext& ctx, const ast::Type& type)
     }
 }
 
-llvm::Constant* createVariableInitializer(ast::Type type, llvm::Type* llvmType)
+llvm::Constant* CodeGenerator::GlobalSymbolTable::createVariableInitializer(const ast::Type& type, llvm::Type* llvmType)
 {
     if (type.isBuiltinType())
     {
@@ -130,12 +131,26 @@ llvm::Constant* createVariableInitializer(ast::Type type, llvm::Type* llvmType)
     {
         return llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(llvmType));
     }
+    else if (type.isUDT())
+    {
+        const ast::UDTDecl* udt = program->lookupUDT(*type.getUDT());
+        std::vector<llvm::Constant*> constants;
+        for (ast::VarDecl* var : udt->body()->varDeclarations())
+        {
+            constants.emplace_back(createVariableInitializer(var->type(), getLLVMType(var->type())));
+        }
+        // Arrays get allocated/freed when the struct is constructed/destructed.
+        for (ast::ArrayDecl* array : udt->body()->arrayDeclarations())
+        {
+            constants.emplace_back(llvm::ConstantPointerNull::get(llvm::dyn_cast<llvm::PointerType>(getLLVMType(array->type()))));
+        }
+        return llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(llvmType), constants);
+    }
     else
     {
         fatalError("Unknown variable type to initialize");
     }
 }
-} // namespace
 
 llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const cmd::Command* command)
 {
@@ -171,7 +186,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     argTypes.emplace_back(llvm::Type::getInt32Ty(ctx));
     for (const auto& arg : command->args())
     {
-        auto llvmType = getLLVMType(module.getContext(), arg.type);
+        auto llvmType = getLLVMTypeFromCommandType(module.getContext(), arg.type);
         if (arg.isOutParameter)
         {
             llvmType = llvm::PointerType::getUnqual(llvmType);
@@ -180,7 +195,7 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getOrCreateCommandThunk(const 
     }
 
     // Get return type.
-    llvm::Type* returnTy = getLLVMType(module.getContext(), command->returnType());
+    llvm::Type* returnTy = getLLVMTypeFromCommandType(module.getContext(), command->returnType());
 
     // Generate command function.
     llvm::FunctionType* functionTy = llvm::FunctionType::get(returnTy, argTypes, false);
@@ -193,6 +208,13 @@ llvm::Function* CodeGenerator::GlobalSymbolTable::getFunction(const ast::FuncDec
 {
     auto entry = functionDefinitions.find(function);
     assert(entry != functionDefinitions.end());
+    return entry->second;
+}
+
+llvm::StructType* CodeGenerator::GlobalSymbolTable::getUDTStructType(const ast::UDTDecl* udt)
+{
+    auto entry = udtDefinitions.find(udt);
+    assert(entry != udtDefinitions.end());
     return entry->second;
 }
 
@@ -216,6 +238,11 @@ void CodeGenerator::GlobalSymbolTable::addFunctionToTable(const ast::FuncDecl* d
 void CodeGenerator::GlobalSymbolTable::addVarToTable(const ast::Variable* variable, llvm::Value* storage)
 {
     variableTable.emplace(variable, storage);
+}
+
+void CodeGenerator::GlobalSymbolTable::addUDTToTable(const ast::UDTDecl* udt, llvm::StructType* structTy)
+{
+    udtDefinitions.emplace(udt, structTy);
 }
 
 void CodeGenerator::SymbolTable::addVar(const ast::Variable* variable, llvm::Value* location)
@@ -289,35 +316,70 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 {
     if (returnAsPointer)
     {
-        if (!dynamic_cast<const ast::VarRef*>(e) && !dynamic_cast<const ast::ArrayRef*>(e))
+        if (!dynamic_cast<const ast::VarRef*>(e) && !dynamic_cast<const ast::ArrayRef*>(e) && !dynamic_cast<const ast::UDTField*>(e))
         {
-            fatalError("Codegen: Only a VarRef or ArrayRef can have its pointer returned. Got %s instead.", typeid(*e).name());
+            fatalError("Codegen: Only a VarRef, ArrayRef or UDTField can have its pointer returned. Got %s instead.", typeid(*e).name());
         }
     }
     if (auto* varRef = dynamic_cast<const ast::VarRef*>(e))
     {
         assert(varRef->variable());
-        llvm::Type* variableTy = getLLVMType(ctx, varRef->variable()->getType());
+        llvm::Type* variableTy = symtab.getGlobalTable().getLLVMType(varRef->variable()->getType());
         llvm::Value* variablePtr = symtab.getVar(varRef->variable());
         return returnAsPointer ? variablePtr : builder.CreateLoad(variableTy,variablePtr);
     }
     else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(e))
     {
+        assert(arrayRef->variable());
         llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
         llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
 
+        // Dereference array.
         std::vector<llvm::Value*> dims;
-        for (ast::Expression* dim : arrayRef->args()->expressions()) {
+        for (ast::Expression* dim : arrayRef->args()->expressions())
+        {
             dims.push_back(generateExpression(symtab, builder, dim));
         }
-        llvm::Type* arrayElementTy = getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
+        llvm::Type* arrayElementTy = symtab.getGlobalTable().getLLVMType(*arrayRef->variable()->getType().getArrayInnerType());
         llvm::Value* arrayElementPtr = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
         return returnAsPointer ? arrayElementPtr : builder.CreateLoad(arrayElementTy, arrayElementPtr);
     }
+    else if (auto* udtField = dynamic_cast<const ast::UDTField*>(e))
+    {
+        llvm::Value* udtPtr = generateExpression(symtab, builder, udtField->udtExpr(), true);
+        auto fieldPtr = udtField->getFieldPtr();
+        size_t offset = 0;
+        if (fieldPtr.isArrayDecl())
+        {
+            offset += udtField->getUDT()->body()->varDeclarations().size();
+            for (ast::ArrayDecl* array : udtField->getUDT()->body()->arrayDeclarations())
+            {
+                if (array == fieldPtr.getAsArrayDecl())
+                {
+                    break;
+                }
+                offset++;
+            }
+        }
+        else
+        {
+            for (ast::VarDecl* var : udtField->getUDT()->body()->varDeclarations())
+            {
+                if (var == fieldPtr.getAsVarDecl())
+                {
+                    break;
+                }
+                offset++;
+            }
+        }
+        llvm::dbgs() << *udtPtr;
+        llvm::Value* udtFieldPtr = builder.CreateStructGEP(symtab.getGlobalTable().getUDTStructType(udtField->getUDT()), udtPtr, offset);
+        return returnAsPointer ? udtFieldPtr : builder.CreateLoad(symtab.getGlobalTable().getLLVMType(udtField->getType()), udtFieldPtr);
+    }
     else if (auto* cast = dynamic_cast<const ast::ImplicitCast*>(e))
     {
-        llvm::Type* expressionType = getLLVMType(ctx, cast->expr()->getType());
-        llvm::Type* targetType = getLLVMType(ctx, cast->getType());
+        llvm::Type* expressionType = symtab.getGlobalTable().getLLVMType(cast->expr()->getType());
+        llvm::Type* targetType = symtab.getGlobalTable().getLLVMType(cast->getType());
 
         llvm::Value* innerExpression = generateExpression(symtab, builder, cast->expr());
 
@@ -922,10 +984,37 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         else if (auto* varDecl = dynamic_cast<const ast::VarDecl*>(s))
         {
             assert(varDecl->variable());
-            // TODO: Handle initializer lists properly.
-            llvm::Value* expression = generateExpression(symtab, builder, varDecl->initializer()->expressions()[0]);
-            llvm::Value* storeTarget = symtab.getVar(varDecl->variable());
-            builder.CreateStore(expression, storeTarget);
+            if (varDecl->type().isBuiltinType())
+            {
+                assert(varDecl->initializer()->expressions().size() == 1 && "We expect exactly one initializer expression for builtin types.");
+                llvm::Value* initializer = generateExpression(symtab, builder, varDecl->initializer()->expressions()[0]);
+                llvm::Value* storeTarget = symtab.getVar(varDecl->variable());
+                builder.CreateStore(initializer, storeTarget);
+            }
+            else if (varDecl->type().isUDT())
+            {
+                llvm::Value* initializer;
+                auto* llvmType = llvm::dyn_cast<llvm::StructType>(symtab.getGlobalTable().getLLVMType(varDecl->type()));
+                if (varDecl->initializer().notNull())
+                {
+                    fatalError("Unimplemented struct initializer list");
+                    // TODO: for each initializer list / struct pairing, recurse into both and assign data to allocated storage using GEPs.
+//                    assert(varDecl->initializer()->expressions().size() == llvmType->getStructNumElements());
+//                    const ast::UDTDecl* udt = program->lookupUDT(*varDecl->type().getUDT());
+//                    if (udt->body()->arrayDeclarations().)
+//                    initializer = builder.CreateInsertValue()
+                }
+                else
+                {
+                    initializer = symtab.getGlobalTable().createVariableInitializer(varDecl->type(), llvmType);
+                    llvm::Value* storeTarget = symtab.getVar(varDecl->variable());
+                    builder.CreateStore(initializer, storeTarget);
+                }
+            }
+            else
+            {
+                fatalError(varDecl->location(), "Declaring a variable of unhandled type %s", varDecl->type().toString().c_str());
+            }
         }
         else if (auto* arrayDecl = dynamic_cast<const ast::ArrayDecl*>(s))
         {
@@ -949,34 +1038,7 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         else if (auto* assignment = dynamic_cast<const ast::Assignment*>(s))
         {
             llvm::Value* expression = generateExpression(symtab, builder, assignment->expression());
-            llvm::Value* storeTarget = nullptr;
-            if (auto* varRef = dynamic_cast<const ast::VarRef*>(assignment->lvalue()))
-            {
-                assert(varRef->variable());
-                storeTarget = symtab.getVar(varRef->variable());
-            }
-            else if (auto* arrayRef = dynamic_cast<const ast::ArrayRef*>(assignment->lvalue()))
-            {
-                assert(arrayRef->variable());
-
-                llvm::Value* arrayVar = symtab.getVar(arrayRef->variable());
-                llvm::Value* arrayPtr = builder.CreateLoad(llvm::IntegerType::getInt8PtrTy(ctx), arrayVar);
-
-                // Dereference array.
-                std::vector<llvm::Value*> dims;
-                for (ast::Expression* dim : arrayRef->args()->expressions())
-                {
-                    dims.push_back(generateExpression(symtab, builder, dim));
-                }
-                llvm::Type* arrayElementTy =
-                    getLLVMType(ctx, *arrayRef->variable()->getType().getArrayInnerType());
-                storeTarget = engineInterface.generateIndexArray(
-                    builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
-            }
-            else
-            {
-                fatalError("Codegen: Unhandled lvalue type: %s", typeid(*assignment->lvalue()).name());
-            }
+            llvm::Value* storeTarget = generateExpression(symtab, builder, assignment->lvalue(), /* returnAsPointer */ true);
             builder.CreateStore(expression, storeTarget);
         }
         else if (auto* call = dynamic_cast<const ast::FuncCallStmnt*>(s))
@@ -1041,9 +1103,9 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // A ret is a BasicBlock terminator, so we need to start a new redundant block for all dead statements.
             builder.SetInsertPoint(llvm::BasicBlock::Create(ctx, "deadStatementsAfterReturn", parent));
         }
-        else if (dynamic_cast<const ast::FuncDecl*>(s))
+        else if (dynamic_cast<const ast::FuncDecl*>(s) || dynamic_cast<const ast::UDTDecl*>(s))
         {
-            // Skip function declarations.
+            // Skip function and UDT declarations.
             continue;
         }
         else
@@ -1055,13 +1117,36 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
     return builder.GetInsertBlock();
 }
 
-llvm::Function* CodeGenerator::generateFunctionPrototype(const ast::FuncDecl* astFunction)
+llvm::StructType* CodeGenerator::getUDTStructType(CodeGenerator::GlobalSymbolTable& globalSymbolTable, const ast::UDTDecl* udt)
+{
+    std::vector<llvm::Type*> types;
+    for (ast::VarDecl* var : udt->body()->varDeclarations())
+    {
+        if (var->type().isUDT())
+        {
+            // Ensure the dependent UDT has been created.
+            types.emplace_back(getUDTStructType(globalSymbolTable, program->lookupUDT(*var->type().getUDT())));
+        }
+        else
+        {
+            types.emplace_back(globalSymbolTable.getLLVMType(var->type()));
+        }
+    }
+    for (ast::ArrayDecl* array : udt->body()->arrayDeclarations())
+    {
+        // Arrays are always pointers, so the dependent UDT type is not required at this stage.
+        types.emplace_back(globalSymbolTable.getLLVMType(array->type()));
+    }
+    return llvm::StructType::get(ctx, types);
+}
+
+llvm::Function* CodeGenerator::generateFunctionPrototype(CodeGenerator::GlobalSymbolTable& globalSymbolTable, const ast::FuncDecl* astFunction)
 {
     std::string functionName = "__DB" + astFunction->identifier()->name();
     llvm::Type* returnTy = llvm::Type::getVoidTy(ctx);
     if (astFunction->returnValue().notNull())
     {
-        returnTy = getLLVMType(ctx, astFunction->returnValue()->getType());
+        returnTy = globalSymbolTable.getLLVMType(astFunction->returnValue()->getType());
     }
 
     // Create argument list.
@@ -1072,7 +1157,7 @@ llvm::Function* CodeGenerator::generateFunctionPrototype(const ast::FuncDecl* as
         {
             std::pair<std::string, llvm::Type*> argPair;
             argPair.first = arg->variable()->name();
-            argPair.second = getLLVMType(ctx, arg->type());
+            argPair.second = globalSymbolTable.getLLVMType(arg->type());
             args.emplace_back(argPair);
         }
     }
@@ -1124,7 +1209,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
     for (ast::Variable* var : variables.list())
     {
         auto type = var->getType();
-        auto* llvmType = getLLVMType(ctx, type);
+        auto* llvmType = symtab.getGlobalTable().getLLVMType(type);
         auto* variableStorage = builder.CreateAlloca(llvmType, nullptr, var->name());
 
         // Create initializer depending on the type.
@@ -1135,7 +1220,7 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
         }
         else
         {
-            initializer = createVariableInitializer(type, llvmType);
+            initializer = symtab.getGlobalTable().createVariableInitializer(type, llvmType);
         }
         builder.CreateStore(initializer, variableStorage);
 
@@ -1162,6 +1247,8 @@ void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::Va
 
 bool CodeGenerator::generateModule(const ast::Program* program)
 {
+    this->program = program;
+
     // Dump AST before processing.
     std::stack<std::pair<const ast::Node*, int>> stack;
     stack.emplace(program, 0);
@@ -1180,7 +1267,7 @@ bool CodeGenerator::generateModule(const ast::Program* program)
         }
     }
 
-    GlobalSymbolTable globalSymbolTable(module, engineInterface);
+    GlobalSymbolTable globalSymbolTable(program, module, engineInterface);
 
     gosubStackType = llvm::ArrayType::get(llvm::Type::getInt8PtrTy(ctx), 32);
     generateGosubHelperFunctions();
@@ -1206,7 +1293,7 @@ bool CodeGenerator::generateModule(const ast::Program* program)
     // Generate user defined function prototypes.
     for (const ast::FuncDecl* function : functions)
     {
-        llvm::Function* llvmFunc = generateFunctionPrototype(function);
+        llvm::Function* llvmFunc = generateFunctionPrototype(globalSymbolTable, function);
         globalSymbolTable.addFunctionToTable(function, llvmFunc);
         symbolTables.emplace(llvmFunc, std::make_unique<SymbolTable>(llvmFunc, globalSymbolTable));
     }
@@ -1215,11 +1302,17 @@ bool CodeGenerator::generateModule(const ast::Program* program)
     for (const ast::Variable* global : program->globalScope().list())
     {
         ast::Type type = global->getType();
-        llvm::Type* llvmType = getLLVMType(ctx, type);
-        llvm::Constant* initializer = createVariableInitializer(type, llvmType);
+        llvm::Type* llvmType = globalSymbolTable.getLLVMType(type);
+        llvm::Constant* initializer = globalSymbolTable.createVariableInitializer(type, llvmType);
         llvm::Value* storage =
             new llvm::GlobalVariable(module, llvmType, false, llvm::GlobalValue::PrivateLinkage, initializer);
         globalSymbolTable.addVarToTable(global, storage);
+    }
+
+    // Cache UDT struct types.
+    for (const ast::UDTDecl* udt : program->getUDTList())
+    {
+        globalSymbolTable.addUDTToTable(udt, getUDTStructType(globalSymbolTable, udt));
     }
 
     // Second pass: generate function bodies.

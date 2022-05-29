@@ -21,6 +21,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
+#include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Variable.hpp"
@@ -212,6 +213,12 @@ public:
 
     void visitVarRef(ast::VarRef* node) override
     {
+        // A VarRef inside a UDTField should not be resolved, because these are inside a UDT and are checked when
+        // resolving UDTField's.
+        if (isNodeUDTFieldSelector(node))
+        {
+            return;
+        }
         node->setVariable(resolveVariable(node->identifier(), false));
     }
 
@@ -222,6 +229,12 @@ public:
 
     void visitArrayRef(ast::ArrayRef* node) override
     {
+        // An ArrayRef inside a UDTField should not be resolved, because these are inside a UDT and are checked when
+        // resolving UDTField's.
+        if (isNodeUDTFieldSelector(node))
+        {
+            return;
+        }
         node->setVariable(resolveVariable(node->identifier(), true));
     }
 
@@ -255,6 +268,15 @@ public:
 
 private:
     void replaceNode(ast::Node* newNode) { parent_->swapChild(current_, newNode); }
+
+    bool isNodeUDTFieldSelector(ast::Node* node)
+    {
+        if (auto* udtField = dynamic_cast<ast::UDTField*>(parent_))
+        {
+            return node == udtField->field();
+        }
+        return false;
+    }
 
     ast::Variable* resolveVariable(const ast::Identifier* identifier, bool isArray)
     {
@@ -458,6 +480,85 @@ public:
         }
     }
 
+    void visitUDTField(ast::UDTField* node) override
+    {
+        ast::Identifier* fieldIdent = node->fieldIdentifier();
+
+        // Lookup UDT type.
+        ast::Type udtType = node->udtExpr()->getType();
+        if (!udtType.isUDT())
+        {
+            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                       "Attempting to access field '%s' from an expression of type %s.\n",
+                                       fieldIdent->nameWithAnnotation().c_str(), udtType.toString().c_str());
+            node->location()->printUnderlinedSection(Log::info);
+            fail = true;
+            return;
+        }
+        auto* udtDef = node->program()->lookupUDT(*udtType.getUDT());
+        if (!udtDef)
+        {
+            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                       "Attempting to access field '%s' from an unknown UDT type '%s'.\n",
+                                       fieldIdent->nameWithAnnotation().c_str(), udtType.getUDT()->c_str());
+            node->location()->printUnderlinedSection(Log::info);
+            fail = true;
+            return;
+        }
+
+        auto fieldInUDT = udtDef->body()->lookupField(fieldIdent);
+        if (!fieldInUDT.has_value())
+        {
+            Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                       "Field '%s' does not exist in UDT '%s'.\n",
+                                       fieldIdent->nameWithAnnotation().c_str(), udtType.getUDT()->c_str());
+            node->location()->printUnderlinedSection(Log::info);
+            fail = true;
+            return;
+        }
+
+        ast::Type fieldElementType = fieldInUDT->getType();
+
+        // We need to make sure that node->field() matches the type of fieldInUDT.
+        ast::FunctorVisitor fieldVisitor {
+            [&](ast::VarRef* varRef)
+            {
+                if (fieldInUDT->isArrayDecl())
+                {
+                    Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                               "Field '%s' in UDT '%s' is an array, but no indices were provided.\n",
+                                               fieldIdent->nameWithAnnotation().c_str(), udtType.getUDT()->c_str());
+                    node->location()->printUnderlinedSection(Log::info);
+                    fail = true;
+                    return;
+                }
+            },
+            [&](ast::ArrayRef* arrayRef)
+            {
+                if (!fieldInUDT->isArrayDecl())
+                {
+                    Log::dbParserSemanticError(node->location()->getFileLineColumn().c_str(),
+                                               "Field '%s' in UDT '%s' is not an array, but indices were provided.\n",
+                                               fieldIdent->nameWithAnnotation().c_str(), udtType.getUDT()->c_str());
+                    node->location()->printUnderlinedSection(Log::info);
+                    fail = true;
+                    return;
+                }
+
+                // Get the element type of the array field in the UDT.
+                fieldElementType = *fieldElementType.getArrayInnerType();
+            }
+        };
+        node->field()->accept(&fieldVisitor);
+        if (fail)
+        {
+            return;
+        }
+
+        node->setUDTFieldPtrs(udtDef, *fieldInUDT, fieldElementType);
+    }
+
+    // TODO: Merge all 3 assignment subclasses into 'visitAssignment' using lvalue().
     void visitVarAssignment(ast::VarAssignment* node) override
     {
         node->swapChild(node->expression(), ensureType(node->expression(), node->varRef()->getType()));
@@ -466,6 +567,11 @@ public:
     void visitArrayAssignment(ast::ArrayAssignment* node) override
     {
         node->swapChild(node->expression(), ensureType(node->expression(), node->array()->getType()));
+    }
+
+    void visitUDTFieldAssignment(ast::UDTFieldAssignment* node) override
+    {
+        node->swapChild(node->expression(), ensureType(node->expression(), node->field()->getType()));
     }
 
     void visitArrayUndim(ast::ArrayUndim* node) override
@@ -498,7 +604,7 @@ public:
             // TODO: can't use an array or UDT counter.
         }
 
-        // TODO: Check that the counter type makes sense (not a complex type for example).
+        // TODO: Check that the counter type makes sense (convertible to endValue's type).
 
         // TODO: Make the step value not optional.
 
@@ -793,18 +899,32 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
 
     FunctionInfo functionInfo;
 
-    // Gather functions.
+    // Gather functions and UDT definitions.
     auto preOrder = ast::preOrderTraversal(root);
     for (auto it = preOrder.begin(); it != preOrder.end(); ++it)
     {
-        GatherFunctionsVisitor visitor{functionInfo, it.parent()};
-        (*it)->accept(&visitor);
+        GatherFunctionsVisitor functionsVisitor{functionInfo, it.parent()};
+        ast::FunctorVisitor udtVisitor {
+            [&](ast::UDTDecl* udt)
+            {
+                root->addUDT(udt);
+            }
+        };
+
+        (*it)->accept(&functionsVisitor);
+        (*it)->accept(&udtVisitor);
     }
 
     // Find all variable declarations and assign them to the scopes.
     auto firstPas = ast::preOrderTraversal(root);
     for (auto it = firstPas.begin(); it != firstPas.end(); ++it)
     {
+        // If this variable or array declaration is within a UDT, we don't want to allocate a Variable.
+        if (dynamic_cast<ast::UDTDeclBody*>(it.parent()))
+        {
+            continue;
+        }
+
         ast::FunctorVisitor visitor {
             [&](ast::VarDecl* node)
             {
@@ -893,6 +1013,8 @@ bool ResolveAndCheckTypes::execute(ast::Program* root)
     // We have to go bottom up because nodes in the tree depend on their children when figuring out their type.
     // We have to resolve functions here because function and command resolution depends on the types of the arguments
     // (for overload resolution).
+    // We also have to resolve UDT fields here, because those also depend on the types of the expression we're trying to
+    // look up a field in.
     auto secondPass = ast::postOrderTraversal(root);
     for (auto it = secondPass.begin(); it != secondPass.end(); ++it)
     {

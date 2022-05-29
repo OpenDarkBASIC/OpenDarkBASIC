@@ -3,11 +3,16 @@ type Bar
 endtype
 
 type Foo
-  Dim y(2) as Bar
+  y as Bar
+  rem Dim y(2) as Bar
 endtype
 
-r as Foo
-r.y(0).x = 2
+dim r(2) as Foo
+r(0).y.x = 2
+r(1).y.x = 4
+
+print r(1).y.x
+print r(0).y.x
 
 //UDTField("r", [""
 

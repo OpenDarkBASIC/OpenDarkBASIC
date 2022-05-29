@@ -8,12 +8,14 @@ namespace odb::ast {
 
 class Block;
 class Expression;
+class UDTDecl;
 
 class ODBCOMPILER_PUBLIC_API Program final : public Node
 {
 public:
-    Program(SourceLocation* location, Block* body);
+    Program();
 
+    void setBody(Block* block);
     Block* body() const;
 
     VariableScope& mainScope();
@@ -21,6 +23,10 @@ public:
 
     VariableScope& globalScope();
     const VariableScope& globalScope() const;
+
+    void addUDT(UDTDecl* decl);
+    UDTDecl* lookupUDT(const std::string& name) const;
+    std::vector<UDTDecl*> getUDTList() const;
 
     std::string toString() const override;
     void accept(Visitor* visitor) override;
@@ -35,6 +41,7 @@ private:
     Reference<Block> body_;
     VariableScope mainScope_;
     VariableScope globalScope_;
+    std::unordered_map<std::string, UDTDecl*> udts_;
 };
 
 }

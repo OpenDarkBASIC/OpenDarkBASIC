@@ -102,7 +102,8 @@ std::vector<std::string> PluginInfo::getStringTable() const
     const auto* peBinary = static_cast<const LIEF::PE::Binary*>(binary);
 
     std::vector<std::string> stringTable;
-    if (peBinary->resources_manager().has_string_table()) {
+    if (peBinary->resources_manager().has_string_table())
+    {
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
         auto peStringTable = peBinary->resources_manager().string_table();
         stringTable.reserve(peStringTable.size());

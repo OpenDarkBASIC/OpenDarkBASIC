@@ -1,15 +1,24 @@
 #include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/Block.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-Program::Program(SourceLocation* location, Block* body) :
-    Node(this, location),
-    body_(body)
+Program::Program() :
+    Node(this, nullptr),
+    body_(nullptr)
 {
+}
+
+// ----------------------------------------------------------------------------
+void Program::setBody(Block* body)
+{
+    body_ = body;
+    updateLocation(body->location());
 }
 
 // ----------------------------------------------------------------------------
@@ -40,6 +49,29 @@ VariableScope& Program::globalScope()
 const VariableScope& Program::globalScope() const
 {
     return globalScope_;
+}
+
+// ----------------------------------------------------------------------------
+void Program::addUDT(UDTDecl* decl)
+{
+    udts_[decl->typeName()->name()] = decl;
+}
+
+// ----------------------------------------------------------------------------
+UDTDecl* Program::lookupUDT(const std::string& name) const
+{
+    return udts_.count(name) > 0 ? udts_.at(name) : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+std::vector<UDTDecl*> Program::getUDTList() const
+{
+    std::vector<UDTDecl*> out;
+    out.reserve(udts_.size());
+    for (auto [_, v] : udts_) {
+        out.emplace_back(v);
+    }
+    return out;
 }
 
 // ----------------------------------------------------------------------------
@@ -76,9 +108,9 @@ void Program::swapChild(const Node* oldNode, Node* newNode)
 // ----------------------------------------------------------------------------
 Node* Program::duplicateImpl() const
 {
-    Program* program = new Program(location(), body_->duplicate<Block>());
-    program->mainScope_ = mainScope_;
-    program->globalScope_ = globalScope_;
+    Program* program = new Program();
+    program->updateLocation(location());
+    program->body_ = body_->duplicate<Block>();
     return program;
 }
 

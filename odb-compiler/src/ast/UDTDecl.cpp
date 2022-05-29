@@ -4,11 +4,53 @@
 #include "odb-compiler/ast/Node.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/UDTDecl.hpp"
 #include "odb-compiler/ast/VarDecl.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
+
+// ----------------------------------------------------------------------------
+VarOrArrayDecl::VarOrArrayDecl(VarDecl* varDecl) : variant_(varDecl)
+{
+
+}
+
+// ----------------------------------------------------------------------------
+VarOrArrayDecl::VarOrArrayDecl(ArrayDecl* arrayDecl) : variant_(arrayDecl)
+{
+}
+
+// ----------------------------------------------------------------------------
+Type VarOrArrayDecl::getType() const
+{
+    if (isArrayDecl())
+    {
+        return getAsArrayDecl()->type();
+    }
+    return getAsVarDecl()->type();
+}
+
+// ----------------------------------------------------------------------------
+VarDecl* VarOrArrayDecl::getAsVarDecl() const
+{
+    VarDecl* const* varDeclPtr = std::get_if<VarDecl*>(&variant_);
+    return varDeclPtr ? *varDeclPtr : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+ArrayDecl* VarOrArrayDecl::getAsArrayDecl() const
+{
+    ArrayDecl* const* arrayDeclPtr = std::get_if<ArrayDecl*>(&variant_);
+    return arrayDeclPtr ? *arrayDeclPtr : nullptr;
+}
+
+// ----------------------------------------------------------------------------
+bool VarOrArrayDecl::isArrayDecl() const
+{
+    return std::holds_alternative<ArrayDecl*>(variant_);
+}
 
 // ----------------------------------------------------------------------------
 UDTDecl::UDTDecl(Program* program, SourceLocation* location, Identifier* typeName, UDTDeclBody* udtBody) :
@@ -120,6 +162,27 @@ const std::vector<Reference<VarDecl>>& UDTDeclBody::varDeclarations() const
 const std::vector<Reference<ArrayDecl>>& UDTDeclBody::arrayDeclarations() const
 {
     return arrayDecls_;
+}
+
+// ----------------------------------------------------------------------------
+std::optional<VarOrArrayDecl> UDTDeclBody::lookupField(Identifier* identifier) const
+{
+    for (VarDecl* var : varDecls_)
+    {
+        if (var->identifier()->name() == identifier->name() && var->identifier()->annotation() == identifier->annotation())
+        {
+            return VarOrArrayDecl{var};
+        }
+    }
+    for (ArrayDecl* array : arrayDecls_)
+    {
+        if (array->identifier()->name() == identifier->name() && array->identifier()->annotation() == identifier->annotation())
+        {
+            return VarOrArrayDecl{array};
+        }
+    }
+
+    return std::nullopt;
 }
 
 // ----------------------------------------------------------------------------

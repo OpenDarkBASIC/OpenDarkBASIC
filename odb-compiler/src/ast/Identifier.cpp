@@ -34,6 +34,17 @@ Annotation Identifier::annotation() const
 }
 
 // ----------------------------------------------------------------------------
+std::string Identifier::nameWithAnnotation() const
+{
+    std::string prettyName = name_;
+    if (annotation_ != Annotation::NONE)
+    {
+        prettyName += ast::typeAnnotationChar(annotation_);
+    }
+    return prettyName;
+}
+
+// ----------------------------------------------------------------------------
 std::string Identifier::toString() const
 {
     return std::string("Identifier(")

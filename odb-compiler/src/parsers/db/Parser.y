@@ -442,7 +442,7 @@
 
 %%
 program
-  : seps_maybe block seps_maybe                               { $$ = $2; driver->giveProgram(new Program($2->location(), $2)); }
+  : seps_maybe block seps_maybe                               { $$ = $2; driver->program()->setBody($2); }
   | seps_maybe                                                { $$ = nullptr; }
   ;
 sep : '\n' | ':' | ';' ;

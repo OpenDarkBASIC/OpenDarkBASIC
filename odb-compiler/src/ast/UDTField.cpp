@@ -1,4 +1,12 @@
 #include "odb-compiler/ast/UDTField.hpp"
+#include "odb-compiler/ast/UDTDecl.hpp"
+#include "odb-compiler/ast/Program.hpp"
+#include "odb-compiler/ast/VarDecl.hpp"
+#include "odb-compiler/ast/Identifier.hpp"
+#include "odb-compiler/ast/ScopedIdentifier.hpp"
+#include "odb-compiler/ast/ArrayDecl.hpp"
+#include "odb-compiler/ast/VarRef.hpp"
+#include "odb-compiler/ast/ArrayRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 
 namespace odb::ast {
@@ -8,6 +16,8 @@ UDTField::UDTField(Program* program, SourceLocation* location, Expression* udtEx
     : LValue(program, location)
     , udtExpr_(udtExpr)
     , field_(field)
+    , udt_(nullptr)
+    , fieldElementType_(Type::getUnknown("astpost::ResolveAndCheckTypes hasn't been run yet"))
 {
 }
 
@@ -24,10 +34,40 @@ LValue* UDTField::field() const
 }
 
 // ----------------------------------------------------------------------------
+Identifier* UDTField::fieldIdentifier() const
+{
+    if (auto* arrayRef = dynamic_cast<ArrayRef*>(field_.get()))
+    {
+        return arrayRef->identifier();
+    }
+    return static_cast<VarRef*>(field_.get())->identifier();
+}
+
+// ----------------------------------------------------------------------------
 Type UDTField::getType() const
 {
-    // TODO: Implement.
-    return Type::getUnknown();
+    return fieldElementType_;
+}
+
+// ----------------------------------------------------------------------------
+void UDTField::setUDTFieldPtrs(UDTDecl* udt, VarOrArrayDecl field, Type fieldElementType)
+{
+    udt_ = udt;
+    fieldInUDT_ = field;
+    fieldElementType_ = fieldElementType;
+}
+
+// ----------------------------------------------------------------------------
+UDTDecl* UDTField::getUDT() const
+{
+    return udt_;
+}
+
+// ----------------------------------------------------------------------------
+VarOrArrayDecl UDTField::getFieldPtr() const
+{
+    assert(fieldInUDT_.has_value());
+    return *fieldInUDT_;
 }
 
 // ----------------------------------------------------------------------------
@@ -72,6 +112,5 @@ Node* UDTField::duplicateImpl() const
         udtExpr_->duplicate<Expression>(),
         field_->duplicate<LValue>());
 }
-
 
 }

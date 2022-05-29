@@ -15,27 +15,34 @@ public:
     class GlobalSymbolTable
     {
     public:
-        GlobalSymbolTable(llvm::Module& module, EngineInterface& engineInterface)
-            : module(module), ctx(module.getContext()), engineInterface(engineInterface)
+        GlobalSymbolTable(const ast::Program* program, llvm::Module& module, EngineInterface& engineInterface)
+            : program(program), module(module), ctx(module.getContext()), engineInterface(engineInterface)
         {
         }
 
+        llvm::Type* getLLVMType(const ast::Type& type);
+        llvm::Constant* createVariableInitializer(const ast::Type& type, llvm::Type* llvmType);
+
         llvm::Function* getOrCreateCommandThunk(const cmd::Command* command);
         llvm::Function* getFunction(const ast::FuncDecl* function);
+        llvm::StructType* getUDTStructType(const ast::UDTDecl* udt);
         llvm::Value* getVar(const ast::Variable* variable);
 
         void addFunctionToTable(const ast::FuncDecl* definition, llvm::Function* function);
+        void addUDTToTable(const ast::UDTDecl* udt, llvm::StructType* structTy);
         void addVarToTable(const ast::Variable* variable, llvm::Value* storage);
 
         llvm::Module& getModule() { return module; }
 
     private:
+        const ast::Program* program;
         llvm::Module& module;
         llvm::LLVMContext& ctx;
         EngineInterface& engineInterface;
 
         std::unordered_map<const cmd::Command*, llvm::Function*> commandThunks;
         std::unordered_map<const ast::FuncDecl*, llvm::Function*> functionDefinitions;
+        std::unordered_map<const ast::UDTDecl*, llvm::StructType*> udtDefinitions;
         std::unordered_map<const ast::Variable*, llvm::Value*> variableTable;
     };
 
@@ -82,13 +89,16 @@ public:
     llvm::BasicBlock* generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock, MaybeNull<ast::Block> statements);
     llvm::BasicBlock* generateBlock(SymbolTable& symtab, llvm::BasicBlock* initialBlock, const ast::Block* statements);
 
-    llvm::Function* generateFunctionPrototype(const ast::FuncDecl* astFunction);
-    void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
-                              const ast::Block* block, const ast::FuncDecl* funcDecl);
+    llvm::StructType* getUDTStructType(CodeGenerator::GlobalSymbolTable& globalSymbolTable, const ast::UDTDecl* udt);
+    llvm::Function* generateFunctionPrototype(CodeGenerator::GlobalSymbolTable& globalSymbolTable,
+                                              const ast::FuncDecl* astFunction);
+    void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables, const ast::Block* block,
+                              const ast::FuncDecl* funcDecl);
 
     bool generateModule(const ast::Program* program);
 
 private:
+    const ast::Program* program;
     llvm::LLVMContext& ctx;
     llvm::Module& module;
     EngineInterface& engineInterface;

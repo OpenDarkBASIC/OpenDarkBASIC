@@ -52,6 +52,8 @@ public:
 protected:
     virtual Node* duplicateImpl() const = 0;
 
+    void updateLocation(SourceLocation* location);
+
 private:
     Program* program_; // weak reference
     Reference<SourceLocation> location_;
