@@ -3,8 +3,8 @@
 
 #include <LIEF/LIEF.hpp>
 #include <codecvt>
-#include <utility>
 #include <filesystem>
+#include <utility>
 
 #ifdef _WIN32
 #undef ERROR
@@ -26,7 +26,8 @@ Reference<PluginInfo> PluginInfo::open(const std::string& path)
     }
 }
 
-const char *PluginInfo::getPath() const {
+const char* PluginInfo::getPath() const
+{
     return path_.c_str();
 }
 
@@ -49,7 +50,8 @@ std::string PluginInfo::getSymbolNameAt(size_t idx) const
 
 std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& name)
 {
-    if (!binary_->has_symbol(name)) {
+    if (!binary_->has_symbol(name))
+    {
         return std::nullopt;
     }
 
@@ -72,8 +74,10 @@ std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& n
 
         // Have we encountered a null terminator yet?
         int size = 1;
-        for (; size <= int(bytes.size()); ++size) {
-            if (bytes[size] == '\0') {
+        for (; size <= int(bytes.size()); ++size)
+        {
+            if (bytes[size] == '\0')
+            {
                 foundNullTerminator = true;
                 break;
             }
@@ -83,7 +87,8 @@ std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& n
         result.append(reinterpret_cast<const char*>(bytes.data()), size);
 
         // If 'get_content_from_virtual_address' truncated the result (because we ran out of bytes to read), then stop.
-        if (bytes.size() < bufferSize) {
+        if (bytes.size() < bufferSize)
+        {
             break;
         }
     }
@@ -94,15 +99,110 @@ std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& n
 std::vector<std::string> PluginInfo::getStringTable() const
 {
     const auto* binary = binary_.get();
-    if (binary->format() != LIEF::FORMAT_PE) {
+    if (binary->format() != LIEF::FORMAT_PE)
+    {
         // Other executable formats don't support string tables.
         return {};
     }
 
     const auto* peBinary = static_cast<const LIEF::PE::Binary*>(binary);
 
+    // Find the string table resource node.
+    const auto& nodes = peBinary->resources().childs();
+    auto stringTableNodeIt =
+        std::find_if(std::begin(nodes), std::end(nodes),
+                     [](const LIEF::PE::ResourceNode& node)
+                     { return static_cast<LIEF::PE::RESOURCE_TYPES>(node.id()) == LIEF::PE::RESOURCE_TYPES::STRING; });
+    if (stringTableNodeIt == std::end(nodes))
+    {
+        return {};
+    }
+    if (stringTableNodeIt->childs().size() == 0 || stringTableNodeIt->childs()[0].childs().size() == 0)
+    {
+        return {};
+    }
+
+    // Check if we have a licensed plugin by looking at the first bytes of the first string table entry.
+    bool licensedPlugin = false;
+    {
+        const auto* stringTableNode =
+            dynamic_cast<const LIEF::PE::ResourceData*>(&stringTableNodeIt->childs()[0].childs()[0]);
+        if (stringTableNode)
+        {
+            const std::vector<uint8_t>& content = stringTableNode->content();
+            const std::string header = " LICENSED PLUGIN:";
+            if (content.size() > header.size())
+            {
+                if (std::string(reinterpret_cast<const char*>(content.data()), header.size()) == header)
+                {
+                    licensedPlugin = true;
+                }
+            }
+        }
+    }
+
     std::vector<std::string> stringTable;
-    if (peBinary->resources_manager().has_string_table())
+
+    // If this is a licensed plugin, then we need to handle a custom format.
+    //
+    // Essentially, instead of UTF-16 encoded strings, we have a single ASCII string (split across all the string
+    // tables) with null terminators separating different command entries.
+    if (licensedPlugin)
+    {
+        // Combine all string table entries into a single buffer (as some commands will be split between string table
+        // nodes).
+        std::string buffer;
+        for (const LIEF::PE::ResourceNode& childL1 : stringTableNodeIt->childs())
+        {
+            for (const LIEF::PE::ResourceNode& childL2 : childL1.childs())
+            {
+                const auto* stringTableNode = dynamic_cast<const LIEF::PE::ResourceData*>(&childL2);
+                if (!stringTableNode)
+                {
+                    continue;
+                }
+
+                const std::vector<uint8_t>& content = stringTableNode->content();
+                if (content.empty())
+                {
+                    continue;
+                }
+
+                buffer += std::string(reinterpret_cast<const char*>(content.data()), content.size());
+            }
+        }
+
+        const char* dataPtr = buffer.data();
+        const char* dataEnd = dataPtr + buffer.size();
+
+        // Skip past the header.
+        while (dataPtr < dataEnd && * dataPtr != '\0')
+        {
+            dataPtr++;
+        }
+
+        // Skip past the null terminator we've landed on.
+        dataPtr++;
+
+        // Read all null terminated strings stored in the buffer from this point.
+        const char* currentStringPtr = dataPtr;
+        while (dataPtr < dataEnd)
+        {
+            // If we encounter a null terminator, terminate the current string and start a new string.
+            if (*dataPtr == '\0')
+            {
+                // Add the string to the string table, but only if it has more than one character (i.e. the first
+                // character is not a null terminator).
+                if (*currentStringPtr != '\0')
+                {
+                    stringTable.emplace_back(currentStringPtr);
+                }
+                currentStringPtr = dataPtr + 1;
+            }
+            dataPtr++;
+        }
+    }
+    else // Otherwise, just treat it as a standard string table.
     {
         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> conv;
         auto peStringTable = peBinary->resources_manager().string_table();
@@ -116,9 +216,7 @@ std::vector<std::string> PluginInfo::getStringTable() const
 }
 
 PluginInfo::PluginInfo(std::unique_ptr<LIEF::Binary> binary, const std::string& path)
-    : binary_(std::move(binary)),
-      path_(path),
-      name_(std::filesystem::path{path}.stem().string())
+    : binary_(std::move(binary)), path_(path), name_(std::filesystem::path{path}.stem().string())
 {
 }
 } // namespace odb
