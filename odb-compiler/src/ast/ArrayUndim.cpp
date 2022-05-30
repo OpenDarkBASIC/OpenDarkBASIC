@@ -17,15 +17,23 @@ ArrayUndim::ArrayUndim(Program* program, SourceLocation* location, ScopedIdentif
 }
 
 // ----------------------------------------------------------------------------
+ArrayUndim::ArrayUndim(Program* program, SourceLocation* location, ScopedIdentifier* identifier)
+    : Statement(program, location)
+    , identifier_(identifier)
+    , dims_(nullptr)
+{
+}
+
+// ----------------------------------------------------------------------------
 ScopedIdentifier* ArrayUndim::identifier() const
 {
     return identifier_;
 }
 
 // ----------------------------------------------------------------------------
-ArgList* ArrayUndim::dims() const
+MaybeNull<ArgList> ArrayUndim::dims() const
 {
-    return dims_;
+    return dims_.get();
 }
 
 // ----------------------------------------------------------------------------

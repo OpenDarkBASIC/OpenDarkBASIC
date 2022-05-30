@@ -1,7 +1,8 @@
 #pragma once
 
-#include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/LValue.hpp"
+#include "odb-compiler/config.hpp"
+#include "odb-sdk/MaybeNull.hpp"
 
 namespace odb::ast {
 
@@ -12,10 +13,11 @@ class Variable;
 class ODBCOMPILER_PUBLIC_API ArrayRef final : public LValue
 {
 public:
-    ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
+    ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* dims);
+    ArrayRef(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
-    ArgList* args() const;
+    MaybeNull<ArgList> dims() const;
 
     Type getType() const override;
 
@@ -33,7 +35,7 @@ protected:
 
 private:
     Reference<Identifier> identifier_;
-    Reference<ArgList> args_;
+    Reference<ArgList> dims_;
 
     // Resolved in a later pass.
     Reference<Variable> variable_;

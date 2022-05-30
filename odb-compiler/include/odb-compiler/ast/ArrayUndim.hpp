@@ -3,6 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Type.hpp"
+#include "odb-sdk/MaybeNull.hpp"
 
 namespace odb::ast {
 
@@ -14,9 +15,10 @@ class ODBCOMPILER_PUBLIC_API ArrayUndim final : public Statement
 {
 public:
     ArrayUndim(Program* program, SourceLocation* location, ScopedIdentifier* identifier, ArgList* dims);
+    ArrayUndim(Program* program, SourceLocation* location, ScopedIdentifier* identifier);
 
     ScopedIdentifier* identifier() const;
-    ArgList* dims() const;
+    MaybeNull<ArgList> dims() const;
 
     void setVariable(Variable* variable);
     Variable* variable() const;

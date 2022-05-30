@@ -391,6 +391,7 @@
 %type<conditional> cond_oneline
 %type<conditional> cond_begin
 %type<block> cond_next
+%type<arg_list> array_dims
 %type<array_decl> array_decl
 %type<array_decl> array_decl_as_type
 %type<array_decl> array_decl_without_type
@@ -603,8 +604,12 @@ var_decl_as_type
   | var_int_sym          AS VEC3                              { $$ = driver->create<VarDecl>(&@$, $1, Type::getBuiltin(BuiltinType::Vec3)); }
   | var_int_sym          AS VEC4                              { $$ = driver->create<VarDecl>(&@$, $1, Type::getBuiltin(BuiltinType::Vec4)); }
   ;
+array_dims
+  : '(' arg_list ')'                                          { $$ = $2; }
+  | '(' ')'                                                   { $$ = nullptr; }
+  ;
 array_ref
-  : annotated_identifier '(' arg_list ')'                     { $$ = driver->create<ArrayRef>(&@$, $1, $3); }
+  : annotated_identifier array_dims                           { $$ = driver->create<ArrayRef>(&@$, $1, $2); }
   ;
 array_decl
   : scope array_decl_as_type                                  { $$ = $2; $$->identifier()->setScope(static_cast<Scope>($1)); }
@@ -613,51 +618,51 @@ array_decl
   | array_decl_without_type                                   { $$ = $1; }
   ;
 array_decl_without_type
-  : DIM var_int_sym          '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Integer)), $4); }
-  | DIM var_double_int_sym   '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $4); }
-  | DIM var_word_sym         '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $4); }
-  | DIM var_double_float_sym '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $4); }
-  | DIM var_float_sym        '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $4); }
-  | DIM var_str_sym          '(' arg_list ')'                { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $4); }
+  : DIM var_int_sym          array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Integer)), $3); }
+  | DIM var_double_int_sym   array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $3); }
+  | DIM var_word_sym         array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $3); }
+  | DIM var_double_float_sym array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $3); }
+  | DIM var_float_sym        array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $3); }
+  | DIM var_str_sym          array_dims                       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $3); }
   ;
 array_decl_as_type
-  : DIM var_int_sym          '(' arg_list ')' AS DOUBLE INTEGER { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS INTEGER        { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Integer)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS DWORD          { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Dword)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS WORD           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS BYTE           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Byte)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS BOOLEAN        { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Boolean)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS DOUBLE FLOAT   { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS FLOAT          { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS STRING         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $4); }
-  | DIM var_double_int_sym   '(' arg_list ')' AS DOUBLE INTEGER { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $4); }
-  | DIM var_word_sym         '(' arg_list ')' AS WORD           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $4); }
-  | DIM var_double_float_sym '(' arg_list ')' AS DOUBLE FLOAT   { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $4); }
-  | DIM var_float_sym        '(' arg_list ')' AS FLOAT          { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $4); }
-  | DIM var_str_sym          '(' arg_list ')' AS STRING         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS udt_ref        { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getUDT($7->name())), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS COMPLEX        { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Complex)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X2         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x2)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X3         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x3)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT2X4         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x4)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X2         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x2)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X3         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x3)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT3X4         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x4)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X2         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x2)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X3         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x3)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS MAT4X4         { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x4)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS QUAT           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Quat)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC2           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec2)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC3           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec3)), $4); }
-  | DIM var_int_sym          '(' arg_list ')' AS VEC4           { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec4)), $4); }
+  : DIM var_int_sym          array_dims AS DOUBLE INTEGER     { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $3); }
+  | DIM var_int_sym          array_dims AS INTEGER            { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Integer)), $3); }
+  | DIM var_int_sym          array_dims AS DWORD              { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Dword)), $3); }
+  | DIM var_int_sym          array_dims AS WORD               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $3); }
+  | DIM var_int_sym          array_dims AS BYTE               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Byte)), $3); }
+  | DIM var_int_sym          array_dims AS BOOLEAN            { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Boolean)), $3); }
+  | DIM var_int_sym          array_dims AS DOUBLE FLOAT       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $3); }
+  | DIM var_int_sym          array_dims AS FLOAT              { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $3); }
+  | DIM var_int_sym          array_dims AS STRING             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $3); }
+  | DIM var_double_int_sym   array_dims AS DOUBLE INTEGER     { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleInteger)), $3); }
+  | DIM var_word_sym         array_dims AS WORD               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Word)), $3); }
+  | DIM var_double_float_sym array_dims AS DOUBLE FLOAT       { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::DoubleFloat)), $3); }
+  | DIM var_float_sym        array_dims AS FLOAT              { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Float)), $3); }
+  | DIM var_str_sym          array_dims AS STRING             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::String)), $3); }
+  | DIM var_int_sym          array_dims AS udt_ref            { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getUDT($5->name())), $3); }
+  | DIM var_int_sym          array_dims AS COMPLEX            { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Complex)), $3); }
+  | DIM var_int_sym          array_dims AS MAT2X2             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x2)), $3); }
+  | DIM var_int_sym          array_dims AS MAT2X3             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x3)), $3); }
+  | DIM var_int_sym          array_dims AS MAT2X4             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat2x4)), $3); }
+  | DIM var_int_sym          array_dims AS MAT3X2             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x2)), $3); }
+  | DIM var_int_sym          array_dims AS MAT3X3             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x3)), $3); }
+  | DIM var_int_sym          array_dims AS MAT3X4             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat3x4)), $3); }
+  | DIM var_int_sym          array_dims AS MAT4X2             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x2)), $3); }
+  | DIM var_int_sym          array_dims AS MAT4X3             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x3)), $3); }
+  | DIM var_int_sym          array_dims AS MAT4X4             { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Mat4x4)), $3); }
+  | DIM var_int_sym          array_dims AS QUAT               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Quat)), $3); }
+  | DIM var_int_sym          array_dims AS VEC2               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec2)), $3); }
+  | DIM var_int_sym          array_dims AS VEC3               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec3)), $3); }
+  | DIM var_int_sym          array_dims AS VEC4               { $$ = driver->create<ArrayDecl>(&@$, $2, Type::getArray(Type::getBuiltin(BuiltinType::Vec4)), $3); }
   ;
 array_undim
-  : UNDIM var_int_sym          '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
-  | UNDIM var_double_int_sym   '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
-  | UNDIM var_word_sym         '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
-  | UNDIM var_double_float_sym '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
-  | UNDIM var_float_sym        '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
-  | UNDIM var_str_sym          '(' arg_list ')'                { $$ = driver->create<ArrayUndim>(&@$, $2, $4); }
+  : UNDIM var_int_sym          array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
+  | UNDIM var_double_int_sym   array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
+  | UNDIM var_word_sym         array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
+  | UNDIM var_double_float_sym array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
+  | UNDIM var_float_sym        array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
+  | UNDIM var_str_sym          array_dims                     { $$ = driver->create<ArrayUndim>(&@$, $2, $3); }
   ;
 scope
   : GLOBAL                                                    { $$ = static_cast<char>(Scope::GLOBAL); }
@@ -730,7 +735,7 @@ func_exit
   ;
 func_call_expr_or_array_ref
   : annotated_identifier '(' arg_list ')'                     { $$ = driver->create<FuncCallExprOrArrayRef>(&@$, $1, $3); }
-  | annotated_identifier '(' ')'                              { $$ = driver->create<FuncCallExpr>(&@$, $1); }
+  | annotated_identifier '(' ')'                              { $$ = driver->create<FuncCallExprOrArrayRef>(&@$, $1); }
   ;
 func_call_stmnt
   : annotated_identifier '(' arg_list ')'                     { $$ = driver->create<FuncCallStmnt>(&@$, $1, $3); }

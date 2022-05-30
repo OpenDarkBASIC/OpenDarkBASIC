@@ -257,7 +257,12 @@ public:
         }
 
         // Turn this into an ArrayRef, then call visitArrayRef to do the usual argument processing.
-        auto* newArrayRef = new ast::ArrayRef(node->program(), node->location(), node->identifier(), node->args());
+        ast::ArgList* dims = nullptr;
+        if (node->args().notNull())
+        {
+            dims = node->args();
+        }
+        auto* newArrayRef = new ast::ArrayRef(node->program(), node->location(), node->identifier(), dims);
         newArrayRef->accept(this);
         replaceNode(newArrayRef);
     }
@@ -474,9 +479,12 @@ public:
 
     void visitArrayDecl(ast::ArrayDecl* node) override
     {
-        for (ast::Expression* index : node->dims()->expressions())
+        if (node->dims().notNull())
         {
-            node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+            for (ast::Expression* index : node->dims()->expressions())
+            {
+                node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+            }
         }
     }
 
@@ -584,9 +592,12 @@ public:
 
     void visitArrayRef(ast::ArrayRef* node) override
     {
-        for (ast::Expression* index : node->args()->expressions())
+        if (node->dims().notNull())
         {
-            node->args()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+            for (ast::Expression* index : node->dims()->expressions())
+            {
+                node->dims()->swapChild(index, ensureType(index, ast::Type::getBuiltin(ast::BuiltinType::Dword)));
+            }
         }
     }
 

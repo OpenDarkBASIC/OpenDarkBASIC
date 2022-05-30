@@ -4,6 +4,8 @@
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Type.hpp"
 
+#include "odb-sdk/MaybeNull.hpp"
+
 namespace odb::ast {
 
 class ArgList;
@@ -14,10 +16,11 @@ class ODBCOMPILER_PUBLIC_API ArrayDecl final : public Statement
 {
 public:
     ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type, ArgList* dims);
+    ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type);
 
     ScopedIdentifier* identifier() const;
     Type type() const;
-    ArgList* dims() const;
+    MaybeNull<ArgList> dims() const;
 
     void setVariable(Variable* variable);
     Variable* variable() const;

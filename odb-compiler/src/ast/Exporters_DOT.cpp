@@ -94,7 +94,7 @@ private:
     void visitArrayRef(const ArrayRef* node) override
     {
         writeNamedConnection(node, node->identifier(), "identifier");
-        writeNamedConnection(node, node->args(), "args");
+        writeNamedConnection(node, node->dims(), "args");
     }
     void visitArrayUndim(const ArrayUndim* node) override
     {

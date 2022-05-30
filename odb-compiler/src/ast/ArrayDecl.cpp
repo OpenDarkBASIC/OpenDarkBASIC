@@ -18,6 +18,15 @@ ArrayDecl::ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifie
 }
 
 // ----------------------------------------------------------------------------
+ArrayDecl::ArrayDecl(Program* program, SourceLocation* location, ScopedIdentifier* identifier, Type type)
+    : Statement(program, location)
+    , identifier_(identifier)
+    , type_(std::move(type))
+    , dims_(nullptr)
+{
+}
+
+// ----------------------------------------------------------------------------
 ScopedIdentifier* ArrayDecl::identifier() const
 {
     return identifier_;
@@ -30,9 +39,9 @@ Type ArrayDecl::type() const
 }
 
 // ----------------------------------------------------------------------------
-ArgList* ArrayDecl::dims() const
+MaybeNull<ArgList> ArrayDecl::dims() const
 {
-    return dims_;
+    return dims_.get();
 }
 
 // ----------------------------------------------------------------------------
@@ -70,10 +79,14 @@ void ArrayDecl::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange ArrayDecl::children()
 {
-    Node::ChildRange children;
-    children.push_back(identifier_);
-    children.push_back(dims_);
-    return children;
+    if (dims_)
+    {
+        return {identifier_, dims_};
+    }
+    else
+    {
+        return {identifier_};
+    }
 }
 
 // ----------------------------------------------------------------------------

@@ -8,10 +8,19 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-ArrayRef::ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args) :
+ArrayRef::ArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* dims) :
     LValue(program, location),
     identifier_(identifier),
-    args_(args),
+    dims_(dims),
+    variable_(nullptr)
+{
+}
+
+// ----------------------------------------------------------------------------
+ArrayRef::ArrayRef(Program* program, SourceLocation* location, Identifier* identifier) :
+    LValue(program, location),
+    identifier_(identifier),
+    dims_(nullptr),
     variable_(nullptr)
 {
 }
@@ -23,9 +32,9 @@ Identifier* ArrayRef::identifier() const
 }
 
 // ----------------------------------------------------------------------------
-ArgList* ArrayRef::args() const
+MaybeNull<ArgList> ArrayRef::dims() const
 {
-    return args_;
+    return dims_.get();
 }
 
 // ----------------------------------------------------------------------------
@@ -72,7 +81,14 @@ void ArrayRef::accept(ConstVisitor* visitor) const
 // ----------------------------------------------------------------------------
 Node::ChildRange ArrayRef::children()
 {
-    return {identifier_, args_};
+    if (dims_)
+    {
+        return {identifier_, dims_};
+    }
+    else
+    {
+        return {identifier_};
+    }
 }
 
 // ----------------------------------------------------------------------------
@@ -80,8 +96,8 @@ void ArrayRef::swapChild(const Node* oldNode, Node* newNode)
 {
     if (identifier_ == oldNode)
         identifier_ = dynamic_cast<Identifier*>(newNode);
-    else if (args_ == oldNode)
-        args_ = dynamic_cast<ArgList*>(newNode);
+    else if (dims_ == oldNode)
+        dims_ = dynamic_cast<ArgList*>(newNode);
     else
         assert(false);
 }
@@ -92,8 +108,7 @@ Node* ArrayRef::duplicateImpl() const
     return new ArrayRef(
         program(),
         location(),
-        identifier_->duplicate<Identifier>(),
-        args_->duplicate<ArgList>());
+        identifier_->duplicate<Identifier>(), dims_->duplicate<ArgList>());
 }
 
 }

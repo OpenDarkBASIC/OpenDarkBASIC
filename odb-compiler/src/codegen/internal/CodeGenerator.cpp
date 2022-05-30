@@ -336,7 +336,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 
         // Dereference array.
         std::vector<llvm::Value*> dims;
-        for (ast::Expression* dim : arrayRef->args()->expressions())
+        for (ast::Expression* dim : arrayRef->dims()->expressions())
         {
             dims.push_back(generateExpression(symtab, builder, dim));
         }

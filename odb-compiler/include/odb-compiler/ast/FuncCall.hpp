@@ -83,6 +83,7 @@ class ODBCOMPILER_PUBLIC_API FuncCallExprOrArrayRef final : public Expression
 {
 public:
     FuncCallExprOrArrayRef(Program* program, SourceLocation* location, Identifier* identifier, ArgList* args);
+    FuncCallExprOrArrayRef(Program* program, SourceLocation* location, Identifier* identifier);
 
     Identifier* identifier() const;
     MaybeNull<ArgList> args() const;

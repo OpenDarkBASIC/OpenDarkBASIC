@@ -218,6 +218,14 @@ FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Program* program, SourceLocation*
 }
 
 // ----------------------------------------------------------------------------
+FuncCallExprOrArrayRef::FuncCallExprOrArrayRef(Program* program, SourceLocation* location, Identifier* identifier) :
+    Expression(program, location),
+    identifier_(identifier),
+    args_(nullptr)
+{
+}
+
+// ----------------------------------------------------------------------------
 Identifier* FuncCallExprOrArrayRef::identifier() const
 {
     return identifier_;
