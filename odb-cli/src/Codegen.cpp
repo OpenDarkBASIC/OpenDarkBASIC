@@ -130,7 +130,6 @@ bool output(const std::vector<std::string>& args)
     }
 
     // Ensure that the executable extension is .exe if Windows is the target platform.
-    // TODO: Move odb::codegen to odb::codegen
     if (outputIsExecutable_ && targetTriplePlatform_ == odb::codegen::TargetTriple::Platform::Windows)
     {
         if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")

@@ -400,14 +400,28 @@ llvm::Value* DBPEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builde
 }
 
 llvm::Value* DBPEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
-    // To obtain the memory location of the data itself, we use the array pointer to index into the ref table and return
-    // the ref table entry.
     llvm::Type* int32PtrTy = llvm::IntegerType::getInt32PtrTy(ctx);
-    llvm::Value* refTable = builder.CreateBitCast(arrayPtr, int32PtrTy);
-    if (dims.size() > 1) {
-        fatalError("Can't index arrays with more than 1 dimension.");
+    llvm::Type* int32Ty = llvm::IntegerType::getInt32Ty(ctx);
+
+    llvm::Value* offsetInRefTable;
+    if (dims.empty())
+    {
+        // Obtain the internal index by subtracting one byte from the array ptr and dereferencing that.
+        llvm::Value* headerEnd = builder.CreateBitCast(arrayPtr, llvm::PointerType::getUnqual(dwordTy));
+        offsetInRefTable = builder.CreateLoad(dwordTy, builder.CreateGEP(dwordTy, headerEnd, llvm::ConstantInt::get(int32Ty, -1)));
     }
-    llvm::Value* memoryAddressAsDword = builder.CreateLoad(llvm::IntegerType::getInt32Ty(ctx), builder.CreateGEP(llvm::IntegerType::getInt32Ty(ctx), refTable, dims));
+    else
+    {
+        offsetInRefTable = dims[0];
+    }
+
+    // To obtain the memory location of the data itself, we use the array pointer to index into the ref table and return the ref table entry.
+    llvm::Value* refTable = builder.CreateBitCast(arrayPtr, int32PtrTy);
+    if (dims.size() > 1)
+    {
+        fatalError("Can't index arrays with more than 1 dimension yet.");
+    }
+    llvm::Value* memoryAddressAsDword = builder.CreateLoad(int32Ty, builder.CreateGEP(int32Ty, refTable, offsetInRefTable));
     llvm::Value* elementPtr = builder.CreateIntToPtr(memoryAddressAsDword, arrayElementPtrTy);
     return elementPtr;
 }

@@ -336,9 +336,12 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
 
         // Dereference array.
         std::vector<llvm::Value*> dims;
-        for (ast::Expression* dim : arrayRef->dims()->expressions())
+        if (arrayRef->dims().notNull())
         {
-            dims.push_back(generateExpression(symtab, builder, dim));
+            for (ast::Expression* dim : arrayRef->dims()->expressions())
+            {
+                dims.push_back(generateExpression(symtab, builder, dim));
+            }
         }
         llvm::Type* arrayElementTy = symtab.getGlobalTable().getLLVMType(*arrayRef->variable()->getType().getArrayInnerType());
         llvm::Value* arrayElementPtr = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
@@ -1020,9 +1023,12 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
         {
             assert(arrayDecl->variable());
             std::vector<llvm::Value*> dims;
-            for (ast::Expression* dim : arrayDecl->dims()->expressions())
+            if (arrayDecl->dims().notNull())
             {
-                dims.push_back(generateExpression(symtab, builder, dim));
+                for (ast::Expression* dim : arrayDecl->dims()->expressions())
+                {
+                    dims.push_back(generateExpression(symtab, builder, dim));
+                }
             }
             llvm::Value* expression = engineInterface.generateAllocateArray(builder, *arrayDecl->variable()->getType().getArrayInnerType(), dims);
             llvm::Value* storeTarget = symtab.getVar(arrayDecl->variable());
