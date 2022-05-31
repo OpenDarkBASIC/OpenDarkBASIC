@@ -93,6 +93,8 @@ Type Type::getFromCommandType(cmd::Command::Type commandType)
         return Type::getBuiltin(BuiltinType::DoubleInteger);
     case cmd::Command::Type::Dword:
         return Type::getBuiltin(BuiltinType::Dword);
+    case cmd::Command::Type::Array:
+        return Type::getArray(Type::getUnknown("Undefined inner type"));
     case cmd::Command::Type::Void:
         return Type::getVoid();
     default:

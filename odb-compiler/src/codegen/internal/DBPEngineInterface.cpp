@@ -182,7 +182,7 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     }
     for (size_t i = 0; i < command.args().size(); ++i)
     {
-        // Skip the out parameter, this is returned instead.
+        // Out parameters are handled differently.
         if (i == outArgIndex)
         {
             // If this out parameter is a string, we need to pass a string to be freed (similar to a string return).
@@ -190,6 +190,12 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
             {
                 pluginFunctionParams.push_back(dwordTy);
             }
+            // If this out parameter is an array, we need to pass the original array (to be modified).
+            if (command.args()[i].type == cmd::Command::Type::Array)
+            {
+                pluginFunctionParams.push_back(voidPtrTy);
+            }
+            // Skip the out parameter, this is just returned instead.
             continue;
         }
         pluginFunctionParams.push_back(functionType->getParamType(i + 1));
@@ -213,7 +219,7 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     }
     for (size_t i = 0; i < command.args().size(); ++i)
     {
-        // Skip the out parameter, this is returned instead.
+        // Out parameters are handled differently.
         if (i == outArgIndex)
         {
             // If this out parameter is a string, we need to pass a string to be freed (similar to a string return).
@@ -222,6 +228,13 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
                 // Pass a nullptr to the extra string argument in functions which return a string.
                 commandArgs.emplace_back(llvm::ConstantInt::get(dwordTy, 0));
             }
+            // If this out parameter is an array, we need to pass the original array (to be modified).
+            if (command.args()[i].type == cmd::Command::Type::Array)
+            {
+                // Dereference the out parameter and pass that in.
+                commandArgs.emplace_back(builder.CreateLoad(voidPtrTy, function->getArg(i + 1)));
+            }
+            // Skip the out parameter, this is returned instead.
             continue;
         }
         commandArgs.emplace_back(function->getArg(i + 1));
@@ -289,16 +302,19 @@ llvm::Value* DBPEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builde
     params.push_back(llvm::ConstantInt::get(dwordTy, encodedTypeAndSize));
     // Encode dimensions
     size_t num_dimensions = dims.size();
-    if (num_dimensions > 9) {
+    if (num_dimensions > 9)
+    {
         // TODO; Consider having a 'IRResult<ReturnType>' return type wrapper that typedefs std::expected, to propagate errors.
         fatalError("Can't create an array with more than 9 dimensions.");
     }
-    for (size_t i = 0; i < num_dimensions; ++i) {
+    for (size_t i = 0; i < num_dimensions; ++i)
+    {
         params.push_back(dims[i]);
     }
-    for (size_t i = num_dimensions; i < 9; ++i) {
-        // Remaining unspecified dimensions are 0.
-        params.push_back(llvm::ConstantInt::get(dwordTy, 0));
+    for (size_t i = num_dimensions; i < 9; ++i)
+    {
+        // Remaining unspecified dimensions are -1.
+        params.push_back(llvm::ConstantInt::get(dwordTy, -1));
     }
 
     // Function returns DWORD, cast to array type using inttoptr.

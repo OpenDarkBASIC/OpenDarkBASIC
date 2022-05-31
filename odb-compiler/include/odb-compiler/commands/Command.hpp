@@ -24,6 +24,7 @@ public:
         Double  = 'O',
         Long    = 'R',
         Dword   = 'D', // Boolean, BYTE, WORD and DWORD.
+        Array   = 'H',
         Void    = '0'
     };
 

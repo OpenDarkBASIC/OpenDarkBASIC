@@ -54,6 +54,8 @@ llvm::Type* getLLVMTypeFromCommandType(llvm::LLVMContext& ctx, cmd::Command::Typ
         return llvm::Type::getInt64Ty(ctx);
     case cmd::Command::Type::Dword:
         return llvm::Type::getInt32Ty(ctx);
+    case cmd::Command::Type::Array:
+        return llvm::Type::getInt8PtrTy(ctx);
     case cmd::Command::Type::Void:
         return llvm::Type::getVoidTy(ctx);
     }

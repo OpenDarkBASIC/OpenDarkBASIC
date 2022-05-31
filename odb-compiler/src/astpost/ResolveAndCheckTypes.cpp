@@ -687,6 +687,22 @@ private:
         assert(!overloads.empty() && "The command index must contain this command.");
         const cmd::Command* command = overloads.front();
 
+        auto isExpressionArrayRef = [](const ast::Expression* e) -> bool {
+            // Either the argument is an array ref 'foo(0)' or udt array field 'foo.bar(0)'.
+            if (dynamic_cast<const ast::ArrayRef*>(e))
+            {
+                return true;
+            }
+            else if (auto* udtField = dynamic_cast<const ast::UDTField*>(e))
+            {
+                if (dynamic_cast<const ast::ArrayRef*>(udtField->field()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        };
+
         // If a command is overloaded, then we will need to perform overload resolution.
         if (overloads.size() > 1)
         {
@@ -728,18 +744,29 @@ private:
                     {
                         return true;
                     }
-                    auto candidateArgType = ast::Type::getFromCommandType(candidateArgCommandType);
-                    // If an argument is an out-parameter, it must be an exact match.
-                    if (candidate->args()[i].isOutParameter)
+                    // If an argument is an array, then the expression needs to be an array.
+                    if (candidateArgCommandType == cmd::Command::Type::Array)
                     {
-                        if (args->expressions()[i]->getType() != candidateArgType)
+                        if (!isExpressionArrayRef(args->expressions()[i]))
                         {
                             return true;
                         }
                     }
-                    else if (!args->expressions()[i]->getType().isConvertibleTo(candidateArgType))
+                    else
                     {
-                        return true;
+                        auto candidateArgType = ast::Type::getFromCommandType(candidateArgCommandType);
+                        // If an argument is an out-parameter, it must be an exact match.
+                        if (candidate->args()[i].isOutParameter)
+                        {
+                            if (args->expressions()[i]->getType() != candidateArgType)
+                            {
+                                return true;
+                            }
+                        }
+                        else if (!args->expressions()[i]->getType().isConvertibleTo(candidateArgType))
+                        {
+                            return true;
+                        }
                     }
                 }
                 return false;
@@ -793,23 +820,32 @@ private:
                     int score = 0;
                     for (std::size_t i = 0; i < overload->args().size(); ++i)
                     {
-                        auto overloadType = ast::Type::getFromCommandType(overload->args()[i].type);
-                        auto argType = args->expressions()[i]->getType();
-                        if (overloadType == argType)
+                        if (overload->args()[i].type == cmd::Command::Type::Array)
                         {
-                            score += 10;
+                            // If an overload with an 'Array' type has not been filtered out yet, that means we have an
+                            // array expression we should favour it above any other overload without an array.
+                            score += 10000;
                         }
-                        else if (overloadType.isBuiltinType() && argType.isBuiltinType())
+                        else
                         {
-                            if (isIntegralType(*overloadType.getBuiltinType()) &&
-                                isIntegralType(*argType.getBuiltinType()))
+                            auto overloadType = ast::Type::getFromCommandType(overload->args()[i].type);
+                            auto argType = args->expressions()[i]->getType();
+                            if (overloadType == argType)
                             {
-                                score += 1;
+                                score += 10;
                             }
-                            if (isFloatingPointType(*overloadType.getBuiltinType()) &&
-                                isFloatingPointType(*argType.getBuiltinType()))
+                            else if (overloadType.isBuiltinType() && argType.isBuiltinType())
                             {
-                                score += 1;
+                                if (isIntegralType(*overloadType.getBuiltinType()) &&
+                                    isIntegralType(*argType.getBuiltinType()))
+                                {
+                                    score += 1;
+                                }
+                                if (isFloatingPointType(*overloadType.getBuiltinType()) &&
+                                    isFloatingPointType(*argType.getBuiltinType()))
+                                {
+                                    score += 1;
+                                }
                             }
                         }
                     }
@@ -844,7 +880,45 @@ private:
             for (std::size_t i = 0; i < args->expressions().size(); ++i)
             {
                 ast::Expression* arg = args->expressions()[i];
-                args->swapChild(arg, ensureType(arg, ast::Type::getFromCommandType(command->args()[i].type)));
+
+                // Array expressions need to have their subscript indexes stripped (so we pass the array pointer directly).
+                if (command->args()[i].type == cmd::Command::Type::Array)
+                {
+                    // We need to turn an array subscript operator into a reference to the array itself, replace the
+                    // ArrayRef with a VarRef.
+                    bool replacedArrayWithVar = false;
+                    if (auto* arrayRef = dynamic_cast<ast::ArrayRef*>(arg))
+                    {
+                        auto* newVarRef = new ast::VarRef(arg->program(), arg->location(), arrayRef->identifier());
+                        newVarRef->setVariable(arrayRef->variable());
+                        args->swapChild(arg, newVarRef);
+                        replacedArrayWithVar = true;
+                    }
+                    else if (auto* udtField = dynamic_cast<ast::UDTField*>(arg))
+                    {
+                        if (auto* arrayRefInUdtField = dynamic_cast<ast::ArrayRef*>(udtField->field()))
+                        {
+                            auto* newVarRef = new ast::VarRef(arg->program(), arg->location(), arrayRefInUdtField->identifier());
+                            newVarRef->setVariable(arrayRefInUdtField->variable());
+                            udtField->swapChild(udtField->field(), newVarRef);
+                            replacedArrayWithVar = true;
+                        }
+                    }
+                    if (!replacedArrayWithVar)
+                    {
+                        Log::dbParserSemanticError(
+                            arg->location()->getFileLineColumn().c_str(),
+                            "Cannot pass an object of type %s to a command expecting an array.\n",
+                            arg->getType().toString().c_str());
+                        arg->location()->printUnderlinedSection(Log::info);
+                        fail = true;
+                        return nullptr;
+                    }
+                }
+                else
+                {
+                    args->swapChild(arg, ensureType(arg, ast::Type::getFromCommandType(command->args()[i].type)));
+                }
             }
         }
 
