@@ -115,6 +115,11 @@ bool DBPCommandLoader::populateIndexFromLibrary(CommandIndex* index, PluginInfo*
         {
             continue;
         }
+        // CASE DEFAULT is technically two tokens, this should be skipped too.
+        if (commandName == "case default")
+        {
+            continue;
+        }
 
         // Extract arguments.
         std::vector<std::string> argumentNames;
