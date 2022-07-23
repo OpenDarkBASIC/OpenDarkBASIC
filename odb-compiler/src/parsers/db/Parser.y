@@ -803,12 +803,19 @@ select
                                                                 SourceLocation* end = driver->newLocation(&@4);
                                                                 $$ = driver->create<Select>(&@$, $2, beg, end);
                                                               }
+  | SELECT expr seps case_list seps default_case seps ENDSELECT{ SourceLocation* beg = driver->newLocation(&@1);
+                                                                SourceLocation* end = driver->newLocation(&@6);
+                                                                $4->appendDefaultCase($6);
+                                                                $$ = driver->create<Select>(&@$, $2, $4, beg, end);
+                                                              }
+  | SELECT expr seps default_case seps ENDSELECT              { SourceLocation* beg = driver->newLocation(&@1);
+                                                                SourceLocation* end = driver->newLocation(&@4);
+                                                                $$ = driver->create<Select>(&@$, $2, driver->create<CaseList>(&@$, $4), beg, end);
+                                                              }
   ;
 case_list
   : case                                                      { $$ = driver->create<CaseList>(&@$, $1); }
-  | default_case                                              { $$ = driver->create<CaseList>(&@$, $1); }
   | case_list seps case                                       { $$ = $1; $$->appendCase($3); }
-  | case_list seps default_case                               { $$ = $1; $$->appendDefaultCase($3); }
   ;
 case
   : CASE expr seps block seps ENDCASE                         { $$ = driver->create<Case>(&@$, $2, $4); }

@@ -92,8 +92,8 @@ public:
     llvm::StructType* getUDTStructType(CodeGenerator::GlobalSymbolTable& globalSymbolTable, const ast::UDTDecl* udt);
     llvm::Function* generateFunctionPrototype(CodeGenerator::GlobalSymbolTable& globalSymbolTable,
                                               const ast::FuncDecl* astFunction);
-    void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables, const ast::Block* block,
-                              const ast::FuncDecl* funcDecl);
+    void generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
+                              MaybeNull<ast::Block> block, const ast::FuncDecl* funcDecl);
 
     bool generateModule(const ast::Program* program);
 

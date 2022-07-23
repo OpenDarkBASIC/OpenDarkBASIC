@@ -44,7 +44,7 @@ TEST_F(ASTPreOrderIteratorTest, EmptyRange)
 
 TEST_F(ASTPreOrderIteratorTest, SingleNodeTraversal)
 {
-    Reference<ByteLiteral> literalNode = new ByteLiteral(10, new InlineSourceLocation("", "", 0, 0, 0, 0));
+    Reference<ByteLiteral> literalNode = new ByteLiteral(ast, new InlineSourceLocation("", "", 0, 0, 0, 0), 10);
     auto range = preOrderTraversal(literalNode);
     auto begin = range.begin();
     auto end = range.end();
@@ -133,8 +133,7 @@ TEST_F(ASTPreOrderIteratorTest, ReplaceNodeWhilstIterating)
 
     // Replace the VarRef with a different VarRef. That way, we can be sure we traverse into the _new_ children.
     Node* previousNode = *it;
-    it.replaceNode(new VarRef(new Identifier("someFloat", Annotation::FLOAT, (*it)->children()[0]->location()),
-                              (*it)->location()));
+    it.replaceNode(new VarRef(ast, (*it)->location(), new Identifier(ast, (*it)->children()[0]->location(), "someFloat", Annotation::FLOAT)));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
     EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
@@ -178,7 +177,7 @@ TEST_F(ASTPreOrderIteratorTest, ModifyChildrenWhilstIterating)
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly (which may
     // affect iteration).
     Node* childToReplace = dynamic_cast<VarRef*>(*it)->identifier();
-    (*it)->swapChild(childToReplace, new Identifier("someFloat", Annotation::FLOAT, childToReplace->location()));
+    (*it)->swapChild(childToReplace, new Identifier(ast, childToReplace->location(), "someFloat", Annotation::FLOAT));
 
     it++;
 
@@ -209,7 +208,7 @@ TEST_F(ASTPostOrderIteratorTest, EmptyRange)
 
 TEST_F(ASTPostOrderIteratorTest, SingleNodeTraversal)
 {
-    Reference<ByteLiteral> literalNode = new ByteLiteral(10, new InlineSourceLocation("", "", 0, 0, 0, 0));
+    Reference<ByteLiteral> literalNode = new ByteLiteral(ast, new InlineSourceLocation("", "", 0, 0, 0, 0), 10);
     auto range = postOrderTraversal(literalNode);
     auto begin = range.begin();
     auto end = range.end();
@@ -290,8 +289,7 @@ TEST_F(ASTPostOrderIteratorTest, ReplaceNodeWhilstIterating)
     // Replace the VarRef with a different VarRef. At this point, we've already traversed into the children, so this
     // shouldn't change anything except what the iterator points to.
     Node* previousNode = *it;
-    it.replaceNode(new VarRef(new Identifier("someFloat", Annotation::FLOAT, (*it)->children()[0]->location()),
-                              (*it)->location()));
+    it.replaceNode(new VarRef(ast, (*it)->location(), new Identifier(ast, (*it)->children()[0]->location(), "someFloat", Annotation::FLOAT)));
     ASSERT_NE(dynamic_cast<VarRef*>(*it), nullptr);
     EXPECT_NE(*it, previousNode);
     EXPECT_EQ(it.parent(), ast->body()->statements()[0]);
@@ -332,7 +330,7 @@ TEST_F(ASTPostOrderIteratorTest, ModifyChildrenWhilstIterating)
     // Perform the same modification as in the previous test, but instead modify the child of VarRef directly. This
     // should not affect iteration.
     Node* childToReplace = dynamic_cast<VarRef*>(*it)->identifier();
-    (*it)->swapChild(childToReplace, new Identifier("someFloat", Annotation::FLOAT, childToReplace->location()));
+    (*it)->swapChild(childToReplace, new Identifier(ast, childToReplace->location(), "someFloat", Annotation::FLOAT));
 
     it++;
 

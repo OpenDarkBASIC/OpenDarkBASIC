@@ -19,6 +19,7 @@
 #include "odb-compiler/ast/Program.hpp"
 #include "odb-compiler/ast/ScopedIdentifier.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
+#include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
 #include "odb-compiler/ast/UDTField.hpp"
@@ -625,6 +626,20 @@ public:
 
         node->swapChild(node->endValue(), ensureType(node->endValue(), variable->getType()));
         node->swapChild(node->stepValue(), ensureType(node->stepValue(), variable->getType()));
+    }
+
+    void visitSelect(ast::Select* select)
+    {
+        ast::Type selectType = select->expression()->getType();
+        if (select->cases().notNull())
+        {
+            for (ast::Case* case_ : select->cases()->cases())
+            {
+                case_->swapChild(case_->expression(), ensureType(case_->expression(), selectType));
+            }
+        }
+
+        // TODO: Selects should only include int, floats or strings.
     }
 
     void visitCommandExpr(ast::CommandExpr* node) override

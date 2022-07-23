@@ -1,0 +1,30 @@
+Rem Project: Dark Basic Pro Project
+Rem Created: Sunday, May 08, 2022
+
+Rem ***** Main Source File *****
+
+print getX()
+foo()
+print getX()
+bar()
+print getX()
+wait key
+exit
+
+function foo()
+  if 1 = 2
+    global x as float = 1.2
+  endif
+  global x as string = "fooo"
+endfunctions
+
+function foo2()
+  global x as float = 4.5
+endfunction
+
+function bar()
+  x = 1.4
+endfunction
+
+function getX()
+endfunction x

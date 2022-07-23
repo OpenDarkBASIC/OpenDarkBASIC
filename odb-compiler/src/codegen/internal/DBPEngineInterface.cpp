@@ -98,6 +98,17 @@ DBPEngineInterface::DBPEngineInterface(llvm::Module& module, const cmd::CommandI
                                             llvm::Function::ExternalLinkage, "initEngine", module);
     initEngineFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
 
+    std::vector<llvm::Type*> checkArrayBoundsParamTypes;
+    checkArrayBoundsParamTypes.resize(11);
+    checkArrayBoundsParamTypes[0] = llvm::Type::getInt8PtrTy(ctx);
+    checkArrayBoundsParamTypes[1] = dwordTy;
+    for (int i = 0; i < 9; ++i) {
+        checkArrayBoundsParamTypes[i + 2] = dwordTy;
+    }
+    checkArrayBoundsFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), checkArrayBoundsParamTypes, false),
+                                               llvm::Function::ExternalLinkage, "checkArrayBounds", module);
+    checkArrayBoundsFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+
     checkForErrorFunc = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt8PtrTy(ctx), dwordTy}, false),
                                             llvm::Function::ExternalLinkage, "checkForError", module);
     checkForErrorFunc->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
@@ -208,7 +219,8 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
     auto commandFunction =
         getPluginFunction(builder, pluginFunctionType, command.library(), command.cppSymbol(), functionName + "Symbol");
 
-    //    printString(builder, builder.CreateGlobalStringPtr("Calling " + functionName));
+    // Debug dump command call.
+//    generatePrintf(builder, "Calling " + command.dbSymbol() + " on line %d\n", function->getArg(0));
 
     // Call it.
     std::vector<llvm::Value*> commandArgs;
@@ -240,7 +252,6 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
         commandArgs.emplace_back(function->getArg(i + 1));
     }
     llvm::CallInst* commandCall = builder.CreateCall(commandFunction, commandArgs);
-    //    printString(builder, builder.CreateGlobalStringPtr("Finished calling " + functionName));
     llvm::Value* commandResult = commandCall;
 
     // Cast the DWORD back to float.
@@ -258,15 +269,16 @@ llvm::Function* DBPEngineInterface::generateCommandFunction(const cmd::Command& 
         builder.CreateStore(commandResult, function->getArg(outArgIndex + 1));
     }
 
+    if (command.dbSymbol() == "print")
+    {
+        if (function->getArg(1)->getType()->isPointerTy())
+        {
+            generatePrintf(builder, "%s\n", function->getArg(1));
+        }
+    }
+
     // Debug dump command call.
-    if (command.dbSymbol().substr(0, strlen("make object")) == "make object")
-    {
-        generatePrintf(builder, "Calling " + command.dbSymbol() + " %d on line %d\n", function->getArg(1), function->getArg(0));
-    }
-    else
-    {
-        generatePrintf(builder, "Calling " + command.dbSymbol() + " on line %d\n", function->getArg(0));
-    }
+    generatePrintf(builder, "Finished calling " + command.dbSymbol() + " on line %d\n", function->getArg(0));
 
     // Check for errors.
     llvm::Constant* commandName = builder.CreateGlobalStringPtr(command.dbSymbol(), functionName + "CommandName");
@@ -335,6 +347,7 @@ llvm::Value* DBPEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builde
         header[6] = header[5] * d7
         header[7] = header[6] * d8
         header[8] = header[7] * d9
+        header[9] = ...
         header[10] = N
         header[11] = size of one item, encoded in the 2nd parameter of DimDDD
         header[12] = type ID of each item, encoded in the 2nd parameter of DimDDD;
@@ -415,7 +428,7 @@ llvm::Value* DBPEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builde
      */
 }
 
-llvm::Value* DBPEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
+llvm::Value* DBPEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, ast::SourceLocation* loc, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
     llvm::Type* int32PtrTy = llvm::IntegerType::getInt32PtrTy(ctx);
     llvm::Type* int32Ty = llvm::IntegerType::getInt32Ty(ctx);
 
@@ -430,6 +443,20 @@ llvm::Value* DBPEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, 
     {
         offsetInRefTable = dims[0];
     }
+
+    // Bounds checking.
+    std::vector<llvm::Value*> arguments;
+    arguments.push_back(arrayPtr);
+    arguments.push_back(llvm::ConstantInt::get(dwordTy, loc->firstLine()));
+    for (size_t i = 0; i < dims.size(); ++i)
+    {
+        arguments.push_back(dims[i]);
+    }
+    for (size_t i = dims.size(); i < 9; ++i)
+    {
+        arguments.push_back(llvm::ConstantInt::get(dwordTy, 0));
+    }
+    builder.CreateCall(checkArrayBoundsFunc, arguments);
 
     // To obtain the memory location of the data itself, we use the array pointer to index into the ref table and return the ref table entry.
     llvm::Value* refTable = builder.CreateBitCast(arrayPtr, int32PtrTy);

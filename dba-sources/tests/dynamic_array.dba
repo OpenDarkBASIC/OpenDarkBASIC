@@ -1,0 +1,21 @@
+dim array() as integer
+
+array insert at bottom array()
+array() = 4
+
+print array count(array())
+print array(0)
+print array()
+print "===="
+
+array insert at bottom array(0)
+array() = 12
+
+print array count(array())
+print array(0)
+print array(1)
+print array()
+print "===="
+
+wait key
+end

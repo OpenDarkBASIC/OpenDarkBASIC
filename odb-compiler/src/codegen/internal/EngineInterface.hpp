@@ -3,6 +3,7 @@
 #include "LLVM.hpp"
 #include "odb-compiler/ast/Operators.hpp"
 #include "odb-compiler/ast/Type.hpp"
+#include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 
@@ -29,7 +30,7 @@ public:
     // Generate code that returns an llvm::Value containing the pointer to the data specified by the index in dims.
     //
     // arrayPtr is of type i8*.
-    virtual llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) = 0;
+    virtual llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, ast::SourceLocation* loc, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) = 0;
 
     // Generate code that frees an array allocated by 'generateAllocateArray'.
     //

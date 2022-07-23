@@ -346,7 +346,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
             }
         }
         llvm::Type* arrayElementTy = symtab.getGlobalTable().getLLVMType(*arrayRef->variable()->getType().getArrayInnerType());
-        llvm::Value* arrayElementPtr = engineInterface.generateIndexArray(builder, llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
+        llvm::Value* arrayElementPtr = engineInterface.generateIndexArray(builder, arrayRef->location(), llvm::PointerType::getUnqual(arrayElementTy), arrayPtr, dims);
         return returnAsPointer ? arrayElementPtr : builder.CreateLoad(arrayElementTy, arrayElementPtr);
     }
     else if (auto* udtField = dynamic_cast<const ast::UDTField*>(e))
@@ -377,7 +377,7 @@ llvm::Value* CodeGenerator::generateExpression(SymbolTable& symtab, llvm::IRBuil
                 offset++;
             }
         }
-        llvm::dbgs() << *udtPtr;
+//        llvm::dbgs() << *udtPtr << std::endl;
         llvm::Value* udtFieldPtr = builder.CreateStructGEP(symtab.getGlobalTable().getUDTStructType(udtField->getUDT()), udtPtr, offset);
         return returnAsPointer ? udtFieldPtr : builder.CreateLoad(symtab.getGlobalTable().getLLVMType(udtField->getType()), udtFieldPtr);
     }
@@ -986,6 +986,100 @@ llvm::BasicBlock* CodeGenerator::generateBlock(SymbolTable& symtab, llvm::BasicB
             // Set loop end block as the insertion point for future instructions.
             builder.SetInsertPoint(endBlock);
         }
+        else if (auto* select = dynamic_cast<const ast::Select*>(s))
+        {
+            llvm::Value* selectExpression = generateExpression(symtab, builder, select->expression());
+
+            // Process case list.
+            if (select->cases().notNull())
+            {
+                ast::CaseList* cases = select->cases();
+
+                llvm::BasicBlock* startingBlock = builder.GetInsertBlock();
+
+                // Create basic blocks for cases.
+                std::vector<llvm::BasicBlock*> caseBlocks;
+                llvm::BasicBlock* lastBlock = startingBlock;
+                llvm::BasicBlock* selectEndBlock = llvm::BasicBlock::Create(ctx, "selectEnd", parent);
+                for (ast::Case* case_ : cases->cases())
+                {
+                    llvm::BasicBlock* block = llvm::BasicBlock::Create(ctx, "selectCase", parent);
+                    caseBlocks.push_back(block);
+
+                    // Generate block.
+                    lastBlock = generateBlock(symtab, block, case_->body());
+
+                    // Branch to the end of the select statement.
+                    builder.SetInsertPoint(lastBlock);
+                    builder.CreateBr(selectEndBlock);
+                }
+                if (cases->defaultCase().notNull())
+                {
+                    llvm::BasicBlock* block = llvm::BasicBlock::Create(ctx, "selectDefaultCase", parent);
+                    caseBlocks.push_back(block);
+
+                    // Generate block.
+                    lastBlock = generateBlock(symtab, block, cases->defaultCase()->body());
+
+                    // Branch to the end of the select statement.
+                    builder.SetInsertPoint(lastBlock);
+                    builder.CreateBr(selectEndBlock);
+                }
+                selectEndBlock->moveAfter(lastBlock);
+
+                // Move to the beginning and generate select branching logic.
+                builder.SetInsertPoint(startingBlock);
+                ast::Type selectType = select->expression()->getType();
+                for (size_t i = 0; i < cases->cases().size(); ++i)
+                {
+                    ast::Case* case_ = cases->cases()[i];
+                    llvm::Value* caseExpression = generateExpression(symtab, builder, case_->expression());
+                    llvm::Value* condition;
+                    if (selectType.isBuiltinType())
+                    {
+                        if (ast::isIntegralType(*selectType.getBuiltinType()))
+                        {
+                            condition = builder.CreateICmpEQ(selectExpression, caseExpression);
+                        }
+                        else if (ast::isFloatingPointType(*selectType.getBuiltinType()))
+                        {
+                            condition = builder.CreateFCmpOEQ(selectExpression, caseExpression);
+                        }
+                        else if (*selectType.getBuiltinType() == ast::BuiltinType::String)
+                        {
+                            condition = engineInterface.generateCompareString(builder, selectExpression, caseExpression, ast::BinaryOpType::EQUAL);
+                        }
+                        else
+                        {
+                            fatalError("Unsupported builtin type for select case: %s\n", ast::builtinTypeEnumString(*selectType.getBuiltinType()));
+                        }
+                    }
+                    else
+                    {
+                        fatalError("Unsupported type for select case: %s\n", selectType.toString().c_str());
+                    }
+
+                    // Branch either to the case block, or the next condition.
+                    llvm::BasicBlock* nextCondition = llvm::BasicBlock::Create(ctx, "selectCondition", parent);
+                    nextCondition->moveAfter(builder.GetInsertBlock());
+                    builder.CreateCondBr(condition, caseBlocks[i], nextCondition);
+                    builder.SetInsertPoint(nextCondition);
+                }
+
+                // Branch either to the default case or the end of the select statement.
+                if (cases->defaultCase().notNull())
+                {
+                    builder.CreateBr(caseBlocks.back());
+                }
+                else
+                {
+                    builder.CreateBr(selectEndBlock);
+                }
+                builder.SetInsertPoint(selectEndBlock);
+            }
+
+
+        }
         else if (auto* varDecl = dynamic_cast<const ast::VarDecl*>(s))
         {
             assert(varDecl->variable());
@@ -1191,7 +1285,7 @@ llvm::Function* CodeGenerator::generateFunctionPrototype(CodeGenerator::GlobalSy
 }
 
 void CodeGenerator::generateFunctionBody(llvm::Function* function, const ast::VariableScope& variables,
-                                         const ast::Block* block, const ast::FuncDecl* funcDecl)
+                                         MaybeNull<ast::Block> block, const ast::FuncDecl* funcDecl)
 {
     bool isMainFunction = funcDecl == nullptr;
     auto& symtab = *symbolTables[function];

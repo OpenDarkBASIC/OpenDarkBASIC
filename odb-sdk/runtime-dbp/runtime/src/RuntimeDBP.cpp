@@ -41,7 +41,10 @@ DLLEXPORT void* loadPlugin(const char* pluginName)
     HMODULE library = LoadLibraryA(pluginName);
     if (!library)
     {
-        printf("Failed to load plugin %s. Reason: %s", pluginName, GetLastErrorAsString().c_str());
+        char buffer[255];
+        sprintf_s(buffer, 255, "Failed to load plugin %s. Reason: %s", pluginName, GetLastErrorAsString().c_str());
+        puts(buffer);
+        MessageBoxA(NULL, buffer, "Fatal error", 0);
         return nullptr;
     }
     loadedPlugins.emplace(pluginName, library);
@@ -63,7 +66,16 @@ DLLEXPORT void* loadPlugin(const char* pluginName)
 DLLEXPORT void* getFunctionAddress(void* plugin, const char* functionName)
 {
     auto address = GetProcAddress(static_cast<HMODULE>(plugin), functionName);
-    //printf("loading %s %p in %p\n", functionName, (void*)address, plugin);
+    if (address == nullptr)
+    {
+        char pluginBuffer[255];
+        GetModuleFileNameA(static_cast<HMODULE>(plugin), pluginBuffer, 255);
+        char buffer[255];
+        sprintf_s(buffer, 255, "Failed to load function %s from plugin %s.", functionName, pluginBuffer);
+        puts(buffer);
+        MessageBoxA(NULL, buffer, "Fatal error", 0);
+        return nullptr;
+    }
     return reinterpret_cast<void*>(address);
 }
 
@@ -163,6 +175,52 @@ DLLEXPORT int initEngine()
     ConstructDLLs();
 
     return 0;
+}
+
+DLLEXPORT void checkArrayBounds(void* arrayPtr, DWORD lineNumber, DWORD d1, DWORD d2, DWORD d3, DWORD d4, DWORD d5,
+                                DWORD d6, DWORD d7, DWORD d8, DWORD d9)
+{
+    /*
+        header[0] = d1
+        header[1] = header[0] * d2
+        header[2] = header[1] * d3
+        header[3] = header[2] * d4
+        header[4] = header[3] * d5
+        header[5] = header[4] * d6
+        header[6] = header[5] * d7
+        header[7] = header[6] * d8
+        header[8] = header[7] * d9
+        header[9] = ...
+        header[10] = N
+        header[11] = size of one item, encoded in the 2nd parameter of DimDDD
+        header[12] = type ID of each item, encoded in the 2nd parameter of DimDDD;
+        header[13] = the internal index of this array (what 'array()' means), defaults to 0
+    */
+    DWORD* header = static_cast<DWORD*>(arrayPtr) - 14;
+    bool fail = false;
+    if (header[1] == 0)
+    {
+        // If we have a single dimensional array, check the total size
+        if (d1 > header[10])
+        {
+            fail = true;
+        }
+    }
+    else
+    {
+        if (d1 > header[0])
+        {
+            fail = true;
+        }
+    }
+    if (fail)
+    {
+        char err[512];
+        wsprintf(err, "OpenDarkBASIC (DBPro) has detected an unexpected issue and needs to restart your session.\n\nArray index %d out of bounds of array of size %d on line %d.",
+                 d1, header[0], lineNumber);
+        MessageBox(nullptr, err, "OpenDarkBASIC (DBPro) Problem Detected", MB_TOPMOST | MB_OK);
+        ExitProcess(1);
+    }
 }
 
 DLLEXPORT void checkForError(const char* commandName, DWORD lineNumber)

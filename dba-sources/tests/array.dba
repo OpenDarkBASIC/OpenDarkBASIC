@@ -1,0 +1,28 @@
+dim array(2)
+array(0) = 2
+array(1) = 3
+
+dim array#(2)
+array#(0) = 1.5
+array#(1) = 3.5
+
+dim arrayf(2) as float
+arrayf(0) = 2.5
+arrayf(1) = 4.5
+
+print array(0)
+print array(1)
+print array#(0)
+print array#(1)
+print arrayf(0)
+print arrayf(1)
+
+undim array(0)
+dim array(4)
+array(3) = 97
+
+print array(3)
+
+undim array(0)
+
+wait key

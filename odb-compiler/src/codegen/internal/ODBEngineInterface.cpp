@@ -26,8 +26,9 @@ llvm::Value* ODBEngineInterface::generateAllocateArray(llvm::IRBuilder<>& builde
     return llvm::ConstantInt::get(llvm::IntegerType::getInt32Ty(ctx), 0);
 }
 
-llvm::Value* ODBEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
+llvm::Value* ODBEngineInterface::generateIndexArray(llvm::IRBuilder<>& builder, ast::SourceLocation* loc, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) {
     (void)(builder, arrayElementPtrTy, arrayPtr, dims);
+    (void)loc;
     // Always return nullptr.
     return llvm::ConstantInt::get(llvm::IntegerType::getInt32Ty(ctx), 0);
 }

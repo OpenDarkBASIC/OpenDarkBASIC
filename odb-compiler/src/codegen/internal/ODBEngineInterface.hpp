@@ -14,7 +14,7 @@ public:
                                             llvm::FunctionType* functionType) override;
 
     llvm::Value* generateAllocateArray(llvm::IRBuilder<>& builder, ast::Type arrayElementTy, std::vector<llvm::Value*> dims) override;
-    llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) override;
+    llvm::Value* generateIndexArray(llvm::IRBuilder<>& builder, ast::SourceLocation* loc, llvm::Type* arrayElementPtrTy, llvm::Value *arrayPtr, std::vector<llvm::Value*> dims) override;
     void generateFreeArray(llvm::IRBuilder<>& builder, llvm::Value *arrayPtr) override;
 
     llvm::Value* generateCopyString(llvm::IRBuilder<>& builder, llvm::Value* src) override;

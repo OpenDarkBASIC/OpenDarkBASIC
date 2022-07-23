@@ -1,0 +1,7 @@
+test(10.0)
+wait key
+end
+
+function test(value as float)
+  print value
+endfunction

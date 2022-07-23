@@ -1,0 +1,21 @@
+x as double integer = 0
+input x
+
+select x
+  case 1
+    print "Typed one"
+  endcase
+  case 2
+    print "Typed two"
+    print "More text"
+  endcase
+  case 3:
+    print "Typed three!!"
+  endcase
+  case default:
+    print "Typed something else"
+  endcase
+endselect
+
+wait key
+end

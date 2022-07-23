@@ -37,9 +37,10 @@ public:
                 continue;
 
             it.replaceNode(new ArrayRef(
+                node->program(),
+                node->location(),
                 node->identifier(),
-                node->args().notNull() ? node->args() : nullptr,
-                node->location()
+                node->args().notNull() ? node->args() : nullptr
             ));
         }
 
