@@ -1,51 +1,160 @@
 #pragma once
 
 #include "odb-sdk/config.hpp"
-#include "odb-sdk/RefCounted.hpp"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace odb {
 
-struct DynLibPlatformData;
-
-class ODBSDK_PUBLIC_API DynamicLibrary : public RefCounted
+class ODBSDK_PUBLIC_API DynamicLibrary
 {
 public:
     DynamicLibrary() = delete;
     ~DynamicLibrary();
 
     /*!
-     * @brief Attempts to load the specified shared library or DLL.
-     * @return Returns nullptr on failure, otherwise returns a new instance of
-     * this class.
+     * \brief Appends a path to search for shared libraries.
+     *
+     * This is required for plugins that ship with their own shared library
+     * dependencies. If the search path is not updated, then loading these plugins
+     * will fail because the dynamic linker won't be ablve to find its dependencies.
+     *
+     * On Windows this calls SetDllDirectory()
+     * On Linux this appends a path to LD_LIBRARY_PATH
+     * \param[in] path Search path to add.
+     * \return Returns 0 on success. Negative on error.
      */
-    static DynamicLibrary* open(const char* filename);
+    static int addRuntimePath(const char* path);
 
-    const char* getFilename() const;
+    /*!
+     * \brief Attempts to load the specified shared library or DLL.
+     * This class overloads the boolean operator, allowing you to check for
+     * success with:
+     * 
+     *   if (auto lib = DynamicLibrary::open(...)) {
+     *       // success
+     *   }
+     */
+    static DynamicLibrary open(const char* filepath);
+
+    /*!
+     * \brief Returns the fully qualified path to the shared library.
+     * \note This may be different from the original filename specified in
+     * DynamicLibrary::open().
+     */
+    std::string getFilePath() const;
 
     /*!
      * @brief Looks up the address of a given symbol in the shared library or
      * DLL. This is equivalent to calling dlsym() on linux and GetProcAddress()
      * on Windows.
+     * \param[in] name Symbol name
+     * \return Returns the address to the symbol if successful or NULL on error.
      */
-    void* lookupSymbolAddress(const char* name) const;
+    void* lookupSymbolAddressVP(const char* name) const;
 
     /*!
-     * @brief Returns the total number of symbols present in the symbol table.
+     * @brief Same as lookupSymbolAddressVP(), but casts the return value to
+     * the required type.
      */
-    int getSymbolCount() const;
+    template <typename T>
+    T lookupSymbolAddress(const char* name) const
+        { return static_cast<T>(lookupSymbolAddressVP(name)); }
 
     /*!
-     * @brief Returns a symbol at the specified index in the symbol table.
+     * \brief Returns the number symbols in the library. These are strings
+     * that have been exported (on Windows) or otherwise made externally 
+     * visible. You can get their name using getSymbolName() and get their
+     * address using lookupSymbolAddress().
+     * 
+     * \note On Windows this is a fast operation, on Linux (GNU) the shared
+     * library's hash table needs to be iterated which is slightly slower.
+     * 
+     * \note On Linux, shared libraries often have a lot of public symbols,
+     * because the default visibility for GCC is public.
      */
-    const char* getSymbolAt(int idx) const;
+    int findSymbolCount() const;
+
+    /*!
+     * \brief Returns the name of a symbol at a specified index.
+     * \param[in] idx 0 to findSymbolCount() - 1
+     */
+    const char* getSymbolName(int idx) const;
+
+#if defined(_WIN32)
+    /*!
+     * \brief Returns the number of entries in the string table. These only
+     * exist in Windows DLLs, and are typically created using resource files
+     * (see: "Stringtable resources" https://learn.microsoft.com/en-us/windows/win32/menurc/stringtable-resource)
+     * 
+     * \note This operation is slow, because it must iterate over all strings
+     * to find the total count.
+     */
+    int findStringResourceCount() const;
+
+    /*!
+     * \brief Returns a string resource at a specified index.
+     * \param[in] idx 0 to findStringResourceCount() - 1
+     */
+    const char* getStringResource(int idx) const;
+#endif
+
+    operator bool() const
+        { return handle_ != nullptr; }
+
+    class SymbolIterator
+    {
+    public:
+        SymbolIterator(const DynamicLibrary& lib, int offset)
+            : lib_(lib)
+            , offset_(offset)
+        {}
+
+        const char* operator*() const { return lib_.getSymbolName(offset_); }
+
+        SymbolIterator& operator++()
+        {
+            offset_++;
+            return *this;
+        }
+        SymbolIterator operator++(int)
+        {
+            SymbolIterator tmp(*this);
+            operator++();
+            return tmp;
+        }
+
+        inline bool operator==(const SymbolIterator& rhs) const { return offset_ == rhs.offset_; }
+        inline bool operator!=(const SymbolIterator& rhs) const { return !operator==(rhs); }
+
+    private:
+        const DynamicLibrary& lib_;
+        int offset_;
+    };
+
+    class Symbols
+    {
+    public:
+        Symbols(const DynamicLibrary& lib, int symbolCount)
+            : lib_(lib)
+            , count_(symbolCount)
+        {}
+
+        SymbolIterator begin() const { return SymbolIterator(lib_, 0); }
+        SymbolIterator end() const { return SymbolIterator(lib_, count_); }
+
+    private:
+        const DynamicLibrary& lib_;
+        int count_;
+    };
+
+    Symbols symbols() const
+        { return Symbols(*this, findSymbolCount()); }
 
 private:
-    explicit DynamicLibrary(std::unique_ptr<DynLibPlatformData> data, const std::string& filename);
-    std::unique_ptr<DynLibPlatformData> data_;
-    const std::string filename_;
+    DynamicLibrary::DynamicLibrary(void* handle) : handle_(handle) {}
+    void* handle_;
 };
 
 }

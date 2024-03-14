@@ -38,6 +38,8 @@ target_link_libraries (odbc
         odb-compiler)
 set_target_properties (odbc
     PROPERTIES
+		VS_DEBUGGER_WORKING_DIRECTORY ${VODHOUND_BUILD_BINDIR}
+		MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR}
         INSTALL_RPATH ${CMAKE_INSTALL_LIBDIR})
 

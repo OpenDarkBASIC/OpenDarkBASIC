@@ -249,13 +249,12 @@ target_compile_options (odb-compiler
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>
 		$<$<CXX_COMPILER_ID:MSVC>:/wd4661>)
-target_compile_features (odb-compiler
-    PUBLIC cxx_std_17)
 target_link_libraries (odb-compiler
     PUBLIC
         odb-sdk)
 set_target_properties (odb-compiler
     PROPERTIES
+        CXX_STANDARD 17
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_ARCHIVE_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${ODB_LIBRARY_DIR}
         RUNTIME_OUTPUT_DIRECTORY ${ODB_RUNTIME_DIR}
@@ -264,48 +263,48 @@ set_target_properties (odb-compiler
 ###############################################################################
 # Dependencies.
 ###############################################################################
-include (FetchContent)
+#include (FetchContent)
 
 # LIEF
 
-set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
-set (LIEF_C_API OFF CACHE BOOL "" FORCE)
-set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
-set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
-set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
-set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
-set (LIEF_OAT OFF CACHE BOOL "" FORCE)
-set (LIEF_DEX OFF CACHE BOOL "" FORCE)
-set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
-set (LIEF_ART OFF CACHE BOOL "" FORCE)
-FetchContent_Declare (
-    lief
-    URL https://github.com/lief-project/LIEF/archive/b8422047e90e287a76d899c28bea3978f1521b74.tar.gz
-)
-FetchContent_MakeAvailable (lief)
+#set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
+#set (LIEF_C_API OFF CACHE BOOL "" FORCE)
+#set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
+#set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
+#set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
+#set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
+#set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
+#set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
+#set (LIEF_OAT OFF CACHE BOOL "" FORCE)
+#set (LIEF_DEX OFF CACHE BOOL "" FORCE)
+#set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
+#set (LIEF_ART OFF CACHE BOOL "" FORCE)
+#FetchContent_Declare (
+#    lief
+#    URL https://github.com/lief-project/LIEF/archive/b8422047e90e287a76d899c28bea3978f1521b74.tar.gz
+#)
+#FetchContent_MakeAvailable (lief)
 
-target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
+#target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 # reproc
 
-set(REPROC++ ON)
-set(REPROC_OBJECT_LIBRARIES ON)
-FetchContent_Declare (
-    reproc
-    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
-)
-FetchContent_MakeAvailable (reproc)
+#set(REPROC++ ON)
+#set(REPROC_OBJECT_LIBRARIES ON)
+#FetchContent_Declare (
+#    reproc
+#    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
+#)
+#FetchContent_MakeAvailable (reproc)
 
-set_property (TARGET reproc PROPERTY POSITION_INDEPENDENT_CODE ON)
-set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
+#set_property (TARGET reproc PROPERTY POSITION_INDEPENDENT_CODE ON)
+#set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_link_libraries (odb-compiler PRIVATE reproc++)
+#target_link_libraries (odb-compiler PRIVATE reproc++)
 
 # LLVM
 
-find_package (LLVM REQUIRED CONFIG)
+#find_package (LLVM REQUIRED CONFIG)
 
 # This is apparently deprecated since 4 years
 # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
@@ -316,16 +315,16 @@ find_package (LLVM REQUIRED CONFIG)
 
 # This is how you're supposed to do it by reading LLVM-Config.cmake
 # https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
-    set (llvm_use_shared USE_SHARED)
-endif()
-llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen aarch64codegen)
+#if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
+#    set (llvm_use_shared USE_SHARED)
+#endif()
+#llvm_config (odb-compiler ${llvm_use_shared} core bitwriter x86codegen aarch64codegen)
 
-target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
-target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
+#target_include_directories (odb-compiler PUBLIC ${LLVM_INCLUDE_DIRS})
+#target_compile_definitions (odb-compiler PUBLIC ${LLVM_DEFINITIONS})
 
 # Push LLVM binary dir to parent scope.
-set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
+#set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
 
 ###############################################################################
 # Unit tests

@@ -1,7 +1,7 @@
 #include "odb-compiler/parsers/PluginInfo.hpp"
 #include "odb-sdk/Log.hpp"
 
-#include <LIEF/LIEF.hpp>
+//#include<LIEF / LIEF.hpp>
 #include <codecvt>
 #include <filesystem>
 #include <utility>
@@ -15,7 +15,7 @@ PluginInfo::~PluginInfo() = default;
 
 Reference<PluginInfo> PluginInfo::open(const std::string& path)
 {
-    try
+    /*try
     {
         return new PluginInfo(LIEF::Parser::parse(path), path);
     }
@@ -26,7 +26,9 @@ Reference<PluginInfo> PluginInfo::open(const std::string& path)
 #endif
         Log::cmd(Log::ERROR, "Failed to open plugin %s: %s", path.c_str(), err.what());
         return nullptr;
-    }
+    }*/
+
+    return nullptr;
 }
 
 const char* PluginInfo::getPath() const
@@ -41,14 +43,16 @@ const char* PluginInfo::getName() const
 
 size_t PluginInfo::getSymbolCount() const
 {
-    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
-    return elfBinary ? elfBinary->dynamic_symbols().size() : binary_->symbols().size();
+    /*const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
+    return elfBinary ? elfBinary->dynamic_symbols().size() : binary_->symbols().size();*/
+    return 0;
 }
 
 std::string PluginInfo::getSymbolNameAt(size_t idx) const
 {
-    const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
-    return elfBinary ? elfBinary->dynamic_symbols()[idx].name() : binary_->symbols()[idx].name();
+    /*const auto* elfBinary = dynamic_cast<const LIEF::ELF::Binary*>(binary_.get());
+    return elfBinary ? elfBinary->dynamic_symbols()[idx].name() : binary_->symbols()[idx].name();*/
+    return "";
 }
 
 std::optional<std::string> PluginInfo::lookupStringBySymbol(const std::string& name)
@@ -218,8 +222,9 @@ std::vector<std::string> PluginInfo::getStringTable() const
     return stringTable;
 }
 
-PluginInfo::PluginInfo(std::unique_ptr<LIEF::Binary> binary, const std::string& path)
-    : binary_(std::move(binary)), path_(path), name_(std::filesystem::path{path}.stem().string())
+PluginInfo::PluginInfo(const std::string& path)
+    : path_(path)
+    , name_(std::filesystem::path{path}.stem().string())
 {
 }
 } // namespace odb

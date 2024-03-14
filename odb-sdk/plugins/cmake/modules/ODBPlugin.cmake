@@ -1,8 +1,8 @@
 macro (odb_add_plugin PLUGIN)
-    set (options "")
-    set (oneValueArgs "")
-    set (multiValueArgs SOURCES HEADERS INCLUDE_DIRECTORIES)
-    cmake_parse_arguments (${PLUGIN} "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+    set (_options "")
+    set (_oneValueArgs "")
+    set (_multiValueArgs SOURCES HEADERS INCLUDE_DIRECTORIES)
+    cmake_parse_arguments (${PLUGIN} "${_options}" "${_oneValueArgs}" "${_multiValueArgs}" ${ARGN})
 
     configure_file ("${PLUGIN_CONFIG_TEMPLATE_PATH}/config.hpp.in"
                     "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.hpp")
@@ -20,15 +20,20 @@ macro (odb_add_plugin PLUGIN)
     target_link_libraries (${PLUGIN}
         PRIVATE
             odb-sdk)
-    set_target_properties (${PLUGIN}
+    include (ODBTargetProperties)
+    odb_target_properties (${PLUGIN}
         PROPERTIES
-            PREFIX "")
-    set_target_properties (${PLUGIN}
-        PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY "${ODB_SDK_DIR}/plugins"
-            RUNTIME_OUTPUT_DIRECTORY "${ODB_SDK_DIR}/plugins")
+            CXX_STANDARD 17
+            CXX_STANDARD_REQUIRED TRUE
+            LIBRARY_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
+            RUNTIME_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins")
+    set_property (TARGET ${PLUGIN} PROPERTY PREFIX "")
     install (
         TARGETS ${PLUGIN}
-        LIBRARY DESTINATION "${CMAKE_INSTALL_ODBSDKDIR}/plugins"
-        RUNTIME DESTINATION "${CMAKE_INSTALL_ODBSDKDIR}/plugins")
+        LIBRARY DESTINATION "${ODB_INSTALL_SDKDIR}/plugins"
+        RUNTIME DESTINATION "${ODB_INSTALL_SDKDIR}/plugins")
+    
+    unset (_options)
+    unset (_oneValueArgs)
+    unset (_multiValueArgs)
 endmacro ()

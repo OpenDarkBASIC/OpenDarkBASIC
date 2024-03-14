@@ -9,4 +9,3 @@ odb_add_plugin (test-plugin
         "src/test_command.c"
     INCLUDE_DIRECTORIES
         "include")
-

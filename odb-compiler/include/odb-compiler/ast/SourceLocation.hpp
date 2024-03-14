@@ -22,7 +22,7 @@ namespace odb::ast {
 class ODBCOMPILER_PUBLIC_API SourceLocation : public RefCounted
 {
 public:
-    SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color=Log::RESET);
+    SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn);
 
     /*!
      * @brief Returns the location in the format "fl-ll:fc-lc" where fl=first line,
@@ -51,7 +51,6 @@ public:
     int lastLine() const;
     int firstColumn() const;
     int lastColumn() const;
-    Log::Color color() const;
 
     void unionize(const SourceLocation* other);
 

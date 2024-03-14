@@ -10,4 +10,3 @@ odb_add_plugin (core-commands
         "src/str.cpp"
     INCLUDE_DIRECTORIES
         "include")
-

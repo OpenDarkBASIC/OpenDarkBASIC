@@ -8,12 +8,11 @@
 namespace odb::ast {
 
 // ----------------------------------------------------------------------------
-SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn, Log::Color color) :
+SourceLocation::SourceLocation(int firstLine, int lastLine, int firstColumn, int lastColumn) :
     firstLine_(firstLine),
     lastLine_(lastLine),
     firstColumn_(firstColumn),
-    lastColumn_(lastColumn),
-    color_(color)
+    lastColumn_(lastColumn)
 {
 }
 
@@ -39,12 +38,6 @@ int SourceLocation::firstColumn() const
 int SourceLocation::lastColumn() const
 {
     return lastColumn_;
-}
-
-// ----------------------------------------------------------------------------
-Log::Color SourceLocation::color() const
-{
-    return color_;
 }
 
 // ----------------------------------------------------------------------------

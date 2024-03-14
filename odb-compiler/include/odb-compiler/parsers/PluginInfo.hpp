@@ -8,10 +8,6 @@
 
 #include "odb-sdk/Reference.hpp"
 
-namespace LIEF {
-class Binary;
-}
-
 namespace odb {
 class PluginInfo : public RefCounted {
 public:
@@ -52,9 +48,8 @@ public:
     std::vector<std::string> getStringTable() const;
 
 private:
-    PluginInfo(std::unique_ptr<LIEF::Binary> binary, const std::string& path);
+    PluginInfo(const std::string& path);
 
-    std::unique_ptr<LIEF::Binary> binary_;
     const std::string path_;
     const std::string name_;
 };

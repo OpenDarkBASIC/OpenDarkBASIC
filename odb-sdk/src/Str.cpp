@@ -141,7 +141,7 @@ void justifyWrap(std::vector<std::string>* lines,
         }
         else
         {
-            len += lineEnd->length() + 1;  // +1 = space
+            len += (int)lineEnd->length() + 1;  // +1 = space
             lineEnd++;
         }
     }
