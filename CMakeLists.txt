@@ -15,20 +15,6 @@ project ("OpenDarkBASIC"
 
 list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
-#include (ConfigureMSVCRuntime)
-#set (MSVC_RUNTIME "shared")
-#configure_msvc_runtime()
-
-# Each subproject uses ODB_PLATFORM to create their own platform defines.
-# Makes sense to put this here.
-#if (WIN32)
-#    set (ODB_PLATFORM "WIN32")
-#elseif (APPLE)
-#    set (ODB_PLATFORM "MACOS")
-#elseif (UNIX)
-#    set (ODB_PLATFORM "LINUX")
-#endif ()
-
 # Try to create the following directory structure in both build and install
 # trees (see issue #11)
 #
@@ -71,7 +57,6 @@ if (ODB_TESTS)
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
     FetchContent_MakeAvailable (googletest)
-    #set_target_properties (gmock PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 endif ()
 
 add_subdirectory ("thirdparty/gperf-3.1")
