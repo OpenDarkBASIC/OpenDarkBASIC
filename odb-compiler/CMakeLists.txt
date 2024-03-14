@@ -165,6 +165,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${Gperf_DarkBASICKeywordToken_OUTPUTS}"
     "${BISON_CommandsParser_OUTPUTS}"
     "${FLEX_CommandsScanner_OUTPUTS}"
+    "templates/BuildInfo.cpp.in"
     "src/ast/Annotation.cpp"
     "src/ast/ArgList.cpp"
     "src/ast/ArrayDecl.cpp"

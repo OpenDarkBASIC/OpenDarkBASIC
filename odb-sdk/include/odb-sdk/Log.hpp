@@ -91,14 +91,14 @@ public:
     static void dbParserLocationNote(const char* fileLineColumn, const char* fmt, ...);
     static void vdbParserFatalError(const char* fileLineColumn, const char* fmt, va_list ap);
 
-    static int cmd(Log::Severity severity, const char* fmt, ...);
-    static int vcmd(Log::Severity severity, const char* fmt, va_list ap);
-    static int ast(Log::Severity severity, const char* fmt, ...);
-    static int sdk(Log::Severity severity, const char* fmt, ...);
-    static int vsdk(Log::Severity severity, const char* fmt, va_list ap);
+    static int cmd(Severity severity, const char* fmt, ...);
+    static int vcmd(Severity severity, const char* fmt, va_list ap);
+    static int ast(Severity severity, const char* fmt, ...);
+    static int sdk(Severity severity, const char* fmt, ...);
+    static int vsdk(Severity severity, const char* fmt, va_list ap);
     static int vlogPrefixSeverity(const char* prefix, Log::Severity severity, const char* fmt, va_list ap);
-    static int codegen(Log::Severity severity, const char* fmt, ...);
-    static int vcodegen(Log::Severity severity, const char* fmt, va_list ap);
+    static int codegen(Severity severity, const char* fmt, ...);
+    static int vcodegen(Severity severity, const char* fmt, va_list ap);
 
     static Log info;
     static Log data;

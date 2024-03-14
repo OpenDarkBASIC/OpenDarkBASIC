@@ -21,7 +21,10 @@ Reference<PluginInfo> PluginInfo::open(const std::string& path)
     }
     catch (const LIEF::exception& err)
     {
-        Log::codegen(Log::ERROR, "Failed to open plugin %s: %s", path.c_str(), err.what());
+#ifdef ERROR
+#undef ERROR
+#endif
+        Log::cmd(Log::ERROR, "Failed to open plugin %s: %s", path.c_str(), err.what());
         return nullptr;
     }
 }
