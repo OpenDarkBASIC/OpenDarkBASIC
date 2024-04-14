@@ -34,33 +34,27 @@ static PIMAGE_EXPORT_DIRECTORY getExportsDirectory(HMODULE hModule)
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary DynamicLibrary::open(const char* filepath)
+void* DynamicLibrary::openLibrary(const char* filepath)
 {
     HMODULE hModule = LoadLibraryA(filepath);
     if (!hModule)
     {
         char* error;
-        if (FormatMessageA(
-            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-            NULL,
-            GetLastError(),
-            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-            (LPSTR)&error,
-            0, NULL))
+        if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
+                           MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&error, 0, NULL))
         {
             Log::sdk(Log::ERROR, "Failed to load library: %s", error);
             LocalFree(error);
         }
     }
 
-    return DynamicLibrary(static_cast<void*>(hModule));
+    return static_cast<void*>(hModule);
 }
 
 // ----------------------------------------------------------------------------
-DynamicLibrary::~DynamicLibrary()
+void DynamicLibrary::closeLibrary(void* handle)
 {
-    if (handle_)
-        FreeLibrary(static_cast<HMODULE>(handle_));
+    FreeLibrary(static_cast<HMODULE>(handle));
 }
 
 // ----------------------------------------------------------------------------
@@ -100,6 +94,7 @@ void* DynamicLibrary::lookupSymbolAddressVP(const char* name) const
 }
 
 // ----------------------------------------------------------------------------
+/*
 int DynamicLibrary::findSymbolCount() const
 {
     assert(handle_);
@@ -124,8 +119,27 @@ const char* DynamicLibrary::getSymbolName(int idx) const
 
     DWORD* name_table = (DWORD*)((size_t)hModule + exports->AddressOfNames);
     return (const char*)((size_t)hModule + name_table[idx]);
+}*/
+
+// ----------------------------------------------------------------------------
+DynamicLibrary::IterateStatus DynamicLibrary::forEachSymbol(std::function<IterateStatus(const char* symbol)> callback)
+{
+    assert(handle_);
+
+    HMODULE hModule = static_cast<HMODULE>(handle_);
+    PIMAGE_EXPORT_DIRECTORY exports = getExportsDirectory(hModule);
+    if (exports == nullptr)
+        return ERROR;
+
+    DWORD* name_table = (DWORD*)((size_t)hModule + exports->AddressOfNames);
+    for (int i = 0; i != exports->NumberOfNames; ++i)
+        if (auto status = callback((const char*)((size_t)hModule + name_table[i])))
+            return status;
+
+    return CONTINUE;
 }
 
+/*
 // ----------------------------------------------------------------------------
 int DynamicLibrary::findStringResourceCount() const
 {
@@ -142,6 +156,7 @@ int DynamicLibrary::findStringResourceCount() const
     return 0;
 }
 
+// ----------------------------------------------------------------------------
 const char* DynamicLibrary::getStringResource(int idx) const
 {
     assert(handle_);
@@ -152,6 +167,89 @@ const char* DynamicLibrary::getStringResource(int idx) const
     // Index starts at 1
     LoadStringA(hModule, idx + 1, (char*)&str, 0);
     return str;
+}*/
+
+// ----------------------------------------------------------------------------
+struct EnumStringNameCtx
+{
+    EnumStringNameCtx(std::function<DynamicLibrary::IterateStatus(const char* str)> callback)
+        : callback(callback)
+        , capacity(256)
+        , callbackStatus(DynamicLibrary::CONTINUE)
+    {
+        utf8 = utf8_mem;
+    }
+
+    ~EnumStringNameCtx()
+    {
+        if (capacity > 256)
+            free(utf8_mem);
+    }
+
+    std::function<DynamicLibrary::IterateStatus(const char* str)> callback;
+    char* utf8;
+    char utf8_mem[256];
+    int capacity;
+    DynamicLibrary::IterateStatus callbackStatus;
+};
+static bool passStringToCallback(LPWSTR utf16, int utf16_len, EnumStringNameCtx* ctx)
+{
+    while (WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, ctx->utf8, ctx->capacity, 0, 0) == 0)
+    {
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)  // Some other error, skip string
+            return TRUE;
+        
+        void* new_mem = ctx->capacity > 256 
+            ? realloc(ctx->utf8, ctx->capacity * 2) 
+            : malloc(ctx->capacity * 2);
+        ctx->utf8 = static_cast<char*>(new_mem);
+        ctx->capacity *= 2;
+    }
+
+    return ctx->callback(ctx->utf8);
+}
+static BOOL enumStringResourceProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam)
+{
+    EnumStringNameCtx* ctx = (EnumStringNameCtx*)(void*)lParam;
+
+    if (IS_INTRESOURCE(lpName))
+    {
+        HRSRC hRes = FindResourceW(hModule, lpName, lpType);
+        HGLOBAL hResData = LoadResource(hModule, hRes);
+        LPWSTR stringTable = (LPWSTR)LockResource(hResData);
+        /* Block of 16 strings. The strings are Pascal style with a WORD length
+         * preceeding the string. 16 strings are always present in each block,
+         * even if not all are used. If a slot is empty, its length will be 0 */
+        LPWSTR p = stringTable;
+        for (int i = 0; i != 16; ++i)
+        {
+            int len = static_cast<int>(*p++);
+            if (len == 0)
+                continue;
+            if (!passStringToCallback(p, len, ctx))
+                return false;
+            p += len;
+        }
+    }
+    else
+    {
+        return passStringToCallback(lpName, lstrlenW(lpName), ctx);
+    }
+}
+DynamicLibrary::IterateStatus DynamicLibrary::forEachString(std::function<IterateStatus(const char* str)> callback)
+{
+    assert(handle_);
+    
+    HMODULE hModule = static_cast<HMODULE>(handle_);
+    EnumStringNameCtx ctx(callback);
+
+    EnumResourceNamesW(hModule, 
+        MAKEINTRESOURCEW(6),  // RT_STRING
+        enumStringResourceProc,
+        (LONG_PTR)(void*)&ctx
+    );
+
+    return CONTINUE;
 }
 
 } // namespace odb

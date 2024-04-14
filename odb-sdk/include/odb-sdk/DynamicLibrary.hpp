@@ -1,17 +1,44 @@
 #pragma once
 
 #include "odb-sdk/config.hpp"
-#include <memory>
+#include <functional>
 #include <string>
-#include <vector>
 
 namespace odb {
 
 class ODBSDK_PUBLIC_API DynamicLibrary
 {
+private:
+    static void* openLibrary(const char* filename);
+    static void closeLibrary(void* handle);
+
+    DynamicLibrary(void* handle) : handle_(handle) {}
+
 public:
+    enum IterateStatus
+    {
+        ERROR = -1,
+        CONTINUE,
+        STOP
+    };
+
     DynamicLibrary() = delete;
-    ~DynamicLibrary();
+    ~DynamicLibrary()
+    {
+        if (handle_)
+            closeLibrary(handle_);
+    }
+
+    DynamicLibrary(const DynamicLibrary&) = delete;
+
+    DynamicLibrary(DynamicLibrary&& other) noexcept
+        : handle_(other.handle_)
+    { 
+        other.handle_ = nullptr;
+    }
+
+    //! Evaluate object to "true" if the library loaded successfully
+    operator bool() const { return handle_ != nullptr; }
 
     /*!
      * \brief Appends a path to search for shared libraries.
@@ -36,7 +63,7 @@ public:
      *       // success
      *   }
      */
-    static DynamicLibrary open(const char* filepath);
+    static DynamicLibrary open(const char* filepath) { return DynamicLibrary(openLibrary(filepath)); }
 
     /*!
      * \brief Returns the fully qualified path to the shared library.
@@ -74,13 +101,15 @@ public:
      * \note On Linux, shared libraries often have a lot of public symbols,
      * because the default visibility for GCC is public.
      */
-    int findSymbolCount() const;
+    //int findSymbolCount() const;
 
     /*!
      * \brief Returns the name of a symbol at a specified index.
      * \param[in] idx 0 to findSymbolCount() - 1
      */
-    const char* getSymbolName(int idx) const;
+    //const char* getSymbolName(int idx) const;
+
+    IterateStatus forEachSymbol(std::function<IterateStatus(const char* symbol)> callback);
 
 #if defined(_WIN32)
     /*!
@@ -91,69 +120,24 @@ public:
      * \note This operation is slow, because it must iterate over all strings
      * to find the total count.
      */
-    int findStringResourceCount() const;
+    //int findStringResourceCount() const;
 
     /*!
      * \brief Returns a string resource at a specified index.
      * \param[in] idx 0 to findStringResourceCount() - 1
      */
-    const char* getStringResource(int idx) const;
+    //const char* getStringResource(int idx) const;
+
+    /*!
+     * \brief Iterates over each string resource present in the DLLs resource
+     * section. These only exist in Windows DLLs, and are typically created
+     * using resource files
+     * (see: "Stringtable resources" https://learn.microsoft.com/en-us/windows/win32/menurc/stringtable-resource)
+     */
+    IterateStatus forEachString(std::function<IterateStatus(const char* str)> callback);
 #endif
 
-    operator bool() const
-        { return handle_ != nullptr; }
-
-    class SymbolIterator
-    {
-    public:
-        SymbolIterator(const DynamicLibrary& lib, int offset)
-            : lib_(lib)
-            , offset_(offset)
-        {}
-
-        const char* operator*() const { return lib_.getSymbolName(offset_); }
-
-        SymbolIterator& operator++()
-        {
-            offset_++;
-            return *this;
-        }
-        SymbolIterator operator++(int)
-        {
-            SymbolIterator tmp(*this);
-            operator++();
-            return tmp;
-        }
-
-        inline bool operator==(const SymbolIterator& rhs) const { return offset_ == rhs.offset_; }
-        inline bool operator!=(const SymbolIterator& rhs) const { return !operator==(rhs); }
-
-    private:
-        const DynamicLibrary& lib_;
-        int offset_;
-    };
-
-    class Symbols
-    {
-    public:
-        Symbols(const DynamicLibrary& lib, int symbolCount)
-            : lib_(lib)
-            , count_(symbolCount)
-        {}
-
-        SymbolIterator begin() const { return SymbolIterator(lib_, 0); }
-        SymbolIterator end() const { return SymbolIterator(lib_, count_); }
-
-    private:
-        const DynamicLibrary& lib_;
-        int count_;
-    };
-
-    Symbols symbols() const
-        { return Symbols(*this, findSymbolCount()); }
-
 private:
-    DynamicLibrary::DynamicLibrary(void* handle) : handle_(handle) {}
     void* handle_;
 };
 
