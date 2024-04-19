@@ -105,7 +105,7 @@ configure_file ("templates/BuildInfo.cpp.in" "src/BuildInfo.cpp")
 ###############################################################################
 
 find_package (FLEX REQUIRED 2.6)
-find_package (BISON REQUIRED 3.7)
+find_package (BISON REQUIRED 3.8)
 
 # These may not exist
 file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
@@ -150,7 +150,7 @@ set_source_files_properties (${Gperf_DarkBASICKeywordToken_OUTPUTS}
         $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
         $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
-#XXX this is broken
+#XXX: this is broken
 add_gperf_bison_dependency (DarkBASICKeywordToken DarkBASICParser)
 
 ###############################################################################
@@ -263,27 +263,8 @@ set_target_properties (odb-compiler
 ###############################################################################
 # Dependencies.
 ###############################################################################
+
 #include (FetchContent)
-
-# LIEF
-
-#set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
-#set (LIEF_C_API OFF CACHE BOOL "" FORCE)
-#set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
-#set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
-#set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
-#set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
-#set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
-#set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
-#set (LIEF_OAT OFF CACHE BOOL "" FORCE)
-#set (LIEF_DEX OFF CACHE BOOL "" FORCE)
-#set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
-#set (LIEF_ART OFF CACHE BOOL "" FORCE)
-#FetchContent_Declare (
-#    lief
-#    URL https://github.com/lief-project/LIEF/archive/b8422047e90e287a76d899c28bea3978f1521b74.tar.gz
-#)
-#FetchContent_MakeAvailable (lief)
 
 #target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 

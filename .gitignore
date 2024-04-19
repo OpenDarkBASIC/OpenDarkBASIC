@@ -1,9 +1,22 @@
+# Build directories
 /build*
 /cmake-build*
+
+# IDE files
 /.idea
-/lightship-source
-/*.grind
 *.kdev4
+/.clangd
+/.cache
 *.swp
 *.kate-swp
+/CMakeLists.txt.user
+
+# valgrind
+/*.grind
+
+# gource
 /gource.mp4
+
+# misc
+/lightship-source
+

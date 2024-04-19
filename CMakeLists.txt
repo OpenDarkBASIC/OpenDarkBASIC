@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.21)
+cmake_minimum_required (VERSION 3.24)
 
 # Default to a release build on non-Windows platforms
 if (NOT DEFINED CMAKE_BUILD_TYPE)
@@ -48,13 +48,12 @@ set (ODB_INSTALL_INCLUDEDIR "include")
 set (ODB_INSTALL_SDKDIR "odb-sdk")
 
 if (ODB_TESTS)
-    set (INSTALL_GTEST OFF CACHE BOOL "")
+    set (INSTALL_GTEST OFF CACHE BOOL "" FORCE)
     include (FetchContent)
     FetchContent_Declare (
         googletest
         URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
-        URL_HASH MD5=c8340a482851ef6a3fe618a082304cfc
-        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        URL_HASH SHA256=8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7
     )
     FetchContent_MakeAvailable (googletest)
 endif ()
@@ -64,3 +63,4 @@ add_subdirectory ("odb-sdk")
 #add_subdirectory ("odb-compiler")
 #add_subdirectory ("odb-interpreter")
 #add_subdirectory ("odb-cli")
+

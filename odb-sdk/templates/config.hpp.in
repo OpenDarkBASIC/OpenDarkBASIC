@@ -1,19 +1,23 @@
 #pragma once
 
-#define STRINGIFY_(x) #x
-#define STRINGIFY(x) STRINGIFY_(x)
-
+/* Compiled version */
 #define ODBSDK_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
 #define ODBSDK_VERSION_MINOR ${PROJECT_VERSION_MINOR}
 #define ODBSDK_VERSION_PATCH ${PROJECT_VERSION_PATCH}
 #define ODBSDK_VERSION \
     ((ODBSDK_VERSION_MAJOR << 16) | (ODBSDK_VERSION_MINOR << 8) | ODBSDK_VERSION_PATCH)
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
 #define ODBSDK_VERSION_STR \
     STRINGIFY(ODBSDK_VERSION_MAJOR) "." STRINGIFY(ODBSDK_VERSION_MINOR) "." STRINGIFY(ODBSDK_VERSION_PATCH)
-
 #undef STRINGIFY
 #undef STRINGIFY_
 
+/* Host platform. Either WINDOWS, DARWIN, or LINUX */
+#define ODBSDK_PLATFORM_${ODBSDK_PLATFORM}
+
+/* If built as a dynamic library, this will be set to ODBSDK_SHARED. Otherwise
+ * ODBSDK_STATIC */
 #define ODBSDK_${ODBSDK_LIB_TYPE}
 
 #if defined(ODBSDK_SHARED)
@@ -27,3 +31,4 @@
 #   define ODBSDK_PUBLIC_API
 #   define ODBSDK_PRIVATE_API
 #endif
+

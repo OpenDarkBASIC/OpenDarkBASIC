@@ -23,7 +23,6 @@
 #include "odb-sdk/RefCounted.hpp"
 
 #include <cassert>
-#include <map>
 
 namespace odb {
 
