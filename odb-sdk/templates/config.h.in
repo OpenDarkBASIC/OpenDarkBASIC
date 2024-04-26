@@ -24,7 +24,6 @@
 #define ODBSDK_VEC_EXPAND_FACTOR      ${ODBSDK_VEC_EXPAND_FACTOR}
 #define ODBSDK_VEC_MIN_CAPACITY       ${ODBSDK_VEC_MIN_CAPACITY}u
 
-
 /* Symbol visibility ------------------------------------------------------- */
 
 #if defined(ODBSDK_SHARED)
@@ -54,8 +53,10 @@
 #undef STRINGIFY_
 
 /* printf formatting ------------------------------------------------------- */
+
 #if defined(__GNUC__) || defined(__clang__)
 #   define ODBSDK_PRINTF_FORMAT(fmt, params) __attribute__((format(printf, fmt, params)))
 #else
 #   define ODBSDK_PRINTF_FORMAT(fmt, params)
 #endif
+

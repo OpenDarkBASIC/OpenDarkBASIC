@@ -153,12 +153,12 @@ add_gperf_bison_dependency (DarkBASICKeywordToken DarkBASICParser)
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${Gperf_DarkBASICKeywordToken_OUTPUTS}"
-    "src/commands/CommandLoader.cpp"
-    "src/commands/ODBCommandLoader.cpp"
-    "src/commands/DBPCommandLoader.cpp"
-    "src/commands/Command.cpp"
-    "src/commands/CommandIndex.cpp"
-    "src/commands/CommandMatcher.cpp"
+    #"src/commands/CommandLoader.cpp"
+    #"src/commands/ODBCommandLoader.cpp"
+    #"src/commands/DBPCommandLoader.cpp"
+    #"src/commands/Command.cpp"
+    #"src/commands/CommandIndex.cpp"
+    #"src/commands/CommandMatcher.cpp"
     
     #"src/parsers/db/Driver.cpp"
     #"src/parsers/PluginInfo.cpp"
@@ -225,6 +225,9 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     
     "include/odb-compiler/codegen/codegen.h"
     "src/codegen/codegen.cpp"
+    
+    "include/odb-compiler/link/link.h"
+    "src/link/link.cpp"
     
     "${PROJECT_BINARY_DIR}/include/odb-compiler/config.h"
     "templates/config.h.in"
@@ -311,6 +314,13 @@ llvm_config (odb-compiler ${llvm_use_shared}
     WebAssemblyCodeGen
     X86AsmParser
     X86CodeGen)
+find_package (LLD REQUIRED CONFIG)
+target_link_libraries (odb-compiler
+    PRIVATE
+        lldCommon
+        lldCOFF
+        lldELF
+        lldMachO)
 
 target_include_directories (odb-compiler PRIVATE ${LLVM_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
@@ -326,43 +336,43 @@ target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
 # seconds. Thankfully, it has a very small API, so we can offload the code in
 # odb-compiler/src/link into a separate DLL and link that to odb-compiler
 
-add_library (odb-link ${ODBCOMPILER_LIB_TYPE}
-    "include/odb-compiler/link/link.h"
-    "src/link/link.cpp")
-target_include_directories (odb-link
-    PUBLIC
-        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-    PRIVATE
-        $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>)
-target_compile_definitions (odb-link
-    PRIVATE
-        ODBCOMPILER_BUILDING)
-target_compile_options (odb-link
-    PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-target_link_libraries (odb-link
-    PUBLIC
-        odb-sdk)
-odb_target_properties (odb-link
-    PROPERTIES
-        ARCHIVE_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-        LIBRARY_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR}
-        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
+#add_library (odb-link ${ODBCOMPILER_LIB_TYPE}
+#    "include/odb-compiler/link/link.h"
+#    "src/link/link.cpp")
+#target_include_directories (odb-link
+#    PUBLIC
+#        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+#        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+#        $<INSTALL_INTERFACE:include>
+#    PRIVATE
+#        $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>)
+#target_compile_definitions (odb-link
+#    PRIVATE
+#        ODBCOMPILER_BUILDING)
+#target_compile_options (odb-link
+#    PRIVATE
+#        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+#        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+#        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
+#target_link_libraries (odb-link
+#    PUBLIC
+#        odb-sdk)
+#odb_target_properties (odb-link
+#    PROPERTIES
+#        ARCHIVE_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
+#        LIBRARY_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
+#        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR}
+#        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
+#
+#find_package (LLD REQUIRED CONFIG)
+#target_link_libraries (odb-link
+#    PRIVATE
+#        lldCommon
+#        lldCOFF
+#        lldELF
+#        lldMachO)
 
-find_package (LLD REQUIRED CONFIG)
-target_link_libraries (odb-link
-    PRIVATE
-        lldCommon
-        lldCOFF
-        lldELF
-        lldMachO)
-
-target_link_libraries (odb-compiler PUBLIC odb-link)
+#target_link_libraries (odb-compiler PUBLIC odb-link)
 
 ###############################################################################
 # Unit tests
@@ -374,7 +384,7 @@ if (${ODBCOMPILER_TESTS})
         #"tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
         #"tests/src/astpost/test_astpost_resolve_labels.cpp"
         #"tests/src/astpost/test_astpost_validate_udt_field_names.cpp"
-        "tests/src/commands/test_cmd_matcher.cpp"
+        #"tests/src/commands/test_cmd_matcher.cpp"
         #"tests/src/harness/ParserTestHarness.cpp"
         #"tests/src/matchers/ArgListCountEq.cpp"
         #"tests/src/matchers/ArrayDeclEq.cpp"
@@ -445,7 +455,7 @@ endif ()
 install (
     TARGETS
         odb-compiler
-        odb-link
+        #odb-link
     EXPORT OpenDarkBASICConfig
     ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}

@@ -12,9 +12,12 @@ macro (odb_target_properties TARGET)
             foreach (_config ${CMAKE_CONFIGURATION_TYPES})
                 string (TOUPPER ${_config} _CONFIG)
                 set_target_properties (${TARGET} PROPERTIES
-                    ${_type}_OUTPUT_DIRECTORY "${${TARGET}_${_type}_OUTPUT_DIRECTORY}"
                     ${_type}_OUTPUT_DIRECTORY_${_CONFIG} "${${TARGET}_${_type}_OUTPUT_DIRECTORY}")
             endforeach ()
+            if (NOT CMAKE_CONFIGURATION_TYPES)
+                set_target_properties (${TARGET} PROPERTIES
+                    ${_type}_OUTPUT_DIRECTORY "${${TARGET}_${_type}_OUTPUT_DIRECTORY}")
+            endif ()
         endif ()
     endforeach ()
     

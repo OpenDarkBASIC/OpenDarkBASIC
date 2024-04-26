@@ -2,6 +2,9 @@
 /build*
 /cmake-build*
 
+# Thirdparty
+/thirdparty/llvm-project
+
 # IDE files
 /.idea
 *.kdev4

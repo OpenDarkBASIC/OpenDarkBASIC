@@ -79,10 +79,10 @@ bool setPlatform(const std::vector<std::string>& args)
 bool output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
-    static const char* objs[] = {"module.obj"};
+    static const char* objs[] = {"module.o"};
     
     odb_codegen(nullptr, objs[0], "module", ODB_CODEGEN_ObjectFile, ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
-    odb_link(objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
+    odb_link(objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
 
     return true;
 }

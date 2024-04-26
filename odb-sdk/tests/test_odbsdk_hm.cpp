@@ -1,5 +1,8 @@
 #include <gmock/gmock.h>
-#include "vh/hm.h"
+
+extern "C" {
+#include "odb-sdk/hm.h"
+}
 
 #define NAME hashmap
 
@@ -16,11 +19,11 @@ static hash32 shitty_hash(const void* data, int len)
 }
 static hash32 collide_with_shitty_hash(const void* data, int len)
 {
-    return VH_HM_MIN_CAPACITY + 42;
+    return ODBSDK_HM_MIN_CAPACITY + 42;
 }
 static hash32 collide_with_shitty_hash_second_probe(const void* data, int len)
 {
-    return VH_HM_MIN_CAPACITY + 45; // sequence would be 42, 43, 45, 48, ...
+    return ODBSDK_HM_MIN_CAPACITY + 45; // sequence would be 42, 43, 45, 48, ...
 }
 
 class NAME : public Test
@@ -53,7 +56,7 @@ hm_insert_value(struct hm* hm, const char* key, const float* value)
 
 TEST_F(NAME, construct_sane_values)
 {
-    EXPECT_THAT(hm->table_count, Eq(VH_HM_MIN_CAPACITY));
+    EXPECT_THAT(hm->table_count, Eq(ODBSDK_HM_MIN_CAPACITY));
     EXPECT_THAT(hm->key_size, Eq(16));
     EXPECT_THAT(hm->value_size, Eq(sizeof(float)));
     EXPECT_THAT(hm_count(hm), Eq(0));
@@ -245,7 +248,7 @@ TEST_F(NAME, rehash_test)
 {
     char key[16];
     float value = 0;
-    for (int i = 0; i != VH_HM_MIN_CAPACITY*128; ++i, value += 1.5f)
+    for (int i = 0; i != ODBSDK_HM_MIN_CAPACITY*128; ++i, value += 1.5f)
     {
         memset(key, 0, sizeof key);
         sprintf(key, "%d", i);
@@ -253,7 +256,7 @@ TEST_F(NAME, rehash_test)
     }
 
     value = 0;
-    for (int i = 0; i != VH_HM_MIN_CAPACITY*128; ++i, value += 1.5f)
+    for (int i = 0; i != ODBSDK_HM_MIN_CAPACITY*128; ++i, value += 1.5f)
     {
         memset(key, 0, sizeof key);
         sprintf(key, "%d", i);

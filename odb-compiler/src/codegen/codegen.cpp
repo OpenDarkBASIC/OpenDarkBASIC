@@ -60,7 +60,7 @@ odb_codegen(
     llvm::InitializeAllTargetMCs();
     llvm::InitializeAllAsmParsers();
     llvm::InitializeAllAsmPrinters();
-    
+   
     std::string Error;
     auto TargetTriple = llvm::sys::getDefaultTargetTriple();
     auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);

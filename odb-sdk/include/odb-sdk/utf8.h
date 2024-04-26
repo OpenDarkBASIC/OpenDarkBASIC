@@ -1,7 +1,8 @@
 #pragma once
 
 #include "odb-sdk/config.h"
-#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
 typedef int16_t utf8_idx;
 typedef int16_t utf16_idx;
@@ -55,8 +56,3 @@ utf_free(void* utf);
 
 #endif
 
-ODBSDK_PUBLIC_API FILE*
-fopen_utf8_wb(const char* utf8_filename, int len);
-
-ODBSDK_PUBLIC_API int
-remove_utf8(const char* utf8_filename, int len);

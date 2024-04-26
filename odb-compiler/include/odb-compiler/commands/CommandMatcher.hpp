@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/config.hpp"
+#include "odb-compiler/config.h"
 #include <string>
 #include <string_view>
 #include <vector>

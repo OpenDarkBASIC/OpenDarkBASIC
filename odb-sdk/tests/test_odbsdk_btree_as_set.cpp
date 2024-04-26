@@ -1,5 +1,8 @@
+extern "C" {
+#include "odb-sdk/btree.h"
+}
+
 #include "gmock/gmock.h"
-#include "vh/btree.h"
 
 #define NAME vh_btree_set
 
@@ -90,16 +93,16 @@ TEST(NAME, compact_reduces_capacity_and_keeps_elements_in_tact)
     struct btree btree;
     btree_init(&btree, 0);
 
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY * 3; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY * 3; ++i)
         ASSERT_THAT(btree_insert_new(&btree, i, NULL), Eq(1));
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY; ++i)
         btree_erase(&btree, i);
 
     btree_size old_capacity = btree_capacity(&btree);
     btree_compact(&btree);
     EXPECT_THAT(btree_capacity(&btree), Lt(old_capacity));
-    EXPECT_THAT(btree_count(&btree), Eq(VH_BTREE_MIN_CAPACITY * 2));
-    EXPECT_THAT(btree_capacity(&btree), Eq(VH_BTREE_MIN_CAPACITY * 2));
+    EXPECT_THAT(btree_count(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY * 2));
+    EXPECT_THAT(btree_capacity(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY * 2));
     EXPECT_THAT(btree.data, NotNull());
 
     btree_deinit(&btree);

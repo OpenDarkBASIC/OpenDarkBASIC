@@ -1,5 +1,8 @@
+extern "C" {
+#include "odb-sdk/btree.h"
+}
+
 #include "gmock/gmock.h"
-#include "vh/btree.h"
 
 #define NAME vh_btree
 
@@ -107,11 +110,11 @@ TEST(NAME, insert_new_with_realloc_shifts_data_correctly)
     struct btree btree;
     btree_init(&btree, sizeof(int));
 
-    btree_size midway = VH_BTREE_MIN_CAPACITY / 2;
+    btree_size midway = ODBSDK_BTREE_MIN_CAPACITY / 2;
 
     int value = 0x55;
-    btree_reserve(&btree, VH_BTREE_MIN_CAPACITY);
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY; ++i)
+    btree_reserve(&btree, ODBSDK_BTREE_MIN_CAPACITY);
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY; ++i)
     {
         if (i < midway)
             ASSERT_THAT(btree_insert_new(&btree, i, &value), Eq(1));
@@ -120,13 +123,13 @@ TEST(NAME, insert_new_with_realloc_shifts_data_correctly)
     }
 
     // Make sure we didn't cause a realloc yet
-    ASSERT_THAT(btree_capacity(&btree), Eq(VH_BTREE_MIN_CAPACITY));
+    ASSERT_THAT(btree_capacity(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY));
     ASSERT_THAT(btree_insert_new(&btree, midway, &value), Eq(1));
     // Now it should have reallocated
-    ASSERT_THAT(btree_capacity(&btree), Gt(VH_BTREE_MIN_CAPACITY));
+    ASSERT_THAT(btree_capacity(&btree), Gt(ODBSDK_BTREE_MIN_CAPACITY));
 
     // Check all values are there
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY+1; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY+1; ++i)
         EXPECT_THAT(btree_find(&btree, i), NotNull()) << "i: " << i << ", midway: " << midway;
 
     btree_deinit(&btree);
@@ -166,16 +169,16 @@ TEST(NAME, compact_reduces_capacity_and_keeps_elements_in_tact)
     btree_init(&btree, sizeof(int));
 
     int a = 53;
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY * 3; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY * 3; ++i)
         ASSERT_THAT(btree_insert_new(&btree, i, &a), Eq(1));
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY; ++i)
         btree_erase(&btree, i);
 
     btree_size old_capacity = btree_capacity(&btree);
     btree_compact(&btree);
     EXPECT_THAT(btree_capacity(&btree), Lt(old_capacity));
-    EXPECT_THAT(btree_count(&btree), Eq(VH_BTREE_MIN_CAPACITY * 2));
-    EXPECT_THAT(btree_capacity(&btree), Eq(VH_BTREE_MIN_CAPACITY * 2));
+    EXPECT_THAT(btree_count(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY * 2));
+    EXPECT_THAT(btree_capacity(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY * 2));
     EXPECT_THAT(btree.data, NotNull());
 
     btree_deinit(&btree);
@@ -272,11 +275,11 @@ TEST(NAME, insert_or_get_with_realloc_shifts_data_correctly)
     struct btree btree;
     btree_init(&btree, sizeof(int));
 
-    btree_size midway = VH_BTREE_MIN_CAPACITY / 2;
+    btree_size midway = ODBSDK_BTREE_MIN_CAPACITY / 2;
 
     int value = 0x55, *get;
-    btree_reserve(&btree, VH_BTREE_MIN_CAPACITY);
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY; ++i)
+    btree_reserve(&btree, ODBSDK_BTREE_MIN_CAPACITY);
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY; ++i)
     {
         if (i < midway)
             ASSERT_THAT(btree_insert_or_get(&btree, i, &value, (void**)&get), Eq(1));
@@ -286,13 +289,13 @@ TEST(NAME, insert_or_get_with_realloc_shifts_data_correctly)
 
     // Make sure we didn't cause a realloc yet
     get = nullptr;
-    ASSERT_THAT(btree_capacity(&btree), Eq(VH_BTREE_MIN_CAPACITY));
+    ASSERT_THAT(btree_capacity(&btree), Eq(ODBSDK_BTREE_MIN_CAPACITY));
     ASSERT_THAT(btree_insert_or_get(&btree, midway, &value, (void**)&get), Eq(1));
     // Now it should have reallocated
-    ASSERT_THAT(btree_capacity(&btree), Gt(VH_BTREE_MIN_CAPACITY));
+    ASSERT_THAT(btree_capacity(&btree), Gt(ODBSDK_BTREE_MIN_CAPACITY));
 
     // Check all values are there
-    for (int i = 0; i != VH_BTREE_MIN_CAPACITY+1; ++i)
+    for (int i = 0; i != ODBSDK_BTREE_MIN_CAPACITY+1; ++i)
     {
         get = nullptr;
         EXPECT_THAT(btree_insert_or_get(&btree, i, &value, (void**)&get), Eq(0)) << "i: " << i << ", midway: " << midway;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/config.hpp"
+#include "odb-compiler/config.h"
 #include "odb-compiler/commands/SDKType.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-sdk/Reference.hpp"

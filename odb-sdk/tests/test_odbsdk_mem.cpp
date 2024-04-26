@@ -1,5 +1,8 @@
+extern "C" {
+#include "odb-sdk/mem.h"
+}
+
 #include "gmock/gmock.h"
-#include "vh/mem.h"
 
 #define NAME memory
 

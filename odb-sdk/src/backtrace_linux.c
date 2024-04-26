@@ -1,4 +1,4 @@
-#include "vh/backtrace.h"
+#include "odb-sdk/backtrace.h"
 #include <execinfo.h>
 #include <stdlib.h>
 
@@ -19,10 +19,10 @@ backtrace_deinit(void)
 char**
 backtrace_get(int* size)
 {
-    void* array[VH_BACKTRACE_SIZE];
+    void* array[ODBSDK_MEM_BACKTRACE_SIZE];
     char** strings;
 
-    *size = backtrace(array, VH_BACKTRACE_SIZE);
+    *size = backtrace(array, ODBSDK_MEM_BACKTRACE_SIZE);
     strings = backtrace_symbols(array, *size);
 
     return strings;

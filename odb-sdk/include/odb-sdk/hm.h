@@ -21,7 +21,7 @@ struct hm
     hash32_func      hash;
     hm_compare_func  compare;
     char*            storage;
-#ifdef ODBSDK_HASHMAP_STATS
+#if defined(ODBSDK_HM_STATS)
     struct {
         uintptr_t total_insertions;
         uintptr_t total_deletions;

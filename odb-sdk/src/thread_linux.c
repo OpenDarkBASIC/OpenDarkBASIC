@@ -4,9 +4,9 @@
 #include <time.h>
 #include <signal.h>
 
-#include "vh/log.h"
-#include "vh/mem.h"
-#include "vh/thread.h"
+#include "odb-sdk/log.h"
+#include "odb-sdk/mem.h"
+#include "odb-sdk/thread.h"
 
 int
 thread_start(struct thread* t, void* (*func)(void*), void* args)

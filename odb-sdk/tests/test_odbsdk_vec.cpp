@@ -1,5 +1,8 @@
+extern "C" {
+#include "odb-sdk/vec.h"
+}
+
 #include "gmock/gmock.h"
-#include "vh/vec.h"
 
 #define NAME vh_vec
 
@@ -51,28 +54,28 @@ TEST_F(NAME, push_increments_count_and_causes_realloc_by_factor)
 {
     int x = 9;
 
-    for(int i = 0; i != VH_VEC_MIN_CAPACITY; ++i)
+    for(int i = 0; i != ODBSDK_VEC_MIN_CAPACITY; ++i)
         vec_push(&vec, &x);
 
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY));
 
     vec_push(&vec, &x);
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY + 1));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY * VH_VEC_EXPAND_FACTOR));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY + 1));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY * ODBSDK_VEC_EXPAND_FACTOR));
 }
 
 TEST_F(NAME, clear_keeps_buffer_and_resets_count)
 {
     int x = 9;
-    for(int i = 0; i != VH_VEC_MIN_CAPACITY*2; ++i)
+    for(int i = 0; i != ODBSDK_VEC_MIN_CAPACITY*2; ++i)
         vec_push(&vec, &x);
 
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY*2));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY*2));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY*2));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY*2));
     vec_clear(&vec);
     EXPECT_THAT(vec_count(&vec), Eq(0u));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY*2));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY*2));
     EXPECT_THAT(vec.data, NotNull());
 }
 
@@ -89,15 +92,15 @@ TEST_F(NAME, clear_and_compact_deletes_buffer_and_resets_count)
 
 TEST_F(NAME, emplace_increments_count_and_causes_realloc_by_factor)
 {
-    for(int i = 0; i != VH_VEC_MIN_CAPACITY; ++i)
+    for(int i = 0; i != ODBSDK_VEC_MIN_CAPACITY; ++i)
         vec_emplace(&vec);
 
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY));
 
     vec_emplace(&vec);
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY + 1));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY * VH_VEC_EXPAND_FACTOR));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY + 1));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY * ODBSDK_VEC_EXPAND_FACTOR));
 }
 
 TEST_F(NAME, pop_returns_pushed_values)
@@ -341,12 +344,12 @@ TEST_F(NAME, resizing_larger_than_capacity_reallocates_and_updates_size)
 
     old_ptr = (int*)vec_emplace(&vec);
     *old_ptr = 42;
-    vec_resize(&vec, VH_VEC_MIN_CAPACITY * 1024 * 1024);
+    vec_resize(&vec, ODBSDK_VEC_MIN_CAPACITY * 1024 * 1024);
     int* new_ptr = (int*)vec_get(&vec, 0);
     EXPECT_THAT(old_ptr, Ne(new_ptr));
     EXPECT_THAT(*new_ptr, Eq(42));
-    EXPECT_THAT(vec.capacity, Eq(VH_VEC_MIN_CAPACITY * 1024 * 1024));
-    EXPECT_THAT(vec_count(&vec), Eq(VH_VEC_MIN_CAPACITY * 1024 * 1024));
+    EXPECT_THAT(vec.capacity, Eq(ODBSDK_VEC_MIN_CAPACITY * 1024 * 1024));
+    EXPECT_THAT(vec_count(&vec), Eq(ODBSDK_VEC_MIN_CAPACITY * 1024 * 1024));
 }
 
 TEST_F(NAME, resizing_smaller_than_capacity_updates_size_but_not_capacity)

@@ -3,7 +3,7 @@
 #include <elf.h>
 #include <link.h>
 
-#include "vh/dynlib.h"
+#include "odb-sdk/dynlib.h"
 
 #include <stddef.h>
 
@@ -36,7 +36,7 @@ get_symbol_count_in_hash_table(const uint32_t* hashtab)
     const uint32_t nchain = hashtab[1];
 
     return nchain;
-};
+}
 
 static ElfW(Addr)
 get_symbol_count_in_GNU_hash_table(const uint32_t* hashtab)
@@ -62,7 +62,7 @@ get_symbol_count_in_GNU_hash_table(const uint32_t* hashtab)
         last_symbol++;
 
     return last_symbol;
-};
+}
 
 static int match_always(struct str_view str, const void* data)
 {

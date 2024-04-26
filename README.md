@@ -78,39 +78,39 @@ If you want a quick list of instructions to build LLVM from source with the mini
 
 Debug build:
 ```sh
-git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.1
-cd llvm-project
-cmake -S llvm -B build-debug -A x64 \
+git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.4 thirdparty/llvm-project
+cmake -S thirdparty/llvm-project/llvm -B build-llvm-debug -A x64 \
   -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_INSTALL_PREFIX=C:\llvm-debug \
+  -DCMAKE_INSTALL_PREFIX:PATH="%CD%/build-llvm-debug/dist" \
   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug \
   -DLLVM_INCLUDE_TESTS=OFF \
   -DLLVM_INCLUDE_BENCHMARKS=OFF \
   -DLLVM_OPTIMIZED_TABLEGEN=ON \
   -DLLVM_TARGETS_TO_BUILD="ARM;X86;AArch64;WebAssembly" \
   -DLLVM_ENABLE_PROJECTS="clang;lldb;lld"
-cmake --build build-debug --target install
+cmake --build build-llvm-debug --target install
 ```
 
 Release build:
 ```sh
-git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.1
-cd llvm-project
-cmake -S llvm -B build-release -A x64 \
-  -DCMAKE_INSTALL_PREFIX=C:\llvm-release \
+git clone https://github.com/llvm/llvm-project -b llvmorg-18.1.4 thirdparty/llvm-project
+cmake -S thirdparty/llvm-project/llvm -B build-llvm-release -A x64 \
+  -DCMAKE_INSTALL_PREFIX:PATH="%CD%/build-llvm-release/dist" \
   -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded \
   -DLLVM_INCLUDE_TESTS=OFF \
   -DLLVM_INCLUDE_BENCHMARKS=OFF \
   -DLLVM_TARGETS_TO_BUILD="ARM;X86;AArch64;WebAssembly" \
   -DLLVM_ENABLE_PROJECTS="clang;lldb;lld"
-cmake --build build-release --config Release --target install
+cmake --build build-llvm-release --config Release --target install
 ```
 
 Note: lldb requires clang to be enabled as well. If not building lldb, you can remove clang.
 
-LLVM binaries will be installed to `path/to/llvm-project/build/install`.
+LLVM binaries will be installed to `build-llvm-<config>/dist`.
 
-Pass `-DLLVM_DIR=path/to/llvm-install/lib/cmake/llvm` to CMake when configuring OpenDarkBASIC to point it to your binaries.
+To configure OpenDarkBASIC, you need to pass the path to LLVM and LLD using
+`-DLLVM_DIR=build-llvm-<config>/lib/cmake/llvm` and
+`-DLLD_DIR=build-llvm-<config>/lib/cmake/lld`.
 
 Running
 =======

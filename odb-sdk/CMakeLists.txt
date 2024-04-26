@@ -17,7 +17,8 @@ set (ODBSDK_BTREE_EXPAND_FACTOR "2" CACHE STRING "When reallocating btree memory
 set (ODBSDK_BTREE_MIN_CAPACITY "32" CACHE STRING "The smallest number of elements to reserve when initializing a btree")
 option (ODBSDK_BTREE_64BIT_KEYS "Enable 64-bit keys for btrees instead of 32-bit keys" OFF)
 option (ODBSDK_BTREE_64BIT_CAPACITY "Enable btrees to allow up to 2^64 entries instead of 2^32" OFF)
-option (ODBSDK_HM_STATS "Track hashmap usage statistics. This will increase sizeof(struct hm)!" ${DEBUG_FEATURE})
+option (ODBSDK_HM_STATS "Track hashmap usage statistics. This will increase
+sizeof(struct hm)!" OFF)
 set (ODBSDK_HM_REHASH_AT_PERCENT "70" CACHE STRING "How full the hash table needs to be before triggering a rehash, in percent")
 set (ODBSDK_HM_MIN_CAPACITY "128" CACHE STRING "Default table size when creating new hashmaps")
 set (ODBSDK_HM_EXPAND_FACTOR "4" CACHE STRING "When reallocating hashmap memory, thiis is the factor with which the buffer grows. WARNING: MUST be a power of 2!")
@@ -168,12 +169,9 @@ if (ODBSDK_TESTS)
         "tests/env_odbsdk_init.cpp"
         "tests/test_odbsdk_btree.cpp"
         "tests/test_odbsdk_btree_as_set.cpp"
-        "tests/test_odbsdk_db.cpp"
-        "tests/test_odbsdk_frame_data.cpp"
         "tests/test_odbsdk_fs.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
-        "tests/test_odbsdk_rb.cpp"
         "tests/test_odbsdk_vec.cpp"
         "tests/test_DynamicLibrary.cpp")
     target_link_libraries (test_odb-sdk PUBLIC

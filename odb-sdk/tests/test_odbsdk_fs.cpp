@@ -1,4 +1,7 @@
-#include "vh/fs.h"
+extern "C" {
+#include "odb-sdk/fs.h"
+}
+
 #include <gmock/gmock.h>
 #include <string_view>
 
