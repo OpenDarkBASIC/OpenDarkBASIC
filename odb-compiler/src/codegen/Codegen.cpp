@@ -1,191 +1,102 @@
-#include "odb-compiler/codegen/Codegen.hpp"
+extern "C" {
+#include "odb-compiler/codegen/codegen.h"
+}
 
-#include "internal/CodeGenerator.hpp"
-#include "internal/DBPEngineInterface.hpp"
-#include "internal/LLVM.hpp"
-#include "internal/ODBEngineInterface.hpp"
+#include "llvm/IR/Function.h"
+#include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/LegacyPassManager.h"
+#include "llvm/IR/Module.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/raw_ostream.h"
+#include "llvm/Target/TargetMachine.h"
+#include "llvm/Target/TargetOptions.h"
+#include "llvm/TargetParser/Host.h"
 
-#include <iostream>
-
-#include <reproc++/run.hpp>
-
-namespace odb::codegen {
-bool generateCode(SDKType sdkType, OutputType outputType, TargetTriple targetTriple, std::ostream& output,
-                  const std::string& moduleName, const ast::Program* program, const cmd::CommandIndex& cmdIndex)
+int
+odb_codegen(
+        union odb_ast_node* program,
+        const char* output_name,
+        const char* module_name,
+        /*enum odb_sdk_type sdkType,*/
+        enum odb_codegen_output_type output_type,
+        enum odb_codegen_arch arch,
+        enum odb_codegen_platform platform)
 {
-    llvm::LLVMContext context;
-    llvm::Module module(moduleName, context);
+    llvm::LLVMContext ctx;
+    llvm::Module mod(module_name, ctx);
+    llvm::IRBuilder<> b(ctx);
 
-    // Generate the module.
-    {
-        std::unique_ptr<EngineInterface> engineInterface;
-        switch (sdkType)
-        {
-        case SDKType::DarkBASIC:
-            engineInterface = std::make_unique<DBPEngineInterface>(module, cmdIndex);
-            break;
-        case SDKType::ODB:
-            engineInterface = std::make_unique<ODBEngineInterface>(module, cmdIndex);
-            break;
-        default:
-            Log::info.print("Code generation not implemented for the specified SDK type.");
-            return false;
-        }
-        if (!engineInterface->setPluginList(cmdIndex.librariesAsList()))
-        {
-            return false;
-        }
-        CodeGenerator gen(module, *engineInterface);
-        if (!gen.generateModule(program))
-        {
-            return false;
-        }
+    // Make the function type:  double(double,double)
+    std::vector<llvm::Type*> Integers(2, llvm::Type::getInt32Ty(ctx));
+    llvm::FunctionType* FT = llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), Integers, false);
+    llvm::Function* F = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, "main", &mod);
+
+    int i = 0;
+    static const char* names[] = { "a", "b" };
+    for (auto& arg : F->args())
+        arg.setName(names[i++]);
+
+    // Create a new basic block to start insertion into.
+    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ctx, "entry", F);
+    b.SetInsertPoint(BB);
+
+    llvm::Value* lhs = llvm::ConstantInt::get(ctx, llvm::APInt(32, 2));
+    llvm::Value* rhs = llvm::ConstantInt::get(ctx, llvm::APInt(32, 3));
+    llvm::Value* RetVal = b.CreateAdd(lhs, rhs, "addtmp");
+    // Finish off the function.
+    b.CreateRet(RetVal);
+
+    // Validate the generated code, checking for consistency.
+    llvm::verifyFunction(*F);
+
+    mod.print(llvm::outs(), nullptr);
+
+    llvm::InitializeAllTargetInfos();
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmParsers();
+    llvm::InitializeAllAsmPrinters();
+    
+    std::string Error;
+    auto TargetTriple = llvm::sys::getDefaultTargetTriple();
+    auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
+
+    // Print an error and exit if we couldn't find the requested target.
+    // This generally occurs if we've forgotten to initialise the
+    // TargetRegistry or we have a bogus target triple.
+    if (!Target) {
+        llvm::errs() << Error;
+        return -1;
     }
-
-    // If we are emitting LLVM IR or Bitcode, return early.
-    if (outputType == OutputType::LLVMIR)
-    {
-        llvm::raw_os_ostream outputStream(output);
-        module.print(outputStream, nullptr);
-        return true;
-    }
-    else if (outputType == OutputType::LLVMBitcode)
-    {
-        llvm::raw_os_ostream outputStream(output);
-        llvm::WriteBitcodeToFile(module, outputStream);
-        return true;
-    }
-
-    assert(outputType == OutputType::ObjectFile);
-
-    static std::once_flag initLLVMBackendsFlag;
-    auto initLLVMBackends = []
-    {
-      LLVMInitializeX86TargetInfo();
-      LLVMInitializeX86Target();
-      LLVMInitializeX86TargetMC();
-      LLVMInitializeX86AsmPrinter();
-      LLVMInitializeAArch64TargetInfo();
-      LLVMInitializeAArch64Target();
-      LLVMInitializeAArch64TargetMC();
-      LLVMInitializeAArch64AsmPrinter();
-    };
-    std::call_once(initLLVMBackendsFlag, initLLVMBackends);
-
-    // Lookup target machine.
-    std::string llvmTargetTriple = targetTriple.getLLVMTargetTriple();
-    if (sdkType == SDKType::DarkBASIC)
-    {
-        // Only the i386-pc-windows-msvc target triple is supported.
-        if (targetTriple.arch != TargetTriple::Arch::i386 || targetTriple.platform != TargetTriple::Platform::Windows)
-        {
-            Log::info.print(
-                "Unsupported platform and arch. Only i386 on Windows is supported when working with the DBP SDK type.");
-            return false;
-        }
-    }
-    std::string error;
-    const llvm::Target* target = llvm::TargetRegistry::lookupTarget(llvmTargetTriple, error);
-    if (!target)
-    {
-        Log::info.print("Unknown target triple: %s", error.c_str());
-        return false;
-    }
-
-    auto cpu = "generic";
-    auto features = "";
+    
+    auto CPU = "generic";
+    auto Features = "";
     llvm::TargetOptions opt;
-    llvm::TargetMachine* targetMachine = target->createTargetMachine(llvmTargetTriple, cpu, features, opt, {});
-    module.setDataLayout(targetMachine->createDataLayout());
-    module.setTargetTriple(llvmTargetTriple);
+    auto TargetMachine = Target->createTargetMachine(TargetTriple, CPU, Features, opt, llvm::Reloc::Static);
 
-    llvm::SmallVector<char, 0> outputFileBuffer;
+    mod.setDataLayout(TargetMachine->createDataLayout());
+    mod.setTargetTriple(TargetTriple);
 
-    // Emit object file to buffer.
-    llvm::raw_svector_ostream objectFileStream(outputFileBuffer);
+    std::error_code EC;
+    llvm::raw_fd_ostream dest(output_name, EC, llvm::sys::fs::OF_None);
+    if (EC) {
+        llvm::errs() << "Could not open file: " << EC.message();
+        return -1;
+    }
+
     llvm::legacy::PassManager pass;
-    if (targetMachine->addPassesToEmitFile(pass, objectFileStream, nullptr, llvm::CGFT_ObjectFile))
-    {
-        Log::info.print("llvm::TargetMachine can't emit a file of this type");
-        return false;
+    auto FileType = llvm::CodeGenFileType::ObjectFile;
+    if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
+        llvm::errs() << "TargetMachine can't emit a file of this type";
+        return -1;
     }
-    pass.run(module);
 
-    // Flush buffer to stream.
-    output.write(outputFileBuffer.data(), outputFileBuffer.size());
-    output.flush();
+    pass.run(mod);
+    dest.flush();
 
-    return true;
+    return 0;
 }
-
-bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir, const std::filesystem::path& linker,
-                    TargetTriple targetTriple, std::vector<std::string> inputFilenames, std::string& outputFilename)
-{
-    std::vector<std::string> args;
-    args.emplace_back(linker.string());
-
-    if (targetTriple.platform == TargetTriple::Platform::Windows)
-    {
-        std::string outFlag = "/out:" + outputFilename;
-
-        if (sdkType == SDKType::DarkBASIC)
-        {
-            inputFilenames.emplace_back((sdkRootDir / std::filesystem::path{"odb-runtime-dbp.lib"}).string());
-            inputFilenames.emplace_back((sdkRootDir / std::filesystem::path{"odb-runtime-dbp-prelude.lib"}).string());
-        }
-
-        args.emplace_back("/nodefaultlib");
-        args.emplace_back("/entry:main");
-        args.emplace_back("/subsystem:windows");
-        if (targetTriple.arch == TargetTriple::Arch::i386)
-        {
-            args.emplace_back("/machine:x86");
-        }
-        else if (targetTriple.arch == TargetTriple::Arch::x86_64)
-        {
-            args.emplace_back("/machine:x64");
-        }
-        else if (targetTriple.arch == TargetTriple::Arch::AArch64)
-        {
-            args.emplace_back("/machine:arm64");
-        }
-        else
-        {
-            Log::codegen(Log::ERROR, "This architecture cannot be linked for Windows.");
-            return false;
-        }
-        args.emplace_back(outFlag);
-        for (const auto& inputs : inputFilenames)
-        {
-            args.emplace_back(inputs);
-        }
-    }
-    else
-    {
-        // TODO: Implement ELF and Mach-O linking.
-        return false;
-    }
-
-    std::string linker_args_list = args[0];
-    for (size_t i = 1; i < args.size(); ++i) {
-        linker_args_list += " ";
-        linker_args_list += args[i];
-    }
-    Log::codegen(Log::INFO, "Invoking linker: %s\n", linker_args_list.c_str());
-
-    int status = -1;
-    std::error_code ec;
-
-    reproc::options options;
-    options.redirect.parent = true;
-    options.deadline = reproc::milliseconds(5000);
-    std::tie(status, ec) = reproc::run(args, options);
-
-    if (ec) {
-        Log::codegen(Log::ERROR, "Linker output:\n%s\n", ec.message().c_str());
-        return false;
-    }
-
-    return true;
-}
-} // namespace odb::codegen

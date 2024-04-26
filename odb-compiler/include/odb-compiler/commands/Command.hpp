@@ -1,10 +1,25 @@
 #pragma once
 
-#include "odb-compiler/config.hpp"
-#include "odb-sdk/Reference.hpp"
-#include <string>
-#include <vector>
-#include <optional>
+#include "odb-compiler/config.h"
+
+// See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
+// for a table of command types.
+enum odb_command_type
+{
+    ODB_COMMAND_INTEGER = 'L',
+    ODB_COMMAND_FLOAT   = 'F',
+    ODB_COMMAND_STRING  = 'S',
+    ODB_COMMAND_DOUBLE  = 'O',
+    ODB_COMMAND_LONG    = 'R',
+    ODB_COMMAND_DWORD   = 'D', // Boolean, BYTE, WORD and DWORD.
+    ODB_COMMAND_ARRAY   = 'H',
+    ODB_COMMAND_VOID    = '0'
+};
+
+struct odb_command
+{
+
+};
 
 namespace odb {
 class PluginInfo;
@@ -14,19 +29,7 @@ namespace cmd {
 class ODBCOMPILER_PUBLIC_API Command : public RefCounted
 {
 public:
-    // See https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
-    // for a table of command types.
-    enum class Type: char
-    {
-        Integer = 'L',
-        Float   = 'F',
-        String  = 'S',
-        Double  = 'O',
-        Long    = 'R',
-        Dword   = 'D', // Boolean, BYTE, WORD and DWORD.
-        Array   = 'H',
-        Void    = '0'
-    };
+
 
     struct Arg
     {

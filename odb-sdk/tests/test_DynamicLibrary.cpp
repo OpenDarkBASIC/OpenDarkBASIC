@@ -72,7 +72,7 @@ TEST(NAME, lookup_string_symbol)
     EXPECT_THAT(lib.lookupStringSymbol("doesnt_exist"), StrEq(""));
 }
 
-#if defined(ODB_PLATFORM_WINDOWS)
+#if defined(ODBSDK_PLATFORM_WINDOWS)
 TEST(NAME, iterate_string_resource_table)
 {
     static const char* expectedStrings[] = {
@@ -87,12 +87,19 @@ TEST(NAME, iterate_string_resource_table)
     odb::DynamicLibrary lib = odb::DynamicLibrary::open(TEST_PLUGIN);
     ASSERT_THAT(lib, IsTrue());
 
-    int i = 0;
-    lib.forEachString([](const char* str) -> bool {
-        std::cout << str << std::endl;
+    std::set<std::string> stringsFound;
+    lib.forEachString([&stringsFound](const char* str) {
+        stringsFound.insert(str);
+            std::cout << str << std::endl;
         return odb::DynamicLibrary::CONTINUE;
     });
+
+    auto setContains = [&stringsFound](const char* test) -> bool {
+        return stringsFound.find(test) != stringsFound.end();
+    };
+
+    for (const char** expected = expectedStrings; *expected; ++expected) {
+        EXPECT_THAT(setContains(*expected), IsTrue());
+    }
 }
 #endif
-
-

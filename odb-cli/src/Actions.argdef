@@ -1,13 +1,13 @@
 %source-preamble {
 #include "odb-cli/Actions.argdef.hpp"
-#include "odb-cli/AST.hpp"
+//#include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
 #include "odb-cli/BuildInfo.hpp"
-#include "odb-cli/Commands.hpp"
+//#include "odb-cli/Commands.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Log.hpp"
-#include "odb-cli/SDK.hpp"
-#include "odb-cli/Warnings.hpp"
+//#include "odb-cli/SDK.hpp"
+//#include "odb-cli/Warnings.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
 #include <cstdarg>
@@ -72,122 +72,122 @@ section global:
     requires: version
 
 ###############################################################################
-section warnings:
-  info: Configure compiler warnings
-
-  warn(W)[warn-test]:
-    help: This helper command lets you use the -Wname and -Wno-name syntax for
-          warnings.
-    func: warn
-    args: <name>
-
-  warn-test():
-    help: Test
-    func: warnTest
-    args: <1|0>
-    runafter: global
-
-###############################################################################
-section sdk:
-  info: Configure the SDK, plugins and commands
-
-  sdk-root():
-    help: Tells the compiler where to look for plugins, help files, and other
-          necessary information. In the case of DBPro this should be a path to
-          the DBPro installation directory (e.g. "C:\Program Files\Dark Basic Professional Online").
-          In the case of ODB this should be a path to the folder called "odb-sdk".
-    args: <path>
-    func: setSDKRootDir
-    runafter: global
-
-  sdk-type():
-    help: Specify if the SDK is the original DBPro SDK, or if it is the ODB
-          reimplementation. --sdk-root will autodetect the type so this is
-          usually not needed. If specified, it will override the autodetected
-          value.
-    args: <odb|dbpro>
-    func: setSDKType
-    runafter: sdk-root
-
-  plugins():
-    help: Add additional directories to scan for thirdparty plugins. Note that
-          ODB and DBPro plugins are not compatible with each other.
-    args: <path|file> [path|file...]
-    func: setAdditionalPluginsDir
-    runafter: global
-
-  init-sdk:
-    func: initSDK
-    runafter: sdk-root, sdk-type, plugins
-
-  print-sdk-root():
-    help: Prints the location of the SDK
-    func: printSDKRootDir
-    runafter: init-sdk
-
-  load-commands:
-    func: loadCommands
-    runafter: init-sdk
-
-  dump-commands():
-    help: Dump all command names in alphabetical order. The default file is stdout.
-    args: [file]
-    func: dumpCommandNames
-    runafter: load-commands
-
-  dump-commands-json():
-    help: Dump all commands (and their type/argument info) to JSON format. The
-          default file is stdout.
-    args: [file]
-    func: dumpCommandsJSON
-    runafter: load-commands
-
-  dump-commands-ini():
-    help: Dump all commands (and their type/argument info) to INI format. The
-          default file is stdout.
-    args: [file]
-    func: dumpCommandsINI
-    runafter: load-commands
-
+#section warnings:
+#  info: Configure compiler warnings
+#
+#  warn(W)[warn-test]:
+#    help: This helper command lets you use the -Wname and -Wno-name syntax for
+#          warnings.
+#    func: warn
+#    args: <name>
+#
+#  warn-test():
+#    help: Test
+#    func: warnTest
+#    args: <1|0>
+#    runafter: global
 
 ###############################################################################
-section parser:
-  info: .dba and .dbpro file related options
+#section sdk:
+#  info: Configure the SDK, plugins and commands
+#
+#  sdk-root():
+#    help: Tells the compiler where to look for plugins, help files, and other
+#          necessary information. In the case of DBPro this should be a path to
+#          the DBPro installation directory (e.g. "C:\Program Files\Dark Basic Professional Online").
+#          In the case of ODB this should be a path to the folder called "odb-sdk".
+#    args: <path>
+#    func: setSDKRootDir
+#    runafter: global
+#
+#  sdk-type():
+#    help: Specify if the SDK is the original DBPro SDK, or if it is the ODB
+#          reimplementation. --sdk-root will autodetect the type so this is
+#          usually not needed. If specified, it will override the autodetected
+#          value.
+#    args: <odb|dbpro>
+#    func: setSDKType
+#    runafter: sdk-root
+#
+#  plugins():
+#    help: Add additional directories to scan for thirdparty plugins. Note that
+#          ODB and DBPro plugins are not compatible with each other.
+#    args: <path|file> [path|file...]
+#    func: setAdditionalPluginsDir
+#    runafter: global
+#
+#  init-sdk:
+#    func: initSDK
+#    runafter: sdk-root, sdk-type, plugins
+#
+#  print-sdk-root():
+#    help: Prints the location of the SDK
+#    func: printSDKRootDir
+#    runafter: init-sdk
+#
+#  load-commands:
+#    func: loadCommands
+#    runafter: init-sdk
+#
+#  dump-commands():
+#    help: Dump all command names in alphabetical order. The default file is stdout.
+#    args: [file]
+#    func: dumpCommandNames
+#    runafter: load-commands
+#
+#  dump-commands-json():
+#    help: Dump all commands (and their type/argument info) to JSON format. The
+#          default file is stdout.
+#    args: [file]
+#    func: dumpCommandsJSON
+#    runafter: load-commands
+#
+#  dump-commands-ini():
+#    help: Dump all commands (and their type/argument info) to INI format. The
+#          default file is stdout.
+#    args: [file]
+#    func: dumpCommandsINI
+#    runafter: load-commands
 
-  init-command-matcher:
-    func: initCommandMatcher
-    runafter: load-commands
 
-  dba():
-    help: Parse DBA source file(s). The first file listed will become the 'main'
-          file, i.e. where execution starts.
-    args: <file> [files...]
-    func: parseDBA
-    runafter: init-command-matcher
-
-  dbpro()[dba]:
-    help: Load DBPro project (.dbpro) and parse all DBA files in it.
-    args: <file>
-    func: parseDBPro
-    runafter: init-command-matcher
-
-  input(i)[dba, dbpro]:
-    help: Specify an input. Can be a .dbpro file or a list of .dba files.
-    args: <file> [files...]
-    func: autoDetectInput
-    runafter: init-command-matcher
-
-  dump-ast-dot():
-    help: Dump AST to Graphviz DOT format. The default file is stdout.
-    args: [file]
-    func: dumpASTDOT
-    runafter: dba, dbpro, input
-
-  dump-ast-json():
-    help: Dump AST to JSON format. The default file is stdout.
-    args: [file]
-    func: dumpASTJSON
-    runafter: dba, dbpro, input
+###############################################################################
+#section parser:
+#  info: .dba and .dbpro file related options
+#
+#  init-command-matcher:
+#    func: initCommandMatcher
+#    runafter: load-commands
+#
+#  dba():
+#    help: Parse DBA source file(s). The first file listed will become the 'main'
+#          file, i.e. where execution starts.
+#    args: <file> [files...]
+#    func: parseDBA
+#    runafter: init-command-matcher
+#
+#  dbpro()[dba]:
+#    help: Load DBPro project (.dbpro) and parse all DBA files in it.
+#    args: <file>
+#    func: parseDBPro
+#    runafter: init-command-matcher
+#
+#  input(i)[dba, dbpro]:
+#    help: Specify an input. Can be a .dbpro file or a list of .dba files.
+#    args: <file> [files...]
+#    func: autoDetectInput
+#    runafter: init-command-matcher
+#
+#  dump-ast-dot():
+#    help: Dump AST to Graphviz DOT format. The default file is stdout.
+#    args: [file]
+#    func: dumpASTDOT
+#    runafter: dba, dbpro, input
+#
+#  dump-ast-json():
+#    help: Dump AST to JSON format. The default file is stdout.
+#    args: [file]
+#    func: dumpASTJSON
+#    runafter: dba, dbpro, input
 
 ###############################################################################
 section codegen:
@@ -219,9 +219,10 @@ section codegen:
   output(o):
     help: Generate output. If no filename is given then output is written to
           stdout.
-    args: [file]
+    args: <file>
     func: output
-    runafter: parser
+#    runafter: parser
+    runafter: global
 %}
 
 %source-postamble {

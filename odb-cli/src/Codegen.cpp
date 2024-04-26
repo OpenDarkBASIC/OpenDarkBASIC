@@ -1,37 +1,35 @@
 #include "odb-cli/Codegen.hpp"
-#include "odb-cli/AST.hpp"
-#include "odb-cli/Commands.hpp"
-#include "odb-cli/SDK.hpp"
-#include "odb-compiler/ast/Program.hpp"
-#include "odb-compiler/astpost/Process.hpp"
-#include "odb-compiler/astpost/ResolveAndCheckTypes.hpp"
-#include "odb-compiler/astpost/ResolveLabels.hpp"
-#include "odb-compiler/codegen/Codegen.hpp"
 #include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Log.hpp"
 
 #include <fstream>
 #include <iostream>
+#include <optional>
 
-static odb::codegen::OutputType outputType_ = odb::codegen::OutputType::ObjectFile;
+extern "C" {
+#include "odb-compiler/codegen/codegen.h"
+#include "odb-compiler/link/link.h"
+}
+
+static enum odb_codegen_output_type outputType_ = ODB_CODEGEN_ObjectFile;
 static bool outputIsExecutable_ = true;
-static std::optional<odb::codegen::TargetTriple::Arch> targetTripleArch_;
-static std::optional<odb::codegen::TargetTriple::Platform> targetTriplePlatform_;
+static std::optional<enum odb_codegen_arch> targetTripleArch_;
+static std::optional<enum odb_codegen_platform> targetTriplePlatform_;
 
 // ----------------------------------------------------------------------------
 bool setOutputType(const std::vector<std::string>& args)
 {
     if (args[0] == "llvm-ir")
     {
-        outputType_ = odb::codegen::OutputType::LLVMIR;
+        outputType_ = ODB_CODEGEN_LLVMIR;
     }
     else if (args[0] == "llvm-bc")
     {
-        outputType_ = odb::codegen::OutputType::LLVMBitcode;
+        outputType_ = ODB_CODEGEN_LLVMBitcode;
     }
     else if (args[0] == "obj" || args[0] == "exe")
     {
-        outputType_ = odb::codegen::OutputType::ObjectFile;
+        outputType_ = ODB_CODEGEN_ObjectFile;
     }
 
     outputIsExecutable_ = args[0] == "exe";
@@ -44,15 +42,15 @@ bool setArch(const std::vector<std::string>& args)
 {
     if (args[0] == "i386")
     {
-        targetTripleArch_ = odb::codegen::TargetTriple::Arch::i386;
+        targetTripleArch_ = ODB_CODEGEN_i386;
     }
     else if (args[0] == "x86_64")
     {
-        targetTripleArch_ = odb::codegen::TargetTriple::Arch::x86_64;
+        targetTripleArch_ = ODB_CODEGEN_x86_64;
     }
     else if (args[0] == "aarch64")
     {
-        targetTripleArch_ = odb::codegen::TargetTriple::Arch::AArch64;
+        targetTripleArch_ = ODB_CODEGEN_AArch64;
     }
 
     return true;
@@ -63,21 +61,33 @@ bool setPlatform(const std::vector<std::string>& args)
 {
     if (args[0] == "windows")
     {
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
+        targetTriplePlatform_ = ODB_CODEGEN_WINDOWS;
     }
     else if (args[0] == "macos")
     {
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::macOS;
+        targetTriplePlatform_ = ODB_CODEGEN_MACOS;
     }
     else if (args[0] == "linux")
     {
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Linux;
+        targetTriplePlatform_ = ODB_CODEGEN_LINUX;
     }
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
+bool output(const std::vector<std::string>& args)
+{
+    std::string outputName = args[0];
+    static const char* objs[] = {"module.obj"};
+    
+    odb_codegen(nullptr, objs[0], "module", ODB_CODEGEN_ObjectFile, ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
+    odb_link(objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
+
+    return true;
+}
+
+    /*
 bool output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
@@ -188,3 +198,4 @@ bool output(const std::vector<std::string>& args)
 
     return true;
 }
+*/

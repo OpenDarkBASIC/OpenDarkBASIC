@@ -258,7 +258,7 @@ adg_gen_cpp_write_action_table(struct adg_action** action_table, struct adg_sect
 
         fprintf(fp, " },\n");
     }
-    fprintf(fp, "    {}  // sentinel\n");
+    fprintf(fp, "    { nullptr, nullptr, Action::HU(), nullptr, nullptr, nullptr, {0,0} }  // sentinel\n");
     fprintf(fp, "};\n");
 
     fprintf(fp, "#define ACTION_VALID(action) \\\n");

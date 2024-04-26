@@ -9,23 +9,26 @@
 #   include <linux/limits.h>  // PATH_MAX
 #elif defined(ODBSDK_PLATFORM_DARWIN)
 #   include <dlfcn.h>
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
 #   define WIN32_LEAN_AND_MEAN
 #   include <Windows.h>
+#   if defined(ERROR)
+#       undef ERROR
+#   endif
 #else
 #   error "Platform not supported"
 #endif
 
 namespace odb {
 
-#if defined(ODBSDK_PLATFORM_WIN32)
+#if defined(ODBSDK_PLATFORM_WINDOWS)
 static void logLastWin32Error(const char* errormsg)
 {
     char* error;
     if (FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(),
                        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&error, 0, NULL))
     {
-        Log::sdk(Log::ERROR, "%s: %s\n", error);
+        Log::sdk(Log::ERROR, "%s: %s\n", errormsg, error);
         LocalFree(error);
     }
 }
@@ -41,7 +44,7 @@ void* DynamicLibrary::openImpl(const char* filepath)
     if (const char* error = dlerror())
         Log::sdk(Log::ERROR, "Failed to load library: %s\n", error);
     return nullptr;
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
     HMODULE hModule = LoadLibraryA(filepath);
 
     if (hModule == NULL)
@@ -56,7 +59,7 @@ void DynamicLibrary::closeImpl(void* handle) {
     assert(handle);
 #if defined(ODBSDK_PLATFORM_LINUX) || defined(ODBSDK_PLATFORM_DARWIN)
     dlclose(handle);
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
 #endif
 }
 
@@ -66,8 +69,8 @@ void* DynamicLibrary::lookupSymbolImpl(void* handle, const char* name)
     assert(handle);
 #if defined(ODBSDK_PLATFORM_LINUX) || defined(ODBSDK_PLATFORM_DARWIN)
     return dlsym(handle, name);
-#elif defined(ODBSDK_PLATFORM_WIN32)
-    return nullptr;
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
+    return GetProcAddress(static_cast<HMODULE>(handle), name);
 #endif
 }
 
@@ -76,7 +79,7 @@ bool DynamicLibrary::addRuntimePath(const char* path)
 {
 #if defined(ODBSDK_PLATFORM_LINUX) || defined(ODBSDK_PLATFORM_DARWIN)
     return false;
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
     // This function does not appear to add duplicates so it's safe to call it
     // multiple times
     if (!SetDllDirectoryA(path))
@@ -96,7 +99,7 @@ void DynamicLibrary::getFilePath(std::function<void(const char*)> callback) cons
 
     if (const char* error = dlerror())
         Log::sdk(Log::ERROR, "Failed to get file path of shared library: %s\n", error);
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
     char filepath_mem[256];
     char* filepath = filepath_mem;
     int capacity = 256;
@@ -104,7 +107,7 @@ void DynamicLibrary::getFilePath(std::function<void(const char*)> callback) cons
 
     while (1)
     {
-        if (GetModleFileNameA(hModule, filepath, (DWORD)capacity) <= capacity)
+        if (GetModuleFileNameA(hModule, filepath, (DWORD)capacity) <= capacity)
         {
             callback(filepath);
             break;
@@ -113,8 +116,8 @@ void DynamicLibrary::getFilePath(std::function<void(const char*)> callback) cons
         if (GetLastError() == ERROR_INSUFFICIENT_BUFFER)
         {
             filepath = capacity > 256
-                ? realloc(filepath, capacity * 2)
-                : malloc(capacity * 2);
+                ? static_cast<char*>(realloc(filepath, capacity * 2))
+                : static_cast<char*>(malloc(capacity * 2));
             capacity *= 2;
             continue;
         }
@@ -161,7 +164,7 @@ static int getSymbolCountInGNUHashTable(const uint32_t* gnuhashtab)
 
     return last_symbol;
 }
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
 static PIMAGE_EXPORT_DIRECTORY getExportsDirectory(HMODULE hModule)
 {
     PIMAGE_DOS_HEADER dos_header = (PIMAGE_DOS_HEADER)hModule;
@@ -259,7 +262,7 @@ DynamicLibrary::IterateStatus DynamicLibrary::forEachSymbol(
     }
 
     return CONTINUE;
-#elif defined(ODBSDK_PLATFORM_WIN32)
+#elif defined(ODBSDK_PLATFORM_WINDOWS)
     HMODULE hModule = static_cast<HMODULE>(handle_);
     PIMAGE_EXPORT_DIRECTORY exports = getExportsDirectory(hModule);
     if (exports == nullptr)
@@ -275,7 +278,7 @@ DynamicLibrary::IterateStatus DynamicLibrary::forEachSymbol(
 }
 
 // ----------------------------------------------------------------------------
-#if defined(ODBSDK_PLATFORM_WIN32)
+#if defined(ODBSDK_PLATFORM_WINDOWS)
 struct EnumStringNameCtx
 {
     EnumStringNameCtx(std::function<DynamicLibrary::IterateStatus(const char* str)> callback)
@@ -298,12 +301,13 @@ struct EnumStringNameCtx
     int capacity;
     DynamicLibrary::IterateStatus callbackStatus;
 };
-static bool passStringToCallback(LPWSTR utf16, int utf16_len, EnumStringNameCtx* ctx)
+static DynamicLibrary::IterateStatus passStringToCallback(LPWSTR utf16, int utf16_len, EnumStringNameCtx* ctx)
 {
-    while (WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, ctx->utf8, ctx->capacity, 0, 0) == 0)
+    int utf8_len;
+    while ((utf8_len = WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, ctx->utf8, ctx->capacity - 1, 0, 0)) == 0)
     {
-        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)  // Some other error, skip string
-            return TRUE;
+        if (GetLastError() != ERROR_INSUFFICIENT_BUFFER) // Some other error
+            return DynamicLibrary::ERROR;
 
         void* new_mem = ctx->capacity > 256
             ? realloc(ctx->utf8, ctx->capacity * 2)
@@ -312,6 +316,7 @@ static bool passStringToCallback(LPWSTR utf16, int utf16_len, EnumStringNameCtx*
         ctx->capacity *= 2;
     }
 
+    ctx->utf8[utf8_len] = '\0';
     return ctx->callback(ctx->utf8);
 }
 static BOOL enumStringResourceProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpName, LONG_PTR lParam)
@@ -332,8 +337,13 @@ static BOOL enumStringResourceProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpNam
             int len = static_cast<int>(*p++);
             if (len == 0)
                 continue;
-            if (!passStringToCallback(p, len, ctx))
-                return false;
+
+            if (auto result = passStringToCallback(p, len, ctx))
+            {
+                ctx->callbackStatus = result;
+                return FALSE;
+            }
+
             p += len;
         }
     }
@@ -341,6 +351,8 @@ static BOOL enumStringResourceProc(HMODULE hModule, LPCWSTR lpType, LPWSTR lpNam
     {
         return passStringToCallback(lpName, lstrlenW(lpName), ctx);
     }
+
+    return TRUE;
 }
 DynamicLibrary::IterateStatus DynamicLibrary::forEachString(std::function<IterateStatus(const char* str)> callback)
 {
@@ -355,9 +367,8 @@ DynamicLibrary::IterateStatus DynamicLibrary::forEachString(std::function<Iterat
         (LONG_PTR)(void*)&ctx
     );
 
-    return CONTINUE;
+    return ctx.callbackStatus;
 }
 #endif
 
 } // namespace odb
-

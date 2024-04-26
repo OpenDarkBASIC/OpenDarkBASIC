@@ -21,13 +21,10 @@ macro (odb_add_plugin PLUGIN)
         PRIVATE
             odb-sdk)
     include (ODBTargetProperties)
-    set_target_properties (${PLUGIN}
+    odb_target_properties (${PLUGIN}
         PROPERTIES
-            CXX_STANDARD 17
-            CXX_STANDARD_REQUIRED TRUE
             LIBRARY_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
-            RUNTIME_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
-            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+            RUNTIME_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins")
     set_property (TARGET ${PLUGIN} PROPERTY PREFIX "")
     install (
         TARGETS ${PLUGIN}

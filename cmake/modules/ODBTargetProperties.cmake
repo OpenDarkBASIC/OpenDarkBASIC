@@ -18,8 +18,9 @@ macro (odb_target_properties TARGET)
         endif ()
     endforeach ()
     
-    set_property (TARGET ${TARGET} PROPERTY
-        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
+    set_target_properties (${TARGET} PROPERTIES
+        CXX_STANDARD 17
+        CXX_STANDARD_REQUIRED TRUE)
     
     if (${TARGET}_UNPARSED_ARGUMENTS)
         set_target_properties (${TARGET} PROPERTIES

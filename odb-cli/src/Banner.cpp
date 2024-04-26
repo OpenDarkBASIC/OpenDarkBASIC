@@ -1,6 +1,9 @@
 #include "odb-cli/Banner.hpp"
-#include "odb-compiler/BuildInfo.hpp"
 #include "odb-sdk/Log.hpp"
+
+extern "C" {
+#include "odb-compiler/build_info.h"
+}
 
 #define B_BLACK   "\u001b[1;30m"
 #define B_RED     "\u001b[1;31m"
@@ -62,13 +65,13 @@ static const char* banner_ =
 // ----------------------------------------------------------------------------
 static void printBannerNormal()
 {
-    odb::Log::info.print(banner_, odb::BuildInfo::url(), odb::BuildInfo::version(), odb::BuildInfo::commitHash());
+    odb::Log::info.print(banner_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------
 static void printBannerNoEscapeSequences()
 {
-    odb::Log::info.print(bannerNoEscapeSequences_, odb::BuildInfo::url(), odb::BuildInfo::version(), odb::BuildInfo::commitHash());
+    odb::Log::info.print(bannerNoEscapeSequences_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------
