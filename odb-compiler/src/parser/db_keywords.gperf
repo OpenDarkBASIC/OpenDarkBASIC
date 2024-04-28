@@ -2,17 +2,14 @@
     #include <stddef.h>  /* size_t */
     #include <string.h>  /* strcmp */
 
-    #include "odb-compiler/parsers/db/Parser.y.hpp"      /* for list of token values */
-    #include "odb-compiler/parsers/db/KeywordToken.hpp"  /* Implementing this interface */
-
-    namespace odb {
-    namespace db {
+    #include "odb-compiler/parser/db_parser.y.h"  /* for list of token values */
+    #include "odb-compiler/parser/db_keywords.h"  /* Implementing this interface */
 %}
 
 %readonly-tables
 %global-table
 %ignore-case
-%language=C++
+%language=C
 %struct-type
 %define class-name KeywordsHash
 %define hash-function-name hash

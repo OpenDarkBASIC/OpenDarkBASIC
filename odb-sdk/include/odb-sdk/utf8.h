@@ -4,8 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef int16_t utf8_idx;
-typedef int16_t utf16_idx;
+/* Can't do int16_t because the parser uses this to refer to offsets in source
+ * files, and source files definitely contain >32768 characters */
+typedef int32_t utf8_idx;
 
 struct utf8
 {
@@ -13,13 +14,13 @@ struct utf8
     utf8_idx len;
 };
 
-struct utf8_ref
+struct utf8_view
 {
     const char* data;
     utf8_idx len;
 };
 
-struct utf8_view
+struct utf8_ref
 {
     utf8_idx off;
     utf8_idx len;
@@ -34,11 +35,21 @@ struct utf8_list
     utf8_idx alloc;
 };
 
+static inline struct utf8_view
+cstr_utf8_view(const char* cstr)
+{
+    struct utf8_view utf8 = {
+        cstr,
+        (utf8_idx)strlen(cstr)
+    };
+    return utf8;
+}
+
 static inline struct utf8_ref
-cstr_utf8(const char* cstr)
+cstr_utf8_ref(const char* cstr)
 {
     struct utf8_ref utf8 = {
-        cstr,
+        0,
         (utf8_idx)strlen(cstr)
     };
     return utf8;

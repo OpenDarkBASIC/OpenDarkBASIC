@@ -33,41 +33,59 @@ odb_codegen(
     llvm::IRBuilder<> b(ctx);
 
     // Make the function type:  void(int, int)
-    llvm::FunctionType* FT = llvm::FunctionType::get(
-        llvm::Type::getVoidTy(ctx),
-        {},
-        false);
-    llvm::Function* F = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, "main", &mod);
+    llvm::Function* F = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
+        llvm::Function::ExternalLinkage,
+        "main",
+        &mod);
+    F->setDoesNotReturn();
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(ctx, "entry", F);
     b.SetInsertPoint(BB);
 
     // Finish off the function.
-    static const char* exitAsmLinux32 = 
-        "mov eax, 1\n"
-        "mov ebx, 0\n"
-        "int 80h\n";
-    static const char* exitAsmLinux64 = 
-        "mov rax, 1\n"
-        "mov rbx, 0\n"
-        "syscall\n";
-    /*
+    switch (platform)
     {
-        llvm::FunctionType* FT = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false);
-        llvm::InlineAsm* IA = llvm::InlineAsm::get(FT, exitAsmWin32, "", true, false, llvm::InlineAsm::AD_Intel);
-        llvm::CallInst* CI = b.CreateCall(IA, {});
-        //IA->setDoesNotReturn();
-    }*/
-    {
-        llvm::Function* FExitProcess = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
-            llvm::Function::ExternalLinkage,
-            "ExitProcess",
-            &mod);
-        FExitProcess->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
-        FExitProcess->setDoesNotReturn();
-        b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
+        case ODB_CODEGEN_LINUX: {
+            const char* exitAsm = nullptr;
+            switch (arch)
+            {
+                case ODB_CODEGEN_i386: exitAsm =
+                    "mov eax, 3Ch\n"
+                    "xor edi, edi\n"
+                    "int 80h\n";
+                    break;
+                case ODB_CODEGEN_x86_64: exitAsm =
+                    "mov rax, 3Ch\n"
+                    "xor rdi, rdi\n"
+                    "syscall\n";
+                    break;
+                case ODB_CODEGEN_AArch64:
+                    break;
+            }
+
+            llvm::FunctionType* FT = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(ctx), {}, false);
+            llvm::InlineAsm* IA = llvm::InlineAsm::get(
+                FT, exitAsm, "", true, false, llvm::InlineAsm::AD_Intel);
+            b.CreateCall(IA, {});
+        } break;
+
+        case ODB_CODEGEN_WINDOWS:
+        {
+            llvm::Function* FExitProcess = llvm::Function::Create(
+                llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
+                llvm::Function::ExternalLinkage,
+                "ExitProcess",
+                &mod);
+            FExitProcess->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+            FExitProcess->setDoesNotReturn();
+            b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
+        } break;
+
+        case ODB_CODEGEN_MACOS:
+            break;
     }
     b.CreateRet(nullptr);
 

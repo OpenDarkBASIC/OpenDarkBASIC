@@ -102,57 +102,64 @@ find_package (FLEX REQUIRED 2.6)
 find_package (BISON REQUIRED 3.8)
 
 # These may not exist
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parsers/db")
-file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db")
+file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/src/parser")
+file (MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/include/odb-compiler/parser")
 
-set (BISON_VERBOSE_OPTION "")
-if (${ODBCOMPILER_VERBOSE_BISON})
-    set (BISON_VERBOSE_OPTION "VERBOSE")
-endif ()
-
+#if (MSVC)
+#    set (FLEX_COMPILE_FLAGS --wincompat)
+#endif ()
 if (ODBCOMPILER_BISON_COUNTER_EXAMPLES)
-    set (BISON_COMPILE_FLAGS -Wcounterexamples)
+    set (BISON_COMPILE_FLAGS "-Wcounterexamples")
 endif ()
-if (MSVC)
-    set (FLEX_COMPILE_FLAGS --wincompat)
+if (ODBCOMPILER_VERBOSE_BISON)
+    set (BISON_VERBOSE "VERBOSE")
 endif ()
-bison_target (DarkBASICParser
-    "${PROJECT_SOURCE_DIR}/src/parsers/db/Parser.y"
-    "${PROJECT_BINARY_DIR}/src/parsers/db/Parser.y.cpp"
-    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parsers/db/Parser.y.hpp" ${BISON_VERBOSE_OPTION}
-    COMPILE_FLAGS ${BISON_COMPILE_FLAGS})
-flex_target (DarkBASICScanner
-    "${PROJECT_SOURCE_DIR}/src/parsers/db/Scanner.lex"
-    "${PROJECT_BINARY_DIR}/src/parsers/db/Scanner.lex.cpp"
-    COMPILE_FLAGS ${FLEX_COMPILE_FLAGS})
-add_flex_bison_dependency (DarkBASICScanner DarkBASICParser)
+
+bison_target (db-parser
+    "${PROJECT_SOURCE_DIR}/src/parser/db_parser.y"
+    "${PROJECT_BINARY_DIR}/src/parser/db_parser.y.c"
+    ${BISON_VERBOSEA}
+    COMPILE_FLAGS "${BISON_COMPILE_FLAGS}"
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parser/db_parser.y.h")
+flex_target (db-scanner
+    "${PROJECT_SOURCE_DIR}/src/parser/db_scanner.lex"
+    "${PROJECT_BINARY_DIR}/src/parser/db_scanner.lex.c"
+    COMPILE_FLAGS ${FLEX_COMPILE_FLAGS}
+    DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parser/db_scanner.lex.h")
+add_flex_bison_dependency (db-scanner db-parser)
 
 if (ODBCOMPILER_VERBOSE_BISON)
     set_property (
-        SOURCE
-            ${BISON_DarkBASICParser_OUTPUTS}
-            ${BISON_CommandsParser_OUTPUTS}
-        PROPERTY COMPILE_DEFINITIONS
-            YYDEBUG)
+        SOURCE ${BISON_db-parser_OUTPUTS}
+        PROPERTY COMPILE_DEFINITIONS YYDEBUG)
 endif ()
 
-gperf_target (DarkBASICKeywordToken
-    "${PROJECT_SOURCE_DIR}/src/parsers/db/KeywordToken.gperf"
-    "${PROJECT_BINARY_DIR}/src/parsers/db/KeywordToken.gperf.cpp")
-set_source_files_properties (${Gperf_DarkBASICKeywordToken_OUTPUTS}
-    PROPERTIES COMPILE_FLAGS
-        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
-        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
-        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
-#XXX: this is broken
-add_gperf_bison_dependency (DarkBASICKeywordToken DarkBASICParser)
+#gperf_target (db-keywords
+#    "${PROJECT_SOURCE_DIR}/src/parser/db_keywords.gperf"
+#    "${PROJECT_BINARY_DIR}/src/parser/db_keywords.gperf.c")
+#set_source_files_properties (${Gperf_db-keywords_OUTPUTS}
+#    PROPERTIES COMPILE_FLAGS
+#        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
+#        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
+#        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
+##XXX: this is broken
+#add_gperf_bison_dependency (db-keywords db-parser)
 
 ###############################################################################
 # Library definition
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
-    "${Gperf_DarkBASICKeywordToken_OUTPUTS}"
+    "include/odb-compiler/parser/db_keywords.h"
+    "include/odb-compiler/parser/db_parser.h"
+    "src/parser/db_keywords.gperf"
+    "src/parser/db_scanner.lex"
+    "src/parser/db_parser.y"
+    "src/parser/db_parser.c"
+    #"${Gperf_db-keywords_OUTPUTS}"
+    "${BISON_db-parser_OUTPUTS}"
+    "${FLEX_db-scanner_OUTPUTS}"
+
     #"src/commands/CommandLoader.cpp"
     #"src/commands/ODBCommandLoader.cpp"
     #"src/commands/DBPCommandLoader.cpp"
