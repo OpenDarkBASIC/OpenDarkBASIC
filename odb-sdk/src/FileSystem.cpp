@@ -82,7 +82,7 @@ fs::path FileSystem::getPathToSelf()
             return std::string(path, bufsize);
         return "";
 #elif defined(ODBSDK_PLATFORM_WIN32)
-        char path[_MAX_PATH] = { 0 };
+        char path[MAX_PATH] = { 0 };
         GetModuleFileNameA(NULL, path, MAX_PATH);
         return path;
 #endif

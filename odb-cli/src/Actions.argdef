@@ -6,7 +6,7 @@
 //#include "odb-cli/Commands.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Log.hpp"
-//#include "odb-cli/SDK.hpp"
+#include "odb-cli/SDK.hpp"
 //#include "odb-cli/Warnings.hpp"
 #include "odb-sdk/Log.hpp"
 #include "odb-sdk/Str.hpp"
@@ -88,43 +88,43 @@ section global:
 #    runafter: global
 
 ###############################################################################
-#section sdk:
-#  info: Configure the SDK, plugins and commands
-#
-#  sdk-root():
-#    help: Tells the compiler where to look for plugins, help files, and other
-#          necessary information. In the case of DBPro this should be a path to
-#          the DBPro installation directory (e.g. "C:\Program Files\Dark Basic Professional Online").
-#          In the case of ODB this should be a path to the folder called "odb-sdk".
-#    args: <path>
-#    func: setSDKRootDir
-#    runafter: global
-#
-#  sdk-type():
-#    help: Specify if the SDK is the original DBPro SDK, or if it is the ODB
-#          reimplementation. --sdk-root will autodetect the type so this is
-#          usually not needed. If specified, it will override the autodetected
-#          value.
-#    args: <odb|dbpro>
-#    func: setSDKType
-#    runafter: sdk-root
-#
-#  plugins():
-#    help: Add additional directories to scan for thirdparty plugins. Note that
-#          ODB and DBPro plugins are not compatible with each other.
-#    args: <path|file> [path|file...]
-#    func: setAdditionalPluginsDir
-#    runafter: global
-#
-#  init-sdk:
-#    func: initSDK
-#    runafter: sdk-root, sdk-type, plugins
-#
-#  print-sdk-root():
-#    help: Prints the location of the SDK
-#    func: printSDKRootDir
-#    runafter: init-sdk
-#
+section sdk:
+  info: Configure the SDK, plugins and commands
+
+  sdk-root():
+    help: Tells the compiler where to look for plugins, help files, and other
+          necessary information. In the case of DBPro this should be a path to
+          the DBPro installation directory (e.g. "C:\Program Files\Dark Basic Professional Online").
+          In the case of ODB this should be a path to the folder called "odb-sdk".
+    args: <path>
+    func: setSDKRootDir
+    runafter: global
+
+  sdk-type():
+    help: Specify if the SDK is the original DBPro SDK, or if it is the ODB
+          reimplementation. --sdk-root will autodetect the type so this is
+          usually not needed. If specified, it will override the autodetected
+          value.
+    args: <odb|dbpro>
+    func: setSDKType
+    runafter: sdk-root
+
+  plugins():
+    help: Add additional directories to scan for thirdparty plugins. Note that
+          ODB and DBPro plugins are not compatible with each other.
+    args: <path|file> [path|file...]
+    func: setAdditionalPluginsDir
+    runafter: global
+
+  init-sdk:
+    func: initSDK
+    runafter: sdk-root, sdk-type, plugins
+
+  print-sdk-root():
+    help: Prints the location of the SDK
+    func: printSDKRootDir
+    runafter: init-sdk
+
 #  load-commands:
 #    func: loadCommands
 #    runafter: init-sdk

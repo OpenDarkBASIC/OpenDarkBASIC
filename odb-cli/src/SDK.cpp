@@ -1,6 +1,6 @@
 #include "odb-cli/SDK.hpp"
-#include "odb-sdk/FileSystem.hpp"
 #include "odb-sdk/Log.hpp"
+#include "odb-sdk/fs.h"
 
 using namespace odb;
 
@@ -66,7 +66,10 @@ bool initSDK(const std::vector<std::string>& args)
         {
             case SDKType::ODB : {
                 // Should in the same directory as the odbc executable
-                sdkRootDir_ = FileSystem::getPathToSelf().replace_filename("odb-sdk");
+                struct ospath path = ospath();
+                //fs_get_path_to_self(&path);
+                //ospath_
+                //sdkRootDir_ = FileSystem::getPathToSelf().replace_filename("odb-sdk");
             } break;
 
             case SDKType::DarkBASIC: {
@@ -97,3 +100,4 @@ const std::vector<std::filesystem::path>& getAdditionalPluginDirs()
 {
     return pluginDirs_;
 }
+

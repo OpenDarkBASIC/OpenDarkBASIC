@@ -1,227 +1,154 @@
 #include "odb-sdk/log.h"
 #include "odb-sdk/cli_colors.h"
-
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <errno.h>
-
-static ODBSDK_THREADLOCAL const char* g_prefix = "";
-static ODBSDK_THREADLOCAL const char* g_col_set = "";
-static ODBSDK_THREADLOCAL const char* g_col_clr = "";
-
-static FILE* g_log = NULL;
 
 /* ------------------------------------------------------------------------- */
-void
-log_set_prefix(const char* prefix)
+static int
+is_ascii_alpha(char c)
 {
-    g_prefix = prefix;
+    return (c >= 'a' && c <= 'z') ||
+           (c >= 'A' && c <= 'Z');
 }
-void
-log_set_colors(const char* set, const char* clear)
+static int
+is_ascii_numeric(char c)
 {
-    g_col_set = set;
-    g_col_clr = clear;
+    return c >= '0' && c <= '9';
 }
 
 /* ------------------------------------------------------------------------- */
-void
-log_file_open(const char* log_file)
+static const char*
+process_standard_format(FILE* fp, const char* fmt, va_list ap)
 {
-    if (g_log)
-    {
-        log_warn("log_file_open() called, but a log file is already open. Closing previous file...\n");
-        log_file_close();
-    }
+    int i = 0;
+    char subfmt[16];
+    subfmt[i++] = *fmt++;
+    do {
+        subfmt[i++] = *fmt++;
+    } while (i != 15 && !is_ascii_alpha(fmt[-1]) && fmt[-1] != '%');
 
-    log_info("Opening log file \"%s\"\n", log_file);
-    g_log = fopen(log_file, "w");
-    if (g_log == NULL)
-        log_err("Failed to open log file \"%s\": %s\n", log_file, strerror(errno));
-}
-void
-log_file_close()
-{
-    if (g_log)
-    {
-        log_info("Closing log file\n");
-        fclose(g_log);
-        g_log = NULL;
-    }
+    subfmt[i] = '\0';
+    vfprintf(fp, subfmt, ap);
+
+    return fmt;
 }
 
 /* ------------------------------------------------------------------------- */
-void
-log_raw(const char* fmt, ...)
+static const char*
+process_color_format(FILE* fp, const char* fmt, va_list ap)
 {
-    va_list va;
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
+    char fg[9] = "\033[\0     ";
+    char bg[9] = "\033[\0     ";
+    char set_fg = 0;
+    char set_bg = 0;
+    fmt += 2;  /* "%{" */
 
-    if (g_log)
+    /* Set foreground color */
+    if (*fmt == 'b')  /* bold */
     {
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
+        strcat(fg, "1;");
+        fmt++;
     }
+    else
+        strcat(fg, "22;");
+    if (is_ascii_numeric(*fmt))
+    {
+        strcat(fg, "3");
+        strncat(fg, fmt++, 1);
+        strcat(fg, "m");
+        set_fg = 1;
+    }
+
+    /* Set background color */
+    if (*fmt == 'b')  /* bold */
+    {
+        strcat(bg, "1;");
+        fmt++;
+    }
+    else
+        strcat(bg, "22;");
+    if (is_ascii_numeric(*fmt))
+    {
+        strcat(bg, "4");
+        strncat(bg, fmt++, 1);
+        strcat(bg, "m");
+        set_bg = 1;
+    }
+
+    if (*fmt == ':')
+        fmt++;
+
+    if (set_fg)
+        fprintf(fp, "%s", fg);
+    if (set_bg)
+        fprintf(fp, "%s", bg);
+
+    while (*fmt)
+    {
+        if (fmt[0] == '%' && fmt[1] == '{')
+        {
+            fmt = process_color_format(fp, fmt, ap);
+            if (set_fg)
+                fprintf(fp, "%s", fg);
+            if (set_bg)
+                fprintf(fp, "%s", bg);
+        }
+        else if (fmt[0] == '%')
+            fmt = process_standard_format(fp, fmt, ap);
+        else if (fmt[0] == '}')
+        {
+            fmt++;
+            break;
+        }
+        else
+            putc(*fmt++, fp);
+    }
+    
+    fprintf(fp, "\033[0m");
+    
+    return fmt;
 }
 
 /* ------------------------------------------------------------------------- */
-void
-log_dbg(const char* fmt, ...)
+static void
+vfprintf_with_color(FILE* fp, const char* fmt, va_list ap)
 {
-    va_list va;
-    fprintf(stderr, "[" COL_N_YELLOW "Debug" COL_RESET "] %s%s%s", g_col_set, g_prefix, g_col_clr);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
+    while (*fmt)
     {
-        fprintf(g_log, "[Debug] %s", g_prefix);
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
+        if (fmt[0] == '%' && fmt[1] == '{')
+            fmt = process_color_format(fp, fmt, ap);
+        else if (fmt[0] == '%')
+            fmt = process_standard_format(fp, fmt, ap);
+        else
+            putc(*fmt++, fp);
     }
 }
 
-/* ------------------------------------------------------------------------- */
-void
-log_info(const char* fmt, ...)
+static void
+fprintf_with_color(FILE* fp, const char* fmt, ...)
 {
-    va_list va;
-    fprintf(stderr, "[" COL_B_WHITE "Info " COL_RESET "] %s%s%s", g_col_set, g_prefix, g_col_clr);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[Info ] %s", g_prefix);
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void
-log_warn(const char* fmt, ...)
-{
-    va_list va;
-    fprintf(stderr, "[" COL_B_YELLOW "Warn " COL_RESET "] %s%s%s", g_col_set, g_prefix, g_col_clr);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[Warn ] %s", g_prefix);
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
-}
-
-/* ------------------------------------------------------------------------- */
-void
-log_err(const char* fmt, ...)
-{
-    va_list va;
-    fprintf(stderr, "[" COL_B_RED "Error" COL_RESET "] %s%s%s", g_col_set, g_prefix, g_col_clr);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[Error] %s", g_prefix);
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf_with_color(fp, fmt, ap);
+    va_end(ap);
 }
 
 /* ------------------------------------------------------------------------- */
 void
-log_note(const char* fmt, ...)
+log_raw(const char* severity, const char* group, const char* fmt, ...)
 {
-    va_list va;
-    fprintf(stderr, "[" COL_B_MAGENTA "NOTE " COL_RESET "] %s%s%s" COL_B_YELLOW, g_col_set, g_prefix, g_col_clr);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-    fprintf(stderr, COL_RESET);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[NOTE ] %s", g_prefix);
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
+    va_list ap;
+    va_start(ap, fmt);
+    log_vraw(severity, group, fmt, ap);
+    va_end(ap);
 }
 
 /* ------------------------------------------------------------------------- */
 void
-log_mem_warn(const char* fmt, ...)
+log_vraw(const char* severity, const char* group, const char* fmt, va_list ap)
 {
-    va_list va;
-    fprintf(stderr, "[" COL_B_YELLOW "Warn " COL_RESET "] " COL_B_BLUE "mem: " COL_RESET);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[Warn ] mem: ");
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
+    fprintf_with_color(stderr, severity);
+    fprintf_with_color(stderr, group);
+    vfprintf_with_color(stderr, fmt, ap);
 }
-void
-log_mem_err(const char* fmt, ...)
-{
-    va_list va;
-    fprintf(stderr, "[" COL_B_RED "Error" COL_RESET "] " COL_B_BLUE "mem: " COL_RESET);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
 
-    if (g_log)
-    {
-        fprintf(g_log, "[Error] mem: ");
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
-}
-void
-log_mem_note(const char* fmt, ...)
-{
-    va_list va;
-    fprintf(stderr, "[" COL_B_MAGENTA "NOTE " COL_RESET "] " COL_B_BLUE "mem: " COL_RESET);
-    va_start(va, fmt);
-    vfprintf(stderr, fmt, va);
-    va_end(va);
-
-    if (g_log)
-    {
-        fprintf(g_log, "[NOTE ] mem: ");
-        va_start(va, fmt);
-        vfprintf(g_log, fmt, va);
-        va_end(va);
-        fflush(g_log);
-    }
-}

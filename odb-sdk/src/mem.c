@@ -77,7 +77,7 @@ print_backtrace(void)
 
     if (!(bt = backtrace_get(&bt_size)))
     {
-        log_mem_warn("Failed to generate backtrace\n");
+        log_sdk_warn("Failed to generate backtrace\n");
         return;
     }
 
@@ -85,7 +85,7 @@ print_backtrace(void)
     {
         if (strstr(bt[i], "invoke_main"))
             break;
-        log_mem_warn("  %s\n", bt[i]);
+        log_sdk_warn("  %s\n", bt[i]);
     }
     backtrace_free(bt);
 }
@@ -102,7 +102,7 @@ track_allocation(uintptr_t addr, mem_size size)
 
     if (size == 0)
     {
-        log_mem_warn("malloc(0)\n");
+        log_sdk_warn("malloc(0)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
         print_backtrace();
 #endif
@@ -125,10 +125,10 @@ track_allocation(uintptr_t addr, mem_size size)
         {
             case 1: break;
             case 0:
-                log_mem_err("Double allocation! This is usually caused by calling mem_track_allocation() on the same address twice.\n");
+                log_sdk_err("Double allocation! This is usually caused by calling mem_track_allocation() on the same address twice.\n");
                 print_backtrace();
                 break;
-            default: log_mem_err("Hashmap insert failed! Expect to see incorrect memory leak reports!\n");
+            default: log_sdk_err("Hashmap insert failed! Expect to see incorrect memory leak reports!\n");
          }
 
         /* record the location and size of the allocation */
@@ -138,7 +138,7 @@ track_allocation(uintptr_t addr, mem_size size)
         /* Create backtrace to this allocation */
 #if defined(ODBSDK_MEM_BACKTRACE)
         if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
-            log_mem_warn("Failed to generate backtrace\n");
+            log_sdk_warn("Failed to generate backtrace\n");
 #endif
     state.ignore_malloc = 0;
 
@@ -153,7 +153,7 @@ track_deallocation(uintptr_t addr, const char* free_type)
 
     if (addr == 0)
     {
-        log_mem_warn("free(NULL)\n");
+        log_sdk_warn("free(NULL)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
         print_backtrace();
 #endif
@@ -171,12 +171,12 @@ track_deallocation(uintptr_t addr, const char* free_type)
         if (info->backtrace)
             backtrace_free(info->backtrace);
         else
-            log_mem_warn("Allocation didn't have a backtrace (it was NULL)\n");
+            log_sdk_warn("Allocation didn't have a backtrace (it was NULL)\n");
 #endif
     }
     else
     {
-        log_mem_warn("%s'ing something that was never allocated\n", free_type);
+        log_sdk_warn("%s'ing something that was never allocated\n", free_type);
 #if defined(ODBSDK_MEM_BACKTRACE)
         print_backtrace();
 #endif
@@ -190,7 +190,7 @@ mem_alloc(mem_size size)
     void* p = malloc(size);
     if (p == NULL)
     {
-        log_mem_err("malloc() failed (out of memory)\n");
+        log_sdk_err("malloc() failed (out of memory)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
         print_backtrace();  /* probably won't work but may as well*/
 #endif
@@ -213,7 +213,7 @@ mem_realloc(void* p, mem_size new_size)
 
     if (p == NULL)
     {
-        log_mem_err("realloc() failed (out of memory)\n");
+        log_sdk_err("realloc() failed (out of memory)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
         print_backtrace();  /* probably won't work but may as well*/
 #endif
@@ -240,11 +240,11 @@ mem_threadlocal_deinit(void)
 
     --state.allocations; /* this is the single allocation still held by the report hashmap */
 
-    log_mem_note("Memory report:\n");
+    log_sdk_note("Memory report:\n");
 
     /* report details on any g_allocations that were not de-allocated */
     HM_FOR_EACH(&state.report, void*, struct report_info, key, info)
-        log_mem_err("  un-freed memory at %" PRIx64 ", size %" PRIx32 "\n",
+        log_sdk_err("  un-freed memory at %" PRIx64 ", size %" PRIx32 "\n",
                 info->location, info->size);
 
 #if defined(ODBSDK_MEM_BACKTRACE)
@@ -254,7 +254,7 @@ mem_threadlocal_deinit(void)
             {
                 if (strstr(info->backtrace[i], "invoke_main"))
                     break;
-                log_mem_err("    %s\n", info->backtrace[i]);
+                log_sdk_err("    %s\n", info->backtrace[i]);
             }
         }
         backtrace_free(info->backtrace); /* this was allocated when malloc() was called */
@@ -265,10 +265,10 @@ mem_threadlocal_deinit(void)
     leaks = (state.allocations > state.deallocations ?
         state.allocations - state.deallocations :
         state.deallocations - state.allocations);
-    log_mem_note("  allocations   : %" PRIu32 "\n", state.allocations);
-    log_mem_note("  deallocations : %" PRIu32 "\n", state.deallocations);
-    log_mem_note("  memory leaks  : %" PRIu64 "\n", leaks);
-    log_mem_note("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
+    log_sdk_note("  allocations   : %" PRIu32 "\n", state.allocations);
+    log_sdk_note("  deallocations : %" PRIu32 "\n", state.deallocations);
+    log_sdk_note("  memory leaks  : %" PRIu64 "\n", leaks);
+    log_sdk_note("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
 
     ++state.allocations; /* this is the single allocation still held by the report hashmap */
     state.ignore_malloc = 1;

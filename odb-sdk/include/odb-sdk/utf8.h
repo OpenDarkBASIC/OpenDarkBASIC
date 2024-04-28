@@ -35,6 +35,12 @@ struct utf8_list
     utf8_idx alloc;
 };
 
+static inline struct utf8 utf8(void)
+{
+    struct utf8 str = { NULL, 0 };
+    return str;
+}
+
 static inline struct utf8_view
 cstr_utf8_view(const char* cstr)
 {
@@ -54,6 +60,9 @@ cstr_utf8_ref(const char* cstr)
     };
     return utf8;
 }
+
+ODBSDK_PUBLIC_API void
+utf8_deinit(struct utf8* str);
 
 #if defined(ODBSDK_PLATFORM_WINDOWS)
 

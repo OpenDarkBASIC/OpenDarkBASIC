@@ -1,5 +1,4 @@
 #include "odb-sdk/backtrace.h"
-#include "odb-sdk/fs.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/init.h"
 
@@ -9,20 +8,16 @@ odbsdk_init(void)
 {
     if (backtrace_init() < 0)
         goto backtrace_init_failed;
-    if (fs_init() < 0)
-        goto fs_init_failed;
 
     return 0;
 
-    fs_init_failed          : backtrace_deinit();
-    backtrace_init_failed   : return -1;
+    backtrace_init_failed : return -1;
 }
 
 /* ------------------------------------------------------------------------- */
 void
 odbsdk_deinit(void)
 {
-    fs_deinit();
     backtrace_deinit();
 }
 

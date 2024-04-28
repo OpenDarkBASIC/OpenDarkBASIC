@@ -71,40 +71,39 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "include/odb-sdk/mem.h"
     "include/odb-sdk/mfile.h"
     "include/odb-sdk/mstream.h"
-    "include/odb-sdk/str.h"
+    "include/odb-sdk/ospath.h"
     "include/odb-sdk/thread.h"
     "include/odb-sdk/utf8.h"
     "include/odb-sdk/vec.h"
 
     "src/btree.c"
-    "src/fs_common.c"
+    #"src/fs_common.c"
     "src/hash.c"
     "src/hm.c"
     "src/init.c"
     "src/log.c"
     "src/mstream.c"
-    "src/str.c"
+    "src/utf8.c"
     "src/vec.c"
 
     $<$<BOOL:${ODBSDK_MEM_DEBUGGING}>:src/mem.c>
 
     $<$<PLATFORM_ID:Linux>:src/backtrace_linux.c>
     $<$<PLATFORM_ID:Linux>:src/dynlib_linux.c>
-    $<$<PLATFORM_ID:Linux>:src/fs_linux.c>
+    #$<$<PLATFORM_ID:Linux>:src/fs_linux.c>
     $<$<PLATFORM_ID:Linux>:src/mfile_linux.c>
+    #$<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
     $<$<PLATFORM_ID:Linux>:src/thread_linux.c>
-    $<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
+    #$<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
 
     $<$<PLATFORM_ID:Windows>:src/backtrace_win32.c>
     $<$<PLATFORM_ID:Windows>:src/dynlib_win32.c>
-    $<$<PLATFORM_ID:Windows>:src/fs_win32.c>
+    #$<$<PLATFORM_ID:Windows>:src/fs_win32.c>
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
+    #$<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
     $<$<PLATFORM_ID:Windows>:src/thread_win32.c>
-    $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>
+    #$<$<PLATFORM_ID:Windows>:src/utf8_win32.c>
     
-    "include/odb-sdk/DynamicLibrary.hpp"
-    "src/DynamicLibrary.cpp"
-    #"src/FileSystem.cpp"
     "src/Log.cpp"
     "src/Str.cpp")
 target_include_directories (odb-sdk
@@ -169,11 +168,11 @@ if (ODBSDK_TESTS)
         "tests/env_odbsdk_init.cpp"
         "tests/test_odbsdk_btree.cpp"
         "tests/test_odbsdk_btree_as_set.cpp"
-        "tests/test_odbsdk_fs.cpp"
+        #"tests/test_odbsdk_fs.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
-        "tests/test_odbsdk_vec.cpp"
-        "tests/test_DynamicLibrary.cpp")
+        "tests/test_odbsdk_vec.cpp")
+        #"tests/test_DynamicLibrary.cpp")
     target_link_libraries (test_odb-sdk PUBLIC
         odb-sdk
         gmock

@@ -26,7 +26,7 @@ add_executable (odb-cli
     "src/Codegen.cpp"
     #"src/Commands.cpp"
     "src/Log.cpp"
-    #"src/SDK.cpp"
+    "src/SDK.cpp"
     #"src/Warnings.cpp"
     "src/main.cpp")
 target_include_directories (odb-cli

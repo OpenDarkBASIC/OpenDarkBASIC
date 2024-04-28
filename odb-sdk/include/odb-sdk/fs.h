@@ -1,105 +1,33 @@
 #pragma once
 
 #include "odb-sdk/config.h"
-#include "odb-sdk/str.h"
+#include "odb-sdk/ospath.h"
 
-struct path
-{
-    struct str str;
-};
+/*!
+ * @brief Returns the absolute path to the executable file, independent of the
+ * current working directory.
+ * @note The returned path needs to be freed using @see ospath_deinit().
+ * @param[in] out Structure receiving the resulting path. Must be initialized.
+ * @return Returns 0 on success, negative on error;
+ */
+ODBSDK_PUBLIC_API int
+fs_get_path_to_self(struct ospath* out);
 
 ODBSDK_PUBLIC_API int
-fs_init(void);
-
-ODBSDK_PRIVATE_API void
-fs_deinit(void);
-
-static inline void
-path_init(struct path* path)
-{
-    str_init(&path->str);
-}
-
-static inline void
-path_deinit(struct path* path)
-{
-    str_deinit(&path->str);
-}
-
-static inline struct str_view
-path_view(struct path path)
-{
-    return str_view(path.str);
-}
-
-static inline void
-path_terminate(struct path* path)
-{
-    str_terminate(&path->str);
-}
+fs_list(struct ospath_view path, int (*on_entry)(const char* name, void* user), void* user);
 
 ODBSDK_PUBLIC_API int
-path_set(struct path* path, struct str_view str);
-
-ODBSDK_PUBLIC_API void
-path_set_take(struct path* path, struct path* other);
-
-static inline void
-path_clear(struct path* path)
-{
-    str_clear(&path->str);
-}
+fs_file_exists(struct ospath_view path);
 
 ODBSDK_PUBLIC_API int
-path_join(struct path* path, struct str_view str);
-
-ODBSDK_PUBLIC_API struct str_view
-path_basename_view(const struct path* path);
-
-ODBSDK_PUBLIC_API struct str_view
-cpath_basename_view(const char* path);
-
-static inline void
-path_basename(struct path* path)
-{
-    struct str_view view = path_basename_view(path);
-    memmove(path->str.data, view.data, (size_t)view.len);
-    path->str.len = view.len;
-}
-
-ODBSDK_PUBLIC_API struct str_view
-path_dirname_view(const struct path* path);
-
-static inline void
-path_dirname(struct path* path)
-{
-    path->str.len = path_dirname_view(path).len;
-}
+fs_dir_exists(struct ospath_view path);
 
 ODBSDK_PUBLIC_API int
-fs_list(struct str_view path, int (*on_entry)(const char* name, void* user), void* user);
+fs_make_dir(struct ospath_view path);
 
 ODBSDK_PUBLIC_API int
-fs_list_strlist(struct strlist* out, struct str_view path);
+fs_remove_file(struct ospath_view path);
 
-ODBSDK_PUBLIC_API int
-fs_list_strlist_matching(
-    struct strlist* out,
-    struct str_view path,
-    int (*match)(const char* str, void* user),
-    void* user);
-
-ODBSDK_PUBLIC_API int
-fs_file_exists(const char* file_path);
-
-ODBSDK_PUBLIC_API int
-fs_dir_exists(const char* file_path);
-
-ODBSDK_PUBLIC_API int
-fs_make_dir(const char* path);
-
-ODBSDK_PUBLIC_API int
-fs_remove_file(const char* path);
-
-ODBSDK_PUBLIC_API struct str_view
+ODBSDK_PUBLIC_API struct ospath_view
 fs_appdata_dir(void);
+

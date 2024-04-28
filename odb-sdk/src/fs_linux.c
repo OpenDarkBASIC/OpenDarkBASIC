@@ -1,147 +1,44 @@
 #include "odb-sdk/fs.h"
+#include "odb-sdk/mem.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <dirent.h>
 #include <pwd.h>
-
-static struct path appdata_dir;
-
-int
-fs_init(void)
-{
-    struct passwd* pw = getpwuid(getuid());
-
-    path_init(&appdata_dir);
-    if (path_set(&appdata_dir, cstr_view(pw->pw_dir)) < 0) goto fail;
-    if (path_join(&appdata_dir, cstr_view(".local/share")) < 0) goto fail;
-    return 0;
-fail:
-    path_deinit(&appdata_dir);
-    return -1;
-}
-
-void
-fs_deinit(void)
-{
-    path_deinit(&appdata_dir);
-}
+#include <errno.h>
+#include <string.h>
 
 int
-path_set(struct path* path, struct str_view str)
+fs_get_path_to_self(struct ospath* path)
 {
-    if (str_set(&path->str, str) != 0)
-        return -1;
-    str_replace_char(&path->str, '\\', '/');
-    /* Remove trailing slashes (if not root) */
-    while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
-        path->str.len--;
-    return 0;
-}
+    int capacity = path->str.len;
+    while (1)
+    {
+        capacity = capacity ? capacity * 2 : PATH_MAX;
+        path->str.data = mem_realloc(path->str.data, capacity);
 
-void
-path_set_take(struct path* path, struct path* other)
-{
-    path_deinit(path);
-    path->str = str_take(&other->str);
-    str_replace_char(&path->str, '\\', '/');
-    /* Remove trailing slashes (if not root) */
-    while (path->str.len && path->str.data[path->str.len - 1] == '/')
-        path->str.len--;
-}
-
-int
-path_join(struct path* path, struct str_view trailing)
-{
-    if (path->str.len && path->str.data[path->str.len - 1] != '/'
-            && path->str.data[path->str.len - 1] != '\\')
-        if (cstr_append(&path->str, "/") != 0)
+        path->str.len = readlink("/proc/self/exe", path->str.data, capacity);
+        if (path->str.len < 0)
+        {
+            log_sdk_err("readlink() failed in fs_get_path_to_self(): %s", strerror(errno));
             return -1;
-    if (str_append(&path->str, trailing) != 0)
-        return -1;
-    str_replace_char(&path->str, '\\', '/');
-    /* Remove trailing slashes (if not root) */
-    while (path->str.len && path->str.data[path->str.len - 1] == '/')
-        path->str.len--;
+        }
+
+        if (path->str.len < capacity)
+            break;
+    }
+
     return 0;
 }
 
-struct str_view
-path_basename_view(const struct path* path)
-{
-    struct str_view view = str_view(path->str);
-    int orig_len = view.len;
-
-    /* Remove trailing slashes (if not root) */
-    while (view.len && view.data[view.len - 1] == '/')
-        view.len--;
-    /* Remove file name */
-    while (view.len && view.data[view.len - 1] != '/')
-        view.len--;
-    /* Special case on linux -- root directory */
-    if (view.len == 1 && view.data[view.len - 1] != '/')
-        view.len--;
-
-    view.data += view.len;
-    view.len = orig_len - view.len;
-
-    return view;
-}
-
-struct str_view
-cpath_basename_view(const char* path)
-{
-    struct str_view view = cstr_view(path);
-    int orig_len = view.len;
-
-    /* Remove trailing slashes */
-    while (view.len && (view.data[view.len - 1] == '\\' || view.data[view.len - 1] == '/'))
-        view.len--;
-    /* Remove file name */
-    while (view.len && (view.data[view.len - 1] != '\\' && view.data[view.len - 1] != '/'))
-        view.len--;
-
-    view.data += view.len;
-    view.len = orig_len - view.len;
-
-    /* Remove trailing slashes (if not root) */
-    while (view.len > 1 && (view.data[view.len - 1] == '\\' || view.data[view.len - 1] == '/'))
-        view.len--;
-    /* Special case on linux -- root directory */
-    if (view.len == 1 && (view.data[view.len - 1] != '\\' && view.data[view.len - 1] != '/'))
-        view.len--;
-
-    return view;
-}
-
-struct str_view
-path_dirname_view(const struct path* path)
-{
-    struct str_view view = str_view(path->str);
-
-    /* Remove trailing slashes (if not root) */
-    while (view.len > 1 && view.data[view.len - 1] == '/')
-        view.len--;
-    /* Remove file name */
-    while (view.len > 1 && view.data[view.len - 1] != '/')
-        view.len--;
-    /* Remove joining slash if not root directory */
-    while (view.len > 1 && view.data[view.len - 1] == '/')
-        view.len--;
-    /* Special case on linux -- root directory */
-    if (view.len == 1 && view.data[view.len - 1] != '/')
-        view.len--;
-
-    return view;
-}
-
+/*
 int
 fs_list(struct str_view path, int (*on_entry)(const char* name, void* user), void* user)
 {
     DIR* dp;
     struct dirent* ep;
-    struct path correct_path;
+    struct ospath correct_path;
     int ret = 0;
 
     path_init(&correct_path);
@@ -196,3 +93,5 @@ fs_appdata_dir(void)
 {
     return path_view(appdata_dir);
 }
+*/
+

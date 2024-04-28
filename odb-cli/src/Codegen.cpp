@@ -4,6 +4,7 @@
 
 extern "C" {
 #include "odb-sdk/dynlib.h"
+#include "odb-sdk/log.h"
 }
 
 #include <fstream>
@@ -83,6 +84,8 @@ bool setPlatform(const std::vector<std::string>& args)
 bool output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
+
+    log_sdk_note("Hello, %{b1:%d int %{6:and %s}} str\n", 42, "lol");
 
 #if defined(ODBCOMPILER_PLATFORM_WINDOWS)
     static const char* objs[] = {"module.obj"};

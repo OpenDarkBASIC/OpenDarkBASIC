@@ -55,7 +55,8 @@
 /* printf formatting ------------------------------------------------------- */
 
 #if defined(__GNUC__) || defined(__clang__)
-#   define ODBSDK_PRINTF_FORMAT(fmt, params) __attribute__((format(printf, fmt, params)))
+#   define ODBSDK_PRINTF_FORMAT(string_index, first_to_check) \
+        __attribute__((format(printf, string_index, first_to_check)))
 #else
 #   define ODBSDK_PRINTF_FORMAT(fmt, params)
 #endif
