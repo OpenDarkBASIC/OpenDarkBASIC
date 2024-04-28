@@ -186,7 +186,7 @@ if (ODBSDK_TESTS)
 endif ()
 
 add_subdirectory ("plugins")
-add_subdirectory ("runtime")
+#add_subdirectory ("runtime")
 add_subdirectory ("runtime-dbp")
 
 ###############################################################################

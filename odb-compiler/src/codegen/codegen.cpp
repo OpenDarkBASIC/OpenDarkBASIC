@@ -3,6 +3,8 @@ extern "C" {
 }
 
 #include "llvm/IR/Function.h"
+#include "llvm/IR/InlineAsm.h"
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
@@ -30,25 +32,44 @@ odb_codegen(
     llvm::Module mod(module_name, ctx);
     llvm::IRBuilder<> b(ctx);
 
-    // Make the function type:  double(double,double)
-    std::vector<llvm::Type*> Integers(2, llvm::Type::getInt32Ty(ctx));
-    llvm::FunctionType* FT = llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), Integers, false);
+    // Make the function type:  void(int, int)
+    llvm::FunctionType* FT = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(ctx),
+        {},
+        false);
     llvm::Function* F = llvm::Function::Create(FT, llvm::Function::ExternalLinkage, "main", &mod);
-
-    int i = 0;
-    static const char* names[] = { "a", "b" };
-    for (auto& arg : F->args())
-        arg.setName(names[i++]);
 
     // Create a new basic block to start insertion into.
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(ctx, "entry", F);
     b.SetInsertPoint(BB);
 
-    llvm::Value* lhs = llvm::ConstantInt::get(ctx, llvm::APInt(32, 2));
-    llvm::Value* rhs = llvm::ConstantInt::get(ctx, llvm::APInt(32, 3));
-    llvm::Value* RetVal = b.CreateAdd(lhs, rhs, "addtmp");
     // Finish off the function.
-    b.CreateRet(RetVal);
+    static const char* exitAsmLinux32 = 
+        "mov eax, 1\n"
+        "mov ebx, 0\n"
+        "int 80h\n";
+    static const char* exitAsmLinux64 = 
+        "mov rax, 1\n"
+        "mov rbx, 0\n"
+        "syscall\n";
+    /*
+    {
+        llvm::FunctionType* FT = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false);
+        llvm::InlineAsm* IA = llvm::InlineAsm::get(FT, exitAsmWin32, "", true, false, llvm::InlineAsm::AD_Intel);
+        llvm::CallInst* CI = b.CreateCall(IA, {});
+        //IA->setDoesNotReturn();
+    }*/
+    {
+        llvm::Function* FExitProcess = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
+            llvm::Function::ExternalLinkage,
+            "ExitProcess",
+            &mod);
+        FExitProcess->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+        FExitProcess->setDoesNotReturn();
+        b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
+    }
+    b.CreateRet(nullptr);
 
     // Validate the generated code, checking for consistency.
     llvm::verifyFunction(*F);

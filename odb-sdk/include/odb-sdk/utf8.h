@@ -34,7 +34,8 @@ struct utf8_list
     utf8_idx alloc;
 };
 
-struct utf8_ref cstr_utf8(const char* cstr)
+static inline struct utf8_ref
+cstr_utf8(const char* cstr)
 {
     struct utf8_ref utf8 = {
         cstr,

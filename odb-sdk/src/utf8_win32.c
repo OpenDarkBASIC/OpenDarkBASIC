@@ -55,6 +55,7 @@ utf_free(void* utf)
     mem_free(utf);
 }
 
+/*
 FILE*
 fopen_utf8_wb(const char* utf8_filename, int len)
 {
@@ -79,3 +80,4 @@ remove_utf8(const char* utf8_filename, int len)
     mem_free(utf16_filename);
     return result;
 }
+*/
