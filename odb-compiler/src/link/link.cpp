@@ -31,8 +31,6 @@ link_windows(
         case ODB_CODEGEN_AArch64 : args.push_back("-machine:aarch64"); break;
     }
 
-    args.push_back("Kernel32.lib"); /* ExitProcess() */
-
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 

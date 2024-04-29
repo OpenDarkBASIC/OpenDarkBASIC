@@ -17,8 +17,12 @@ is_ascii_numeric(char c)
 }
 
 /* ------------------------------------------------------------------------- */
+struct varef
+{
+    va_list ap;
+};
 static const char*
-process_standard_format(FILE* fp, const char* fmt, va_list* ap)
+process_standard_format(FILE* fp, const char* fmt, struct varef* args)
 {
     int i = 0;
     char subfmt[16];
@@ -28,11 +32,11 @@ process_standard_format(FILE* fp, const char* fmt, va_list* ap)
     } while (i != 15 && !is_ascii_alpha(fmt[-1]) && fmt[-1] != '%');
 
     subfmt[i] = '\0';
-    vfprintf(fp, subfmt, *ap);
+    vfprintf(fp, subfmt, args->ap);
 
     /* Have to advance to next argument */
     /* XXX: Does this work on all platforms? */
-    (void)va_arg(*ap, void*);
+    //(void)va_arg(*ap, void*);
 
     return fmt;
 }
@@ -68,7 +72,7 @@ next_control_sequence(const char* fmt, int* i)
     return NULL;
 }
 static const char*
-process_color_format(FILE* fp, const char* fmt, va_list* ap)
+process_color_format(FILE* fp, const char* fmt, struct varef* args)
 {
     int i;
     const char* ctrl_seq;
@@ -89,12 +93,12 @@ process_color_format(FILE* fp, const char* fmt, va_list* ap)
     {
         if (*content == '{')
         {
-            content = process_color_format(fp, content, ap);
+            content = process_color_format(fp, content, args);
             for (i = 0; (ctrl_seq = next_control_sequence(fmt + 1, &i)) != NULL; )
                 fprintf(fp, "%s", ctrl_seq);
         }
         else if (*content == '%')
-            content = process_standard_format(fp, content, ap);
+            content = process_standard_format(fp, content, args);
         else if (*content == '}')
         {
             fprintf(fp, "\033[0m");
@@ -111,14 +115,14 @@ process_color_format(FILE* fp, const char* fmt, va_list* ap)
 
 /* ------------------------------------------------------------------------- */
 static void
-vfprintf_with_color(FILE* fp, const char* fmt, va_list* ap)
+vfprintf_with_color(FILE* fp, const char* fmt, struct varef* args)
 {
     while (*fmt)
     {
         if (fmt[0] == '{')
-            fmt = process_color_format(fp, fmt, ap);
+            fmt = process_color_format(fp, fmt, args);
         else if (fmt[0] == '%')
-            fmt = process_standard_format(fp, fmt, ap);
+            fmt = process_standard_format(fp, fmt, args);
         else
             putc(*fmt++, fp);
     }
@@ -127,10 +131,10 @@ vfprintf_with_color(FILE* fp, const char* fmt, va_list* ap)
 static void
 fprintf_with_color(FILE* fp, const char* fmt, ...)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf_with_color(fp, fmt, &ap);
-    va_end(ap);
+    struct varef args;
+    va_start(args.ap, fmt);
+    vfprintf_with_color(fp, fmt, &args);
+    va_end(args.ap);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -147,7 +151,9 @@ log_raw(const char* severity, const char* group, const char* fmt, ...)
 void
 log_vraw(const char* severity, const char* group, const char* fmt, va_list ap)
 {
+    struct varef args;
+    va_copy(args.ap, ap);
     fprintf_with_color(stderr, group);
     fprintf_with_color(stderr, severity);
-    vfprintf_with_color(stderr, fmt, &ap);
+    vfprintf_with_color(stderr, fmt, &args);
 }
