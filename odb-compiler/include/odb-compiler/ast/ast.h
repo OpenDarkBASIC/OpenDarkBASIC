@@ -30,21 +30,21 @@ union ast_node
     struct info
     {
         enum ast_type type;
-    };
+    } info;
 
     struct base
     {
         struct info info;
         int left;
         int right;
-    };
+    } base;
 
     struct command
     {
         struct info info;
-        int args;
+        int args, _pad;
         struct utf8_ref name;
-    };
+    } command;
 
     struct identifier
     {
@@ -52,7 +52,7 @@ union ast_node
         int _pad1, _pad2;
         struct utf8_ref name;
         enum type_annotation annotation;
-    };
+    } identifier;
 };
 
 struct ast

@@ -17,7 +17,7 @@ thread_start(struct thread* t, void* (*func)(const void*), const void* args)
         NULL); /* tid */
     if (hThread == NULL)
     {
-        log_err("Failed to create thread\n");
+        log_sdk_err("Failed to create thread\n");
         return -1;
     }
 
@@ -32,7 +32,7 @@ thread_join(struct thread t, int timeout_ms)
     switch (WaitForSingleObject(hThread, timeout_ms == 0 ? INFINITE : (DWORD)timeout_ms))
     {
     case WAIT_FAILED:
-        log_err("WaitForSingleObject failed in thread_join(): %d\n", GetLastError());
+        log_sdk_err("WaitForSingleObject failed in thread_join(): %d\n", GetLastError());
         /* fallthrough */
     case WAIT_ABANDONED:
     case WAIT_TIMEOUT:
@@ -50,7 +50,7 @@ thread_kill(struct thread t)
 {
     HANDLE hThread = (HANDLE)t.handle;
     if (TerminateThread(hThread, (DWORD)-1) == FALSE)
-        log_err("Failed to TerminateThread: %d\n", GetLastError());
+        log_sdk_err("Failed to TerminateThread: %d\n", GetLastError());
     CloseHandle(hThread);
 }
 

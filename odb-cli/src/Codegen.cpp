@@ -85,7 +85,7 @@ bool output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
 
-    log_sdk_note("Hello, %{b1:%d int %{6:and %s}} str\n", 42, "lol");
+    log_sdk_note("Hello, {w:int is %d {e:and str is %s} wow} haha\n", 42, "lol");
 
 #if defined(ODBCOMPILER_PLATFORM_WINDOWS)
     static const char* objs[] = {"module.obj"};

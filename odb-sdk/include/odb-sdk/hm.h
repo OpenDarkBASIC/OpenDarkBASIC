@@ -23,16 +23,16 @@ struct hm
     char*            storage;
 #if defined(ODBSDK_HM_STATS)
     struct {
-        uintptr_t total_insertions;
-        uintptr_t total_deletions;
-        uintptr_t total_tombstones;
-        uintptr_t total_tombstone_reuses;
-        uintptr_t total_rehashes;
-        uintptr_t total_insertion_probes;
-        uintptr_t total_deletion_probes;
-        uintptr_t max_slots_used;
-        uintptr_t max_slots_tombstoned;
-        uint32_t current_tombstone_count;
+        int total_insertions;
+        int total_deletions;
+        int total_tombstones;
+        int total_tombstone_reuses;
+        int total_rehashes;
+        int total_insertion_probes;
+        int total_deletion_probes;
+        int max_slots_used;
+        int max_slots_tombstoned;
+        int current_tombstone_count;
     } stats;
 #endif
 };

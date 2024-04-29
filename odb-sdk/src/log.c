@@ -18,7 +18,7 @@ is_ascii_numeric(char c)
 
 /* ------------------------------------------------------------------------- */
 static const char*
-process_standard_format(FILE* fp, const char* fmt, va_list ap)
+process_standard_format(FILE* fp, const char* fmt, va_list* ap)
 {
     int i = 0;
     char subfmt[16];
@@ -28,7 +28,11 @@ process_standard_format(FILE* fp, const char* fmt, va_list ap)
     } while (i != 15 && !is_ascii_alpha(fmt[-1]) && fmt[-1] != '%');
 
     subfmt[i] = '\0';
-    vfprintf(fp, subfmt, ap);
+    vfprintf(fp, subfmt, *ap);
+
+    /* Have to advance to next argument */
+    /* XXX: Does this work on all platforms? */
+    (void)va_arg(*ap, void*);
 
     return fmt;
 }
@@ -53,7 +57,7 @@ next_control_sequence(const char* fmt, int* i)
         case 'n': return note_style();
         case 'w': return warn_style();
         case 'e':
-            if (strcmp(&fmt[*i], "mph") == 0)
+            if (memcmp(&fmt[*i], "mph", 3) == 0)
             {
                 (*i) += 3;
                 return emph_style();
@@ -64,7 +68,7 @@ next_control_sequence(const char* fmt, int* i)
     return NULL;
 }
 static const char*
-process_color_format(FILE* fp, const char* fmt, va_list ap)
+process_color_format(FILE* fp, const char* fmt, va_list* ap)
 {
     int i;
     const char* ctrl_seq;
@@ -107,7 +111,7 @@ process_color_format(FILE* fp, const char* fmt, va_list ap)
 
 /* ------------------------------------------------------------------------- */
 static void
-vfprintf_with_color(FILE* fp, const char* fmt, va_list ap)
+vfprintf_with_color(FILE* fp, const char* fmt, va_list* ap)
 {
     while (*fmt)
     {
@@ -125,7 +129,7 @@ fprintf_with_color(FILE* fp, const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf_with_color(fp, fmt, ap);
+    vfprintf_with_color(fp, fmt, &ap);
     va_end(ap);
 }
 
@@ -143,8 +147,7 @@ log_raw(const char* severity, const char* group, const char* fmt, ...)
 void
 log_vraw(const char* severity, const char* group, const char* fmt, va_list ap)
 {
-    fprintf_with_color(stderr, severity);
     fprintf_with_color(stderr, group);
-    vfprintf_with_color(stderr, fmt, ap);
+    fprintf_with_color(stderr, severity);
+    vfprintf_with_color(stderr, fmt, &ap);
 }
-
