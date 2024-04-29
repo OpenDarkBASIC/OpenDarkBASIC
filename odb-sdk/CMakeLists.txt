@@ -169,6 +169,7 @@ if (ODBSDK_TESTS)
         "tests/test_odbsdk_btree.cpp"
         "tests/test_odbsdk_btree_as_set.cpp"
         #"tests/test_odbsdk_fs.cpp"
+        "tests/test_odbsdk_log.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
         "tests/test_odbsdk_vec.cpp")

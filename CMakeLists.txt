@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.24)
+cmake_minimum_required (VERSION 3.21)
 
 # Default to a release build on non-Windows platforms
 if (NOT DEFINED CMAKE_BUILD_TYPE)
@@ -60,6 +60,6 @@ endif ()
 
 add_subdirectory ("thirdparty/gperf-3.1")
 add_subdirectory ("odb-sdk")
-add_subdirectory ("odb-compiler")
+#add_subdirectory ("odb-compiler")
 #add_subdirectory ("odb-interpreter")
-add_subdirectory ("odb-cli")
+#add_subdirectory ("odb-cli")

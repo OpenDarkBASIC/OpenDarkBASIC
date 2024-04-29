@@ -34,79 +34,75 @@ process_standard_format(FILE* fp, const char* fmt, va_list ap)
 }
 
 /* ------------------------------------------------------------------------- */
+static const char* debug_style(void) { return FG_YELLOW; }
+static const char* info_style(void)  { return FGB_WHITE; }
+static const char* note_style(void)  { return FGB_MAGENTA; }
+static const char* warn_style(void)  { return FGB_YELLOW; }
+static const char* err_style(void)   { return FGB_RED; }
+static const char* emph_style(void)  { return FGB_WHITE; }
+static const char*
+next_control_sequence(const char* fmt, int* i)
+{
+    if (!fmt[*i])
+        return NULL;
+
+    switch (fmt[(*i)++])
+    {
+        case 'd': return debug_style();
+        case 'i': return info_style();
+        case 'n': return note_style();
+        case 'w': return warn_style();
+        case 'e':
+            if (strcmp(&fmt[*i], "mph") == 0)
+            {
+                (*i) += 3;
+                return emph_style();
+            }
+            return err_style();
+    }
+
+    return NULL;
+}
 static const char*
 process_color_format(FILE* fp, const char* fmt, va_list ap)
 {
-    char fg[9] = "\033[\0     ";
-    char bg[9] = "\033[\0     ";
-    char set_fg = 0;
-    char set_bg = 0;
-    fmt += 2;  /* "%{" */
+    int i;
+    const char* ctrl_seq;
+    const char* content;
+    for (i = 0; next_control_sequence(fmt + 1, &i); ) {}
 
-    /* Set foreground color */
-    if (*fmt == 'b')  /* bold */
+    if (fmt[i] != ':')
     {
-        strcat(fg, "1;");
-        fmt++;
-    }
-    else
-        strcat(fg, "22;");
-    if (is_ascii_numeric(*fmt))
-    {
-        strcat(fg, "3");
-        strncat(fg, fmt++, 1);
-        strcat(fg, "m");
-        set_fg = 1;
+        putc(*fmt, fp);
+        return fmt + 1;
     }
 
-    /* Set background color */
-    if (*fmt == 'b')  /* bold */
-    {
-        strcat(bg, "1;");
-        fmt++;
-    }
-    else
-        strcat(bg, "22;");
-    if (is_ascii_numeric(*fmt))
-    {
-        strcat(bg, "4");
-        strncat(bg, fmt++, 1);
-        strcat(bg, "m");
-        set_bg = 1;
-    }
+    for (i = 0; (ctrl_seq = next_control_sequence(fmt + 1, &i)) != NULL; )
+        fprintf(fp, "%s", ctrl_seq);
+    content = fmt + i + 1;
 
-    if (*fmt == ':')
-        fmt++;
-
-    if (set_fg)
-        fprintf(fp, "%s", fg);
-    if (set_bg)
-        fprintf(fp, "%s", bg);
-
-    while (*fmt)
+    while (*content)
     {
-        if (fmt[0] == '%' && fmt[1] == '{')
+        if (*content == '{')
         {
-            fmt = process_color_format(fp, fmt, ap);
-            if (set_fg)
-                fprintf(fp, "%s", fg);
-            if (set_bg)
-                fprintf(fp, "%s", bg);
+            content = process_color_format(fp, content, ap);
+            for (i = 0; (ctrl_seq = next_control_sequence(fmt + 1, &i)) != NULL; )
+                fprintf(fp, "%s", ctrl_seq);
         }
-        else if (fmt[0] == '%')
-            fmt = process_standard_format(fp, fmt, ap);
-        else if (fmt[0] == '}')
+        else if (*content == '%')
+            content = process_standard_format(fp, content, ap);
+        else if (*content == '}')
         {
-            fmt++;
+            fprintf(fp, "\033[0m");
+            content++;
             break;
         }
         else
-            putc(*fmt++, fp);
+            putc(*content++, fp);
     }
     
-    fprintf(fp, "\033[0m");
     
-    return fmt;
+    return content;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -115,7 +111,7 @@ vfprintf_with_color(FILE* fp, const char* fmt, va_list ap)
 {
     while (*fmt)
     {
-        if (fmt[0] == '%' && fmt[1] == '{')
+        if (fmt[0] == '{')
             fmt = process_color_format(fp, fmt, ap);
         else if (fmt[0] == '%')
             fmt = process_standard_format(fp, fmt, ap);
