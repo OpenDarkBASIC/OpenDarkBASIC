@@ -46,6 +46,10 @@ log_err(const char* group, const char* fmt, ...)
 
 /* SDK logging functions --------------------------------------------------- */
 ODBSDK_PRINTF_FORMAT(1, 2) static inline void
+log_sdk_info(const char* fmt, ...)
+{ va_list ap; va_start(ap, fmt); log_vinfo("[sdk] ", fmt, ap); va_end(ap); }
+
+ODBSDK_PRINTF_FORMAT(1, 2) static inline void
 log_sdk_note(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vnote("[sdk] ", fmt, ap); va_end(ap); }
 

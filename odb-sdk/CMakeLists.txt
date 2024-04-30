@@ -77,7 +77,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "include/odb-sdk/vec.h"
 
     "src/btree.c"
-    #"src/fs_common.c"
+    "src/fs_common.c"
     "src/hash.c"
     "src/hm.c"
     "src/init.c"
@@ -98,9 +98,9 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
 
     $<$<PLATFORM_ID:Windows>:src/backtrace_win32.c>
     $<$<PLATFORM_ID:Windows>:src/dynlib_win32.c>
-    #$<$<PLATFORM_ID:Windows>:src/fs_win32.c>
+    $<$<PLATFORM_ID:Windows>:src/fs_win32.c>
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
-    #$<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
+    $<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
     $<$<PLATFORM_ID:Windows>:src/thread_win32.c>
     $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>
     

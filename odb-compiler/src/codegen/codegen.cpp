@@ -79,7 +79,7 @@ odb_codegen(
                 llvm::Function::ExternalLinkage,
                 "ExitProcess",
                 &mod);
-            FExitProcess->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
+            //FExitProcess->setDLLStorageClass(llvm::Function::DLLImportStorageClass);
             FExitProcess->setDoesNotReturn();
             b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
         } break;

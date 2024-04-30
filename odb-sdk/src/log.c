@@ -35,8 +35,10 @@ process_standard_format(FILE* fp, const char* fmt, struct varef* args)
     vfprintf(fp, subfmt, args->ap);
 
     /* Have to advance to next argument */
-    /* XXX: Does this work on all platforms? */
-    //(void)va_arg(*ap, void*);
+    /* XXX: Does this work on all compilers? */
+#if defined(_MSC_VER)
+    (void)va_arg(args->ap, void*);
+#endif
 
     return fmt;
 }

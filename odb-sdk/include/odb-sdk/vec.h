@@ -25,18 +25,11 @@ typedef uint32_t vec_size;
 typedef int32_t vec_idx;
 #endif
 
-#define VEC(T, S)           \
-    struct                  \
-    {                       \
-        S count, capacity;  \
-        T data[1];          \
-    }
-
-#define STACK_VEC(T, N)             \
-    struct                          \
-    {                               \
-        int16_t count, capacity;    \
-        T data[N];                  \
+#define VEC(T, B)                    \
+    struct                           \
+    {                                \
+        int##B##_t count, capacity;  \
+        T data[1];                   \
     }
 
 static inline int _vec_realloc(void** v, size_t bytes)
@@ -377,3 +370,5 @@ vec_reverse(struct vec* vector);
 
 #endif
 
+#define vec_for_each(v, var) \
+    for (intptr_t var_##i = 0; (v) && (var_##i != (v)->count) && ((var = &(v)->data[var_##i]) || 1); ++var_##i)

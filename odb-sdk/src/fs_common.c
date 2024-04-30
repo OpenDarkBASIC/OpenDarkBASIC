@@ -18,6 +18,7 @@ static int on_list_strlist(const char* name, void* user)
     return 0;
 }
 
+/*
 int
 fs_list_strlist(struct strlist* out, struct str_view path)
 {
@@ -34,3 +35,4 @@ fs_list_strlist_matching(
     struct on_list_strlist_ctx ctx = { out, match, user };
     return fs_list(path, on_list_strlist, &ctx);
 }
+*/

@@ -36,10 +36,13 @@ ospath(void)
 }
 
 static inline void
-ospath_deinit(struct ospath* path)
+ospath_free(struct ospath* path)
 {
-    utf8_deinit(&path->str);
+    utf8_free(&path->str);
 }
+
+ODBSDK_PUBLIC_API int
+ospath_set(struct ospath* path, struct utf8_view str);
 
 ODBSDK_PUBLIC_API int
 ospath_join(struct ospath* path, struct ospath_view other);
