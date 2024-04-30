@@ -29,7 +29,7 @@ process_standard_format(FILE* fp, const char* fmt, struct varef* args)
     subfmt[i++] = *fmt++;
     do {
         subfmt[i++] = *fmt++;
-    } while (i != 15 && !is_ascii_alpha(fmt[-1]) && fmt[-1] != '%');
+    } while (i != 15 && (!is_ascii_alpha(fmt[-1]) || fmt[-1] == 'l') && fmt[-1] != '%');
 
     subfmt[i] = '\0';
     vfprintf(fp, subfmt, args->ap);

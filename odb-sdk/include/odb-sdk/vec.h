@@ -10,8 +10,12 @@
 #pragma once
 
 #include "odb-sdk/config.h"
+#include "odb-sdk/log.h"
+#include "odb-sdk/mem.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #if defined(ODBSDK_VEC_64BIT)
 typedef uint64_t vec_size;
@@ -21,90 +25,90 @@ typedef uint32_t vec_size;
 typedef int32_t vec_idx;
 #endif
 
-struct vec
+#define VEC(T, S)           \
+    struct                  \
+    {                       \
+        S count, capacity;  \
+        T data[1];          \
+    }
+
+#define STACK_VEC(T, N)             \
+    struct                          \
+    {                               \
+        int16_t count, capacity;    \
+        T data[N];                  \
+    }
+
+static inline int _vec_realloc(void** v, size_t bytes)
 {
-    uint8_t* data;          /* pointer to the contiguous section of memory */
-    vec_size capacity;      /* how many elements actually fit into the allocated space */
-    vec_size count;         /* number of elements inserted */
-    vec_size element_size;  /* how large one element is in bytes */
-};
-
-/*!
- * @brief Creates a new vector object. See @ref vector for details.
- * @param[in] element_size Specifies the size in bytes of the type of data you want
- * the vector to store. Typically one would pass sizeof(my_data_type).
- * @return Returns the newly created vector object.
- */
-ODBSDK_PUBLIC_API struct vec*
-vec_alloc(const vec_size element_size);
-
-/*!
- * @brief Initializes an existing vector object.
- * @note This does **not** free existing memory. If you've pushed elements
- * into your vector and call this, you will have created a memory leak.
- * @param[in] vector The vector to initialize.
- * @param[in] element_size Specifies the size in bytes of the type of data you
- * want the vector to store. Typically one would pass sizeof(my_data_type).
- */
-ODBSDK_PUBLIC_API void
-vec_init(struct vec* vec, const vec_size element_size);
-
-ODBSDK_PUBLIC_API int
-vec_init_copy(struct vec* vec, const struct vec* src);
-
-ODBSDK_PUBLIC_API void
-vec_deinit(struct vec* vec);
+    void* mem = mem_realloc(*v, bytes);
+    if (mem)
+    {
+        *v = mem;
+        return 0;
+    }
+    log_sdk_err("Failed to allocate %" PRIu64 " bytes in vec_reserve()\n", bytes);
+    return -1;
+}
 
 /*!
  * @brief Destroys an existing vector object and frees all memory allocated by
  * inserted elements.
  * @param[in] vector The vector to free.
  */
-ODBSDK_PUBLIC_API void
-vec_free(struct vec* vec);
+#define vec_free(v) do {        \
+        if (v)                  \
+            mem_free(v);        \
+    } while (0)
 
 /*!
- * @brief Erases all elements in a vector.
- * @note This does not actually erase the underlying memory, it simply resets
+ * @brief Reserves memory for "num" amount of elements. Existing elements are
+ * preserved. If you specify a value smaller than the number of elements
+ * currently in the vector, then superfluous elements are removed.
+ * @param[in] v Pointer to a vector of type VEC(T,S)*.
+ * @param[in] num Number of elements to reserve memory for.
+ * @return Returns 0 on success, negative on error.
+ */
+#define vec_reserve(v, num) (           \
+    _vec_realloc((void**)&(v),          \
+            sizeof((v)->count)          \
+          + sizeof((v)->capacity)       \
+          + sizeof(*(v)->data) * num)   \
+      ? -1                              \
+      : (((v)->count = 0), ((v)->capacity = num), 0))
+
+/*!
+ * @brief Resets the vector's size to 0.
+ * @note This does not actually free the underlying memory, it simply resets
  * the element counter. If you wish to free the underlying memory, see
  * vec_clear_compact().
- * @param[in] vector The vector to clear.
+ * @param[in] v Pointer to a vector of type VEC(T,S)*.
  */
-ODBSDK_PUBLIC_API void
-vec_clear(struct vec* vec);
+#define vec_clear(v) \
+    (((v)->count = 0), (void)(v))
 
 /*!
- * @brief Erases all elements in a vector and frees their memory.
- * @param[in] vector The vector to clear.
+ * @brief Frees any excess memory using realloc(). The allocated memory should
+ * be exactly enough to contain the current number of elements.
+ * @param[in] v Pointer to a vector of type VEC(T,S)*.
  */
-ODBSDK_PUBLIC_API void
-vec_compact(struct vec* vec);
-
-ODBSDK_PUBLIC_API void
-vec_clear_compact(struct vec* vec);
-
-ODBSDK_PUBLIC_API int
-vec_reserve(struct vec* vec, vec_size size);
+#define vec_compact(v) (                            \
+    (v)->count == 0                                 \
+      ? (mem_free(v), ((v) = NULL), (void)(v))      \
+      : ((_vec_realloc((void**)&(v),                \
+            sizeof((v)->count)                      \
+          + sizeof((v)->capacity)                   \
+          + sizeof(*(v)->data) * (v)->count)),      \
+        ((v)->capacity = (v)->count),               \
+        (void)(v)))
 
 /*!
- * @brief Sets the size of the vector to exactly the size specified. If the
- * vector was smaller then memory will be reallocated. If the vector was larger
- * then the capacity will remain the same and the size will adjusted.
- * @param[in] vector The vector to resize.
- * @param[in] size The new size of the vector.
- * @return Returns ODBSDK_VEC_OOM on failure, ODBSDK_OK on success.
+ * @brief A combination of @see vec_clear() and @see vec_compact(). Resets the
+ * vector's count to 0 and frees all underlying memory.
+ * @param[in] v Pointer to a vector of type VEC(T,S)*.
  */
-ODBSDK_PUBLIC_API int
-vec_resize(struct vec* vec, vec_size size);
-
-/*!
- * @brief Gets the number of elements that have been inserted into the vector.
- */
-#define vec_count(x) ((x)->count)
-
-#define vec_capacity(x) ((x)->capacity)
-
-#define vec_data(x) ((void*)(x)->data)
+#define vec_clear_compact(v) \
+    (((v) ? (mem_free((void*)v), ((v) = NULL)) : NULL), (void)(v))
 
 /*!
  * @brief Inserts (copies) a new element at the head of the vector.
@@ -120,8 +124,24 @@ vec_resize(struct vec* vec, vec_size size);
  * @return Returns ODBSDK_OK if the data was successfully pushed, ODBSDK_VEC_OOM
  * if otherwise.
  */
-ODBSDK_PUBLIC_API int
-vec_push(struct vec* vec, const void* data);
+#define vec_push(v, element) (                                      \
+    (v) == NULL                                                     \
+      ? vec_reserve(v, ODBSDK_VEC_MIN_CAPACITY)                     \
+        ? -1                                                        \
+        : (((v)->data[(v)->count++] = element), 0)                  \
+      : (v)->count == (v)->capacity                                 \
+        ? _vec_realloc((void**)&(v),                                \
+              sizeof((v)->count)                                    \
+            + sizeof((v)->capacity)                                 \
+            + sizeof(*(v)->data) *                                  \
+                ((v)->capacity * ODBSDK_VEC_EXPAND_FACTOR))         \
+          ? -1                                                      \
+          : (                                                       \
+              ((v)->capacity *= ODBSDK_VEC_EXPAND_FACTOR),          \
+              ((v)->data[(v)->count++] = element),                  \
+              0                                                     \
+            )                                                       \
+        : (((v)->data[(v)->count++] = element), 0))
 
 /*!
  * @brief Allocates space for a new element at the head of the vector, but does
@@ -134,39 +154,26 @@ vec_push(struct vec* vec, const void* data);
  * @return A pointer to the allocated memory for the requested element. See
  * warning and use with caution.
  */
-ODBSDK_PUBLIC_API void*
-vec_emplace(struct vec* vec);
+#define vec_emplace(v) (                                            \
+    (v) == NULL                                                     \
+      ? vec_reserve(v, ODBSDK_VEC_MIN_CAPACITY)                     \
+        ? NULL                                                      \
+        : &(v)->data[(v)->count++]                                  \
+      : (v)->count == (v)->capacity                                 \
+        ? _vec_realloc((void**)&(v),                                \
+              sizeof((v)->count)                                    \
+            + sizeof((v)->capacity)                                 \
+            + sizeof(*(v)->data) *                                  \
+                ((v)->capacity * ODBSDK_VEC_EXPAND_FACTOR))         \
+          ? NULL                                                    \
+          : (                                                       \
+              ((v)->capacity *= ODBSDK_VEC_EXPAND_FACTOR),          \
+              &(v)->data[(v)->count++]                              \
+            )                                                       \
+        : &(v)->data[(v)->count++])
 
 /*!
- * @brief Copies the contents of another vector and pushes it into the vector.
- * @return Returns 0 if successful, -1 if a memory allocation failed, -2 if
- * the two vectors are incompatible.
- */
-ODBSDK_PUBLIC_API int
-vec_push_vec(struct vec* vec, const struct vec* src_vec);
-
-static void
-vec_steal_vector(struct vec* vec, struct vec* src_vec)
-{
-    vec_deinit(vec);
-    *vec = *src_vec;
-    src_vec->data = (uint8_t*)(void*)0;
-    src_vec->count = 0;
-    src_vec->capacity = 0;
-}
-
-static void*
-vec_steal_data(struct vec* vec)
-{
-    void* data = vec->data;
-    vec->data = (uint8_t*)(void*)0;
-    vec->count = 0;
-    vec->capacity = 0;
-    return data;
-}
-
-/*!
- * @brief Removes an element from the back (end) of the vector.
+ * @brief Removes an element from the end of the vector.
  * @warning The returned pointer could be invalidated if any other
  * vector related function is called, as the underlying memory of the vector
  * could be re-allocated. Use the pointer immediately after calling this
@@ -175,8 +182,10 @@ vec_steal_data(struct vec* vec)
  * @return A pointer to the popped element. See warning and use with caution.
  * If there are no elements to pop, NULL is returned.
  */
-ODBSDK_PUBLIC_API void*
-vec_pop(struct vec* vec);
+#define vec_pop(v) \
+    ((v) && (v)->count ? &(v)->data[--(v)->count] : NULL)
+
+#if 0
 
 /*!
  * @brief Returns the very last element of the vector.
@@ -365,3 +374,6 @@ vec_reverse(struct vec* vector);
  * @brief Closes a for each scope previously opened by ODBSDK_VEC_FOR_EACH.
  */
 #define VEC_END_EACH }}
+
+#endif
+

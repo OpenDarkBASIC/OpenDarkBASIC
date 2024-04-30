@@ -26,8 +26,8 @@ typedef int32_t mem_idx;
 #   define mem_alloc     malloc
 #   define mem_free      free
 #   define mem_realloc   realloc
-#   define mem_alloc_sentinel()
-#   define mem_free_sentinel()
+#   define mem_track_allocation()
+#   define mem_track_deallocation()
 #else
 
 /*!
@@ -79,3 +79,4 @@ ODBSDK_PUBLIC_API void
 mem_track_deallocation(void* p);
 
 #endif
+
