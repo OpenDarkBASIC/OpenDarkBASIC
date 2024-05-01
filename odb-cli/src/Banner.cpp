@@ -1,34 +1,17 @@
 #include "odb-cli/Banner.hpp"
-#include "odb-sdk/Log.hpp"
 
 extern "C" {
 #include "odb-compiler/build_info.h"
+#include "odb-sdk/cli_colors.h"
+#include "odb-sdk/log.h"
 }
 
-#define B_BLACK   "\u001b[1;30m"
-#define B_RED     "\u001b[1;31m"
-#define B_GREEN   "\u001b[1;32m"
-#define B_YELLOW  "\u001b[1;33m"
-#define B_BLUE    "\u001b[1;34m"
-#define B_MAGENTA "\u001b[1;35m"
-#define B_CYAN    "\u001b[1;36m"
-#define B_WHITE   "\u001b[1;37m"
-#define N_BLACK   "\u001b[22;30m"
-#define N_RED     "\u001b[22;31m"
-#define N_GREEN   "\u001b[22;32m"
-#define N_YELLOW  "\u001b[22;33m"
-#define N_BLUE    "\u001b[22;34m"
-#define N_MAGENTA "\u001b[22;35m"
-#define N_CYAN    "\u001b[22;36m"
-#define N_WHITE   "\u001b[22;37m"
-#define RESET     "\u001b[0m"
-
-#define PYRAMID_LEFT   N_YELLOW
-#define PYRAMID_RIGHT  B_YELLOW
-#define TEXT           B_CYAN
-#define URL            B_WHITE
-#define VERSION_TEXT   B_WHITE
-#define VERSION_NUMBER B_CYAN
+#define PYRAMID_LEFT   FG_YELLOW
+#define PYRAMID_RIGHT  FGB_YELLOW
+#define TEXT           FGB_CYAN
+#define URL            FGB_WHITE
+#define VERSION_TEXT   FGB_WHITE
+#define VERSION_NUMBER FGB_CYAN
 
 static bool printBanner_ = true;
 static const char* widerBannerNoEscapeSequences_ =
@@ -41,7 +24,7 @@ R"(              ▄▀▀█
   ▄▀ ^j]╚DD░÷╠╠╣~`╓▄▄▌▄▄██████,     | |__| | |_) |  __| | | | |__| | (_| | |  |   <| |_) / ____ \ ____) |_| || |____
 ╓▀   ^░░░ß░Ü<║╫▓▓███████████████,    \____/| .__/ \___|_| |_|_____/ \__,_|_|  |_|\_|____/_/    \_|_____/|_____\_____|
 ▐█▄  ~░─╚░*U⌐Å▒▒█████▀████████████,        | |
-  `██▄─ %.='╦╢╫▌█████▌▄▐██████████▌
+  `██▄─ &.='╦╢╫▌█████▌▄▐██████████▌
      ▀██░⌂r3▄▒▓█████████▀▀└          %s
         ▀█▀▀▀▀`                      Version %s (%s)
 
@@ -56,10 +39,10 @@ static const char* wideBanner_ =
 )" PYRAMID_LEFT R"(  ▄▀ ^j]╚DD░÷)" PYRAMID_RIGHT R"(╠╠╣~`╓▄▄▌▄▄██████,     )" TEXT       R"(| |__| | |_) |  __| | | | |__| | (_| | |  |   <| |_) / ____ \ ____) |_| || |____
 )" PYRAMID_LEFT R"(╓▀   ^░░░ß░Ü<)" PYRAMID_RIGHT R"(║╫▓▓███████████████,   )" TEXT       R"( \____/| .__/ \___|_| |_|_____/ \__,_|_|  |_|\_|____/_/    \_|_____/|_____\_____|
 )" PYRAMID_LEFT R"(▐█▄  ~░─╚░*U)" PYRAMID_RIGHT R"(⌐Å▒▒█████▀████████████, )" TEXT       R"(       | |
-)" PYRAMID_LEFT R"(  `██▄─ %.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
+)" PYRAMID_LEFT R"(  `██▄─ &.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
 )" PYRAMID_LEFT R"(     ▀██░⌂r)" PYRAMID_RIGHT R"(3▄▒▓█████████▀▀└         )" URL        R"( %s
 )" PYRAMID_LEFT R"(        ▀█▀)" PYRAMID_RIGHT R"(▀▀▀`                     )" VERSION_TEXT " Version " VERSION_NUMBER "%s " VERSION_TEXT "(" VERSION_NUMBER "%s" VERSION_TEXT R"()
-)" RESET        R"(
+)" COL_RESET    R"(
 )";
 static const char* bannerNoEscapeSequences_ =
 R"(              ▄▀▀█
@@ -71,7 +54,7 @@ R"(              ▄▀▀█
   ▄▀ ^j]╚DD░÷╠╠╣~`╓▄▄▌▄▄██████,     | |_| | |_) |  __/ | | | |_| | |_) |  __/
 ╓▀   ^░░░ß░Ü<║╫▓▓███████████████,    \___/| .__/ \___|_| |_|____/|____/|_|
 ▐█▄  ~░─╚░*U⌐Å▒▒█████▀████████████,       |_|
-  `██▄─ %.='╦╢╫▌█████▌▄▐██████████▌
+  `██▄─ &.='╦╢╫▌█████▌▄▐██████████▌
      ▀██░⌂r3▄▒▓█████████▀▀└          %s
         ▀█▀▀▀▀`                      Version %s (%s)
 
@@ -86,10 +69,10 @@ static const char* banner_ =
 )" PYRAMID_LEFT R"(  ▄▀ ^j]╚DD░÷)" PYRAMID_RIGHT R"(╠╠╣~`╓▄▄▌▄▄██████,     )" TEXT       R"(| |_| | |_) |  __/ | | | |_| | |_) |  __/
 )" PYRAMID_LEFT R"(╓▀   ^░░░ß░Ü<)" PYRAMID_RIGHT R"(║╫▓▓███████████████,   )" TEXT       R"( \___/| .__/ \___|_| |_|____/|____/|_|
 )" PYRAMID_LEFT R"(▐█▄  ~░─╚░*U)" PYRAMID_RIGHT R"(⌐Å▒▒█████▀████████████, )" TEXT       R"(      |_|
-)" PYRAMID_LEFT R"(  `██▄─ %.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
+)" PYRAMID_LEFT R"(  `██▄─ &.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
 )" PYRAMID_LEFT R"(     ▀██░⌂r)" PYRAMID_RIGHT R"(3▄▒▓█████████▀▀└         )" URL        R"( %s
 )" PYRAMID_LEFT R"(        ▀█▀)" PYRAMID_RIGHT R"(▀▀▀`                     )" VERSION_TEXT " Version " VERSION_NUMBER "%s " VERSION_TEXT "(" VERSION_NUMBER "%s" VERSION_TEXT R"()
-)" RESET        R"(
+)" COL_RESET    R"(
 )";
 
 static const char* smallBannerNoEscapeSequences_ =
@@ -102,7 +85,7 @@ R"(              ▄▀▀█
   ▄▀ ^j]╚DD░÷╠╠╣~`╓▄▄▌▄▄██████,
 ╓▀   ^░░░ß░Ü<║╫▓▓███████████████,
 ▐█▄  ~░─╚░*U⌐Å▒▒█████▀████████████,
-  `██▄─ %.='╦╢╫▌█████▌▄▐██████████▌
+  `██▄─ &.='╦╢╫▌█████▌▄▐██████████▌
      ▀██░⌂r3▄▒▓█████████▀▀└
         ▀█▀▀▀▀`
 %s
@@ -119,12 +102,12 @@ static const char* smallBanner_ =
 )" PYRAMID_LEFT R"(  ▄▀ ^j]╚DD░÷)" PYRAMID_RIGHT R"(╠╠╣~`╓▄▄▌▄▄██████,
 )" PYRAMID_LEFT R"(╓▀   ^░░░ß░Ü<)" PYRAMID_RIGHT R"(║╫▓▓███████████████,
 )" PYRAMID_LEFT R"(▐█▄  ~░─╚░*U)" PYRAMID_RIGHT R"(⌐Å▒▒█████▀████████████,
-)" PYRAMID_LEFT R"(  `██▄─ %.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
+)" PYRAMID_LEFT R"(  `██▄─ &.=')" PYRAMID_RIGHT R"(╦╢╫▌█████▌▄▐██████████▌
 )" PYRAMID_LEFT R"(     ▀██░⌂r)" PYRAMID_RIGHT R"(3▄▒▓█████████▀▀└
 )" PYRAMID_LEFT R"(        ▀█▀)" PYRAMID_RIGHT R"(▀▀▀`
 )" URL          R"(%s
 )" VERSION_TEXT   "Version " VERSION_NUMBER "%s " VERSION_TEXT "(" VERSION_NUMBER "%s" VERSION_TEXT R"()
-)" RESET        R"(
+)" COL_RESET    R"(
 )";
 
 /*
@@ -165,13 +148,13 @@ static const char* smallBanner_ =
 // ----------------------------------------------------------------------------
 static void printBannerNormal()
 {
-    odb::Log::info.print(banner_, build_info_url(), build_info_version(), build_info_commit_hash());
+    log_raw("", "", banner_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------
 static void printBannerNoEscapeSequences()
 {
-    odb::Log::info.print(bannerNoEscapeSequences_, build_info_url(), build_info_version(), build_info_commit_hash());
+    log_raw("", "", bannerNoEscapeSequences_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------
@@ -180,10 +163,10 @@ bool printBanner(const std::vector<std::string>& args)
     if (!printBanner_)
         return true;
 
-    if (odb::Log::info.colorEnabled())
+    //if (odb::Log::info.colorEnabled())
         printBannerNormal();
-    else
-        printBannerNoEscapeSequences();
+    //else
+    //    printBannerNoEscapeSequences();
 
     return true;
 }

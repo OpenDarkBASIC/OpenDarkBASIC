@@ -1,6 +1,5 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-sdk/FileSystem.hpp"
-#include "odb-sdk/Log.hpp"
 
 extern "C" {
 #include "odb-sdk/dynlib.h"

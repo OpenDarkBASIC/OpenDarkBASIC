@@ -4,6 +4,9 @@ extern "C" {
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/vec.h"
+
+VEC_DECLARE_API(path_list, struct ospath, 16)
+VEC_DEFINE_API(path_list, struct ospath, 16)
 }
 
 static struct G
@@ -11,13 +14,13 @@ static struct G
     ~G()
     {
         struct ospath* path;
-        vec_for_each(plugin_dirs, path)
+        vec_for_each(&plugin_dirs, path)
             ospath_free(path);
-        vec_free(plugin_dirs);
+        path_list_free(&plugin_dirs);
     }
 
     struct ospath sdk_root_dir = ospath();
-    VEC(struct ospath, 16)* plugin_dirs = NULL;
+    struct path_list* plugin_dirs = NULL;
     odb::SDKType sdk_type = odb::SDKType::ODB;
 } g;
 
@@ -56,7 +59,7 @@ bool setSDKType(const std::vector<std::string>& args)
 bool setAdditionalPluginsDir(const std::vector<std::string>& args)
 {
     for (const auto& dirOrFile : args)
-        ospath_set(vec_emplace(g.plugin_dirs), cstr_utf8_view(dirOrFile.c_str()));
+        ospath_set(path_list_emplace(&g.plugin_dirs), cstr_utf8_view(dirOrFile.c_str()));
 
     return true;
 }

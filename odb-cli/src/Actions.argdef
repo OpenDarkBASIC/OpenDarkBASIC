@@ -8,21 +8,26 @@
 #include "odb-cli/Log.hpp"
 #include "odb-cli/SDK.hpp"
 //#include "odb-cli/Warnings.hpp"
-#include "odb-sdk/Log.hpp"
-#include "odb-sdk/Str.hpp"
 #include <cstdarg>
 
+extern "C" {
+#include "odb-sdk/cli_colors.h"
+#include "odb-sdk/log.h"
+}
+
 #define ADG_FPRINTF(fp, fmt, ...) \
-    odb::Log::info.print(fmt, __VA_ARGS__)
-#define ADG_FPRINTF_COLOR(print_func, fp, color, fmt, ...) \
-    odb::Log::info.print(color, fmt, __VA_ARGS__)
-#define ADG_COLOR_RESET    odb::Log::Color::RESET
-#define ADG_COLOR_HEADING1 odb::Log::Color::FG_BRIGHT_WHITE
-#define ADG_COLOR_HEADING2 odb::Log::Color::FG_BRIGHT_YELLOW
-#define ADG_COLOR_LONGOPT  odb::Log::Color::FG_BRIGHT_GREEN
-#define ADG_COLOR_SHORTOPT odb::Log::Color::FG_BRIGHT_YELLOW
-#define ADG_COLOR_ARG      odb::Log::Color::FG_BRIGHT_YELLOW
-#define ADG_COLOR_ERROR    odb::Log::Color::FG_BRIGHT_RED
+    log_raw("", "", fmt, __VA_ARGS__)
+#define ADG_FPRINTF_COLOR(print_func, fp, color, fmt, ...) do { \
+        log_raw("", "", color); \
+        log_raw("", "", fmt, __VA_ARGS__); \
+    } while (0)
+#define ADG_COLOR_RESET    COL_RESET
+#define ADG_COLOR_HEADING1 FGB_WHITE
+#define ADG_COLOR_HEADING2 FGB_YELLOW
+#define ADG_COLOR_LONGOPT  FGB_GREEN
+#define ADG_COLOR_SHORTOPT FGB_YELLOW
+#define ADG_COLOR_ARG      FGB_YELLOW
+#define ADG_COLOR_ERROR    FGB_RED
 
 #define ADG_HELP_EXAMPLES \
     printHelpExamples();
@@ -62,14 +67,11 @@ section global:
 
   version():
     help: Prints the version.
-    runafter: help
     func: printVersion
 
   commit-hash():
     help: Prints the git commit hash.
     func: printCommitHash
-    runafter: help
-    requires: version
 
 ###############################################################################
 #section warnings:
