@@ -27,7 +27,6 @@ cmake_dependent_option (ODBSDK_MEM_BACKTRACE "Enable generating backtraces to ev
 set (ODBSDK_MEM_BACKTRACE_SIZE "64" CACHE STRING "Sets the maximum stack size (depth) when generating backtraces")
 cmake_dependent_option (ODBSDK_PROFILING "Enable -pg and -fno-omit-frame-pointer" ON "${ODB_PROFILING}" OFF)
 cmake_dependent_option (ODBSDK_TESTS "Build unit tests for the OpenDarkBASIC SDK" ON "${ODB_TESTS}" OFF)
-option (ODBSDK_VEC_64BIT_CAPACITY "Set vector capacity to 2^64 instead of 2^32, but makes the structure 32 bytes instead of 20 bytes" OFF)
 set (ODBSDK_VEC_EXPAND_FACTOR "2" CACHE STRING "When reallocating vector memory, this is the factor with which the buffer grows")
 set (ODBSDK_VEC_MIN_CAPACITY "32" CACHE STRING "The smallest number of elements to reserve when initializing a vector")
 
