@@ -1,6 +1,6 @@
 #pragma once
 
-/* Options ----------------------------------------------------------------- */
+/* Options ------------------------------------------------------------------ */
 
 #define ODBSDK_${ODBSDK_LIB_TYPE}
 #define ODBSDK_PLATFORM_${ODBSDK_PLATFORM}
@@ -23,7 +23,7 @@
 #define ODBSDK_VEC_EXPAND_FACTOR      ${ODBSDK_VEC_EXPAND_FACTOR}
 #define ODBSDK_VEC_MIN_CAPACITY       ${ODBSDK_VEC_MIN_CAPACITY}
 
-/* Symbol visibility ------------------------------------------------------- */
+/* Symbol visibility -------------------------------------------------------- */
 
 #if defined(ODBSDK_SHARED)
 #   if defined(ODBSDK_BUILDING)
@@ -37,7 +37,12 @@
 #   define ODBSDK_PRIVATE_API
 #endif
 
-/* Version string ---------------------------------------------------------- */
+/* Assertions --------------------------------------------------------------- */
+
+#define ODBSDK_STATIC_ASSERT(condition) ${ODBSDK_STATIC_ASSERT}
+#define ODBSDK_DEBUG_ASSERT(condition)  assert(condition)
+
+/* Version string ----------------------------------------------------------- */
 
 #define ODBSDK_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
 #define ODBSDK_VERSION_MINOR ${PROJECT_VERSION_MINOR}
@@ -51,7 +56,7 @@
 #undef STRINGIFY
 #undef STRINGIFY_
 
-/* printf formatting ------------------------------------------------------- */
+/* printf formatting -------------------------------------------------------- */
 
 #if defined(__GNUC__) || defined(__clang__)
 #   define ODBSDK_PRINTF_FORMAT(string_index, first_to_check) \

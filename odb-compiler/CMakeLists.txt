@@ -284,6 +284,7 @@ odb_target_properties (odb-compiler
 #FetchContent_Declare (
 #    reproc
 #    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
+#    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 #)
 #FetchContent_MakeAvailable (reproc)
 

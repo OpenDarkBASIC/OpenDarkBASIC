@@ -48,6 +48,17 @@ if (GCC_THREADLOCAL)
     set (ODBSDK_THREADLOCAL "__thread")
 endif ()
 
+# Static assert support in C
+check_c_source_compiles ("int main(void) { _Static_assert(1, \"\"); return 0; }" GCC_STATIC_ASSERT)
+check_c_source_compiles ("int main(void) { _STATIC_ASSERT(1); return 0; }" MSVC_STATIC_ASSERT)
+if (MSVC_STATIC_ASSERT)
+    set (ODBSDK_STATIC_ASSERT "_STATIC_ASSERT(condition)")
+elseif (GCC_STATIC_ASSERT)
+    set (ODBSDK_STATIC_ASSERT "_Static_assert(condition, \"(\" #condition \") failed\")")
+else ()
+    set (ODBSDK_STATIC_ASSERT "assert(condition)")
+endif ()
+
 configure_file ("templates/config.h.in" "include/odb-sdk/config.h")
 
 ###############################################################################
@@ -156,6 +167,7 @@ FetchContent_Declare (
     lief
     URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
     URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable (lief)
 

@@ -1,16 +1,28 @@
 ﻿---
+AlignAfterOpenBracket: AlwaysBreak
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Right
+AlignOperands: true
+AlignTrailingComments: true
 AllowShortBlocksOnASingleLine: Never
-AllowShortCaseLabelsOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: true
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLambdasOnASingleLine: Inline
 AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: All
+AlwaysBreakBeforeMultilineStrings: true
 AccessModifierOffset: -4
+BinPackParameters: false
+BinPackArguments: false
+BreakBeforeBinaryOperators: All
+BreakBeforeTernaryOperators: true
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel: true
+  AfterCaseLabel: false
   AfterClass: true
-  AfterControlStatement: Always
+  AfterControlStatement: true
   AfterEnum: true
   AfterExternBlock: false
   AfterFunction: true
@@ -21,9 +33,27 @@ BraceWrapping:
   BeforeElse: true
   BeforeLambdaBody: true
 BreakConstructorInitializers: BeforeComma
-ColumnLimit: 120
+BreakStringLiterals: true
+ColumnLimit: 80
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^odb-cli/'
+    Priority:        4
+    SortPriority:    4
+  - Regex:           '^odb-compiler/'
+    Priority:        3
+    SortPriority:    3
+  - Regex:           '^odb-sdk/'
+    Priority:        2
+    SortPriority:    2
+  - Regex:           '^((<|")(gtest|gmock|isl|json)/)'
+    Priority:        1
+  - Regex:           '.*'
+    Priority:        0
+    SortPriority:    0
 IndentWidth: 4
+InsertNewlineAtEOF: true
 PointerAlignment: Left
-
+SpaceBeforeParens: ControlStatements
 ...

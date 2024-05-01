@@ -1,3 +1,4 @@
+#include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 #include <assert.h>
 
@@ -6,10 +7,9 @@ hash32
 hash32_jenkins_oaat(const void* key, int len)
 {
     hash32 hash = 0;
-    int i = 0;
-    for(; i != len; ++i)
+    while (len--)
     {
-        hash += *((uint8_t*)key + i);
+        hash += *((uint8_t*)key + len);
         hash += (hash << 10);
         hash ^= (hash >> 6);
     }
@@ -24,22 +24,21 @@ hash32_jenkins_oaat(const void* key, int len)
 hash32
 hash32_ptr(const void* ptr, int len)
 {
-    assert(len == sizeof(void*));
-    assert(sizeof(uintptr_t) == sizeof(void*));
+    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return hash32_combine(
-           (hash32)(*(uintptr_t*)ptr & 0xFFFFFFFF),
-           (hash32)(*(uintptr_t*)ptr >> 32)
-    );
+        (hash32)(*(uintptr_t*)ptr & 0xFFFFFFFF),
+        (hash32)(*(uintptr_t*)ptr >> 32));
 }
 #elif ODBSDK_SIZEOF_VOID_P == 4
 hash32
 hash32_ptr(const void* ptr, uintptr_t len)
 {
-    assert(len == sizeof(void*));
-    assert(sizeof(uintptr_t) == sizeof(void*));
+    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
-    return (hash32)*(uintptr_t*)ptr;
+    return (hash32) * (uintptr_t*)ptr;
 }
 #endif
 
@@ -48,8 +47,8 @@ hash32_ptr(const void* ptr, uintptr_t len)
 hash32
 hash32_aligned_ptr(const void* ptr, int len)
 {
-    assert(len == sizeof(void*));
-    assert(sizeof(uintptr_t) == sizeof(void*));
+    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return (hash32)((*(uintptr_t*)ptr / sizeof(void*)) & 0xFFFFFFFF);
 }
@@ -57,8 +56,8 @@ hash32_aligned_ptr(const void* ptr, int len)
 hash32
 hash32_aligned_ptr(const void* ptr, uintptr_t len)
 {
-    assert(len == sizeof(void*));
-    assert(sizeof(uintptr_t) == sizeof(void*));
+    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return (hash32)(*(uintptr_t*)ptr / sizeof(void*));
 }

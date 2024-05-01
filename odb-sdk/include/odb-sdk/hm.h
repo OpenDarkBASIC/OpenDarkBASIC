@@ -3,26 +3,27 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 
-#define ODBSDK_HM_SLOT_UNUSED    0
-#define ODBSDK_HM_SLOT_RIP       1
-#define ODBSDK_HM_SLOT_INVALID   2
+#define ODBSDK_HM_SLOT_UNUSED  0
+#define ODBSDK_HM_SLOT_RIP     1
+#define ODBSDK_HM_SLOT_INVALID 2
 
 typedef uint32_t hm_size;
-typedef int32_t hm_idx;
+typedef int32_t  hm_idx;
 
 typedef int (*hm_compare_func)(const void* a, const void* b, int size);
 
 struct hm
 {
-    hm_size          table_count;
-    hm_size          key_size;
-    hm_size          value_size;
-    hm_size          slots_used;
-    hash32_func      hash;
-    hm_compare_func  compare;
-    char*            storage;
+    hm_size         table_count;
+    hm_size         key_size;
+    hm_size         value_size;
+    hm_size         slots_used;
+    hash32_func     hash;
+    hm_compare_func compare;
+    char*           storage;
 #if defined(ODBSDK_HM_STATS)
-    struct {
+    struct
+    {
         int total_insertions;
         int total_deletions;
         int total_tombstones;
@@ -57,17 +58,18 @@ struct hm
  * calling hm_insert(), value_size number of bytes are copied from the
  * memory pointed to by value into the hm.
  * @note This parameter may be 0.
- * @return If successful, returns HM_OK. If allocation fails, HM_OOM is returned.
+ * @return If successful, returns HM_OK. If allocation fails, HM_OOM is
+ * returned.
  */
 ODBSDK_PUBLIC_API struct hm*
 hm_alloc(hm_size key_size, hm_size value_size);
 
 ODBSDK_PUBLIC_API struct hm*
 hm_create_with_options(
-    hm_size key_size,
-    hm_size value_size,
-    hm_size table_count,
-    hash32_func hash_func,
+    hm_size         key_size,
+    hm_size         value_size,
+    hm_size         table_count,
+    hash32_func     hash_func,
     hm_compare_func compare_func);
 
 /*!
@@ -79,11 +81,11 @@ hm_init(struct hm* hm, hm_size key_size, hm_size value_size);
 
 ODBSDK_PUBLIC_API int
 hm_init_with_options(
-    struct hm* hm,
-    hm_size key_size,
-    hm_size value_size,
-    hm_size table_count,
-    hash32_func hash_func,
+    struct hm*      hm,
+    hm_size         key_size,
+    hm_size         value_size,
+    hm_size         table_count,
+    hash32_func     hash_func,
     hm_compare_func compare_func);
 
 /*!
@@ -130,19 +132,38 @@ hm_exists(const struct hm* hm, const void* key);
 
 #define hm_count(hm) ((hm)->slots_used)
 
-#define HM_FOR_EACH(hm, key_t, value_t, key, value) { \
-    key_t* key; \
-    value_t* value; \
-    hm_idx pos_##value; \
-    for (pos_##value = 0; \
-        pos_##value != (hm_idx)(hm)->table_count && \
-            ((key = (key_t*)((hm)->storage + (hm_idx)sizeof(hash32) * (hm_idx)(hm)->table_count + (hm_idx)(hm)->key_size * pos_##value)) || 1) && \
-            ((value = (value_t*)((hm)->storage + (hm_idx)sizeof(hash32) * (hm_idx)(hm)->table_count + (hm_idx)(hm)->key_size * (hm_idx)(hm)->table_count + (hm_idx)(hm)->value_size * pos_##value)) || 1); \
-        ++pos_##value) \
-    { \
-        hash32 slot_##value = *(hash32*)((hm)->storage + (hm_idx)sizeof(hash32) * pos_##value); \
-        if (slot_##value == ODBSDK_HM_SLOT_UNUSED || slot_##value == ODBSDK_HM_SLOT_RIP || slot_##value == ODBSDK_HM_SLOT_INVALID) \
-            continue; \
-        { \
+#define HM_FOR_EACH(hm, key_t, value_t, key, value)                            \
+    {                                                                          \
+        key_t*   key;                                                          \
+        value_t* value;                                                        \
+        hm_idx   pos_##value;                                                  \
+        for (pos_##value = 0;                                                  \
+             pos_##value != (hm_idx)(hm)->table_count                          \
+             && ((key = (key_t*)((hm)->storage                                 \
+                                 + (hm_idx)sizeof(hash32)                      \
+                                       * (hm_idx)(hm)->table_count             \
+                                 + (hm_idx)(hm)->key_size * pos_##value))      \
+                 || 1)                                                         \
+             && ((value                                                        \
+                  = (value_t*)((hm)->storage                                   \
+                               + (hm_idx)sizeof(hash32)                        \
+                                     * (hm_idx)(hm)->table_count               \
+                               + (hm_idx)(hm)->key_size                        \
+                                     * (hm_idx)(hm)->table_count               \
+                               + (hm_idx)(hm)->value_size * pos_##value))      \
+                 || 1);                                                        \
+             ++pos_##value)                                                    \
+        {                                                                      \
+            hash32 slot_##value                                                \
+                = *(hash32*)((hm)->storage                                     \
+                             + (hm_idx)sizeof(hash32) * pos_##value);          \
+            if (slot_##value == ODBSDK_HM_SLOT_UNUSED                          \
+                || slot_##value == ODBSDK_HM_SLOT_RIP                          \
+                || slot_##value == ODBSDK_HM_SLOT_INVALID)                     \
+                continue;                                                      \
+            {
 
-#define HM_END_EACH }}}
+#define HM_END_EACH                                                            \
+    }                                                                          \
+    }                                                                          \
+    }
