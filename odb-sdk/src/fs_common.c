@@ -1,5 +1,6 @@
 #include "odb-sdk/fs.h"
 
+/*
 static int match_all(const char* path, void* user) { (void)path; (void)user;  return 1; }
 
 struct on_list_strlist_ctx
@@ -16,7 +17,7 @@ static int on_list_strlist(const char* name, void* user)
         if (strlist_add(ctx->out, cstr_view(name)) != 0)
             return -1;
     return 0;
-}
+}*/
 
 /*
 int

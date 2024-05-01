@@ -17,7 +17,7 @@ thread_start(struct thread* t, void* (*func)(void*), void* args)
     if ((rc = pthread_create((pthread_t*)&t->handle, &attr, (void*(*)(void*))func, (void*)args)) != 0)
     {
         pthread_attr_destroy(&attr);
-        log_err("Failed to create thread: %s\n", strerror(rc));
+        log_sdk_err("Failed to create thread: %s\n", strerror(rc));
         return -1;
     }
 
@@ -99,3 +99,4 @@ mutex_unlock(struct mutex m)
 {
     pthread_mutex_unlock(m.handle);
 }
+

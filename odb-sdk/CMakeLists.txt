@@ -102,10 +102,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
     $<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
     $<$<PLATFORM_ID:Windows>:src/thread_win32.c>
-    $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>
-    
-    "src/Log.cpp"
-    "src/Str.cpp")
+    $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>)
 target_include_directories (odb-sdk
     PUBLIC
         "$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>"
