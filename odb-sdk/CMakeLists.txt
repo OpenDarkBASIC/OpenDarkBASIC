@@ -102,11 +102,11 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
 
     $<$<PLATFORM_ID:Linux>:src/backtrace_linux.c>
     $<$<PLATFORM_ID:Linux>:src/dynlib_linux.c>
-    #$<$<PLATFORM_ID:Linux>:src/fs_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/fs_linux.c>
     $<$<PLATFORM_ID:Linux>:src/mfile_linux.c>
-    #$<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
     $<$<PLATFORM_ID:Linux>:src/thread_linux.c>
-    #$<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
 
     $<$<PLATFORM_ID:Windows>:src/backtrace_win32.c>
     $<$<PLATFORM_ID:Windows>:src/dynlib_win32.c>

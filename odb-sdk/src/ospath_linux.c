@@ -1,17 +1,18 @@
 #include "odb-sdk/ospath.h"
 
 int
-path_set(struct ospath* path, struct str_view str)
+ospath_set(struct ospath* path, struct utf8_view str)
 {
-    if (str_set(&path->str, str) != 0)
+    if (utf8_set(&path->str, str) != 0)
         return -1;
-    str_replace_char(&path->str, '\\', '/');
+    utf8_replace_char(&path->str, '\\', '/');
     /* Remove trailing slashes (if not root) */
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;
     return 0;
 }
 
+#if 0
 void
 path_set_take(struct ospath* path, struct ospath* other)
 {
@@ -107,5 +108,4 @@ path_dirname_view(const struct ospath* path)
 
     return view;
 }
-
-
+#endif

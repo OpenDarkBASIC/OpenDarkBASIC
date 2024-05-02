@@ -60,6 +60,6 @@ endif ()
 
 add_subdirectory ("thirdparty/gperf-3.1")
 add_subdirectory ("odb-sdk")
-#add_subdirectory ("odb-compiler")
+add_subdirectory ("odb-compiler")
 #add_subdirectory ("odb-interpreter")
-#add_subdirectory ("odb-cli")
+add_subdirectory ("odb-cli")

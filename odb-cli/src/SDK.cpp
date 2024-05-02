@@ -20,7 +20,7 @@ static struct G
     }
 
     struct ospath sdk_root_dir = ospath();
-    struct path_list* plugin_dirs = NULL;
+    struct path_list plugin_dirs = {};
     odb::SDKType sdk_type = odb::SDKType::ODB;
 } g;
 

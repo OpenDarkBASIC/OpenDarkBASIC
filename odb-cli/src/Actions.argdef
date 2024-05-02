@@ -39,6 +39,14 @@ static void printHelpExamples();
 ###############################################################################
 section global:
   info: Initial setup and version information
+  
+  version():
+    help: Prints the version.
+    func: printVersion
+
+  commit-hash():
+    help: Prints the git commit hash.
+    func: printCommitHash
 
   no-banner(b):
     help: Don't print the cool art banner.
@@ -48,7 +56,7 @@ section global:
     help: Enables color escape sequences for all messages. Color is enabled by
           default unless the output is piped.
     func: enableColor
-
+  
   no-color(c):
     help: Disables color escape sequences for all messages. Color is enabled by
           default unless the output is piped.
@@ -56,7 +64,7 @@ section global:
 
   print-banner:
     func: printBanner
-    runafter: no-banner, no-color, color
+    runafter: version, commit-hash, no-banner, no-color, color
 
   help(h):
     help: Print this help text, or print help about a specific section, or print
@@ -64,14 +72,6 @@ section global:
     args: [all|section]
     func: printHelp
     runafter: print-banner
-
-  version():
-    help: Prints the version.
-    func: printVersion
-
-  commit-hash():
-    help: Prints the git commit hash.
-    func: printCommitHash
 
 ###############################################################################
 #section warnings:

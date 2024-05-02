@@ -8,10 +8,10 @@
 # IDE files
 /.idea
 *.kdev4
-/.clangd
 /.cache
 *.swp
 *.kate-swp
+/compile_commands.json
 /CMakeLists.txt.user
 
 # valgrind

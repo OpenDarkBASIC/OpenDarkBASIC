@@ -1,5 +1,6 @@
 #include "odb-sdk/fs.h"
 #include "odb-sdk/mem.h"
+#include "odb-sdk/log.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>

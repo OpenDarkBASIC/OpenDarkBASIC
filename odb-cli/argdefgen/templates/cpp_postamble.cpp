@@ -428,7 +428,7 @@ static void tryToHelp(ActionList* list)
         if (actions_[handler.actionId].type & META)
             return;
 
-    if (list->size() == 0 || lastPriority < helpPriority)
+    if (list->size() == 0 /*|| lastPriority < helpPriority*/)
         if (helpActionId != -1) // or maybe not if there is no help action
         {
             list->push_back(ActionHandler::fromId(helpActionId));

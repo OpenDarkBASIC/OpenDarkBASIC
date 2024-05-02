@@ -1,5 +1,4 @@
 #include "gmock/gmock.h"
-#include "odb-sdk/Log.hpp"
 
 int main(int argc, char** argv)
 {
