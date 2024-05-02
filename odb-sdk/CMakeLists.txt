@@ -2,6 +2,10 @@ project ("odb-sdk"
     LANGUAGES CXX C
     VERSION ${ODB_VERSION})
 
+include (CheckCSourceCompiles)
+include (CMakeDependentOption)
+include (TestVisibilityMacros)
+
 ###############################################################################
 # Configuration
 ###############################################################################
@@ -10,7 +14,6 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     set (DEBUG_FEATURE ON)
 endif ()
 
-include (CMakeDependentOption)
 set (ODBSDK_LIB_TYPE "SHARED" CACHE STRING "Build either as SHARED or STATIC library")
 
 set (ODBSDK_BTREE_EXPAND_FACTOR "2" CACHE STRING "When reallocating btree memory, this is the factor with which the buffer grows")
@@ -32,7 +35,6 @@ set (ODBSDK_VEC_MIN_CAPACITY "32" CACHE STRING "The smallest number of elements 
 
 string (TOUPPER ${CMAKE_SYSTEM_NAME} ODBSDK_PLATFORM)
 
-include (TestVisibilityMacros)
 test_visibility_macros (
     ODBSDK_API_EXPORT
     ODBSDK_API_IMPORT
@@ -167,7 +169,6 @@ FetchContent_Declare (
     lief
     URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
     URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable (lief)
 
