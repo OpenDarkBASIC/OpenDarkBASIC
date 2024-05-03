@@ -39,11 +39,19 @@ union ast_node
         int right;
     } base;
 
+    struct paramlist
+    {
+        struct info info;
+        int expr;
+        int next;
+    } paramlist;
+
     struct command
     {
         struct info info;
-        int args, _pad;
-        struct utf8_ref name;
+        int retval;
+        int paramlist;
+        int command_id;
     } command;
 
     struct identifier

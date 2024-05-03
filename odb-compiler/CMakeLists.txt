@@ -230,11 +230,11 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/codegen/internal/ODBEngineInterface.cpp"
     #"src/codegen/internal/DBPEngineInterface.cpp"
     
-    "include/odb-compiler/codegen/codegen.h"
-    "src/codegen/codegen.cpp"
+    #"include/odb-compiler/codegen/codegen.h"
+    #"src/codegen/codegen.cpp"
     
-    "include/odb-compiler/link/link.h"
-    "src/link/link.cpp"
+    #"include/odb-compiler/link/link.h"
+    #"src/link/link.cpp"
     
     "${PROJECT_BINARY_DIR}/include/odb-compiler/config.h"
     "templates/config.h.in"
@@ -273,9 +273,29 @@ odb_target_properties (odb-compiler
 # Dependencies.
 ###############################################################################
 
-#include (FetchContent)
+include (FetchContent)
 
-#target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
+# LIEF is required for loading commands from shared libraries
+set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
+set (LIEF_C_API OFF CACHE BOOL "" FORCE)
+set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
+set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
+set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
+set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
+set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
+set (LIEF_OAT OFF CACHE BOOL "" FORCE)
+set (LIEF_DEX OFF CACHE BOOL "" FORCE)
+set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
+set (LIEF_ART OFF CACHE BOOL "" FORCE)
+FetchContent_Declare (
+    lief
+    URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
+    URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
+)
+FetchContent_MakeAvailable (lief)
+
+target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 # reproc
 
@@ -296,46 +316,46 @@ odb_target_properties (odb-compiler
 ###############################################################################
 # LLVM
 ###############################################################################
-
-find_package (LLVM REQUIRED CONFIG)
-
-# This is apparently deprecated since 4 years
-# https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
 #
-#llvm_map_components_to_libnames (llvm_libs <list of LLVM libs>)
-#target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
-#target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
-
-# This is how you're supposed to do it by reading LLVM-Config.cmake
-# https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
-    set (llvm_use_shared USE_SHARED)
-endif()
-llvm_config (odb-compiler ${llvm_use_shared}
-    Core
-    BitWriter
-    AArch64AsmParser
-    AArch64CodeGen
-    ARMAsmParser
-    ARMCodeGen
-    WebAssemblyAsmParser
-    WebAssemblyCodeGen
-    X86AsmParser
-    X86CodeGen)
-find_package (LLD REQUIRED CONFIG)
-target_link_libraries (odb-compiler
-    PRIVATE
-        lldCommon
-        lldCOFF
-        lldELF
-        lldMachO)
-
-target_include_directories (odb-compiler PRIVATE ${LLVM_INCLUDE_DIRS})
-target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
-
-# Push LLVM binary dir to parent scope.
-#set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
-
+#find_package (LLVM REQUIRED CONFIG)
+#
+## This is apparently deprecated since 4 years
+## https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
+##
+##llvm_map_components_to_libnames (llvm_libs <list of LLVM libs>)
+##target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
+##target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
+#
+## This is how you're supposed to do it by reading LLVM-Config.cmake
+## https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
+#if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
+#    set (llvm_use_shared USE_SHARED)
+#endif()
+#llvm_config (odb-compiler ${llvm_use_shared}
+#    Core
+#    BitWriter
+#    AArch64AsmParser
+#    AArch64CodeGen
+#    ARMAsmParser
+#    ARMCodeGen
+#    WebAssemblyAsmParser
+#    WebAssemblyCodeGen
+#    X86AsmParser
+#    X86CodeGen)
+#find_package (LLD REQUIRED CONFIG)
+#target_link_libraries (odb-compiler
+#    PRIVATE
+#        lldCommon
+#        lldCOFF
+#        lldELF
+#        lldMachO)
+#
+#target_include_directories (odb-compiler PRIVATE ${LLVM_INCLUDE_DIRS})
+#target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
+#
+## Push LLVM binary dir to parent scope.
+##set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
+#
 ###############################################################################
 # LLD
 ###############################################################################

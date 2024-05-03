@@ -152,26 +152,6 @@ target_link_libraries (odb-sdk
 
 include (FetchContent)
 
-# LIEF is required for loading commands from shared libraries
-set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
-set (LIEF_C_API OFF CACHE BOOL "" FORCE)
-set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
-set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
-set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
-set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
-set (LIEF_OAT OFF CACHE BOOL "" FORCE)
-set (LIEF_DEX OFF CACHE BOOL "" FORCE)
-set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
-set (LIEF_ART OFF CACHE BOOL "" FORCE)
-FetchContent_Declare (
-    lief
-    URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
-    URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
-)
-FetchContent_MakeAvailable (lief)
-
 if (ODBSDK_TESTS)
     add_executable (test_odb-sdk
         "tests/env_odbsdk_init.cpp"
