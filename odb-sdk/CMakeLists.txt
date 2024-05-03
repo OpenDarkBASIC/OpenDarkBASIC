@@ -96,7 +96,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/log.c"
     "src/mstream.c"
     "src/utf8.c"
-    #"src/vec.c"
+    "src/utf8_list.c"
 
     $<$<BOOL:${ODBSDK_MEM_DEBUGGING}>:src/mem.c>
 
@@ -161,6 +161,8 @@ if (ODBSDK_TESTS)
         "tests/test_odbsdk_log.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
+        "tests/test_odbsdk_utf8.cpp"
+        "tests/test_odbsdk_utf8_list.cpp"
         "tests/test_odbsdk_vec.cpp")
         #"tests/test_DynamicLibrary.cpp")
     target_link_libraries (test_odb-sdk PUBLIC

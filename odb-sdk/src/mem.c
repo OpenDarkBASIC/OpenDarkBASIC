@@ -1,41 +1,52 @@
 #include "odb-sdk/backtrace.h"
-#include "odb-sdk/hm.h"
 #include "odb-sdk/hash.h"
+#include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define BACKTRACE_OMIT_COUNT 2
 
 struct state
 {
     struct hm report;
-    mem_size allocations;
-    mem_size deallocations;
-    mem_size bytes_in_use;
-    mem_size bytes_in_use_peak;
-    unsigned ignore_malloc : 1;
+    mem_size  allocations;
+    mem_size  deallocations;
+    mem_size  bytes_in_use;
+    mem_size  bytes_in_use_peak;
+    unsigned  ignore_malloc : 1;
 };
 
 struct report_info
 {
     uintptr_t location;
-    mem_size size;
-#   if defined(ODBSDK_MEM_BACKTRACE)
-    int backtrace_size;
+    mem_size  size;
+#if defined(ODBSDK_MEM_BACKTRACE)
+    int    backtrace_size;
     char** backtrace;
-#   endif
+#endif
 };
 
 static ODBSDK_THREADLOCAL struct state state;
 
 /* ------------------------------------------------------------------------- */
-static int report_info_cmp(const void* a, const void* b, int size) { return memcmp(a, b, (size_t)size); }
+int
+mem_report_oom(mem_size bytes, const char* func_name)
+{
+    log_sdk_err("Failed to allocate %u bytes in %s\n", bytes, func_name);
+    return -1;
+}
+
+/* ------------------------------------------------------------------------- */
+static int
+report_info_cmp(const void* a, const void* b, int size)
+{
+    return memcmp(a, b, (size_t)size);
+}
 int
 mem_threadlocal_init(void)
 {
@@ -49,16 +60,17 @@ mem_threadlocal_init(void)
      * crashing.
      */
     state.ignore_malloc = 1;
-        if (hm_init_with_options(
+    if (hm_init_with_options(
             &state.report,
             sizeof(uintptr_t),
             sizeof(struct report_info),
             4096,
             hash32_ptr,
-            report_info_cmp) != 0)
-        {
-            return -1;
-        }
+            report_info_cmp)
+        != 0)
+    {
+        return -1;
+    }
     state.ignore_malloc = 0;
 
     return 0;
@@ -70,7 +82,7 @@ static void
 print_backtrace(void)
 {
     char** bt;
-    int bt_size, i;
+    int    bt_size, i;
 
     if (state.ignore_malloc)
         return;
@@ -90,7 +102,7 @@ print_backtrace(void)
     backtrace_free(bt);
 }
 #else
-#   define print_backtrace()
+#define print_backtrace()
 #endif
 
 /* ------------------------------------------------------------------------- */
@@ -120,25 +132,30 @@ track_allocation(uintptr_t addr, mem_size size)
         state.bytes_in_use_peak = state.bytes_in_use;
 
     state.ignore_malloc = 1;
-        /* insert info into hashmap */
-        switch (hm_insert(&state.report, &addr, (void**)&info))
-        {
-            case 1: break;
-            case 0:
-                log_sdk_err("Double allocation! This is usually caused by calling mem_track_allocation() on the same address twice.\n");
-                print_backtrace();
-                break;
-            default: log_sdk_err("Hashmap insert failed! Expect to see incorrect memory leak reports!\n");
-         }
+    /* insert info into hashmap */
+    switch (hm_insert(&state.report, &addr, (void**)&info))
+    {
+    case 1: break;
+    case 0:
+        log_sdk_err(
+            "Double allocation! This is usually caused by calling "
+            "mem_track_allocation() on the same address twice.\n");
+        print_backtrace();
+        break;
+    default:
+        log_sdk_err(
+            "Hashmap insert failed! Expect to see incorrect memory leak "
+            "reports!\n");
+    }
 
-        /* record the location and size of the allocation */
-        info->location = addr;
-        info->size = size;
+    /* record the location and size of the allocation */
+    info->location = addr;
+    info->size = size;
 
-        /* Create backtrace to this allocation */
+    /* Create backtrace to this allocation */
 #if defined(ODBSDK_MEM_BACKTRACE)
-        if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
-            log_sdk_warn("Failed to generate backtrace\n");
+    if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
+        log_sdk_warn("Failed to generate backtrace\n");
 #endif
     state.ignore_malloc = 0;
 
@@ -192,7 +209,7 @@ mem_alloc(mem_size size)
     {
         log_sdk_err("malloc() failed (out of memory)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
-        print_backtrace();  /* probably won't work but may as well*/
+        print_backtrace(); /* probably won't work but may as well*/
 #endif
         return NULL;
     }
@@ -215,7 +232,7 @@ mem_realloc(void* p, mem_size new_size)
     {
         log_sdk_err("realloc() failed (out of memory)\n");
 #if defined(ODBSDK_MEM_BACKTRACE)
-        print_backtrace();  /* probably won't work but may as well*/
+        print_backtrace(); /* probably won't work but may as well*/
 #endif
         return NULL;
     }
@@ -238,41 +255,48 @@ mem_threadlocal_deinit(void)
 {
     uintptr_t leaks;
 
-    --state.allocations; /* this is the single allocation still held by the report hashmap */
+    --state.allocations; /* this is the single allocation still held by the
+                            report hashmap */
 
     log_sdk_note("Memory report:\n");
 
     /* report details on any g_allocations that were not de-allocated */
     HM_FOR_EACH(&state.report, void*, struct report_info, key, info)
-        log_sdk_err("  un-freed memory at %" PRIx64 ", size %" PRIx32 "\n",
-                info->location, info->size);
+    log_sdk_err(
+        "  un-freed memory at %" PRIx64 ", size %" PRIx32 "\n",
+        info->location,
+        info->size);
 
 #if defined(ODBSDK_MEM_BACKTRACE)
+    {
+        int i;
+        for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
         {
-            int i;
-            for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
-            {
-                if (strstr(info->backtrace[i], "invoke_main"))
-                    break;
-                log_sdk_err("    %s\n", info->backtrace[i]);
-            }
+            if (strstr(info->backtrace[i], "invoke_main"))
+                break;
+            log_sdk_err("    %s\n", info->backtrace[i]);
         }
-        backtrace_free(info->backtrace); /* this was allocated when malloc() was called */
+    }
+    backtrace_free(
+        info->backtrace); /* this was allocated when malloc() was called */
 #endif
     HM_END_EACH
 
     /* overall report */
-    leaks = (state.allocations > state.deallocations ?
-        state.allocations - state.deallocations :
-        state.deallocations - state.allocations);
+    leaks
+        = (state.allocations > state.deallocations
+               ? state.allocations - state.deallocations
+               : state.deallocations - state.allocations);
     log_sdk_note("  allocations   : %" PRIu32 "\n", state.allocations);
     log_sdk_note("  deallocations : %" PRIu32 "\n", state.deallocations);
     log_sdk_note("  memory leaks  : %" PRIu64 "\n", leaks);
-    log_sdk_note("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
+    log_sdk_note(
+        "  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
 
-    ++state.allocations; /* this is the single allocation still held by the report hashmap */
+    ++state.allocations; /* this is the single allocation still held by the
+                            report hashmap */
     state.ignore_malloc = 1;
-        hm_deinit(&state.report);
+    hm_deinit(&state.report);
     state.ignore_malloc = 0;
 
     return (mem_size)leaks;

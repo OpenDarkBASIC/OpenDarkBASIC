@@ -1,54 +1,58 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
-#include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
-#include "odb-sdk/vec.h"
-
-VEC_DECLARE_API(path_list, struct ospath, 16)
-VEC_DEFINE_API(path_list, struct ospath, 16)
+#include "odb-sdk/ospath.h"
+#include "odb-sdk/ospath_list.h"
 }
 
 static struct G
 {
-    ~G()
-    {
-        struct ospath* path;
-        vec_for_each(&plugin_dirs, path)
-            ospath_free(path);
-        path_list_free(&plugin_dirs);
-    }
+    ~G() { ospath_list_free(&plugin_dirs); }
 
-    struct ospath sdk_root_dir = ospath();
-    struct path_list plugin_dirs = {};
-    odb::SDKType sdk_type = odb::SDKType::ODB;
+    struct ospath      sdk_root_dir = ospath();
+    struct ospath_list plugin_dirs = ospath_list();
+    odb::SDKType       sdk_type = odb::SDKType::ODB;
 } g;
 
 // ----------------------------------------------------------------------------
-bool setSDKRootDir(const std::vector<std::string>& args)
+bool
+setSDKRootDir(const std::vector<std::string>& args)
 {
-    if (g.sdk_root_dir.str.len > 0)
+    if (ospath_len(g.sdk_root_dir) > 0)
     {
-        log_sdk_err("SDK root directory is already set to {quote:%.*s}'\n", g.sdk_root_dir.str.len, g.sdk_root_dir.str.data);
+        log_sdk_err(
+            "SDK root directory is already set to {quote:%s}'\n",
+            ospath_cstr(g.sdk_root_dir));
         return false;
     }
 
-    ospath_set(&g.sdk_root_dir, cstr_utf8_view(args[0].c_str()));
-    log_sdk_info("Using SDK root directory {quote:%.*s}\n", g.sdk_root_dir.str.len, g.sdk_root_dir.str.data);
+    ospath_set(
+        &g.sdk_root_dir,
+        cstr_utf8_view(args[0].c_str()),
+        cstr_utf8_range(args[0].c_str()));
+    log_sdk_info(
+        "Using SDK root directory {quote:%s}\n", ospath_cstr(g.sdk_root_dir));
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
-bool setSDKType(const std::vector<std::string>& args)
+bool
+setSDKType(const std::vector<std::string>& args)
 {
-    if (args[0] == "dbpro") {
-      g.sdk_type = odb::SDKType::DarkBASIC;
-    } else if (args[0] == "odb-sdk") {
-      g.sdk_type = odb::SDKType::ODB;
-    } else {
-      log_sdk_err("Unknown SDK type {quote:%s}\n", args[0].c_str());
-      return false;
+    if (args[0] == "dbpro")
+    {
+        g.sdk_type = odb::SDKType::DarkBASIC;
+    }
+    else if (args[0] == "odb-sdk")
+    {
+        g.sdk_type = odb::SDKType::ODB;
+    }
+    else
+    {
+        log_sdk_err("Unknown SDK type {quote:%s}\n", args[0].c_str());
+        return false;
     }
 
     log_sdk_info("Setting SDK type to {quote:%s}\n", args[0].c_str());
@@ -56,44 +60,51 @@ bool setSDKType(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool setAdditionalPluginsDir(const std::vector<std::string>& args)
+bool
+setAdditionalPluginsDir(const std::vector<std::string>& args)
 {
     for (const auto& dirOrFile : args)
-        ospath_set(path_list_emplace(&g.plugin_dirs), cstr_utf8_view(dirOrFile.c_str()));
+        ospath_list_add_cstr(&g.plugin_dirs, dirOrFile.c_str());
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
-bool printSDKRootDir(const std::vector<std::string>& args)
+bool
+printSDKRootDir(const std::vector<std::string>& args)
 {
-    log_sdk_note("SDK root directory: {quote:%.*s}'\n", g.sdk_root_dir.str.len, g.sdk_root_dir.str.data);
+    log_sdk_note(
+        "SDK root directory: {quote:%s}'\n", ospath_cstr(g.sdk_root_dir));
     return true;
 }
 
 // ----------------------------------------------------------------------------
-bool initSDK(const std::vector<std::string>& args)
+bool
+initSDK(const std::vector<std::string>& args)
 {
     // Default SDK root dir
-    if (g.sdk_root_dir.str.len == 0)
+    if (ospath_len(g.sdk_root_dir) == 0)
     {
         switch (g.sdk_type)
         {
-            case odb::SDKType::ODB : {
-                // Should in the same directory as the odbc executable
-                struct ospath path = ospath();
-                //fs_get_path_to_self(&path);
-                //ospath_
-                //sdkRootDir_ = FileSystem::getPathToSelf().replace_filename("odb-sdk");
-            } break;
+        case odb::SDKType::ODB: {
+            // Should in the same directory as the odbc executable
+            struct ospath path = ospath();
+            // fs_get_path_to_self(&path);
+            // ospath_
+            // sdkRootDir_ =
+            // FileSystem::getPathToSelf().replace_filename("odb-sdk");
+        }
+        break;
 
-            case odb::SDKType::DarkBASIC: {
-                log_sdk_err(
-                    "There is no default path configured for the DarkBASIC Pro SDK "
-                    "root directory. Please specify it with {emph:--sdkroot} or set "
-                    "the SDK type to {quote:odb} with {emph:--sdktype}\n");
-                return false;
-            }
+        case odb::SDKType::DarkBASIC: {
+            log_sdk_err(
+                "There is no default path configured for the DarkBASIC Pro SDK "
+                "root directory. Please specify it with {emph:--sdkroot} or "
+                "set "
+                "the SDK type to {quote:odb} with {emph:--sdktype}\n");
+            return false;
+        }
         }
     }
 
@@ -102,15 +113,17 @@ bool initSDK(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-odb::SDKType getSDKType()
+odb::SDKType
+getSDKType()
 {
     return g.sdk_type;
 }
 
 // ----------------------------------------------------------------------------
-const std::filesystem::path getSDKRootDir()
+const std::filesystem::path
+getSDKRootDir()
 {
-    return std::string(g.sdk_root_dir.str.data, g.sdk_root_dir.str.len);
+    return std::string(g.sdk_root_dir.str.data, g.sdk_root_dir.range.len);
 }
 
 // ----------------------------------------------------------------------------

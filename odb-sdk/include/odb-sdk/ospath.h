@@ -20,30 +20,63 @@
 
 struct ospath
 {
-    struct utf8 str;
+    struct utf8       str;
+    struct utf8_range range;
 };
 
 struct ospath_view
 {
-    struct utf8_view str;
+    struct utf8_view  str;
+    struct utf8_range range;
 };
 
 static inline struct ospath
 ospath(void)
 {
-    struct ospath path = { utf8() };
+    struct ospath path = {utf8(), utf8_range()};
     return path;
 }
 
-static inline void
-ospath_free(struct ospath* path)
+static inline struct ospath_view
+ospath_view(struct ospath path)
 {
-    utf8_free(&path->str);
+    struct ospath_view view = {utf8_view(path.str, path.range), path.range};
+    return view;
+}
+
+static inline struct ospath_view
+cstr_ospath_view(const char* cstr)
+{
+    struct ospath_view view = {cstr_utf8_view(cstr), cstr_utf8_range(cstr)};
+    return view;
+}
+
+static inline const char*
+ospath_view_cstr(struct ospath_view path)
+{
+    return utf8_view_cstr(path.str);
+}
+
+static inline const char*
+ospath_cstr(struct ospath path)
+{
+    return ospath_view_cstr(ospath_view(path));
+}
+
+static inline int
+ospath_len(struct ospath path)
+{
+    return path.range.len;
+}
+
+static inline void
+ospath_free(struct ospath path)
+{
+    utf8_free(path.str);
 }
 
 ODBSDK_PUBLIC_API int
-ospath_set(struct ospath* path, struct utf8_view str);
+ospath_set(struct ospath* path, struct utf8_view str, struct utf8_range range);
 
 ODBSDK_PUBLIC_API int
 ospath_join(struct ospath* path, struct ospath_view other);
-

@@ -1,14 +1,16 @@
 #include "odb-sdk/ospath.h"
 
 int
-ospath_set(struct ospath* path, struct utf8_view str)
+ospath_set(struct ospath* path, struct utf8_view str, struct utf8_range range)
 {
-    if (utf8_set(&path->str, str) != 0)
+    if (utf8_set(&path->str, &path->range, str, range) != 0)
         return -1;
-    utf8_replace_char(&path->str, '\\', '/');
+
+    utf8_replace_char(path->str, path->range, '\\', '/');
+
     /* Remove trailing slashes (if not root) */
-    while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
-        path->str.len--;
+    while (path->range.len > 1 && path->str.data[path->range.len - 1] == '/')
+        path->range.len--;
     return 0;
 }
 

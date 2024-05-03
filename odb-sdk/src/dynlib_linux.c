@@ -11,20 +11,20 @@ int
 dynlib_add_path(const char* path)
 { (void)path; return 0; }
 
-void*
+struct dynlib*
 dynlib_open(const char* file_name)
 {
     return dlopen(file_name, RTLD_LAZY);
 }
 
 void
-dynlib_close(void* handle)
+dynlib_close(struct dynlib* handle)
 {
     dlclose(handle);
 }
 
 void*
-dynlib_symbol_addr(void* handle, const char* name)
+dynlib_symbol_addr(struct dynlib* handle, const char* name)
 {
     return dlsym(handle, name);
 }
@@ -72,7 +72,7 @@ static int match_always(struct str_view str, const void* data)
 }
 
 int
-dynlib_symbol_table(void* handle, int (*on_symbol)(const char* sym, void* user), void* user)
+dynlib_symbol_table(struct dynlib* handle, int (*on_symbol)(const char* sym, void* user), void* user)
 {
     struct link_map* lm;
     ElfW(Addr) symidx;

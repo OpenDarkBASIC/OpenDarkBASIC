@@ -7,7 +7,7 @@
     #define YYSTYPE DBSTYPE
     #define YYLTYPE DBLTYPE
 
-    /* union contains struct utf8_ref string_value */
+    /* union contains struct utf8_range string_value */
     #include "odb-sdk/utf8.h"
 
     typedef void* dbscan_t;
@@ -75,10 +75,10 @@
     int64_t integer_value;
     /* The parser API has been deliberately designed in a way where strings do
      * not have to be copied. Whole source files are mapped into memory, and the
-     * lexer passes in string values as a utf8_ref, which is an offset and
+     * lexer passes in string values as a utf8_range, which is an offset and
      * length into the memory-mapped file.
      */
-    struct utf8_ref string_value;
+    struct utf8_range string_value;
 }
 
 /* Add a description to some of the tokens */

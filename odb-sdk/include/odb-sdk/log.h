@@ -57,6 +57,12 @@ ODBSDK_PRINTF_FORMAT(1, 2) static inline void
 log_sdk_warn(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vwarn("[sdk] ", fmt, ap); va_end(ap); }
 
-ODBSDK_PRINTF_FORMAT(1, 2) static inline void
+ODBSDK_PRINTF_FORMAT(1, 2) static inline int
 log_sdk_err(const char* fmt, ...)
-{ va_list ap; va_start(ap, fmt); log_verr("[sdk] ", fmt, ap); va_end(ap); }
+{ va_list ap; va_start(ap, fmt); log_verr("[sdk] ", fmt, ap); va_end(ap); return -1; }
+
+/* Parser logging functions ------------------------------------------------- */
+ODBSDK_PRINTF_FORMAT(1, 2) static inline int
+log_parser_err(const char* fmt, ...)
+{ va_list ap; va_start(ap, fmt); log_verr("[parser] ", fmt, ap); va_end(ap); return -1; }
+

@@ -1,24 +1,35 @@
+#include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8.h"
-#include "odb-sdk/log.h"
-
-#include <string.h>
-#include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
+
+void
+utf8_free(struct utf8 str)
+{
+    if (str.data)
+        mem_free(str.data);
+}
 
 int
-utf8_set(struct utf8* str, struct utf8_view view)
+utf8_set(
+    struct utf8*       dst,
+    struct utf8_range* dst_range,
+    struct utf8_view   src,
+    struct utf8_range  src_range)
 {
-    void* new_data = mem_realloc(str->data, (mem_size)view.len + 1);
-    if (new_data == NULL)
+    if (dst_range->len < src_range.len)
     {
-        log_sdk_err("Failed to allocate memory in utf8_set()\n");
-        return -1;
+        /* All utf8 strings are NULL terminated, so we still have to make space
+         * for that */
+        void* new_data = mem_realloc(dst->data, (mem_size)src_range.len + 1);
+        if (new_data == NULL)
+            return mem_report_oom(src_range.len + 1, "utf8_set()");
+        dst->data = new_data;
     }
 
-    str->data = new_data;
-    str->len = view.len;
-    memcpy(str->data, view.data, (size_t)view.len);
+    dst_range->len = src_range.len;
+    memcpy(dst->data, src.data, (size_t)src_range.len);
 
     return 0;
 }
