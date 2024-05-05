@@ -24,7 +24,7 @@ add_executable (odb-cli
     "src/Banner.cpp"
     "src/BuildInfo.cpp"
     "src/Codegen.cpp"
-    #"src/Commands.cpp"
+    "src/Commands.cpp"
     "src/Log.cpp"
     "src/SDK.cpp"
     #"src/Warnings.cpp"

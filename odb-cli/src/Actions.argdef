@@ -3,7 +3,7 @@
 //#include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
 #include "odb-cli/BuildInfo.hpp"
-//#include "odb-cli/Commands.hpp"
+#include "odb-cli/Commands.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Log.hpp"
 #include "odb-cli/SDK.hpp"
@@ -127,29 +127,29 @@ section sdk:
     func: printSDKRootDir
     runafter: init-sdk
 
-#  load-commands:
-#    func: loadCommands
-#    runafter: init-sdk
-#
-#  dump-commands():
-#    help: Dump all command names in alphabetical order. The default file is stdout.
-#    args: [file]
-#    func: dumpCommandNames
-#    runafter: load-commands
-#
-#  dump-commands-json():
-#    help: Dump all commands (and their type/argument info) to JSON format. The
-#          default file is stdout.
-#    args: [file]
-#    func: dumpCommandsJSON
-#    runafter: load-commands
-#
-#  dump-commands-ini():
-#    help: Dump all commands (and their type/argument info) to INI format. The
-#          default file is stdout.
-#    args: [file]
-#    func: dumpCommandsINI
-#    runafter: load-commands
+  load-commands:
+    func: loadCommands
+    runafter: init-sdk
+
+  dump-commands():
+    help: Dump all command names in alphabetical order. The default file is stdout.
+    args: [file]
+    func: dumpCommandNames
+    runafter: load-commands
+
+  dump-commands-json():
+    help: Dump all commands (and their type/argument info) to JSON format. The
+          default file is stdout.
+    args: [file]
+    func: dumpCommandsJSON
+    runafter: load-commands
+
+  dump-commands-ini():
+    help: Dump all commands (and their type/argument info) to INI format. The
+          default file is stdout.
+    args: [file]
+    func: dumpCommandsINI
+    runafter: load-commands
 
 
 ###############################################################################

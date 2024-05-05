@@ -1,27 +1,30 @@
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
-#include "odb-compiler/commands/CommandIndex.hpp"
-#include "odb-compiler/commands/ODBCommandLoader.hpp"
-#include "odb-compiler/commands/DBPCommandLoader.hpp"
-#include "odb-sdk/Log.hpp"
 #include <algorithm>
+
+extern "C" {
+#include "odb-compiler/commands/plugin_info.h"
+#include "odb-sdk/log.h"
+}
 
 using namespace odb;
 
-static cmd::CommandIndex cmdIndex_;
-
 // ----------------------------------------------------------------------------
-bool loadCommands(const std::vector<std::string>& args)
+bool
+loadCommands(const std::vector<std::string>& args)
 {
+    log_info("", "Loading commands\n");
+    struct plugin_list plugins;
+    plugin_list_populate(&plugins, getSDKRootDir(), NULL);
+    /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;
     switch (getSDKType())
     {
         case odb::SDKType::ODB :
-            loader = std::make_unique<cmd::ODBCommandLoader>(getSDKRootDir(), getAdditionalPluginDirs());
-            break;
-        case odb::SDKType::DarkBASIC :
-            loader = std::make_unique<cmd::DBPCommandLoader>(getSDKRootDir(), getAdditionalPluginDirs());
-            break;
+            loader = std::make_unique<cmd::ODBCommandLoader>(getSDKRootDir(),
+    getAdditionalPluginDirs()); break; case odb::SDKType::DarkBASIC : loader =
+    std::make_unique<cmd::DBPCommandLoader>(getSDKRootDir(),
+    getAdditionalPluginDirs()); break;
     }
 
     if (!loader->populateIndex(&cmdIndex_))
@@ -30,18 +33,19 @@ bool loadCommands(const std::vector<std::string>& args)
     if (cmdIndex_.findConflicts())
         return false;
 
-    Log::cmd(Log::INFO, "Loaded %d commands\n", cmdIndex_.commands().size());
+    Log::cmd(Log::INFO, "Loaded %d commands\n", cmdIndex_.commands().size());*/
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
-bool dumpCommandsJSON(const std::vector<std::string>& args)
+bool
+dumpCommandsJSON(const std::vector<std::string>& args)
 {
+#if 0
     std::vector<Reference<cmd::Command>> commands = cmdIndex_.commands();
     std::sort(commands.begin(), commands.end(), [](const cmd::Command* a, const cmd::Command* b) { return a->dbSymbol() < b->dbSymbol(); });
 
-#if 0
     Log::data.print("{\n");
     for (const auto& command : commands)
     {
@@ -72,7 +76,8 @@ bool dumpCommandsJSON(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool dumpCommandsINI(const std::vector<std::string> &args)
+bool
+dumpCommandsINI(const std::vector<std::string>& args)
 {
 #if 0
     auto commands = cmdIndex_.commandsAsList();
@@ -111,8 +116,10 @@ bool dumpCommandsINI(const std::vector<std::string> &args)
 }
 
 // ----------------------------------------------------------------------------
-bool dumpCommandNames(const std::vector<std::string>& args)
+bool
+dumpCommandNames(const std::vector<std::string>& args)
 {
+#if 0
     auto commands = cmdIndex_.commandNamesAsList();
     std::sort(commands.begin(), commands.end(), [](const std::string& a,const  std::string& b) { return a < b; });
     for (const auto& command : commands)
@@ -121,11 +128,6 @@ bool dumpCommandNames(const std::vector<std::string>& args)
     }
 
     Log::cmd(Log::INFO, "Commands dumped\n");
+#endif
     return true;
-}
-
-// ----------------------------------------------------------------------------
-const cmd::CommandIndex* getCommandIndex()
-{
-    return &cmdIndex_;
 }

@@ -1,10 +1,24 @@
 #include "odb-cli/Actions.argdef.hpp"
 
-// ----------------------------------------------------------------------------
-int main(int argc, char** argv)
-{
-    if (!parseCommandLine(argc, argv))
-        return -1;
+extern "C" {
+#include "odb-sdk/init.h"
+}
 
-    return 0;
+// ----------------------------------------------------------------------------
+int
+main(int argc, char** argv)
+{
+    bool success = false;
+
+    if (odbsdk_threadlocal_init() != 0)
+        goto odbsdk_tl_init_failed;
+    if (odbsdk_init() != 0)
+        goto odbsdk_init_failed;
+
+    success = parseCommandLine(argc, argv);
+
+odbsdk_init_failed:
+    odbsdk_threadlocal_deinit();
+odbsdk_tl_init_failed:
+    return success ? 0 : -1;
 }

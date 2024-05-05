@@ -257,7 +257,7 @@ hm_insert(struct hm* hm, const void* key, void** value)
     int pos, i, last_tombstone;
 
     /* NOTE: Rehashing may change table count, make sure to compute hash after this */
-    if (hm->slots_used * 100 / hm->table_count >= ODBSDK_HM_REHASH_AT_PERCENT)
+    if (hm->slots_used * 100 >= ODBSDK_HM_REHASH_AT_PERCENT * hm->table_count)
         if (resize_rehash(hm, hm->table_count * ODBSDK_HM_EXPAND_FACTOR) != 0)
             return -1;
 

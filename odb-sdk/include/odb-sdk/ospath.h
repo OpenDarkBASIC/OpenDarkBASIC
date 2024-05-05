@@ -75,8 +75,27 @@ ospath_free(struct ospath path)
     utf8_free(path.str);
 }
 
+static inline int
+ospath_set(struct ospath* path, const struct ospath_view other)
+{
+    return utf8_set(&path->str, &path->range, other.str, other.range);
+}
 ODBSDK_PUBLIC_API int
-ospath_set(struct ospath* path, struct utf8_view str, struct utf8_range range);
+ospath_set_utf8(
+    struct ospath* path, struct utf8_view str, struct utf8_range range);
+static inline int
+ospath_set_cstr(struct ospath* path, const char* cstr)
+{
+    return ospath_set_utf8(path, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+}
 
+/*!
+ * @brief
+ */
 ODBSDK_PUBLIC_API int
-ospath_join(struct ospath* path, struct ospath_view other);
+ospath_join(struct ospath* path, struct ospath_view trailing);
+static inline int
+ospath_join_cstr(struct ospath* path, const char* cstr)
+{
+    return ospath_join(path, cstr_ospath_view(cstr));
+}

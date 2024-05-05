@@ -150,6 +150,15 @@ endif ()
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
+    "include/odb-compiler/commands/plugin_info.h"
+    "src/commands/plugin_info.c"
+    #"src/commands/CommandLoader.cpp"
+    #"src/commands/ODBCommandLoader.cpp"
+    #"src/commands/DBPCommandLoader.cpp"
+    #"src/commands/Command.cpp"
+    #"src/commands/CommandIndex.cpp"
+    #"src/commands/CommandMatcher.cpp"
+
     "include/odb-compiler/parser/db_keywords.h"
     "include/odb-compiler/parser/db_parser.h"
     "src/parser/db_keywords.gperf"
@@ -160,13 +169,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${BISON_db-parser_OUTPUTS}"
     "${FLEX_db-scanner_OUTPUTS}"
 
-    #"src/commands/CommandLoader.cpp"
-    #"src/commands/ODBCommandLoader.cpp"
-    #"src/commands/DBPCommandLoader.cpp"
-    #"src/commands/Command.cpp"
-    #"src/commands/CommandIndex.cpp"
-    #"src/commands/CommandMatcher.cpp"
-    
     #"src/parsers/db/Driver.cpp"
     #"src/parsers/PluginInfo.cpp"
     #"${BISON_DarkBASICParser_OUTPUTS}"

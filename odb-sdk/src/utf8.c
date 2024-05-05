@@ -28,25 +28,37 @@ utf8_set(
         dst->data = new_data;
     }
 
+    dst_range->off = 0;
     dst_range->len = src_range.len;
-    memcpy(dst->data, src.data, (size_t)src_range.len);
+    memcpy(dst->data, src.data + src_range.off, (size_t)src_range.len);
+
+    return 0;
+}
+
+int
+utf8_append(
+    struct utf8*       str,
+    struct utf8_range* str_range,
+    struct utf8_view   append,
+    struct utf8_range  append_range)
+{
+    mem_size new_size
+        = (mem_size)(str_range->off + str_range->len + append_range.len + 1);
+    void* new_data = mem_realloc(str->data, new_size);
+    if (new_data == NULL)
+        return mem_report_oom(new_size, "utf8_append()");
+
+    str->data = new_data;
+    memcpy(
+        str->data + str_range->off + str_range->len,
+        append.data + append_range.off,
+        (size_t)append_range.len);
+    str_range->len += append_range.len;
 
     return 0;
 }
 
 #if 0
-int
-str_append(struct str* str, struct str_view other)
-{
-    void* new_data = mem_realloc(str->data, (mem_size)(str->len + other.len + 1));
-    if (new_data == NULL)
-        return -1;
-    str->data = new_data;
-    memcpy(str->data + str->len, other.data, (size_t)other.len);
-    str->len += other.len;
-    return 0;
-}
-
 int
 str_fmt(struct str* str, const char* fmt, ...)
 {

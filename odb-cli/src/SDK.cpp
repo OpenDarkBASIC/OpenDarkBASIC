@@ -1,6 +1,7 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
+#include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/ospath.h"
 #include "odb-sdk/ospath_list.h"
@@ -27,10 +28,7 @@ setSDKRootDir(const std::vector<std::string>& args)
         return false;
     }
 
-    ospath_set(
-        &g.sdk_root_dir,
-        cstr_utf8_view(args[0].c_str()),
-        cstr_utf8_range(args[0].c_str()));
+    ospath_set_cstr(&g.sdk_root_dir, args[0].c_str());
     log_sdk_info(
         "Using SDK root directory {quote:%s}\n", ospath_cstr(g.sdk_root_dir));
 
@@ -90,7 +88,7 @@ initSDK(const std::vector<std::string>& args)
         case odb::SDKType::ODB: {
             // Should in the same directory as the odbc executable
             struct ospath path = ospath();
-            // fs_get_path_to_self(&path);
+            fs_get_path_to_self(&path);
             // ospath_
             // sdkRootDir_ =
             // FileSystem::getPathToSelf().replace_filename("odb-sdk");
@@ -120,10 +118,10 @@ getSDKType()
 }
 
 // ----------------------------------------------------------------------------
-const std::filesystem::path
+struct ospath_view
 getSDKRootDir()
 {
-    return std::string(g.sdk_root_dir.str.data, g.sdk_root_dir.range.len);
+    return ospath_view(g.sdk_root_dir);
 }
 
 // ----------------------------------------------------------------------------

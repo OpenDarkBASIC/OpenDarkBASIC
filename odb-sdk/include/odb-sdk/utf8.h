@@ -46,9 +46,12 @@ utf8(void)
 static inline struct utf8_view
 utf8_view(struct utf8 str, struct utf8_range range)
 {
-    struct utf8_view view = {str.data};
-    if (str.data)
+    struct utf8_view view = {NULL};
+    if (range.len)
+    {
         str.data[range.off + range.len] = '\0';
+        view.data = str.data + range.off;
+    }
     return view;
 }
 
@@ -91,6 +94,19 @@ utf8_set_cstr(struct utf8* str, struct utf8_range* str_range, const char* cstr)
 {
     return utf8_set(
         str, str_range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+}
+
+ODBSDK_PUBLIC_API int
+utf8_append(
+    struct utf8*       str,
+    struct utf8_range* str_range,
+    struct utf8_view   append,
+    struct utf8_range  append_range);
+
+static inline int
+utf8_append_cstr(struct utf8* str, struct utf8_range* range, const char* cstr)
+{
+    return utf8_append(str, range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
 }
 
 ODBSDK_PUBLIC_API void
@@ -151,6 +167,22 @@ utf8_ends_with_cstr(
 {
     return utf8_ends_with(
         str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
+}
+
+static inline int
+utf8_equal(
+    struct utf8_view  s1,
+    struct utf8_range r1,
+    struct utf8_view  s2,
+    struct utf8_range r2)
+{
+    return r1.len == r2.len
+           && memcmp(s1.data + r1.off, s2.data + r2.off, (size_t)r1.len) == 0;
+}
+static inline int
+utf8_equal_cstr(struct utf8_view str, struct utf8_range range, const char* cstr)
+{
+    return utf8_equal(str, range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
 }
 
 #if defined(ODBSDK_PLATFORM_WINDOWS)

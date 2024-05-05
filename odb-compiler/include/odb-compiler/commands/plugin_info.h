@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.h"
 #include "odb-sdk/ospath.h"
+#include "odb-sdk/ospath_list.h"
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"
 
@@ -22,4 +23,7 @@ struct plugin_info
 VEC_DECLARE_API(plugin_list, struct plugin_info, 16)
 
 ODBCOMPILER_PUBLIC_API int
-plugin_list_populate(struct ospath sdk_root, struct pathlist extra_plugin_dirs);
+plugin_list_populate(
+    struct plugin_list* plugins,
+    struct ospath_view  sdk_root,
+    const struct ospath_list*  extra_plugin_dirs);

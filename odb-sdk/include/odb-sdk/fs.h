@@ -15,9 +15,9 @@ fs_get_path_to_self(struct ospath* path);
 
 ODBSDK_PUBLIC_API int
 fs_list(
-    struct utf8_view path,
-    int              (*on_entry)(const char* name, void* user),
-    void*            user);
+    struct ospath_view path,
+    int                (*on_entry)(const char* name, void* user),
+    void*              user);
 
 ODBSDK_PUBLIC_API int
 fs_file_exists(struct ospath_view path);
