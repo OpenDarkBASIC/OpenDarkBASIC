@@ -20,9 +20,9 @@
         int##bits##_t count, capacity;                                         \
         T             data[1];                                                 \
     }
-#define VEC_DEF(T, bits) \
-    { \
-        struct VEC_MEM_DEF(T, bits)* mem; \
+#define VEC_DEF(T, bits)                                                       \
+    {                                                                          \
+        struct VEC_MEM_DEF(T, bits) * mem;                                     \
     }
 
 #define VEC_DECLARE_API(prefix, T, bits)                                       \
@@ -227,17 +227,11 @@
 #define VEC_DEFINE_API(prefix, T, bits)                                        \
     static int prefix##_realloc(struct prefix* v, int##bits##_t elems)         \
     {                                                                          \
-        void* new_mem = mem_realloc(                                           \
-            v->mem,                                                            \
-            sizeof(*v->mem) + sizeof(v->mem->data[0]) * (elems - 1));          \
+        mem_size bytes = sizeof(*v->mem)                                       \
+                       + sizeof(v->mem->data[0]) * (elems - 1);                \
+        void* new_mem = mem_realloc(v->mem, bytes);                            \
         if (new_mem == NULL)                                                   \
-        {                                                                      \
-            log_sdk_err(                                                       \
-                "Failed to allocate memory in " #prefix                        \
-                "_reserve(%" PRId##bits ")\n",                                 \
-                elems);                                                        \
-            return -1;                                                         \
-        }                                                                      \
+            return mem_report_oom(bytes, #prefix "_reserve");                  \
         *(void**)&v->mem = new_mem;                                            \
         return 0;                                                              \
     }                                                                          \
@@ -264,7 +258,8 @@
         {                                                                      \
             void* new_mem = mem_realloc(                                       \
                 v->mem,                                                        \
-                sizeof(*v->mem) + sizeof(v->mem->data[0]) * (v->mem->count - 1)); \
+                sizeof(*v->mem)                                                \
+                    + sizeof(v->mem->data[0]) * (v->mem->count - 1));          \
             *(void**)&v->mem = new_mem;                                        \
             v->mem->capacity = v->mem->count;                                  \
         }                                                                      \
@@ -277,7 +272,8 @@
                                                                                \
         if (v->mem->count == v->mem->capacity)                                 \
         {                                                                      \
-            if (prefix##_realloc(v, v->mem->capacity * ODBSDK_VEC_EXPAND_FACTOR) \
+            if (prefix##_realloc(                                              \
+                    v, v->mem->capacity * ODBSDK_VEC_EXPAND_FACTOR)            \
                 != 0)                                                          \
                 return NULL;                                                   \
             v->mem->capacity *= ODBSDK_VEC_EXPAND_FACTOR;                      \
@@ -349,7 +345,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->mem->data[(v)->mem->count - (i) - 1])
+#define vec_rget(v, i) (&(v)->mem->data[(v)->mem->count - (i)-1])
 
 /*!
  * @brief Returns the number of elements in the vector. Works on NULL vectors,
@@ -371,4 +367,3 @@
     for (intptr_t var_##i = 0; (v)->mem && var_##i != (v)->mem->count          \
                                && ((var = &(v)->mem->data[var_##i]) || 1);     \
          ++var_##i)
-

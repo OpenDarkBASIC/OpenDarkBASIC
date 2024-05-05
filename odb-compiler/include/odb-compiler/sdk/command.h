@@ -1,7 +1,6 @@
 #pragma once
 
 #include "odb-sdk/utf8.h"
-#include "odb-sdk/vec.h"
 
 enum command_arg_type
 {
@@ -25,13 +24,13 @@ struct command_arg
 {
     enum command_arg_type type;
     enum command_arg_direction direction;
-    struct utf8_ref symbol_name;
-    struct utf8_ref description;
+    struct utf8_range symbol_name;
+    struct utf8_range description;
 };
 
 struct command
 {
-    struct utf8_ref db_name;
-    struct utf8_ref symbol;
+    struct utf8_range db_name;
+    struct utf8_range symbol;
 };
 

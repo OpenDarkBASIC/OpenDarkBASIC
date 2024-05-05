@@ -31,5 +31,5 @@ fs_make_dir(const char* path);
 ODBSDK_PUBLIC_API int
 fs_remove_file(const char* path);
 
-ODBSDK_PUBLIC_API struct ospath
+ODBSDK_PUBLIC_API struct empty_ospath
 fs_appdata_dir(void);

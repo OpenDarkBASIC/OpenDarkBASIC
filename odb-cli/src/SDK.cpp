@@ -1,22 +1,23 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
-#include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/ospath.h"
 #include "odb-sdk/ospath_list.h"
 }
 
-static struct ospath      sdk_root_dir = ospath();
-static struct ospath_list plugin_dirs = ospath_list();
-static odb::SDKType       sdk_type = odb::SDKType::ODB;
+static struct ospath sdk_root_dir = empty_ospath();
+static struct ospath_list  plugin_dirs = ospath_list();
+static enum sdk_type        sdk_type = SDK_ODB;
 
-void initSDK(void)
+void
+initSDK(void)
 {
     ospath_list_init(&plugin_dirs);
 }
 
-void deinitSDK(void)
+void
+deinitSDK(void)
 {
     ospath_list_deinit(&plugin_dirs);
     ospath_deinit(sdk_root_dir);
@@ -47,11 +48,11 @@ setSDKType(const std::vector<std::string>& args)
 {
     if (args[0] == "dbpro")
     {
-        sdk_type = odb::SDKType::DarkBASIC;
+        sdk_type = SDK_DBPRO;
     }
     else if (args[0] == "odb-sdk")
     {
-        sdk_type = odb::SDKType::ODB;
+        sdk_type = SDK_ODB;
     }
     else
     {
@@ -91,7 +92,7 @@ setupSDK(const std::vector<std::string>& args)
     {
         switch (sdk_type)
         {
-        case odb::SDKType::ODB: {
+        case SDK_ODB: {
             // Should in the same directory as the odbc executable
             // fs_get_path_to_self(&sdk_root_dir);
             // ospath_dirname(&sdk_root_dir);
@@ -99,7 +100,7 @@ setupSDK(const std::vector<std::string>& args)
         }
         break;
 
-        case odb::SDKType::DarkBASIC: {
+        case SDK_DBPRO: {
             log_sdk_err(
                 "There is no default path configured for the DarkBASIC Pro SDK "
                 "root directory. Please specify it with {emph:--sdkroot} or "
@@ -113,16 +114,19 @@ setupSDK(const std::vector<std::string>& args)
     const char* type = "";
     switch (sdk_type)
     {
-        case odb::SDKType::ODB: type = "OpenDarkBASIC"; break;
-        case odb::SDKType::DarkBASIC: type = "DarkBASIC Pro"; break;
+    case SDK_ODB: type = "OpenDarkBASIC"; break;
+    case SDK_DBPRO: type = "DarkBASIC Pro"; break;
     }
 
-    log_sdk_info("Using {emph:%s SDK} with root directory {quote:%s}\n", type, ospath_cstr(sdk_root_dir));
+    log_sdk_info(
+        "Using {emph:%s SDK} with root directory {quote:%s}\n",
+        type,
+        ospath_cstr(sdk_root_dir));
     return true;
 }
 
 // ----------------------------------------------------------------------------
-odb::SDKType
+enum sdk_type
 getSDKType()
 {
     return sdk_type;

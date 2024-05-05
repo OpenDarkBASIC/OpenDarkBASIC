@@ -150,14 +150,16 @@ endif ()
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
-    "include/odb-compiler/commands/plugin_info.h"
-    "src/commands/plugin_info.c"
-    #"src/commands/CommandLoader.cpp"
-    #"src/commands/ODBCommandLoader.cpp"
-    #"src/commands/DBPCommandLoader.cpp"
-    #"src/commands/Command.cpp"
-    #"src/commands/CommandIndex.cpp"
-    #"src/commands/CommandMatcher.cpp"
+    "include/odb-compiler/sdk/plugin_info.h"
+    "src/sdk/plugin_info.c"
+    "src/sdk/command_loader.cpp"
+    #"src/sdk/CommandLoader.cpp"
+    #"src/sdk/CommandLoader.cpp"
+    #"src/sdk/ODBCommandLoader.cpp"
+    #"src/sdk/DBPCommandLoader.cpp"
+    #"src/sdk/Command.cpp"
+    #"src/sdk/CommandIndex.cpp"
+    #"src/sdk/CommandMatcher.cpp"
 
     "include/odb-compiler/parser/db_keywords.h"
     "include/odb-compiler/parser/db_parser.h"
@@ -278,18 +280,19 @@ odb_target_properties (odb-compiler
 include (FetchContent)
 
 # LIEF is required for loading commands from shared libraries
-set (LIEF_PYTHON_API OFF CACHE BOOL "" FORCE)
-set (LIEF_C_API OFF CACHE BOOL "" FORCE)
-set (LIEF_EXAMPLES OFF CACHE BOOL "" FORCE)
-set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "" FORCE)
-set (LIEF_USE_CCACHE OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING OFF CACHE BOOL "" FORCE)
-set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "" FORCE)
-set (LIEF_ENABLE_JSON OFF CACHE BOOL "" FORCE)
-set (LIEF_OAT OFF CACHE BOOL "" FORCE)
-set (LIEF_DEX OFF CACHE BOOL "" FORCE)
-set (LIEF_VDEX OFF CACHE BOOL "" FORCE)
-set (LIEF_ART OFF CACHE BOOL "" FORCE)
+set (LIEF_ART OFF CACHE BOOL "")
+set (LIEF_C_API OFF CACHE BOOL "")
+set (LIEF_DEX OFF CACHE BOOL "")
+set (LIEF_ENABLE_JSON OFF CACHE BOOL "")
+set (LIEF_EXAMPLES OFF CACHE BOOL "")
+set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "")
+set (LIEF_INSTALL OFF CACHE BOOL "")
+set (LIEF_LOGGING OFF CACHE BOOL "")
+set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "")
+set (LIEF_OAT OFF CACHE BOOL "")
+set (LIEF_PYTHON_API OFF CACHE BOOL "")
+set (LIEF_USE_CCACHE OFF CACHE BOOL "")
+set (LIEF_VDEX OFF CACHE BOOL "")
 FetchContent_Declare (
     lief
     URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz

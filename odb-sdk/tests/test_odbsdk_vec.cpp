@@ -52,7 +52,7 @@ public:
 
     void TearDown() override
     {
-        vobj_free(&vobj);
+        vobj_deinit(&vobj);
     }
 
     struct vobj vobj = {};
@@ -61,7 +61,7 @@ public:
 
 TEST_F(NAME, free_null_vector_works)
 {
-    vobj_free(&vobj);
+    vobj_deinit(&vobj);
 }
 
 TEST_F(NAME, reserve_new_vector_sets_capacity)

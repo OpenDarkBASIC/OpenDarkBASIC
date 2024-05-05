@@ -44,12 +44,6 @@ dynlib_close(struct dynlib* handle);
 ODBSDK_PUBLIC_API void*
 dynlib_symbol_addr(struct dynlib* handle, const char* name);
 
-ODBSDK_PUBLIC_API int
-dynlib_symbol_table(
-    struct dynlib* handle,
-    int            (*on_symbol)(const char* sym, void* user),
-    void*          user);
-
 /*!
  * \brief Returns the library's symbol table. These are symbols that have been
  * exported (on Windows) or otherwise made visible, and can be loaded using
@@ -64,49 +58,10 @@ dynlib_symbol_table(
  * \return Returns 0 on success and negative on error.
  */
 ODBSDK_PUBLIC_API int
-dynlib_symbol_table_strlist(struct dynlib* handle, struct strlist* sl);
-
-/*!
- * \brief Returns the symbols from the library matching a custom predicate.
- * These are symbols that have been exported (on Windows) or otherwise made
- * visible, and can be loaded using dynlib_symbol_addr().
- * \param[in] handle Handle returned by dynlib_open().
- * \param[out] sl String list to receive the list of symbols. Must be
- * initialized. \note This function does not clear the string list. Make sure if
- * you are re-using string lists to first clear them, otherwise old results will
- * persist.
- * \param[in] match For every symbol found, this callback function will be
- * called with "str" as the name of the symbol. The callback function can
- * return "true" (non-zero) to add the symbol to the output string list, or
- * "false" (zero) to ignore the symbol.
- * \param[in] data A user data pointer. This gets passed to the second argument
- * of the callback function "match". Can be NULL.
- * \return Returns 0 on success and negative on error.
- */
-ODBSDK_PUBLIC_API int
-dynlib_symbol_table_strlist_filtered(
-    struct dynlib*  handle,
-    struct strlist* sl,
-    int             (*match)(struct str_view str, const void* data),
-    const void*     data);
-
-/*!
- * \brief Returns the number of symbols in the symbol table.
- * \note This is rather slow, and should be cached if used in e.g. a for-loop.
- * \param[in] handle Handle returned by dynlib_open().
- * \return Count, or negative if an error occurred.
- */
-ODBSDK_PUBLIC_API int
-dynlib_symbol_count(struct dynlib* handle);
-
-/*!
- * \brief Returns the symbol name at the specified index.
- * \param[in] handle Handle returned by dynlib_open().
- * \param[in] idx 0 to dynlib_symbol_count() - 1
- * \return Null-terminated string of the symbol name.
- */
-ODBSDK_PUBLIC_API const char*
-dynlib_symbol_at(struct dynlib* handle, int idx);
+dynlib_symbol_table(
+    struct dynlib* handle,
+    int            (*on_symbol)(const char* sym, void* user),
+    void*          user);
 
 #if defined(_WIN32)
 

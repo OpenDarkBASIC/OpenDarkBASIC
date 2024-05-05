@@ -1,11 +1,11 @@
 #pragma once
 
-#include "odb-compiler/commands/SDKType.hpp"
 #include <string>
 #include <vector>
 #include <filesystem>
 
 extern "C" {
+#include "odb-compiler/sdk/sdk.h"
 #include "odb-sdk/ospath.h"
 }
 
@@ -18,6 +18,6 @@ bool setAdditionalPluginsDir(const std::vector<std::string>& args);
 bool printSDKRootDir(const std::vector<std::string>& args);
 bool setupSDK(const std::vector<std::string>& args);
 
-odb::SDKType getSDKType();
+enum sdk_type getSDKType();
 struct ospath_view getSDKRootDir();
 const std::vector<std::filesystem::path>& getAdditionalPluginDirs();

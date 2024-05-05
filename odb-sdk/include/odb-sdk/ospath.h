@@ -31,9 +31,16 @@ struct ospath_view
 };
 
 static inline struct ospath
-ospath(void)
+empty_ospath(void)
 {
-    struct ospath path = {utf8(), utf8_range()};
+    struct ospath path = {empty_utf8(), utf8_range()};
+    return path;
+}
+
+static inline struct ospath_view
+empty_ospath_view(void)
+{
+    struct ospath_view path = {empty_utf8_view(), empty_utf8_range()};
     return path;
 }
 

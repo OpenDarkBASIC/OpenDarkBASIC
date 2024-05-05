@@ -1,8 +1,9 @@
 #pragma once
 
 #include "odb-sdk/config.h"
-#include "odb-sdk/mem.h"
 #include <string.h>
+#include <stdint.h>
+#include <ctype.h>
 
 /* Can't do int16_t because the parser uses this to refer to offsets in source
  * files, and source files definitely contain >32768 characters */
@@ -36,14 +37,19 @@ struct utf8_range
 };
 
 static inline struct utf8
-utf8(void)
+empty_utf8(void)
 {
     struct utf8 str = {NULL};
     return str;
 }
-
+static inline struct utf8_view
+empty_utf8_view(void)
+{
+    struct utf8_view str = {NULL};
+    return str;
+}
 static inline struct utf8_range
-utf8_empty_range(void)
+empty_utf8_range(void)
 {
     struct utf8_range range = { 0, 0 };
     return range;
