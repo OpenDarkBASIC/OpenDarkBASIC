@@ -19,7 +19,7 @@ public:
     void
     TearDown() override
     {
-        utf8_list_free(&list);
+        utf8_list_deinit(&list);
     }
 
     struct utf8_list list;

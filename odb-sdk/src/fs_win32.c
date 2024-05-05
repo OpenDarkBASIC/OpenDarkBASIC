@@ -1,4 +1,5 @@
 #include "odb-sdk/fs.h"
+#include "odb-sdk/log.h"
 #include "odb-sdk/utf8.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -6,31 +7,50 @@
 #include <KnownFolders.h>
 #include <ShlObj.h>
 
-#if 0
 int
-fs_list(struct utf8_view path, int (*on_entry)(const char* name, void* user), void* user)
+fs_get_path_to_self(struct ospath* path)
 {
-    struct ospath correct_path;
+    wchar_t* utf16 = _wpgmptr;
+    DWORD utf16_len = wcslen(utf16);
+    int utf8_bytes = WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, NULL, 0, NULL, NULL);
+    if (utf8_bytes == 0)
+        return log_sdk_err("WideCharToMultiByte() failed in fs_get_path_to_self(): {win32error}'n");
+
+    char* new_mem = mem_realloc(path->str.data, utf8_bytes + 1);
+    if (new_mem == NULL)
+        return -1;
+    path->str.data = new_mem;
+
+    if (WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, path->str.data, utf8_bytes, NULL, NULL) == 0)
+        return log_sdk_err("WideCharToMultiByte() failed in fs_get_path_to_self(): {win32error}'n");
+
+    path->range.off = 0;
+    path->range.len = utf8_bytes;
+
+    return 0;
+}
+
+int
+fs_list(struct ospath_view path, int (*on_entry)(const char* name, void* user), void* user)
+{
     DWORD dwError;
     WIN32_FIND_DATA ffd;
     int ret = 0;
     HANDLE hFind = INVALID_HANDLE_VALUE;
+    struct ospath correct_path = ospath();
 
-    path_init(&correct_path);
-    if (path_set(&correct_path, path) != 0)
+    if (ospath_set(&correct_path, path) != 0)
         goto str_set_failed;
-    /* Using cutf8_view2() here so correct_path is null terminated */
-    if (path_join(&correct_path, cutf8_view2("*", 2)) != 0)
+    if (ospath_join_cstr(&correct_path, "*") != 0)
         goto first_file_failed;
 
-    hFind = FindFirstFileA(correct_path.str.data, &ffd);
+    hFind = FindFirstFileA(ospath_cstr(correct_path), &ffd);
     if (hFind == INVALID_HANDLE_VALUE)
         goto first_file_failed;
 
     do
     {
-        struct utf8_view fname = cstr_utf8_view(ffd.cFileName);
-        if (cstr_equal(fname, ".") || cstr_equal(fname, ".."))
+        if (strcmp(ffd.cFileName, ".") == 0 || strcmp(ffd.cFileName, "..") == 0)
             continue;
         ret = on_entry(ffd.cFileName, user);
         if (ret != 0) goto out;
@@ -41,30 +61,29 @@ fs_list(struct utf8_view path, int (*on_entry)(const char* name, void* user), vo
         ret = -1;
 
     out               : FindClose(hFind);
-    first_file_failed : path_deinit(&correct_path);
+    first_file_failed : ospath_deinit(correct_path);
     str_set_failed    : return ret;
 }
-#endif
 
-/*
 int
-fs_file_exists(const char* file_path)
+fs_file_exists(struct ospath_view file_path)
 {
-    DWORD attr = GetFileAttributes(file_path);
+    DWORD attr = GetFileAttributes(ospath_view_cstr(file_path));
     if (attr == INVALID_FILE_ATTRIBUTES)
         return 0;
     return !(attr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 int
-fs_path_exists(const char* file_path)
+fs_dir_exists(struct ospath_view path)
 {
-    DWORD attr = GetFileAttributes(file_path);
+    DWORD attr = GetFileAttributes(ospath_view_cstr(path));
     if (attr == INVALID_FILE_ATTRIBUTES)
         return 0;
     return !!(attr & FILE_ATTRIBUTE_DIRECTORY);
-}*/
+}
 
+#if 0
 struct ospath
 fs_appdata_dir(void)
 {
@@ -104,3 +123,4 @@ fs_remove_file(const char* path)
         return 0;
     return -1;
 }
+#endif

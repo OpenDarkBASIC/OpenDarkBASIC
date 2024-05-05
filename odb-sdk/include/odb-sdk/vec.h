@@ -28,12 +28,14 @@
 #define VEC_DECLARE_API(prefix, T, bits)                                       \
     struct prefix VEC_DEF(T, bits);                                            \
                                                                                \
+    static inline void prefix##_init(struct prefix* v);                        \
+                                                                               \
     /*!                                                                        \
      * @brief Destroys an existing vector object and frees all memory          \
      * allocated by inserted elements.                                         \
      * @param[in] v Pointer to a vector of type VEC(T,B)*. Can be NULL.        \
      */                                                                        \
-    static inline void prefix##_free(struct prefix* v);                        \
+    static inline void prefix##_deinit(struct prefix* v);                      \
                                                                                \
     /*!                                                                        \
      * @brief Allocates memory to fit exactly "num" amount of elements.        \
@@ -168,7 +170,12 @@
      */                                                                        \
     void prefix##_erase(struct prefix* v, int##bits##_t i);                    \
                                                                                \
-    static inline void prefix##_free(struct prefix* v)                         \
+    static inline void prefix##_init(struct prefix* v)                         \
+    {                                                                          \
+        v->mem = NULL;                                                         \
+    }                                                                          \
+                                                                               \
+    static inline void prefix##_deinit(struct prefix* v)                       \
     {                                                                          \
         if (v->mem)                                                            \
             mem_free(v->mem);                                                  \
@@ -222,8 +229,7 @@
     {                                                                          \
         void* new_mem = mem_realloc(                                           \
             v->mem,                                                            \
-            sizeof(v->mem->count) + sizeof(v->mem->capacity)                   \
-                + sizeof(v->mem->data[0]) * elems);                            \
+            sizeof(*v->mem) + sizeof(v->mem->data[0]) * (elems - 1));          \
         if (new_mem == NULL)                                                   \
         {                                                                      \
             log_sdk_err(                                                       \
@@ -258,8 +264,7 @@
         {                                                                      \
             void* new_mem = mem_realloc(                                       \
                 v->mem,                                                        \
-                sizeof(v->mem->count) + sizeof(v->mem->capacity)               \
-                    + sizeof(v->mem->data[0]) * v->mem->count);                \
+                sizeof(*v->mem) + sizeof(v->mem->data[0]) * (v->mem->count - 1)); \
             *(void**)&v->mem = new_mem;                                        \
             v->mem->capacity = v->mem->count;                                  \
         }                                                                      \

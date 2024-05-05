@@ -2,7 +2,6 @@
 
 #include "odb-sdk/config.h"
 #include "odb-sdk/mem.h"
-#include <stdint.h>
 #include <string.h>
 
 /* Can't do int16_t because the parser uses this to refer to offsets in source
@@ -43,6 +42,13 @@ utf8(void)
     return str;
 }
 
+static inline struct utf8_range
+utf8_empty_range(void)
+{
+    struct utf8_range range = { 0, 0 };
+    return range;
+}
+
 static inline struct utf8_view
 utf8_view(struct utf8 str, struct utf8_range range)
 {
@@ -66,6 +72,12 @@ static inline const char*
 utf8_view_cstr(struct utf8_view str)
 {
     return str.data;
+}
+
+static inline const char*
+utf8_cstr(struct utf8 str, struct utf8_range range)
+{
+    return utf8_view_cstr(utf8_view(str, range));
 }
 
 static inline struct utf8_range
@@ -110,7 +122,7 @@ utf8_append_cstr(struct utf8* str, struct utf8_range* range, const char* cstr)
 }
 
 ODBSDK_PUBLIC_API void
-utf8_free(struct utf8 str);
+utf8_deinit(struct utf8 str);
 
 static inline void
 utf8_replace_char(
@@ -166,6 +178,33 @@ utf8_ends_with_cstr(
     struct utf8_view str, struct utf8_range range, const char* cmp)
 {
     return utf8_ends_with(
+        str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
+}
+
+static inline int
+utf8_ends_with_i(
+    struct utf8_view  str,
+    struct utf8_range str_range,
+    struct utf8_view  cmp,
+    struct utf8_range cmp_range)
+{
+    const char* cstr1 = str.data + str_range.len - cmp_range.len;
+    const char* cstr2 = cmp.data;
+    int len = cmp_range.len;
+
+    if (str_range.len < cmp_range.len)
+        return 0;
+
+    while (len--)
+        if (tolower(*cstr1++) != tolower(*cstr2++))
+            return 0;
+    return 1;
+}
+static inline int
+utf8_ends_with_i_cstr(
+    struct utf8_view str, struct utf8_range range, const char* cmp)
+{
+    return utf8_ends_with_i(
         str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
 }
 

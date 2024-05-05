@@ -12,9 +12,19 @@ struct utf8_list
     utf8_idx         alloc;
 };
 
-void
-utf8_list_free(struct utf8_list* l);
+static inline void
+utf8_list_init(struct utf8_list* l)
+{
+    l->data = NULL;
+    l->strs = NULL;
+    l->count = 0;
+    l->used = 0;
+    l->alloc = 0;
+}
 
-int
+ODBSDK_PUBLIC_API void
+utf8_list_deinit(struct utf8_list* l);
+
+ODBSDK_PUBLIC_API int
 utf8_list_add(struct utf8_list* l, struct utf8_view str, struct utf8_range range);
 

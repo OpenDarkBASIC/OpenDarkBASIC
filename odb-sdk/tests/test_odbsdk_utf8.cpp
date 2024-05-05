@@ -18,7 +18,7 @@ class NAME : public Test
     void
     TearDown() override
     {
-        utf8_free(str);
+        utf8_deinit(str);
     }
 
     struct utf8 str = utf8();

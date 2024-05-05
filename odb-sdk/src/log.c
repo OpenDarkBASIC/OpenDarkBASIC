@@ -4,6 +4,32 @@
 #include <string.h>
 
 /* ------------------------------------------------------------------------- */
+#if defined(ODBSDK_PLATFORM_WINDOWS)
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+static void
+log_last_error_win32(FILE* fp)
+{
+    char* error;
+    if (FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        GetLastError(),
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&error,
+        0,
+        NULL) != 0)
+    {
+        fprintf(fp, "(Failed to get error from FormatMessage())");
+        return;
+    }
+
+    fprintf(fp, "%s", error);
+    LocalFree(error);
+}
+#endif
+
+/* ------------------------------------------------------------------------- */
 static int
 is_ascii_alpha(char c)
 {
@@ -50,36 +76,50 @@ static const char* note_style(void)  { return FGB_MAGENTA; }
 static const char* warn_style(void)  { return FGB_YELLOW; }
 static const char* err_style(void)   { return FGB_RED; }
 static const char* emph_style(void)  { return FGB_WHITE; }
-static const char*
-next_control_sequence(const char* fmt, int* i)
+static const char* quote_style(void) { return "`" FGB_WHITE; }
+static const char* end_quote_style(void) { return "'" COL_RESET; }
+static const char* reset_style(void) { return COL_RESET; }
+static int
+next_control_sequence(const char* fmt, int* i, const char** start, const char** end)
 {
     if (!fmt[*i])
-        return NULL;
+        return 0;
 
     switch (fmt[(*i)++])
     {
-        case 'd': return debug_style();
-        case 'i': return info_style();
-        case 'n': return note_style();
-        case 'w': return warn_style();
+        case 'd': *start = debug_style(); *end = reset_style(); return 1;
+        case 'i': *start = info_style(); *end = reset_style(); return 1;
+        case 'n': *start = note_style(); *end = reset_style(); return 1;
+        case 'w': *start = warn_style(); *end = reset_style(); return 1;
         case 'e':
             if (memcmp(&fmt[*i], "mph", 3) == 0)
             {
                 (*i) += 3;
-                return emph_style();
+                *start = emph_style();  *end = reset_style();
+                return 1;
             }
-            return err_style();
+            *start = err_style(); *end = reset_style();
+            return 1;
+        case 'q':
+            if (memcmp(&fmt[*i], "uote", 4) == 0)
+            {
+                (*i) += 4;
+                *start = quote_style(); *end = end_quote_style();
+                return 1;
+            }
+            break;
     }
 
-    return NULL;
+    return 0;
 }
 static const char*
 process_color_format(FILE* fp, const char* fmt, struct varef* args)
 {
     int i;
-    const char* ctrl_seq;
+    const char* start;
+    const char* end;
     const char* content;
-    for (i = 0; next_control_sequence(fmt + 1, &i); ) {}
+    for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end); ) {}
 
     if (fmt[i] != ':')
     {
@@ -87,23 +127,19 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
         return fmt + 1;
     }
 
-    for (i = 0; (ctrl_seq = next_control_sequence(fmt + 1, &i)) != NULL; )
-        fprintf(fp, "%s", ctrl_seq);
+    for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end); )
+        fprintf(fp, "%s", start);
     content = fmt + i + 1;
 
     while (*content)
     {
         if (*content == '{')
-        {
             content = process_color_format(fp, content, args);
-            for (i = 0; (ctrl_seq = next_control_sequence(fmt + 1, &i)) != NULL; )
-                fprintf(fp, "%s", ctrl_seq);
-        }
         else if (*content == '%')
             content = process_standard_format(fp, content, args);
         else if (*content == '}')
         {
-            fprintf(fp, "\033[0m");
+            fprintf(fp, "%s", end);
             content++;
             break;
         }

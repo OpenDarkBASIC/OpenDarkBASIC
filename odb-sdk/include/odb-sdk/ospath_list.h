@@ -9,9 +9,15 @@ struct ospath_list
 };
 
 static inline void
-ospath_list_free(struct ospath_list* l)
+ospath_list_init(struct ospath_list* l)
 {
-    utf8_list_free(&l->strlist);
+    utf8_list_init(&l->strlist);
+}
+
+static inline void
+ospath_list_deinit(struct ospath_list* l)
+{
+    utf8_list_deinit(&l->strlist);
 }
 
 static inline int

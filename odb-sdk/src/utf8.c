@@ -5,7 +5,7 @@
 #include <string.h>
 
 void
-utf8_free(struct utf8 str)
+utf8_deinit(struct utf8 str)
 {
     if (str.data)
         mem_free(str.data);

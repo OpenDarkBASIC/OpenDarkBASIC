@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-sdk/config.h"
-#include "odb-sdk/str.h"
+#include "odb-sdk/ospath.h"
 
 struct dynlib;
 
@@ -18,7 +18,7 @@ struct dynlib;
  * \return Returns 0 on success. Negative on error.
  */
 ODBSDK_PUBLIC_API int
-dynlib_add_path(const char* path);
+dynlib_add_path(struct ospath_view path);
 
 /*!
  * \brief Loads a shared library and returns its handle.
@@ -26,7 +26,7 @@ dynlib_add_path(const char* path);
  * \return Returns a handle on success, NULL on failure.
  */
 ODBSDK_PUBLIC_API struct dynlib*
-dynlib_open(const char* file_name);
+dynlib_open(struct ospath_view filepath);
 
 /*!
  * \brief Unloads a previously loaded shared library.

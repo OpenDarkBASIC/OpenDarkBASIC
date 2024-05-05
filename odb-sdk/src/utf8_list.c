@@ -1,7 +1,7 @@
 #include "odb-sdk/utf8_list.h"
 
 void
-utf8_list_free(struct utf8_list* l)
+utf8_list_deinit(struct utf8_list* l)
 {
 }
 

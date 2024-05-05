@@ -9,13 +9,32 @@ extern "C" {
 
 using namespace odb;
 
+static plugin_list plugins;
+
+void initCommands(void)
+{
+    plugin_list_init(&plugins);
+}
+void deinitCommands(void)
+{
+    struct plugin_info* plugin;
+    vec_for_each(&plugins, plugin)
+        plugin_info_deinit(plugin);
+    plugin_list_deinit(&plugins);
+}
+
 // ----------------------------------------------------------------------------
 bool
 loadCommands(const std::vector<std::string>& args)
 {
     log_info("", "Loading commands\n");
-    struct plugin_list plugins;
     plugin_list_populate(&plugins, getSDKRootDir(), NULL);
+    struct plugin_info* plugin;
+    vec_for_each(&plugins, plugin) {
+        log_dbg("", "%s\n", ospath_cstr(plugin->filepath));
+        log_dbg("", "%s\n", utf8_cstr(plugin->name, plugin->name_range));
+    }
+
     /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;
     switch (getSDKType())

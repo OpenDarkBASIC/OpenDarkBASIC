@@ -70,9 +70,9 @@ ospath_len(struct ospath path)
 }
 
 static inline void
-ospath_free(struct ospath path)
+ospath_deinit(struct ospath path)
 {
-    utf8_free(path.str);
+    utf8_deinit(path.str);
 }
 
 static inline int
@@ -98,4 +98,26 @@ static inline int
 ospath_join_cstr(struct ospath* path, const char* cstr)
 {
     return ospath_join(path, cstr_ospath_view(cstr));
+}
+
+static inline int
+ospath_ends_with(struct ospath_view path, struct utf8_view str, struct utf8_range range)
+{
+    return utf8_ends_with(path.str, path.range, str, range);
+}
+static inline int
+ospath_ends_with_cstr(struct ospath_view path, const char* cstr)
+{
+    return ospath_ends_with(path, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+}
+
+static inline int
+ospath_ends_with_i(struct ospath_view path, struct utf8_view str, struct utf8_range range)
+{
+    return utf8_ends_with_i(path.str, path.range, str, range);
+}
+static inline int
+ospath_ends_with_i_cstr(struct ospath_view path, const char* cstr)
+{
+    return ospath_ends_with_i(path, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
 }

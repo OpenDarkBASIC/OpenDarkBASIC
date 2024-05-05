@@ -1,13 +1,41 @@
 #include "odb-sdk/ospath.h"
 
-int
-ospath_set(struct ospath* path, struct utf8_view str)
+static void
+remove_trailing_slashes(struct ospath* path)
 {
-    if (utf8_set(&path->str, str) != 0)
+    while (path->range.len && path->str.data[path->range.len - 1] == '\\')
+        path->range.len--;
+}
+
+int
+ospath_set_utf8(
+    struct ospath* path, struct utf8_view str, struct utf8_range range)
+{
+    if (utf8_set(&path->str, &path->range, str, range) != 0)
         return -1;
-    utf8_replace_char(&path->str, '/', '\\');
-    while (path->str.len && path->str.data[path->str.len - 1] == '\\')
-        path->str.len--;
+
+    utf8_replace_char(path->str, path->range, '/', '\\');
+    remove_trailing_slashes(path);
+    return 0;
+}
+
+int
+ospath_join(struct ospath* path, struct ospath_view trailing)
+{
+    /* Append joining slash */
+    if (path->range.len
+        && path->str.data[path->range.off + path->range.len - 1] != '\\')
+    {
+        if (utf8_append_cstr(&path->str, &path->range, "\\") != 0)
+            return -1;
+    }
+
+    /* Append trailing path */
+    if (utf8_append(&path->str, &path->range, trailing.str, trailing.range)
+        != 0)
+        return -1;
+
+    remove_trailing_slashes(path);
     return 0;
 }
 

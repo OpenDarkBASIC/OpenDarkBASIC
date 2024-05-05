@@ -1,54 +1,41 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <stdio.h>
 
 #include "odb-sdk/dynlib.h"
-
-static char* last_error;
-const char*
-dynlib_last_error(void)
-{
-    FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL,
-        GetLastError(),
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&last_error,
-        0,
-        NULL);
-    return last_error;
-}
-void
-dynlib_last_error_free(void)
-{
-    if (last_error)
-        LocalFree(last_error);
-    last_error = NULL;
-}
+#include "odb-sdk/log.h"
 
 int
-dynlib_add_path(const char* path)
+dynlib_add_path(struct ospath_view path)
 {
     /* This function does not appear to add duplicates so it's safe to call it
      * multiple times */
-    if (!SetDllDirectoryA(path))
-        return -1;
+    if (!SetDllDirectoryA(ospath_view_cstr(path)))
+        return log_sdk_err(
+            "Failed to add DLL path {quote:%s}: {win32error}\n",
+            ospath_view_cstr(path));
+
     return 0;
 }
 
-void*
-dynlib_open(const char* file_name)
+struct dynlib*
+dynlib_open(struct ospath_view file_path)
 {
-    return (void*)LoadLibraryA(file_name);
+    HANDLE hModule = LoadLibraryA(ospath_view_cstr(file_path));
+    if (hModule == NULL)
+        log_sdk_err("Failed to load library {quote:%s}: {win32error}\n", ospath_view_cstr(file_path));
+
+    return (struct dynlib*)hModule;
 }
 
 void
-dynlib_close(void* handle)
+dynlib_close(struct dynlib* handle)
 {
     FreeLibrary((HMODULE)handle);
 }
 
 void*
-dynlib_symbol_addr(void* handle, const char* name)
+dynlib_symbol_addr(struct dynlib* handle, const char* name)
 {
     return (void*)GetProcAddress((HMODULE)handle, name);
 }
@@ -75,15 +62,8 @@ get_exports_directory(HMODULE hModule)
     return exports;
 }
 
-static int match_always(struct str_view str, const void* data)
-{
-    (void)str;
-    (void)data;
-    return 1;
-}
-
 int
-dynlib_symbol_table(void* handle, int (*on_symbol)(const char* sym, void* user), void* user)
+dynlib_symbol_table(struct dynlib* handle, int (*on_symbol)(const char* sym, void* user), void* user)
 {
     int ret = 0;
     HMODULE hModule = (HMODULE)handle;
@@ -100,30 +80,4 @@ dynlib_symbol_table(void* handle, int (*on_symbol)(const char* sym, void* user),
     }
 
     return ret;
-}
-
-int
-dynlib_string_count(void* handle)
-{
-    const char* symbol;
-    int table_size = 0;
-    HMODULE hModule = (HMODULE)handle;
-
-    /* Index starts at 1 */
-    while (LoadStringA(hModule, table_size + 1, (char*)&symbol, 0) > 0)
-        table_size++;
-
-    return 0;
-}
-
-struct str_view
-dynlib_string_at(void* handle, int idx)
-{
-    const char* symbol;
-    int len;
-    HMODULE hModule = (HMODULE)handle;
-
-    /* Index starts at 1 */
-    len = LoadStringA(hModule, idx + 1, (char*)&symbol, 0);
-    return cstr_view2(symbol, len);
 }

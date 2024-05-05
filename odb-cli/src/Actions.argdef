@@ -118,18 +118,18 @@ section sdk:
     func: setAdditionalPluginsDir
     runafter: global
 
-  init-sdk:
-    func: initSDK
+  setup-sdk:
+    func: setupSDK
     runafter: sdk-root, sdk-type, plugins
 
   print-sdk-root():
     help: Prints the location of the SDK
     func: printSDKRootDir
-    runafter: init-sdk
+    runafter: setup-sdk
 
   load-commands:
     func: loadCommands
-    runafter: init-sdk
+    runafter: setup-sdk
 
   dump-commands():
     help: Dump all command names in alphabetical order. The default file is stdout.

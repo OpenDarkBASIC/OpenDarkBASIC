@@ -225,9 +225,6 @@ mem_realloc(void* p, mem_size new_size)
     uintptr_t old_addr = (uintptr_t)p;
     p = realloc(p, new_size);
 
-    if (old_addr)
-        track_deallocation(old_addr, "realloc()");
-
     if (p == NULL)
     {
         log_sdk_err("realloc() failed (out of memory)\n");
@@ -237,7 +234,10 @@ mem_realloc(void* p, mem_size new_size)
         return NULL;
     }
 
+    if (old_addr)
+        track_deallocation(old_addr, "realloc()");
     track_allocation((uintptr_t)p, new_size);
+
     return p;
 }
 
