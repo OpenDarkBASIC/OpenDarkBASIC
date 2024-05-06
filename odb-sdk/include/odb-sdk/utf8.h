@@ -1,9 +1,10 @@
 #pragma once
 
 #include "odb-sdk/config.h"
-#include <string.h>
-#include <stdint.h>
 #include <ctype.h>
+#include <stdint.h>
+#include <string.h>
+#include <wchar.h>
 
 /* Can't do int16_t because the parser uses this to refer to offsets in source
  * files, and source files definitely contain >32768 characters */
@@ -16,7 +17,8 @@ typedef int32_t utf8_idx;
  */
 struct utf8
 {
-    char* data;
+    char*    data;
+    utf8_idx len;
 };
 
 /*!
@@ -25,12 +27,13 @@ struct utf8
 struct utf8_view
 {
     const char* data;
+    utf8_idx    len;
 };
 
 /*!
  * @brief A subset of a utf-8 encoded string, represented as offset and length.
  */
-struct utf8_range
+struct utf8_ref
 {
     utf8_idx off;
     utf8_idx len;
@@ -39,38 +42,35 @@ struct utf8_range
 static inline struct utf8
 empty_utf8(void)
 {
-    struct utf8 str = {NULL};
+    struct utf8 str = {NULL, 0};
     return str;
 }
 static inline struct utf8_view
 empty_utf8_view(void)
 {
-    struct utf8_view str = {NULL};
+    struct utf8_view str = {NULL, 0};
     return str;
 }
-static inline struct utf8_range
-empty_utf8_range(void)
+static inline struct utf8_ref
+empty_utf8_ref(void)
 {
-    struct utf8_range range = { 0, 0 };
-    return range;
+    struct utf8_ref ref = {0, 0};
+    return ref;
 }
 
 static inline struct utf8_view
-utf8_view(struct utf8 str, struct utf8_range range)
+utf8_view(struct utf8 str)
 {
-    struct utf8_view view = {NULL};
-    if (range.len)
-    {
-        str.data[range.off + range.len] = '\0';
-        view.data = str.data + range.off;
-    }
+    struct utf8_view view = {str.data, str.len};
+    if (str.len)
+        str.data[str.len] = '\0';
     return view;
 }
 
 static inline struct utf8_view
 cstr_utf8_view(const char* cstr)
 {
-    struct utf8_view utf8 = {cstr};
+    struct utf8_view utf8 = {cstr, (utf8_idx)strlen(cstr)};
     return utf8;
 }
 
@@ -81,124 +81,79 @@ utf8_view_cstr(struct utf8_view str)
 }
 
 static inline const char*
-utf8_cstr(struct utf8 str, struct utf8_range range)
+utf8_cstr(struct utf8 str)
 {
-    return utf8_view_cstr(utf8_view(str, range));
-}
-
-static inline struct utf8_range
-cstr_utf8_range(const char* cstr)
-{
-    struct utf8_range range = {0, (utf8_idx)strlen(cstr)};
-    return range;
-}
-
-static inline struct utf8_range
-utf8_range(void)
-{
-    struct utf8_range range = {0, 0};
-    return range;
+    return utf8_view_cstr(utf8_view(str));
 }
 
 ODBSDK_PUBLIC_API int
-utf8_set(
-    struct utf8*       dst,
-    struct utf8_range* dst_range,
-    struct utf8_view   src,
-    struct utf8_range  src_range);
+utf8_set(struct utf8* dst, struct utf8_view src);
 
 static inline int
-utf8_set_cstr(struct utf8* str, struct utf8_range* str_range, const char* cstr)
+utf8_set_cstr(struct utf8* str, const char* cstr)
 {
-    return utf8_set(
-        str, str_range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+    return utf8_set(str, cstr_utf8_view(cstr));
 }
 
 ODBSDK_PUBLIC_API int
-utf8_append(
-    struct utf8*       str,
-    struct utf8_range* str_range,
-    struct utf8_view   append,
-    struct utf8_range  append_range);
+utf8_append(struct utf8* str, struct utf8_view append);
 
 static inline int
-utf8_append_cstr(struct utf8* str, struct utf8_range* range, const char* cstr)
+utf8_append_cstr(struct utf8* str, const char* cstr)
 {
-    return utf8_append(str, range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+    return utf8_append(str, cstr_utf8_view(cstr));
 }
 
 ODBSDK_PUBLIC_API void
 utf8_deinit(struct utf8 str);
 
 static inline void
-utf8_replace_char(
-    struct utf8 str, struct utf8_range range, char search, char replace)
+utf8_replace_char(struct utf8 str, char search, char replace)
 {
-    utf8_idx i;
-    for (i = range.off; i != range.off + range.len; ++i)
-        if (str.data[i] == search)
-            str.data[i] = replace;
+    while (str.len--) /* It's a copy */
+        if (str.data[str.len] == search)
+            str.data[str.len] = replace;
 }
 
 static inline int
-utf8_starts_with(
-    struct utf8_view  str,
-    struct utf8_range str_range,
-    struct utf8_view  cmp,
-    struct utf8_range cmp_range)
+utf8_starts_with(struct utf8_view str, struct utf8_view cmp)
 {
-    if (str_range.len < cmp_range.len)
+    if (str.len < cmp.len)
         return 0;
 
-    return memcmp(
-               str.data + str_range.off,
-               cmp.data + cmp_range.off,
-               (size_t)cmp_range.len)
-           == 0;
+    return memcmp(str.data, cmp.data, (size_t)cmp.len) == 0;
 }
 
 static inline int
-utf8_starts_with_cstr(
-    struct utf8_view str, struct utf8_range range, const char* cmp)
+utf8_starts_with_cstr(struct utf8_view str, const char* cmp)
 {
-    return utf8_starts_with(
-        str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
+    return utf8_starts_with(str, cstr_utf8_view(cmp));
 }
 
 static inline int
-utf8_ends_with(
-    struct utf8_view  str,
-    struct utf8_range str_range,
-    struct utf8_view  cmp,
-    struct utf8_range cmp_range)
+utf8_ends_with(struct utf8_view str, struct utf8_view cmp)
 {
-    if (str_range.len < cmp_range.len)
+    if (str.len < cmp.len)
         return 0;
 
-    const char* off = str.data + str_range.len - cmp_range.len;
-    return memcmp(off, cmp.data, (size_t)cmp_range.len) == 0;
+    const char* off = str.data + str.len - cmp.len;
+    return memcmp(off, cmp.data, (size_t)cmp.len) == 0;
 }
 
 static inline int
-utf8_ends_with_cstr(
-    struct utf8_view str, struct utf8_range range, const char* cmp)
+utf8_ends_with_cstr(struct utf8_view str, const char* cmp)
 {
-    return utf8_ends_with(
-        str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
+    return utf8_ends_with(str, cstr_utf8_view(cmp));
 }
 
 static inline int
-utf8_ends_with_i(
-    struct utf8_view  str,
-    struct utf8_range str_range,
-    struct utf8_view  cmp,
-    struct utf8_range cmp_range)
+utf8_ends_with_i(struct utf8_view str, struct utf8_view cmp)
 {
-    const char* cstr1 = str.data + str_range.len - cmp_range.len;
+    const char* cstr1 = str.data + str.len - cmp.len;
     const char* cstr2 = cmp.data;
-    int len = cmp_range.len;
+    int         len = cmp.len;
 
-    if (str_range.len < cmp_range.len)
+    if (str.len < cmp.len)
         return 0;
 
     while (len--)
@@ -207,38 +162,58 @@ utf8_ends_with_i(
     return 1;
 }
 static inline int
-utf8_ends_with_i_cstr(
-    struct utf8_view str, struct utf8_range range, const char* cmp)
+utf8_ends_with_i_cstr(struct utf8_view str, const char* cmp)
 {
-    return utf8_ends_with_i(
-        str, range, cstr_utf8_view(cmp), cstr_utf8_range(cmp));
+    return utf8_ends_with_i(str, cstr_utf8_view(cmp));
 }
 
 static inline int
-utf8_equal(
-    struct utf8_view  s1,
-    struct utf8_range r1,
-    struct utf8_view  s2,
-    struct utf8_range r2)
+utf8_equal(struct utf8_view s1, struct utf8_view s2)
 {
-    return r1.len == r2.len
-           && memcmp(s1.data + r1.off, s2.data + r2.off, (size_t)r1.len) == 0;
+    return s1.len == s2.len && memcmp(s1.data, s2.data, (size_t)s1.len) == 0;
 }
 static inline int
-utf8_equal_cstr(struct utf8_view str, struct utf8_range range, const char* cstr)
+utf8_equal_cstr(struct utf8_view str, const char* cstr)
 {
-    return utf8_equal(str, range, cstr_utf8_view(cstr), cstr_utf8_range(cstr));
+    return utf8_equal(str, cstr_utf8_view(cstr));
 }
 
-#if defined(ODBSDK_PLATFORM_WINDOWS)
+static inline void
+utf8_remove_extension(struct utf8* str)
+{
+    while (str->len && str->data[str->len - 1] != '.')
+        str->len--;
+}
 
-ODBSDK_PRIVATE_API wchar_t*
-utf8_to_utf16(const char* utf8, int utf8_bytes);
+typedef int32_t utf16_idx;
 
-ODBSDK_PRIVATE_API char*
-utf16_to_utf8(const wchar_t* utf16, int utf16_len);
+struct utf16
+{
+    uint16_t* data;
+    utf16_idx len;
+};
 
-ODBSDK_PRIVATE_API void
-utf_free(void* utf);
+struct utf16_view
+{
+    const uint16_t* data;
+    utf16_idx len;
+};
 
-#endif
+static inline struct utf16_view
+cstr_utf16_view(const uint16_t* cstr)
+{
+    struct utf16_view str = { cstr, 0 };
+    while (*cstr++)
+        str.len++;
+    return str;
+}
+
+ODBSDK_PUBLIC_API int
+utf8_to_utf16(struct utf16* out, struct utf8_view in);
+
+ODBSDK_PUBLIC_API int
+utf16_to_utf8(struct utf8* out, struct utf16_view in);
+
+ODBSDK_PUBLIC_API void
+utf16_deinit(struct utf16 str);
+

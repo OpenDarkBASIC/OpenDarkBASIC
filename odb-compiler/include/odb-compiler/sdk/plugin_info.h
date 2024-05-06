@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
+#include "odb-compiler/sdk/sdk.h"
 #include "odb-sdk/ospath_list.h"
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"
@@ -17,7 +18,6 @@ struct plugin_info
      * load libs/DBProCore.dll, then this will contain "DBProCore".
      */
     struct utf8       name;
-    struct utf8_range name_range;
 };
 
 VEC_DECLARE_API(plugin_list, struct plugin_info, 16)
@@ -27,7 +27,6 @@ plugin_info_init(struct plugin_info* plugin)
 {
     plugin->filepath = empty_ospath();
     plugin->name = empty_utf8();
-    plugin->name_range = empty_utf8_range();
 }
 
 static inline void
@@ -40,5 +39,6 @@ plugin_info_deinit(struct plugin_info* plugin)
 ODBCOMPILER_PUBLIC_API int
 plugin_list_populate(
     struct plugin_list*       plugins,
+    enum sdk_type             sdk_type,
     struct ospath_view        sdk_root,
     const struct ospath_list* extra_plugins);

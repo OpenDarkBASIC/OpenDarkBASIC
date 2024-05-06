@@ -77,12 +77,12 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = 1; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = 0; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string_value = cstr_utf8_range(yytext); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {STRING_LITERAL}    { /* XXX: broken yylval->string_value = cstr_utf8_ref(yytext);*/ RETURN_TOKEN(TOK_STRING_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[1], NULL, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    {IDENTIFIER}        { yylval->string_value = cstr_utf8_range(yytext); RETURN_TOKEN(TOK_IDENTIFIER); }
+    {IDENTIFIER}        { /* XXX: broken yylval->string_value = cstr_utf8_ref(yytext);*/ RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }
     "$"                 { RETURN_TOKEN('$'); }

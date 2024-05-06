@@ -53,6 +53,7 @@ IncludeCategories:
     Priority:        0
     SortPriority:    0
 IndentWidth: 4
+IndentCaseLabels: true
 InsertNewlineAtEOF: true
 PointerAlignment: Left
 SpaceBeforeParens: ControlStatements

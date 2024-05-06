@@ -12,48 +12,35 @@ utf8_deinit(struct utf8 str)
 }
 
 int
-utf8_set(
-    struct utf8*       dst,
-    struct utf8_range* dst_range,
-    struct utf8_view   src,
-    struct utf8_range  src_range)
+utf8_set(struct utf8* dst, struct utf8_view src)
 {
-    if (dst_range->len < src_range.len)
+    if (dst->len < src.len)
     {
         /* All utf8 strings are NULL terminated, so we still have to make space
          * for that */
-        void* new_data = mem_realloc(dst->data, (mem_size)src_range.len + 1);
+        void* new_data = mem_realloc(dst->data, (mem_size)src.len + 1);
         if (new_data == NULL)
-            return mem_report_oom(src_range.len + 1, "utf8_set()");
+            return mem_report_oom(src.len + 1, "utf8_set()");
         dst->data = new_data;
     }
 
-    dst_range->off = 0;
-    dst_range->len = src_range.len;
-    memcpy(dst->data, src.data + src_range.off, (size_t)src_range.len);
+    dst->len = src.len;
+    memcpy(dst->data, src.data, (size_t)src.len);
 
     return 0;
 }
 
 int
-utf8_append(
-    struct utf8*       str,
-    struct utf8_range* str_range,
-    struct utf8_view   append,
-    struct utf8_range  append_range)
+utf8_append(struct utf8* str, struct utf8_view append)
 {
-    mem_size new_size
-        = (mem_size)(str_range->off + str_range->len + append_range.len + 1);
-    void* new_data = mem_realloc(str->data, new_size);
+    mem_size new_size = (mem_size)(str->len + append.len + 1);
+    void*    new_data = mem_realloc(str->data, new_size);
     if (new_data == NULL)
         return mem_report_oom(new_size, "utf8_append()");
 
     str->data = new_data;
-    memcpy(
-        str->data + str_range->off + str_range->len,
-        append.data + append_range.off,
-        (size_t)append_range.len);
-    str_range->len += append_range.len;
+    memcpy(str->data + str->len, append.data, (size_t)append.len);
+    str->len += append.len;
 
     return 0;
 }

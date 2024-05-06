@@ -6,8 +6,7 @@ utf8_list_deinit(struct utf8_list* l)
 }
 
 int
-utf8_list_add(
-    struct utf8_list* l, struct utf8_view str, struct utf8_range range)
+utf8_list_add(struct utf8_list* l, struct utf8_view str)
 {
     return 0;
 }

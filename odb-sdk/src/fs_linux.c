@@ -15,7 +15,7 @@ int
 fs_get_path_to_self(struct ospath* path)
 {
     int capacity
-        = path->range.len + 1; /* paths have space for a null terminator */
+        = path->str.len + 1; /* paths have space for a null terminator */
     if (capacity < PATH_MAX)
     {
         void* new_mem = mem_realloc(path->str.data, PATH_MAX);
@@ -31,16 +31,16 @@ fs_get_path_to_self(struct ospath* path)
          * is fine for struct utf8 since it doesn't expect it to be, but we
          * still have to make sure to reserve the space for a NULL terminator at
          * the end of the buffer for when utf8_view() is called. */
-        path->range.len = readlink(
+        path->str.len = readlink(
             "/proc/self/exe",
             path->str.data,
             capacity - 1 /* null terminator */);
-        if (path->range.len < 0)
+        if (path->str.len < 0)
             return log_sdk_err(
                 "readlink() failed in fs_get_path_to_self(): %s",
                 strerror(errno));
 
-        if (path->range.len < capacity - 1)
+        if (path->str.len < capacity - 1)
             break;
 
         capacity *= 2;
@@ -49,8 +49,6 @@ fs_get_path_to_self(struct ospath* path)
             return mem_report_oom(capacity, "fs_get_path_to_self()");
         path->str.data = new_mem;
     }
-
-    path->range.off = 0;
 
     return 0;
 }
@@ -65,7 +63,7 @@ fs_list(
     struct dirent* ep;
     int            ret = 0;
 
-    ODBSDK_DEBUG_ASSERT(path.str.data[path.range.off + path.range.len] == '\0');
+    ODBSDK_DEBUG_ASSERT(path.str.data[path.str.len] == '\0');
 
     dp = opendir(ospath_view_cstr(path));
     if (!dp)

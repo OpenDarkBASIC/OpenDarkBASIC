@@ -78,7 +78,7 @@
      * lexer passes in string values as a utf8_range, which is an offset and
      * length into the memory-mapped file.
      */
-    struct utf8_range string_value;
+    struct utf8_ref string_value;
 }
 
 /* Add a description to some of the tokens */

@@ -1,4 +1,93 @@
+#include "odb-sdk/config.h"
+#include "odb-sdk/log.h"
+#include "odb-sdk/mem.h"
 #include "odb-sdk/utf8.h"
+#include <errno.h>
+#include <iconv.h>
+
+int
+utf16_to_utf8(struct utf8* out, struct utf16_view in)
+{
+    char*    inp;
+    char*    outp;
+    iconv_t  cd;
+    size_t   nconv;
+    size_t   inbytes = in.len;
+    size_t   outbytes = in.len * 2;
+    utf8_idx outcapacity = in.len * 2;
+
+    cd = iconv_open("UTF-8", "UTF-16");
+    if (cd == (iconv_t)-1)
+    {
+        log_sdk_err(
+            "iconv_open() failed in utf16_to_utf8(): %s\n", strerror(errno));
+        goto iconv_open_failed;
+    }
+
+    out->data = mem_alloc(outcapacity);
+    if (out->data == NULL)
+    {
+        mem_report_oom(outcapacity, "utf16_to_utf8()");
+        goto alloc_outbuf_failed;
+    }
+
+    inp = (char*)in.data;
+    outp = (char*)out->data;
+    while (inbytes)
+    {
+        nconv = iconv(cd, &inp, &inbytes, &outp, &outbytes);
+        if (nconv == (size_t)-1)
+        {
+            switch (errno)
+            {
+                case E2BIG: {
+                    void* new_mem = mem_realloc(out->data, outcapacity * 2);
+                    if (new_mem == NULL)
+                    {
+                        mem_report_oom(outcapacity * 2, "utf16_to_utf8()");
+                        goto grow_outbuf_failed;
+                    }
+                    out->data = new_mem;
+                    outp = (char*)out->data + outcapacity;
+                    outbytes += outcapacity;
+                    outcapacity *= 2;
+                }
+                break;
+
+                case EINVAL:
+                    inp++;
+                    inbytes--;
+                    break;
+
+                default:
+                    log_sdk_err(
+                        "Failed to convert string to UTF-8: %s\n",
+                        strerror(errno));
+                    goto grow_outbuf_failed;
+                    break;
+            }
+        }
+    }
+
+    out->len = outcapacity - outbytes;
+
+    return 0;
+
+grow_outbuf_failed:
+    mem_free(out->data);
+    out->data = NULL;
+alloc_outbuf_failed:
+    iconv_close(cd);
+iconv_open_failed:
+    return -1;
+}
+
+void
+utf16_deinit(struct utf16 str)
+{
+    if (str.data)
+        mem_free(str.data);
+}
 
 /*
 FILE*
@@ -15,4 +104,3 @@ remove_utf8(const char* utf8_filename, int len)
     return remove(utf8_filename);
 }
 */
-

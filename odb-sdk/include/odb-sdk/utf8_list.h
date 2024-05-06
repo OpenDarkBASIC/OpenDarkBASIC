@@ -26,5 +26,5 @@ ODBSDK_PUBLIC_API void
 utf8_list_deinit(struct utf8_list* l);
 
 ODBSDK_PUBLIC_API int
-utf8_list_add(struct utf8_list* l, struct utf8_view str, struct utf8_range range);
+utf8_list_add(struct utf8_list* l, struct utf8_view str);
 

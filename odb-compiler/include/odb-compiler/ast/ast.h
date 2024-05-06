@@ -58,7 +58,7 @@ union ast_node
     {
         struct info info;
         int _pad1, _pad2;
-        struct utf8_range name;
+        struct utf8_ref name;
         enum type_annotation annotation;
     } identifier;
 };
@@ -73,5 +73,5 @@ struct ast
 int ast_init(struct ast* ast);
 void ast_deinit(struct ast* ast);
 
-int ast_identifier(struct ast* ast, struct utf8_range name, enum type_annotation annotation);
+int ast_identifier(struct ast* ast, struct utf8_ref name, enum type_annotation annotation);
 
