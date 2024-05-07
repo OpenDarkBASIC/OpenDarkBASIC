@@ -1,4 +1,4 @@
-#include "odb-compiler/sdk/plugin_info.h"
+#include "odb-compiler/sdk/plugin_list.h"
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 

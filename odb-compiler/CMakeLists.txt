@@ -150,9 +150,14 @@ endif ()
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
-    "include/odb-compiler/sdk/plugin_info.h"
-    "src/sdk/plugin_info.c"
+    "include/odb-compiler/sdk/command_list.h"
+    "include/odb-compiler/sdk/plugin_list.h"
+    "src/sdk/command_list.c"
     "src/sdk/command_loader.cpp"
+    "src/sdk/command_loader_dbpro.cpp"
+    "src/sdk/command_loader_odb.cpp"
+    "src/sdk/command_matcher.c"
+    "src/sdk/plugin_info.c"
     #"src/sdk/CommandLoader.cpp"
     #"src/sdk/CommandLoader.cpp"
     #"src/sdk/ODBCommandLoader.cpp"
@@ -464,6 +469,9 @@ if (${ODBCOMPILER_TESTS})
         #"tests/src/parser/test_db_parser_var_decl_math.cpp"
         #"tests/src/parser/test_db_parser_var_ref.cpp"
         #"tests/src/test_SourceLocation.cpp"
+
+        "tests/src/sdk/test_odbcompiler_command_list.cpp"
+        "tests/src/sdk/test_odbcompiler_command_matcher.cpp"
         
         "tests/src/main.cpp")
     target_link_libraries (test_odb-compiler

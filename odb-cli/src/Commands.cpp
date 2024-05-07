@@ -2,31 +2,26 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
-#include "odb-compiler/sdk/command_loader.h"
-#include "odb-compiler/sdk/plugin_info.h"
+#include "odb-compiler/sdk/command_list.h"
+#include "odb-compiler/sdk/plugin_list.h"
 #include "odb-sdk/log.h"
 }
 
-static plugin_list  plugins;
-static command_list commands;
+static plugin_list plugins;
+static cmd_list    commands;
 
 void
 initCommands(void)
 {
     plugin_list_init(&plugins);
-    command_list_init(&commands);
+    cmd_list_init(&commands);
 }
 void
 deinitCommands(void)
 {
     struct plugin_info* plugin;
-    struct command*     command;
 
-    vec_for_each(&commands, command)
-    {
-    }
-    command_list_deinit(&commands);
-
+    cmd_list_deinit(&commands);
     vec_for_each(&plugins, plugin)
     {
         plugin_info_deinit(plugin);
@@ -40,7 +35,7 @@ loadCommands(const std::vector<std::string>& args)
 {
     log_info("", "Loading commands\n");
     plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL);
-    commands_load_all(&commands, getSDKType(), &plugins);
+    cmd_list_load_from_plugins(&commands, getSDKType(), &plugins);
 
     /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;

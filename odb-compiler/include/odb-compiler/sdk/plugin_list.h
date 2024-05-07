@@ -6,6 +6,8 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"
 
+typedef int16_t plugin_ref;
+
 struct plugin_info
 {
     /*!
