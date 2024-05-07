@@ -14,19 +14,20 @@
 #include "odb-sdk/mem.h"
 #include <inttypes.h>
 #include <stddef.h>
+#include <string.h>
 
-#define VEC_MEM_DEF(T, bits)                                                   \
+#define VEC_DECLARE_TYPE(name, T, bits)                                        \
+    struct name                                                                \
     {                                                                          \
-        int##bits##_t count, capacity;                                         \
-        T             data[1];                                                 \
-    }
-#define VEC_DEF(T, bits)                                                       \
-    {                                                                          \
-        struct VEC_MEM_DEF(T, bits) * mem;                                     \
+        struct                                                                 \
+        {                                                                      \
+            int##bits##_t count, capacity;                                     \
+            T             data[1];                                             \
+        }* mem;                                                                \
     }
 
 #define VEC_DECLARE_API(prefix, T, bits)                                       \
-    struct prefix VEC_DEF(T, bits);                                            \
+    VEC_DECLARE_TYPE(prefix, T, bits);                                         \
                                                                                \
     static inline void prefix##_init(struct prefix* v);                        \
                                                                                \
@@ -227,8 +228,8 @@
 #define VEC_DEFINE_API(prefix, T, bits)                                        \
     static int prefix##_realloc(struct prefix* v, int##bits##_t elems)         \
     {                                                                          \
-        mem_size bytes = sizeof(*v->mem)                                       \
-                       + sizeof(v->mem->data[0]) * (elems - 1);                \
+        mem_size bytes                                                         \
+            = sizeof(*v->mem) + sizeof(v->mem->data[0]) * (elems - 1);         \
         void* new_mem = mem_realloc(v->mem, bytes);                            \
         if (new_mem == NULL)                                                   \
             return mem_report_oom(bytes, #prefix "_reserve");                  \
@@ -345,7 +346,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->mem->data[(v)->mem->count - (i)-1])
+#define vec_rget(v, i) (&(v)->mem->data[(v)->mem->count - (i) - 1])
 
 /*!
  * @brief Returns the number of elements in the vector. Works on NULL vectors,
@@ -367,3 +368,7 @@
     for (intptr_t var_##i = 0; (v)->mem && var_##i != (v)->mem->count          \
                                && ((var = &(v)->mem->data[var_##i]) || 1);     \
          ++var_##i)
+
+VEC_DECLARE_API(v1616, int16_t, 16)
+VEC_DECLARE_API(v816, int16_t, 16)
+

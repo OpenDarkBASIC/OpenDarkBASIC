@@ -97,6 +97,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/mstream.c"
     "src/utf8.c"
     "src/utf8_list.c"
+    "src/vec.c"
 
     $<$<BOOL:${ODBSDK_MEM_DEBUGGING}>:src/mem.c>
 
