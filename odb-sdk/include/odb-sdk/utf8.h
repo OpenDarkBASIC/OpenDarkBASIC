@@ -170,12 +170,19 @@ utf8_ends_with_i_cstr(struct utf8_view str, const char* cmp)
 static inline int
 utf8_equal(struct utf8_view s1, struct utf8_view s2)
 {
-    return s1.len == s2.len && memcmp(s1.data, s2.data, (size_t)s1.len) == 0;
+    return strcmp(s1.data, s2.data) == 0;
 }
 static inline int
 utf8_equal_cstr(struct utf8_view str, const char* cstr)
 {
     return utf8_equal(str, cstr_utf8_view(cstr));
+}
+static inline int
+utf8_ref_equal(
+    struct utf8_view s1, struct utf8_ref r1, struct utf8_view s2, struct utf8_ref r2)
+{
+    return r1.len == r2.len
+           && memcmp(s1.data + r1.off, s2.data + r2.off, (size_t)s1.len) == 0;
 }
 
 static inline void
@@ -196,13 +203,13 @@ struct utf16
 struct utf16_view
 {
     const uint16_t* data;
-    utf16_idx len;
+    utf16_idx       len;
 };
 
 static inline struct utf16_view
 cstr_utf16_view(const uint16_t* cstr)
 {
-    struct utf16_view str = { cstr, 0 };
+    struct utf16_view str = {cstr, 0};
     while (*cstr++)
         str.len++;
     return str;
@@ -216,4 +223,3 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in);
 
 ODBSDK_PUBLIC_API void
 utf16_deinit(struct utf16 str);
-

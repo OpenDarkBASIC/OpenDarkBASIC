@@ -2,14 +2,6 @@
 
 VEC_DEFINE_API(arg_type_list, enum cmd_arg_type, 32)
 
-static int
-lexicographically_less(struct utf8_view a, struct utf8_view b)
-{
-    return memcmp(a.data, b.data, a.len < b.len ? a.len : b.len) < 0
-               ? 1
-               : a.len < b.len;
-}
-
 /* 1) If the string exists, then a reference to that string is returned.
  * 2) If the string does not exist, then the first string that lexicographically
  *    compares less than the string being searched-for is returned.
@@ -29,7 +21,7 @@ find_lower_bound(struct utf8_list* l, struct utf8_view cmp)
     {
         half = len / 2;
         middle = found + half;
-        if (lexicographically_less(utf8_list_view(l, middle), cmp))
+        if (strcmp(utf8_list_view(l, middle).data, cmp.data) < 0)
         {
             found = middle;
             ++found;
@@ -79,7 +71,7 @@ cmd_list_add(
     if (arg_type_list_insert(&commands->return_types, insert, return_type) < 0)
         goto return_type_failed;
 
-    return 0;
+    return insert;
 
 return_type_failed:
     v1616_erase(&commands->plugin_refs, insert);

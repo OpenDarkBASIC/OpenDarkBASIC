@@ -1,4 +1,5 @@
 %{
+#include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-sdk/utf8.h"
 
@@ -24,6 +25,17 @@
         dbg(#token);                                                          \
         return token;                                                         \
     } while(0)
+
+static inline struct utf8_ref
+token_to_ref(const char* cstr, void* extra)
+{
+    char* base = extra;
+    struct utf8_ref ref = {
+        (utf8_idx)(cstr - base),
+        (utf8_idx)strlen(cstr)
+    };
+    return ref;
+}
 
 %}
 
@@ -77,12 +89,12 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = 1; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = 0; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { /* XXX: broken yylval->string_value = cstr_utf8_ref(yytext);*/ RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {STRING_LITERAL}    { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_STRING_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[1], NULL, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    {IDENTIFIER}        { /* XXX: broken yylval->string_value = cstr_utf8_ref(yytext);*/ RETURN_TOKEN(TOK_IDENTIFIER); }
+    {IDENTIFIER}        { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }
     "$"                 { RETURN_TOKEN('$'); }

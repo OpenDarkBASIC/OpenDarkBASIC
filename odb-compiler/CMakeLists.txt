@@ -118,7 +118,7 @@ endif ()
 bison_target (db-parser
     "${PROJECT_SOURCE_DIR}/src/parser/db_parser.y"
     "${PROJECT_BINARY_DIR}/src/parser/db_parser.y.c"
-    ${BISON_VERBOSEA}
+    ${BISON_VERBOSE}
     COMPILE_FLAGS "${BISON_COMPILE_FLAGS}"
     DEFINES_FILE "${PROJECT_BINARY_DIR}/include/odb-compiler/parser/db_parser.y.h")
 flex_target (db-scanner
@@ -168,10 +168,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
 
     "include/odb-compiler/parser/db_keywords.h"
     "include/odb-compiler/parser/db_parser.h"
+    "include/odb-compiler/parser/db_source.h"
     "src/parser/db_keywords.gperf"
     "src/parser/db_scanner.lex"
     "src/parser/db_parser.y"
     "src/parser/db_parser.c"
+    "src/parser/db_source.c"
     #"${Gperf_db-keywords_OUTPUTS}"
     "${BISON_db-parser_OUTPUTS}"
     "${FLEX_db-scanner_OUTPUTS}"
@@ -180,7 +182,13 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/parsers/PluginInfo.cpp"
     #"${BISON_DarkBASICParser_OUTPUTS}"
     #"${FLEX_DarkBASICScanner_OUTPUTS}"
-    
+   
+    "include/odb-compiler/ast/ast.h"
+    "include/odb-compiler/ast/ast_ops.h"
+    "include/odb-compiler/ast/ast_export.h"
+    "src/ast/ast.c"
+    "src/ast/ast_ops.c"
+    "src/ast/ast_export.c"
     #"src/ast/Annotation.cpp"
     #"src/ast/ArgList.cpp"
     #"src/ast/ArrayDecl.cpp"
@@ -470,9 +478,16 @@ if (${ODBCOMPILER_TESTS})
         #"tests/src/parser/test_db_parser_var_ref.cpp"
         #"tests/src/test_SourceLocation.cpp"
 
+        "tests/include/odb-compiler/tests/DBParserTestHarness.hpp"
+        "tests/src/DBParserTestHarness.cpp"
+        "tests/src/env_odbsdk_init.cpp"
+
+        "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/sdk/test_odbcompiler_command_list.cpp"
         "tests/src/sdk/test_odbcompiler_command_matcher.cpp"
-        
+
         "tests/src/main.cpp")
     target_link_libraries (test_odb-compiler
         PRIVATE

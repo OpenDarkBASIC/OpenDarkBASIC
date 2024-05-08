@@ -9,7 +9,8 @@
 #include <unistd.h>
 
 int
-mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view file, int padding)
+mfile_map_cow_with_extra_padding(
+    struct mfile* mf, struct ospath_view file, int padding)
 {
     struct stat stbuf;
     int         fd;
@@ -73,6 +74,22 @@ fstat_failed:
     close(fd);
 open_failed:
     return -1;
+}
+
+int
+mfile_map_mem(struct mfile* mf, int size)
+{
+    mf->address = mmap(
+        NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (mf->address == MAP_FAILED)
+    {
+        log_sdk_err(
+            "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
+        return -1;
+    }
+
+    mf->size = size;
+    return 0;
 }
 
 void

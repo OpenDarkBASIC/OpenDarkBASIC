@@ -21,6 +21,7 @@
     #include "odb-compiler/parser/db_parser.y.h"
     #include "odb-compiler/parser/db_scanner.lex.h"
     #include "odb-compiler/ast/ast.h"
+    #include "odb-compiler/ast/ast_ops.h"
 
     static void dberror(DBLTYPE* loc, dbscan_t scanner, const char* msg, ...);
 }
@@ -75,10 +76,10 @@
     int64_t integer_value;
     /* The parser API has been deliberately designed in a way where strings do
      * not have to be copied. Whole source files are mapped into memory, and the
-     * lexer passes in string values as a utf8_range, which is an offset and
-     * length into the memory-mapped file.
-     */
+     * lexer passes in string values as a utf8_ref, which is an offset and
+     * length into the memory-mapped file. */
     struct utf8_ref string_value;
+    int node_value;  /* Index into the ast->nodes[] array */
 }
 
 /* Add a description to some of the tokens */
@@ -95,7 +96,15 @@
 %token<string_value> STRING_LITERAL "string literal"
 
 /* Identifiers */
-%token<string> IDENTIFIER "identifier"
+%token<string_value> IDENTIFIER "identifier"
+
+/* non-terminals */
+%type<node_value> program
+%type<node_value> block stmt
+%type<node_value> expr
+%type<node_value> const_decl
+%type<node_value> literal
+%type<node_value> annotated_identifier
 
 /* Precedence rules */
 %nonassoc NO_ANNOTATION
@@ -103,38 +112,40 @@
 %start program
 
 %%
+sep: '\n' | ':' | ';' ;
+seps: seps sep | sep;
+maybe_seps: seps | ;
 program
-  : seps_maybe block seps_maybe
-  | seps_maybe
+  : maybe_seps block maybe_seps             { ast_set_root(ast, $2); }
+  | maybe_seps                              {}
   ;
-sep : '\n' | ':' | ';';
-seps : seps sep | sep;
-seps_maybe : seps | ;
 block
-  : block seps stmt
-  | stmt
+  : block seps stmt                         { $$ = $1; ast_block_append(ast, $$, $3, &@$); }
+  | stmt                                    { $$ = ast_block(ast, $1, &@$); }
   ;
 stmt
-  : const_decl
+  : const_decl                              { $$ = $1; }
+  //| command_stmt
   ;
 expr
-  : '(' expr ')'
-  | literal
+  : '(' expr ')'                            { $$ = $2; }
+  //| command_expr
+  | literal                                 { $$ = $1; }
   ;
 const_decl
-  : CONSTANT annotated_identifier expr
+  : CONSTANT annotated_identifier expr      { $$ = ast_const_decl(ast, $2, $3, &@$); }
   ;
 literal
-  : BOOLEAN_LITERAL
-  | INTEGER_LITERAL
+  : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ast, yylval.boolean_value, &@$); }
+  | INTEGER_LITERAL                         { $$ = ast_integer_literal(ast, yylval.integer_value, &@$); }
   ;
 annotated_identifier
-  : IDENTIFIER %prec NO_ANNOTATION
-  | IDENTIFIER '&'
-  | IDENTIFIER '%'
-  | IDENTIFIER '!'
-  | IDENTIFIER '#'
-  | IDENTIFIER '$'
+  : IDENTIFIER %prec NO_ANNOTATION          { $$ = ast_identifier(ast, $1, TA_NONE, &@$); }
+  | IDENTIFIER '&'                          { $$ = ast_identifier(ast, $1, TA_INT64, &@$); }
+  | IDENTIFIER '%'                          { $$ = ast_identifier(ast, $1, TA_INT16, &@$); }
+  | IDENTIFIER '!'                          { $$ = ast_identifier(ast, $1, TA_DOUBLE, &@$); }
+  | IDENTIFIER '#'                          { $$ = ast_identifier(ast, $1, TA_FLOAT, &@$); }
+  | IDENTIFIER '$'                          { $$ = ast_identifier(ast, $1, TA_STRING, &@$); }
   ;
 %%
 

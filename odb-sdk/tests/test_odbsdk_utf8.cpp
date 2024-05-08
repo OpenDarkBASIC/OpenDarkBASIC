@@ -11,6 +11,7 @@ using namespace testing;
 namespace {
 class NAME : public Test
 {
+public:
     void
     SetUp() override
     {
@@ -23,9 +24,21 @@ class NAME : public Test
 
     struct utf8 str = utf8();
 };
-}
+} // namespace
 
 TEST_F(NAME, test)
 {
 }
 
+TEST_F(NAME, can_append_null_bytes)
+{
+    struct utf8_view eob = {"", 1};
+    utf8_set_cstr(&str, "test");
+    EXPECT_THAT(str.len, Eq(4));
+
+    utf8_append(&str, eob);
+    const char* cstr = utf8_cstr(str);
+    EXPECT_THAT(str.len, Eq(5));
+    EXPECT_THAT(cstr[4], Eq('\0'));
+    EXPECT_THAT(cstr[5], Eq('\0'));
+}

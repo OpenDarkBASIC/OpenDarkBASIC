@@ -81,6 +81,12 @@ cmd_list_add(
     struct utf8_view  c_identifier,
     struct utf8_view  help_file);
 
+static inline struct utf8_view
+cmd_list_get(struct cmd_list* commands, cmd_ref cmd_ref)
+{
+    return utf8_list_view(&commands->db_identifiers, cmd_ref);
+}
+
 ODBCOMPILER_PUBLIC_API int
 cmd_add_arg(
     struct cmd_list*       commands,
@@ -95,5 +101,8 @@ cmd_list_load_from_plugins(
     struct cmd_list*          commands,
     enum sdk_type             sdk_type,
     const struct plugin_list* plugins);
+
+ODBCOMPILER_PUBLIC_API int
+cmd_list_match_longest(struct cmd_list* commands, struct utf8_view candidate);
 
 #define cmd_list_count(commands) (utf8_list_count(&(commands)))

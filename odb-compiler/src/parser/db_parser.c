@@ -3,8 +3,12 @@
 #include "odb-compiler/parser/db_scanner.lex.h"
 #include "odb-sdk/log.h"
 
+#if defined(ODBCOMPILER_VERBOSE_BISON)
+extern int dbdebug;
+#endif
+
 int
-parser_init(struct db_parser* parser)
+db_parser_init(struct db_parser* parser)
 {
     if (dblex_init(&parser->scanner) != 0)
         goto init_scanner_failed;
@@ -22,26 +26,15 @@ init_scanner_failed:
 }
 
 void
-parser_deinit(struct db_parser* parser)
+db_parser_deinit(struct db_parser* parser)
 {
     dbpstate_delete(parser->parser);
     dblex_destroy(parser->scanner);
 }
 
 int
-parser_prepare_file(struct mfile* mf, struct ospath_view file)
-{
-    if (mfile_map_cow_with_extra_padding(mf, file, 2) != 0)
-        return -1;
-
-    ((char*)mf->address)[mf->size - 1] = 0;
-    ((char*)mf->address)[mf->size - 2] = 0;
-
-    return 0;
-}
-
-int
-parser_parse_file(struct db_parser* parser, struct ast* ast, struct mfile mf)
+db_parse(
+    struct db_parser* parser, struct ast* ast, struct db_source source)
 {
     YY_BUFFER_STATE buffer_state;
     DBSTYPE         pushed_value;
@@ -49,14 +42,22 @@ parser_parse_file(struct db_parser* parser, struct ast* ast, struct mfile mf)
     int             parse_result;
     DBLTYPE         location = {1, 1, 1, 1};
 
-    buffer_state = db_scan_buffer(mf.address, mf.size, parser->scanner);
+    buffer_state = db_scan_buffer(source.text.data, source.text.len + 2, parser->scanner);
     if (buffer_state == NULL)
     {
         log_parser_err(
             "Failed to set up scan buffer. Either we ran out of memory, or the "
-            "source file was not memory mapped correctly.\n");
+            "source file was not memory mapped correctly. Did you use "
+            "db_parser_open_file()?\n");
         goto init_buffer_failed;
     }
+
+
+#if defined(ODBCOMPILER_VERBOSE_BISON)
+    dbdebug = 1;
+#endif
+
+    dbset_extra(source.text.data, parser->scanner);
 
     do
     {
@@ -65,7 +66,10 @@ parser_parse_file(struct db_parser* parser, struct ast* ast, struct mfile mf)
             parser->parser, pushed_char, &pushed_value, &location, ast);
     } while (parse_result == YYPUSH_MORE);
 
+    dbset_extra(NULL, parser->scanner);
     db_delete_buffer(buffer_state, parser->scanner);
+
+    return parse_result == 0 ? 0 : -1;
 
 init_buffer_failed:
     return -1;

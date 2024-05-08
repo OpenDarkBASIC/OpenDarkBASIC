@@ -30,6 +30,11 @@ public:
     {
         return cstr_utf8_view(cstr);
     }
+    const char*
+    C(struct utf8_view str)
+    {
+        return utf8_view_cstr(str);
+    }
 
     struct cmd_list cmds;
 };
@@ -45,103 +50,12 @@ TEST_F(NAME, add_command_returns_ref)
     EXPECT_THAT(c, Eq(2));
 }
 
-/*
-TEST_F(NAME, exact_string)
+TEST_F(NAME, added_commands_are_lexicographically_sorted)
 {
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(
-        nullptr, "projection matrix4", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(
-        nullptr, "randomize", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(
-        nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(
-        nullptr, "randomize mesh", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(
-        new cmd::Command(nullptr, "read", "", cmd::Command::Type::Void, {}));
-    matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("randomize");
-
-    EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(9));
+    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize mesh"), U(""), U("")), Eq(0));
+    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize"), U(""), U("")), Eq(0));
+    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("projection matrix4"), U(""), U("")), Eq(0));
+    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize matrix"), U(""), U("")), Eq(2));
+    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("read"), U(""), U("")), Eq(4));
 }
 
-TEST_F(NAME, trailing_space)
-{
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "projection matrix4", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"randomize", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "randomize mesh", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"read", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("randomize ");
-
-    EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(9));
-}
-
-TEST_F(NAME, longer_symbol)
-{
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "projection matrix4", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"randomize", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "randomize mesh", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"read", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("randomized");
-
-    EXPECT_THAT(result.found, IsFalse());
-    EXPECT_THAT(result.matchedLength, Eq(9));
-}
-
-TEST_F(NAME, match_longer_string_to_shorter_command)
-{
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "projection matrix4", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"randomize", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "randomize mesh", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"read", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("randomize timer");
-
-    EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(9)); // strlen("randomize")
-}
-
-TEST_F(NAME, dont_match_shorter_string_to_longer_command)
-{
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "dec", "",
-cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("decalmax");
-
-    EXPECT_THAT(result.found, IsFalse());
-    EXPECT_THAT(result.matchedLength, Eq(3)); // strlen("dec")
-}
-
-TEST_F(NAME, match_when_multiple_options_include_spaces_and_non_spaces)
-{
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "DELETE OBJECT COLLISION BOX",
-"", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "DELETE OBJECT", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "DELETE OBJECTS", "",
-cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
-
-    auto result = matcher->findLongestCommandMatching("delete object 100");
-
-    EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(strlen("delete object")));
-}
-*/

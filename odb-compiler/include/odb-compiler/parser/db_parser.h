@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-sdk/mfile.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-sdk/ospath.h"
 
 typedef void*           dbscan_t;
@@ -22,7 +22,6 @@ void
 db_parser_deinit(struct db_parser* parser);
 
 int
-parser_prepare_file(struct mfile* mf, struct ospath_view file);
+db_parse(
+    struct db_parser* parser, struct ast* ast, struct db_source source);
 
-int
-db_parse_text(struct db_parser* parser, struct ast* ast, struct mfile mf);

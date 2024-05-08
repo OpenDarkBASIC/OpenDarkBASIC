@@ -45,18 +45,37 @@ TEST_F(NAME, add_one_string)
     EXPECT_THAT(C(utf8_list_view(&l, 0)), StrEq("test"));
 }
 
-TEST_F(NAME, add_strings_until_realloc)
+TEST_F(NAME, insert_one_string)
 {
-    for (int i = 0; i != 256; ++i)
+    ASSERT_THAT(utf8_list_insert(&l, 0, U("test")), Eq(0));
+    ASSERT_THAT(utf8_list_count(&l), Eq(1));
+    EXPECT_THAT(C(utf8_list_view(&l, 0)), StrEq("test"));
+}
+
+TEST_F(NAME, insert_string_depending_on_garbage_ref)
+{
+    utf8_list_add(&l, U("blub"));
+    l.count = 0;
+    l.str_used = 0;
+    UTF8_LIST_TABLE_PTR(&l)[0].off = -666666;
+    UTF8_LIST_TABLE_PTR(&l)[0].len = -999999;
+    ASSERT_THAT(utf8_list_insert(&l, 0, U("test")), Eq(0));
+    ASSERT_THAT(utf8_list_count(&l), Eq(1));
+    EXPECT_THAT(C(utf8_list_view(&l, 0)), StrEq("test"));
+}
+
+TEST_F(NAME, add_strings_with_realloc)
+{
+    for (int i = 0; i != 32; ++i)
     {
         char buf[32];
         sprintf(buf, "test%d", i);
         ASSERT_THAT(utf8_list_add(&l, U(buf)), Eq(0));
     }
 
-    ASSERT_THAT(utf8_list_count(&l), Eq(256));
+    ASSERT_THAT(utf8_list_count(&l), Eq(32));
 
-    for (int i = 0; i != 256; ++i)
+    for (int i = 0; i != 32; ++i)
     {
         char buf[32];
         sprintf(buf, "test%d", i);
@@ -64,22 +83,60 @@ TEST_F(NAME, add_strings_until_realloc)
     }
 }
 
-TEST_F(NAME, insert_strings_until_realloc)
+TEST_F(NAME, insert_string_moves_memory_correctly)
 {
-    for (int i = 0; i != 256; ++i)
+    for (int i = 0; i != 32; ++i)
     {
         char buf[32];
         sprintf(buf, "test%d", i);
-        ASSERT_THAT(utf8_list_insert(&l, i/2, U(buf)), Eq(0));
+        ASSERT_THAT(utf8_list_add(&l, U(buf)), Eq(0));
     }
 
-    ASSERT_THAT(utf8_list_count(&l), Eq(256));
-    
-    for (int i = 0; i != 256; ++i)
+    ASSERT_THAT(utf8_list_insert(&l, 8, U("inserted string")), Eq(0));
+    ASSERT_THAT(utf8_list_count(&l), Eq(33));
+
+    for (int i = 0; i != 8; ++i)
     {
         char buf[32];
         sprintf(buf, "test%d", i);
-        //ASSERT_THAT(C(utf8_list_view(&l, i)), StrEq(buf));
-        puts(C(utf8_list_view(&l, i)));
+        ASSERT_THAT(C(utf8_list_view(&l, i)), StrEq(buf));
     }
+    ASSERT_THAT(C(utf8_list_view(&l, 8)), StrEq("inserted string"));
+    for (int i = 9; i != 32; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i - 1);
+        ASSERT_THAT(C(utf8_list_view(&l, i)), StrEq(buf));
+    }
+}
+
+TEST_F(NAME, add_string_after_inserting_moves_memory_correctly)
+{
+    for (int i = 0; i != 32; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i);
+        ASSERT_THAT(utf8_list_add(&l, U(buf)), Eq(0));
+    }
+
+    ASSERT_THAT(utf8_list_insert(&l, 8, U("inserted string")), Eq(0));
+    ASSERT_THAT(utf8_list_add(&l, U("append1")), Eq(0));
+    ASSERT_THAT(utf8_list_add(&l, U("append2")), Eq(0));
+    ASSERT_THAT(utf8_list_count(&l), Eq(35));
+
+    for (int i = 0; i != 8; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i);
+        ASSERT_THAT(C(utf8_list_view(&l, i)), StrEq(buf));
+    }
+    ASSERT_THAT(C(utf8_list_view(&l, 8)), StrEq("inserted string"));
+    for (int i = 9; i != 32; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i - 1);
+        ASSERT_THAT(C(utf8_list_view(&l, i)), StrEq(buf));
+    }
+    ASSERT_THAT(C(utf8_list_view(&l, 33)), StrEq("append1"));
+    ASSERT_THAT(C(utf8_list_view(&l, 34)), StrEq("append2"));
 }

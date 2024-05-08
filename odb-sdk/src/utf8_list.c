@@ -67,38 +67,40 @@ utf8_list_add(struct utf8_list* l, struct utf8_view str)
 int
 utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str)
 {
-    struct utf8_ref* ref;
+    struct utf8_ref* insref;
 
     if (grow(l, str.len) < 0)
         return -1;
 
+    insref = &UTF8_LIST_TABLE_PTR(l)[-insert];
     if (insert < l->count)
     {
-        int i;
+        struct utf8_ref* ref;
+        int              i;
 
         /* Move strings to make space for str.len+1 */
-        ref = &UTF8_LIST_TABLE_PTR(l)[-insert];
         memmove(
-            l->data + ref->off + str.len + 1,
-            l->data + ref->off,
-            l->str_used - ref->off);
-
-        /* Calculate new offsets */
-        for (i = l->count - insert; i; i--, ref--)
-            ref->off += str.len + 1;
+            l->data + insref->off + str.len + 1,
+            l->data + insref->off,
+            l->str_used - insref->off);
 
         /* Move ref table */
         memmove(
             (struct utf8_ref*)(l->data + l->capacity) - l->count - 1,
             (struct utf8_ref*)(l->data + l->capacity) - l->count,
-            sizeof(struct utf8_ref) * l->count - insert);
+            sizeof(struct utf8_ref) * (l->count - insert));
+
+        /* Calculate new offsets */
+        for (ref = insref - 1, i = l->count - insert; i; i--, ref--)
+            ref->off += str.len + 1;
+    }
+    else
+    {
+        insref->off = l->str_used;
     }
 
-    ref = &UTF8_LIST_TABLE_PTR(l)[-insert];
-    ref->off = l->str_used;
-    ref->len = str.len;
-
-    memcpy(l->data + ref->off, str.data, str.len);
+    memcpy(l->data + insref->off, str.data, str.len);
+    insref->len = str.len;
 
     l->str_used += str.len + 1; /* Potential null terminator */
     l->count++;
