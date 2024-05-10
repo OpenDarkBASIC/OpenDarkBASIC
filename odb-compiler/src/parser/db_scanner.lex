@@ -3,17 +3,9 @@
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-sdk/utf8.h"
 
-#define YY_USER_ACTION \
-    yylloc->first_line = yylloc->last_line;                                   \
-    yylloc->first_column = yylloc->last_column;                               \
-    for(int i = 0; yytext[i] != '\0'; i++) {                                  \
-        if(yytext[i] == '\n') {                                               \
-            yylloc->last_line++;                                              \
-            yylloc->last_column = 1;                                          \
-        } else {                                                              \
-            yylloc->last_column++;                                            \
-        }                                                                     \
-    }
+#define YY_USER_ACTION                      \
+    yylloc->off += yylloc->len;             \
+    yylloc->len = (utf8_idx)strlen(yytext);
 
 #if defined(ODBCOMPILER_VERBOSE_FLEX)
 #   define dbg(text) fprintf(stderr, text ": \"%s\"\n", yytext)

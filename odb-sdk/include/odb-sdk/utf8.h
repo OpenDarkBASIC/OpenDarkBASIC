@@ -86,6 +86,13 @@ utf8_cstr(struct utf8 str)
     return utf8_view_cstr(utf8_view(str));
 }
 
+static inline struct utf8_view
+utf8_ref_view(const char* text, struct utf8_ref ref)
+{
+    struct utf8_view view = {text + ref.off, ref.len};
+    return view;
+}
+
 ODBSDK_PUBLIC_API int
 utf8_set(struct utf8* dst, struct utf8_view src);
 
@@ -179,7 +186,10 @@ utf8_equal_cstr(struct utf8_view str, const char* cstr)
 }
 static inline int
 utf8_ref_equal(
-    struct utf8_view s1, struct utf8_ref r1, struct utf8_view s2, struct utf8_ref r2)
+    struct utf8_view s1,
+    struct utf8_ref  r1,
+    struct utf8_view s2,
+    struct utf8_ref  r2)
 {
     return r1.len == r2.len
            && memcmp(s1.data + r1.off, s2.data + r2.off, (size_t)s1.len) == 0;

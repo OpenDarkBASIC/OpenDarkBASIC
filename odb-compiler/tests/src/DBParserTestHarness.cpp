@@ -1,9 +1,10 @@
 #include "odb-compiler/tests/DBParserTestHarness.hpp"
-#include "odb-sdk/utf8.h"
 #include <filesystem>
 
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
+#include "odb-sdk/utf8.h"
 }
 
 void
@@ -26,7 +27,7 @@ DBParserTestHarness::TearDown()
         std::string filename = std::string("ast/") + info->test_suite_name()
                                + "__" + info->name() + ".dot";
         std::filesystem::create_directory("ast");
-        ast_export_dot(cstr_utf8_view(filename.c_str()), &src, &ast);
+        ast_export_dot(&ast, cstr_utf8_view(filename.c_str()), &src, &cmds);
 #endif
     }
 
@@ -38,11 +39,28 @@ DBParserTestHarness::TearDown()
 }
 
 int
+DBParserTestHarness::addCommand(enum cmd_arg_type return_type, const char* name)
+{
+    return cmd_list_add(
+        &cmds,
+        0,
+        return_type,
+        cstr_utf8_view(name),
+        empty_utf8_view(),
+        empty_utf8_view());
+}
+int
+DBParserTestHarness::addCommand(const char* name)
+{
+    return addCommand(CMD_ARG_VOID, name);
+}
+
+int
 DBParserTestHarness::parse(const char* code)
 {
     if (src.text.data)
         db_source_close(&src);
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
         return -1;
-    return db_parse(&p, &ast, src);
+    return db_parse(&p, &ast, src, &cmds);
 }

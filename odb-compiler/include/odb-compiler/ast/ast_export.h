@@ -5,8 +5,12 @@
 
 struct ast;
 struct db_source;
+struct cmd_list;
 
-#if defined(ODBCOMPILER_DOT_EXPORT)
-int ast_export_dot(struct utf8_view filepath, const struct db_source* source, const struct ast* ast);
-#endif
+ODBCOMPILER_PUBLIC_API int
+ast_export_dot(
+    const struct ast*       ast,
+    struct utf8_view        filepath,
+    const struct db_source* source,
+    const struct cmd_list* commands);
 

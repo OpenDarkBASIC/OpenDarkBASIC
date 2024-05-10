@@ -78,7 +78,7 @@ populate_dbpro(
     struct ospath_view        sdk_root,
     const struct ospath_list* extra_plugins)
 {
-    const char* plugin_subdir;
+    const char** plugin_subdir;
     const char* plugin_subdirs[]
         = {"plugins", "plugins-licensed", "plugins-user", NULL};
     struct ospath              path = empty_ospath();
@@ -93,10 +93,10 @@ populate_dbpro(
     }
 
     /* Collect DLL files from subdirectories */
-    for (plugin_subdir = plugin_subdirs[0]; *plugin_subdir; ++plugin_subdir)
+    for (plugin_subdir = plugin_subdirs; *plugin_subdir; ++plugin_subdir)
     {
         if (ospath_set(&path, sdk_root) != 0
-            || ospath_join_cstr(&path, plugin_subdir) != 0)
+            || ospath_join_cstr(&path, *plugin_subdir) != 0)
         {
             ospath_deinit(path);
             return -1;
@@ -108,13 +108,13 @@ populate_dbpro(
     /* Maybe the SDK root directory is pointing to the DBP installation
      * directory instead of the "Compiler" subdirectory. Try to be nice and scan
      * that too. */
-    if (vec_count(plugins) == 0)
+    if (vec_count(*plugins) == 0)
     {
-        for (plugin_subdir = plugin_subdirs[0]; *plugin_subdir; ++plugin_subdir)
+        for (plugin_subdir = plugin_subdirs; *plugin_subdir; ++plugin_subdir)
         {
             if (ospath_set(&path, sdk_root) != 0
                 || ospath_join_cstr(&path, "Compiler") != 0
-                || ospath_join_cstr(&path, plugin_subdir) != 0)
+                || ospath_join_cstr(&path, *plugin_subdir) != 0)
             {
                 ospath_deinit(path);
                 return -1;

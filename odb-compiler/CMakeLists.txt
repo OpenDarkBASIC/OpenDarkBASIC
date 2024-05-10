@@ -134,29 +134,28 @@ if (ODBCOMPILER_VERBOSE_BISON)
         PROPERTY COMPILE_DEFINITIONS YYDEBUG)
 endif ()
 
-#gperf_target (db-keywords
-#    "${PROJECT_SOURCE_DIR}/src/parser/db_keywords.gperf"
-#    "${PROJECT_BINARY_DIR}/src/parser/db_keywords.gperf.c")
-#set_source_files_properties (${Gperf_db-keywords_OUTPUTS}
-#    PROPERTIES COMPILE_FLAGS
-#        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
-#        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
-#        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
-##XXX: this is broken
-#add_gperf_bison_dependency (db-keywords db-parser)
+gperf_target (db-keyword
+    "${PROJECT_SOURCE_DIR}/src/parser/db_keyword.gperf"
+    "${PROJECT_BINARY_DIR}/src/parser/db_keyword.gperf.c")
+set_source_files_properties (${Gperf_db-keyword_OUTPUTS}
+    PROPERTIES COMPILE_FLAGS
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:Clang>:-Wno-missing-field-initializers>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wno-missing-field-initializers>)
+#XXX: this is broken
+add_gperf_bison_dependency (db-keyword db-parser)
 
 ###############################################################################
 # Library definition
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
-    "include/odb-compiler/sdk/command_list.h"
+    "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
-    "src/sdk/command_list.c"
-    "src/sdk/command_loader.cpp"
-    "src/sdk/command_loader_dbpro.cpp"
-    "src/sdk/command_loader_odb.cpp"
-    "src/sdk/command_matcher.c"
+    "src/sdk/cmd_list.c"
+    "src/sdk/cmd_loader.cpp"
+    "src/sdk/cmd_loader_dbpro.cpp"
+    "src/sdk/cmd_loader_odb.cpp"
     "src/sdk/plugin_info.c"
     #"src/sdk/CommandLoader.cpp"
     #"src/sdk/CommandLoader.cpp"
@@ -166,15 +165,15 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/sdk/CommandIndex.cpp"
     #"src/sdk/CommandMatcher.cpp"
 
-    "include/odb-compiler/parser/db_keywords.h"
+    "include/odb-compiler/parser/db_keyword.h"
     "include/odb-compiler/parser/db_parser.h"
     "include/odb-compiler/parser/db_source.h"
-    "src/parser/db_keywords.gperf"
+    "src/parser/db_keyword.gperf"
     "src/parser/db_scanner.lex"
     "src/parser/db_parser.y"
     "src/parser/db_parser.c"
     "src/parser/db_source.c"
-    #"${Gperf_db-keywords_OUTPUTS}"
+    "${Gperf_db-keyword_OUTPUTS}"
     "${BISON_db-parser_OUTPUTS}"
     "${FLEX_db-scanner_OUTPUTS}"
 
@@ -485,8 +484,8 @@ if (${ODBCOMPILER_TESTS})
         "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
-        "tests/src/sdk/test_odbcompiler_command_list.cpp"
-        "tests/src/sdk/test_odbcompiler_command_matcher.cpp"
+        "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
+        "tests/src/sdk/test_odbcompiler_cmd_matcher.cpp"
 
         "tests/src/main.cpp")
     target_link_libraries (test_odb-compiler

@@ -3,10 +3,10 @@
 #include "gmock/gmock.h"
 
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_source.h"
-#include "odb-compiler/sdk/command_list.h"
-#include "odb-compiler/ast/ast.h"
+#include "odb-compiler/sdk/cmd_list.h"
 }
 
 class DBParserTestHarness : public testing::Test
@@ -16,6 +16,10 @@ public:
     SetUp() override;
     void
     TearDown() override;
+    int
+    addCommand(const char* name);
+    int
+    addCommand(enum cmd_arg_type return_type, const char* name);
     int
     parse(const char* code);
 

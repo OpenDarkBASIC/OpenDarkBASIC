@@ -84,6 +84,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "include/odb-sdk/mfile.h"
     "include/odb-sdk/mstream.h"
     "include/odb-sdk/ospath.h"
+    "include/odb-sdk/rb.h"
     "include/odb-sdk/thread.h"
     "include/odb-sdk/utf8.h"
     "include/odb-sdk/vec.h"
@@ -95,6 +96,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/init.c"
     "src/log.c"
     "src/mstream.c"
+    "src/rb.c"
     "src/utf8.c"
     "src/utf8_list.c"
     "src/vec.c"
@@ -162,6 +164,7 @@ if (ODBSDK_TESTS)
         "tests/test_odbsdk_log.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
+        "tests/test_odbsdk_rb.cpp"
         "tests/test_odbsdk_utf8.cpp"
         "tests/test_odbsdk_utf8_list.cpp"
         "tests/test_odbsdk_vec.cpp")

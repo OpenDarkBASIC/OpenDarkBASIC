@@ -45,4 +45,34 @@ utf8_list_view(const struct utf8_list* l, utf8_idx i)
     return view;
 }
 
+/*!
+ * @brief Finds the first position in which a string could be inserted without
+ * changing the ordering.
+ *
+ * 1) If cmd exists in the list, then a reference to that string is returned.
+ * 2) If the string does not exist, then the first string that lexicographically
+ *    compares less than the string being searched-for is returned.
+ * 3) If there is no string that lexicographically compares less than the
+ *    searched-for string, the returned reference will have length zero, but
+ *    its offset will point after the last valid character in the list.
+ *
+ * @note The list must be sorted.
+ * @note Algorithm taken from GNU GCC stdlibc++'s lower_bound function,
+ * line 2121 in stl_algo.h
+ * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
+ */
+ODBSDK_PUBLIC_API utf8_idx
+utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp);
+
+/*!
+ * @brief Finds the last position in which a string could be inserted without
+ * changing the ordering.
+ * @note The list must be sorted.
+ * @note Algorithm taken from GNU GCC stdlibc++'s lower_bound function,
+ * line 2169 in stl_algo.h
+ * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
+ */
+ODBSDK_PUBLIC_API utf8_idx
+utf8_upper_bound(const struct utf8_list* l, struct utf8_view cmp);
+
 #define utf8_list_count(l) ((l)->count)

@@ -7,7 +7,7 @@
 #include "odb-sdk/vec.h"
 
 struct plugin_list;
-typedef int32_t cmd_ref;
+typedef utf8_idx cmd_idx;
 
 /* Type information encoding of exported commands from plugins. See
  * https://github.com/TheGameCreators/Dark-Basic-Pro/blob/Initial-Files/Install/Help/documents/1%20Third%20Party%20Commands.htm#L112
@@ -15,12 +15,12 @@ typedef int32_t cmd_ref;
  */
 enum cmd_arg_type
 {
-    CMD_ARG_INTEGER = 'L',
-    CMD_ARG_FLOAT = 'F',
-    CMD_ARG_STRING = 'S',
-    CMD_ARG_DOUBLE = 'O',
-    CMD_ARG_LONG = 'R',
-    CMD_ARG_DWORD = 'D',
+    CMD_ARG_DWORD = 'D',   /* 32-bit unsigned integer */
+    CMD_ARG_INTEGER = 'L', /* 32-bit signed integer */
+    CMD_ARG_LONG = 'R',    /* 64-bit signed integer */
+    CMD_ARG_FLOAT = 'F',   /* float */
+    CMD_ARG_DOUBLE = 'O',  /* double */
+    CMD_ARG_STRING = 'S',  /* char* */
     CMD_ARG_ARRAY = 'H',
     CMD_ARG_VOID = '0'
 };
@@ -50,6 +50,7 @@ struct cmd_list
     struct utf8_list     help_files;
     struct v1616         plugin_refs;
     struct arg_type_list return_types;
+    char                 longest_command;
 };
 
 static inline void
@@ -60,6 +61,7 @@ cmd_list_init(struct cmd_list* commands)
     utf8_list_init(&commands->help_files);
     v1616_init(&commands->plugin_refs);
     arg_type_list_init(&commands->return_types);
+    commands->longest_command = 0;
 }
 
 static inline void
@@ -72,7 +74,7 @@ cmd_list_deinit(struct cmd_list* commands)
     utf8_list_deinit(&commands->db_identifiers);
 }
 
-ODBCOMPILER_PUBLIC_API cmd_ref
+ODBCOMPILER_PUBLIC_API cmd_idx
 cmd_list_add(
     struct cmd_list*  commands,
     plugin_ref        plugin_ref,
@@ -81,16 +83,10 @@ cmd_list_add(
     struct utf8_view  c_identifier,
     struct utf8_view  help_file);
 
-static inline struct utf8_view
-cmd_list_get(struct cmd_list* commands, cmd_ref cmd_ref)
-{
-    return utf8_list_view(&commands->db_identifiers, cmd_ref);
-}
-
 ODBCOMPILER_PUBLIC_API int
 cmd_add_arg(
     struct cmd_list*       commands,
-    cmd_ref                cmd_ref,
+    cmd_idx                cmd,
     enum cmd_arg_type      type,
     enum cmd_arg_direction direction,
     struct utf8_view       identifier,
@@ -98,11 +94,11 @@ cmd_add_arg(
 
 ODBCOMPILER_PUBLIC_API int
 cmd_list_load_from_plugins(
-    struct cmd_list*          commands,
-    enum sdk_type             sdk_type,
-    const struct plugin_list* plugins);
+    struct cmd_list*   commands,
+    enum sdk_type      sdk_type,
+    struct plugin_list plugins);
 
-ODBCOMPILER_PUBLIC_API int
-cmd_list_match_longest(struct cmd_list* commands, struct utf8_view candidate);
+ODBCOMPILER_PUBLIC_API cmd_idx
+cmd_list_find(const struct cmd_list* commands, struct utf8_view name);
 
-#define cmd_list_count(commands) (utf8_list_count(&(commands)))
+#define cmd_list_count(commands) (utf8_list_count(&(commands)->db_identifiers))

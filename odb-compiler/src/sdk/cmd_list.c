@@ -1,46 +1,15 @@
-#include "odb-compiler/sdk/command_list.h"
+#include "odb-compiler/sdk/cmd_list.h"
+#include "odb-sdk/utf8_list.h"
 
 VEC_DEFINE_API(arg_type_list, enum cmd_arg_type, 32)
-
-/* 1) If the string exists, then a reference to that string is returned.
- * 2) If the string does not exist, then the first string that lexicographically
- *    compares less than the string being searched-for is returned.
- * 3) If there is no string that lexicographically compares less than the
- *    searched-for string, the returned reference will have length zero, but
- *    its offset will point after the last valid character in the list.
- */
-static utf8_idx
-find_lower_bound(struct utf8_list* l, struct utf8_view cmp)
-{
-    utf8_idx half, middle, found, len;
-
-    found = 0;
-    len = utf8_list_count(l);
-
-    while (len)
-    {
-        half = len / 2;
-        middle = found + half;
-        if (strcmp(utf8_list_view(l, middle).data, cmp.data) < 0)
-        {
-            found = middle;
-            ++found;
-            len = len - half - 1;
-        }
-        else
-            len = half;
-    }
-
-    return found;
-}
 
 static int
 handle_duplicate_identifier(void)
 {
-    return 0;
+    return -1;
 }
 
-cmd_ref
+cmd_idx
 cmd_list_add(
     struct cmd_list*  commands,
     int16_t           plugin_ref,
@@ -50,7 +19,7 @@ cmd_list_add(
     struct utf8_view  help_file)
 {
     utf8_idx insert
-        = find_lower_bound(&commands->db_identifiers, db_identifier);
+        = utf8_lower_bound(&commands->db_identifiers, db_identifier);
 
     if (insert < utf8_list_count(&commands->db_identifiers))
     {
@@ -71,10 +40,13 @@ cmd_list_add(
     if (arg_type_list_insert(&commands->return_types, insert, return_type) < 0)
         goto return_type_failed;
 
+    if (commands->longest_command < db_identifier.len)
+        commands->longest_command = db_identifier.len;
+
     return insert;
 
 return_type_failed:
-    v1616_erase(&commands->plugin_refs, insert);
+    v1616_erase(commands->plugin_refs, insert);
 plugin_ref_failed:
     utf8_list_erase(&commands->help_files, insert);
 help_file_failed:
@@ -88,11 +60,21 @@ db_identifier_failed:
 int
 cmd_add_arg(
     struct cmd_list*       commands,
-    cmd_ref                cmd_ref,
+    cmd_idx                cmd_ref,
     enum cmd_arg_type      type,
     enum cmd_arg_direction direction,
     struct utf8_view       identifier,
     struct utf8_view       description)
 {
     return -1;
+}
+
+cmd_idx
+cmd_list_find(const struct cmd_list* commands, struct utf8_view name)
+{
+    cmd_idx cmd = utf8_lower_bound(&commands->db_identifiers, name);
+    if (cmd < cmd_list_count(commands)
+           && utf8_equal(name, utf8_list_view(&commands->db_identifiers, cmd)))
+        return cmd;
+    return cmd_list_count(commands);
 }

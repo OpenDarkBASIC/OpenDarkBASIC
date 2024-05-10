@@ -18,21 +18,21 @@ log_dbg(const char* group, const char* fmt, ...)
 
 ODBSDK_PRINTF_FORMAT(2, 0) static inline void
 log_vinfo(const char* group, const char* fmt, va_list ap)
-{ log_vraw("{i:info: }", group, fmt, ap); }
+{ log_vraw("{i:info:  }", group, fmt, ap); }
 ODBSDK_PRINTF_FORMAT(2, 3) static inline void
 log_info(const char* group, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vinfo(group, fmt, ap); va_end(ap); }
 
 ODBSDK_PRINTF_FORMAT(2, 0) static inline void
 log_vnote(const char* group, const char* fmt, va_list ap)
-{ log_vraw("{n:note: }", group, fmt, ap); }
+{ log_vraw("{n:note:  }", group, fmt, ap); }
 ODBSDK_PRINTF_FORMAT(2, 3) static inline void
 log_note(const char* group, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vnote(group, fmt, ap); va_end(ap); }
 
 ODBSDK_PRINTF_FORMAT(2, 0) static inline void
 log_vwarn(const char* group, const char* fmt, va_list ap) 
-{ log_vraw("{w:warn: }", group, fmt, ap); }
+{ log_vraw("{w:warn:  }", group, fmt, ap); }
 ODBSDK_PRINTF_FORMAT(2, 3) static inline void
 log_warn(const char* group, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vwarn(group, fmt, ap); va_end(ap); }

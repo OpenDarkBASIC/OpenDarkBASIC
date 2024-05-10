@@ -57,15 +57,18 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
     switch (ast->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_PARAMLIST: break;
+        case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
-        case AST_COMMAND: SWAP(cmd_ref, command, ref) break;
+        case AST_COMMAND: SWAP(cmd_idx, command, idx) break;
+        case AST_ASSIGN_VAR: break;
         case AST_IDENTIFIER:
             SWAP(struct utf8_ref, identifier, name)
             SWAP(enum type_annotation, identifier, annotation)
             break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_INTEGER_LITERAL: SWAP(int, integer_literal, value) break;
+        case AST_STRING_LITERAL:
+            SWAP(struct utf8_ref, string_literal, str) break;
     }
 #undef SWAP
 }
@@ -134,15 +137,17 @@ ast_trees_equal(
     switch (a1->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_PARAMLIST: break;
+        case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
 
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
-            if (a1->nodes[n1].command.ref != a2->nodes[n2].command.ref)
+            if (a1->nodes[n1].command.idx != a2->nodes[n2].command.idx)
                 return 0;
             break;
+
+        case AST_ASSIGN_VAR: break;
 
         case AST_IDENTIFIER:
             if (!utf8_ref_equal(
@@ -154,12 +159,22 @@ ast_trees_equal(
             break;
 
         case AST_BOOLEAN_LITERAL:
-            if (a1->nodes[n1].boolean_literal.is_true != a2->nodes[n2].boolean_literal.is_true)
+            if (a1->nodes[n1].boolean_literal.is_true
+                != a2->nodes[n2].boolean_literal.is_true)
                 return 0;
             break;
 
-        case AST_INTEGER_LITERAL: 
-            if (a1->nodes[n1].integer_literal.value != a2->nodes[n2].integer_literal.value)
+        case AST_INTEGER_LITERAL:
+            if (a1->nodes[n1].integer_literal.value
+                != a2->nodes[n2].integer_literal.value)
+                return 0;
+            break;
+        case AST_STRING_LITERAL:
+            if (!utf8_ref_equal(
+                    utf8_view(source->text),
+                    a1->nodes[n1].string_literal.str,
+                    utf8_view(source->text),
+                    a2->nodes[n2].string_literal.str))
                 return 0;
             break;
     }

@@ -1,5 +1,7 @@
+#include "odb-sdk/config.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8_list.h"
+#include <assert.h>
 
 /*
  *                capacity
@@ -24,7 +26,7 @@ grow(struct utf8_list* l, utf8_idx str_len)
         mem_size grow_size = l->capacity ? l->capacity : 128;
         void*    new_mem = mem_realloc(l->data, l->capacity + grow_size);
         if (new_mem == NULL)
-            return mem_report_oom(l->capacity + grow_size, "utf8_list_add()");
+            return mem_report_oom(l->capacity + grow_size, "utf8_list_grow()");
         l->data = new_mem;
         l->capacity += grow_size;
 
@@ -111,4 +113,55 @@ utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str)
 void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 {
+    ODBSDK_DEBUG_ASSERT(0);
+}
+
+utf8_idx
+utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp)
+{
+    utf8_idx half, middle, found, len;
+
+    found = 0;
+    len = utf8_list_count(l);
+
+    while (len)
+    {
+        half = len / 2;
+        middle = found + half;
+        if (strcmp(utf8_list_view(l, middle).data, cmp.data) < 0)
+        {
+            found = middle;
+            ++found;
+            len = len - half - 1;
+        }
+        else
+            len = half;
+    }
+
+    return found;
+}
+
+utf8_idx
+utf8_upper_bound(const struct utf8_list* l, struct utf8_view cmp)
+{
+    utf8_idx half, middle, found, len;
+
+    found = 0;
+    len = utf8_list_count(l);
+
+    while (len)
+    {
+        half = len / 2;
+        middle = found + half;
+        if (strcmp(cmp.data, utf8_list_view(l, middle).data) < 0)
+            len = half;
+        else
+        {
+            found = middle;
+            ++found;
+            len = len - half - 1;
+        }
+    }
+
+    return found;
 }

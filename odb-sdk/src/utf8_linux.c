@@ -12,9 +12,9 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
     char*    outp;
     iconv_t  cd;
     size_t   nconv;
-    size_t   inbytes = in.len;
-    size_t   outbytes = in.len * 2;
-    utf8_idx outcapacity = in.len * 2;
+    size_t   inbytes = in.len * sizeof(uint16_t);
+    size_t   outbytes = in.len * sizeof(char);
+    utf8_idx outcapacity = in.len * sizeof(char);
 
     cd = iconv_open("UTF-8", "UTF-16");
     if (cd == (iconv_t)-1)
@@ -24,7 +24,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
         goto iconv_open_failed;
     }
 
-    out->data = mem_alloc(outcapacity);
+    out->data = mem_alloc(outcapacity + 1);
     if (out->data == NULL)
     {
         mem_report_oom(outcapacity, "utf16_to_utf8()");
@@ -41,7 +41,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
             switch (errno)
             {
                 case E2BIG: {
-                    void* new_mem = mem_realloc(out->data, outcapacity * 2);
+                    void* new_mem = mem_realloc(out->data, outcapacity * 2 + 1);
                     if (new_mem == NULL)
                     {
                         mem_report_oom(outcapacity * 2, "utf16_to_utf8()");
@@ -71,6 +71,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
 
     out->len = outcapacity - outbytes;
 
+    iconv_close(cd);
     return 0;
 
 grow_outbuf_failed:

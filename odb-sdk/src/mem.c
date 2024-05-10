@@ -135,17 +135,17 @@ track_allocation(uintptr_t addr, mem_size size)
     /* insert info into hashmap */
     switch (hm_insert(&state.report, &addr, (void**)&info))
     {
-    case 1: break;
-    case 0:
-        log_sdk_err(
-            "Double allocation! This is usually caused by calling "
-            "mem_track_allocation() on the same address twice.\n");
-        print_backtrace();
-        break;
-    default:
-        log_sdk_err(
-            "Hashmap insert failed! Expect to see incorrect memory leak "
-            "reports!\n");
+        case 1: break;
+        case 0:
+            log_sdk_err(
+                "Double allocation! This is usually caused by calling "
+                "mem_track_allocation() on the same address twice.\n");
+            print_backtrace();
+            break;
+        default:
+            log_sdk_err(
+                "Hashmap insert failed! Expect to see incorrect memory leak "
+                "reports!\n");
     }
 
     /* record the location and size of the allocation */
@@ -263,22 +263,63 @@ mem_threadlocal_deinit(void)
     /* report details on any g_allocations that were not de-allocated */
     HM_FOR_EACH(&state.report, void*, struct report_info, key, info)
     log_sdk_err(
-        "  un-freed memory at %" PRIx64 ", size %" PRIx32 "\n",
+        "un-freed memory at 0x%" PRIx64 ", size 0x%" PRIx32 "\n",
         info->location,
         info->size);
 
 #if defined(ODBSDK_MEM_BACKTRACE)
     {
         int i;
+        log_sdk_note("Backtrace:\n");
         for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
         {
             if (strstr(info->backtrace[i], "invoke_main"))
                 break;
-            log_sdk_err("    %s\n", info->backtrace[i]);
+            log_raw("", "", "  %s\n", info->backtrace[i]);
         }
     }
     backtrace_free(
         info->backtrace); /* this was allocated when malloc() was called */
+#endif
+#if 1
+    {
+        intptr_t i;
+        char*    p = (void*)info->location;
+        log_sdk_note("Hex Dump:\n");
+
+        log_raw("", "", "  ");
+        for (i = 0; i != 16; ++i)
+            log_raw("", "", "%c  ", "0123456789ABCDEF"[i]);
+        log_raw("", "", " ");
+        for (i = 0; i != 16; ++i)
+            log_raw("", "", "%c", "0123456789ABCDEF"[i]);
+        log_raw("", "", "\n");
+
+        for (i = 0; i < info->size; )
+        {
+            int j;
+            log_raw("", "", "  ");
+            for (j = 0; j != 16; ++j)
+            {
+                if (i + j < info->size)
+                    log_raw("", "", "%02x ", p[i]);
+                else
+                    log_raw("", "", "   ");
+            }
+
+            log_raw("", "", " ");
+            for (j = 0; j != 16 && i + j != info->size; ++j)
+            {
+                if (p[i] >= 32 && p[i] < 127)  /* printable ascii */
+                    log_raw("", "", "%c", p[i]);
+                else
+                    log_raw("", "", ".");
+            }
+
+            log_raw("", "", "\n");
+            i += 16;
+        }
+    }
 #endif
     HM_END_EACH
 

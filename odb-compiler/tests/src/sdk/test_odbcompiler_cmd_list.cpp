@@ -3,7 +3,7 @@
 #include "gmock/gmock.h"
 
 extern "C" {
-#include "odb-compiler/sdk/command_list.h"
+#include "odb-compiler/sdk/cmd_list.h"
 }
 
 #define NAME odbcompiler_command_list
@@ -41,9 +41,9 @@ public:
 
 TEST_F(NAME, add_command_returns_ref)
 {
-    cmd_ref a = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("projection matrix4"), U(""), U(""));
-    cmd_ref b = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize"), U(""), U(""));
-    cmd_ref c = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize matrix"), U(""), U(""));
+    cmd_idx a = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("projection matrix4"), U(""), U(""));
+    cmd_idx b = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize"), U(""), U(""));
+    cmd_idx c = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize matrix"), U(""), U(""));
 
     EXPECT_THAT(a, Eq(0));
     EXPECT_THAT(b, Eq(1));

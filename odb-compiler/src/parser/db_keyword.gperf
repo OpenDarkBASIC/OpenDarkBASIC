@@ -1,0 +1,99 @@
+%{
+    #include <stddef.h>  /* size_t */
+    #include <string.h>  /* strcmp */
+
+    #include "odb-compiler/parser/db_parser.y.h"  /* for list of token values */
+    #include "odb-compiler/parser/db_keyword.h"  /* Implementing this interface */
+%}
+
+%readonly-tables
+%global-table
+%language=C
+%7bit
+%define hash-function-name db_keyword_hash
+%define lookup-function-name db_keyword_lookup_impl
+%struct-type
+// Strings passed in are not null terminated
+%compare-lengths
+
+struct db_keyword
+{
+    const char* name;
+    dbtoken_kind_t token;
+};
+
+%%
+and,              TOK_LAND
+as,               TOK_AS
+%%
+
+//boolean,          TOK_BOOLEAN
+//byte,             TOK_BYTE
+//case,             TOK_CASE
+//complex,          TOK_COMPLEX
+//dec,              TOK_DEC
+//dim,              TOK_DIM
+//default,          TOK_DEFAULT
+//do,               TOK_DO
+//double,           TOK_DOUBLE
+//dword,            TOK_DWORD
+//else,             TOK_ELSE
+//elseif,           TOK_ELSEIF
+//endcase,          TOK_ENDCASE
+//endfunction,      TOK_ENDFUNCTION
+//endif,            TOK_ENDIF
+//endselect,        TOK_ENDSELECT
+//endtype,          TOK_ENDTYPE
+//endwhile,         TOK_ENDWHILE
+//exit,             TOK_EXIT
+//exitfunction,     TOK_EXITFUNCTION
+//float,            TOK_FLOAT
+//for,              TOK_FOR
+//function,         TOK_FUNCTION
+//global,           TOK_GLOBAL
+//gosub,            TOK_GOSUB
+//goto,             TOK_GOTO
+//if,               TOK_IF
+//inc,              TOK_INC
+//integer,          TOK_INTEGER
+//local,            TOK_LOCAL
+//loop,             TOK_LOOP
+//mat2x2,           TOK_MAT2X2
+//mat2x3,           TOK_MAT2X3
+//mat2x4,           TOK_MAT2X4
+//mat3x2,           TOK_MAT3X2
+//mat3x3,           TOK_MAT3X3
+//mat3x4,           TOK_MAT3X4
+//mat4x2,           TOK_MAT4X2
+//mat4x3,           TOK_MAT4X3
+//mat4x4,           TOK_MAT4X4
+//mod,              TOK_MOD
+//next,             TOK_NEXT
+//not,              TOK_LNOT
+//or,               TOK_LOR
+//quat,             TOK_QUAT
+//repeat,           TOK_REPEAT
+//return,           TOK_RETURN
+//select,           TOK_SELECT
+//step,             TOK_STEP
+//string,           TOK_STRING
+//then,             TOK_THEN
+//to,               TOK_TO
+//type,             TOK_TYPE
+//undim,            TOK_UNDIM
+//until,            TOK_UNTIL
+//vec2,             TOK_VEC2
+//vec3,             TOK_VEC3
+//vec4,             TOK_VEC4
+//while,            TOK_WHILE
+//word,             TOK_WORD
+//xor,              TOK_LXOR
+
+dbtoken_kind_t
+db_keyword_lookup(const char* data, struct utf8_ref ref)
+{
+    const struct db_keyword* kw = db_keyword_lookup_impl(data + ref.off, ref.len);
+    if (kw == NULL)
+        return TOK_END;
+    return kw->token;
+}
