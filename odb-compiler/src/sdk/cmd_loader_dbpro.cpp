@@ -27,28 +27,25 @@ load_dbpro_commands(struct cmd_list* commands, const LIEF::PE::Binary* pe)
     if (stringTableNodeIt->childs().size() == 0
         || stringTableNodeIt->childs()[0].childs().size() == 0)
         return -1;
-
+    
+    struct utf8 name = empty_utf8();
     if (auto resmgr = pe->resources_manager())
         for (const auto& entry : resmgr.value().string_table())
         {
-            //for (uint16_t c : entry.name())
-            //{
-            //    char l = (c & 0xFF);
-            //    char h = ((c >> 8) & 0xFF);
-            //    putc(std::isalnum(l) ? l : '.', stdout);
-            //    putc(std::isalnum(h) ? h : '.', stdout);
-            //}
-            //puts("");
-
-            struct utf8 name = empty_utf8();
             if (utf16_to_utf8(
                     &name, cstr_utf16_view((uint16_t*)entry.name().c_str()))
                 == 0)
             {
-                //printf("%s\n", utf8_cstr(name));
+                cmd_list_add(
+                    commands,
+                    0,
+                    CMD_ARG_VOID,
+                    utf8_view(name),
+                    empty_utf8_view(),
+                    empty_utf8_view());
             }
-            utf8_deinit(name);
         }
+    utf8_deinit(name);
 
     return 0;
 }

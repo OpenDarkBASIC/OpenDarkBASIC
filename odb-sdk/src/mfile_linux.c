@@ -64,7 +64,8 @@ mfile_map_cow_with_extra_padding(
 
     /* file descriptor no longer required */
     close(fd);
-
+    
+    mem_track_allocation(mf->address);
     mf->size = (int)(stbuf.st_size + padding);
     return 0;
 
@@ -87,7 +88,8 @@ mfile_map_mem(struct mfile* mf, int size)
             "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
         return -1;
     }
-
+    
+    mem_track_allocation(mf->address);
     mf->size = size;
     return 0;
 }
@@ -95,5 +97,6 @@ mfile_map_mem(struct mfile* mf, int size)
 void
 mfile_unmap(struct mfile* mf)
 {
+    mem_track_deallocation(mf->address);
     munmap(mf->address, (size_t)mf->size);
 }

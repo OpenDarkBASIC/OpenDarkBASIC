@@ -129,7 +129,8 @@ ast_init(struct ast* ast)
     ast->node_capacity = 0;
 }
 
-void ast_deinit(struct ast* ast);
+ODBCOMPILER_PUBLIC_API void 
+ast_deinit(struct ast* ast);
 
 int ast_block(struct ast* ast, int stmt, struct utf8_ref location);
 int ast_block_append(struct ast* ast, int block, int stmt, struct utf8_ref location);

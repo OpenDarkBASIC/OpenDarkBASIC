@@ -2,6 +2,7 @@
 #include "odb-sdk/utf8_list.h"
 
 VEC_DEFINE_API(arg_type_list, enum cmd_arg_type, 32)
+VEC_DEFINE_API(plugin_idxs, int16_t, 16)
 
 static int
 handle_duplicate_identifier(void)
@@ -12,7 +13,7 @@ handle_duplicate_identifier(void)
 cmd_idx
 cmd_list_add(
     struct cmd_list*  commands,
-    int16_t           plugin_ref,
+    plugin_ref        plugin_ref,
     enum cmd_arg_type return_type,
     struct utf8_view  db_identifier,
     struct utf8_view  c_identifier,
@@ -35,7 +36,7 @@ cmd_list_add(
         goto c_identifier_failed;
     if (utf8_list_insert(&commands->help_files, insert, help_file) < 0)
         goto help_file_failed;
-    if (v1616_insert(&commands->plugin_refs, insert, plugin_ref) < 0)
+    if (plugin_idxs_insert(&commands->plugin_idxs, insert, plugin_ref) < 0)
         goto plugin_ref_failed;
     if (arg_type_list_insert(&commands->return_types, insert, return_type) < 0)
         goto return_type_failed;
@@ -46,7 +47,7 @@ cmd_list_add(
     return insert;
 
 return_type_failed:
-    v1616_erase(commands->plugin_refs, insert);
+    plugin_idxs_erase(commands->plugin_idxs, insert);
 plugin_ref_failed:
     utf8_list_erase(&commands->help_files, insert);
 help_file_failed:

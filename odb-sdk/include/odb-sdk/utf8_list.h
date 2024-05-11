@@ -45,6 +45,12 @@ utf8_list_view(const struct utf8_list* l, utf8_idx i)
     return view;
 }
 
+static inline const char*
+utf8_list_cstr(const struct utf8_list* l, utf8_idx i)
+{
+    return utf8_view_cstr(utf8_list_view(l, i));
+}
+
 /*!
  * @brief Finds the first position in which a string could be inserted without
  * changing the ordering.

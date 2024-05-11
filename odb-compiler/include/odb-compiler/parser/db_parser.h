@@ -15,13 +15,13 @@ struct db_parser
     dbpstate* parser;
 };
 
-int
+ODBCOMPILER_PUBLIC_API int
 db_parser_init(struct db_parser* parser);
 
-void
+ODBCOMPILER_PUBLIC_API void
 db_parser_deinit(struct db_parser* parser);
 
-int
+ODBCOMPILER_PUBLIC_API int
 db_parse(
     struct db_parser*      parser,
     struct ast*            ast,

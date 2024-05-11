@@ -281,10 +281,11 @@ mem_threadlocal_deinit(void)
     backtrace_free(
         info->backtrace); /* this was allocated when malloc() was called */
 #endif
-#if 1
+#if defined(ODBSDK_MEM_HEX_DUMP)
+    if (info->size <= ODBSDK_MEM_HEX_DUMP_SIZE)
     {
         intptr_t i;
-        char*    p = (void*)info->location;
+        uint8_t*    p = (void*)info->location;
         log_sdk_note("Hex Dump:\n");
 
         log_raw("", "", "  ");

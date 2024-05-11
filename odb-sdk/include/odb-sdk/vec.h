@@ -313,16 +313,16 @@
         memmove(                                                               \
             v->mem->data + i + 1,                                              \
             v->mem->data + i,                                                  \
-            (v->mem->count - 1) * sizeof(v->mem->data[0]));                    \
+            (v->mem->count - i - 1) * sizeof(v->mem->data[0]));                \
         return &v->mem->data[i];                                               \
     }                                                                          \
     void prefix##_erase(struct prefix v, int##bits##_t i)                      \
     {                                                                          \
+        --v.mem->count;                                                        \
         memmove(                                                               \
             v.mem->data + i,                                                   \
             v.mem->data + i + 1,                                               \
             (v.mem->count - i) * sizeof(v.mem->data[0]));                      \
-        --v.mem->count;                                                        \
     }                                                                          \
                                                                                \
     int prefix##_retain(                                                       \
@@ -409,6 +409,3 @@
     for (intptr_t var##_i = 0; (v).mem && var##_i != (v).mem->count            \
                                && ((var = &(v).mem->data[var##_i]) || 1);      \
          ++var##_i)
-
-VEC_DECLARE_API(v1616, int16_t, 16)
-VEC_DECLARE_API(v816, int16_t, 16)

@@ -6,44 +6,21 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/log.h"
 
-static char* last_error;
-const char*
-mfile_last_error(void)
-{
-    FormatMessageA(
-        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
-        NULL,
-        GetLastError(),
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPSTR)&last_error,
-        0,
-        NULL);
-    return last_error;
-}
-void
-mfile_last_error_free(void)
-{
-    if (last_error)
-        LocalFree(last_error);
-    last_error = NULL;
-}
-
 int
 mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, int padding)
 {
     HANDLE hFile;
     LARGE_INTEGER liFileSize;
     HANDLE mapping;
-    wchar_t* utf16_filename;
+    struct utf16 utf16_filename = empty_utf16();
     DWORD map_size;
 
-    utf16_filename = utf8_to_utf16(ospath_view_cstr(filepath), filepath.range.len);
-    if (utf16_filename == NULL)
+    if (utf8_to_utf16(&utf16_filename, filepath.str) != 0)
         goto utf16_conv_failed;
 
     /* Try to open the file */
     hFile = CreateFileW(
-        utf16_filename,         /* File name */
+        utf16_cstr(utf16_filename), /* File name */
         GENERIC_READ,           /* Read only */
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         NULL,                   /* Default security */
@@ -77,7 +54,7 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, 
 
     mf->address = MapViewOfFile(
         mapping,               /* File mapping handle */
-        FILE_MAP_COPY,         /* Read-only view of file */
+        FILE_MAP_COPY,         /* Copy-on-Write */
         0, 0,                  /* High/Low offset of where the mapping should begin in the file */
         map_size);             /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
@@ -86,7 +63,7 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, 
     /* The file mapping isn't required anymore */
     CloseHandle(mapping);
     CloseHandle(hFile);
-    utf_free(utf16_filename);
+    utf16_deinit(utf16_filename);
 
     mem_track_allocation(mf->address);
     mf->size = map_size;
@@ -96,8 +73,39 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, 
     map_view_failed            : CloseHandle(mapping);
     create_file_mapping_failed :
     get_file_size_failed       : CloseHandle(hFile);
-    open_failed                : utf_free(utf16_filename);
+    open_failed                : utf16_deinit(utf16_filename);
     utf16_conv_failed          : return -1;
+}
+
+int
+mfile_map_mem(struct mfile* mf, int size)
+{
+    HANDLE mapping = CreateFileMapping(
+        INVALID_HANDLE_VALUE,  /* File handle */
+        NULL,                  /* Default security attributes */
+        PAGE_READWRITE,        /* Read + Write access */
+        0, size,               /* High/Low size of mapping. Zero means entire file */
+        NULL);                 /* Don't name the mapping */
+    if (mapping == NULL)
+        goto create_file_mapping_failed;
+
+    mf->address = MapViewOfFile(
+        mapping,               /* File mapping handle */
+        FILE_MAP_WRITE,        /* Read + Write */
+        0, 0,                  /* High/Low offset of where the mapping should begin in the file */
+        size);                 /* Length of mapping. Zero means entire file */
+    if (mf->address == NULL)
+        goto map_view_failed;
+
+    CloseHandle(mapping);
+
+    mem_track_allocation(mf->address);
+    mf->size = size;
+
+    return 0;
+
+    map_view_failed            : CloseHandle(mapping);
+    create_file_mapping_failed : return -1;
 }
 
 void mfile_unmap(struct mfile* mf)

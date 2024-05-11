@@ -48,7 +48,7 @@ empty_utf8(void)
 static inline struct utf8_view
 empty_utf8_view(void)
 {
-    struct utf8_view str = {NULL, 0};
+    struct utf8_view str = {"", 0};
     return str;
 }
 static inline struct utf8_ref
@@ -216,6 +216,13 @@ struct utf16_view
     utf16_idx       len;
 };
 
+static inline struct utf16
+empty_utf16(void)
+{
+    struct utf16 str = {NULL, 0};
+    return str;
+}
+
 static inline struct utf16_view
 cstr_utf16_view(const uint16_t* cstr)
 {
@@ -223,6 +230,27 @@ cstr_utf16_view(const uint16_t* cstr)
     while (*cstr++)
         str.len++;
     return str;
+}
+
+static inline struct utf16_view
+utf16_view(struct utf16 str)
+{
+    struct utf16_view view = {str.data, str.len};
+    if (str.len)
+        str.data[str.len] = L'\0';
+    return view;
+}
+
+static inline const uint16_t*
+utf16_view_cstr(struct utf16_view str)
+{
+    return str.data;
+}
+
+static inline const uint16_t*
+utf16_cstr(struct utf16 str)
+{
+    return utf16_view_cstr(utf16_view(str));
 }
 
 ODBSDK_PUBLIC_API int

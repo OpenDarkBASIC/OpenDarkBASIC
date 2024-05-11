@@ -10,24 +10,11 @@
 int
 fs_get_path_to_self(struct ospath* path)
 {
-    wchar_t* utf16 = _wpgmptr;
-    DWORD utf16_len = wcslen(utf16);
-    int utf8_bytes = WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, NULL, 0, NULL, NULL);
-    if (utf8_bytes == 0)
-        return log_sdk_err("WideCharToMultiByte() failed in fs_get_path_to_self(): {win32error}'n");
+    struct utf16_view utf16;
+    utf16.data = _wpgmptr;
+    utf16.len = wcslen(utf16.data);
 
-    char* new_mem = mem_realloc(path->str.data, utf8_bytes + 1);
-    if (new_mem == NULL)
-        return -1;
-    path->str.data = new_mem;
-
-    if (WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, path->str.data, utf8_bytes, NULL, NULL) == 0)
-        return log_sdk_err("WideCharToMultiByte() failed in fs_get_path_to_self(): {win32error}'n");
-
-    path->range.off = 0;
-    path->range.len = utf8_bytes;
-
-    return 0;
+    return utf16_to_utf8(&path->str, utf16);
 }
 
 int
@@ -37,7 +24,7 @@ fs_list(struct ospath_view path, int (*on_entry)(const char* name, void* user), 
     WIN32_FIND_DATA ffd;
     int ret = 0;
     HANDLE hFind = INVALID_HANDLE_VALUE;
-    struct ospath correct_path = ospath();
+    struct ospath correct_path = empty_ospath();
 
     if (ospath_set(&correct_path, path) != 0)
         goto str_set_failed;

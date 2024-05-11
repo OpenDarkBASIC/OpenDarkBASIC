@@ -42,13 +42,14 @@ struct cmd_arg
 };
 
 VEC_DECLARE_API(arg_type_list, enum cmd_arg_type, 32)
+VEC_DECLARE_API(plugin_idxs, int16_t, 16)
 
 struct cmd_list
 {
     struct utf8_list     db_identifiers;
     struct utf8_list     c_identifiers;
     struct utf8_list     help_files;
-    struct v1616         plugin_refs;
+    struct plugin_idxs   plugin_idxs;
     struct arg_type_list return_types;
     char                 longest_command;
 };
@@ -59,7 +60,7 @@ cmd_list_init(struct cmd_list* commands)
     utf8_list_init(&commands->db_identifiers);
     utf8_list_init(&commands->c_identifiers);
     utf8_list_init(&commands->help_files);
-    v1616_init(&commands->plugin_refs);
+    plugin_idxs_init(&commands->plugin_idxs);
     arg_type_list_init(&commands->return_types);
     commands->longest_command = 0;
 }
@@ -68,7 +69,7 @@ static inline void
 cmd_list_deinit(struct cmd_list* commands)
 {
     arg_type_list_deinit(&commands->return_types);
-    v1616_deinit(&commands->plugin_refs);
+    plugin_idxs_deinit(&commands->plugin_idxs);
     utf8_list_deinit(&commands->help_files);
     utf8_list_deinit(&commands->c_identifiers);
     utf8_list_deinit(&commands->db_identifiers);

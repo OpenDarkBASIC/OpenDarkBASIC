@@ -37,7 +37,7 @@ struct db_source
  * @param[in] filepath Path to a source file to open.
  * @return Returns 0 on success, negative on error.
  */
-int
+ODBCOMPILER_PUBLIC_API int
 db_source_open_file(struct db_source* s, struct ospath_view filepath);
 
 /*!
@@ -49,7 +49,7 @@ db_source_open_file(struct db_source* s, struct ospath_view filepath);
  * @param[in] str The string to copy for parsing.
  * @return Returns 0 on success, negative on error.
  */
-int
+ODBCOMPILER_PUBLIC_API int
 db_source_open_string(struct db_source* s, struct utf8_view str);
 
 /*!
@@ -64,12 +64,12 @@ db_source_open_string(struct db_source* s, struct utf8_view str);
  * db_source structure.
  * @return Returns 0 on success, negative on error.
  */
-int
+ODBCOMPILER_PUBLIC_API int
 db_source_ref_string(struct db_source* s, struct utf8* str);
 
 /*!
  * @brief Close a source.
  */
-void
+ODBCOMPILER_PUBLIC_API void
 db_source_close(struct db_source* s);
 

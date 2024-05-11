@@ -5,54 +5,57 @@
 #include <Windows.h>
 
 #include <stdlib.h>
+#include <assert.h>
 
-wchar_t*
-utf8_to_utf16(const char* utf8, int utf8_bytes)
+int
+utf8_to_utf16(struct utf16* out, struct utf8_view in)
 {
-    int utf16_bytes = MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_bytes, NULL, 0);
-    if (utf16_bytes == 0)
-        return NULL;
+    void* new_mem;
+    ODBSDK_STATIC_ASSERT(sizeof(uint16_t) == sizeof(wchar_t));
 
-    wchar_t* utf16 = mem_alloc((sizeof(wchar_t) + 1) * utf16_bytes);
-    if (utf16 == NULL)
-        return NULL;
+    out->len = MultiByteToWideChar(CP_UTF8, 0, in.data, in.len, NULL, 0);
+    if (out->len == 0)
+        return -1;
 
-    if (MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_bytes, utf16, utf16_bytes) == 0)
-    {
-        mem_free(utf16);
-        return NULL;
-    }
+    new_mem = mem_realloc(out->data, (sizeof(wchar_t) + 1) * out->len);
+    if (new_mem == NULL)
+        return -1;
+    out->data = new_mem;
 
-    utf16[utf16_bytes] = 0;
+    if (MultiByteToWideChar(CP_UTF8, 0, in.data, in.len, out->data, out->len) == 0)
+        return -1;
 
-    return utf16;
+    out->data[out->len] = L'\0';
+    return 0;
 }
 
-char*
-utf16_to_utf8(const wchar_t* utf16, int utf16_len)
+int
+utf16_to_utf8(struct utf8* out, struct utf16_view in)
 {
-    int utf8_bytes = WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, NULL, 0, NULL, NULL);
-    if (utf8_bytes == 0)
-        return NULL;
+    void* new_mem;
+    ODBSDK_STATIC_ASSERT(sizeof(uint16_t) == sizeof(wchar_t));
 
-    char* utf8 = mem_alloc(utf8_bytes + 1);
-    if (utf8 == NULL)
-        return NULL;
+    out->len = WideCharToMultiByte(CP_UTF8, 0, in.data, in.len, NULL, 0, NULL, NULL);
+    if (out->len == 0)
+        return -1;
 
-    if (WideCharToMultiByte(CP_UTF8, 0, utf16, utf16_len, utf8, utf8_bytes, NULL, NULL) == 0)
-    {
-        mem_free(utf8);
-        return NULL;
-    }
+    new_mem = mem_realloc(out->data, out->len + 1);
+    if (new_mem == NULL)
+        return -1;
+    out->data = new_mem;
 
-    utf8[utf8_bytes] = 0;
-    return utf8;
+    if (WideCharToMultiByte(CP_UTF8, 0, in.data, in.len, out->data, out->len, NULL, NULL) == 0)
+        return -1;
+
+    out->data[out->len] = '\0';
+    return 0;
 }
 
 void
-utf_free(void* utf)
+utf16_deinit(struct utf16 str)
 {
-    mem_free(utf);
+    if (str.data)
+        mem_free(str.data);
 }
 
 /*
