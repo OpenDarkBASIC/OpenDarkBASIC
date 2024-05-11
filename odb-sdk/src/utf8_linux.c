@@ -1,4 +1,3 @@
-#include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8.h"
@@ -8,6 +7,7 @@
 int
 utf16_to_utf8(struct utf8* out, struct utf16_view in)
 {
+    void*    new_mem;
     char*    inp;
     char*    outp;
     iconv_t  cd;
@@ -24,12 +24,13 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
         goto iconv_open_failed;
     }
 
-    out->data = mem_alloc(outcapacity + 1);
-    if (out->data == NULL)
+    new_mem = mem_realloc(out->data, outcapacity + 1);
+    if (new_mem == NULL)
     {
         mem_report_oom(outcapacity, "utf16_to_utf8()");
         goto alloc_outbuf_failed;
     }
+    out->data = new_mem;
 
     inp = (char*)in.data;
     outp = (char*)out->data;
@@ -75,8 +76,6 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
     return 0;
 
 grow_outbuf_failed:
-    mem_free(out->data);
-    out->data = NULL;
 alloc_outbuf_failed:
     iconv_close(cd);
 iconv_open_failed:

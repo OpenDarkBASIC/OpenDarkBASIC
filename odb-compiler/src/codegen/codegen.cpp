@@ -20,7 +20,7 @@ extern "C" {
 
 int
 odb_codegen(
-        union odb_ast_node* program,
+        struct ast* program,
         const char* output_name,
         const char* module_name,
         /*enum odb_sdk_type sdkType,*/

@@ -23,11 +23,11 @@ enum odb_codegen_platform
     ODB_CODEGEN_LINUX
 };
 
-union odb_ast_node;
+struct ast;
 
 ODBCOMPILER_PUBLIC_API int
 odb_codegen(
-        union odb_ast_node* program,
+        struct ast* program,
         const char* output_name,
         const char* module_name,
         /*enum odb_sdk_type sdkType,*/

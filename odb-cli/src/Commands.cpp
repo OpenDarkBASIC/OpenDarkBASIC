@@ -33,11 +33,12 @@ deinitCommands(void)
 bool
 loadCommands(const std::vector<std::string>& args)
 {
+    log_sdk_progress(0, 0, "Searching for plugins...\n");
     plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL);
-    log_sdk_info("Found %d plugins\n", vec_count(plugins));
-    
+   
+    log_sdk_progress(0, 0, "Loading commands...\n");
     cmd_list_load_from_plugins(&commands, getSDKType(), plugins);
-    log_sdk_info("Loaded %d commands\n", cmd_list_count(&commands));
+    log_sdk_info("Loaded %d commands from %d plugins\n", cmd_list_count(&commands), vec_count(plugins));
 
     /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;

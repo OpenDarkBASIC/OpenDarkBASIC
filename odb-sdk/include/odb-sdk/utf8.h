@@ -198,8 +198,9 @@ utf8_ref_equal(
 static inline void
 utf8_remove_extension(struct utf8* str)
 {
-    while (str->len && str->data[str->len - 1] != '.')
-        str->len--;
+    while (str->len && str->data[--str->len] != '.')
+    {
+    }
 }
 
 typedef int32_t utf16_idx;

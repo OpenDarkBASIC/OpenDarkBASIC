@@ -1,13 +1,15 @@
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-sdk/utf8.h"
 #include "odb-sdk/utf8_list.h"
 
 VEC_DEFINE_API(arg_type_list, enum cmd_arg_type, 32)
 VEC_DEFINE_API(plugin_idxs, int16_t, 16)
 
 static int
-handle_duplicate_identifier(void)
+handle_duplicate_identifier(struct utf8_view identifier)
 {
-    return -1;
+    //log_sdk_err("Duplicate command {quote:%s}\n", utf8_view_cstr(identifier));
+    return 0;
 }
 
 cmd_idx
@@ -26,7 +28,7 @@ cmd_list_add(
     {
         struct utf8_view s = utf8_list_view(&commands->db_identifiers, insert);
         if (utf8_equal(s, db_identifier))
-            if (handle_duplicate_identifier() != 0)
+            if (handle_duplicate_identifier(db_identifier) != 0)
                 return -1;
     }
 

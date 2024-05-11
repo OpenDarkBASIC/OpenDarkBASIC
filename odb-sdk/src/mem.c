@@ -275,7 +275,7 @@ mem_threadlocal_deinit(void)
         {
             if (strstr(info->backtrace[i], "invoke_main"))
                 break;
-            log_raw("", "", "  %s\n", info->backtrace[i]);
+            log_raw("  %s\n", info->backtrace[i]);
         }
     }
     backtrace_free(
@@ -288,36 +288,36 @@ mem_threadlocal_deinit(void)
         uint8_t*    p = (void*)info->location;
         log_sdk_note("Hex Dump:\n");
 
-        log_raw("", "", "  ");
+        log_raw("  ");
         for (i = 0; i != 16; ++i)
-            log_raw("", "", "%c  ", "0123456789ABCDEF"[i]);
-        log_raw("", "", " ");
+            log_raw("%c  ", "0123456789ABCDEF"[i]);
+        log_raw(" ");
         for (i = 0; i != 16; ++i)
-            log_raw("", "", "%c", "0123456789ABCDEF"[i]);
-        log_raw("", "", "\n");
+            log_raw("%c", "0123456789ABCDEF"[i]);
+        log_raw("\n");
 
         for (i = 0; i < info->size; )
         {
             int j;
-            log_raw("", "", "  ");
+            log_raw("  ");
             for (j = 0; j != 16; ++j)
             {
                 if (i + j < info->size)
-                    log_raw("", "", "%02x ", p[i]);
+                    log_raw("%02x ", p[i]);
                 else
-                    log_raw("", "", "   ");
+                    log_raw("   ");
             }
 
-            log_raw("", "", " ");
+            log_raw(" ");
             for (j = 0; j != 16 && i + j != info->size; ++j)
             {
                 if (p[i] >= 32 && p[i] < 127)  /* printable ascii */
-                    log_raw("", "", "%c", p[i]);
+                    log_raw("%c", p[i]);
                 else
-                    log_raw("", "", ".");
+                    log_raw(".");
             }
 
-            log_raw("", "", "\n");
+            log_raw("\n");
             i += 16;
         }
     }

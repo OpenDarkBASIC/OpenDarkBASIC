@@ -1,6 +1,7 @@
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
+#include "odb-sdk/utf8.h"
 }
 
 #include "LIEF/PE.hpp"
@@ -8,10 +9,18 @@ extern "C" {
 #include "LIEF/PE/ResourceNode.hpp"
 
 int
-load_dbpro_commands(struct cmd_list* commands, const LIEF::PE::Binary* pe)
+load_dbpro_commands(
+    struct cmd_list*        commands,
+    const LIEF::PE::Binary* pe,
+    struct ospath_view      filepath)
 {
     if (pe->resources() == nullptr)
-        return -1;
+    {
+        log_sdk_warn(
+            "No resources found in plugin {quote:%s}. Skipping...\n",
+            ospath_view_cstr(filepath));
+        return 0;
+    }
 
     const auto& nodes = pe->resources()->childs();
     auto        stringTableNodeIt = std::find_if(
@@ -23,29 +32,49 @@ load_dbpro_commands(struct cmd_list* commands, const LIEF::PE::Binary* pe)
                    == LIEF::PE::ResourcesManager::TYPE::STRING;
         });
     if (stringTableNodeIt == std::end(nodes))
-        return -1;
+    {
+        log_sdk_warn(
+            "Missing string table in plugin {quote:%s}. Skipping...\n",
+            ospath_view_cstr(filepath));
+        return 0;
+    }
     if (stringTableNodeIt->childs().size() == 0
         || stringTableNodeIt->childs()[0].childs().size() == 0)
-        return -1;
-    
+    {
+        log_sdk_warn(
+            "Malformed string table structure in plugin {quote:%s}. "
+            "Skipping...\n",
+            ospath_view_cstr(filepath));
+        return 0;
+    }
+
     struct utf8 name = empty_utf8();
     if (auto resmgr = pe->resources_manager())
         for (const auto& entry : resmgr.value().string_table())
         {
-            if (utf16_to_utf8(
-                    &name, cstr_utf16_view((uint16_t*)entry.name().c_str()))
-                == 0)
+            const std::u16string& u16 = entry.name();
+            struct utf16_view     u16v
+                = {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
+            if (utf16_to_utf8(&name, u16v) != 0)
             {
-                cmd_list_add(
+                utf8_deinit(name);
+                return 0;
+            }
+
+            if (cmd_list_add(
                     commands,
                     0,
                     CMD_ARG_VOID,
                     utf8_view(name),
                     empty_utf8_view(),
-                    empty_utf8_view());
+                    empty_utf8_view())
+                < 0)
+            {
+                utf8_deinit(name);
+                return -1;
             }
         }
     utf8_deinit(name);
 
-    return 0;
+    return 1;
 }

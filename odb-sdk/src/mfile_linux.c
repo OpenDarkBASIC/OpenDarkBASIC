@@ -1,6 +1,7 @@
 #define _LARGEFILE64_SOURCE
 #include "odb-sdk/log.h"
 #include "odb-sdk/mfile.h"
+#include "odb-sdk/mem.h"
 #include <errno.h>
 #include <string.h>
 #include <sys/fcntl.h>

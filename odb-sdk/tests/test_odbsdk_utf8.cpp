@@ -26,10 +26,6 @@ public:
 };
 } // namespace
 
-TEST_F(NAME, test)
-{
-}
-
 TEST_F(NAME, can_append_null_bytes)
 {
     struct utf8_view eob = {"", 1};
@@ -41,4 +37,19 @@ TEST_F(NAME, can_append_null_bytes)
     EXPECT_THAT(str.len, Eq(5));
     EXPECT_THAT(cstr[4], Eq('\0'));
     EXPECT_THAT(cstr[5], Eq('\0'));
+}
+
+TEST_F(NAME, utf16_to_utf8_weirdness)
+{
+    std::u16string u16 = u"xxxxMay";
+    struct utf16_view in = {
+        (const uint16_t*)u16.data() + 4,
+        (utf16_idx)u16.length()
+    };
+
+    struct utf8 out = empty_utf8();
+    utf16_to_utf8(&out, in);
+
+    EXPECT_THAT(utf8_cstr(out), StrEq("May"));
+    utf8_deinit(out);
 }

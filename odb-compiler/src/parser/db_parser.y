@@ -213,7 +213,7 @@ static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     log_verr("[parser] ", fmt, args);
-    log_raw("", "", "\n");
+    log_raw("\n");
     //odb::Log::vdbParserFatalError(location->getFileLineColumn().c_str(), fmt, args);
     va_end(args);
 
