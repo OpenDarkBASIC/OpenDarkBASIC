@@ -67,11 +67,25 @@ utf8_view(struct utf8 str)
     return view;
 }
 
+static inline struct utf8_ref
+utf8_ref(struct utf8 str)
+{
+    struct utf8_ref ref = {0, str.len};
+    return ref;
+}
+
 static inline struct utf8_view
 cstr_utf8_view(const char* cstr)
 {
     struct utf8_view utf8 = {cstr, (utf8_idx)strlen(cstr)};
     return utf8;
+}
+
+static inline struct utf8_ref
+cstr_utf8_ref(const char* cstr)
+{
+    struct utf8_ref ref = {0, (utf8_idx)strlen(cstr)};
+    return ref;
 }
 
 static inline const char*
@@ -185,14 +199,11 @@ utf8_equal_cstr(struct utf8_view str, const char* cstr)
     return utf8_equal(str, cstr_utf8_view(cstr));
 }
 static inline int
-utf8_ref_equal(
-    struct utf8_view s1,
-    struct utf8_ref  r1,
-    struct utf8_view s2,
-    struct utf8_ref  r2)
+utf8_equal_ref(
+    const char* s1, struct utf8_ref r1, const char* s2, struct utf8_ref r2)
 {
     return r1.len == r2.len
-           && memcmp(s1.data + r1.off, s2.data + r2.off, (size_t)s1.len) == 0;
+           && memcmp(s1 + r1.off, s2 + r2.off, (size_t)r1.len) == 0;
 }
 
 static inline void
@@ -201,6 +212,29 @@ utf8_remove_extension(struct utf8* str)
     while (str->len && str->data[--str->len] != '.')
     {
     }
+}
+
+static inline void
+utf8_split_ref(
+    const char*      data,
+    struct utf8_ref  in,
+    char             delim,
+    struct utf8_ref* left,
+    struct utf8_ref* right)
+{
+    utf8_idx i;
+    for (i = 0; i != in.len; ++i)
+        if (data[in.off + i] == delim)
+        {
+            left->off = in.off;
+            left->len = i;
+            right->off = in.off + i + 1;
+            right->len = in.len - i - 1;
+            return;
+        }
+    *left = in;
+    right->off = 0;
+    right->len = 0;
 }
 
 typedef int32_t utf16_idx;

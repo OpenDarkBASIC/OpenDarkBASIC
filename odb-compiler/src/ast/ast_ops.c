@@ -150,10 +150,10 @@ ast_trees_equal(
         case AST_ASSIGN_VAR: break;
 
         case AST_IDENTIFIER:
-            if (!utf8_ref_equal(
-                    utf8_view(source->text),
+            if (!utf8_equal_ref(
+                    source->text.data,
                     a2->nodes[n1].identifier.name,
-                    utf8_view(source->text),
+                    source->text.data,
                     a2->nodes[n2].identifier.name))
                 return 0;
             break;
@@ -170,10 +170,10 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_STRING_LITERAL:
-            if (!utf8_ref_equal(
-                    utf8_view(source->text),
+            if (!utf8_equal_ref(
+                    source->text.data,
                     a1->nodes[n1].string_literal.str,
-                    utf8_view(source->text),
+                    source->text.data,
                     a2->nodes[n2].string_literal.str))
                 return 0;
             break;

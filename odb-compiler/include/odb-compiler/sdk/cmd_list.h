@@ -76,13 +76,16 @@ cmd_list_deinit(struct cmd_list* commands)
 }
 
 ODBCOMPILER_PUBLIC_API cmd_idx
-cmd_list_add(
+cmd_list_add_ref(
     struct cmd_list*  commands,
     plugin_ref        plugin_ref,
     enum cmd_arg_type return_type,
-    struct utf8_view  db_identifier,
-    struct utf8_view  c_identifier,
-    struct utf8_view  help_file);
+    const char*       db_identifier_data,
+    struct utf8_ref   db_identifier_ref,
+    const char*       c_identifier_data,
+    struct utf8_ref   c_identifier_ref,
+    const char*       help_file_data,
+    struct utf8_ref   help_file_ref);
 
 ODBCOMPILER_PUBLIC_API int
 cmd_add_arg(
@@ -100,6 +103,9 @@ cmd_list_load_from_plugins(
     struct plugin_list plugins);
 
 ODBCOMPILER_PUBLIC_API cmd_idx
-cmd_list_find(const struct cmd_list* commands, struct utf8_view name);
+cmd_list_find_ref(
+    const struct cmd_list* commands,
+    const char*            name_data,
+    struct utf8_ref        name_ref);
 
 #define cmd_list_count(commands) (utf8_list_count(&(commands)->db_identifiers))

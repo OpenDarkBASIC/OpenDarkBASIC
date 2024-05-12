@@ -1,3 +1,4 @@
+#include "odb-compiler/tests/DBParserTestHarness.hpp"
 #include "odb-sdk/utf8.h"
 
 #include "gmock/gmock.h"
@@ -30,10 +31,32 @@ public:
     {
         return cstr_utf8_view(cstr);
     }
+
+    struct utf8_ref
+    R(const char* cstr)
+    {
+        return cstr_utf8_ref(cstr);
+    }
+
     const char*
     C(struct utf8_view str)
     {
         return utf8_view_cstr(str);
+    }
+
+    int
+    addCommand(const char* name)
+    {
+        return cmd_list_add_ref(
+            &cmds,
+            0,
+            CMD_ARG_VOID,
+            name,
+            R(name),
+            NULL,
+            empty_utf8_ref(),
+            NULL,
+            empty_utf8_ref());
     }
 
     struct cmd_list cmds;
@@ -41,9 +64,9 @@ public:
 
 TEST_F(NAME, add_command_returns_ref)
 {
-    cmd_idx a = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("projection matrix4"), U(""), U(""));
-    cmd_idx b = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize"), U(""), U(""));
-    cmd_idx c = cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize matrix"), U(""), U(""));
+    cmd_idx a = addCommand("projection matrix4");
+    cmd_idx b = addCommand("randomize");
+    cmd_idx c = addCommand("randomize matrix");
 
     EXPECT_THAT(a, Eq(0));
     EXPECT_THAT(b, Eq(1));
@@ -52,10 +75,9 @@ TEST_F(NAME, add_command_returns_ref)
 
 TEST_F(NAME, added_commands_are_lexicographically_sorted)
 {
-    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize mesh"), U(""), U("")), Eq(0));
-    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize"), U(""), U("")), Eq(0));
-    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("projection matrix4"), U(""), U("")), Eq(0));
-    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("randomize matrix"), U(""), U("")), Eq(2));
-    EXPECT_THAT(cmd_list_add(&cmds, 0, CMD_ARG_VOID, U("read"), U(""), U("")), Eq(4));
+    EXPECT_THAT(addCommand("randomize mesh"), Eq(0));
+    EXPECT_THAT(addCommand("randomize"), Eq(0));
+    EXPECT_THAT(addCommand("projection matrix4"), Eq(0));
+    EXPECT_THAT(addCommand("randomize matrix"), Eq(2));
+    EXPECT_THAT(addCommand("read"), Eq(4));
 }
-

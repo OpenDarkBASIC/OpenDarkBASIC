@@ -247,10 +247,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/codegen/internal/DBPEngineInterface.cpp"
     
     "include/odb-compiler/codegen/codegen.h"
-    #"src/codegen/codegen.cpp"
+    "src/codegen/codegen.cpp"
     
     "include/odb-compiler/link/link.h"
-    #"src/link/link.cpp"
+    "src/link/link.cpp"
     
     "${PROJECT_BINARY_DIR}/include/odb-compiler/config.h"
     "templates/config.h.in"

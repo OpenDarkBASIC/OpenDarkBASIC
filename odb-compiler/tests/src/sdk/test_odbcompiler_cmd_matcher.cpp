@@ -31,17 +31,32 @@ public:
         return cstr_utf8_view(cstr);
     }
 
-    void
+    struct utf8_ref
+    R(const char* cstr)
+    {
+        return cstr_utf8_ref(cstr);
+    }
+
+    cmd_idx
     addCommand(const char* cstr)
     {
-        cmd_list_add(&cmds, 0, CMD_ARG_VOID, U(cstr), U(""), U(""));
+        return cmd_list_add_ref(
+            &cmds,
+            0,
+            CMD_ARG_VOID,
+            cstr,
+            cstr_utf8_ref(cstr),
+            NULL,
+            empty_utf8_ref(),
+            NULL,
+            empty_utf8_ref());
     }
 
     utf8_idx
     matchCommand(const char* cstr)
     {
         struct utf8_ref ref = {0, (utf8_idx)strlen(cstr)};
-        return cmd_list_find(&cmds, U(cstr));
+        return cmd_list_find_ref(&cmds, cstr, R(cstr));
     }
 
     struct cmd_list cmds;

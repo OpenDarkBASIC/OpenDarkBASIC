@@ -102,11 +102,10 @@ scan_next_token(
     {
         cmd_idx          longest_match_cmd_idx;
         int              i, longest_match_token_idx = 0;
-        struct utf8_view candidate
-            = utf8_ref_view(source_text, token->pushed_location);
+        struct utf8_ref candidate = token->pushed_location;
         for (i = 1; candidate.len <= commands->longest_command; ++i)
         {
-            cmd_idx cmd = cmd_list_find(commands, candidate);
+            cmd_idx cmd = cmd_list_find_ref(commands, source_text, candidate);
             if (cmd < cmd_list_count(commands))
             {
                 longest_match_cmd_idx = cmd;

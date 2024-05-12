@@ -47,45 +47,61 @@ load_dbpro_commands(
         return 0;
     }
 
-    struct utf8 entry = empty_utf8();
+    struct utf8 entry_name = empty_utf8();
     if (auto resmgr = pe->resources_manager())
         for (const auto& entry : resmgr.value().string_table())
         {
             const std::u16string& u16 = entry.name();
             struct utf16_view     u16v
                 = {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
-            if (utf16_to_utf8(&entry, u16v) != 0)
+            if (utf16_to_utf8(&entry_name, u16v) != 0)
             {
-                utf8_deinit(entry);
+                utf8_deinit(entry_name);
                 return 0;
             }
 
-            struct utf8_view cmd_name, type_str;
-            utf8_split(utf8_view(entry), '%' &cmd_name, &type_str);
-            if (cmd_name.len == 0)
+            /* String has format: <command>%<type>%<c symbol>%<help>
+             * Additionally, if <command> ends with a "[", then the first entry
+             * in the type information is the type of the return value instead
+             * of the first parameter */
+            struct utf8_ref cmd_name, type_str, c_symbol, help;
+            utf8_split_ref(
+                entry_name.data,
+                utf8_ref(entry_name),
+                '%',
+                &cmd_name,
+                &type_str);
+            utf8_split_ref(
+                entry_name.data, type_str, '%', &type_str, &c_symbol);
+            utf8_split_ref(entry_name.data, c_symbol, '%', &c_symbol, &help);
+
+            if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
             {
                 log_sdk_warn(
-                    "Invalid string table entry in plugin {quote:%s}: {emph:%s}\n",
+                    "Invalid string table entry in plugin {quote:%s}: %s\n",
                     ospath_view_cstr(filepath),
-                    utf8_cstr(entry));
-                utf8_deinit(entry);
+                    utf8_cstr(entry_name));
+                utf8_deinit(entry_name);
                 return 0;
             }
 
-            if (cmd_list_add(
+            if (cmd_list_add_ref(
                     commands,
                     0,
                     CMD_ARG_VOID,
-                    utf8_view(entry),
-                    empty_utf8_view(),
-                    empty_utf8_view())
+                    entry_name.data,
+                    cmd_name,
+                    entry_name.data,
+                    c_symbol,
+                    entry_name.data,
+                    help)
                 < 0)
             {
-                utf8_deinit(entry);
+                utf8_deinit(entry_name);
                 return -1;
             }
         }
-    utf8_deinit(entry);
+    utf8_deinit(entry_name);
 
     return 1;
 }

@@ -31,7 +31,11 @@ ODBSDK_PUBLIC_API int
 utf8_list_add(struct utf8_list* l, struct utf8_view str);
 
 ODBSDK_PUBLIC_API int
-utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str);
+utf8_list_insert_ref(
+    struct utf8_list* l,
+    utf8_idx          insert,
+    const char*       indata,
+    struct utf8_ref   inref);
 
 ODBSDK_PUBLIC_API void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx);
@@ -43,6 +47,12 @@ utf8_list_view(const struct utf8_list* l, utf8_idx i)
     struct utf8_view view = {l->data + ref.off, ref.len};
     l->data[ref.off + ref.len] = '\0';
     return view;
+}
+
+static inline struct utf8_ref
+utf8_list_ref(const struct utf8_list* l, utf8_idx i)
+{
+    return UTF8_LIST_TABLE_PTR(l)[-i];
 }
 
 static inline const char*
@@ -68,7 +78,8 @@ utf8_list_cstr(const struct utf8_list* l, utf8_idx i)
  * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
  */
 ODBSDK_PUBLIC_API utf8_idx
-utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp);
+utf8_lower_bound_ref(
+    const struct utf8_list* l, const char* data, struct utf8_ref ref);
 
 /*!
  * @brief Finds the last position in which a string could be inserted without
@@ -79,6 +90,7 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp);
  * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
  */
 ODBSDK_PUBLIC_API utf8_idx
-utf8_upper_bound(const struct utf8_list* l, struct utf8_view cmp);
+utf8_upper_bound_ref(
+    const struct utf8_list* l, const char* data, struct utf8_ref ref);
 
 #define utf8_list_count(l) ((l)->count)

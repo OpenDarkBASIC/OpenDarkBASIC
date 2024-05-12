@@ -67,14 +67,18 @@ utf8_list_add(struct utf8_list* l, struct utf8_view str)
 }
 
 int
-utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str)
+utf8_list_insert_ref(
+    struct utf8_list* l,
+    utf8_idx          insert,
+    const char*       indata,
+    struct utf8_ref   inref)
 {
-    struct utf8_ref* insref;
+    struct utf8_ref* slotref;
 
-    if (grow(l, str.len) < 0)
+    if (grow(l, inref.len) < 0)
         return -1;
 
-    insref = &UTF8_LIST_TABLE_PTR(l)[-insert];
+    slotref = &UTF8_LIST_TABLE_PTR(l)[-insert];
     if (insert < l->count)
     {
         struct utf8_ref* ref;
@@ -82,9 +86,9 @@ utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str)
 
         /* Move strings to make space for str.len+1 */
         memmove(
-            l->data + insref->off + str.len + 1,
-            l->data + insref->off,
-            l->str_used - insref->off);
+            l->data + slotref->off + inref.len + 1,
+            l->data + slotref->off,
+            l->str_used - slotref->off);
 
         /* Move ref table */
         memmove(
@@ -93,18 +97,18 @@ utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view str)
             sizeof(struct utf8_ref) * (l->count - insert));
 
         /* Calculate new offsets */
-        for (ref = insref - 1, i = l->count - insert; i; i--, ref--)
-            ref->off += str.len + 1;
+        for (ref = slotref - 1, i = l->count - insert; i; i--, ref--)
+            ref->off += inref.len + 1;
     }
     else
     {
-        insref->off = l->str_used;
+        slotref->off = l->str_used;
     }
 
-    memcpy(l->data + insref->off, str.data, str.len);
-    insref->len = str.len;
+    memcpy(l->data + slotref->off, indata + inref.off, inref.len);
+    slotref->len = inref.len;
 
-    l->str_used += str.len + 1; /* Potential null terminator */
+    l->str_used += inref.len + 1; /* Potential null terminator */
     l->count++;
 
     return 0;
@@ -116,8 +120,19 @@ utf8_list_erase(struct utf8_list* l, utf8_idx idx)
     ODBSDK_DEBUG_ASSERT(0);
 }
 
+static int
+lexicographically_less(
+    const char* t1, struct utf8_ref r1, const char* t2, struct utf8_ref r2)
+{
+    int cmp = memcmp(t1, t2, r1.len < r2.len ? r1.len : r2.len);
+    if (cmp == 0)
+        return r1.len < r2.len;
+    return cmp < 0;
+}
+
 utf8_idx
-utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp)
+utf8_lower_bound_ref(
+    const struct utf8_list* l, const char* data, struct utf8_ref ref)
 {
     utf8_idx half, middle, found, len;
 
@@ -128,7 +143,8 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp)
     {
         half = len / 2;
         middle = found + half;
-        if (strcmp(utf8_list_view(l, middle).data, cmp.data) < 0)
+        if (lexicographically_less(
+                l->data, UTF8_LIST_TABLE_PTR(l)[-middle], data, ref))
         {
             found = middle;
             ++found;
@@ -142,7 +158,8 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view cmp)
 }
 
 utf8_idx
-utf8_upper_bound(const struct utf8_list* l, struct utf8_view cmp)
+utf8_upper_bound_ref(
+    const struct utf8_list* l, const char* data, struct utf8_ref ref)
 {
     utf8_idx half, middle, found, len;
 
@@ -153,7 +170,8 @@ utf8_upper_bound(const struct utf8_list* l, struct utf8_view cmp)
     {
         half = len / 2;
         middle = found + half;
-        if (strcmp(cmp.data, utf8_list_view(l, middle).data) < 0)
+        if (lexicographically_less(
+                data, ref, l->data, UTF8_LIST_TABLE_PTR(l)[-middle]))
             len = half;
         else
         {
