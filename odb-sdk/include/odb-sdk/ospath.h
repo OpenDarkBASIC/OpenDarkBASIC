@@ -23,9 +23,10 @@ struct ospath
     struct utf8 str;
 };
 
-struct ospath_view
+struct ospathc
 {
-    struct utf8_view str;
+    struct utf8c str;
+    utf8_idx     len;
 };
 
 static inline struct ospath
@@ -35,37 +36,46 @@ empty_ospath(void)
     return path;
 }
 
-static inline struct ospath_view
-empty_ospath_view(void)
+static inline struct ospathc
+empty_ospathc(void)
 {
-    struct ospath_view path = {empty_utf8_view()};
+    struct ospathc path = {empty_utf8c(), 0};
     return path;
 }
 
-static inline struct ospath_view
-ospath_view(struct ospath path)
+static inline struct ospathc
+ospathc(struct ospath path)
 {
-    struct ospath_view view = {utf8_view(path.str)};
-    return view;
+    struct ospathc pathc = {utf8_utf8c(path.str), path.str.len};
+    return pathc;
 }
 
-static inline struct ospath_view
-cstr_ospath_view(const char* cstr)
+static inline struct ospathc
+cstr_ospathc(const char* cstr)
 {
-    struct ospath_view view = {cstr_utf8_view(cstr)};
-    return view;
+    struct ospathc pathc = {cstr_utf8c(cstr), (utf8_idx)strlen(cstr)};
+    return pathc;
 }
 
 static inline const char*
-ospath_view_cstr(struct ospath_view path)
+ospathc_cstr(struct ospathc path)
 {
-    return utf8_view_cstr(path.str);
+    return utf8c_cstr(path.str);
+}
+
+
+
+static inline struct utf8_view
+ospathc_view(struct ospathc path)
+{
+    struct utf8_view view = {utf8c_cstr(path.str), 0, path.len};
+    return view;
 }
 
 static inline const char*
 ospath_cstr(struct ospath path)
 {
-    return ospath_view_cstr(ospath_view(path));
+    return utf8_cstr(path.str);
 }
 
 static inline int
@@ -80,48 +90,48 @@ ospath_deinit(struct ospath path)
     utf8_deinit(path.str);
 }
 
-static inline int
-ospath_set(struct ospath* path, const struct ospath_view other)
-{
-    return utf8_set(&path->str, other.str);
-}
 ODBSDK_PUBLIC_API int
 ospath_set_utf8(struct ospath* path, struct utf8_view str);
 static inline int
+ospath_set(struct ospath* path, struct ospathc newpath)
+{
+    return ospath_set_utf8(path, ospathc_view(newpath));
+}
+static inline int
 ospath_set_cstr(struct ospath* path, const char* cstr)
 {
-    return ospath_set_utf8(path, cstr_utf8_view(cstr));
+    return ospath_set(path, cstr_ospathc(cstr));
 }
 
 /*!
  * @brief
  */
 ODBSDK_PUBLIC_API int
-ospath_join(struct ospath* path, struct ospath_view trailing);
+ospath_join(struct ospath* path, struct ospathc trailing);
 static inline int
 ospath_join_cstr(struct ospath* path, const char* cstr)
 {
-    return ospath_join(path, cstr_ospath_view(cstr));
+    return ospath_join(path, cstr_ospathc(cstr));
 }
 
 static inline int
-ospath_ends_with(struct ospath_view path, struct utf8_view str)
+ospath_ends_with(struct ospathc path, struct utf8_view str)
 {
-    return utf8_ends_with(path.str, str);
+    return utf8_ends_with(ospathc_view(path), str);
 }
 static inline int
-ospath_ends_with_cstr(struct ospath_view path, const char* cstr)
+ospath_ends_with_cstr(struct ospathc path, const char* cstr)
 {
     return ospath_ends_with(path, cstr_utf8_view(cstr));
 }
 
 static inline int
-ospath_ends_with_i(struct ospath_view path, struct utf8_view str)
+ospath_ends_with_i(struct ospathc path, struct utf8_view str)
 {
-    return utf8_ends_with_i(path.str, str);
+    return utf8_ends_with_i(ospathc_view(path), str);
 }
 static inline int
-ospath_ends_with_i_cstr(struct ospath_view path, const char* cstr)
+ospath_ends_with_i_cstr(struct ospathc path, const char* cstr)
 {
     return ospath_ends_with_i(path, cstr_utf8_view(cstr));
 }

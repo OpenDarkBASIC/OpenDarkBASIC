@@ -26,37 +26,16 @@ public:
         cmd_list_deinit(&cmds);
     }
 
-    struct utf8_view
-    U(const char* cstr)
-    {
-        return cstr_utf8_view(cstr);
-    }
-
-    struct utf8_ref
-    R(const char* cstr)
-    {
-        return cstr_utf8_ref(cstr);
-    }
-
-    const char*
-    C(struct utf8_view str)
-    {
-        return utf8_view_cstr(str);
-    }
-
     int
     addCommand(const char* name)
     {
-        return cmd_list_add_ref(
+        return cmd_list_add(
             &cmds,
             0,
             CMD_ARG_VOID,
-            name,
-            R(name),
-            NULL,
-            empty_utf8_ref(),
-            NULL,
-            empty_utf8_ref());
+            cstr_utf8_view(name),
+            empty_utf8_view(),
+            empty_utf8_view());
     }
 
     struct cmd_list cmds;

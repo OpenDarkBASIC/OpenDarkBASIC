@@ -2,7 +2,7 @@
 #include "odb-sdk/mfile.h"
 
 int
-db_source_open_file(struct db_source* s, struct ospath_view filepath)
+db_source_open_file(struct db_source* s, struct ospathc filepath)
 {
     struct mfile mf;
 
@@ -42,7 +42,7 @@ db_source_ref_string(struct db_source* s, struct utf8* str)
 {
     /* FLEX expects to find an "EOB marker" at the end of its buffer, which is a
      * sequence of two NULL bytes. */
-    struct utf8_view eob = {"", 1};
+    struct utf8_view eob = {"", 0, 1};
     if (utf8_append(str, eob) != 0)
         return -1;
 

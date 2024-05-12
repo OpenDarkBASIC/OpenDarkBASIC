@@ -18,11 +18,11 @@
         return token;                                                         \
     } while(0)
 
-static inline struct utf8_ref
+static inline struct utf8_span
 token_to_ref(const char* cstr, void* extra)
 {
     char* base = extra;
-    struct utf8_ref ref = {
+    struct utf8_span ref = {
         (utf8_idx)(cstr - base),
         (utf8_idx)strlen(cstr)
     };

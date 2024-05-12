@@ -16,8 +16,8 @@
 static int
 grow(struct utf8_list* l, utf8_idx str_len)
 {
-    utf8_idx old_table_size = sizeof(struct utf8_ref) * l->count;
-    utf8_idx new_table_size = sizeof(struct utf8_ref) * (l->count + 1);
+    utf8_idx old_table_size = sizeof(struct utf8_span) * l->count;
+    utf8_idx new_table_size = sizeof(struct utf8_span) * (l->count + 1);
 
     /* Need to +1 here for potential null terminator when converting to
      * utf8_view */
@@ -49,7 +49,7 @@ utf8_list_deinit(struct utf8_list* l)
 int
 utf8_list_add(struct utf8_list* l, struct utf8_view str)
 {
-    struct utf8_ref* ref;
+    struct utf8_span* ref;
 
     if (grow(l, str.len) < 0)
         return -1;
@@ -67,48 +67,44 @@ utf8_list_add(struct utf8_list* l, struct utf8_view str)
 }
 
 int
-utf8_list_insert_ref(
-    struct utf8_list* l,
-    utf8_idx          insert,
-    const char*       indata,
-    struct utf8_ref   inref)
+utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in)
 {
-    struct utf8_ref* slotref;
+    struct utf8_span* slotref;
 
-    if (grow(l, inref.len) < 0)
+    if (grow(l, in.len) < 0)
         return -1;
 
     slotref = &UTF8_LIST_TABLE_PTR(l)[-insert];
     if (insert < l->count)
     {
-        struct utf8_ref* ref;
-        int              i;
+        struct utf8_span* ref;
+        int               i;
 
         /* Move strings to make space for str.len+1 */
         memmove(
-            l->data + slotref->off + inref.len + 1,
+            l->data + slotref->off + in.len + 1,
             l->data + slotref->off,
             l->str_used - slotref->off);
 
         /* Move ref table */
         memmove(
-            (struct utf8_ref*)(l->data + l->capacity) - l->count - 1,
-            (struct utf8_ref*)(l->data + l->capacity) - l->count,
-            sizeof(struct utf8_ref) * (l->count - insert));
+            (struct utf8_span*)(l->data + l->capacity) - l->count - 1,
+            (struct utf8_span*)(l->data + l->capacity) - l->count,
+            sizeof(struct utf8_span) * (l->count - insert));
 
         /* Calculate new offsets */
         for (ref = slotref - 1, i = l->count - insert; i; i--, ref--)
-            ref->off += inref.len + 1;
+            ref->off += in.len + 1;
     }
     else
     {
         slotref->off = l->str_used;
     }
 
-    memcpy(l->data + slotref->off, indata + inref.off, inref.len);
-    slotref->len = inref.len;
+    memcpy(l->data + slotref->off, in.data + in.off, in.len);
+    slotref->len = in.len;
 
-    l->str_used += inref.len + 1; /* Potential null terminator */
+    l->str_used += in.len + 1; /* Potential null terminator */
     l->count++;
 
     return 0;
@@ -121,18 +117,16 @@ utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 }
 
 static int
-lexicographically_less(
-    const char* t1, struct utf8_ref r1, const char* t2, struct utf8_ref r2)
+lexicographically_less(struct utf8_view s1, struct utf8_view s2)
 {
-    int cmp = memcmp(t1, t2, r1.len < r2.len ? r1.len : r2.len);
+    int cmp = memcmp(s1.data, s2.data, s1.len < s2.len ? s1.len : s2.len);
     if (cmp == 0)
-        return r1.len < r2.len;
+        return s1.len < s2.len;
     return cmp < 0;
 }
 
 utf8_idx
-utf8_lower_bound_ref(
-    const struct utf8_list* l, const char* data, struct utf8_ref ref)
+utf8_lower_bound(const struct utf8_list* l, struct utf8_view str)
 {
     utf8_idx half, middle, found, len;
 
@@ -144,7 +138,7 @@ utf8_lower_bound_ref(
         half = len / 2;
         middle = found + half;
         if (lexicographically_less(
-                l->data, UTF8_LIST_TABLE_PTR(l)[-middle], data, ref))
+                utf8_span_view(l->data, UTF8_LIST_TABLE_PTR(l)[-middle]), str))
         {
             found = middle;
             ++found;
@@ -158,8 +152,7 @@ utf8_lower_bound_ref(
 }
 
 utf8_idx
-utf8_upper_bound_ref(
-    const struct utf8_list* l, const char* data, struct utf8_ref ref)
+utf8_upper_bound(const struct utf8_list* l, struct utf8_view str)
 {
     utf8_idx half, middle, found, len;
 
@@ -171,7 +164,7 @@ utf8_upper_bound_ref(
         half = len / 2;
         middle = found + half;
         if (lexicographically_less(
-                data, ref, l->data, UTF8_LIST_TABLE_PTR(l)[-middle]))
+                str, utf8_span_view(l->data, UTF8_LIST_TABLE_PTR(l)[-middle])))
             len = half;
         else
         {

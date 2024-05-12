@@ -55,17 +55,15 @@ fs_get_path_to_self(struct ospath* path)
 
 int
 fs_list(
-    struct ospath_view path,
-    int                (*on_entry)(const char* name, void* user),
-    void*              user)
+    struct ospathc path,
+    int            (*on_entry)(const char* name, void* user),
+    void*          user)
 {
     DIR*           dp;
     struct dirent* ep;
     int            ret = 0;
 
-    ODBSDK_DEBUG_ASSERT(path.str.data[path.str.len] == '\0');
-
-    dp = opendir(ospath_view_cstr(path));
+    dp = opendir(ospathc_cstr(path));
     if (!dp)
         goto first_file_failed;
 
@@ -85,19 +83,19 @@ first_file_failed:
 }
 
 int
-fs_file_exists(struct ospath_view file_path)
+fs_file_exists(struct ospathc file_path)
 {
     struct stat st;
-    if (stat(ospath_view_cstr(file_path), &st))
+    if (stat(ospathc_cstr(file_path), &st))
         return 0;
     return S_ISREG(st.st_mode);
 }
 
 int
-fs_dir_exists(struct ospath_view path)
+fs_dir_exists(struct ospathc path)
 {
     struct stat st;
-    if (stat(ospath_view_cstr(path), &st))
+    if (stat(ospathc_cstr(path), &st))
         return 0;
     return S_ISDIR(st.st_mode);
 }

@@ -4,7 +4,7 @@
 #include "odb-sdk/utf8.h"
 
 #define UTF8_LIST_TABLE_PTR(l)                                                 \
-    ((struct utf8_ref*)((l)->data + (l)->capacity) - 1)
+    ((struct utf8_span*)((l)->data + (l)->capacity) - 1)
 
 struct utf8_list
 {
@@ -31,34 +31,30 @@ ODBSDK_PUBLIC_API int
 utf8_list_add(struct utf8_list* l, struct utf8_view str);
 
 ODBSDK_PUBLIC_API int
-utf8_list_insert_ref(
-    struct utf8_list* l,
-    utf8_idx          insert,
-    const char*       indata,
-    struct utf8_ref   inref);
+utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in);
 
 ODBSDK_PUBLIC_API void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx);
 
-static inline struct utf8_view
-utf8_list_view(const struct utf8_list* l, utf8_idx i)
-{
-    struct utf8_ref  ref = UTF8_LIST_TABLE_PTR(l)[-i];
-    struct utf8_view view = {l->data + ref.off, ref.len};
-    l->data[ref.off + ref.len] = '\0';
-    return view;
-}
-
-static inline struct utf8_ref
-utf8_list_ref(const struct utf8_list* l, utf8_idx i)
+static inline struct utf8_span
+utf8_list_span(const struct utf8_list* l, utf8_idx i)
 {
     return UTF8_LIST_TABLE_PTR(l)[-i];
 }
-
 static inline const char*
 utf8_list_cstr(const struct utf8_list* l, utf8_idx i)
 {
-    return utf8_view_cstr(utf8_list_view(l, i));
+    struct utf8_span span = utf8_list_span(l, i);
+    l->data[span.off + span.len] = '\0';
+    return l->data + span.off;
+}
+static inline struct utf8_view
+utf8_list_view(const struct utf8_list* l, utf8_idx i)
+{
+    struct utf8_span span = UTF8_LIST_TABLE_PTR(l)[-i];
+    struct utf8_view view = {l->data, span.off, span.len};
+    l->data[span.off + span.len] = '\0';
+    return view;
 }
 
 /*!
@@ -78,8 +74,7 @@ utf8_list_cstr(const struct utf8_list* l, utf8_idx i)
  * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
  */
 ODBSDK_PUBLIC_API utf8_idx
-utf8_lower_bound_ref(
-    const struct utf8_list* l, const char* data, struct utf8_ref ref);
+utf8_lower_bound(const struct utf8_list* l, struct utf8_view str);
 
 /*!
  * @brief Finds the last position in which a string could be inserted without
@@ -90,7 +85,6 @@ utf8_lower_bound_ref(
  * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
  */
 ODBSDK_PUBLIC_API utf8_idx
-utf8_upper_bound_ref(
-    const struct utf8_list* l, const char* data, struct utf8_ref ref);
+utf8_upper_bound_ref(const struct utf8_list* l, struct utf8_view str);
 
 #define utf8_list_count(l) ((l)->count)

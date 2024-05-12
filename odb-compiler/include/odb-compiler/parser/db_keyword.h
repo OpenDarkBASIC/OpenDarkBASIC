@@ -4,4 +4,4 @@
 #include "odb-sdk/utf8.h"
 
 dbtoken_kind_t
-db_keyword_lookup(const char* data, struct utf8_ref ref);
+db_keyword_lookup(const char* data, struct utf8_span ref);

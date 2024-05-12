@@ -21,7 +21,7 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str)
 }
 
 int
-ospath_join(struct ospath* path, struct ospath_view trailing)
+ospath_join(struct ospath* path, struct ospathc trailing)
 {
     /* Append joining slash */
     if (path->str.len && path->str.data[path->str.len - 1] != '/')
@@ -31,7 +31,7 @@ ospath_join(struct ospath* path, struct ospath_view trailing)
     }
 
     /* Append trailing path */
-    if (utf8_append(&path->str, trailing.str) != 0)
+    if (utf8_append(&path->str, utf8c_view(trailing.str)) != 0)
         return -1;
 
     remove_trailing_slashes(path);

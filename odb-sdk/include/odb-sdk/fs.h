@@ -15,15 +15,15 @@ fs_get_path_to_self(struct ospath* path);
 
 ODBSDK_PUBLIC_API int
 fs_list(
-    struct ospath_view path,
+    struct ospathc path,
     int                (*on_entry)(const char* name, void* user),
     void*              user);
 
 ODBSDK_PUBLIC_API int
-fs_file_exists(struct ospath_view path);
+fs_file_exists(struct ospathc path);
 
 ODBSDK_PUBLIC_API int
-fs_dir_exists(struct ospath_view path);
+fs_dir_exists(struct ospathc path);
 
 ODBSDK_PUBLIC_API int
 fs_make_dir(const char* path);

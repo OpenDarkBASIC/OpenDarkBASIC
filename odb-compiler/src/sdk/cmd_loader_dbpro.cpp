@@ -12,13 +12,13 @@ int
 load_dbpro_commands(
     struct cmd_list*        commands,
     const LIEF::PE::Binary* pe,
-    struct ospath_view      filepath)
+    struct ospathc          filepath)
 {
     if (pe->resources() == nullptr)
     {
         log_sdk_warn(
             "No resources found in plugin {quote:%s}.\n",
-            ospath_view_cstr(filepath));
+            ospathc_cstr(filepath));
         return 0;
     }
 
@@ -35,7 +35,7 @@ load_dbpro_commands(
     {
         log_sdk_warn(
             "Missing string table in plugin {quote:%s}.\n",
-            ospath_view_cstr(filepath));
+            ospathc_cstr(filepath));
         return 0;
     }
     if (stringTableNodeIt->childs().size() == 0
@@ -43,7 +43,7 @@ load_dbpro_commands(
     {
         log_sdk_warn(
             "Malformed string table structure in plugin {quote:%s}.\n",
-            ospath_view_cstr(filepath));
+            ospathc_cstr(filepath));
         return 0;
     }
 
@@ -64,37 +64,33 @@ load_dbpro_commands(
              * Additionally, if <command> ends with a "[", then the first entry
              * in the type information is the type of the return value instead
              * of the first parameter */
-            struct utf8_ref cmd_name, type_str, c_symbol, help;
-            utf8_split_ref(
+            struct utf8_span cmd_name, type_str, c_symbol, help;
+            utf8_split(
                 entry_name.data,
-                utf8_ref(entry_name),
+                utf8_span(entry_name),
                 '%',
                 &cmd_name,
                 &type_str);
-            utf8_split_ref(
-                entry_name.data, type_str, '%', &type_str, &c_symbol);
-            utf8_split_ref(entry_name.data, c_symbol, '%', &c_symbol, &help);
+            utf8_split(entry_name.data, type_str, '%', &type_str, &c_symbol);
+            utf8_split(entry_name.data, c_symbol, '%', &c_symbol, &help);
 
             if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
             {
                 log_sdk_warn(
                     "Invalid string table entry in plugin {quote:%s}: %s\n",
-                    ospath_view_cstr(filepath),
+                    ospathc_cstr(filepath),
                     utf8_cstr(entry_name));
                 utf8_deinit(entry_name);
                 return 0;
             }
 
-            if (cmd_list_add_ref(
+            if (cmd_list_add(
                     commands,
                     0,
                     CMD_ARG_VOID,
-                    entry_name.data,
-                    cmd_name,
-                    entry_name.data,
-                    c_symbol,
-                    entry_name.data,
-                    help)
+                    utf8_span_view(entry_name.data, cmd_name),
+                    utf8_span_view(entry_name.data, c_symbol),
+                    utf8_span_view(entry_name.data, help))
                 < 0)
             {
                 utf8_deinit(entry_name);

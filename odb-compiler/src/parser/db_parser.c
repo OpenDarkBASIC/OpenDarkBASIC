@@ -102,10 +102,11 @@ scan_next_token(
     {
         cmd_idx          longest_match_cmd_idx;
         int              i, longest_match_token_idx = 0;
-        struct utf8_ref candidate = token->pushed_location;
+        struct utf8_span candidate = token->pushed_location;
         for (i = 1; candidate.len <= commands->longest_command; ++i)
         {
-            cmd_idx cmd = cmd_list_find_ref(commands, source_text, candidate);
+            cmd_idx cmd = cmd_list_find(
+                commands, utf8_span_view(source_text, candidate));
             if (cmd < cmd_list_count(commands))
             {
                 longest_match_cmd_idx = cmd;
@@ -164,7 +165,7 @@ db_parse(
     struct token_queue tokens;
     YY_BUFFER_STATE    buffer_state;
     int                parse_result = -1;
-    DBLTYPE            scanner_location = empty_utf8_ref();
+    DBLTYPE            scanner_location = empty_utf8_span();
 
     buffer_state = db_scan_buffer(
         source.text.data, source.text.len + 2, parser->scanner);

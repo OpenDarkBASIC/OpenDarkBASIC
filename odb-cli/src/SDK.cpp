@@ -133,10 +133,10 @@ getSDKType()
 }
 
 // ----------------------------------------------------------------------------
-struct ospath_view
+struct ospathc
 getSDKRootDir()
 {
-    return ospath_view(sdk_root_dir);
+    return ospathc(sdk_root_dir);
 }
 
 // ----------------------------------------------------------------------------

@@ -9,7 +9,7 @@ int
 load_dbpro_commands(
     struct cmd_list*        commands,
     const LIEF::PE::Binary* pe,
-    struct ospath_view      filepath);
+    struct ospathc      filepath);
 
 struct on_plugin_ctx
 {
@@ -56,7 +56,7 @@ on_plugin(struct plugin_info* plugin, void* user)
             switch (load_dbpro_commands(
                 ctx->commands,
                 static_cast<const LIEF::PE::Binary*>(binary.get()),
-                ospath_view(plugin->filepath)))
+                ospathc(plugin->filepath)))
             {
                 case 1: break;
                 case 0:

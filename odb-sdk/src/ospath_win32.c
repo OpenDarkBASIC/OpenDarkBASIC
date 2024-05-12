@@ -19,7 +19,7 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str)
 }
 
 int
-ospath_join(struct ospath* path, struct ospath_view trailing)
+ospath_join(struct ospath* path, struct ospathc trailing)
 {
     /* Append joining slash */
     if (path->str.len && path->str.data[path->str.len - 1] != '\\')

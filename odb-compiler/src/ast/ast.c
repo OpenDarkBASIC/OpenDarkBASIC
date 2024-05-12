@@ -5,7 +5,7 @@
 #include <assert.h>
 
 static int
-new_node(struct ast* ast, enum ast_type type, struct utf8_ref location)
+new_node(struct ast* ast, enum ast_type type, struct utf8_span location)
 {
     if (ast->node_count == ast->node_capacity)
     {
@@ -39,7 +39,7 @@ ast_deinit(struct ast* ast)
 }
 
 int
-ast_block(struct ast* ast, int stmt, struct utf8_ref location)
+ast_block(struct ast* ast, int stmt, struct utf8_span location)
 {
     int n = new_node(ast, AST_BLOCK, location);
     if (n < 0)
@@ -49,7 +49,7 @@ ast_block(struct ast* ast, int stmt, struct utf8_ref location)
 }
 
 int
-ast_block_append(struct ast* ast, int block, int stmt, struct utf8_ref location)
+ast_block_append(struct ast* ast, int block, int stmt, struct utf8_span location)
 {
     int n = new_node(ast, AST_BLOCK, location);
     if (n < 0)
@@ -65,7 +65,7 @@ ast_block_append(struct ast* ast, int block, int stmt, struct utf8_ref location)
     return n;
 }
 int
-ast_arglist(struct ast* ast, int expr, struct utf8_ref location)
+ast_arglist(struct ast* ast, int expr, struct utf8_span location)
 {
     int n = new_node(ast, AST_ARGLIST, location);
     if (n < 0)
@@ -76,7 +76,7 @@ ast_arglist(struct ast* ast, int expr, struct utf8_ref location)
 
 int
 ast_arglist_append(
-    struct ast* ast, int arglist, int expr, struct utf8_ref location)
+    struct ast* ast, int arglist, int expr, struct utf8_span location)
 {
     int n = new_node(ast, AST_ARGLIST, location);
     if (n < 0)
@@ -94,7 +94,7 @@ ast_arglist_append(
 
 int
 ast_const_decl(
-    struct ast* ast, int identifier, int expr, struct utf8_ref location)
+    struct ast* ast, int identifier, int expr, struct utf8_span location)
 {
     int n = new_node(ast, AST_CONST_DECL, location);
     if (n < 0)
@@ -106,7 +106,7 @@ ast_const_decl(
 
 int
 ast_command(
-    struct ast* ast, cmd_idx cmd_idx, int arglist, struct utf8_ref location)
+    struct ast* ast, cmd_idx cmd_idx, int arglist, struct utf8_span location)
 {
     int n = new_node(ast, AST_COMMAND, location);
     if (n < 0)
@@ -117,7 +117,7 @@ ast_command(
 }
 
 int
-ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_ref location)
+ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location)
 {
     int n = new_node(ast, AST_ASSIGN_VAR, location);
     if (n < 0)
@@ -130,9 +130,9 @@ ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_ref location)
 int
 ast_identifier(
     struct ast*          ast,
-    struct utf8_ref      name,
+    struct utf8_span      name,
     enum type_annotation annotation,
-    struct utf8_ref      location)
+    struct utf8_span      location)
 {
     int n = new_node(ast, AST_IDENTIFIER, location);
     if (n < 0)
@@ -143,7 +143,7 @@ ast_identifier(
 }
 
 int
-ast_boolean_literal(struct ast* ast, char is_true, struct utf8_ref location)
+ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location)
 {
     int n = new_node(ast, AST_BOOLEAN_LITERAL, location);
     if (n < 0)
@@ -152,7 +152,7 @@ ast_boolean_literal(struct ast* ast, char is_true, struct utf8_ref location)
     return n;
 }
 int
-ast_integer_literal(struct ast* ast, int value, struct utf8_ref location)
+ast_integer_literal(struct ast* ast, int value, struct utf8_span location)
 {
     int n = new_node(ast, AST_INTEGER_LITERAL, location);
     if (n < 0)
@@ -162,7 +162,7 @@ ast_integer_literal(struct ast* ast, int value, struct utf8_ref location)
 }
 int
 ast_string_literal(
-    struct ast* ast, struct utf8_ref str, struct utf8_ref location)
+    struct ast* ast, struct utf8_span str, struct utf8_span location)
 {
     int n = new_node(ast, AST_STRING_LITERAL, location);
     if (n < 0)

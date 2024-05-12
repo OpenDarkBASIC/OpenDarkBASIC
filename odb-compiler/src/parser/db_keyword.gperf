@@ -90,7 +90,7 @@ as,               TOK_AS
 //xor,              TOK_LXOR
 
 dbtoken_kind_t
-db_keyword_lookup(const char* data, struct utf8_ref ref)
+db_keyword_lookup(const char* data, struct utf8_span ref)
 {
     const struct db_keyword* kw = db_keyword_lookup_impl(data + ref.off, ref.len);
     if (kw == NULL)

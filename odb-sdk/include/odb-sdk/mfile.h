@@ -22,7 +22,7 @@ struct mfile
  */
 ODBSDK_PUBLIC_API int
 mfile_map_cow_with_extra_padding(
-    struct mfile* mf, struct ospath_view file, int padding);
+    struct mfile* mf, struct ospathc file, int padding);
 
 /*!
  * @brief Allocates memory using mmap. The memory must be freed again using

@@ -18,7 +18,7 @@ struct dynlib;
  * \return Returns 0 on success. Negative on error.
  */
 ODBSDK_PUBLIC_API int
-dynlib_add_path(struct ospath_view path);
+dynlib_add_path(struct ospathc path);
 
 /*!
  * \brief Loads a shared library and returns its handle.
@@ -26,7 +26,7 @@ dynlib_add_path(struct ospath_view path);
  * \return Returns a handle on success, NULL on failure.
  */
 ODBSDK_PUBLIC_API struct dynlib*
-dynlib_open(struct ospath_view filepath);
+dynlib_open(struct ospathc filepath);
 
 /*!
  * \brief Unloads a previously loaded shared library.

@@ -42,5 +42,5 @@ ODBCOMPILER_PUBLIC_API int
 plugin_list_populate(
     struct plugin_list*       plugins,
     enum sdk_type             sdk_type,
-    struct ospath_view        sdk_root,
+    struct ospathc        sdk_root,
     const struct ospath_list* extra_plugins);

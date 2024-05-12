@@ -25,7 +25,7 @@ utf8_set(struct utf8* dst, struct utf8_view src)
     }
 
     dst->len = src.len;
-    memcpy(dst->data, src.data, (size_t)src.len);
+    memcpy(dst->data, src.data + src.off, (size_t)src.len);
 
     return 0;
 }
@@ -39,7 +39,7 @@ utf8_append(struct utf8* str, struct utf8_view append)
         return mem_report_oom(new_size, "utf8_append()");
 
     str->data = new_data;
-    memcpy(str->data + str->len, append.data, (size_t)append.len);
+    memcpy(str->data + str->len, append.data + append.off, (size_t)append.len);
     str->len += append.len;
 
     return 0;

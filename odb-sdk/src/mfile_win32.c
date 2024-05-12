@@ -7,7 +7,7 @@
 #include "odb-sdk/log.h"
 
 int
-mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, int padding)
+mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int padding)
 {
     HANDLE hFile;
     LARGE_INTEGER liFileSize;
@@ -38,7 +38,7 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospath_view filepath, 
     {
         log_sdk_err(
             "Failed to map file {quote:%s}: Mapping files >4GiB is not implemented\n",
-            ospath_view_cstr(filepath));
+            ospathc_cstr(filepath));
         goto get_file_size_failed;
     }
     map_size = liFileSize.LowPart;

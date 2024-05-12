@@ -31,32 +31,28 @@ public:
         return cstr_utf8_view(cstr);
     }
 
-    struct utf8_ref
+    struct utf8_span
     R(const char* cstr)
     {
-        return cstr_utf8_ref(cstr);
+        return cstr_utf8_span(cstr);
     }
 
     cmd_idx
     addCommand(const char* cstr)
     {
-        return cmd_list_add_ref(
+        return cmd_list_add(
             &cmds,
             0,
             CMD_ARG_VOID,
-            cstr,
-            cstr_utf8_ref(cstr),
-            NULL,
-            empty_utf8_ref(),
-            NULL,
-            empty_utf8_ref());
+            cstr_utf8_view(cstr),
+            empty_utf8_view(),
+            empty_utf8_view());
     }
 
     utf8_idx
     matchCommand(const char* cstr)
     {
-        struct utf8_ref ref = {0, (utf8_idx)strlen(cstr)};
-        return cmd_list_find_ref(&cmds, cstr, R(cstr));
+        return cmd_list_find(&cmds, cstr_utf8_view(cstr));
     }
 
     struct cmd_list cmds;

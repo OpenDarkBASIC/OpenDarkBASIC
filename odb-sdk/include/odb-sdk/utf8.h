@@ -12,7 +12,7 @@ typedef int32_t utf8_idx;
 
 /*!
  * @brief A mutable UTF-8 encoded string.
- * @warning The mutable version is NOT NULL-terminated. @see utf8_view() will
+ * @warning The mutable version is NOT NULL-terminated. @see utf8c() will
  * add the NULL terminator.
  */
 struct utf8
@@ -21,92 +21,123 @@ struct utf8
     utf8_idx len;
 };
 
-/*!
- * @brief An immutable, NULL-terminated, UTF-8 encoded string.
- */
-struct utf8_view
+struct utf8c
 {
     const char* data;
-    utf8_idx    len;
 };
 
-/*!
- * @brief A subset of a utf-8 encoded string, represented as offset and length.
- */
-struct utf8_ref
+struct utf8_span
 {
     utf8_idx off;
     utf8_idx len;
 };
 
+struct utf8_view
+{
+    const char* data;
+    utf8_idx    off;
+    utf8_idx    len;
+};
+
+/* Initialize structures ---------------------------------------------------- */
 static inline struct utf8
 empty_utf8(void)
 {
     struct utf8 str = {NULL, 0};
     return str;
 }
+static inline struct utf8c
+empty_utf8c(void)
+{
+    struct utf8c str = {""};
+    return str;
+}
+static inline struct utf8_span
+empty_utf8_span(void)
+{
+    struct utf8_span span = {0, 0};
+    return span;
+}
 static inline struct utf8_view
 empty_utf8_view(void)
 {
-    struct utf8_view str = {"", 0};
+    struct utf8_view str = {"", 0, 0};
     return str;
 }
-static inline struct utf8_ref
-empty_utf8_ref(void)
+
+/* Convert between different structures ------------------------------------- */
+static inline struct utf8c
+utf8_utf8c(struct utf8 str)
 {
-    struct utf8_ref ref = {0, 0};
+    struct utf8c strc;
+    if (str.len)
+        str.data[str.len] = '\0';
+    strc.data = str.data;
+    return strc;
+}
+static inline struct utf8_span
+utf8_span(struct utf8 str)
+{
+    struct utf8_span ref = {0, str.len};
     return ref;
 }
-
+static inline struct utf8_view
+utf8c_view(struct utf8c str)
+{
+    struct utf8_view view = {str.data, 0, (utf8_idx)strlen(str.data)};
+    return view;
+}
 static inline struct utf8_view
 utf8_view(struct utf8 str)
 {
-    struct utf8_view view = {str.data, str.len};
+    struct utf8_view view;
     if (str.len)
         str.data[str.len] = '\0';
+    view.data = str.data;
+    view.off = 0;
+    view.len = str.len;
+    return view;
+}
+static inline struct utf8_view
+utf8_span_view(const char* data, struct utf8_span span)
+{
+    struct utf8_view view = {data, span.off, span.len};
     return view;
 }
 
-static inline struct utf8_ref
-utf8_ref(struct utf8 str)
+/* Convert from C strings to structures  ------------------------------------ */
+static inline struct utf8c
+cstr_utf8c(const char* cstr)
 {
-    struct utf8_ref ref = {0, str.len};
-    return ref;
+    struct utf8c strc = {cstr};
+    return strc;
 }
-
+static inline struct utf8_span
+cstr_utf8_span(const char* cstr)
+{
+    struct utf8_span span = {0, (utf8_idx)strlen(cstr)};
+    return span;
+}
 static inline struct utf8_view
 cstr_utf8_view(const char* cstr)
 {
-    struct utf8_view utf8 = {cstr, (utf8_idx)strlen(cstr)};
+    struct utf8_view utf8 = {cstr, 0, (utf8_idx)strlen(cstr)};
     return utf8;
 }
 
-static inline struct utf8_ref
-cstr_utf8_ref(const char* cstr)
-{
-    struct utf8_ref ref = {0, (utf8_idx)strlen(cstr)};
-    return ref;
-}
-
+/* Convert from structures to C strings ------------------------------------- */
 static inline const char*
-utf8_view_cstr(struct utf8_view str)
+utf8c_cstr(struct utf8c str)
 {
     return str.data;
 }
-
 static inline const char*
 utf8_cstr(struct utf8 str)
 {
-    return utf8_view_cstr(utf8_view(str));
+    return utf8c_cstr(utf8_utf8c(str));
 }
 
-static inline struct utf8_view
-utf8_ref_view(const char* text, struct utf8_ref ref)
-{
-    struct utf8_view view = {text + ref.off, ref.len};
-    return view;
-}
-
+/* Modifying utf8 structure ------------------------------------------------- */
 ODBSDK_PUBLIC_API int
 utf8_set(struct utf8* dst, struct utf8_view src);
 
@@ -136,6 +167,39 @@ utf8_replace_char(struct utf8 str, char search, char replace)
             str.data[str.len] = replace;
 }
 
+static inline void
+utf8_remove_extension(struct utf8* str)
+{
+    while (str->len && str->data[--str->len] != '.')
+    {
+    }
+}
+
+static inline void
+utf8_split(
+    const char*       data,
+    struct utf8_span  span,
+    char              delim,
+    struct utf8_span* left,
+    struct utf8_span* right)
+{
+    utf8_idx i;
+    for (i = 0; i != span.len; ++i)
+        if (data[span.off + i] == delim)
+        {
+            left->off = span.off;
+            left->len = i;
+            right->off = span.off + i + 1;
+            right->len = span.len - i - 1;
+            return;
+        }
+    left->off = span.off;
+    left->len = span.len;
+    right->off = 0;
+    right->len = 0;
+}
+
+/* Query functions ---------------------------------------------------------- */
 static inline int
 utf8_starts_with(struct utf8_view str, struct utf8_view cmp)
 {
@@ -144,7 +208,6 @@ utf8_starts_with(struct utf8_view str, struct utf8_view cmp)
 
     return memcmp(str.data, cmp.data, (size_t)cmp.len) == 0;
 }
-
 static inline int
 utf8_starts_with_cstr(struct utf8_view str, const char* cmp)
 {
@@ -191,52 +254,16 @@ utf8_ends_with_i_cstr(struct utf8_view str, const char* cmp)
 static inline int
 utf8_equal(struct utf8_view s1, struct utf8_view s2)
 {
-    return strcmp(s1.data, s2.data) == 0;
+    return s1.len == s2.len
+           && memcmp(s1.data + s1.off, s2.data + s2.off, (size_t)s1.len) == 0;
 }
 static inline int
 utf8_equal_cstr(struct utf8_view str, const char* cstr)
 {
     return utf8_equal(str, cstr_utf8_view(cstr));
 }
-static inline int
-utf8_equal_ref(
-    const char* s1, struct utf8_ref r1, const char* s2, struct utf8_ref r2)
-{
-    return r1.len == r2.len
-           && memcmp(s1 + r1.off, s2 + r2.off, (size_t)r1.len) == 0;
-}
 
-static inline void
-utf8_remove_extension(struct utf8* str)
-{
-    while (str->len && str->data[--str->len] != '.')
-    {
-    }
-}
-
-static inline void
-utf8_split_ref(
-    const char*      data,
-    struct utf8_ref  in,
-    char             delim,
-    struct utf8_ref* left,
-    struct utf8_ref* right)
-{
-    utf8_idx i;
-    for (i = 0; i != in.len; ++i)
-        if (data[in.off + i] == delim)
-        {
-            left->off = in.off;
-            left->len = i;
-            right->off = in.off + i + 1;
-            right->len = in.len - i - 1;
-            return;
-        }
-    *left = in;
-    right->off = 0;
-    right->len = 0;
-}
-
+/* UTF-16 ------------------------------------------------------------------- */
 typedef int32_t utf16_idx;
 
 struct utf16

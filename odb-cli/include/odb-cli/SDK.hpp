@@ -19,5 +19,5 @@ bool printSDKRootDir(const std::vector<std::string>& args);
 bool setupSDK(const std::vector<std::string>& args);
 
 enum sdk_type getSDKType();
-struct ospath_view getSDKRootDir();
+struct ospathc getSDKRootDir();
 const std::vector<std::filesystem::path>& getAdditionalPluginDirs();

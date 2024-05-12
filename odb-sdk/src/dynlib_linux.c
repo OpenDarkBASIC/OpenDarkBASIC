@@ -8,20 +8,20 @@
 #include <stddef.h>
 
 int
-dynlib_add_path(struct ospath_view path)
+dynlib_add_path(struct ospathc path)
 {
     (void)path;
     return 0;
 }
 
 struct dynlib*
-dynlib_open(struct ospath_view filepath)
+dynlib_open(struct ospathc filepath)
 {
-    void* handle = dlopen(ospath_view_cstr(filepath), RTLD_LAZY);
+    void* handle = dlopen(ospathc_cstr(filepath), RTLD_LAZY);
     if (handle == NULL)
         log_sdk_err(
             "Failed to dlopen() file {quote:%s}: %s\n",
-            ospath_view_cstr(filepath),
+            ospathc_cstr(filepath),
             strerror(errno));
     return (struct dynlib*)handle;
 }

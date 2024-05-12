@@ -21,15 +21,15 @@ ospath_list_deinit(struct ospath_list* l)
 }
 
 static inline int
-ospath_list_add(struct ospath_list* l, struct ospath_view path)
+ospath_list_add(struct ospath_list* l, struct ospathc path)
 {
-    return utf8_list_add(&l->strlist, path.str);
+    return utf8_list_add(&l->strlist, utf8c_view(path.str));
 }
 
 static inline int
 ospath_list_add_cstr(struct ospath_list* l, const char* cpath)
 {
-    struct ospath_view path = cstr_ospath_view(cpath);
-    return utf8_list_add(&l->strlist, path.str);
+    struct ospathc path = cstr_ospathc(cpath);
+    return utf8_list_add(&l->strlist, utf8c_view(path.str));
 }
 

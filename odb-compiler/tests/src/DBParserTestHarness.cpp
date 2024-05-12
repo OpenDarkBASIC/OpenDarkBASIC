@@ -41,16 +41,13 @@ DBParserTestHarness::TearDown()
 int
 DBParserTestHarness::addCommand(enum cmd_arg_type return_type, const char* name)
 {
-    return cmd_list_add_ref(
+    return cmd_list_add(
         &cmds,
         0,
         return_type,
-        name,
-        cstr_utf8_ref(name),
-        NULL,
-        empty_utf8_ref(),
-        NULL,
-        empty_utf8_ref());
+        cstr_utf8_view(name),
+        empty_utf8_view(),
+        empty_utf8_view());
 }
 int
 DBParserTestHarness::addCommand(const char* name)

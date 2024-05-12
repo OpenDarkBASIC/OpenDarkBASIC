@@ -7,14 +7,14 @@ VEC_DEFINE_API(plugin_list, struct plugin_info, 16)
 struct on_plugin_entry_ctx
 {
     struct plugin_list* plugins;
-    struct ospath_view  dir;
+    struct ospathc  dir;
 };
 
 static int
 on_plugin_entry_odb(const char* cname, void* user)
 {
     struct on_plugin_entry_ctx* ctx = user;
-    struct ospath_view          name = cstr_ospath_view(cname);
+    struct ospathc          name = cstr_ospathc(cname);
 
     if (ospath_ends_with_i_cstr(name, ".dll")
         || ospath_ends_with_i_cstr(name, ".so"))
@@ -29,7 +29,7 @@ on_plugin_entry_odb(const char* cname, void* user)
         if (ospath_join(&plugin->filepath, name) != 0)
             return -1;
 
-        if (utf8_set(&plugin->name, name.str) != 0)
+        if (utf8_set(&plugin->name, ospathc_view(name)) != 0)
             return -1;
         utf8_remove_extension(&plugin->name);
     }
@@ -41,7 +41,7 @@ static int
 on_plugin_entry_dbpro(const char* cname, void* user)
 {
     struct on_plugin_entry_ctx* ctx = user;
-    struct ospath_view          name = cstr_ospath_view(cname);
+    struct ospathc          name = cstr_ospathc(cname);
 
     if (ospath_ends_with_i_cstr(name, ".dll"))
     {
@@ -55,7 +55,7 @@ on_plugin_entry_dbpro(const char* cname, void* user)
         if (ospath_join(&plugin->filepath, name) != 0)
             return -1;
 
-        if (utf8_set(&plugin->name, name.str) != 0)
+        if (utf8_set(&plugin->name, ospathc_view(name)) != 0)
             return -1;
         utf8_remove_extension(&plugin->name);
     }
@@ -66,7 +66,7 @@ on_plugin_entry_dbpro(const char* cname, void* user)
 static int
 populate_odb(
     struct plugin_list*       plugins,
-    struct ospath_view        sdk_root,
+    struct ospathc        sdk_root,
     const struct ospath_list* extra_plugins)
 {
     return log_sdk_err("plugin_list_populate() not implemented for ODB\n");
@@ -75,20 +75,20 @@ populate_odb(
 static int
 populate_dbpro(
     struct plugin_list*       plugins,
-    struct ospath_view        sdk_root,
+    struct ospathc        sdk_root,
     const struct ospath_list* extra_plugins)
 {
     const char** plugin_subdir;
     const char* plugin_subdirs[]
         = {"plugins", "plugins-licensed", "plugins-user", NULL};
     struct ospath              path = empty_ospath();
-    struct on_plugin_entry_ctx ctx = {plugins, empty_ospath_view()};
+    struct on_plugin_entry_ctx ctx = {plugins, empty_ospathc()};
 
     if (!fs_dir_exists(sdk_root))
     {
         log_sdk_err(
             "SDK root directory {quote:%s} does not exist\n",
-            ospath_view_cstr(sdk_root));
+            ospathc_cstr(sdk_root));
         return -1;
     }
 
@@ -101,8 +101,8 @@ populate_dbpro(
             ospath_deinit(path);
             return -1;
         }
-        ctx.dir = ospath_view(path);
-        fs_list(ospath_view(path), on_plugin_entry_dbpro, &ctx);
+        ctx.dir = ospathc(path);
+        fs_list(ospathc(path), on_plugin_entry_dbpro, &ctx);
     }
 
     /* Maybe the SDK root directory is pointing to the DBP installation
@@ -119,8 +119,8 @@ populate_dbpro(
                 ospath_deinit(path);
                 return -1;
             }
-            ctx.dir = ospath_view(path);
-            fs_list(ospath_view(path), on_plugin_entry_dbpro, &ctx);
+            ctx.dir = ospathc(path);
+            fs_list(ospathc(path), on_plugin_entry_dbpro, &ctx);
         }
     }
 
@@ -132,7 +132,7 @@ int
 plugin_list_populate(
     struct plugin_list*       plugins,
     enum sdk_type             sdk_type,
-    struct ospath_view        sdk_root,
+    struct ospathc        sdk_root,
     const struct ospath_list* extra_plugins)
 {
     switch (sdk_type)

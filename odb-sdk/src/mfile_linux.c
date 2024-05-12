@@ -11,11 +11,11 @@
 
 int
 mfile_map_cow_with_extra_padding(
-    struct mfile* mf, struct ospath_view file, int padding)
+    struct mfile* mf, struct ospathc file, int padding)
 {
     struct stat stbuf;
     int         fd;
-    const char* c_file_name = ospath_view_cstr(file);
+    const char* c_file_name = ospathc_cstr(file);
 
     fd = open(c_file_name, O_RDONLY | O_LARGEFILE);
     if (fd < 0)

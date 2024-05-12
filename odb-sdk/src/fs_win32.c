@@ -18,7 +18,7 @@ fs_get_path_to_self(struct ospath* path)
 }
 
 int
-fs_list(struct ospath_view path, int (*on_entry)(const char* name, void* user), void* user)
+fs_list(struct ospathc path, int (*on_entry)(const char* name, void* user), void* user)
 {
     DWORD dwError;
     WIN32_FIND_DATA ffd;
@@ -53,18 +53,18 @@ fs_list(struct ospath_view path, int (*on_entry)(const char* name, void* user), 
 }
 
 int
-fs_file_exists(struct ospath_view file_path)
+fs_file_exists(struct ospathc file_path)
 {
-    DWORD attr = GetFileAttributes(ospath_view_cstr(file_path));
+    DWORD attr = GetFileAttributes(ospathc_cstr(file_path));
     if (attr == INVALID_FILE_ATTRIBUTES)
         return 0;
     return !(attr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
 int
-fs_dir_exists(struct ospath_view path)
+fs_dir_exists(struct ospathc path)
 {
-    DWORD attr = GetFileAttributes(ospath_view_cstr(path));
+    DWORD attr = GetFileAttributes(ospathc_cstr(path));
     if (attr == INVALID_FILE_ATTRIBUTES)
         return 0;
     return !!(attr & FILE_ATTRIBUTE_DIRECTORY);

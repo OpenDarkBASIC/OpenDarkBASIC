@@ -33,7 +33,7 @@ union ast_node
 {
     struct info
     {
-        struct utf8_ref location;
+        struct utf8_span location;
         enum ast_type type;
     } info;
 
@@ -90,7 +90,7 @@ union ast_node
         struct info info;
         int parent;
         int _pad1, _pad2;
-        struct utf8_ref name;
+        struct utf8_span name;
         enum type_annotation annotation;
     } identifier;
 
@@ -110,7 +110,7 @@ union ast_node
         struct info info;
         int parent;
         int _pad1, _pad2;
-        struct utf8_ref str;
+        struct utf8_span str;
     } string_literal;
 };
 
@@ -132,14 +132,14 @@ ast_init(struct ast* ast)
 ODBCOMPILER_PUBLIC_API void 
 ast_deinit(struct ast* ast);
 
-int ast_block(struct ast* ast, int stmt, struct utf8_ref location);
-int ast_block_append(struct ast* ast, int block, int stmt, struct utf8_ref location);
-int ast_arglist(struct ast* ast, int expr, struct utf8_ref location);
-int ast_arglist_append(struct ast* ast, int arglist, int expr, struct utf8_ref location);
-int ast_const_decl(struct ast* ast, int identifier, int expr, struct utf8_ref location);
-int ast_command(struct ast* ast, cmd_idx cmd_ref, int arglist, struct utf8_ref location);
-int ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_ref location);
-int ast_identifier(struct ast* ast, struct utf8_ref name, enum type_annotation annotation, struct utf8_ref location);
-int ast_boolean_literal(struct ast* ast, char is_true, struct utf8_ref location);
-int ast_integer_literal(struct ast* ast, int value, struct utf8_ref location);
-int ast_string_literal(struct ast* ast, struct utf8_ref str, struct utf8_ref location);
+int ast_block(struct ast* ast, int stmt, struct utf8_span location);
+int ast_block_append(struct ast* ast, int block, int stmt, struct utf8_span location);
+int ast_arglist(struct ast* ast, int expr, struct utf8_span location);
+int ast_arglist_append(struct ast* ast, int arglist, int expr, struct utf8_span location);
+int ast_const_decl(struct ast* ast, int identifier, int expr, struct utf8_span location);
+int ast_command(struct ast* ast, cmd_idx cmd_ref, int arglist, struct utf8_span location);
+int ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location);
+int ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
+int ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
+int ast_integer_literal(struct ast* ast, int value, struct utf8_span location);
+int ast_string_literal(struct ast* ast, struct utf8_span str, struct utf8_span location);

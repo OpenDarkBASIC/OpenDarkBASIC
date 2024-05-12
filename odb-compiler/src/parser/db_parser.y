@@ -27,7 +27,7 @@
 
     static void dberror(DBLTYPE* loc, dbscan_t scanner, const char* msg, ...);
 
-    /* Our location structure is a utf8_ref, so have to override the default
+    /* Our location structure is a utf8_span, so have to override the default
      * location handling code */
     #define YYLLOC_DEFAULT(Current, Rhs, N) do { \
         if (N) { \
@@ -72,12 +72,12 @@
 /*
  * Enable tracking locations. This adds an additional location parameter to the
  * dbpush_parse() function. By default, locations are tracked with first/last 
- * line/column. We prefer to use utf8_ref which is simply an offset+length into
+ * line/column. We prefer to use utf8_span which is simply an offset+length into
  * the source text. Line and column numbers are derived from this information
  * later, if required.
  */
 %locations
-%define api.location.type { struct utf8_ref }
+%define api.location.type { struct utf8_span }
 
 /* Enable calling yyreport_syntax_error() which gives us much more control over
  * formatting error messages whenever a syntax error occurs. */
@@ -98,9 +98,9 @@
     int64_t integer_value;
     /* The parser API has been deliberately designed in a way where strings do
      * not have to be copied. Whole source files are mapped into memory, and the
-     * lexer passes in string values as a utf8_ref, which is an offset and
+     * lexer passes in string values as a utf8_span, which is an offset and
      * length into the memory-mapped file. */
-    struct utf8_ref string_value;
+    struct utf8_span string_value;
     int node_value;  /* Index into the ast->nodes[] array */
     cmd_idx cmd_value;  /* Index into the command_list */
 }

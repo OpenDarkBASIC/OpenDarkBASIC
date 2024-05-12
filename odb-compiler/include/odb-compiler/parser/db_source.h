@@ -21,7 +21,7 @@
  *   1) FLEX requires an "EOB" marker at the end of its buffers. This is
  *      appended when using the various open() functions below.
  *   2) Throughout the compilation process, any text extracted from the parsing
- *      stage is referenced through @see utf8_ref, which is an offset/length
+ *      stage is referenced through @see utf8_span, which is an offset/length
  *      into the source text. Thus, it's necessary to keep the file around for
  *      the duration of the compilation process.
  */
@@ -38,7 +38,7 @@ struct db_source
  * @return Returns 0 on success, negative on error.
  */
 ODBCOMPILER_PUBLIC_API int
-db_source_open_file(struct db_source* s, struct ospath_view filepath);
+db_source_open_file(struct db_source* s, struct ospathc filepath);
 
 /*!
  * @brief Use this if you need to parse a temporary string. The string is copied

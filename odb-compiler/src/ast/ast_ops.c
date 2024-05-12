@@ -62,13 +62,13 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
         case AST_COMMAND: SWAP(cmd_idx, command, idx) break;
         case AST_ASSIGN_VAR: break;
         case AST_IDENTIFIER:
-            SWAP(struct utf8_ref, identifier, name)
+            SWAP(struct utf8_span, identifier, name)
             SWAP(enum type_annotation, identifier, annotation)
             break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_INTEGER_LITERAL: SWAP(int, integer_literal, value) break;
         case AST_STRING_LITERAL:
-            SWAP(struct utf8_ref, string_literal, str) break;
+            SWAP(struct utf8_span, string_literal, str) break;
     }
 #undef SWAP
 }
@@ -150,11 +150,11 @@ ast_trees_equal(
         case AST_ASSIGN_VAR: break;
 
         case AST_IDENTIFIER:
-            if (!utf8_equal_ref(
-                    source->text.data,
-                    a2->nodes[n1].identifier.name,
-                    source->text.data,
-                    a2->nodes[n2].identifier.name))
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source->text.data, a2->nodes[n1].identifier.name),
+                    utf8_span_view(
+                        source->text.data, a2->nodes[n2].identifier.name)))
                 return 0;
             break;
 
@@ -170,11 +170,11 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_STRING_LITERAL:
-            if (!utf8_equal_ref(
-                    source->text.data,
-                    a1->nodes[n1].string_literal.str,
-                    source->text.data,
-                    a2->nodes[n2].string_literal.str))
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source->text.data, a1->nodes[n1].string_literal.str),
+                    utf8_span_view(
+                        source->text.data, a2->nodes[n2].string_literal.str)))
                 return 0;
             break;
     }

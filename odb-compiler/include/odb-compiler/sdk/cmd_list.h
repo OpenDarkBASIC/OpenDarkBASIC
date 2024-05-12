@@ -37,8 +37,8 @@ struct cmd_arg
 {
     enum cmd_arg_type      type;
     enum cmd_arg_direction direction;
-    struct utf8_ref        symbol_name;
-    struct utf8_ref        description;
+    struct utf8_span       symbol_name;
+    struct utf8_span       description;
 };
 
 VEC_DECLARE_API(arg_type_list, enum cmd_arg_type, 32)
@@ -76,16 +76,13 @@ cmd_list_deinit(struct cmd_list* commands)
 }
 
 ODBCOMPILER_PUBLIC_API cmd_idx
-cmd_list_add_ref(
+cmd_list_add(
     struct cmd_list*  commands,
     plugin_ref        plugin_ref,
     enum cmd_arg_type return_type,
-    const char*       db_identifier_data,
-    struct utf8_ref   db_identifier_ref,
-    const char*       c_identifier_data,
-    struct utf8_ref   c_identifier_ref,
-    const char*       help_file_data,
-    struct utf8_ref   help_file_ref);
+    struct utf8_view  db_identifier,
+    struct utf8_view  c_symbol,
+    struct utf8_view  help_file);
 
 ODBCOMPILER_PUBLIC_API int
 cmd_add_arg(
@@ -103,9 +100,6 @@ cmd_list_load_from_plugins(
     struct plugin_list plugins);
 
 ODBCOMPILER_PUBLIC_API cmd_idx
-cmd_list_find_ref(
-    const struct cmd_list* commands,
-    const char*            name_data,
-    struct utf8_ref        name_ref);
+cmd_list_find(const struct cmd_list* commands, struct utf8_view name);
 
 #define cmd_list_count(commands) (utf8_list_count(&(commands)->db_identifiers))
