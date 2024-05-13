@@ -19,7 +19,7 @@ public:
     int
     addCommand(const char* name);
     int
-    addCommand(enum cmd_arg_type return_type, const char* name);
+    addCommand(enum cmd_param_type return_type, const char* name);
     int
     parse(const char* code);
 

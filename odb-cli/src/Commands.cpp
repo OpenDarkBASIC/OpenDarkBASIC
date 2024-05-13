@@ -35,10 +35,13 @@ loadCommands(const std::vector<std::string>& args)
 {
     log_sdk_progress(0, 0, "Searching for plugins...\n");
     plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL);
-   
+
     log_sdk_progress(0, 0, "Loading commands...\n");
     cmd_list_load_from_plugins(&commands, getSDKType(), plugins);
-    log_sdk_info("Loaded %d commands from %d plugins\n", cmd_list_count(&commands), vec_count(plugins));
+    log_sdk_info(
+        "Loaded %d commands from %d plugins\n",
+        cmd_list_count(&commands),
+        vec_count(plugins));
 
     /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;
@@ -145,7 +148,9 @@ dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
         printf("%s\n", utf8_list_cstr(&commands.db_identifiers, i));
-    log_sdk_info("Command names dumped\n");
+    log_sdk_info(
+        "Wrote %d commands to stdout [--dump-commands]\n",
+        cmd_list_count(&commands));
 
     return true;
 }

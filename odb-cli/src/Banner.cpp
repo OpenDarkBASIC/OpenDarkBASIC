@@ -148,13 +148,13 @@ static const char* smallBanner_ =
 // ----------------------------------------------------------------------------
 static void printBannerNormal()
 {
-    log_raw("", "", banner_, build_info_url(), build_info_version(), build_info_commit_hash());
+    log_raw(banner_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------
 static void printBannerNoEscapeSequences()
 {
-    log_raw("", "", bannerNoEscapeSequences_, build_info_url(), build_info_version(), build_info_commit_hash());
+    log_raw(bannerNoEscapeSequences_, build_info_url(), build_info_version(), build_info_commit_hash());
 }
 
 // ----------------------------------------------------------------------------

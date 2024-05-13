@@ -2,7 +2,7 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/utf8_list.h"
 
-VEC_DEFINE_API(arg_type_list, enum cmd_arg_type, 32)
+VEC_DEFINE_API(param_type_list, enum cmd_param_type, 32)
 VEC_DEFINE_API(plugin_idxs, int16_t, 16)
 
 static int
@@ -15,14 +15,15 @@ handle_duplicate_identifier(struct utf8_view identifier)
 
 cmd_idx
 cmd_list_add(
-    struct cmd_list*  commands,
-    plugin_ref        plugin_ref,
-    enum cmd_arg_type return_type,
-    struct utf8_view  db_identifier,
-    struct utf8_view  c_symbol,
-    struct utf8_view  help_file)
+    struct cmd_list*    commands,
+    plugin_ref          plugin_ref,
+    enum cmd_param_type return_type,
+    struct utf8_view    db_identifier,
+    struct utf8_view    c_symbol,
+    struct utf8_view    help_file)
 {
-    utf8_idx insert
+    struct param_type_list* param_types;
+    utf8_idx               insert
         = utf8_lower_bound(&commands->db_identifiers, db_identifier);
 
     if (insert < utf8_list_count(&commands->db_identifiers))
@@ -42,14 +43,21 @@ cmd_list_add(
         goto help_file_failed;
     if (plugin_idxs_insert(&commands->plugin_idxs, insert, plugin_ref) < 0)
         goto plugin_ref_failed;
-    if (arg_type_list_insert(&commands->return_types, insert, return_type) < 0)
+    if (param_type_list_insert(&commands->return_types, insert, return_type)
+        < 0)
         goto return_type_failed;
+    param_types = param_type_lists_emplace(&commands->param_types);
+    if (param_types == NULL)
+        goto param_types_failed;
+    param_type_list_init(param_types);
 
     if (commands->longest_command < db_identifier.len)
         commands->longest_command = db_identifier.len;
 
     return insert;
 
+param_types_failed:
+    param_type_list_erase(commands->return_types, insert);
 return_type_failed:
     plugin_idxs_erase(commands->plugin_idxs, insert);
 plugin_ref_failed:
@@ -63,13 +71,12 @@ db_identifier_failed:
 }
 
 int
-cmd_add_arg(
-    struct cmd_list*       commands,
-    cmd_idx                cmd_ref,
-    enum cmd_arg_type      type,
-    enum cmd_arg_direction direction,
-    struct utf8_view       identifier,
-    struct utf8_view       description)
+cmd_add_param(
+    struct cmd_list*         commands,
+    cmd_idx                  cmd_ref,
+    enum cmd_param_type      type,
+    enum cmd_param_direction direction,
+    struct utf8_view         doc)
 {
     return -1;
 }

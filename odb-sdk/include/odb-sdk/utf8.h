@@ -199,6 +199,13 @@ utf8_split(
     right->len = 0;
 }
 
+static inline void
+utf8_tolower_span(char* data, struct utf8_span span)
+{
+    for (; span.len; span.len--, span.off++)
+        data[span.off] = tolower(data[span.off]);
+}
+
 /* Query functions ---------------------------------------------------------- */
 static inline int
 utf8_starts_with(struct utf8_view str, struct utf8_view cmp)

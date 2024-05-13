@@ -8,12 +8,13 @@ extern "C" {
 int
 load_dbpro_commands(
     struct cmd_list*        commands,
+    plugin_ref              plugin_id,
     const LIEF::PE::Binary* pe,
-    struct ospathc      filepath);
+    struct ospathc          filepath);
 
 struct on_plugin_ctx
 {
-    int              current, total;
+    plugin_ref       current, total;
     struct cmd_list* commands;
     enum sdk_type    sdk_type;
 };
@@ -55,6 +56,7 @@ on_plugin(struct plugin_info* plugin, void* user)
             }
             switch (load_dbpro_commands(
                 ctx->commands,
+                ctx->current,
                 static_cast<const LIEF::PE::Binary*>(binary.get()),
                 ospathc(plugin->filepath)))
             {
@@ -80,7 +82,8 @@ cmd_list_load_from_plugins(
     enum sdk_type      sdk_type,
     struct plugin_list plugins)
 {
-    struct on_plugin_ctx ctx = {0, vec_count(plugins), commands, sdk_type};
+    struct on_plugin_ctx ctx
+        = {0, (plugin_ref)vec_count(plugins), commands, sdk_type};
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         return -1;
 

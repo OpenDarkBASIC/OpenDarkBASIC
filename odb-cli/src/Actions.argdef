@@ -16,10 +16,10 @@ extern "C" {
 }
 
 #define ADG_FPRINTF(fp, fmt, ...) \
-    log_raw("", "", fmt, __VA_ARGS__)
+    log_raw(fmt, __VA_ARGS__)
 #define ADG_FPRINTF_COLOR(print_func, fp, color, fmt, ...) do { \
-        log_raw("", "", color); \
-        log_raw("", "", fmt, __VA_ARGS__); \
+        log_raw(color); \
+        log_raw(fmt, __VA_ARGS__); \
     } while (0)
 #define ADG_COLOR_RESET    COL_RESET
 #define ADG_COLOR_HEADING1 FGB_WHITE

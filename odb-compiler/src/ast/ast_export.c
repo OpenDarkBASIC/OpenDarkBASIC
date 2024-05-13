@@ -27,7 +27,7 @@ write_nodes(
         case AST_COMMAND: {
             struct utf8_view cmd_name
                 = utf8_list_view(&commands->db_identifiers, nd->command.idx);
-            enum cmd_arg_type ret_type
+            enum cmd_param_type ret_type
                 = *vec_get(commands->return_types, nd->command.idx);
             fprintf(
                 fp,

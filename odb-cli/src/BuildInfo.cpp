@@ -8,13 +8,13 @@ extern "C" {
 // ----------------------------------------------------------------------------
 bool printCommitHash(const std::vector<std::string>& args)
 {
-    log_raw("", "", "%s\n", build_info_commit_hash());
+    log_raw("%s\n", build_info_commit_hash());
     return true;
 }
 
 // ----------------------------------------------------------------------------
 bool printVersion(const std::vector<std::string>& args)
 {
-    log_raw("", "", "%s\n", build_info_version());
+    log_raw("%s\n", build_info_version());
     return true;
 }
