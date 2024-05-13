@@ -114,7 +114,7 @@ quote_style(void)
 static const char*
 end_quote_style(void)
 {
-    return "'" COL_RESET;
+    return COL_RESET "'";
 }
 static const char*
 reset_style(void)
@@ -269,7 +269,8 @@ log_vimpl(
 
 /* ------------------------------------------------------------------------- */
 void
-log_vprogress(const char* group, int current, int total, const char* fmt, va_list ap)
+log_vprogress(
+    const char* group, int current, int total, const char* fmt, va_list ap)
 {
     char buf[31];
     if (total > 0)

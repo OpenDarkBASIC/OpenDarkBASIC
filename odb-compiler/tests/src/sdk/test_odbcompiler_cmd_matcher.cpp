@@ -43,7 +43,7 @@ public:
         return cmd_list_add(
             &cmds,
             0,
-            CMD_ARG_VOID,
+            CMD_PARAM_VOID,
             cstr_utf8_view(cstr),
             empty_utf8_view(),
             empty_utf8_view());

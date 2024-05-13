@@ -52,7 +52,7 @@ DBParserTestHarness::addCommand(enum cmd_param_type return_type, const char* nam
 int
 DBParserTestHarness::addCommand(const char* name)
 {
-    return addCommand(CMD_ARG_VOID, name);
+    return addCommand(CMD_PARAM_VOID, name);
 }
 
 int

@@ -24,10 +24,10 @@
             int##bits##_t count, capacity;                                     \
             T             data[1];                                             \
         }* mem;                                                                \
-    }
+    };
 
 #define VEC_DECLARE_API(prefix, T, bits)                                       \
-    VEC(prefix, T, bits);                                                      \
+    VEC(prefix, T, bits)                                                       \
                                                                                \
     /*!                                                                        \
      * @brief This must be called before operating on any vector. Initializes  \

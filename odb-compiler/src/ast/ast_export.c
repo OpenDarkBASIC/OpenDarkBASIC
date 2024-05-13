@@ -36,7 +36,7 @@ write_nodes(
                 n,
                 cmd_name.len,
                 cmd_name.data,
-                ret_type == CMD_ARG_VOID ? "" : "()");
+                ret_type == CMD_PARAM_VOID ? "" : "()");
         }
         break;
         case AST_ASSIGN_VAR: fprintf(fp, "  n%d [label=\"=\"];\n", n); break;

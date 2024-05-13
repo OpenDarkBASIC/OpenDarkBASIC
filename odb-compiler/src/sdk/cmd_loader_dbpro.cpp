@@ -9,19 +9,51 @@ extern "C" {
 #include "LIEF/PE/ResourceNode.hpp"
 
 static enum cmd_param_type
-convert_char_to_type(char c)
+convert_char_to_return_type(char c)
 {
     switch ((enum cmd_param_type)c)
     {
-        case CMD_ARG_FLOAT:
-        case CMD_ARG_STRING:
-        case CMD_ARG_DOUBLE:
-        case CMD_ARG_LONG:
-        case CMD_ARG_DWORD:
-        case CMD_ARG_INTEGER:
-        case CMD_ARG_VOID: return (enum cmd_param_type)c;
+        case CMD_PARAM_VOID:
+        case CMD_PARAM_LONG:
+        case CMD_PARAM_DWORD:
+        case CMD_PARAM_INTEGER:
+        case CMD_PARAM_WORD:
+        case CMD_PARAM_BYTE:
+        case CMD_PARAM_BOOLEAN:
+        case CMD_PARAM_FLOAT:
+        case CMD_PARAM_DOUBLE:
+        case CMD_PARAM_STRING:
+        case CMD_PARAM_ARRAY:
+        case CMD_PARAM_LABEL:
+        case CMD_PARAM_DABEL:
+        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
 
-        case CMD_ARG_ARRAY: break;
+        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
+    }
+    return (enum cmd_param_type)0;
+}
+
+static enum cmd_param_type
+convert_char_to_param_type(char c)
+{
+    switch ((enum cmd_param_type)c)
+    {
+        case CMD_PARAM_VOID:
+        case CMD_PARAM_LONG:
+        case CMD_PARAM_DWORD:
+        case CMD_PARAM_INTEGER:
+        case CMD_PARAM_WORD:
+        case CMD_PARAM_BYTE:
+        case CMD_PARAM_BOOLEAN:
+        case CMD_PARAM_FLOAT:
+        case CMD_PARAM_DOUBLE:
+        case CMD_PARAM_STRING:
+        case CMD_PARAM_ARRAY:
+        case CMD_PARAM_LABEL:
+        case CMD_PARAM_DABEL:
+        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
+
+        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
     }
     return (enum cmd_param_type)0;
 }
@@ -77,6 +109,9 @@ load_dbpro_commands(
             if (utf16_to_utf8(&entry_str, u16v) != 0)
                 goto bad_plugin;
 
+        if (utf8_equal(utf8_view(entry_str), cstr_utf8_view("input%A%?%Variable")))
+                puts("oh no");
+
             /* String has format: <command>%<type>%<c symbol>%<help>
              * Split on '%' into the relevant parts. */
             struct utf8_span cmd_name, type_str, c_symbol, doc;
@@ -91,26 +126,28 @@ load_dbpro_commands(
             if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
             {
                 log_sdk_warn(
-                    "Invalid string table entry in plugin {emph:%s}: %s\n",
-                    ospathc_cstr(filepath),
-                    utf8_cstr(entry_str));
+                    "Invalid string table entry {quote:%s} in plugin "
+                    "{emph:%s}\n",
+                    utf8_cstr(entry_str),
+                    ospathc_cstr(filepath));
                 goto bad_plugin;
             }
 
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
-            enum cmd_param_type return_type = CMD_ARG_VOID;
+            enum cmd_param_type return_type = CMD_PARAM_VOID;
             if (entry_str.data[cmd_name.off + cmd_name.len - 1] == '[')
             {
                 char type_char = entry_str.data[type_str.off];
-                return_type = convert_char_to_type(type_char);
+                return_type = convert_char_to_return_type(type_char);
                 if (return_type == 0)
                 {
                     log_sdk_warn(
-                        "Invalid command argument type {quote:%c} in plugin "
-                        "{emph:%s}\n",
+                        "Invalid command return type {quote:%c} in string "
+                        "{quote:%s} in plugin {emph:%s}\n",
                         type_char,
+                        utf8_cstr(entry_str),
                         ospathc_cstr(filepath));
                     goto bad_plugin;
                 }
@@ -132,10 +169,7 @@ load_dbpro_commands(
                 utf8_span_view(entry_str.data, c_symbol),
                 utf8_span_view(entry_str.data, doc));
             if (cmd < 0)
-            {
                 goto critical_error;
-                return -1;
-            }
 
             /* Parse and add each parameter type to the command. If a character
              * is proceeded by an asterisk "*", then it is an out parameter */
@@ -143,33 +177,39 @@ load_dbpro_commands(
             for (utf8_idx i = 0; i != type_str.len; ++i)
             {
                 char type_char = entry_str.data[type_str.off + i];
-                enum cmd_param_direction direction = CMD_ARG_IN;
-                enum cmd_param_type      type = convert_char_to_type(type_char);
+                enum cmd_param_direction direction = CMD_PARAM_IN;
+                enum cmd_param_type      type
+                    = convert_char_to_param_type(type_char);
 
                 utf8_split(entry_str.data, doc, ',', &param_doc, &doc);
 
                 if (type == 0)
                 {
                     log_sdk_warn(
-                        "Invalid command argument type {quote:%c} in plugin "
-                        "{emph:%s}\n",
+                        "Invalid command argument type {quote:%c} in string "
+                        "{quote:%s} in plugin {emph:%s}\n",
                         type_char,
+                        utf8_cstr(entry_str),
                         ospathc_cstr(filepath));
+                    goto bad_plugin;
                 }
 
-                if (type_str.off + i + 1 < type_str.len
+                if (i + 1 < type_str.len
                     && entry_str.data[type_str.off + i + 1] == '*')
                 {
                     i++;
-                    direction = CMD_ARG_OUT;
+                    direction = CMD_PARAM_OUT;
                 }
 
-                cmd_add_arg(
+                if (cmd_add_param(
                     commands,
                     cmd,
                     type,
                     direction,
-                    utf8_span_view(entry_str.data, param_doc));
+                    utf8_span_view(entry_str.data, param_doc)) != 0)
+                {
+                    goto critical_error;
+                }
             }
         }
 

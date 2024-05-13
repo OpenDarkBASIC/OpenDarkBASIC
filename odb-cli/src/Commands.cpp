@@ -147,7 +147,21 @@ bool
 dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
-        printf("%s\n", utf8_list_cstr(&commands.db_identifiers, i));
+    {
+        enum cmd_param_type ret_type = *vec_get(commands.return_types, i);
+        printf("%c ", ret_type);
+        printf("%s", utf8_list_cstr(&commands.db_identifiers, i));
+        printf("(");
+        struct param_types_list* params = vec_get(commands.param_types, i);
+        struct cmd_param* param;
+        vec_for_each(*params, param)
+        {
+            printf("%c", param->type);
+            if (param->direction == CMD_PARAM_OUT)
+                printf("*");
+        }
+        printf(")\n");
+    }
     log_sdk_info(
         "Wrote %d commands to stdout [--dump-commands]\n",
         cmd_list_count(&commands));

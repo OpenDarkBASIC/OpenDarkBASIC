@@ -36,7 +36,7 @@ TEST_F(NAME, print_command)
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)
 {
-    addCommand(CMD_ARG_LONG, "get dir&");
+    addCommand(CMD_PARAM_LONG, "get dir&");
 
     ASSERT_THAT(parse("OriginalDirectory& = get dir&()"), Eq(0));
 }

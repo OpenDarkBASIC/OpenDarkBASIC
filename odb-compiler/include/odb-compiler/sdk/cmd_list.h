@@ -15,14 +15,21 @@ typedef utf8_idx cmd_idx;
  */
 enum cmd_param_type
 {
-    CMD_PARAM_DWORD = 'D',   /* 32-bit unsigned integer */
-    CMD_PARAM_INTEGER = 'L', /* 32-bit signed integer */
-    CMD_PARAM_LONG = 'R',    /* 64-bit signed integer */
-    CMD_PARAM_FLOAT = 'F',   /* float */
-    CMD_PARAM_DOUBLE = 'O',  /* double */
-    CMD_PARAM_STRING = 'S',  /* char* */
-    CMD_PARAM_ARRAY = 'H',
-    CMD_PARAM_VOID = '0'
+    CMD_PARAM_VOID = '0',
+    CMD_PARAM_LONG = 'R',    /* 8 bytes -- signed int */
+    CMD_PARAM_DWORD = 'D',   /* 4 bytes -- unsigned int */
+    CMD_PARAM_INTEGER = 'L', /* 4 bytes -- signed int */
+    CMD_PARAM_WORD = 'W',    /* 2 bytes -- unsigned int */
+    CMD_PARAM_BYTE = 'Y',    /* 1 byte -- unsigned int */
+    CMD_PARAM_BOOLEAN = 'B', /* 1 byte -- boolean */
+    CMD_PARAM_FLOAT = 'F',   /* 4 bytes -- float */
+    CMD_PARAM_DOUBLE = 'O',  /* 8 bytes -- double */
+    CMD_PARAM_STRING = 'S',  /* 4 bytes -- char* (passed as DWORD on 32-bit) */
+    CMD_PARAM_ARRAY = 'H',   /* 4 bytes -- Pass array address directly */
+    CMD_PARAM_LABEL = 'P',   /* 4 bytes -- ? */
+    CMD_PARAM_DABEL = 'Q',   /* 4 bytes -- ? */
+    CMD_PARAM_ANY = 'X',     /* 4 bytes -- (think reinterpret_cast) */
+    CMD_PARAM_USER_DEFINED_VAR_PTR = 'E', /* 4 bytes */
 };
 
 /* Command arguments can also have out parameters */
@@ -37,23 +44,23 @@ struct cmd_param
 {
     enum cmd_param_type      type;
     enum cmd_param_direction direction;
-    struct utf8_span         doc;
+    //struct utf8_span         doc;
 };
 
-VEC_DECLARE_API(param_type_list, enum cmd_param_type, 32)
 VEC_DECLARE_API(plugin_idxs, int16_t, 16)
-
-VEC_DECLARE_API(param_type_lists, struct param_type_list, 32)
+VEC_DECLARE_API(return_types_list, enum cmd_param_type, 32)
+VEC_DECLARE_API(param_types_list, struct cmd_param, 32)
+VEC_DECLARE_API(param_types_lists, struct param_types_list, 32)
 
 struct cmd_list
 {
-    struct utf8_list        db_identifiers;
-    struct utf8_list        c_identifiers;
-    struct utf8_list        help_files;
-    struct plugin_idxs      plugin_idxs;
-    struct param_type_list  return_types;
-    struct param_type_lists param_types;
-    char                    longest_command;
+    struct utf8_list         db_identifiers;
+    struct utf8_list         c_identifiers;
+    struct utf8_list         help_files;
+    struct plugin_idxs       plugin_idxs;
+    struct return_types_list return_types;
+    struct param_types_lists param_types;
+    char                     longest_command;
 };
 
 static inline void
@@ -63,16 +70,19 @@ cmd_list_init(struct cmd_list* commands)
     utf8_list_init(&commands->c_identifiers);
     utf8_list_init(&commands->help_files);
     plugin_idxs_init(&commands->plugin_idxs);
-    param_type_list_init(&commands->return_types);
-    param_type_lists_init(&commands->param_types);
+    return_types_list_init(&commands->return_types);
+    param_types_lists_init(&commands->param_types);
     commands->longest_command = 0;
 }
 
 static inline void
 cmd_list_deinit(struct cmd_list* commands)
 {
-    param_type_lists_deinit(&commands->param_types);
-    param_type_list_deinit(&commands->return_types);
+    struct param_types_list* params;
+    vec_for_each(commands->param_types, params)
+        param_types_list_deinit(params);
+    param_types_lists_deinit(&commands->param_types);
+    return_types_list_deinit(&commands->return_types);
     plugin_idxs_deinit(&commands->plugin_idxs);
     utf8_list_deinit(&commands->help_files);
     utf8_list_deinit(&commands->c_identifiers);

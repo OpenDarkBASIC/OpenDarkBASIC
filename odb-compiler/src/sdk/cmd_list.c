@@ -2,8 +2,10 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/utf8_list.h"
 
-VEC_DEFINE_API(param_type_list, enum cmd_param_type, 32)
 VEC_DEFINE_API(plugin_idxs, int16_t, 16)
+VEC_DEFINE_API(return_types_list, enum cmd_param_type, 32)
+VEC_DEFINE_API(param_types_list, struct cmd_param, 32)
+VEC_DEFINE_API(param_types_lists, struct param_types_list, 32)
 
 static int
 handle_duplicate_identifier(struct utf8_view identifier)
@@ -22,7 +24,7 @@ cmd_list_add(
     struct utf8_view    c_symbol,
     struct utf8_view    help_file)
 {
-    struct param_type_list* param_types;
+    struct param_types_list* param_types;
     utf8_idx               insert
         = utf8_lower_bound(&commands->db_identifiers, db_identifier);
 
@@ -43,13 +45,13 @@ cmd_list_add(
         goto help_file_failed;
     if (plugin_idxs_insert(&commands->plugin_idxs, insert, plugin_ref) < 0)
         goto plugin_ref_failed;
-    if (param_type_list_insert(&commands->return_types, insert, return_type)
+    if (return_types_list_insert(&commands->return_types, insert, return_type)
         < 0)
         goto return_type_failed;
-    param_types = param_type_lists_emplace(&commands->param_types);
+    param_types = param_types_lists_emplace(&commands->param_types);
     if (param_types == NULL)
         goto param_types_failed;
-    param_type_list_init(param_types);
+    param_types_list_init(param_types);
 
     if (commands->longest_command < db_identifier.len)
         commands->longest_command = db_identifier.len;
@@ -57,7 +59,7 @@ cmd_list_add(
     return insert;
 
 param_types_failed:
-    param_type_list_erase(commands->return_types, insert);
+    return_types_list_erase(commands->return_types, insert);
 return_type_failed:
     plugin_idxs_erase(commands->plugin_idxs, insert);
 plugin_ref_failed:
@@ -78,7 +80,15 @@ cmd_add_param(
     enum cmd_param_direction direction,
     struct utf8_view         doc)
 {
-    return -1;
+    struct param_types_list* params = vec_get(commands->param_types, cmd_ref);
+    struct cmd_param* param = param_types_list_emplace(params);
+    if (param == NULL)
+        return -1;
+
+    param->type = type;
+    param->direction = direction;
+
+    return 0;
 }
 
 cmd_idx
