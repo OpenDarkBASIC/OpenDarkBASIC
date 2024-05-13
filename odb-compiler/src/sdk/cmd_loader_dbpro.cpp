@@ -109,7 +109,8 @@ load_dbpro_commands(
             if (utf16_to_utf8(&entry_str, u16v) != 0)
                 goto bad_plugin;
 
-        if (utf8_equal(utf8_view(entry_str), cstr_utf8_view("input%A%?%Variable")))
+            if (utf8_equal(
+                    utf8_view(entry_str), cstr_utf8_view("input%A%?%Variable")))
                 puts("oh no");
 
             /* String has format: <command>%<type>%<c symbol>%<help>
@@ -191,7 +192,9 @@ load_dbpro_commands(
                         type_char,
                         utf8_cstr(entry_str),
                         ospathc_cstr(filepath));
-                    goto bad_plugin;
+                    /* Skip command, but plugin is still usable hopefully */
+                    cmd_list_erase(commands, cmd);
+                    continue;
                 }
 
                 if (i + 1 < type_str.len
@@ -202,11 +205,12 @@ load_dbpro_commands(
                 }
 
                 if (cmd_add_param(
-                    commands,
-                    cmd,
-                    type,
-                    direction,
-                    utf8_span_view(entry_str.data, param_doc)) != 0)
+                        commands,
+                        cmd,
+                        type,
+                        direction,
+                        utf8_span_view(entry_str.data, param_doc))
+                    != 0)
                 {
                     goto critical_error;
                 }

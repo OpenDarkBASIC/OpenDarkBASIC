@@ -25,7 +25,7 @@ cmd_list_add(
     struct utf8_view    help_file)
 {
     struct param_types_list* param_types;
-    utf8_idx               insert
+    utf8_idx                 insert
         = utf8_lower_bound(&commands->db_identifiers, db_identifier);
 
     if (insert < utf8_list_count(&commands->db_identifiers))
@@ -72,6 +72,18 @@ db_identifier_failed:
     return -1;
 }
 
+void
+cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx)
+{
+    param_types_list_deinit(vec_get(commands->param_types, cmd_idx));
+    param_types_lists_erase(commands->param_types, cmd_idx);
+    return_types_list_erase(commands->return_types, cmd_idx);
+    plugin_idxs_erase(commands->plugin_idxs, cmd_idx);
+    utf8_list_erase(&commands->help_files, cmd_idx);
+    utf8_list_erase(&commands->c_identifiers, cmd_idx);
+    utf8_list_erase(&commands->db_identifiers, cmd_idx);
+}
+
 int
 cmd_add_param(
     struct cmd_list*         commands,
@@ -81,7 +93,7 @@ cmd_add_param(
     struct utf8_view         doc)
 {
     struct param_types_list* params = vec_get(commands->param_types, cmd_ref);
-    struct cmd_param* param = param_types_list_emplace(params);
+    struct cmd_param*        param = param_types_list_emplace(params);
     if (param == NULL)
         return -1;
 

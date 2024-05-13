@@ -44,7 +44,7 @@ struct cmd_param
 {
     enum cmd_param_type      type;
     enum cmd_param_direction direction;
-    //struct utf8_span         doc;
+    // struct utf8_span         doc;
 };
 
 VEC_DECLARE_API(plugin_idxs, int16_t, 16)
@@ -97,6 +97,9 @@ cmd_list_add(
     struct utf8_view    db_identifier,
     struct utf8_view    c_symbol,
     struct utf8_view    help_file);
+
+void
+cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx);
 
 ODBCOMPILER_PUBLIC_API int
 cmd_add_param(
