@@ -117,6 +117,11 @@ end_quote_style(void)
     return COL_RESET "'";
 }
 static const char*
+underline_style(void)
+{
+    return FGB_BLUE;
+}
+static const char*
 reset_style(void)
 {
     return COL_RESET;
@@ -279,4 +284,184 @@ log_vprogress(
         buf[0] = '\0';
 
     log_vimpl(1, buf, group, fmt, ap);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+log_flc(
+    const char*      severity,
+    const char*      filename,
+    const char*      source,
+    struct utf8_span location,
+    const char*      fmt,
+    ...)
+{
+    utf8_idx     i;
+    utf8_idx     l1, c1;
+    struct varef args;
+
+    l1 = 1, c1 = 1;
+    for (i = 0; i != location.off; i++)
+    {
+        c1++;
+        if (source[i] == '\n')
+            l1++, c1 = 1;
+    }
+
+    fprintf_with_color(stderr, "{emph:%s:%d:%d:} ", filename, l1, c1);
+    fprintf_with_color(stderr, severity);
+
+    va_start(args.ap, fmt);
+    vfprintf_with_color(stderr, fmt, &args);
+    va_end(args.ap);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+log_excerpt(const char* filename, const char* source, struct utf8_span loc)
+{
+    utf8_idx         i;
+    utf8_idx         l1, c1, l2, c2;
+    utf8_idx         indent, max_indent;
+    utf8_idx         gutter_indent;
+    utf8_idx         line;
+    struct utf8_span block;
+
+    /* Calculate line column as well as beginning of block. The goal is to make
+     * "block" point to the first character in the line that contains the
+     * location. */
+    l1 = 1, c1 = 1, block.off = 0;
+    for (i = 0; i != loc.off; i++)
+    {
+        c1++;
+        if (source[i] == '\n')
+            l1++, c1 = 1, block.off = i + 1;
+    }
+
+    /* Calculate line/column of where the location ends */
+    l2 = l1, c2 = c1;
+    for (i = 0; i != loc.len; i++)
+    {
+        c2++;
+        if (source[loc.off + i] == '\n')
+            l2++, c2 = 1;
+    }
+
+    /* Find the end of the line for block */
+    block.len = loc.off - block.off + loc.len;
+    for (; source[loc.off + i]; block.len++, i++)
+        if (source[loc.off + i] == '\n')
+            break;
+
+    /* We also keep track of the minimum indentation. This is used to unindent
+     * the block of code as much as possible when printing out the excerpt. */
+    max_indent = 10000;
+    for (i = 0; i != block.len;)
+    {
+        indent = 0;
+        for (; i != block.len; ++i, ++indent)
+        {
+            if (source[block.off + i] != ' ' && source[block.off + i] != '\t')
+                break;
+        }
+
+        if (max_indent > indent)
+            max_indent = indent;
+
+        while (i != block.len)
+            if (source[block.off + i++] == '\n')
+                break;
+    }
+
+    /* Unindent columns */
+    c1 -= max_indent;
+    c2 -= max_indent;
+
+    /* Find width of the largest line number. This sets the indentation of the
+     * gutter */
+    gutter_indent = snprintf(NULL, 0, "%d", l2);
+    gutter_indent += 2; /* Padding on either side of the line number */
+
+    /* Print line number, gutter, and block of code */
+    line = l1;
+    for (i = 0; i != block.len;)
+    {
+        fprintf(stderr, "%*d | ", gutter_indent - 1, line);
+
+        if (i >= loc.off - block.off && i <= loc.off - block.off + loc.len)
+            fprintf(stderr, "%s", underline_style());
+
+        indent = 0;
+        while (i != block.len)
+        {
+            if (i == loc.off - block.off)
+                fprintf(stderr, "%s", underline_style());
+            if (i == loc.off - block.off + loc.len)
+                fprintf(stderr, "%s", reset_style());
+
+            if (indent++ >= max_indent)
+                putc(source[block.off + i], stderr);
+
+            if (source[block.off + i++] == '\n')
+            {
+                if (i >= loc.off - block.off
+                    && i <= loc.off - block.off + loc.len)
+                    fprintf(stderr, "%s", reset_style());
+                break;
+            }
+        }
+        line++;
+    }
+    fprintf(stderr, "%s\n", reset_style());
+
+    /* print underline */
+    if (c2 > c1)
+    {
+        fprintf(stderr, "%*s|%*s", gutter_indent, "", c1, "");
+        fprintf(stderr, "%s", underline_style());
+        putc('^', stderr);
+        for (i = c1 + 1; i < c2; ++i)
+            putc('~', stderr);
+        fprintf(stderr, "%s", reset_style());
+    }
+    else
+    {
+        utf8_idx col, max_col;
+
+        fprintf(stderr, "%*s| ", gutter_indent, "");
+        fprintf(stderr, "%s", underline_style());
+        for (i = 1; i < c2; ++i)
+            putc('~', stderr);
+        for (; i < c1; ++i)
+            putc(' ', stderr);
+        putc('^', stderr);
+
+        /* Have to find length of the longest line */
+        col = 1, max_col = 1;
+        for (i = 0; i != block.len; ++i)
+        {
+            if (max_col < col)
+                max_col = col;
+            col++;
+            if (source[block.off + i] == '\n')
+                col = 1;
+        }
+        max_col -= max_indent;
+
+        for (i = c1 + 1; i < max_col; ++i)
+            putc('~', stderr);
+        fprintf(stderr, "%s", reset_style());
+    }
+
+    putc('\n', stderr);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+log_binop_excerpt(
+    const char*      filename,
+    struct utf8_view lhs,
+    struct utf8_view op,
+    struct utf8_view rhs)
+{
 }

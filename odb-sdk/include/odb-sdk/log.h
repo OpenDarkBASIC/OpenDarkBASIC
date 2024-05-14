@@ -56,11 +56,11 @@ log_err(const char* group, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_verr(group, fmt, ap); va_end(ap); }
 
 /* Location logging functions ---------------------------------------------- */
-ODBSDK_PRINTF_FORMAT(4, 5) ODBSDK_PUBLIC_API void
-log_flc(const char* severity, const char* filename, struct utf8_view location, const char* fmt, ...);
+ODBSDK_PRINTF_FORMAT(5, 6) ODBSDK_PUBLIC_API void
+log_flc(const char* severity, const char* filename, const char* source, struct utf8_span location, const char* fmt, ...);
 
 ODBSDK_PUBLIC_API void
-log_excerpt(const char* filename, struct utf8_view location);
+log_excerpt(const char* filename, const char* source, struct utf8_span location);
 
 ODBSDK_PUBLIC_API void
 log_binop_excerpt(const char* filename, struct utf8_view lhs, struct utf8_view op, struct utf8_view rhs);

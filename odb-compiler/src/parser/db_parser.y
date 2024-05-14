@@ -15,6 +15,13 @@
     typedef void* dbscan_t;
     typedef struct dbpstate dbpstate;
     struct ast;
+
+    struct parse_param
+    {
+        const char* filename;
+        const char* source;
+        struct ast* ast;
+    };
 }
 
 /* Gets inserted into db_parser.y.c */
@@ -90,7 +97,7 @@
  * Modifies the dbparse() function to include a parameter for passing in the
  * root node of the AST. This is how we get the result out of the parser.
  */
-%parse-param {struct ast* ast}
+%parse-param {struct parse_param* ctx}
 
 /* This is the union that will become known as DBSTYPE in the generated code */
 %union {
@@ -148,12 +155,12 @@ sep: '\n' | ':' | ';' ;
 seps: seps sep | sep;
 maybe_seps: seps | ;
 program
-  : maybe_seps block maybe_seps             { ast_set_root(ast, $2); }
+  : maybe_seps block maybe_seps             { ast_set_root(ctx->ast, $2); }
   | maybe_seps                              {}
   ;
 block
-  : block seps stmt                         { $$ = $1; ast_block_append(ast, $$, $3, @$); }
-  | stmt                                    { $$ = ast_block(ast, $1, @$); }
+  : block seps stmt                         { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
+  | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 stmt
   : const_decl                              { $$ = $1; }
@@ -166,45 +173,45 @@ expr
   | literal                                 { $$ = $1; }
   ;
 arglist
-  : arglist ',' expr                        { $$ = $1; ast_arglist_append(ast, $$, $3, @$); }
-  | expr                                    { $$ = ast_arglist(ast, $1, @$); }
+  : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->ast, $$, $3, @$); }
+  | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
   ;
 const_decl
-  : CONSTANT annotated_identifier expr      { $$ = ast_const_decl(ast, $2, $3, @$); }
-  | CONSTANT annotated_identifier '=' expr  { $$ = ast_const_decl(ast, $2, $4, @$); }
+  : CONSTANT annotated_identifier expr      { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
+  | CONSTANT annotated_identifier '=' expr  { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
 command_stmt
-  : COMMAND                                 { $$ = ast_command(ast, $1, -1, @$); }
-  | COMMAND arglist                         { $$ = ast_command(ast, $1, $2, @$); }
-  | COMMAND '(' ')'                         { $$ = ast_command(ast, $1, -1, @$); }
+  : COMMAND                                 { $$ = ast_command(ctx->ast, $1, -1, @$); }
+  | COMMAND arglist                         { $$ = ast_command(ctx->ast, $1, $2, @$); }
+  | COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
 //| COMMAND '(' arglist ')'  <-- this case is already handled by expr
   ;
 // Commands appearing as expressions must be csalled with arguments in brackets
 command_expr
-  : COMMAND '(' ')'                         { $$ = ast_command(ast, $1, -1, @$); }
-  | COMMAND '(' arglist ')'                 { $$ = ast_command(ast, $1, $3, @$); }
+  : COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
+  | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : var_ref '=' expr                        { $$ = ast_assign_var(ast, $1, $3, @$); }
+  : var_ref '=' expr                        { $$ = ast_assign_var(ctx->ast, $1, $3, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;
 var_ref
   : annotated_identifier                    { $$ = $1; }
 literal
-  : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ast, $1, @$); }
-  | INTEGER_LITERAL                         { $$ = ast_integer_literal(ast, $1, @$); }
-  | STRING_LITERAL                          { $$ = ast_string_literal(ast, $1, @$); }
+  : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
+  | INTEGER_LITERAL                         { $$ = ast_integer_literal(ctx->ast, $1, @$); }
+  | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
   ;
 annotated_identifier
-  : IDENTIFIER %prec NO_ANNOTATION          { $$ = ast_identifier(ast, $1, TA_NONE, @$); }
-  | IDENTIFIER '&'                          { $$ = ast_identifier(ast, $1, TA_INT64, @$); }
-  | IDENTIFIER '%'                          { $$ = ast_identifier(ast, $1, TA_INT16, @$); }
-  | IDENTIFIER '!'                          { $$ = ast_identifier(ast, $1, TA_DOUBLE, @$); }
-  | IDENTIFIER '#'                          { $$ = ast_identifier(ast, $1, TA_FLOAT, @$); }
-  | IDENTIFIER '$'                          { $$ = ast_identifier(ast, $1, TA_STRING, @$); }
+  : IDENTIFIER %prec NO_ANNOTATION          { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
+  | IDENTIFIER '&'                          { $$ = ast_identifier(ctx->ast, $1, TA_INT64, @$); }
+  | IDENTIFIER '%'                          { $$ = ast_identifier(ctx->ast, $1, TA_INT16, @$); }
+  | IDENTIFIER '!'                          { $$ = ast_identifier(ctx->ast, $1, TA_DOUBLE, @$); }
+  | IDENTIFIER '#'                          { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
+  | IDENTIFIER '$'                          { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
   ;
 %%
 
@@ -221,76 +228,43 @@ static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
     //location->printUnderlinedSection(Log::info);
 }
 
-static int yyreport_syntax_error(const yypcontext_t *ctx, struct ast* ast) 
+static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* parse_param) 
 {
-  int res = 0;
-  //YYLOCATION_PRINT (stderr, *yypcontext_location (ctx));
-  fprintf (stderr, ": syntax error");
-  // Report the tokens expected at this point.
-  {
     enum { TOKENMAX = 5 };
     yysymbol_kind_t expected[TOKENMAX];
-    int n = yypcontext_expected_tokens (ctx, expected, TOKENMAX);
-    if (n < 0)
-      // Forward errors to yyparse.
-      res = n;
-    else
-      for (int i = 0; i < n; ++i)
-        fprintf (stderr, "%s %s",
-                 i == 0 ? ": expected" : " or", yysymbol_name (expected[i]));
-  }
-  // Report the unexpected token.
-  {
-    yysymbol_kind_t lookahead = yypcontext_token (ctx);
+    yysymbol_kind_t lookahead = yypcontext_token(ctx);
+    int res = 0;
+    int n = yypcontext_expected_tokens(ctx, expected, TOKENMAX);
+    
     if (lookahead != YYSYMBOL_YYEMPTY)
-      fprintf (stderr, " before %s", yysymbol_name (lookahead));
-  }
-  fprintf (stderr, "\n");
-  return res;
-/*
-    std::pair<dbtokentype, std::string> unexpectedToken;
-    unexpectedToken.first = (dbtokentype)yypcontext_token(ctx);
-    if (unexpectedToken.first != TOK_DBEMPTY)
-        unexpectedToken.second = yysymbol_name((yysymbol_kind_t)unexpectedToken.first);
+    {
+        log_flc(
+            "{e:syntax error: }",
+            parse_param->filename,
+            parse_param->source,
+            *yypcontext_location(ctx),
+            "Unexpected %s\n",
+            yysymbol_name(lookahead));
+        log_excerpt(parse_param->filename, parse_param->source, *yypcontext_location(ctx));
+    }
 
-    enum { TOKENMAX = 10 };
-    std::vector<std::pair<dbtokentype, std::string>> expectedTokens;
-    dbtokentype expected[TOKENMAX];
-    int n = yypcontext_expected_tokens(ctx, (yysymbol_kind_t*)expected, TOKENMAX);
     if (n < 0)
-        // Forward errors to yyparse.
-        ret = n;
+        /* Forward errors to yyparse. */
+        res = n;
     else
-        for (int i = 0; i < n; ++i)
-            expectedTokens.push_back({expected[i], yysymbol_name((yysymbol_kind_t)expected[i])});
-
-    Reference<ast::SourceLocation> location = driver->newLocation(loc);
-
-    ColorState state(Log::info, Log::FG_WHITE);
-    Log::info.print(Log::FG_BRIGHT_RED, "[db parser] ");
-    Log::info.print(Log::FG_BRIGHT_WHITE, "%s: ", location->getFileLineColumn().c_str());
-    Log::info.print(Log::FG_BRIGHT_RED, "syntax error: ");
-
-    if (unexpectedToken.first != TOK_DBEMPTY)
     {
-        Log::info.print("unexpected ");
-        Log::info.print(Log::FG_BRIGHT_WHITE, "%s", unexpectedToken.second.c_str());
-    }
-    if (expectedTokens.size() > 0)
-    {
-        Log::info.print(", expected ");
-        for (int i = 0; i != (int)expectedTokens.size(); ++i)
-        {
-            if (i != 0)
-                Log::info.print(" or ");
-            Log::info.print(Log::FG_BRIGHT_WHITE, expectedTokens[i].second.c_str());
-        }
-        Log::info.print("\n");
+        int i;
+        log_flc(
+            "{n:note: }",
+            parse_param->filename,
+            parse_param->source,
+            *yypcontext_location(ctx),
+            "Expected ");
+        for (i = 0; i < n; ++i)
+            log_raw("%s%s", i ? " or " : "", yysymbol_name(expected[i]));
+        log_raw("\n");
     }
 
-    location->printUnderlinedSection(Log::info);
-
-    return ret;*/
-    return 0;
+  return res;
 }
 

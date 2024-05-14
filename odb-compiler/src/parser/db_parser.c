@@ -166,6 +166,7 @@ int
 db_parse(
     struct db_parser*      parser,
     struct ast*            ast,
+    const char*            filename,
     struct db_source       source,
     const struct cmd_list* commands)
 {
@@ -173,6 +174,7 @@ db_parse(
     YY_BUFFER_STATE    buffer_state;
     int                parse_result = -1;
     DBLTYPE            scanner_location = empty_utf8_span();
+    struct parse_param parse_param = {filename, source.text.data, ast};
 
     buffer_state = db_scan_buffer(
         source.text.data, source.text.len + 2, parser->scanner);
@@ -211,7 +213,7 @@ db_parse(
             token->pushed_char,
             &token->pushed_value,
             &token->pushed_location,
-            ast);
+            &parse_param);
     } while (parse_result == YYPUSH_MORE);
 
 parse_failed:

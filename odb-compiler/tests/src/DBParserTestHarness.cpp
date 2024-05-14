@@ -62,5 +62,5 @@ DBParserTestHarness::parse(const char* code)
         db_source_close(&src);
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
         return -1;
-    return db_parse(&p, &ast, src, &cmds);
+    return db_parse(&p, &ast, "test", src, &cmds);
 }

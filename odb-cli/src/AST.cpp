@@ -52,7 +52,11 @@ parseDBA(const std::vector<std::string>& args)
 
         ast_init(&result.ast);
         if (db_parse(
-                &result.parser, &result.ast, result.source, getCommandList())
+                &result.parser,
+                &result.ast,
+                arg.c_str(),
+                result.source,
+                getCommandList())
             != 0)
             goto parse_failed;
 
