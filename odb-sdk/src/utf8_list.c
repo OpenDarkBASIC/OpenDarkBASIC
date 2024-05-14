@@ -69,40 +69,40 @@ utf8_list_add(struct utf8_list* l, struct utf8_view str)
 int
 utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in)
 {
-    struct utf8_span* slotref;
+    struct utf8_span* slotspan;
 
     if (grow(l, in.len) < 0)
         return -1;
 
-    slotref = &UTF8_LIST_TABLE_PTR(l)[-insert];
+    slotspan = &UTF8_LIST_TABLE_PTR(l)[-insert];
     if (insert < l->count)
     {
-        struct utf8_span* ref;
+        struct utf8_span* span;
         int               i;
 
         /* Move strings to make space for str.len+1 */
         memmove(
-            l->data + slotref->off + in.len + 1,
-            l->data + slotref->off,
-            l->str_used - slotref->off);
+            l->data + slotspan->off + in.len + 1,
+            l->data + slotspan->off,
+            l->str_used - slotspan->off);
 
-        /* Move ref table */
+        /* Move span table */
         memmove(
             (struct utf8_span*)(l->data + l->capacity) - l->count - 1,
             (struct utf8_span*)(l->data + l->capacity) - l->count,
             sizeof(struct utf8_span) * (l->count - insert));
 
         /* Calculate new offsets */
-        for (ref = slotref - 1, i = l->count - insert; i; i--, ref--)
-            ref->off += in.len + 1;
+        for (span = slotspan - 1, i = l->count - insert; i; i--, span--)
+            span->off += in.len + 1;
     }
     else
     {
-        slotref->off = l->str_used;
+        slotspan->off = l->str_used;
     }
 
-    memcpy(l->data + slotref->off, in.data + in.off, in.len);
-    slotref->len = in.len;
+    memcpy(l->data + slotspan->off, in.data + in.off, in.len);
+    slotspan->len = in.len;
 
     l->str_used += in.len + 1; /* Potential null terminator */
     l->count++;
@@ -113,13 +113,38 @@ utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in)
 void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 {
-    ODBSDK_DEBUG_ASSERT(0);
+    struct utf8_span* span = &UTF8_LIST_TABLE_PTR(l)[-idx];
+    utf8_idx          str_gap = span->len + 1;
+    if (idx < l->count - 1)
+    {
+        int i;
+
+        /* Move strings to fill gap */
+        memmove(
+            l->data + span->off,
+            l->data + span->off + str_gap,
+            l->str_used - span->off - str_gap);
+
+        /* Move span table to fill gap */
+        memmove(
+            (struct utf8_span*)(l->data + l->capacity) - l->count + 1,
+            (struct utf8_span*)(l->data + l->capacity) - l->count,
+            sizeof(struct utf8_span) * (l->count - idx - 1));
+
+        /* Calculate new offsets */
+        for (i = l->count - idx - 1; i; i--, span--)
+            span->off -= str_gap;
+    }
+
+    l->str_used -= str_gap;
+    l->count--;
 }
 
 static int
 lexicographically_less(struct utf8_view s1, struct utf8_view s2)
 {
-    int cmp = memcmp(s1.data, s2.data, s1.len < s2.len ? s1.len : s2.len);
+    int cmp = memcmp(
+        s1.data + s1.off, s2.data + s2.off, s1.len < s2.len ? s1.len : s2.len);
     if (cmp == 0)
         return s1.len < s2.len;
     return cmp < 0;

@@ -106,6 +106,32 @@ TEST_F(NAME, insert_string_moves_memory_correctly)
     }
 }
 
+TEST_F(NAME, erase_string_moves_memory_correctly)
+{
+    for (int i = 0; i != 32; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i);
+        ASSERT_THAT(utf8_list_add(&l, U(buf)), Eq(0));
+    }
+
+    utf8_list_erase(&l, 8);
+    ASSERT_THAT(utf8_list_count(&l), Eq(31));
+
+    for (int i = 0; i != 8; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i);
+        ASSERT_THAT(utf8_list_cstr(&l, i), StrEq(buf));
+    }
+    for (int i = 8; i != 31; ++i)
+    {
+        char buf[32];
+        sprintf(buf, "test%d", i + 1);
+        ASSERT_THAT(utf8_list_cstr(&l, i), StrEq(buf));
+    }
+}
+
 TEST_F(NAME, add_string_after_inserting_moves_memory_correctly)
 {
     for (int i = 0; i != 32; ++i)

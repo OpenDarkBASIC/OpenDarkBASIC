@@ -48,7 +48,8 @@ cmd_list_add(
     if (return_types_list_insert(&commands->return_types, insert, return_type)
         < 0)
         goto return_type_failed;
-    param_types = param_types_lists_emplace(&commands->param_types);
+    param_types
+        = param_types_lists_insert_emplace(&commands->param_types, insert);
     if (param_types == NULL)
         goto param_types_failed;
     param_types_list_init(param_types);
@@ -75,6 +76,13 @@ db_identifier_failed:
 void
 cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx)
 {
+    /* The max length may have changed if we remove a command that is equal to
+     * the max */
+    int              recalc_longest_command = 0;
+    struct utf8_span span = utf8_list_span(&commands->db_identifiers, cmd_idx);
+    if (span.len == commands->longest_command)
+        recalc_longest_command = 1;
+
     param_types_list_deinit(vec_get(commands->param_types, cmd_idx));
     param_types_lists_erase(commands->param_types, cmd_idx);
     return_types_list_erase(commands->return_types, cmd_idx);
@@ -82,6 +90,18 @@ cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx)
     utf8_list_erase(&commands->help_files, cmd_idx);
     utf8_list_erase(&commands->c_identifiers, cmd_idx);
     utf8_list_erase(&commands->db_identifiers, cmd_idx);
+
+    if (recalc_longest_command)
+    {
+        int i;
+        commands->longest_command = 0;
+        for (i = 0; i != cmd_list_count(commands); ++i)
+        {
+            span = utf8_list_span(&commands->db_identifiers, i);
+            if (commands->longest_command < span.len)
+                commands->longest_command = span.len;
+        }
+    }
 }
 
 int

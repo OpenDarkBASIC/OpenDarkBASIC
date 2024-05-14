@@ -28,7 +28,7 @@ public:
 
 TEST_F(NAME, can_append_null_bytes)
 {
-    struct utf8_view eob = {"", 1};
+    struct utf8_view eob = {"", 0, 1};
     utf8_set_cstr(&str, "test");
     EXPECT_THAT(str.len, Eq(4));
 
