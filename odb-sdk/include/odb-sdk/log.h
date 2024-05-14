@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-sdk/config.h"
+#include "odb-sdk/utf8.h"
 #include <stdarg.h>
 
 ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(1, 0) void
@@ -53,6 +54,16 @@ log_verr(const char* group, const char* fmt, va_list ap)
 ODBSDK_PRINTF_FORMAT(2, 3) static inline void
 log_err(const char* group, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_verr(group, fmt, ap); va_end(ap); }
+
+/* Location logging functions ---------------------------------------------- */
+ODBSDK_PRINTF_FORMAT(4, 5) ODBSDK_PUBLIC_API void
+log_flc(const char* severity, const char* filename, struct utf8_view location, const char* fmt, ...);
+
+ODBSDK_PUBLIC_API void
+log_excerpt(const char* filename, struct utf8_view location);
+
+ODBSDK_PUBLIC_API void
+log_binop_excerpt(const char* filename, struct utf8_view lhs, struct utf8_view op, struct utf8_view rhs);
 
 /* SDK logging functions --------------------------------------------------- */
 ODBSDK_PRINTF_FORMAT(3, 4) static inline void
