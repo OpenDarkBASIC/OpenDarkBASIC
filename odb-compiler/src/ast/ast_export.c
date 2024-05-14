@@ -35,7 +35,7 @@ write_nodes(
                 "label=\"%.*s%s\"];\n",
                 n,
                 cmd_name.len,
-                cmd_name.data,
+                cmd_name.data + cmd_name.off,
                 ret_type == CMD_PARAM_VOID ? "" : "()");
         }
         break;
@@ -44,7 +44,7 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", fontcolor=\"purple\", "
-                "label=\"\\\"%.*s%.*s\\\"\"];\n",
+                "label=\"%.*s%.*s\"];\n",
                 n,
                 nd->identifier.name.len,
                 source->text.data + nd->identifier.name.off,
@@ -106,12 +106,23 @@ ast_export_dot(
     FILE* fp = fopen(filepath.data, "w");
     if (fp == NULL)
         return -1;
+    ast_export_dot_fp(ast, fp, source, commands);
+    fclose(fp);
 
+    return 0;
+}
+
+int
+ast_export_dot_fp(
+    const struct ast*       ast,
+    FILE*                   fp,
+    const struct db_source* source,
+    const struct cmd_list*  commands)
+{
     fprintf(fp, "digraph ast {\n");
     write_nodes(ast, 0, fp, source, commands);
     write_edges(ast, fp);
     fprintf(fp, "}\n");
-    fclose(fp);
 
     return 0;
 }

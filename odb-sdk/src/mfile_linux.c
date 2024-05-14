@@ -50,7 +50,7 @@ mfile_map_cow_with_extra_padding(
     mf->address = mmap(
         NULL,
         (size_t)(stbuf.st_size + padding),
-        PROT_READ,
+        PROT_READ | PROT_WRITE,
         MAP_PRIVATE | MAP_NORESERVE,
         fd,
         0);

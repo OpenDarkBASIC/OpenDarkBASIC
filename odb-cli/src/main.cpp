@@ -1,6 +1,7 @@
 #include "odb-cli/Actions.argdef.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-cli/AST.hpp"
 
 extern "C" {
 #include "odb-sdk/init.h"
@@ -19,9 +20,11 @@ main(int argc, char** argv)
 
     initSDK();
     initCommands();
+    initAST();
 
     success = parseCommandLine(argc, argv);
 
+    deinitAST();
     deinitCommands();
     deinitSDK();
 

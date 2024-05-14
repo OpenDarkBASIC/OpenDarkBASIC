@@ -20,7 +20,7 @@ argdefgen_target (odb-cli_argdef
 
 add_executable (odb-cli
     ${argdefgen_odb-cli_argdef_OUTPUTS}
-    #"src/AST.cpp"
+    "src/AST.cpp"
     "src/Banner.cpp"
     "src/BuildInfo.cpp"
     "src/Codegen.cpp"

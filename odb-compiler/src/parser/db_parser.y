@@ -171,6 +171,7 @@ arglist
   ;
 const_decl
   : CONSTANT annotated_identifier expr      { $$ = ast_const_decl(ast, $2, $3, @$); }
+  | CONSTANT annotated_identifier '=' expr  { $$ = ast_const_decl(ast, $2, $4, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.

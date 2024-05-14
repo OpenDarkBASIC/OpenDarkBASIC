@@ -1,6 +1,6 @@
 %source-preamble {
 #include "odb-cli/Actions.argdef.hpp"
-//#include "odb-cli/AST.hpp"
+#include "odb-cli/AST.hpp"
 #include "odb-cli/Banner.hpp"
 #include "odb-cli/BuildInfo.hpp"
 #include "odb-cli/Commands.hpp"
@@ -153,43 +153,39 @@ section sdk:
 
 
 ###############################################################################
-#section parser:
-#  info: .dba and .dbpro file related options
-#
-#  init-command-matcher:
-#    func: initCommandMatcher
-#    runafter: load-commands
-#
-#  dba():
-#    help: Parse DBA source file(s). The first file listed will become the 'main'
-#          file, i.e. where execution starts.
-#    args: <file> [files...]
-#    func: parseDBA
-#    runafter: init-command-matcher
-#
-#  dbpro()[dba]:
-#    help: Load DBPro project (.dbpro) and parse all DBA files in it.
-#    args: <file>
-#    func: parseDBPro
-#    runafter: init-command-matcher
-#
-#  input(i)[dba, dbpro]:
-#    help: Specify an input. Can be a .dbpro file or a list of .dba files.
-#    args: <file> [files...]
-#    func: autoDetectInput
-#    runafter: init-command-matcher
-#
-#  dump-ast-dot():
-#    help: Dump AST to Graphviz DOT format. The default file is stdout.
-#    args: [file]
-#    func: dumpASTDOT
-#    runafter: dba, dbpro, input
-#
-#  dump-ast-json():
-#    help: Dump AST to JSON format. The default file is stdout.
-#    args: [file]
-#    func: dumpASTJSON
-#    runafter: dba, dbpro, input
+section parser:
+  info: .dba and .dbpro file related options
+
+  dba():
+    help: Parse DBA source file(s). The first file listed will become the 'main'
+          file, i.e. where execution starts.
+    args: <file> [files...]
+    func: parseDBA
+    runafter: load-commands
+
+  dbpro()[dba]:
+    help: Load DBPro project (.dbpro) and parse all DBA files in it.
+    args: <file>
+    func: parseDBPro
+    runafter: load-commands
+
+  input(i)[dba, dbpro]:
+    help: Specify an input. Can be a .dbpro file or a list of .dba files.
+    args: <file> [files...]
+    func: autoDetectInput
+    runafter: load-commands
+
+  dump-ast-dot():
+    help: Dump AST to Graphviz DOT format. The default file is stdout.
+    args: [file]
+    func: dumpASTDOT
+    runafter: dba, dbpro, input
+
+  #dump-ast-json():
+  #  help: Dump AST to JSON format. The default file is stdout.
+  #  args: [file]
+  #  func: dumpASTJSON
+  #  runafter: dba, dbpro, input
 
 ###############################################################################
 section codegen:

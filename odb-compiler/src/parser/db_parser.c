@@ -101,9 +101,9 @@ scan_next_token(
                                                          an integer literal */
     {
         cmd_idx          longest_match_cmd_idx;
-        int              i, longest_match_token_idx = 0;
+        int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
-        for (i = 1; candidate.len <= commands->longest_command; ++i)
+        for (i = 0; candidate.len <= commands->longest_command; ++i)
         {
             cmd_idx cmd = cmd_list_find(
                 commands, utf8_span_view(source_text, candidate));
@@ -113,13 +113,20 @@ scan_next_token(
                 longest_match_token_idx = i;
             }
 
-            /* Scan next token */
-            token = token_queue_emplace_realloc(tokens);
-            if (token == NULL)
-                return NULL;
-            token->pushed_char
-                = dblex(&token->pushed_value, scanner_location, scanner);
-            token->pushed_location = *scanner_location;
+            /* Get or scan next token */
+            if (i + 1 >= token_queue_count(*tokens))
+            {
+                token = token_queue_emplace_realloc(tokens);
+                if (token == NULL)
+                    return NULL;
+                token->pushed_char
+                    = dblex(&token->pushed_value, scanner_location, scanner);
+                token->pushed_location = *scanner_location;
+            }
+            else
+            {
+                token = token_queue_peek(*tokens, i + 1);
+            }
 
             /* Handle EOF or scanner error */
             if (token->pushed_char == TOK_END)
@@ -134,7 +141,7 @@ scan_next_token(
         }
 
         /* Merge tokens that matched the longest command */
-        for (i = 1; i < longest_match_token_idx; ++i)
+        for (i = 0; i < longest_match_token_idx; ++i)
         {
             struct token* t1 = token_queue_take(*tokens);
             struct token* t2 = token_queue_peek_read(*tokens);
@@ -144,7 +151,7 @@ scan_next_token(
         }
 
         /* Promote token to a command */
-        if (longest_match_token_idx)
+        if (longest_match_token_idx > -1)
         {
             token = token_queue_peek_read(*tokens);
             token->pushed_char = TOK_COMMAND;

@@ -49,7 +49,8 @@ ast_block(struct ast* ast, int stmt, struct utf8_span location)
 }
 
 int
-ast_block_append(struct ast* ast, int block, int stmt, struct utf8_span location)
+ast_block_append(
+    struct ast* ast, int block, int stmt, struct utf8_span location)
 {
     int n = new_node(ast, AST_BLOCK, location);
     if (n < 0)
@@ -87,7 +88,7 @@ ast_arglist_append(
     while (ast->nodes[arglist].arglist.next != -1)
         arglist = ast->nodes[arglist].arglist.next;
     ast->nodes[arglist].arglist.next = n;
-    ast->nodes[arglist].arglist.expr = expr;
+    ast->nodes[n].arglist.expr = expr;
 
     return n;
 }
@@ -117,7 +118,8 @@ ast_command(
 }
 
 int
-ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location)
+ast_assign_var(
+    struct ast* ast, int var_ref, int expr, struct utf8_span location)
 {
     int n = new_node(ast, AST_ASSIGN_VAR, location);
     if (n < 0)
@@ -130,9 +132,9 @@ ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location
 int
 ast_identifier(
     struct ast*          ast,
-    struct utf8_span      name,
+    struct utf8_span     name,
     enum type_annotation annotation,
-    struct utf8_span      location)
+    struct utf8_span     location)
 {
     int n = new_node(ast, AST_IDENTIFIER, location);
     if (n < 0)

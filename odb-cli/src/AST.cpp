@@ -1,97 +1,130 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Commands.hpp"
-#include "odb-compiler/ast/Block.hpp"
-#include "odb-compiler/ast/Program.hpp"
-#include "odb-compiler/ast/Exporters.hpp"
-#include "odb-compiler/parsers/db/Driver.hpp"
-#include "odb-compiler/commands/CommandMatcher.hpp"
-#include "odb-sdk/Log.hpp"
 
-using namespace odb;
+extern "C" {
+#include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_export.h"
+#include "odb-compiler/parser/db_parser.h"
+#include "odb-compiler/parser/db_source.h"
+#include "odb-sdk/log.h"
+}
 
-static cmd::CommandMatcher cmdMatcher_;
-static Reference<ast::Program> ast_;
-
-// ----------------------------------------------------------------------------
-bool initCommandMatcher(const std::vector<std::string>& args)
+struct result
 {
-    Log::ast(Log::INFO, "Updating command matcher\n");
-    cmdMatcher_.updateFromIndex(getCommandIndex());
+    struct db_source source;
+    struct db_parser parser;
+    struct ast       ast;
+};
 
-    return true;
+static std::vector<result> results;
+
+int
+initAST(void)
+{
+    return 0;
+}
+void
+deinitAST(void)
+{
+    for (auto& result : results)
+    {
+        ast_deinit(&result.ast);
+        db_parser_deinit(&result.parser);
+        db_source_close(&result.source);
+    }
 }
 
 // ----------------------------------------------------------------------------
-bool parseDBA(const std::vector<std::string>& args)
+bool
+parseDBA(const std::vector<std::string>& args)
 {
-    db::FileParserDriver driver;
+    struct db_parser parser;
     for (const auto& arg : args)
     {
-        Log::ast(Log::INFO, "Parsing file `%s`\n", arg.c_str());
-        Reference<ast::Program> program = driver.parse(arg, cmdMatcher_);
-        if (program == nullptr)
-            return false;
+        auto& result = results.emplace_back();
 
-        if (ast_.isNull())
-            ast_ = program;
-        else
-            ast_->body()->merge(program->body());
-    }
+        log_info("[ast] ", "Parsing file {quote:%s}\n", arg.c_str());
+        if (db_source_open_file(&result.source, cstr_ospathc(arg.c_str())) != 0)
+            goto open_source_failed;
 
-    return true;
-}
+        if (db_parser_init(&result.parser) != 0)
+            goto init_parser_failed;
 
-// ----------------------------------------------------------------------------
-ActionHandler parseDBPro(const ArgList& args)
-{
-    return ActionHandler();
-}
+        ast_init(&result.ast);
+        if (db_parse(
+                &result.parser, &result.ast, result.source, getCommandList())
+            != 0)
+            goto parse_failed;
 
-// ----------------------------------------------------------------------------
-ActionHandler autoDetectInput(const ArgList& args)
-{
-    return ActionHandler();
-}
+        continue;
 
-// ----------------------------------------------------------------------------
-bool dumpASTDOT(const std::vector<std::string>& args)
-{
-#if defined(ODBCOMPILER_DOT_EXPORT)
-    if (ast_.isNull())
-    {
-        Log::ast(Log::ERROR, "Error: AST is empty, nothing to dump\n");
+    parse_failed:
+        ast_deinit(&result.ast);
+        db_parser_deinit(&result.parser);
+    init_parser_failed:
+        db_source_close(&result.source);
+    open_source_failed:
+        results.pop_back();
         return false;
     }
 
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+ActionHandler
+parseDBPro(const ArgList& args)
+{
+    return ActionHandler();
+}
+
+// ----------------------------------------------------------------------------
+ActionHandler
+autoDetectInput(const ArgList& args)
+{
+    return ActionHandler();
+}
+
+// ----------------------------------------------------------------------------
+bool
+dumpASTDOT(const std::vector<std::string>& args)
+{
     FILE* outFile = stdout;
     if (!args.empty())
     {
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
         {
-            Log::ast(Log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
+            log_err(
+                "[ast] ",
+                "Failed to open file {quote:%s}: %s\n",
+                args[0].c_str(),
+                strerror(errno));
             return false;
         }
-        Log::ast(Log::INFO, "Dumping AST to Graphviz DOT format: `%s`\n", args[0].c_str());
+        log_info(
+            "[ast] ",
+            "Dumping AST to Graphviz DOT format: {quote:%s}\n",
+            args[0].c_str());
     }
     else
-        Log::ast(Log::INFO, "Dumping AST to Graphviz DOT format\n");
+        log_info("[ast] ", "Dumping AST to Graphviz DOT format\n");
 
-    ast::dumpToDOT(outFile, ast_);
+    for (const auto& result : results)
+        ast_export_dot_fp(
+            &result.ast, outFile, &result.source, getCommandList());
 
     if (!args.empty())
         fclose(outFile);
 
     return true;
-#else
-    Log::ast(Log::ERROR, "Error: odb-compiler was built without DOT export support. Recompile with -DODBCOMPILER_DOT_EXPORT=ON.\n");
-    return false;
-#endif
 }
 
 // ----------------------------------------------------------------------------
-bool dumpASTJSON(const std::vector<std::string>& args)
+bool
+dumpASTJSON(const std::vector<std::string>& args)
 {
+#if 0
     if (ast_ == nullptr)
     {
         Log::ast(Log::ERROR, "Error: AST is empty, nothing to dump\n");
@@ -104,7 +137,10 @@ bool dumpASTJSON(const std::vector<std::string>& args)
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
         {
-            Log::ast(Log::ERROR, "Error: Failed to open file `%s`\n", args[0].c_str());
+            Log::ast(
+                Log::ERROR,
+                "Error: Failed to open file `%s`\n",
+                args[0].c_str());
             return false;
         }
         Log::ast(Log::INFO, "Dumping AST to JSON: `%s`\n", args[0].c_str());
@@ -116,11 +152,6 @@ bool dumpASTJSON(const std::vector<std::string>& args)
 
     if (!args.empty())
         fclose(outFile);
-
+#endif
     return false;
-}
-
-// ----------------------------------------------------------------------------
-odb::ast::Program* getAST() {
-    return ast_;
 }

@@ -153,7 +153,7 @@ dumpCommandNames(const std::vector<std::string>& args)
         printf("%s", utf8_list_cstr(&commands.db_identifiers, i));
         printf("(");
         struct param_types_list* params = vec_get(commands.param_types, i);
-        struct cmd_param* param;
+        struct cmd_param*        param;
         vec_for_each(*params, param)
         {
             printf("%c", param->type);
@@ -167,4 +167,10 @@ dumpCommandNames(const std::vector<std::string>& args)
         cmd_list_count(&commands));
 
     return true;
+}
+
+struct cmd_list*
+getCommandList(void)
+{
+    return &commands;
 }

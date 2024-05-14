@@ -12,5 +12,11 @@ ast_export_dot(
     const struct ast*       ast,
     struct utf8_view        filepath,
     const struct db_source* source,
-    const struct cmd_list* commands);
+    const struct cmd_list*  commands);
 
+ODBCOMPILER_PUBLIC_API int
+ast_export_dot_fp(
+    const struct ast*       ast,
+    FILE*                   fp,
+    const struct db_source* source,
+    const struct cmd_list*  commands);
