@@ -7,5 +7,7 @@ test_visibility_macros (
     ODBPLUGIN_API_IMPORT
     ODBPLUGIN_API_LOCAL)
 
+add_subdirectory ("resgen")
+
 add_subdirectory ("test-plugin")
 add_subdirectory ("core-commands")

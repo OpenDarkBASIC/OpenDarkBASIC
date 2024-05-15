@@ -187,7 +187,7 @@ endif ()
 
 add_subdirectory ("plugins")
 #add_subdirectory ("runtime")
-add_subdirectory ("runtime-dbp")
+#add_subdirectory ("runtime-dbp")
 
 ###############################################################################
 # Installation

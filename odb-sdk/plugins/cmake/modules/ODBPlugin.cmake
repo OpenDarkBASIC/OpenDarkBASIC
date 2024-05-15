@@ -8,9 +8,16 @@ macro (odb_add_plugin PLUGIN)
       "${PLUGIN_CONFIG_TEMPLATE_PATH}/config.h.in"
       "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.h")
 
+    odb_resgen_target (${PLUGIN}
+        PLATFORM ${CMAKE_SYSTEM_NAME}
+        INPUT
+            ${${PLUGIN}_SOURCES}
+            ${${PLUGIN}_HEADERS})
+
     add_library (${PLUGIN} SHARED
         ${${PLUGIN}_SOURCES}
         ${${PLUGIN}_HEADERS})
+        #${ODB_RESGEN_${PLUGIN}_OUTPUTS})
     target_include_directories (${PLUGIN}
         PRIVATE
             ${${PLUGIN}_INCLUDE_DIRECTORIES}
@@ -31,7 +38,9 @@ macro (odb_add_plugin PLUGIN)
         PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
             RUNTIME_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins")
-    set_property (TARGET ${PLUGIN} PROPERTY PREFIX "")
+    set_property (TARGET ${PLUGIN}
+        PROPERTY PREFIX "")
+
     install (
         TARGETS ${PLUGIN}
         LIBRARY DESTINATION "${ODB_INSTALL_SDKDIR}/plugins"

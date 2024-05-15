@@ -143,6 +143,7 @@ cmd_list_load_from_plugins(
 {
     struct on_plugin_ctx ctx = {
         0, (plugin_ref)vec_count(plugins), commands, sdk_type, target_platform};
+
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         return -1;
 

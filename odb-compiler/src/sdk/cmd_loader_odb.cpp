@@ -6,6 +6,7 @@ extern "C" {
 
 #include "LIEF/Abstract/Binary.hpp"
 #include "LIEF/ELF.hpp"
+#include <iostream>
 
 int
 load_odb_commands(
@@ -24,9 +25,16 @@ load_odb_commands(
                     "",
                     "%s: %lu, %lu\n",
                     sym.name().c_str(),
-                    sym.value(),
+                    sym.size(),
                     elf->virtual_address_to_offset(sym.value()).value());
+                for (auto c : elf->get_content_from_virtual_address(
+                         sym.value(), sym.size()))
+                    log_raw("%02x ", (int)c);
+                log_raw("\n");
             }
+            for (const LIEF::Symbol& s : elf->dynamic_symbols())
+                std::cout << s << '\n';
+
             for (const auto& str : elf->strings())
                 log_dbg("", "str: %s\n", str.c_str());
             log_dbg(
