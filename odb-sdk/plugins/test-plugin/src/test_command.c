@@ -1,10 +1,10 @@
-#include "test-plugin/config.hpp"
+#include "test-plugin/config.h"
 #include <stdio.h>
 
-ODBPLUGIN_API const char* test_command_name = "test command";
-ODBPLUGIN_API const char* test_command_typeinfo = "0()";
-ODBPLUGIN_API const char* test_command_helpfile = "help/print.html";
-ODBPLUGIN_API void test_command(void)
+ODB_COMMAND0(
+    "test command",
+    "help/print.html",
+    void, test_command)
 {
     puts("Hello from test_command!");
 }

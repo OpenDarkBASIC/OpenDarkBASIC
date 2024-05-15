@@ -109,10 +109,6 @@ load_dbpro_commands(
             if (utf16_to_utf8(&entry_str, u16v) != 0)
                 goto bad_plugin;
 
-            if (utf8_equal(
-                    utf8_view(entry_str), cstr_utf8_view("input%A%?%Variable")))
-                puts("oh no");
-
             /* String has format: <command>%<type>%<c symbol>%<help>
              * Split on '%' into the relevant parts. */
             struct utf8_span cmd_name, type_str, c_symbol, doc;

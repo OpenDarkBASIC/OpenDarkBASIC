@@ -131,9 +131,12 @@ target_compile_definitions (odb-sdk
         _CRT_SECURE_NO_WARNINGS)
 target_compile_options (odb-sdk
     PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
+        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
 include (ODBTargetProperties)
 odb_target_properties (odb-sdk
     PROPERTIES
@@ -162,10 +165,10 @@ if (ODBSDK_TESTS)
         "tests/env_odbsdk_init.cpp"
         "tests/test_odbsdk_btree.cpp"
         "tests/test_odbsdk_btree_as_set.cpp"
-        #"tests/test_odbsdk_fs.cpp"
         "tests/test_odbsdk_log.cpp"
         "tests/test_odbsdk_mem.cpp"
         "tests/test_odbsdk_hm.cpp"
+        "tests/test_odbsdk_ospath.cpp"
         "tests/test_odbsdk_rb.cpp"
         "tests/test_odbsdk_utf8.cpp"
         "tests/test_odbsdk_utf8_list.cpp"

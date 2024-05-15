@@ -1,20 +1,21 @@
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
+#include "odb-sdk/ospath.h"
 
 VEC_DEFINE_API(plugin_list, struct plugin_info, 16)
 
 struct on_plugin_entry_ctx
 {
     struct plugin_list* plugins;
-    struct ospathc  dir;
+    struct ospathc      dir;
 };
 
 static int
 on_plugin_entry_odb(const char* cname, void* user)
 {
     struct on_plugin_entry_ctx* ctx = user;
-    struct ospathc          name = cstr_ospathc(cname);
+    struct ospathc              name = cstr_ospathc(cname);
 
     if (ospath_ends_with_i_cstr(name, ".dll")
         || ospath_ends_with_i_cstr(name, ".so"))
@@ -41,7 +42,7 @@ static int
 on_plugin_entry_dbpro(const char* cname, void* user)
 {
     struct on_plugin_entry_ctx* ctx = user;
-    struct ospathc          name = cstr_ospathc(cname);
+    struct ospathc              name = cstr_ospathc(cname);
 
     if (ospath_ends_with_i_cstr(name, ".dll"))
     {
@@ -66,20 +67,47 @@ on_plugin_entry_dbpro(const char* cname, void* user)
 static int
 populate_odb(
     struct plugin_list*       plugins,
-    struct ospathc        sdk_root,
+    struct ospathc            sdk_root,
     const struct ospath_list* extra_plugins)
 {
-    return log_sdk_err("plugin_list_populate() not implemented for ODB\n");
+    const char**               plugin_subdir;
+    const char*                plugin_subdirs[] = {"plugins", NULL};
+    struct ospath              path = empty_ospath();
+    struct on_plugin_entry_ctx ctx = {plugins, empty_ospathc()};
+
+    if (!fs_dir_exists(sdk_root))
+    {
+        log_sdk_err(
+            "SDK root directory {quote:%s} does not exist\n",
+            ospathc_cstr(sdk_root));
+        return -1;
+    }
+
+    /* Collect DLL files from subdirectories */
+    for (plugin_subdir = plugin_subdirs; *plugin_subdir; ++plugin_subdir)
+    {
+        if (ospath_set(&path, sdk_root) != 0
+            || ospath_join_cstr(&path, *plugin_subdir) != 0)
+        {
+            ospath_deinit(path);
+            return -1;
+        }
+        ctx.dir = ospathc(path);
+        fs_list(ospathc(path), on_plugin_entry_odb, &ctx);
+    }
+
+    ospath_deinit(path);
+    return 0;
 }
 
 static int
 populate_dbpro(
     struct plugin_list*       plugins,
-    struct ospathc        sdk_root,
+    struct ospathc            sdk_root,
     const struct ospath_list* extra_plugins)
 {
     const char** plugin_subdir;
-    const char* plugin_subdirs[]
+    const char*  plugin_subdirs[]
         = {"plugins", "plugins-licensed", "plugins-user", NULL};
     struct ospath              path = empty_ospath();
     struct on_plugin_entry_ctx ctx = {plugins, empty_ospathc()};
@@ -132,7 +160,7 @@ int
 plugin_list_populate(
     struct plugin_list*       plugins,
     enum sdk_type             sdk_type,
-    struct ospathc        sdk_root,
+    struct ospathc            sdk_root,
     const struct ospath_list* extra_plugins)
 {
     switch (sdk_type)

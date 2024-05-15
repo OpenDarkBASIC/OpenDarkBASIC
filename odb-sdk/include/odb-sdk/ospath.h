@@ -63,8 +63,6 @@ ospathc_cstr(struct ospathc path)
     return utf8c_cstr(path.str);
 }
 
-
-
 static inline struct utf8_view
 ospathc_view(struct ospathc path)
 {
@@ -90,6 +88,8 @@ ospath_deinit(struct ospath path)
     utf8_deinit(path.str);
 }
 
+/* Modifying functions ----------------------------------------------------- */
+
 ODBSDK_PUBLIC_API int
 ospath_set_utf8(struct ospath* path, struct utf8_view str);
 static inline int
@@ -114,6 +114,11 @@ ospath_join_cstr(struct ospath* path, const char* cstr)
     return ospath_join(path, cstr_ospathc(cstr));
 }
 
+ODBSDK_PUBLIC_API void
+ospath_dirname(struct ospath* path);
+
+/* Query/Test functions ---------------------------------------------------- */
+
 static inline int
 ospath_ends_with(struct ospathc path, struct utf8_view str)
 {
@@ -135,3 +140,4 @@ ospath_ends_with_i_cstr(struct ospathc path, const char* cstr)
 {
     return ospath_ends_with_i(path, cstr_utf8_view(cstr));
 }
+

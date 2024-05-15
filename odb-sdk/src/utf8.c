@@ -14,7 +14,7 @@ utf8_deinit(struct utf8 str)
 int
 utf8_set(struct utf8* dst, struct utf8_view src)
 {
-    if (dst->len < src.len)
+    if (dst->len < src.len || dst->data == NULL)
     {
         /* All utf8 strings are NULL terminated, so we still have to make space
          * for that */

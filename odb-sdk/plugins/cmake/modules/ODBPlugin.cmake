@@ -4,8 +4,9 @@ macro (odb_add_plugin PLUGIN)
     set (_multiValueArgs SOURCES HEADERS INCLUDE_DIRECTORIES)
     cmake_parse_arguments (${PLUGIN} "${_options}" "${_oneValueArgs}" "${_multiValueArgs}" ${ARGN})
 
-    configure_file ("${PLUGIN_CONFIG_TEMPLATE_PATH}/config.hpp.in"
-                    "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.hpp")
+    configure_file (
+      "${PLUGIN_CONFIG_TEMPLATE_PATH}/config.h.in"
+      "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.h")
 
     add_library (${PLUGIN} SHARED
         ${${PLUGIN}_SOURCES}
@@ -14,9 +15,14 @@ macro (odb_add_plugin PLUGIN)
         PRIVATE
             ${${PLUGIN}_INCLUDE_DIRECTORIES}
             "${PROJECT_BINARY_DIR}/include")
-    target_compile_definitions (${PLUGIN}
+    target_compile_options (${PLUGIN}
         PRIVATE
-            ODBPLUGIN_BUILDING)
+            $<$<C_COMPILER_ID:GNU>:-fvisibility=hidden>
+            $<$<CXX_COMPILER_ID:GNU>:-fvisibility=hidden>
+            $<$<C_COMPILER_ID:Clang>:-fvisibility=hidden>
+            $<$<CXX_COMPILER_ID:Clang>:-fvisibility=hidden>
+            $<$<C_COMPILER_ID:AppleClang>:-fvisibility=hidden>
+            $<$<CXX_COMPILER_ID:AppleClang>:-fvisibility=hidden>)
     target_link_libraries (${PLUGIN}
         PRIVATE
             odb-sdk)

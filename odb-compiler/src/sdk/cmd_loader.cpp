@@ -12,6 +12,13 @@ load_dbpro_commands(
     const LIEF::PE::Binary* pe,
     struct ospathc          filepath);
 
+int
+load_odb_commands(
+    struct cmd_list*    commands,
+    plugin_ref          plugin_id,
+    const LIEF::Binary* binary,
+    struct ospathc      filepath);
+
 struct on_plugin_ctx
 {
     plugin_ref       current, total;
@@ -69,7 +76,21 @@ on_plugin(struct plugin_info* plugin, void* user)
             }
             break;
 
-        case SDK_ODB: break;
+        case SDK_ODB:
+            switch (load_odb_commands(
+                ctx->commands,
+                ctx->current,
+                binary.get(),
+                ospathc(plugin->filepath)))
+            {
+                case 1: break;
+                case 0:
+                    plugin_info_deinit(plugin);
+                    ctx->total--;
+                    return 0;
+                default: return -1;
+            }
+            break;
     }
 
     ctx->current++;

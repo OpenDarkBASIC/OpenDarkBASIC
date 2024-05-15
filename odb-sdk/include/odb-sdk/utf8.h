@@ -70,7 +70,7 @@ static inline struct utf8c
 utf8_utf8c(struct utf8 str)
 {
     struct utf8c strc;
-    if (str.len)
+    if (str.data)
         str.data[str.len] = '\0';
     strc.data = str.data;
     return strc;

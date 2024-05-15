@@ -1,6 +1,7 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
+#include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/ospath.h"
 #include "odb-sdk/ospath_list.h"
@@ -91,9 +92,11 @@ setupSDK(const std::vector<std::string>& args)
         {
             case SDK_ODB: {
                 // Should in the same directory as the odbc executable
-                // fs_get_path_to_self(&sdk_root_dir);
-                // ospath_dirname(&sdk_root_dir);
-                // ospath_join_cstr(&sdk_root_dir, "odb-sdk");
+                if (fs_get_path_to_self(&sdk_root_dir) != 0)
+                    return false;
+                ospath_dirname(&sdk_root_dir);
+                if (ospath_join_cstr(&sdk_root_dir, "odb-sdk") != 0)
+                    return false;
             }
             break;
 

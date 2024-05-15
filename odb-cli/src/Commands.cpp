@@ -34,10 +34,13 @@ bool
 loadCommands(const std::vector<std::string>& args)
 {
     log_sdk_progress(0, 0, "Searching for plugins...\n");
-    plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL);
+    if (plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL)
+        != 0)
+        return false;
 
     log_sdk_progress(0, 0, "Loading commands...\n");
-    cmd_list_load_from_plugins(&commands, getSDKType(), plugins);
+    if (cmd_list_load_from_plugins(&commands, getSDKType(), plugins) != 0)
+        return false;
     log_sdk_info(
         "Loaded %d commands from %d plugins\n",
         cmd_list_count(&commands),

@@ -26,6 +26,14 @@ public:
 };
 } // namespace
 
+TEST_F(NAME, set_empty_string)
+{
+  utf8_set_cstr(&str, "");
+  EXPECT_THAT(str.len, Eq(0));
+  EXPECT_THAT(str.data, NotNull());
+  EXPECT_THAT(utf8_cstr(str), StrEq(""));
+}
+
 TEST_F(NAME, can_append_null_bytes)
 {
     struct utf8_view eob = {"", 0, 1};
