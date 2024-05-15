@@ -1,13 +1,8 @@
-#include "core-commands/config.hpp"
+#include "core-commands/config.h"
 #include <cstdio>
 
-extern "C" {
-ODBPLUGIN_API const char* print_stdout_name = "stdout";
-ODBPLUGIN_API const char* print_stdout_typeinfo = "0(S)";
-ODBPLUGIN_API const char* print_stdout_helpfile = "str.html";
-ODBPLUGIN_API void print_stdout(const char* str)
+ODB_COMMAND1("stdout", "help/stdout.html", void, print_stdout, const char* str)
 {
     puts(str);
-}
 }
 

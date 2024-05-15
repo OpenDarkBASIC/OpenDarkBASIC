@@ -1,8 +1,8 @@
 #pragma once
 
+#include "odb-compiler/codegen/codegen.h"
 #include <string>
 #include <vector>
-#include <filesystem>
 
 extern "C" {
 #include "odb-compiler/sdk/sdk.h"
@@ -20,4 +20,3 @@ bool setupSDK(const std::vector<std::string>& args);
 
 enum sdk_type getSDKType();
 struct ospathc getSDKRootDir();
-const std::vector<std::filesystem::path>& getAdditionalPluginDirs();

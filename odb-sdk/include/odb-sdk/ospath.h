@@ -140,4 +140,3 @@ ospath_ends_with_i_cstr(struct ospathc path, const char* cstr)
 {
     return ospath_ends_with_i(path, cstr_utf8_view(cstr));
 }
-

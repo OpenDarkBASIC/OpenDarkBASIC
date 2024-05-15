@@ -33,3 +33,5 @@ ospath_list_add_cstr(struct ospath_list* l, const char* cpath)
     return utf8_list_add(&l->strlist, utf8c_view(path.str));
 }
 
+#define ospath_for_each_cstr(path, var) utf8_for_each_cstr(&(path)->strlist, var)
+

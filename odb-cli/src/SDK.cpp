@@ -1,4 +1,6 @@
 #include "odb-cli/SDK.hpp"
+#include "odb-cli/Codegen.hpp"
+#include "odb-compiler/sdk/sdk.h"
 
 extern "C" {
 #include "odb-sdk/fs.h"
@@ -112,6 +114,9 @@ setupSDK(const std::vector<std::string>& args)
             }
         }
     }
+
+    if (sdk_type == SDK_DBPRO)
+        setPlatform({"windows"});
 
     /* Print to log */
     const char* type = "";

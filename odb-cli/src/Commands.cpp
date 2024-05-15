@@ -1,5 +1,7 @@
+#include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-compiler/codegen/codegen.h"
 
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
@@ -9,18 +11,21 @@ extern "C" {
 
 static plugin_list plugins;
 static cmd_list    commands;
+static ospath_list extra_plugins;
 
 void
 initCommands(void)
 {
     plugin_list_init(&plugins);
     cmd_list_init(&commands);
+    ospath_list_init(&extra_plugins);
 }
 void
 deinitCommands(void)
 {
     struct plugin_info* plugin;
 
+    ospath_list_deinit(&extra_plugins);
     cmd_list_deinit(&commands);
     vec_for_each(plugins, plugin)
     {
@@ -34,12 +39,19 @@ bool
 loadCommands(const std::vector<std::string>& args)
 {
     log_sdk_progress(0, 0, "Searching for plugins...\n");
-    if (plugin_list_populate(&plugins, getSDKType(), getSDKRootDir(), NULL)
+    if (plugin_list_populate(
+            &plugins,
+            getSDKType(),
+            getTargetPlatform(),
+            getSDKRootDir(),
+            &extra_plugins)
         != 0)
         return false;
 
     log_sdk_progress(0, 0, "Loading commands...\n");
-    if (cmd_list_load_from_plugins(&commands, getSDKType(), plugins) != 0)
+    if (cmd_list_load_from_plugins(
+            &commands, getSDKType(), getTargetPlatform(), plugins)
+        != 0)
         return false;
     log_sdk_info(
         "Loaded %d commands from %d plugins\n",

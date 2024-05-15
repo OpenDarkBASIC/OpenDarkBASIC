@@ -99,6 +99,20 @@ bool output(const std::vector<std::string>& args)
     return true;
 }
 
+// ----------------------------------------------------------------------------
+enum odb_codegen_platform getTargetPlatform(void)
+{
+    if (targetTriplePlatform_)
+        return targetTriplePlatform_.value();
+#if defined(ODBCOMPILER_PLATFORM_WINDOWS)
+    return ODB_CODEGEN_WINDOWS;
+#elif defined(ODBCOMPILER_PLATFORM_MACOS)
+    return ODB_CODEGEN_MACOS;
+#else
+    return ODB_CODEGEN_LINUX;
+#endif
+}
+
     /*
 bool output(const std::vector<std::string>& args)
 {

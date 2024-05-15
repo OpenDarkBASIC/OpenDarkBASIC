@@ -1,12 +1,7 @@
-#include "core-commands/config.hpp"
+#include "core-commands/config.h"
 
-extern "C" {
-ODBPLUGIN_API const char* str_name = "str$";
-ODBPLUGIN_API const char* str_typeinfo = "S(L)";
-ODBPLUGIN_API const char* str_helpfile = "str.html";
-ODBPLUGIN_API char* str(int value)
+ODB_COMMAND1("str$", "help/str.html", char*, str_int, int value)
 {
     return nullptr;
-}
 }
 

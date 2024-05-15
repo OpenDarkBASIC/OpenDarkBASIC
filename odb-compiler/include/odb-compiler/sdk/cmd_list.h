@@ -1,8 +1,8 @@
 #pragma once
 
+#include "odb-compiler/codegen/codegen.h"
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/plugin_list.h"
-#include "odb-compiler/sdk/sdk.h"
 #include "odb-sdk/utf8_list.h"
 #include "odb-sdk/vec.h"
 
@@ -79,8 +79,7 @@ static inline void
 cmd_list_deinit(struct cmd_list* commands)
 {
     struct param_types_list* params;
-    vec_for_each(commands->param_types, params)
-        param_types_list_deinit(params);
+    vec_for_each(commands->param_types, params) param_types_list_deinit(params);
     param_types_lists_deinit(&commands->param_types);
     return_types_list_deinit(&commands->return_types);
     plugin_idxs_deinit(&commands->plugin_idxs);
@@ -111,9 +110,10 @@ cmd_add_param(
 
 ODBCOMPILER_PUBLIC_API int
 cmd_list_load_from_plugins(
-    struct cmd_list*   commands,
-    enum sdk_type      sdk_type,
-    struct plugin_list plugins);
+    struct cmd_list*          commands,
+    enum sdk_type             sdk_type,
+    enum odb_codegen_platform target_platform,
+    struct plugin_list        plugins);
 
 ODBCOMPILER_PUBLIC_API cmd_idx
 cmd_list_find(const struct cmd_list* commands, struct utf8_view name);

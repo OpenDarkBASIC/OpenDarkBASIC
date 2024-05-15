@@ -1,4 +1,8 @@
+#include "LIEF/ELF.hpp"
+#include "LIEF/MachO.hpp"
 #include "LIEF/PE.hpp"
+#include "LIEF/PE/ParserConfig.hpp"
+#include "odb-compiler/sdk/sdk.h"
 
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
@@ -21,17 +25,50 @@ load_odb_commands(
 
 struct on_plugin_ctx
 {
-    plugin_ref       current, total;
-    struct cmd_list* commands;
-    enum sdk_type    sdk_type;
+    plugin_ref                current, total;
+    struct cmd_list*          commands;
+    enum sdk_type             sdk_type;
+    enum odb_codegen_platform target_platform;
 };
 
 static int
 on_plugin(struct plugin_info* plugin, void* user)
 {
+    std::unique_ptr<LIEF::Binary> binary;
     auto                          ctx = static_cast<on_plugin_ctx*>(user);
-    std::unique_ptr<LIEF::Binary> binary
-        = LIEF::Parser::parse(ospath_cstr(plugin->filepath));
+    switch (ctx->target_platform)
+    {
+        case ODB_CODEGEN_WINDOWS: {
+            binary.reset(static_cast<LIEF::Binary*>(
+                LIEF::PE::Parser::parse(
+                    ospath_cstr(plugin->filepath),
+                    LIEF::PE::ParserConfig{
+                        false, ///< Parse PE Authenticode signature
+                        true,  ///< Parse PE Exports Directory
+                        false, ///< Parse PE Import Directory
+                        true,  ///< Parse PE resources tree
+                        false, ///< Parse PE relocations
+                    })
+                    .release()));
+            break;
+        }
+
+        case ODB_CODEGEN_LINUX:
+            binary.reset(static_cast<LIEF::Binary*>(
+                LIEF::ELF::Parser::parse(ospath_cstr(plugin->filepath))
+                    .release()));
+            break;
+
+        case ODB_CODEGEN_MACOS:
+            log_sdk_err("Loading MachO not implemented\n");
+            return -1;
+            /*
+                binary.reset(static_cast<LIEF::Binary*>(
+                    LIEF::MachO::Parser::parse(ospath_cstr(plugin->filepath))
+                        .release()));*/
+            break;
+    }
+
     if (binary.get() == nullptr)
     {
         log_sdk_warn(
@@ -99,12 +136,13 @@ on_plugin(struct plugin_info* plugin, void* user)
 
 int
 cmd_list_load_from_plugins(
-    struct cmd_list*   commands,
-    enum sdk_type      sdk_type,
-    struct plugin_list plugins)
+    struct cmd_list*          commands,
+    enum sdk_type             sdk_type,
+    enum odb_codegen_platform target_platform,
+    struct plugin_list        plugins)
 {
-    struct on_plugin_ctx ctx
-        = {0, (plugin_ref)vec_count(plugins), commands, sdk_type};
+    struct on_plugin_ctx ctx = {
+        0, (plugin_ref)vec_count(plugins), commands, sdk_type, target_platform};
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         return -1;
 

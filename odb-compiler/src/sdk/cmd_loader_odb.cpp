@@ -14,21 +14,37 @@ load_odb_commands(
     const LIEF::Binary* binary,
     struct ospathc      filepath)
 {
-    if (binary->format() == LIEF::Binary::FORMATS::ELF)
+    switch (binary->format())
     {
-        auto elf = static_cast<const LIEF::ELF::Binary*>(binary);
-        for (const auto& sym : elf->symbols())
-        {
+        case LIEF::Binary::FORMATS::ELF: {
+            auto elf = static_cast<const LIEF::ELF::Binary*>(binary);
+            for (const auto& sym : elf->symbols())
+            {
+                log_dbg(
+                    "",
+                    "%s: %lu, %lu\n",
+                    sym.name().c_str(),
+                    sym.value(),
+                    elf->virtual_address_to_offset(sym.value()).value());
+            }
+            for (const auto& str : elf->strings())
+                log_dbg("", "str: %s\n", str.c_str());
             log_dbg(
                 "",
-                "%s: %lu, %lu\n",
-                sym.name().c_str(),
-                sym.value(),
-                elf->virtual_address_to_offset(sym.value()).value());
+                "%s\n",
+                elf->get_dynamic_symbol("test_command_help")->name().c_str());
+            break;
         }
-        for (const auto& str : elf->strings())
-            log_dbg("", "str: %s\n", str.c_str());
-        log_dbg("", "%s\n", elf->get_dynamic_symbol("test_command_help")->name().c_str());
+
+        case LIEF::Binary::UNKNOWN:
+        case LIEF::Binary::PE:
+        case LIEF::Binary::MACHO:
+        case LIEF::Binary::OAT:
+            log_sdk_err(
+                "Loading plugin format %d is not yet supported\n",
+                binary->format());
+            return -1;
     }
-    return -1;
+
+    return 0;
 }

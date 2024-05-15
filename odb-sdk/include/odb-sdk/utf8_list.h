@@ -88,3 +88,8 @@ ODBSDK_PUBLIC_API utf8_idx
 utf8_upper_bound_ref(const struct utf8_list* l, struct utf8_view str);
 
 #define utf8_list_count(l) ((l)->count)
+
+#define utf8_for_each_cstr(l, var)                                             \
+    for (utf8_idx var##_i = 0;                                                 \
+         var##_i != (l)->count && ((var = utf8_list_cstr((l), var##_i)) || 1); \
+         ++var##_i)

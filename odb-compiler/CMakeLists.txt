@@ -156,7 +156,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_loader.cpp"
     "src/sdk/cmd_loader_dbpro.cpp"
     "src/sdk/cmd_loader_odb.cpp"
-    "src/sdk/plugin_info.c"
+    "src/sdk/plugin_list.c"
     #"src/sdk/CommandLoader.cpp"
     #"src/sdk/CommandLoader.cpp"
     #"src/sdk/ODBCommandLoader.cpp"
