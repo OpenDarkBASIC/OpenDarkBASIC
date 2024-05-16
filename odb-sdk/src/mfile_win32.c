@@ -12,10 +12,11 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int 
     HANDLE hFile;
     LARGE_INTEGER liFileSize;
     HANDLE mapping;
-    struct utf16 utf16_filename = empty_utf16();
     DWORD map_size;
+    struct utf16 utf16_filename = empty_utf16();
+    struct utf8_view filepath_view = {utf8c_cstr(filepath.str), 0, filepath.len};
 
-    if (utf8_to_utf16(&utf16_filename, filepath.str) != 0)
+    if (utf8_to_utf16(&utf16_filename, filepath_view) != 0)
         goto utf16_conv_failed;
 
     /* Try to open the file */

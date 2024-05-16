@@ -1,4 +1,4 @@
-#if defined(WIN32)
+#if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #define NL "\r\n"
@@ -444,7 +444,7 @@ mstream_init_writeable(void)
  * by.
  */
 static inline void
-mstream_pad(struct mstream* ms, int additional_size)
+mstream_grow(struct mstream* ms, int additional_size)
 {
     while (ms->capacity < ms->write_ptr + additional_size)
     {
@@ -457,7 +457,7 @@ mstream_pad(struct mstream* ms, int additional_size)
 static inline void
 mstream_putc(struct mstream* ms, char c)
 {
-    mstream_pad(ms, 1);
+    mstream_grow(ms, 1);
     ((char*)ms->address)[ms->write_ptr++] = c;
 }
 
@@ -466,7 +466,7 @@ static inline void
 mstream_write_int(struct mstream* ms, int value)
 {
     int digit = 1000000000;
-    mstream_pad(ms, sizeof("-2147483648") - 1);
+    mstream_grow(ms, sizeof("-2147483648") - 1);
     if (value < 0)
     {
         ((char*)ms->address)[ms->write_ptr++] = '-';
@@ -497,7 +497,7 @@ static inline void
 mstream_cstr(struct mstream* ms, const char* cstr)
 {
     int len = (int)strlen(cstr);
-    mstream_pad(ms, len);
+    mstream_grow(ms, len);
     memcpy((char*)ms->address + ms->write_ptr, cstr, len);
     ms->write_ptr += len;
 }
@@ -506,7 +506,7 @@ mstream_cstr(struct mstream* ms, const char* cstr)
 static inline void
 mstream_str(struct mstream* ms, struct str_view str, const char* data)
 {
-    mstream_pad(ms, str.len);
+    mstream_grow(ms, str.len);
     memcpy((char*)ms->address + ms->write_ptr, data + str.off, str.len);
     ms->write_ptr += str.len;
 }
@@ -534,6 +534,7 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
         if (fmt[i] == '%')
             switch (fmt[++i])
             {
+                case 'c': mstream_putc(ms, va_arg(va, char)); continue;
                 case 's': mstream_cstr(ms, va_arg(va, const char*)); continue;
                 case 'i':
                 case 'd': mstream_write_int(ms, va_arg(va, int)); continue;
@@ -542,7 +543,7 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
                     const char*     data = va_arg(va, const char*);
                     mstream_str(ms, str, data);
                 }
-                    continue;
+                continue;
             }
         mstream_putc(ms, fmt[i]);
     }
@@ -681,6 +682,7 @@ enum token
     TOK_ERROR = -1,
     TOK_END = 0,
     TOK_ODB_COMMAND = 256,
+    TOK_IDENTIFIER,
     TOK_STRING,
 };
 
@@ -715,53 +717,253 @@ scan_next_token(struct parser* p)
             p->value.str.len = p->head++ - p->value.str.off;
             return TOK_STRING;
         }
+        if (p->data[p->head] == '(')
+            return p->data[p->head++];
+        if (p->data[p->head] == ')')
+            return p->data[p->head++];
+        if (p->data[p->head] == ',')
+            return p->data[p->head++];
+        if (p->data[p->head] == '*')
+            return p->data[p->head++];
         if (memcmp(p->data + p->head, "ODB_COMMAND", sizeof("ODB_COMMAND") - 1)
             == 0)
         {
+            p->head += sizeof("ODB_COMMAND") - 1;
             while (p->head != p->len && isdigit(p->data[p->head]))
                 p->head++;
             return TOK_ODB_COMMAND;
         }
+        if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
+        {
+            p->value.str.off = p->head++;
+            while (p->head != p->len && (isalnum(p->data[p->head]) ||
+                p->data[p->head] == '-' || p->data[p->head] == '_' || p->data[p->head] == '*'))
+            {
+                p->head++;
+            }
+            p->value.str.len = p->head - p->value.str.off;
+            return TOK_IDENTIFIER;
+        }
+
+        p->head++;
     }
 
     return TOK_END;
 }
 
-static int
-parse(struct parser* p, const struct cfg* cfg)
+enum arg_type
+{
+    ARG_NONE = 0,
+
+    ARG_VOID = '0',
+    ARG_LONG = 'R',    /* 8 bytes -- signed int */
+    ARG_DWORD = 'D',   /* 4 bytes -- unsigned int */
+    ARG_INTEGER = 'L', /* 4 bytes -- signed int */
+    ARG_WORD = 'W',    /* 2 bytes -- unsigned int */
+    ARG_BYTE = 'Y',    /* 1 byte -- unsigned int */
+    ARG_BOOLEAN = 'B', /* 1 byte -- boolean */
+    ARG_FLOAT = 'F',   /* 4 bytes -- float */
+    ARG_DOUBLE = 'O',  /* 8 bytes -- double */
+    ARG_STRING = 'S',  /* 4 bytes -- char* (passed as DWORD on 32-bit) */
+    ARG_ARRAY = 'H',   /* 4 bytes -- Pass array address directly */
+    ARG_LABEL = 'P',   /* 4 bytes -- ? */
+    ARG_DABEL = 'Q',   /* 4 bytes -- ? */
+    ARG_ANY = 'X',     /* 4 bytes -- (think reinterpret_cast) */
+    ARG_USER_DEFINED_VAR_PTR = 'E', /* 4 bytes */
+};
+
+struct arg
+{
+    struct arg* next;
+
+    struct str_view name;
+    enum arg_type type;
+    
+    unsigned is_ptr : 1;
+    unsigned is_const : 1;
+};
+
+struct command
+{
+    struct command* next;
+    struct arg* args;
+
+    struct str_view name;
+    struct str_view help;
+    struct str_view symbol;
+    struct arg ret;
+};
+
+struct root
+{
+    struct command* commands;
+};
+
+static struct command*
+new_command(struct root* root)
+{
+    struct command** cmd = &root->commands;
+    while (*cmd)
+        cmd = &(*cmd)->next;
+
+    *cmd = calloc(1, sizeof **cmd);
+    return *cmd;
+}
+
+static struct arg*
+new_argument(struct command* command)
+{
+    struct arg** arg = &command->args;
+    while (*arg)
+        arg = &(*arg)->next;
+
+    *arg = calloc(1, sizeof **arg);
+    return *arg;
+}
+
+static enum token
+parse_argument(struct parser* p, struct arg* arg)
 {
     enum token tok;
-    do
+    while (1)
     {
         switch ((tok = scan_next_token(p)))
         {
-            case TOK_ERROR: return -1;
-            case TOK_END: return 0;
-            case TOK_ODB_COMMAND: break;
-            case TOK_STRING: break;
+            case TOK_ERROR:
+            case TOK_END:
+            case ',':
+            case ')':
+                return tok;
+            default: return TOK_ERROR;
+
+            case '*':
+                arg->is_ptr = 1;
+                break;
+            case TOK_IDENTIFIER:
+                if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
+                    arg->type = ARG_VOID;
+                else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
+                    arg->type = ARG_INTEGER;
+                break;
         }
-    } while (1);
+    }
+}
+
+static enum token
+parse_command(struct parser* p, struct command* command)
+{
+    enum token tok;
+
+    if (scan_next_token(p) != '(')
+        return print_error(p, "Error: Expected argument list\n");
+    if (scan_next_token(p) != TOK_STRING)
+        return print_error(p, "Error: Expected command name string as first parameter to ODB_COMMAND()\n");
+    command->name = p->value.str;
+    if (scan_next_token(p) != ',')
+        return print_error(p, "Error: Expected next argument\n");
+    if (scan_next_token(p) != TOK_STRING)
+        return print_error(p, "Error: Expected help file string as second parameter to ODB_COMMAND()\n");
+    if (scan_next_token(p) != ',')
+        return print_error(p, "Error: Expected next argument\n");
+
+    switch (parse_argument(p, &command->ret))
+    {
+        case ',': break;
+        case ')': return print_error(p, "Error: Expected next argument\n");
+        default: return print_error(p, "Error: Expected function return type as third parameter to ODB_COMMAND()\n");
+    }
+
+    if (scan_next_token(p) != TOK_IDENTIFIER)
+        return print_error(p, "Error: Expected function name as fourth parameter to ODB_COMMAND()\n");
+    command->symbol = p->value.str;
+
+    while (1)
+    {
+        switch ((tok = parse_argument(p, new_argument(command))))
+        {
+            case ',': break;
+            default: return tok;
+        }
+    }
 }
 
 static int
-gen_resource(const char* filename)
+parse(struct parser* p, struct root* root, const struct cfg* cfg)
+{
+    while (1) {
+        switch (scan_next_token(p))
+        {
+            case TOK_ERROR: return -1;
+            case TOK_END: return 0;
+            case TOK_ODB_COMMAND:
+                if (parse_command(p, new_command(root)) != ')')
+                    return -1;
+            default: break;
+        }
+    }
+}
+
+static int
+gen_winres_resource(struct mstream* ms)
+{
+    return 0;
+}
+
+static int
+gen_elf_resource(struct mstream* ms, const struct root* root, const char* data)
+{
+    const struct command* cmd = root->commands;
+    const struct arg* arg;
+    while (cmd)
+    {
+        mstream_fmt(ms, "%S", cmd->name, data);
+        if (cmd->ret.type != ARG_VOID)
+            mstream_putc(ms, '[');
+        
+        mstream_putc(ms, '%');
+
+        if (cmd->ret.type != ARG_VOID)
+            mstream_putc(ms, cmd->ret.type);
+
+        arg = cmd->args;
+        while (arg)
+        {
+            mstream_putc(ms, arg->type);
+            arg = arg->next;
+        }
+        
+        mstream_putc(ms, '%');
+
+        mstream_fmt(ms, "%S", cmd->symbol, data);
+        
+        mstream_putc(ms, '%');
+
+        mstream_fmt(ms, "\n");
+
+        cmd = cmd->next;
+    }
+    return 0;
+}
+
+static int
+write_resource(const struct mstream* ms, const char* filename)
 {
     struct mfile   mf;
-    struct mstream ms = mstream_init_writeable();
 
     /* Don't write resource if it is identical to the existing one -- causes
      * less rebuilds */
     if (mfile_map_read(&mf, filename, 1) == 0)
     {
-        if (mf.size == ms.write_ptr
-            && memcmp(mf.address, ms.address, mf.size) == 0)
+        if (mf.size == ms->write_ptr
+            && memcmp(mf.address, ms->address, mf.size) == 0)
             return 0;
         mfile_unmap(&mf);
     }
 
-    if (mfile_map_write(&mf, filename, ms.write_ptr) != 0)
+    /* Write out file */
+    if (mfile_map_write(&mf, filename, ms->write_ptr) != 0)
         return -1;
-    memcpy(mf.address, ms.address, ms.write_ptr);
+    memcpy(mf.address, ms->address, ms->write_ptr);
     mfile_unmap(&mf);
 
     return 0;
@@ -770,8 +972,33 @@ gen_resource(const char* filename)
 int
 main(int argc, char** argv)
 {
+    struct parser parser;
     struct cfg cfg = {0};
+    struct mstream ms = mstream_init_writeable();
+
     if (parse_cmdline(argc, argv, &cfg) != 0)
+        return -1;
+
+    for (int i = 0; i != cfg.input_files_count; ++i)
+    {
+        struct mfile mf;
+        struct root root = {0};
+
+        if (mfile_map_read(&mf, cfg.input_files[i], 0) != 0)
+            return -1;
+
+        parser_init(&parser, &mf);
+        if (parse(&parser, &root, &cfg) != 0)
+            return -1;
+
+        switch (cfg.target)
+        {
+            case TARGET_WINRES: if (gen_winres_resource(&ms) != 0) return -1; break;
+            case TARGET_ELF: if (gen_elf_resource(&ms, &root, parser.data) != 0) return -1; break;
+        }
+    }
+
+    if (write_resource(&ms, cfg.output_file) != 0)
         return -1;
 
     return 0;

@@ -95,7 +95,8 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str);
 static inline int
 ospath_set(struct ospath* path, struct ospathc newpath)
 {
-    return ospath_set_utf8(path, ospathc_view(newpath));
+    struct utf8_view view = {utf8c_cstr(newpath.str), 0, newpath.len};
+    return ospath_set_utf8(path, view);
 }
 static inline int
 ospath_set_cstr(struct ospath* path, const char* cstr)

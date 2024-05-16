@@ -21,6 +21,8 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str)
 int
 ospath_join(struct ospath* path, struct ospathc trailing)
 {
+    struct utf8_view trailing_view = {utf8c_cstr(trailing.str), 0, trailing.len};
+
     /* Append joining slash */
     if (path->str.len && path->str.data[path->str.len - 1] != '\\')
     {
@@ -29,10 +31,11 @@ ospath_join(struct ospath* path, struct ospathc trailing)
     }
 
     /* Append trailing path */
-    if (utf8_append(&path->str, trailing.str)
+    if (utf8_append(&path->str, trailing_view)
         != 0)
         return -1;
-
+    
+    utf8_replace_char(path->str, '/', '\\');
     remove_trailing_slashes(path);
     return 0;
 }
@@ -118,26 +121,25 @@ cpath_basename_view(const char* path)
 
     return view;
 }
+#endif
 
-struct str_view
-path_dirname_view(const struct path* path)
+void
+ospath_dirname(struct ospath* path)
 {
-    struct str_view view = str_view(path->str);
-
     /* Special case on windows -- If path starts with "\" it is invalid */
-    if (view.len && view.data[0] == '\\')
+    if (path->str.len && path->str.data[0] == '\\')
     {
-        view.len = 0;
-        return view;
+        path->str.len = 0;
+        return;
     }
 
-    while (view.len && view.data[view.len - 1] == '\\')
-        view.len--;
-    while (view.len && view.data[view.len - 1] != '\\')
-        view.len--;
-    while (view.len && view.data[view.len - 1] == '\\')
-        view.len--;
+    while (path->str.len && path->str.data[path->str.len - 1] == '\\')
+        path->str.len--;
+    while (path->str.len && path->str.data[path->str.len - 1] != '\\')
+        path->str.len--;
+    while (path->str.len && path->str.data[path->str.len - 1] == '\\')
+        path->str.len--;
 
-    return view;
+    if (path->str.len == 0)
+        utf8_set(&path->str, cstr_utf8_view("."));
 }
-#endif

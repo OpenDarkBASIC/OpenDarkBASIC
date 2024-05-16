@@ -55,13 +55,13 @@ inline testing::Matcher<struct str_view> StrViewEq(const std::string& expected)
 }
 */
 
-TEST_F(NAME, ospath_set_empty)
+TEST_F(NAME, set_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
     EXPECT_THAT(ospath_cstr(path), StrEq(""));
 }
 
-TEST_F(NAME, ospath_set_replace_slashes)
+TEST_F(NAME, set_replace_slashes)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/unix/path"));
@@ -72,7 +72,7 @@ TEST_F(NAME, ospath_set_replace_slashes)
 #endif
 }
 
-TEST_F(NAME, ospath_set_remove_trailing_slashes)
+TEST_F(NAME, set_remove_trailing_slashes)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/unix/path/"));
@@ -83,7 +83,7 @@ TEST_F(NAME, ospath_set_remove_trailing_slashes)
 #endif
 }
 
-TEST_F(NAME, ospath_set_dont_remove_root_slash)
+TEST_F(NAME, set_dont_remove_root_slash)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("/"));
@@ -94,14 +94,14 @@ TEST_F(NAME, ospath_set_dont_remove_root_slash)
 #endif
 }
 
-TEST_F(NAME, ospath_join_empty)
+TEST_F(NAME, join_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
     ospath_join(&path, cstr_ospathc(""));
     EXPECT_THAT(ospath_cstr(path), StrEq(""));
 }
 
-TEST_F(NAME, ospath_join_1)
+TEST_F(NAME, join_1)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/"));
@@ -114,7 +114,7 @@ TEST_F(NAME, ospath_join_1)
 #endif
 }
 
-TEST_F(NAME, ospath_join_2)
+TEST_F(NAME, join_2)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some"));
@@ -127,21 +127,21 @@ TEST_F(NAME, ospath_join_2)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_empty)
+TEST_F(NAME, dirname_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
     ospath_dirname(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq(""));
+    EXPECT_THAT(ospath_cstr(path), StrEq("."));
 }
 
-TEST_F(NAME, ospath_dirname_file_1)
+TEST_F(NAME, dirname_file_1)
 {
     ospath_set(&path, cstr_ospathc("file.dat.xz"));
     ospath_dirname(&path);
     EXPECT_THAT(ospath_cstr(path), StrEq("."));
 }
 
-TEST_F(NAME, ospath_dirname_on_file_2)
+TEST_F(NAME, dirname_on_file_2)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("/file.dat.xz"));
@@ -154,7 +154,7 @@ TEST_F(NAME, ospath_dirname_on_file_2)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_on_file_3)
+TEST_F(NAME, dirname_on_file_3)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/unix/file.dat.xz"));
@@ -167,7 +167,7 @@ TEST_F(NAME, ospath_dirname_on_file_3)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_on_path_1)
+TEST_F(NAME, dirname_on_path_1)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/unix/path"));
@@ -180,7 +180,7 @@ TEST_F(NAME, ospath_dirname_on_path_1)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_on_path_2)
+TEST_F(NAME, dirname_on_path_2)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("some/unix/path/"));
@@ -193,7 +193,7 @@ TEST_F(NAME, ospath_dirname_on_path_2)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_on_path_3)
+TEST_F(NAME, dirname_on_path_3)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("/some/unix/path"));
@@ -206,19 +206,19 @@ TEST_F(NAME, ospath_dirname_on_path_3)
 #endif
 }
 
-TEST_F(NAME, ospath_dirname_on_path_4)
+TEST_F(NAME, dirname_on_path_4)
 {
     ospath_set(&path, cstr_ospathc("dir"));
     ospath_dirname(&path);
     EXPECT_THAT(ospath_cstr(path), StrEq("."));
 }
 
-TEST_F(NAME, ospath_dirname_on_path_5)
+TEST_F(NAME, dirname_on_path_5)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("/"));
     ospath_dirname(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq(""));
+    EXPECT_THAT(ospath_cstr(path), StrEq("."));
 #else
     ospath_set(&path, cstr_ospathc("\\"));
     ospath_dirname(&path);
