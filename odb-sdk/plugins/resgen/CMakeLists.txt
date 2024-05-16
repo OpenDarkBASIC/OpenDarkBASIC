@@ -22,7 +22,7 @@ install (
 macro (odb_resgen_target name)
     set (odb_resgen_target_PARAM_OPTIONS)
     set (odb_resgen_target_PARAM_ONE_VALUE_KEYWORDS
-        PLATFORM)
+        TARGET)
     set (odb_resgen_target_PARAM_MULTI_VALUE_KEYWORDS
         INPUT)
     cmake_parse_arguments (
@@ -33,29 +33,40 @@ macro (odb_resgen_target name)
         ${ARGN})
 
     if (NOT "${odb_resgen_target_arg_UNPARSED_ARGUMENTS}" STREQUAL "")
-        message (FATAL_ERROR "odb_resgen_target <name> PLATFORM <Windows|Linux> INPUT <files...>")
+        message (FATAL_ERROR "odb_resgen_target <name> TARGET <WINRES|ELF> INPUT <files...>")
     endif ()
 
-    add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/typeinfo
-        COMMAND odb-resgen ${PROJECT_BINARY_DIR}/typeinfo
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        DEPENDS odb-resgen
-        COMMENT "[odb-resgen] Generating resource strings for ${name}"
-        VERBATIM)
+    if (${odb_resgen_target_arg_TARGET} STREQUAL "winres")
+        add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.rc
+            COMMAND odb-resgen
+            ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres.rc
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            DEPENDS odb-resgen
+            COMMENT "[odb-resgen] Generating resource strings for ${name}"
+            VERBATIM)
+        set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/odbres.rc)
+    else ()
+        add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres
+            COMMAND odb-resgen
+            ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            DEPENDS odb-resgen
+            COMMENT "[odb-resgen] Generating resource strings for ${name}"
+            VERBATIM)
 
-    add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/typeinfo.o
-        COMMAND objcopy
-        ARGS --input-target binary
-             --output-target elf64-x86-64
-             --binary-architecture i386:x86-64
-             --rename-section .data=.odbtypeinfo,CONTENTS,ALLOC,LOAD,READONLY,DATA
-             typeinfo
-             typeinfo.o
-        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-        DEPENDS ${PROJECT_BINARY_DIR}/typeinfo
-        COMMENT "[odb-resgen] Compiling resource strings for ${name}"
-        VERBATIM)
+        add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.o
+            COMMAND ${CMAKE_OBJCOPY}
+            ARGS --input-target binary
+                 --output-target elf64-x86-64
+                 --binary-architecture i386:x86-64
+                 --rename-section .data=.odbres,CONTENTS,ALLOC,LOAD,READONLY,DATA
+                 odbres odbres.o
+            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            DEPENDS ${PROJECT_BINARY_DIR}/odbres
+            COMMENT "[odb-resgen] Compiling resource strings for ${name}"
+            VERBATIM)
+        set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/odbres.o)
+    endif ()
 
     set (ODB_RESGEN_${name}_DEFINED TRUE)
-    set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/typeinfo.o)
 endmacro ()

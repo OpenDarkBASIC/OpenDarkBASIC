@@ -9,15 +9,15 @@ macro (odb_add_plugin PLUGIN)
       "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.h")
 
     odb_resgen_target (${PLUGIN}
-        PLATFORM ${CMAKE_SYSTEM_NAME}
+        TARGET elf
         INPUT
             ${${PLUGIN}_SOURCES}
             ${${PLUGIN}_HEADERS})
 
     add_library (${PLUGIN} SHARED
         ${${PLUGIN}_SOURCES}
-        ${${PLUGIN}_HEADERS})
-        #${ODB_RESGEN_${PLUGIN}_OUTPUTS})
+        ${${PLUGIN}_HEADERS}
+        ${ODB_RESGEN_${PLUGIN}_OUTPUTS})
     target_include_directories (${PLUGIN}
         PRIVATE
             ${${PLUGIN}_INCLUDE_DIRECTORIES}
