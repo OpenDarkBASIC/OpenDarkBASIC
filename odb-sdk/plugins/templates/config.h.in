@@ -21,11 +21,11 @@
 #endif
 
 #define ODB_COMMAND0(name, help, ret_type, symbol) \
-  ODBPLUGIN_API const char* symbol##_name = name; \
-  ODBPLUGIN_API const char* symbol##_help = help; \
   ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(void)
 #define ODB_COMMAND1(name, help, ret_type, symbol, arg1) \
-  ODBPLUGIN_API const char* symbol##_name = name; \
-  ODBPLUGIN_API const char* symbol##_help = help; \
   ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1)
+#define ODB_COMMAND2(name, help, ret_type, symbol, arg1, arg2) \
+  ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2)
+#define ODB_COMMAND3(name, help, ret_type, symbol, arg1, arg2, arg3) \
+  ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
 

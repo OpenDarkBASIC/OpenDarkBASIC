@@ -534,7 +534,7 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
         if (fmt[i] == '%')
             switch (fmt[++i])
             {
-                case 'c': mstream_putc(ms, va_arg(va, char)); continue;
+                case 'c': mstream_putc(ms, (char)va_arg(va, int)); continue;
                 case 's': mstream_cstr(ms, va_arg(va, const char*)); continue;
                 case 'i':
                 case 'd': mstream_write_int(ms, va_arg(va, int)); continue;
@@ -542,8 +542,8 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
                     struct str_view str = va_arg(va, struct str_view);
                     const char*     data = va_arg(va, const char*);
                     mstream_str(ms, str, data);
+                    continue;
                 }
-                continue;
             }
         mstream_putc(ms, fmt[i]);
     }
@@ -681,6 +681,10 @@ enum token
 {
     TOK_ERROR = -1,
     TOK_END = 0,
+    TOK_LPAREN = '(',
+    TOK_RPAREN = ')',
+    TOK_COMMA = ',',
+    TOK_ASTERISK = '*',
     TOK_ODB_COMMAND = 256,
     TOK_IDENTIFIER,
     TOK_STRING,
@@ -736,8 +740,8 @@ scan_next_token(struct parser* p)
         if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
         {
             p->value.str.off = p->head++;
-            while (p->head != p->len && (isalnum(p->data[p->head]) ||
-                p->data[p->head] == '-' || p->data[p->head] == '_' || p->data[p->head] == '*'))
+            while (p->head != p->len
+                   && (isalnum(p->data[p->head]) || p->data[p->head] == '_'))
             {
                 p->head++;
             }
@@ -777,8 +781,8 @@ struct arg
     struct arg* next;
 
     struct str_view name;
-    enum arg_type type;
-    
+    enum arg_type   type;
+
     unsigned is_ptr : 1;
     unsigned is_const : 1;
 };
@@ -786,12 +790,12 @@ struct arg
 struct command
 {
     struct command* next;
-    struct arg* args;
+    struct arg*     args;
 
     struct str_view name;
     struct str_view help;
     struct str_view symbol;
-    struct arg ret;
+    struct arg      ret;
 };
 
 struct root
@@ -822,29 +826,68 @@ new_argument(struct command* command)
 }
 
 static enum token
-parse_argument(struct parser* p, struct arg* arg)
+parse_argument(struct parser* p, struct command* command, char is_ret)
 {
-    enum token tok;
+    enum token  tok;
+    struct arg* arg = NULL;
+
     while (1)
     {
         switch ((tok = scan_next_token(p)))
         {
             case TOK_ERROR:
             case TOK_END:
-            case ',':
-            case ')':
-                return tok;
             default: return TOK_ERROR;
 
+            case ',':
+            case ')':
+                if (arg)
+                {
+                    if (arg->is_ptr)
+                        arg->type = ARG_ARRAY;
+                }
+                return tok;
+
             case '*':
-                arg->is_ptr = 1;
-                break;
             case TOK_IDENTIFIER:
-                if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
+                if (arg == NULL)
+                    arg = is_ret ? &command->ret : new_argument(command);
+                break;
+        }
+
+        switch (tok)
+        {
+            case '*': arg->is_ptr = 1; break;
+            case TOK_IDENTIFIER:
+                if (memcmp(p->data + p->value.str.off, "const", 4) == 0)
+                    arg->is_const = 1;
+                else if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
                     arg->type = ARG_VOID;
                 else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
                     arg->type = ARG_INTEGER;
+                else if (memcmp(p->data + p->value.str.off, "char", 3) == 0)
+                    arg->type = ARG_INTEGER;
+                else
+                {
+                    arg->name = p->value.str;
+                    if (arg->type == ARG_NONE)
+                    {
+                        fprintf(
+                            stderr,
+                            "Error: Unknown type '%.*s' encountered: Don't "
+                            "know "
+                            "how "
+                            "to map to DB type. This is an issue with "
+                            "odb-resgen. "
+                            "Please report a bug!\n",
+                            p->value.str.len,
+                            p->data + p->value.str.off);
+                        return TOK_ERROR;
+                    }
+                }
                 break;
+
+            default: break;
         }
     }
 }
@@ -856,30 +899,48 @@ parse_command(struct parser* p, struct command* command)
 
     if (scan_next_token(p) != '(')
         return print_error(p, "Error: Expected argument list\n");
+
     if (scan_next_token(p) != TOK_STRING)
-        return print_error(p, "Error: Expected command name string as first parameter to ODB_COMMAND()\n");
+        return print_error(
+            p,
+            "Error: Expected command name string as first parameter to "
+            "ODB_COMMAND()\n");
     command->name = p->value.str;
-    if (scan_next_token(p) != ',')
-        return print_error(p, "Error: Expected next argument\n");
-    if (scan_next_token(p) != TOK_STRING)
-        return print_error(p, "Error: Expected help file string as second parameter to ODB_COMMAND()\n");
+
     if (scan_next_token(p) != ',')
         return print_error(p, "Error: Expected next argument\n");
 
-    switch (parse_argument(p, &command->ret))
+    if (scan_next_token(p) != TOK_STRING)
+        return print_error(
+            p,
+            "Error: Expected help file string as second parameter to "
+            "ODB_COMMAND()\n");
+    command->help = p->value.str;
+
+    if (scan_next_token(p) != ',')
+        return print_error(p, "Error: Expected next argument\n");
+
+    switch (parse_argument(p, command, 1))
     {
         case ',': break;
         case ')': return print_error(p, "Error: Expected next argument\n");
-        default: return print_error(p, "Error: Expected function return type as third parameter to ODB_COMMAND()\n");
+        default:
+            return print_error(
+                p,
+                "Error: Expected function return type as third parameter to "
+                "ODB_COMMAND()\n");
     }
 
     if (scan_next_token(p) != TOK_IDENTIFIER)
-        return print_error(p, "Error: Expected function name as fourth parameter to ODB_COMMAND()\n");
+        return print_error(
+            p,
+            "Error: Expected function name as fourth parameter to "
+            "ODB_COMMAND()\n");
     command->symbol = p->value.str;
 
     while (1)
     {
-        switch ((tok = parse_argument(p, new_argument(command))))
+        switch ((tok = parse_argument(p, command, 0)))
         {
             case ',': break;
             default: return tok;
@@ -890,7 +951,8 @@ parse_command(struct parser* p, struct command* command)
 static int
 parse(struct parser* p, struct root* root, const struct cfg* cfg)
 {
-    while (1) {
+    while (1)
+    {
         switch (scan_next_token(p))
         {
             case TOK_ERROR: return -1;
@@ -913,32 +975,57 @@ static int
 gen_elf_resource(struct mstream* ms, const struct root* root, const char* data)
 {
     const struct command* cmd = root->commands;
-    const struct arg* arg;
+    const struct arg*     arg;
     while (cmd)
     {
         mstream_fmt(ms, "%S", cmd->name, data);
-        if (cmd->ret.type != ARG_VOID)
-            mstream_putc(ms, '[');
-        
         mstream_putc(ms, '%');
+        mstream_putc(ms, cmd->ret.type);
 
-        if (cmd->ret.type != ARG_VOID)
-            mstream_putc(ms, cmd->ret.type);
-
+        mstream_putc(ms, '(');
         arg = cmd->args;
         while (arg)
         {
             mstream_putc(ms, arg->type);
             arg = arg->next;
         }
-        
-        mstream_putc(ms, '%');
+        mstream_putc(ms, ')');
 
+        mstream_putc(ms, '%');
         mstream_fmt(ms, "%S", cmd->symbol, data);
-        
         mstream_putc(ms, '%');
 
-        mstream_fmt(ms, "\n");
+        arg = cmd->args;
+        while (arg)
+        {
+            if (arg != cmd->args)
+                mstream_cstr(ms, ", ");
+            mstream_fmt(ms, "%S", arg->name, data);
+            switch (arg->type)
+            {
+                case ARG_NONE: break;
+                case ARG_VOID: break;
+                case ARG_LONG: mstream_cstr(ms, " as long"); break;
+                case ARG_DWORD: mstream_cstr(ms, " as dword"); break;
+                case ARG_INTEGER: mstream_cstr(ms, " as integer"); break;
+                case ARG_WORD: mstream_cstr(ms, " as word"); break;
+                case ARG_BYTE: mstream_cstr(ms, " as byte"); break;
+                case ARG_BOOLEAN: mstream_cstr(ms, " as boolean"); break;
+                case ARG_FLOAT: mstream_cstr(ms, " as float"); break;
+                case ARG_DOUBLE: mstream_cstr(ms, " as double"); break;
+                case ARG_STRING: mstream_cstr(ms, " as string"); break;
+                case ARG_ARRAY: break;
+                case ARG_LABEL: break;
+                case ARG_DABEL: break;
+                case ARG_ANY: break;
+                case ARG_USER_DEFINED_VAR_PTR: break;
+            }
+            arg = arg->next;
+        }
+
+        mstream_putc(ms, '%');
+        mstream_fmt(ms, "%S", cmd->help, data);
+        mstream_putc(ms, '\n');
 
         cmd = cmd->next;
     }
@@ -948,7 +1035,7 @@ gen_elf_resource(struct mstream* ms, const struct root* root, const char* data)
 static int
 write_resource(const struct mstream* ms, const char* filename)
 {
-    struct mfile   mf;
+    struct mfile mf;
 
     /* Don't write resource if it is identical to the existing one -- causes
      * less rebuilds */
@@ -972,8 +1059,8 @@ write_resource(const struct mstream* ms, const char* filename)
 int
 main(int argc, char** argv)
 {
-    struct parser parser;
-    struct cfg cfg = {0};
+    struct parser  parser;
+    struct cfg     cfg = {0};
     struct mstream ms = mstream_init_writeable();
 
     if (parse_cmdline(argc, argv, &cfg) != 0)
@@ -982,7 +1069,12 @@ main(int argc, char** argv)
     for (int i = 0; i != cfg.input_files_count; ++i)
     {
         struct mfile mf;
-        struct root root = {0};
+        struct root  root = {0};
+
+        /* File names can be empty if CMake uses generator expressions for file
+         * names */
+        if (!*cfg.input_files[i])
+            continue;
 
         if (mfile_map_read(&mf, cfg.input_files[i], 0) != 0)
             return -1;
@@ -993,8 +1085,21 @@ main(int argc, char** argv)
 
         switch (cfg.target)
         {
-            case TARGET_WINRES: if (gen_winres_resource(&ms) != 0) return -1; break;
-            case TARGET_ELF: if (gen_elf_resource(&ms, &root, parser.data) != 0) return -1; break;
+            case TARGET_NONE:
+                fprintf(
+                    stderr,
+                    "Error: No target specified. Use -t <winres|elf>\n");
+                return -1;
+
+            case TARGET_WINRES:
+                if (gen_winres_resource(&ms) != 0)
+                    return -1;
+                break;
+
+            case TARGET_ELF:
+                if (gen_elf_resource(&ms, &root, parser.data) != 0)
+                    return -1;
+                break;
         }
     }
 

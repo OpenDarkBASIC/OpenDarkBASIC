@@ -33,14 +33,14 @@ macro (odb_resgen_target name)
         ${ARGN})
 
     if (NOT "${odb_resgen_target_arg_UNPARSED_ARGUMENTS}" STREQUAL "")
-        message (FATAL_ERROR "odb_resgen_target <name> TARGET <WINRES|ELF> INPUT <files...>")
+        message (FATAL_ERROR "odb_resgen_target <name> TARGET <winres|elf> INPUT <files...>")
     endif ()
 
     if (${odb_resgen_target_arg_TARGET} STREQUAL "winres")
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.rc
             COMMAND odb-resgen
             ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres.rc
-            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             DEPENDS odb-resgen
             COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
@@ -49,7 +49,7 @@ macro (odb_resgen_target name)
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres
             COMMAND odb-resgen
             ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres
-            WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             DEPENDS odb-resgen
             COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
