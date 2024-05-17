@@ -39,28 +39,39 @@ macro (odb_resgen_target name)
     if (${odb_resgen_target_arg_TARGET} STREQUAL "winres")
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.rc
             COMMAND odb-resgen
-            ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres.rc
+            ARGS
+                -t ${odb_resgen_target_arg_TARGET}
+                -i ${odb_resgen_target_arg_INPUT}
+                -o ${PROJECT_BINARY_DIR}/odbres.rc
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            DEPENDS odb-resgen
+            DEPENDS
+                odb-resgen
+                ${odb_resgen_target_arg_INPUT}
             COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
         set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/odbres.rc)
     else ()
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres
             COMMAND odb-resgen
-            ARGS -t ${odb_resgen_target_arg_TARGET} -i ${odb_resgen_target_arg_INPUT} -o ${PROJECT_BINARY_DIR}/odbres
+            ARGS
+                -t ${odb_resgen_target_arg_TARGET}
+                -i ${odb_resgen_target_arg_INPUT}
+                -o ${PROJECT_BINARY_DIR}/odbres
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-            DEPENDS odb-resgen
+            DEPENDS
+                odb-resgen
+                ${odb_resgen_target_arg_INPUT}
             COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
 
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.o
             COMMAND ${CMAKE_OBJCOPY}
-            ARGS --input-target binary
-                 --output-target elf64-x86-64
-                 --binary-architecture i386:x86-64
-                 --rename-section .data=.odbres,CONTENTS,ALLOC,LOAD,READONLY,DATA
-                 odbres odbres.o
+            ARGS
+                --input-target binary
+                --output-target elf64-x86-64
+                --binary-architecture i386:x86-64
+                --rename-section .data=.odbres,CONTENTS,ALLOC,LOAD,READONLY,DATA
+                odbres odbres.o
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             DEPENDS ${PROJECT_BINARY_DIR}/odbres
             COMMENT "[odb-resgen] Compiling resource strings for ${name}"

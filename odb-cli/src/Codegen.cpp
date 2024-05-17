@@ -16,12 +16,13 @@ extern "C" {
 }
 
 static enum odb_codegen_output_type outputType_ = ODB_CODEGEN_ObjectFile;
-static bool outputIsExecutable_ = true;
-static std::optional<enum odb_codegen_arch> targetTripleArch_;
+static bool                         outputIsExecutable_ = true;
+static std::optional<enum odb_codegen_arch>     targetTripleArch_;
 static std::optional<enum odb_codegen_platform> targetTriplePlatform_;
 
 // ----------------------------------------------------------------------------
-bool setOutputType(const std::vector<std::string>& args)
+bool
+setOutputType(const std::vector<std::string>& args)
 {
     if (args[0] == "llvm-ir")
     {
@@ -42,7 +43,8 @@ bool setOutputType(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool setArch(const std::vector<std::string>& args)
+bool
+setArch(const std::vector<std::string>& args)
 {
     if (args[0] == "i386")
     {
@@ -61,7 +63,8 @@ bool setArch(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool setPlatform(const std::vector<std::string>& args)
+bool
+setPlatform(const std::vector<std::string>& args)
 {
     if (args[0] == "windows")
     {
@@ -80,27 +83,35 @@ bool setPlatform(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
-bool output(const std::vector<std::string>& args)
+bool
+output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
 
-    log_sdk_note("Hello, {w:int is %d {e:and str is %s} wow} haha\n", 42, "lol");
-
 #if defined(ODBCOMPILER_PLATFORM_WINDOWS)
     static const char* objs[] = {"module.obj"};
-    //odb_codegen(nullptr, objs[0], "module", ODB_CODEGEN_ObjectFile, ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
-    //odb_link(objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
+    // odb_codegen(nullptr, objs[0], "module", ODB_CODEGEN_ObjectFile,
+    // ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS); odb_link(objs, 1,
+    // outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
 #else
     static const char* objs[] = {"module.o"};
-    //odb_codegen(nullptr, objs[0], "module", ODB_CODEGEN_ObjectFile, ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
-    //odb_link(objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
+    odb_codegen(
+        nullptr,
+        objs[0],
+        "module",
+        ODB_CODEGEN_ObjectFile,
+        ODB_CODEGEN_x86_64,
+        ODB_CODEGEN_LINUX);
+    odb_link(
+        objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
 #endif
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
-enum odb_codegen_platform getTargetPlatform(void)
+enum odb_codegen_platform
+getTargetPlatform(void)
 {
     if (targetTriplePlatform_)
         return targetTriplePlatform_.value();
@@ -113,115 +124,123 @@ enum odb_codegen_platform getTargetPlatform(void)
 #endif
 }
 
-    /*
+/*
 bool output(const std::vector<std::string>& args)
 {
-    std::string outputName = args[0];
-    bool outputToStdout = outputName == "-";
+std::string outputName = args[0];
+bool outputToStdout = outputName == "-";
 
-    auto* cmdIndex = getCommandIndex();
-    auto* ast = getAST();
+auto* cmdIndex = getCommandIndex();
+auto* ast = getAST();
 
-    // Set default target triple if they are not specified by the user.
-    if (!targetTripleArch_)
+// Set default target triple if they are not specified by the user.
+if (!targetTripleArch_)
+{
+    if (getSDKType() == odb::SDKType::DarkBASIC)
     {
-        if (getSDKType() == odb::SDKType::DarkBASIC)
-        {
-            targetTripleArch_ = odb::codegen::TargetTriple::Arch::i386;
-        }
-        else
-        {
-            targetTripleArch_ = odb::codegen::TargetTriple::Arch::x86_64;
-        }
+        targetTripleArch_ = odb::codegen::TargetTriple::Arch::i386;
     }
-    if (!targetTriplePlatform_)
+    else
     {
-        if (getSDKType() == odb::SDKType::DarkBASIC)
-        {
-            targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
-        }
-        else
-        {
+        targetTripleArch_ = odb::codegen::TargetTriple::Arch::x86_64;
+    }
+}
+if (!targetTriplePlatform_)
+{
+    if (getSDKType() == odb::SDKType::DarkBASIC)
+    {
+        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
+    }
+    else
+    {
 #if defined(ODBCOMPILER_PLATFORM_LINUX)
-            targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Linux;
+        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Linux;
 #elif defined(ODBCOMPILER_PLATFORM_MACOS)
-            targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::macOS;
+        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::macOS;
 #elif defined(ODBCOMPILER_PLATFORM_WIN32)
-            targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
+        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
 #else
-#error "Unknown host platform. Add a new default target platform for the current host."
-#endif
-        }
+#error "Unknown host platform. Add a new default target platform for the current
+host." #endif
+    }
+}
+
+odb::codegen::TargetTriple targetTriple{*targetTripleArch_,
+*targetTriplePlatform_};
+
+// Run AST post-processing (such as type checking, label resolution, etc).
+odb::astpost::ProcessGroup post;
+post.addProcess(std::make_unique<odb::astpost::ResolveAndCheckTypes>(*cmdIndex));
+post.addProcess(std::make_unique<odb::astpost::ResolveLabels>());
+if (!post.execute(ast))
+{
+    return false;
+}
+
+// Ensure that the executable extension is .exe if Windows is the target
+platform. if (outputIsExecutable_ && targetTriplePlatform_ ==
+odb::codegen::TargetTriple::Platform::Windows)
+{
+    if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) !=
+".exe")
+    {
+        outputName += ".exe";
+    }
+}
+
+// Generate code.
+std::unique_ptr<std::ofstream> outputFile;
+if (!outputToStdout)
+{
+    outputFile = std::make_unique<std::ofstream>(outputName, std::ios::binary);
+    if (!outputFile->is_open())
+    {
+        odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n",
+outputName.c_str()); return false;
     }
 
-    odb::codegen::TargetTriple targetTriple{*targetTripleArch_, *targetTriplePlatform_};
+    odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n",
+outputName.c_str());
+}
+std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
+if (!odb::codegen::generateCode(getSDKType(), outputType_, targetTriple,
+outputStream, "input.dba", ast, *cmdIndex))
+{
+    return false;
+}
 
-    // Run AST post-processing (such as type checking, label resolution, etc).
-    odb::astpost::ProcessGroup post;
-    post.addProcess(std::make_unique<odb::astpost::ResolveAndCheckTypes>(*cmdIndex));
-    post.addProcess(std::make_unique<odb::astpost::ResolveLabels>());
-    if (!post.execute(ast))
+// If we're generating an executable, invoke the linker.
+if (outputIsExecutable_)
+{
+    assert(outputType_ == odb::codegen::OutputType::ObjectFile);
+
+    // Select a linker. By default, we choose the locally embedded LLD linker.
+    std::filesystem::path linker =
+odb::FileSystem::getPathToSelf().parent_path() / "lld/bin"; switch
+(targetTriple.platform) { case odb::codegen::TargetTriple::Platform::Windows:
+        linker /= "lld-link";
+        break;
+    case odb::codegen::TargetTriple::Platform::macOS:
+        linker /= "ld64.lld";
+        break;
+    case odb::codegen::TargetTriple::Platform::Linux:
+        linker /= "ld.lld";
+        break;
+    }
+
+    // Above, we generated an object file and wrote it to `outputName`, even
+though it is not an executable
+    // yet. Here, we invoke the linker, which takes the above object file
+(written to `outputName`), links it, and
+    // overwrites the object file with the actual executable.
+    if (!odb::codegen::linkExecutable(getSDKType(), getSDKRootDir(), linker,
+targetTriple, {outputName}, outputName))
     {
+        odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
         return false;
     }
+}
 
-    // Ensure that the executable extension is .exe if Windows is the target platform.
-    if (outputIsExecutable_ && targetTriplePlatform_ == odb::codegen::TargetTriple::Platform::Windows)
-    {
-        if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) != ".exe")
-        {
-            outputName += ".exe";
-        }
-    }
-
-    // Generate code.
-    std::unique_ptr<std::ofstream> outputFile;
-    if (!outputToStdout)
-    {
-        outputFile = std::make_unique<std::ofstream>(outputName, std::ios::binary);
-        if (!outputFile->is_open())
-        {
-            odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n", outputName.c_str());
-            return false;
-        }
-
-        odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n", outputName.c_str());
-    }
-    std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
-    if (!odb::codegen::generateCode(getSDKType(), outputType_, targetTriple, outputStream, "input.dba", ast, *cmdIndex))
-    {
-        return false;
-    }
-
-    // If we're generating an executable, invoke the linker.
-    if (outputIsExecutable_)
-    {
-        assert(outputType_ == odb::codegen::OutputType::ObjectFile);
-
-        // Select a linker. By default, we choose the locally embedded LLD linker.
-        std::filesystem::path linker = odb::FileSystem::getPathToSelf().parent_path() / "lld/bin";
-        switch (targetTriple.platform) {
-        case odb::codegen::TargetTriple::Platform::Windows:
-            linker /= "lld-link";
-            break;
-        case odb::codegen::TargetTriple::Platform::macOS:
-            linker /= "ld64.lld";
-            break;
-        case odb::codegen::TargetTriple::Platform::Linux:
-            linker /= "ld.lld";
-            break;
-        }
-
-        // Above, we generated an object file and wrote it to `outputName`, even though it is not an executable
-        // yet. Here, we invoke the linker, which takes the above object file (written to `outputName`), links it, and
-        // overwrites the object file with the actual executable.
-        if (!odb::codegen::linkExecutable(getSDKType(), getSDKRootDir(), linker, targetTriple, {outputName}, outputName))
-        {
-            odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
-            return false;
-        }
-    }
-
-    return true;
+return true;
 }
 */

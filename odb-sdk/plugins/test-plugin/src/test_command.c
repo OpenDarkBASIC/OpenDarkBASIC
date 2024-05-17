@@ -15,10 +15,11 @@ ODB_COMMAND1(
 ODB_COMMAND2(
     "test command",
     "help/print.html",
-    void,
+    float,
     test_command2,
     const char* str,
     int         value)
 {
     printf("%s: %d\n", str, value);
+    return (float)value;
 }

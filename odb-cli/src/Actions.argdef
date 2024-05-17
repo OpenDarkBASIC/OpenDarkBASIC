@@ -219,8 +219,7 @@ section codegen:
           stdout.
     args: <file>
     func: output
-#    runafter: parser
-    runafter: global
+    runafter: parser
 %}
 
 %source-postamble {

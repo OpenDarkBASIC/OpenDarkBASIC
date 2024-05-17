@@ -9,7 +9,7 @@ macro (odb_add_plugin PLUGIN)
       "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.h")
 
     odb_resgen_target (${PLUGIN}
-        TARGET elf
+        TARGET $<IF:$<PLATFORM_ID:Windows>,winres,elf>
         INPUT
             ${${PLUGIN}_SOURCES}
             ${${PLUGIN}_HEADERS})

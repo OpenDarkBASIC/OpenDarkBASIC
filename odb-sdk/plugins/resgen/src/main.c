@@ -360,64 +360,6 @@ struct str_view
     int off, len;
 };
 
-/*! Create a string view from a c-string */
-static struct str_view
-str_view(const char* cstr)
-{
-    struct str_view str;
-    str.off = 0;
-    str.len = strlen(cstr);
-    return str;
-}
-/*!
- * \brief Checks for equality between a c-string and a string view.
- * \param[in] s1 C-String to compare.
- * \param[in] s2 String view to compare.
- * \param[in] data Pointer to buffer containing the data of the string view.
- * \return Return non-zero if equal, zero if the strings differ.
- */
-static int
-cstr_eq_str(const char* s1, struct str_view s2, const char* data)
-{
-    int len = (int)strlen(s1);
-    return len == s2.len && memcmp(data + s2.off, s1, len) == 0;
-}
-/*!
- * \brief Checks for equality between two string views.
- * \param[in] s1 First string view.
- * \param[in] s2 Second string view.
- * \param[in] data Pointer to buffer containing the data of both string views.
- * \return Return non-zero if equal, zero if the strings differ.
- */
-static int
-str_eq_str(struct str_view s1, struct str_view s2, const char* data)
-{
-    return s1.len == s2.len
-           && memcmp(data + s1.off, data + s2.off, s1.len) == 0;
-}
-/*!
- * \brief Convert a string view to a decimal integer.
- * \param[in] str String view to convert.
- * \param[in] dataPointer to buffer containing the data of the string view.
- * \return Return the converted value, or 0 if an error occurred.
- */
-static int
-str_dec_to_int(struct str_view str, const char* data)
-{
-    int i;
-    int value = 0;
-    for (i = 0; i != str.len; ++i)
-    {
-        char b = data[str.off + i];
-        if (b >= '0' && b <= '9')
-            value = value * 10 + (b - '0');
-        else
-            return 0;
-    }
-
-    return value;
-}
-
 /*! A memory buffer that grows as data is added. */
 struct mstream
 {
@@ -785,12 +727,18 @@ struct arg
 
     unsigned is_ptr : 1;
     unsigned is_const : 1;
+    unsigned is_signed : 1;
+    unsigned is_unsigned : 1;
+    unsigned is_char : 1;
+    unsigned is_struct : 1;
 };
 
 struct command
 {
     struct command* next;
     struct arg*     args;
+
+    const char* source;
 
     struct str_view name;
     struct str_view help;
@@ -843,8 +791,15 @@ parse_argument(struct parser* p, struct command* command, char is_ret)
             case ')':
                 if (arg)
                 {
+                    /* If a pointer was detected, change the type to an array,
+                     * unless it was also a "char". Then it is a string */
                     if (arg->is_ptr)
-                        arg->type = ARG_ARRAY;
+                    {
+                        if (arg->is_char)
+                            arg->type = ARG_STRING;
+                        else
+                            arg->type = ARG_ARRAY;
+                    }
                 }
                 return tok;
 
@@ -859,14 +814,49 @@ parse_argument(struct parser* p, struct command* command, char is_ret)
         {
             case '*': arg->is_ptr = 1; break;
             case TOK_IDENTIFIER:
-                if (memcmp(p->data + p->value.str.off, "const", 4) == 0)
+                /* C qualifiers */
+                if (memcmp(p->data + p->value.str.off, "const", 5) == 0)
                     arg->is_const = 1;
+                else if (memcmp(p->data + p->value.str.off, "signed", 6) == 0)
+                    arg->is_signed = 1;
+                else if (memcmp(p->data + p->value.str.off, "unsigned", 8) == 0)
+                    arg->is_unsigned = 1;
+                else if (memcmp(p->data + p->value.str.off, "struct", 6) == 0)
+                    arg->is_struct = 1;
+                /* C types */
                 else if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
                     arg->type = ARG_VOID;
+                else if (memcmp(p->data + p->value.str.off, "float", 5) == 0)
+                    arg->type = ARG_FLOAT;
+                else if (memcmp(p->data + p->value.str.off, "double", 6) == 0)
+                    arg->type = ARG_DOUBLE;
+                else if (memcmp(p->data + p->value.str.off, "int64_t", 7) == 0)
+                    arg->type = ARG_LONG;
+                else if (memcmp(p->data + p->value.str.off, "uint64_t", 8) == 0)
+                    arg->type = ARG_LONG;
                 else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
-                    arg->type = ARG_INTEGER;
-                else if (memcmp(p->data + p->value.str.off, "char", 3) == 0)
-                    arg->type = ARG_INTEGER;
+                    arg->type = arg->is_unsigned ? ARG_DWORD : ARG_INTEGER;
+                else if (memcmp(p->data + p->value.str.off, "int32_t", 7) == 0)
+                    arg->type = arg->is_unsigned ? ARG_DWORD : ARG_INTEGER;
+                else if (memcmp(p->data + p->value.str.off, "uint32_t", 8) == 0)
+                    arg->type = ARG_DWORD;
+                else if (memcmp(p->data + p->value.str.off, "int16_t", 7) == 0)
+                    arg->type = ARG_WORD;
+                else if (memcmp(p->data + p->value.str.off, "uint16_t", 8) == 0)
+                    arg->type = ARG_WORD;
+                else if (memcmp(p->data + p->value.str.off, "char", 4) == 0)
+                {
+                    arg->type = ARG_BYTE;
+                    arg->is_char = 1;
+                }
+                else if (memcmp(p->data + p->value.str.off, "uint8_t", 7) == 0)
+                    arg->type = ARG_BYTE;
+                else if (memcmp(p->data + p->value.str.off, "int8_t", 6) == 0)
+                    arg->type = ARG_BYTE;
+                else if (memcmp(p->data + p->value.str.off, "bool", 4) == 0)
+                    arg->type = ARG_BOOLEAN;
+                else if (memcmp(p->data + p->value.str.off, "_Bool", 5) == 0)
+                    arg->type = ARG_BOOLEAN;
                 else
                 {
                     arg->name = p->value.str;
@@ -875,11 +865,8 @@ parse_argument(struct parser* p, struct command* command, char is_ret)
                         fprintf(
                             stderr,
                             "Error: Unknown type '%.*s' encountered: Don't "
-                            "know "
-                            "how "
-                            "to map to DB type. This is an issue with "
-                            "odb-resgen. "
-                            "Please report a bug!\n",
+                            "know how to map to DB type. This is an issue with "
+                            "odb-resgen. Please report a bug!\n",
                             p->value.str.len,
                             p->data + p->value.str.off);
                         return TOK_ERROR;
@@ -896,6 +883,8 @@ static enum token
 parse_command(struct parser* p, struct command* command)
 {
     enum token tok;
+
+    command->source = p->data;
 
     if (scan_next_token(p) != '(')
         return print_error(p, "Error: Expected argument list\n");
@@ -965,71 +954,92 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
     }
 }
 
-static int
-gen_winres_resource(struct mstream* ms)
+static void
+gen_command_string(struct mstream* ms, const struct command* cmd)
 {
-    return 0;
+    struct arg* arg;
+    mstream_fmt(ms, "%S", cmd->name, cmd->source);
+    mstream_putc(ms, '%');
+    mstream_putc(ms, cmd->ret.type);
+
+    mstream_putc(ms, '(');
+    arg = cmd->args;
+    while (arg)
+    {
+        mstream_putc(ms, arg->type);
+        arg = arg->next;
+    }
+    mstream_putc(ms, ')');
+
+    mstream_putc(ms, '%');
+    mstream_fmt(ms, "%S", cmd->symbol, cmd->source);
+    mstream_putc(ms, '%');
+
+    arg = cmd->args;
+    while (arg)
+    {
+        if (arg != cmd->args)
+            mstream_cstr(ms, ", ");
+        mstream_fmt(ms, "%S", arg->name, cmd->source);
+        switch (arg->type)
+        {
+            case ARG_NONE: break;
+            case ARG_VOID: break;
+            case ARG_LONG: mstream_cstr(ms, " as long"); break;
+            case ARG_DWORD: mstream_cstr(ms, " as dword"); break;
+            case ARG_INTEGER: mstream_cstr(ms, " as integer"); break;
+            case ARG_WORD: mstream_cstr(ms, " as word"); break;
+            case ARG_BYTE: mstream_cstr(ms, " as byte"); break;
+            case ARG_BOOLEAN: mstream_cstr(ms, " as boolean"); break;
+            case ARG_FLOAT: mstream_cstr(ms, " as float"); break;
+            case ARG_DOUBLE: mstream_cstr(ms, " as double"); break;
+            case ARG_STRING: mstream_cstr(ms, " as string"); break;
+            case ARG_ARRAY: break;
+            case ARG_LABEL: break;
+            case ARG_DABEL: break;
+            case ARG_ANY: break;
+            case ARG_USER_DEFINED_VAR_PTR: break;
+        }
+        arg = arg->next;
+    }
+
+    mstream_putc(ms, '%');
+    mstream_fmt(ms, "%S", cmd->help, cmd->source);
 }
 
-static int
-gen_elf_resource(struct mstream* ms, const struct root* root, const char* data)
+static void
+gen_winres_resource(struct mstream* ms, const struct root* root)
 {
+    int                   stringID = 1;
     const struct command* cmd = root->commands;
-    const struct arg*     arg;
+
+    mstream_cstr(ms, "STRINGTABLE\n");
+    mstream_cstr(ms, "BEGIN\n");
+
     while (cmd)
     {
-        mstream_fmt(ms, "%S", cmd->name, data);
-        mstream_putc(ms, '%');
-        mstream_putc(ms, cmd->ret.type);
-
-        mstream_putc(ms, '(');
-        arg = cmd->args;
-        while (arg)
-        {
-            mstream_putc(ms, arg->type);
-            arg = arg->next;
-        }
-        mstream_putc(ms, ')');
-
-        mstream_putc(ms, '%');
-        mstream_fmt(ms, "%S", cmd->symbol, data);
-        mstream_putc(ms, '%');
-
-        arg = cmd->args;
-        while (arg)
-        {
-            if (arg != cmd->args)
-                mstream_cstr(ms, ", ");
-            mstream_fmt(ms, "%S", arg->name, data);
-            switch (arg->type)
-            {
-                case ARG_NONE: break;
-                case ARG_VOID: break;
-                case ARG_LONG: mstream_cstr(ms, " as long"); break;
-                case ARG_DWORD: mstream_cstr(ms, " as dword"); break;
-                case ARG_INTEGER: mstream_cstr(ms, " as integer"); break;
-                case ARG_WORD: mstream_cstr(ms, " as word"); break;
-                case ARG_BYTE: mstream_cstr(ms, " as byte"); break;
-                case ARG_BOOLEAN: mstream_cstr(ms, " as boolean"); break;
-                case ARG_FLOAT: mstream_cstr(ms, " as float"); break;
-                case ARG_DOUBLE: mstream_cstr(ms, " as double"); break;
-                case ARG_STRING: mstream_cstr(ms, " as string"); break;
-                case ARG_ARRAY: break;
-                case ARG_LABEL: break;
-                case ARG_DABEL: break;
-                case ARG_ANY: break;
-                case ARG_USER_DEFINED_VAR_PTR: break;
-            }
-            arg = arg->next;
-        }
-
-        mstream_putc(ms, '%');
-        mstream_fmt(ms, "%S", cmd->help, data);
-        mstream_putc(ms, '\n');
-
+        mstream_fmt(ms, "    %d", stringID++);
+        mstream_cstr(ms, " \"");
+        gen_command_string(ms, cmd);
+        mstream_cstr(ms, "\"\n");
         cmd = cmd->next;
     }
-    return 0;
+
+    mstream_cstr(ms, "END\n");
+}
+
+static void
+gen_elf_resource(struct mstream* ms, const struct root* root)
+{
+    const struct command* cmd = root->commands;
+    while (cmd)
+    {
+        if (cmd != root->commands)
+            mstream_putc(ms, '\n');
+
+        gen_command_string(ms, cmd);
+        cmd = cmd->next;
+    }
 }
 
 static int
@@ -1061,6 +1071,7 @@ main(int argc, char** argv)
 {
     struct parser  parser;
     struct cfg     cfg = {0};
+    struct root    root = {0};
     struct mstream ms = mstream_init_writeable();
 
     if (parse_cmdline(argc, argv, &cfg) != 0)
@@ -1069,7 +1080,6 @@ main(int argc, char** argv)
     for (int i = 0; i != cfg.input_files_count; ++i)
     {
         struct mfile mf;
-        struct root  root = {0};
 
         /* File names can be empty if CMake uses generator expressions for file
          * names */
@@ -1082,25 +1092,17 @@ main(int argc, char** argv)
         parser_init(&parser, &mf);
         if (parse(&parser, &root, &cfg) != 0)
             return -1;
+    }
 
-        switch (cfg.target)
-        {
-            case TARGET_NONE:
-                fprintf(
-                    stderr,
-                    "Error: No target specified. Use -t <winres|elf>\n");
-                return -1;
+    switch (cfg.target)
+    {
+        case TARGET_NONE:
+            fprintf(
+                stderr, "Error: No target specified. Use -t <winres|elf>\n");
+            return -1;
 
-            case TARGET_WINRES:
-                if (gen_winres_resource(&ms) != 0)
-                    return -1;
-                break;
-
-            case TARGET_ELF:
-                if (gen_elf_resource(&ms, &root, parser.data) != 0)
-                    return -1;
-                break;
-        }
+        case TARGET_WINRES: gen_winres_resource(&ms, &root); break;
+        case TARGET_ELF: gen_elf_resource(&ms, &root); break;
     }
 
     if (write_resource(&ms, cfg.output_file) != 0)
