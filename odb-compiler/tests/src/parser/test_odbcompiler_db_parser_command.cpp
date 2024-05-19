@@ -22,12 +22,12 @@ TEST_F(NAME, print_command)
     int stmt = ast.nodes[0].block.stmt;
     ASSERT_THAT(stmt, Gt(0));
     ASSERT_THAT(ast.nodes[stmt].info.type, Eq(AST_COMMAND));
-    ASSERT_THAT(ast.nodes[stmt].command.idx, Eq(1));
-    int arglist = ast.nodes[stmt].command.arglist;
+    ASSERT_THAT(ast.nodes[stmt].command.id, Eq(1));
+    int arglist = ast.nodes[stmt].command.paramlist;
     ASSERT_THAT(arglist, Gt(0));
-    ASSERT_THAT(ast.nodes[arglist].info.type, Eq(AST_ARGLIST));
-    ASSERT_THAT(ast.nodes[arglist].arglist.next, Eq(-1));
-    int expr = ast.nodes[arglist].arglist.expr;
+    ASSERT_THAT(ast.nodes[arglist].info.type, Eq(AST_PARAMLIST));
+    ASSERT_THAT(ast.nodes[arglist].paramlist.next, Eq(-1));
+    int expr = ast.nodes[arglist].paramlist.expr;
     ASSERT_THAT(expr, Gt(0));
     ASSERT_THAT(ast.nodes[expr].info.type, Eq(AST_STRING_LITERAL));
     ASSERT_THAT(ast.nodes[expr].string_literal.str.off, Eq(6));

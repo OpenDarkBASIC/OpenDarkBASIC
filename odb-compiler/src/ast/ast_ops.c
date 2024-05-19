@@ -57,9 +57,9 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
     switch (ast->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
         case AST_CONST_DECL: break;
-        case AST_COMMAND: SWAP(cmd_idx, command, idx) break;
+        case AST_COMMAND: SWAP(cmd_id, command, id) break;
         case AST_ASSIGN_VAR: break;
         case AST_IDENTIFIER:
             SWAP(struct utf8_span, identifier, name)
@@ -137,13 +137,13 @@ ast_trees_equal(
     switch (a1->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
         case AST_CONST_DECL: break;
 
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
-            if (a1->nodes[n1].command.idx != a2->nodes[n2].command.idx)
+            if (a1->nodes[n1].command.id != a2->nodes[n2].command.id)
                 return 0;
             break;
 

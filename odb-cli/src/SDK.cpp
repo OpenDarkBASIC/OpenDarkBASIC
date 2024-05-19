@@ -1,8 +1,8 @@
-#include "odb-cli/SDK.hpp"
 #include "odb-cli/Codegen.hpp"
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-cli/SDK.hpp"
 
 extern "C" {
+#include "odb-compiler/sdk/sdk.h"
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/ospath.h"

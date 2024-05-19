@@ -37,7 +37,7 @@ public:
         return cstr_utf8_span(cstr);
     }
 
-    cmd_idx
+    cmd_id
     addCommand(const char* cstr)
     {
         return cmd_list_add(

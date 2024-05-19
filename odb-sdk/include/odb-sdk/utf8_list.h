@@ -56,6 +56,11 @@ utf8_list_view(const struct utf8_list* l, utf8_idx i)
     l->data[span.off + span.len] = '\0';
     return view;
 }
+static inline char*
+utf8_list_data(struct utf8_list* l, utf8_idx i)
+{
+    return l->data + UTF8_LIST_TABLE_PTR(l)[-i].off;
+}
 
 /*!
  * @brief Finds the first position in which a string could be inserted without

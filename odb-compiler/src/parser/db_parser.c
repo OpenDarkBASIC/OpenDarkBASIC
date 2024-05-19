@@ -100,12 +100,12 @@ scan_next_token(
         || token->pushed_char == TOK_INTEGER_LITERAL) /* Commands can start with
                                                          an integer literal */
     {
-        cmd_idx          longest_match_cmd_idx;
+        cmd_id          longest_match_cmd_idx;
         int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
         for (i = 0; candidate.len <= commands->longest_command; ++i)
         {
-            cmd_idx cmd = cmd_list_find(
+            cmd_id cmd = cmd_list_find(
                 commands, utf8_span_view(source_text, candidate));
             if (cmd < cmd_list_count(commands))
             {

@@ -288,13 +288,13 @@ log_vprogress(
 
 /* ------------------------------------------------------------------------- */
 void
-log_flc(
+log_vflc(
     const char*      severity,
     const char*      filename,
     const char*      source,
     struct utf8_span location,
     const char*      fmt,
-    ...)
+    va_list ap)
 {
     utf8_idx     i;
     utf8_idx     l1, c1;
@@ -311,9 +311,8 @@ log_flc(
     fprintf_with_color(stderr, "{emph:%s:%d:%d:} ", filename, l1, c1);
     fprintf_with_color(stderr, severity);
 
-    va_start(args.ap, fmt);
+    va_copy(args.ap, ap);
     vfprintf_with_color(stderr, fmt, &args);
-    va_end(args.ap);
 }
 
 /* ------------------------------------------------------------------------- */

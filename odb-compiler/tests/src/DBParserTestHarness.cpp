@@ -39,7 +39,7 @@ DBParserTestHarness::TearDown()
 }
 
 int
-DBParserTestHarness::addCommand(enum cmd_param_type return_type, const char* name)
+DBParserTestHarness::addCommand(enum cmd_arg_type return_type, const char* name)
 {
     return cmd_list_add(
         &cmds,

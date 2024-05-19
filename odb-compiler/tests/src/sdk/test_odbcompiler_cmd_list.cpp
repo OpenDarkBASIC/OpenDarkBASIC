@@ -43,9 +43,9 @@ public:
 
 TEST_F(NAME, add_command_returns_ref)
 {
-    cmd_idx a = addCommand("projection matrix4");
-    cmd_idx b = addCommand("randomize");
-    cmd_idx c = addCommand("randomize matrix");
+    cmd_id a = addCommand("projection matrix4");
+    cmd_id b = addCommand("randomize");
+    cmd_id c = addCommand("randomize matrix");
 
     EXPECT_THAT(a, Eq(0));
     EXPECT_THAT(b, Eq(1));

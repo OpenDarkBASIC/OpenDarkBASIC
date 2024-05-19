@@ -8,10 +8,10 @@ extern "C" {
 #include "LIEF/PE/Binary.hpp"
 #include "LIEF/PE/ResourceNode.hpp"
 
-static enum cmd_param_type
+static enum cmd_arg_type
 convert_char_to_return_type(char c)
 {
-    switch ((enum cmd_param_type)c)
+    switch ((enum cmd_arg_type)c)
     {
         case CMD_PARAM_VOID:
         case CMD_PARAM_LONG:
@@ -26,17 +26,17 @@ convert_char_to_return_type(char c)
         case CMD_PARAM_ARRAY:
         case CMD_PARAM_LABEL:
         case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
+        case CMD_PARAM_ANY: return (enum cmd_arg_type)c;
 
         case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
     }
-    return (enum cmd_param_type)0;
+    return (enum cmd_arg_type)0;
 }
 
-static enum cmd_param_type
+static enum cmd_arg_type
 convert_char_to_param_type(char c)
 {
-    switch ((enum cmd_param_type)c)
+    switch ((enum cmd_arg_type)c)
     {
         case CMD_PARAM_VOID:
         case CMD_PARAM_LONG:
@@ -51,17 +51,17 @@ convert_char_to_param_type(char c)
         case CMD_PARAM_ARRAY:
         case CMD_PARAM_LABEL:
         case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
+        case CMD_PARAM_ANY: return (enum cmd_arg_type)c;
 
         case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
     }
-    return (enum cmd_param_type)0;
+    return (enum cmd_arg_type)0;
 }
 
 int
 load_dbpro_commands(
     struct cmd_list*        commands,
-    plugin_ref              plugin_id,
+    plugin_id              plugin_id,
     const LIEF::PE::Binary* pe,
     struct ospathc          filepath)
 {
@@ -133,7 +133,7 @@ load_dbpro_commands(
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
-            enum cmd_param_type return_type = CMD_PARAM_VOID;
+            enum cmd_arg_type return_type = CMD_PARAM_VOID;
             if (entry_str.data[cmd_name.off + cmd_name.len - 1] == '[')
             {
                 char type_char = entry_str.data[type_str.off];
@@ -158,7 +158,7 @@ load_dbpro_commands(
              * in lower case in the command list for this reason */
             utf8_tolower_span(entry_str.data, cmd_name);
 
-            cmd_idx cmd = cmd_list_add(
+            cmd_id cmd = cmd_list_add(
                 commands,
                 plugin_id,
                 return_type,
@@ -174,8 +174,8 @@ load_dbpro_commands(
             for (utf8_idx i = 0; i != type_str.len; ++i)
             {
                 char type_char = entry_str.data[type_str.off + i];
-                enum cmd_param_direction direction = CMD_PARAM_IN;
-                enum cmd_param_type      type
+                enum cmd_arg_direction direction = CMD_PARAM_IN;
+                enum cmd_arg_type      type
                     = convert_char_to_param_type(type_char);
 
                 utf8_split(entry_str.data, doc, ',', &param_doc, &doc);

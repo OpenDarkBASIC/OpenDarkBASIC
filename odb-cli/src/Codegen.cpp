@@ -1,13 +1,7 @@
+#include "odb-cli/AST.hpp"
 #include "odb-cli/Codegen.hpp"
-#include "odb-sdk/FileSystem.hpp"
+#include "odb-cli/Commands.hpp"
 
-extern "C" {
-#include "odb-sdk/dynlib.h"
-#include "odb-sdk/log.h"
-}
-
-#include <fstream>
-#include <iostream>
 #include <optional>
 
 extern "C" {
@@ -96,12 +90,15 @@ output(const std::vector<std::string>& args)
 #else
     static const char* objs[] = {"module.o"};
     odb_codegen(
-        nullptr,
+        getAST(),
         objs[0],
         "module",
         ODB_CODEGEN_ObjectFile,
         ODB_CODEGEN_x86_64,
-        ODB_CODEGEN_LINUX);
+        ODB_CODEGEN_LINUX,
+        getCommandList(),
+        getSourceFilename(),
+        getSource());
     odb_link(
         objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
 #endif

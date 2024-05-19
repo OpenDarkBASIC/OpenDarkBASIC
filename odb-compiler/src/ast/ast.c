@@ -66,29 +66,29 @@ ast_block_append(
     return n;
 }
 int
-ast_arglist(struct ast* ast, int expr, struct utf8_span location)
+ast_paramlist(struct ast* ast, int expr, struct utf8_span location)
 {
-    int n = new_node(ast, AST_ARGLIST, location);
+    int n = new_node(ast, AST_PARAMLIST, location);
     if (n < 0)
         return -1;
-    ast->nodes[n].arglist.expr = expr;
+    ast->nodes[n].paramlist.expr = expr;
     return n;
 }
 
 int
-ast_arglist_append(
-    struct ast* ast, int arglist, int expr, struct utf8_span location)
+ast_paramlist_append(
+    struct ast* ast, int paramlist, int expr, struct utf8_span location)
 {
-    int n = new_node(ast, AST_ARGLIST, location);
+    int n = new_node(ast, AST_PARAMLIST, location);
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(arglist > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].base.info.type == AST_ARGLIST);
-    while (ast->nodes[arglist].arglist.next != -1)
-        arglist = ast->nodes[arglist].arglist.next;
-    ast->nodes[arglist].arglist.next = n;
-    ast->nodes[n].arglist.expr = expr;
+    ODBSDK_DEBUG_ASSERT(paramlist > -1);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[paramlist].base.info.type == AST_PARAMLIST);
+    while (ast->nodes[paramlist].paramlist.next != -1)
+        paramlist = ast->nodes[paramlist].paramlist.next;
+    ast->nodes[paramlist].paramlist.next = n;
+    ast->nodes[n].paramlist.expr = expr;
 
     return n;
 }
@@ -107,13 +107,13 @@ ast_const_decl(
 
 int
 ast_command(
-    struct ast* ast, cmd_idx cmd_idx, int arglist, struct utf8_span location)
+    struct ast* ast, cmd_id cmd_idx, int paramlist, struct utf8_span location)
 {
     int n = new_node(ast, AST_COMMAND, location);
     if (n < 0)
         return -1;
-    ast->nodes[n].command.idx = cmd_idx;
-    ast->nodes[n].command.arglist = arglist;
+    ast->nodes[n].command.id = cmd_idx;
+    ast->nodes[n].command.paramlist = paramlist;
     return n;
 }
 

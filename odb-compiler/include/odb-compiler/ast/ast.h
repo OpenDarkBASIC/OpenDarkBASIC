@@ -4,8 +4,6 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-sdk/utf8.h"
 
-struct DBLTYPE;
-
 enum type_annotation
 {
     TA_NONE,
@@ -19,7 +17,7 @@ enum type_annotation
 enum ast_type
 {
     AST_BLOCK,
-    AST_ARGLIST,
+    AST_PARAMLIST,
     AST_CONST_DECL,
     AST_COMMAND,
     AST_ASSIGN_VAR,
@@ -58,7 +56,7 @@ union ast_node
         int parent;
         int expr;
         int next;
-    } arglist;
+    } paramlist;
 
     struct const_decl
     {
@@ -72,9 +70,9 @@ union ast_node
     {
         struct info info;
         int parent;
-        int arglist;
+        int paramlist;
         int _pad;
-        cmd_idx idx;
+        cmd_id id;
     } command;
 
     struct assign_var
@@ -134,10 +132,10 @@ ast_deinit(struct ast* ast);
 
 int ast_block(struct ast* ast, int stmt, struct utf8_span location);
 int ast_block_append(struct ast* ast, int block, int stmt, struct utf8_span location);
-int ast_arglist(struct ast* ast, int expr, struct utf8_span location);
-int ast_arglist_append(struct ast* ast, int arglist, int expr, struct utf8_span location);
+int ast_paramlist(struct ast* ast, int expr, struct utf8_span location);
+int ast_paramlist_append(struct ast* ast, int arglist, int expr, struct utf8_span location);
 int ast_const_decl(struct ast* ast, int identifier, int expr, struct utf8_span location);
-int ast_command(struct ast* ast, cmd_idx cmd_ref, int arglist, struct utf8_span location);
+int ast_command(struct ast* ast, cmd_id cmd_id, int arglist, struct utf8_span location);
 int ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location);
 int ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 int ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);

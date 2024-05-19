@@ -11,6 +11,7 @@ extern "C" {
 
 struct result
 {
+    std::string      source_filename;
     struct db_source source;
     struct db_parser parser;
     struct ast       ast;
@@ -43,8 +44,9 @@ parseDBA(const std::vector<std::string>& args)
     {
         auto& result = results.emplace_back();
 
-        log_info("[ast] ", "Parsing file {quote:%s}\n", arg.c_str());
-        if (db_source_open_file(&result.source, cstr_ospathc(arg.c_str())) != 0)
+        result.source_filename = arg;
+        log_info("[ast] ", "Parsing file {quote:%s}\n", result.source_filename.c_str());
+        if (db_source_open_file(&result.source, cstr_ospathc(result.source_filename.c_str())) != 0)
             goto open_source_failed;
 
         if (db_parser_init(&result.parser) != 0)
@@ -54,7 +56,7 @@ parseDBA(const std::vector<std::string>& args)
         if (db_parse(
                 &result.parser,
                 &result.ast,
-                arg.c_str(),
+                result.source_filename.c_str(),
                 result.source,
                 getCommandList())
             != 0)
@@ -158,4 +160,21 @@ dumpASTJSON(const std::vector<std::string>& args)
         fclose(outFile);
 #endif
     return false;
+}
+
+// ----------------------------------------------------------------------------
+struct ast*
+getAST()
+{
+    return &results[0].ast;
+}
+const char*
+getSourceFilename()
+{
+    return results[0].source_filename.c_str();
+}
+struct db_source
+getSource()
+{
+    return results[0].source;
 }

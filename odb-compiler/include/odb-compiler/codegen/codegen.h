@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
+#include "odb-compiler/parser/db_source.h"
 
 enum odb_codegen_output_type
 {
@@ -24,20 +25,25 @@ enum odb_codegen_platform
 };
 
 struct ast;
+struct cmd_list;
 
 ODBCOMPILER_PUBLIC_API int
 odb_codegen(
-        struct ast* program,
-        const char* output_name,
-        const char* module_name,
-        /*enum odb_sdk_type sdkType,*/
-        enum odb_codegen_output_type output_type,
-        enum odb_codegen_arch arch,
-        enum odb_codegen_platform platform);
+    struct ast* program,
+    const char* output_name,
+    const char* module_name,
+    /*enum odb_sdk_type sdkType,*/
+    enum odb_codegen_output_type output_type,
+    enum odb_codegen_arch        arch,
+    enum odb_codegen_platform    platform,
+    const struct cmd_list*       cmds,
+    const char*                  source_filename,
+    struct db_source             source);
 
-/*ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const std::filesystem::path& sdkRootDir,
-                                           const std::filesystem::path& linker, TargetTriple targetTriple,
-                                           std::vector<std::string> inputFilenames, std::string& outputFilename);*/
+/*ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const
+   std::filesystem::path& sdkRootDir, const std::filesystem::path& linker,
+   TargetTriple targetTriple, std::vector<std::string> inputFilenames,
+   std::string& outputFilename);*/
 
 /*
 struct TargetTriple

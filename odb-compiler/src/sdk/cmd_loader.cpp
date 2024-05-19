@@ -12,20 +12,20 @@ extern "C" {
 int
 load_dbpro_commands(
     struct cmd_list*        commands,
-    plugin_ref              plugin_id,
+    plugin_id              plugin_id,
     const LIEF::PE::Binary* pe,
     struct ospathc          filepath);
 
 int
 load_odb_commands(
     struct cmd_list*    commands,
-    plugin_ref          plugin_id,
+    plugin_id          plugin_id,
     const LIEF::Binary* binary,
     struct ospathc      filepath);
 
 struct on_plugin_ctx
 {
-    plugin_ref                current, total;
+    plugin_id                current, total;
     struct cmd_list*          commands;
     enum sdk_type             sdk_type;
     enum odb_codegen_platform target_platform;
@@ -142,7 +142,7 @@ cmd_list_load_from_plugins(
     struct plugin_list        plugins)
 {
     struct on_plugin_ctx ctx = {
-        0, (plugin_ref)vec_count(plugins), commands, sdk_type, target_platform};
+        0, (plugin_id)vec_count(plugins), commands, sdk_type, target_platform};
 
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         return -1;

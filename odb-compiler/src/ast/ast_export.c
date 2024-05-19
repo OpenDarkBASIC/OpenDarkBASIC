@@ -18,17 +18,17 @@ write_nodes(
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
             break;
-        case AST_ARGLIST:
-            fprintf(fp, "  n%d [shape=\"box3d\", label=\"arglist\"];\n", n);
+        case AST_PARAMLIST:
+            fprintf(fp, "  n%d [shape=\"box3d\", label=\"paramlist\"];\n", n);
             break;
         case AST_CONST_DECL:
             fprintf(fp, "  n%d [label=\"#constant\"];\n", n);
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
-                = utf8_list_view(&commands->db_identifiers, nd->command.idx);
-            enum cmd_param_type ret_type
-                = *vec_get(commands->return_types, nd->command.idx);
+                = utf8_list_view(&commands->db_identifiers, nd->command.id);
+            enum cmd_arg_type ret_type
+                = *vec_get(commands->return_types, nd->command.id);
             fprintf(
                 fp,
                 "  n%d [shape=\"doubleoctagon\", fontcolor=\"blue\", "

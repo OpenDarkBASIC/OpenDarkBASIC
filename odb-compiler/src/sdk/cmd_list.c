@@ -2,10 +2,10 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/utf8_list.h"
 
-VEC_DEFINE_API(plugin_idxs, int16_t, 16)
-VEC_DEFINE_API(return_types_list, enum cmd_param_type, 32)
-VEC_DEFINE_API(param_types_list, struct cmd_param, 32)
-VEC_DEFINE_API(param_types_lists, struct param_types_list, 32)
+VEC_DEFINE_API(plugin_ids, int16_t, 16)
+VEC_DEFINE_API(return_types_list, enum cmd_arg_type, 32)
+VEC_DEFINE_API(arg_types_list, struct cmd_arg, 32)
+VEC_DEFINE_API(arg_types_lists, struct arg_types_list, 32)
 
 static int
 handle_duplicate_identifier(struct utf8_view identifier)
@@ -15,17 +15,17 @@ handle_duplicate_identifier(struct utf8_view identifier)
     return 0;
 }
 
-cmd_idx
+cmd_id
 cmd_list_add(
-    struct cmd_list*    commands,
-    plugin_ref          plugin_ref,
-    enum cmd_param_type return_type,
-    struct utf8_view    db_identifier,
-    struct utf8_view    c_symbol,
-    struct utf8_view    help_file)
+    struct cmd_list*  commands,
+    plugin_id         plugin_id,
+    enum cmd_arg_type return_type,
+    struct utf8_view  db_identifier,
+    struct utf8_view  c_symbol,
+    struct utf8_view  help_file)
 {
-    struct param_types_list* param_types;
-    utf8_idx                 insert
+    struct arg_types_list* arg_types;
+    utf8_idx               insert
         = utf8_lower_bound(&commands->db_identifiers, db_identifier);
 
     if (insert < utf8_list_count(&commands->db_identifiers))
@@ -39,34 +39,33 @@ cmd_list_add(
 
     if (utf8_list_insert(&commands->db_identifiers, insert, db_identifier) < 0)
         goto db_identifier_failed;
-    if (utf8_list_insert(&commands->c_identifiers, insert, c_symbol) < 0)
+    if (utf8_list_insert(&commands->c_symbols, insert, c_symbol) < 0)
         goto c_identifier_failed;
     if (utf8_list_insert(&commands->help_files, insert, help_file) < 0)
         goto help_file_failed;
-    if (plugin_idxs_insert(&commands->plugin_idxs, insert, plugin_ref) < 0)
-        goto plugin_ref_failed;
+    if (plugin_ids_insert(&commands->plugin_ids, insert, plugin_id) < 0)
+        goto plugin_insert_failed;
     if (return_types_list_insert(&commands->return_types, insert, return_type)
         < 0)
         goto return_type_failed;
-    param_types
-        = param_types_lists_insert_emplace(&commands->param_types, insert);
-    if (param_types == NULL)
-        goto param_types_failed;
-    param_types_list_init(param_types);
+    arg_types = arg_types_lists_insert_emplace(&commands->arg_types, insert);
+    if (arg_types == NULL)
+        goto arg_types_failed;
+    arg_types_list_init(arg_types);
 
     if (commands->longest_command < db_identifier.len)
         commands->longest_command = db_identifier.len;
 
     return insert;
 
-param_types_failed:
+arg_types_failed:
     return_types_list_erase(commands->return_types, insert);
 return_type_failed:
-    plugin_idxs_erase(commands->plugin_idxs, insert);
-plugin_ref_failed:
+    plugin_ids_erase(commands->plugin_ids, insert);
+plugin_insert_failed:
     utf8_list_erase(&commands->help_files, insert);
 help_file_failed:
-    utf8_list_erase(&commands->c_identifiers, insert);
+    utf8_list_erase(&commands->c_symbols, insert);
 c_identifier_failed:
     utf8_list_erase(&commands->db_identifiers, insert);
 db_identifier_failed:
@@ -74,22 +73,22 @@ db_identifier_failed:
 }
 
 void
-cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx)
+cmd_list_erase(struct cmd_list* commands, cmd_id cmd_id)
 {
     /* The max length may have changed if we remove a command that is equal to
      * the max */
     int              recalc_longest_command = 0;
-    struct utf8_span span = utf8_list_span(&commands->db_identifiers, cmd_idx);
+    struct utf8_span span = utf8_list_span(&commands->db_identifiers, cmd_id);
     if (span.len == commands->longest_command)
         recalc_longest_command = 1;
 
-    param_types_list_deinit(vec_get(commands->param_types, cmd_idx));
-    param_types_lists_erase(commands->param_types, cmd_idx);
-    return_types_list_erase(commands->return_types, cmd_idx);
-    plugin_idxs_erase(commands->plugin_idxs, cmd_idx);
-    utf8_list_erase(&commands->help_files, cmd_idx);
-    utf8_list_erase(&commands->c_identifiers, cmd_idx);
-    utf8_list_erase(&commands->db_identifiers, cmd_idx);
+    arg_types_list_deinit(vec_get(commands->arg_types, cmd_id));
+    arg_types_lists_erase(commands->arg_types, cmd_id);
+    return_types_list_erase(commands->return_types, cmd_id);
+    plugin_ids_erase(commands->plugin_ids, cmd_id);
+    utf8_list_erase(&commands->help_files, cmd_id);
+    utf8_list_erase(&commands->c_symbols, cmd_id);
+    utf8_list_erase(&commands->db_identifiers, cmd_id);
 
     if (recalc_longest_command)
     {
@@ -106,27 +105,27 @@ cmd_list_erase(struct cmd_list* commands, cmd_idx cmd_idx)
 
 int
 cmd_add_param(
-    struct cmd_list*         commands,
-    cmd_idx                  cmd_ref,
-    enum cmd_param_type      type,
-    enum cmd_param_direction direction,
-    struct utf8_view         doc)
+    struct cmd_list*       commands,
+    cmd_id                 cmd_id,
+    enum cmd_arg_type      type,
+    enum cmd_arg_direction direction,
+    struct utf8_view       doc)
 {
-    struct param_types_list* params = vec_get(commands->param_types, cmd_ref);
-    struct cmd_param*        param = param_types_list_emplace(params);
-    if (param == NULL)
+    struct arg_types_list* args = vec_get(commands->arg_types, cmd_id);
+    struct cmd_arg*        arg = arg_types_list_emplace(args);
+    if (arg == NULL)
         return -1;
 
-    param->type = type;
-    param->direction = direction;
+    arg->type = type;
+    arg->direction = direction;
 
     return 0;
 }
 
-cmd_idx
+cmd_id
 cmd_list_find(const struct cmd_list* commands, struct utf8_view name)
 {
-    cmd_idx cmd = utf8_lower_bound(&commands->db_identifiers, name);
+    cmd_id cmd = utf8_lower_bound(&commands->db_identifiers, name);
     if (cmd < cmd_list_count(commands)
         && utf8_equal(name, utf8_list_view(&commands->db_identifiers, cmd)))
         return cmd;

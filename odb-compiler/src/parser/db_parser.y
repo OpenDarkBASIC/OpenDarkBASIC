@@ -9,7 +9,7 @@
 
     /* %union contains struct utf8_range string_value */
     #include "odb-sdk/utf8.h"
-    /* %union contains cmd_ref */
+    /* %union contains cmd_id */
     #include "odb-compiler/sdk/cmd_list.h"
 
     typedef void* dbscan_t;
@@ -109,7 +109,7 @@
      * length into the memory-mapped file. */
     struct utf8_span string_value;
     int node_value;  /* Index into the ast->nodes[] array */
-    cmd_idx cmd_value;  /* Index into the command_list */
+    cmd_id cmd_value;  /* Index into the command_list */
 }
 
 /* Add a description to some of the tokens */

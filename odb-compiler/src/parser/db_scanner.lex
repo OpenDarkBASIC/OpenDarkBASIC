@@ -28,6 +28,16 @@ token_to_ref(const char* cstr, void* extra)
     };
     return ref;
 }
+static inline struct utf8_span
+token_to_ref_strip_quotes(const char* cstr, void* extra)
+{
+    char* base = extra;
+    struct utf8_span ref = {
+        (utf8_idx)(cstr - base) + 1,
+        (utf8_idx)strlen(cstr) - 2
+    };
+    return ref;
+}
 
 %}
 
@@ -81,7 +91,7 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
     {BOOL_TRUE}         { yylval->boolean_value = 1; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = 0; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {STRING_LITERAL}    { yylval->string_value = token_to_ref_strip_quotes(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_STRING_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[1], NULL, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
