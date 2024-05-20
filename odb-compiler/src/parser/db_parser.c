@@ -107,7 +107,7 @@ scan_next_token(
         {
             cmd_id cmd = cmd_list_find(
                 commands, utf8_span_view(source_text, candidate));
-            if (cmd < cmd_list_count(commands))
+            if (cmd > -1)
             {
                 longest_match_cmd_idx = cmd;
                 longest_match_token_idx = i;

@@ -61,7 +61,7 @@ create_global_string_table(
 }
 
 static llvm::Type*
-dbpro_cmd_arg_type_to_llvm(enum cmd_arg_type type, llvm::Module* mod)
+dbpro_cmd_param_type_to_llvm(enum cmd_param_type type, llvm::Module* mod)
 {
     switch (type)
     {
@@ -110,23 +110,24 @@ get_command_function_signature(
     llvm::Module*          mod)
 {
     ODBSDK_DEBUG_ASSERT(ast->nodes[cmd].info.type == AST_COMMAND);
-    cmd_id cmd_id = ast->nodes[cmd].command.id;
+    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
-    struct arg_types_list* odb_arg_types = vec_get(cmds->arg_types, cmd_id);
-    llvm::SmallVector<llvm::Type*, 8> llvm_arg_types;
-    struct cmd_arg*                   odb_arg;
-    vec_for_each(*odb_arg_types, odb_arg)
+    struct param_types_list* odb_param_types
+        = vec_get(cmds->param_types, cmd_id);
+    llvm::SmallVector<llvm::Type*, 8> llvm_param_types;
+    struct cmd_param*                 odb_param;
+    vec_for_each(*odb_param_types, odb_param)
     {
-        llvm_arg_types.push_back(
-            dbpro_cmd_arg_type_to_llvm(odb_arg->type, mod));
+        llvm_param_types.push_back(
+            dbpro_cmd_param_type_to_llvm(odb_param->type, mod));
     }
 
     /* Convert return type from command list as well, and create LLVM FT */
-    enum cmd_arg_type odb_return_type = *vec_get(cmds->return_types, cmd_id);
+    enum cmd_param_type odb_return_type = *vec_get(cmds->return_types, cmd_id);
     return llvm::FunctionType::get(
-        dbpro_cmd_arg_type_to_llvm(odb_return_type, mod),
-        llvm_arg_types,
+        dbpro_cmd_param_type_to_llvm(odb_return_type, mod),
+        llvm_param_types,
         /* isVarArg */ false);
 }
 
@@ -143,7 +144,7 @@ create_global_plugin_symbol_table(
         if (ast->nodes[n].info.type != AST_COMMAND)
             continue;
 
-        cmd_id           cmd_id = ast->nodes[n].command.id;
+        cmd_id           cmd_id = ast->nodes[n].cmd.id;
         struct utf8_view c_sym = utf8_list_view(&cmds->c_symbols, cmd_id);
         llvm::StringRef  c_sym_ref(c_sym.data + c_sym.off, c_sym.len);
 
@@ -191,7 +192,7 @@ static llvm::Value*
 gen_expr(
     const struct ast*                             ast,
     int                                           expr,
-    const llvm::Type*                             cmd_arg_type,
+    const llvm::Type*                             cmd_param_type,
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
@@ -200,65 +201,54 @@ gen_expr(
     switch (ast->nodes[expr].info.type)
     {
         case AST_BLOCK:
-        case AST_PARAMLIST:
+        case AST_ARGLIST:
         case AST_CONST_DECL:
         case AST_COMMAND:
-        case AST_ASSIGN_VAR:
+        case AST_ASSIGN:
         case AST_IDENTIFIER: break;
 
         case AST_BOOLEAN_LITERAL:
-            if (!cmd_arg_type->isIntegerTy())
-            {
-                log_semantic_err(
-                    source_filename,
-                    source,
-                    ast->nodes[expr].info.location,
-                    "Parameter mismatch. Expected {emph:%s}, but parameter has "
-                    "type {emph:BOOLEAN}\n",
-                    to_string(cmd_arg_type).c_str());
-                return nullptr;
-            }
             return llvm::ConstantInt::get(
                 llvm::Type::getInt8Ty(mod->getContext()),
                 ast->nodes[expr].boolean_literal.is_true,
                 /* isSigned */ true);
 
+        case AST_BYTE_LITERAL:
+            return llvm::ConstantInt::get(
+                llvm::Type::getInt8Ty(mod->getContext()),
+                ast->nodes[expr].byte_literal.value,
+                /* isSigned */ false);
+        case AST_WORD_LITERAL:
+            return llvm::ConstantInt::get(
+                llvm::Type::getInt16Ty(mod->getContext()),
+                ast->nodes[expr].word_literal.value,
+                /* isSigned */ false);
+        case AST_DWORD_LITERAL:
+            return llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(mod->getContext()),
+                ast->nodes[expr].dword_literal.value,
+                /* isSigned */ false);
         case AST_INTEGER_LITERAL:
-            if (!cmd_arg_type->isIntegerTy()
-                || cmd_arg_type->getIntegerBitWidth() < 32)
-            {
-                log_semantic_err(
-                    source_filename,
-                    source,
-                    ast->nodes[expr].info.location,
-                    "Parameter mismatch. Expected {emph:%s}, but parameter has "
-                    "type {emph:INTEGER}\n",
-                    to_string(cmd_arg_type).c_str());
-                return nullptr;
-            }
             return llvm::ConstantInt::get(
                 llvm::Type::getInt32Ty(mod->getContext()),
                 ast->nodes[expr].integer_literal.value,
                 /* isSigned */ true);
+        case AST_DOUBLE_INTEGER_LITERAL:
+            return llvm::ConstantInt::get(
+                llvm::Type::getInt64Ty(mod->getContext()),
+                ast->nodes[expr].double_integer_literal.value,
+                /* isSigned */ true);
+
+        case AST_FLOAT_LITERAL:
+            return llvm::ConstantFP::get(
+                llvm::Type::getFloatTy(mod->getContext()),
+                llvm::APFloat(ast->nodes[expr].float_literal.value));
+        case AST_DOUBLE_LITERAL:
+            return llvm::ConstantFP::get(
+                llvm::Type::getDoubleTy(mod->getContext()),
+                llvm::APFloat(ast->nodes[expr].double_literal.value));
 
         case AST_STRING_LITERAL: {
-            // XXX: Opaque pointer: cmd_arg_type->getElement:Type() no longer
-            //      exists. This information is now part of the operation, i.e.
-            //      if this expression is being passed to a function as a
-            //      parameter, then the element type information is in the
-            //      function's argument type list instead. Find a nice way to
-            //      build the check for getInt8Ty() here.
-            if (!cmd_arg_type->isPointerTy())
-            {
-                log_semantic_err(
-                    source_filename,
-                    source,
-                    ast->nodes[expr].info.location,
-                    "Parameter mismatch. Expected {emph:%s}, but parameter has "
-                    "type {emph:STRING}\n",
-                    to_string(cmd_arg_type).c_str());
-                return nullptr;
-            }
             struct utf8_span span = ast->nodes[expr].string_literal.str;
             llvm::StringRef  str_ref(source.text.data + span.off, span.len);
             return string_table->find(str_ref)->getValue();
@@ -298,7 +288,7 @@ gen_block(
         switch (ast->nodes[stmt].info.type)
         {
             case AST_COMMAND: {
-                cmd_id cmd_id = ast->nodes[stmt].command.id;
+                cmd_id cmd_id = ast->nodes[stmt].cmd.id;
 
                 // Function table for commands should be generated at this
                 // point. Look up the command's symbol in the command list and
@@ -319,18 +309,18 @@ gen_block(
                 //       before passing them to the function call. This makes
                 //       nested function calls possible.
                 llvm::SmallVector<llvm::Value*, 8> param_values;
-                int paramlist = ast->nodes[stmt].command.paramlist;
+                int arglist = ast->nodes[stmt].cmd.arglist;
                 for (const llvm::Argument& arg : F->args())
                 {
                     param_values.push_back(gen_expr(
                         ast,
-                        ast->nodes[paramlist].paramlist.expr,
+                        ast->nodes[arglist].arglist.expr,
                         arg.getType(),
                         source_filename,
                         source,
                         string_table,
                         mod));
-                    paramlist = ast->nodes[paramlist].paramlist.next;
+                    arglist = ast->nodes[arglist].arglist.next;
                 }
 
                 b.CreateCall(F, param_values);

@@ -57,16 +57,25 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
     switch (ast->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_PARAMLIST: break;
+        case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
-        case AST_COMMAND: SWAP(cmd_id, command, id) break;
-        case AST_ASSIGN_VAR: break;
+        case AST_COMMAND: SWAP(cmd_id, cmd, id) break;
+        case AST_ASSIGN: break;
         case AST_IDENTIFIER:
             SWAP(struct utf8_span, identifier, name)
             SWAP(enum type_annotation, identifier, annotation)
             break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
-        case AST_INTEGER_LITERAL: SWAP(int, integer_literal, value) break;
+        case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
+        case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
+        case AST_INTEGER_LITERAL: SWAP(int32_t, integer_literal, value) break;
+        case AST_DWORD_LITERAL: SWAP(uint32_t, dword_literal, value) break;
+        case AST_DOUBLE_INTEGER_LITERAL:
+            SWAP(int64_t, double_integer_literal, value) break;
+        case AST_FLOAT_LITERAL:
+            SWAP(float, float_literal, value) break;
+        case AST_DOUBLE_LITERAL:
+            SWAP(double, double_literal, value) break;
         case AST_STRING_LITERAL:
             SWAP(struct utf8_span, string_literal, str) break;
     }
@@ -137,17 +146,17 @@ ast_trees_equal(
     switch (a1->nodes[n1].info.type)
     {
         case AST_BLOCK: break;
-        case AST_PARAMLIST: break;
+        case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
 
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
-            if (a1->nodes[n1].command.id != a2->nodes[n2].command.id)
+            if (a1->nodes[n1].cmd.id != a2->nodes[n2].cmd.id)
                 return 0;
             break;
 
-        case AST_ASSIGN_VAR: break;
+        case AST_ASSIGN: break;
 
         case AST_IDENTIFIER:
             if (!utf8_equal(
@@ -164,11 +173,43 @@ ast_trees_equal(
                 return 0;
             break;
 
+        case AST_BYTE_LITERAL:
+            if (a1->nodes[n1].byte_literal.value
+                != a2->nodes[n2].byte_literal.value)
+                return 0;
+            break;
+        case AST_WORD_LITERAL:
+            if (a1->nodes[n1].word_literal.value
+                != a2->nodes[n2].word_literal.value)
+                return 0;
+            break;
         case AST_INTEGER_LITERAL:
             if (a1->nodes[n1].integer_literal.value
                 != a2->nodes[n2].integer_literal.value)
                 return 0;
             break;
+        case AST_DWORD_LITERAL:
+            if (a1->nodes[n1].dword_literal.value
+                != a2->nodes[n2].dword_literal.value)
+                return 0;
+            break;
+        case AST_DOUBLE_INTEGER_LITERAL:
+            if (a1->nodes[n1].double_integer_literal.value
+                != a2->nodes[n2].double_integer_literal.value)
+                return 0;
+            break;
+        
+        case AST_FLOAT_LITERAL:
+            if (a1->nodes[n1].float_literal.value
+                != a2->nodes[n2].float_literal.value)
+                return 0;
+            break;
+        case AST_DOUBLE_LITERAL:
+            if (a1->nodes[n1].double_literal.value
+                != a2->nodes[n2].double_literal.value)
+                return 0;
+            break;
+
         case AST_STRING_LITERAL:
             if (!utf8_equal(
                     utf8_span_view(

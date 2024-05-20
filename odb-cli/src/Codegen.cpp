@@ -1,12 +1,12 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
-
 #include <optional>
 
 extern "C" {
 #include "odb-compiler/codegen/codegen.h"
 #include "odb-compiler/link/link.h"
+#include "odb-compiler/semantic/semantic.h"
 }
 
 static enum odb_codegen_output_type outputType_ = ODB_CODEGEN_ObjectFile;
@@ -81,6 +81,11 @@ bool
 output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
+
+    if (semantic_checks_run(
+            getAST(), getCommandList(), getSourceFilename(), getSource())
+        != 0)
+        return false;
 
 #if defined(ODBCOMPILER_PLATFORM_WINDOWS)
     static const char* objs[] = {"module.obj"};

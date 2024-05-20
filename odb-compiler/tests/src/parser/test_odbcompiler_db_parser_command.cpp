@@ -1,11 +1,11 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/tests/DBParserTestHarness.hpp"
+#include "odb-compiler/tests/DBParserHelper.hpp"
 
 #define NAME odbcompiler_db_parser_command
 
 using namespace testing;
 
-struct NAME : public DBParserTestHarness
+struct NAME : public DBParserHelper
 {
 };
 
@@ -22,16 +22,16 @@ TEST_F(NAME, print_command)
     int stmt = ast.nodes[0].block.stmt;
     ASSERT_THAT(stmt, Gt(0));
     ASSERT_THAT(ast.nodes[stmt].info.type, Eq(AST_COMMAND));
-    ASSERT_THAT(ast.nodes[stmt].command.id, Eq(1));
-    int arglist = ast.nodes[stmt].command.paramlist;
+    ASSERT_THAT(ast.nodes[stmt].cmd.id, Eq(1));
+    int arglist = ast.nodes[stmt].cmd.arglist;
     ASSERT_THAT(arglist, Gt(0));
-    ASSERT_THAT(ast.nodes[arglist].info.type, Eq(AST_PARAMLIST));
-    ASSERT_THAT(ast.nodes[arglist].paramlist.next, Eq(-1));
-    int expr = ast.nodes[arglist].paramlist.expr;
+    ASSERT_THAT(ast.nodes[arglist].info.type, Eq(AST_ARGLIST));
+    ASSERT_THAT(ast.nodes[arglist].arglist.next, Eq(-1));
+    int expr = ast.nodes[arglist].arglist.expr;
     ASSERT_THAT(expr, Gt(0));
     ASSERT_THAT(ast.nodes[expr].info.type, Eq(AST_STRING_LITERAL));
-    ASSERT_THAT(ast.nodes[expr].string_literal.str.off, Eq(6));
-    ASSERT_THAT(ast.nodes[expr].string_literal.str.len, Eq(13));
+    ASSERT_THAT(ast.nodes[expr].string_literal.str.off, Eq(7));
+    ASSERT_THAT(ast.nodes[expr].string_literal.str.len, Eq(11));
 }
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)

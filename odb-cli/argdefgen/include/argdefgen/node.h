@@ -176,9 +176,9 @@ union adg_node
         char* str;
     } argname;
 
-    struct arg {
+    struct param {
         struct info info;
-        struct arg* next;
+        struct param* next;
         struct argname* argnames;
     } arg;
 

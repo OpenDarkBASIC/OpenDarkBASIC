@@ -697,33 +697,33 @@ scan_next_token(struct parser* p)
     return TOK_END;
 }
 
-enum arg_type
+enum param_type
 {
-    ARG_NONE = 0,
+    PARAM_NONE = 0,
 
-    ARG_VOID = '0',
-    ARG_LONG = 'R',    /* 8 bytes -- signed int */
-    ARG_DWORD = 'D',   /* 4 bytes -- unsigned int */
-    ARG_INTEGER = 'L', /* 4 bytes -- signed int */
-    ARG_WORD = 'W',    /* 2 bytes -- unsigned int */
-    ARG_BYTE = 'Y',    /* 1 byte -- unsigned int */
-    ARG_BOOLEAN = 'B', /* 1 byte -- boolean */
-    ARG_FLOAT = 'F',   /* 4 bytes -- float */
-    ARG_DOUBLE = 'O',  /* 8 bytes -- double */
-    ARG_STRING = 'S',  /* 4 bytes -- char* (passed as DWORD on 32-bit) */
-    ARG_ARRAY = 'H',   /* 4 bytes -- Pass array address directly */
-    ARG_LABEL = 'P',   /* 4 bytes -- ? */
-    ARG_DABEL = 'Q',   /* 4 bytes -- ? */
-    ARG_ANY = 'X',     /* 4 bytes -- (think reinterpret_cast) */
-    ARG_USER_DEFINED_VAR_PTR = 'E', /* 4 bytes */
+    PARAM_VOID = '0',
+    PARAM_LONG = 'R',    /* 8 bytes -- signed int */
+    PARAM_DWORD = 'D',   /* 4 bytes -- unsigned int */
+    PARAM_INTEGER = 'L', /* 4 bytes -- signed int */
+    PARAM_WORD = 'W',    /* 2 bytes -- unsigned int */
+    PARAM_BYTE = 'Y',    /* 1 byte -- unsigned int */
+    PARAM_BOOLEAN = 'B', /* 1 byte -- boolean */
+    PARAM_FLOAT = 'F',   /* 4 bytes -- float */
+    PARAM_DOUBLE = 'O',  /* 8 bytes -- double */
+    PARAM_STRING = 'S',  /* 4 bytes -- char* (passed as DWORD on 32-bit) */
+    PARAM_ARRAY = 'H',   /* 4 bytes -- Pass array address directly */
+    PARAM_LABEL = 'P',   /* 4 bytes -- ? */
+    PARAM_DABEL = 'Q',   /* 4 bytes -- ? */
+    PARAM_ANY = 'X',     /* 4 bytes -- (think reinterpret_cast) */
+    PARAM_USER_DEFINED_VAR_PTR = 'E', /* 4 bytes */
 };
 
-struct arg
+struct param
 {
-    struct arg* next;
+    struct param* next;
 
     struct str_view name;
-    enum arg_type   type;
+    enum param_type type;
 
     unsigned is_ptr : 1;
     unsigned is_const : 1;
@@ -733,28 +733,28 @@ struct arg
     unsigned is_struct : 1;
 };
 
-struct command
+struct cmd
 {
-    struct command* next;
-    struct arg*     args;
+    struct cmd*   next;
+    struct param* params;
 
     const char* source;
 
     struct str_view name;
     struct str_view help;
     struct str_view symbol;
-    struct arg      ret;
+    struct param    ret;
 };
 
 struct root
 {
-    struct command* commands;
+    struct cmd* commands;
 };
 
-static struct command*
+static struct cmd*
 new_command(struct root* root)
 {
-    struct command** cmd = &root->commands;
+    struct cmd** cmd = &root->commands;
     while (*cmd)
         cmd = &(*cmd)->next;
 
@@ -762,22 +762,22 @@ new_command(struct root* root)
     return *cmd;
 }
 
-static struct arg*
-new_argument(struct command* command)
+static struct param*
+new_param(struct cmd* command)
 {
-    struct arg** arg = &command->args;
-    while (*arg)
-        arg = &(*arg)->next;
+    struct param** param = &command->params;
+    while (*param)
+        param = &(*param)->next;
 
-    *arg = calloc(1, sizeof **arg);
-    return *arg;
+    *param = calloc(1, sizeof **param);
+    return *param;
 }
 
 static enum token
-parse_argument(struct parser* p, struct command* command, char is_ret)
+parse_parameter(struct parser* p, struct cmd* command, char is_ret)
 {
-    enum token  tok;
-    struct arg* arg = NULL;
+    enum token    tok;
+    struct param* param = NULL;
 
     while (1)
     {
@@ -789,78 +789,80 @@ parse_argument(struct parser* p, struct command* command, char is_ret)
 
             case ',':
             case ')':
-                if (arg)
+                if (param)
                 {
                     /* If a pointer was detected, change the type to an array,
                      * unless it was also a "char". Then it is a string */
-                    if (arg->is_ptr)
+                    if (param->is_ptr)
                     {
-                        if (arg->is_char)
-                            arg->type = ARG_STRING;
+                        if (param->is_char)
+                            param->type = PARAM_STRING;
                         else
-                            arg->type = ARG_ARRAY;
+                            param->type = PARAM_ARRAY;
                     }
                 }
                 return tok;
 
             case '*':
             case TOK_IDENTIFIER:
-                if (arg == NULL)
-                    arg = is_ret ? &command->ret : new_argument(command);
+                if (param == NULL)
+                    param = is_ret ? &command->ret : new_param(command);
                 break;
         }
 
         switch (tok)
         {
-            case '*': arg->is_ptr = 1; break;
+            case '*': param->is_ptr = 1; break;
             case TOK_IDENTIFIER:
                 /* C qualifiers */
                 if (memcmp(p->data + p->value.str.off, "const", 5) == 0)
-                    arg->is_const = 1;
+                    param->is_const = 1;
                 else if (memcmp(p->data + p->value.str.off, "signed", 6) == 0)
-                    arg->is_signed = 1;
+                    param->is_signed = 1;
                 else if (memcmp(p->data + p->value.str.off, "unsigned", 8) == 0)
-                    arg->is_unsigned = 1;
+                    param->is_unsigned = 1;
                 else if (memcmp(p->data + p->value.str.off, "struct", 6) == 0)
-                    arg->is_struct = 1;
+                    param->is_struct = 1;
                 /* C types */
                 else if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
-                    arg->type = ARG_VOID;
+                    param->type = PARAM_VOID;
                 else if (memcmp(p->data + p->value.str.off, "float", 5) == 0)
-                    arg->type = ARG_FLOAT;
+                    param->type = PARAM_FLOAT;
                 else if (memcmp(p->data + p->value.str.off, "double", 6) == 0)
-                    arg->type = ARG_DOUBLE;
+                    param->type = PARAM_DOUBLE;
                 else if (memcmp(p->data + p->value.str.off, "int64_t", 7) == 0)
-                    arg->type = ARG_LONG;
+                    param->type = PARAM_LONG;
                 else if (memcmp(p->data + p->value.str.off, "uint64_t", 8) == 0)
-                    arg->type = ARG_LONG;
+                    param->type = PARAM_LONG;
                 else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
-                    arg->type = arg->is_unsigned ? ARG_DWORD : ARG_INTEGER;
+                    param->type
+                        = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
                 else if (memcmp(p->data + p->value.str.off, "int32_t", 7) == 0)
-                    arg->type = arg->is_unsigned ? ARG_DWORD : ARG_INTEGER;
+                    param->type
+                        = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
                 else if (memcmp(p->data + p->value.str.off, "uint32_t", 8) == 0)
-                    arg->type = ARG_DWORD;
+                    param->type = PARAM_DWORD;
                 else if (memcmp(p->data + p->value.str.off, "int16_t", 7) == 0)
-                    arg->type = ARG_WORD;
+                    param->type = PARAM_WORD;
                 else if (memcmp(p->data + p->value.str.off, "uint16_t", 8) == 0)
-                    arg->type = ARG_WORD;
+                    param->type = PARAM_WORD;
                 else if (memcmp(p->data + p->value.str.off, "char", 4) == 0)
                 {
-                    arg->type = ARG_BYTE;
-                    arg->is_char = 1;
+                    param->type = PARAM_BYTE;
+                    param->is_char = 1;
                 }
                 else if (memcmp(p->data + p->value.str.off, "uint8_t", 7) == 0)
-                    arg->type = ARG_BYTE;
+                    param->type = PARAM_BYTE;
                 else if (memcmp(p->data + p->value.str.off, "int8_t", 6) == 0)
-                    arg->type = ARG_BYTE;
+                    param->type = PARAM_BYTE;
                 else if (memcmp(p->data + p->value.str.off, "bool", 4) == 0)
-                    arg->type = ARG_BOOLEAN;
+                    param->type = PARAM_BOOLEAN;
                 else if (memcmp(p->data + p->value.str.off, "_Bool", 5) == 0)
-                    arg->type = ARG_BOOLEAN;
+                    param->type = PARAM_BOOLEAN;
                 else
                 {
-                    arg->name = p->value.str;
-                    if (arg->type == ARG_NONE)
+                    param->name = p->value.str;
+                    if (param->type == PARAM_NONE)
                     {
                         fprintf(
                             stderr,
@@ -880,14 +882,14 @@ parse_argument(struct parser* p, struct command* command, char is_ret)
 }
 
 static enum token
-parse_command(struct parser* p, struct command* command)
+parse_command(struct parser* p, struct cmd* command)
 {
     enum token tok;
 
     command->source = p->data;
 
     if (scan_next_token(p) != '(')
-        return print_error(p, "Error: Expected argument list\n");
+        return print_error(p, "Error: Expected parameter list\n");
 
     if (scan_next_token(p) != TOK_STRING)
         return print_error(
@@ -897,7 +899,7 @@ parse_command(struct parser* p, struct command* command)
     command->name = p->value.str;
 
     if (scan_next_token(p) != ',')
-        return print_error(p, "Error: Expected next argument\n");
+        return print_error(p, "Error: Expected next parameter\n");
 
     if (scan_next_token(p) != TOK_STRING)
         return print_error(
@@ -907,12 +909,12 @@ parse_command(struct parser* p, struct command* command)
     command->help = p->value.str;
 
     if (scan_next_token(p) != ',')
-        return print_error(p, "Error: Expected next argument\n");
+        return print_error(p, "Error: Expected next parameter\n");
 
-    switch (parse_argument(p, command, 1))
+    switch (parse_parameter(p, command, 1))
     {
         case ',': break;
-        case ')': return print_error(p, "Error: Expected next argument\n");
+        case ')': return print_error(p, "Error: Expected next parameter\n");
         default:
             return print_error(
                 p,
@@ -929,7 +931,7 @@ parse_command(struct parser* p, struct command* command)
 
     while (1)
     {
-        switch ((tok = parse_argument(p, command, 0)))
+        switch ((tok = parse_parameter(p, command, 0)))
         {
             case ',': break;
             default: return tok;
@@ -955,19 +957,19 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
 }
 
 static void
-gen_command_string(struct mstream* ms, const struct command* cmd)
+gen_command_string(struct mstream* ms, const struct cmd* cmd)
 {
-    struct arg* arg;
+    struct param* param;
     mstream_fmt(ms, "%S", cmd->name, cmd->source);
     mstream_putc(ms, '%');
     mstream_putc(ms, cmd->ret.type);
 
     mstream_putc(ms, '(');
-    arg = cmd->args;
-    while (arg)
+    param = cmd->params;
+    while (param)
     {
-        mstream_putc(ms, arg->type);
-        arg = arg->next;
+        mstream_putc(ms, param->type);
+        param = param->next;
     }
     mstream_putc(ms, ')');
 
@@ -975,32 +977,32 @@ gen_command_string(struct mstream* ms, const struct command* cmd)
     mstream_fmt(ms, "%S", cmd->symbol, cmd->source);
     mstream_putc(ms, '%');
 
-    arg = cmd->args;
-    while (arg)
+    param = cmd->params;
+    while (param)
     {
-        if (arg != cmd->args)
+        if (param != cmd->params)
             mstream_cstr(ms, ", ");
-        mstream_fmt(ms, "%S", arg->name, cmd->source);
-        switch (arg->type)
+        mstream_fmt(ms, "%S", param->name, cmd->source);
+        switch (param->type)
         {
-            case ARG_NONE: break;
-            case ARG_VOID: break;
-            case ARG_LONG: mstream_cstr(ms, " as long"); break;
-            case ARG_DWORD: mstream_cstr(ms, " as dword"); break;
-            case ARG_INTEGER: mstream_cstr(ms, " as integer"); break;
-            case ARG_WORD: mstream_cstr(ms, " as word"); break;
-            case ARG_BYTE: mstream_cstr(ms, " as byte"); break;
-            case ARG_BOOLEAN: mstream_cstr(ms, " as boolean"); break;
-            case ARG_FLOAT: mstream_cstr(ms, " as float"); break;
-            case ARG_DOUBLE: mstream_cstr(ms, " as double"); break;
-            case ARG_STRING: mstream_cstr(ms, " as string"); break;
-            case ARG_ARRAY: break;
-            case ARG_LABEL: break;
-            case ARG_DABEL: break;
-            case ARG_ANY: break;
-            case ARG_USER_DEFINED_VAR_PTR: break;
+            case PARAM_NONE: break;
+            case PARAM_VOID: break;
+            case PARAM_LONG: mstream_cstr(ms, " AS DOUBLE INTEGER"); break;
+            case PARAM_DWORD: mstream_cstr(ms, " AS DWORD"); break;
+            case PARAM_INTEGER: mstream_cstr(ms, " AS INTEGER"); break;
+            case PARAM_WORD: mstream_cstr(ms, " AS WORD"); break;
+            case PARAM_BYTE: mstream_cstr(ms, " AS BYTE"); break;
+            case PARAM_BOOLEAN: mstream_cstr(ms, " AS BOOLEAN"); break;
+            case PARAM_FLOAT: mstream_cstr(ms, " AS FLOAT"); break;
+            case PARAM_DOUBLE: mstream_cstr(ms, " AS DOUBLE"); break;
+            case PARAM_STRING: mstream_cstr(ms, " AS STRING"); break;
+            case PARAM_ARRAY: break;
+            case PARAM_LABEL: break;
+            case PARAM_DABEL: break;
+            case PARAM_ANY: break;
+            case PARAM_USER_DEFINED_VAR_PTR: break;
         }
-        arg = arg->next;
+        param = param->next;
     }
 
     mstream_putc(ms, '%');
@@ -1010,8 +1012,8 @@ gen_command_string(struct mstream* ms, const struct command* cmd)
 static void
 gen_winres_resource(struct mstream* ms, const struct root* root)
 {
-    int                   stringID = 1;
-    const struct command* cmd = root->commands;
+    int               stringID = 1;
+    const struct cmd* cmd = root->commands;
 
     mstream_cstr(ms, "STRINGTABLE\n");
     mstream_cstr(ms, "BEGIN\n");
@@ -1031,7 +1033,7 @@ gen_winres_resource(struct mstream* ms, const struct root* root)
 static void
 gen_elf_resource(struct mstream* ms, const struct root* root)
 {
-    const struct command* cmd = root->commands;
+    const struct cmd* cmd = root->commands;
     while (cmd)
     {
         if (cmd != root->commands)

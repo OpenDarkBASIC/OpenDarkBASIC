@@ -1,3 +1,4 @@
+#include "odb-compiler/tests/DBParserHelper.hpp"
 #include "odb-sdk/utf8.h"
 
 #include "gmock/gmock.h"
@@ -10,57 +11,13 @@ extern "C" {
 
 using namespace testing;
 
-class NAME : public Test
+struct NAME : DBParserHelper
 {
-public:
-    void
-    SetUp() override
-    {
-        cmd_list_init(&cmds);
-    }
-
-    void
-    TearDown() override
-    {
-        cmd_list_deinit(&cmds);
-    }
-
-    struct utf8_view
-    U(const char* cstr)
-    {
-        return cstr_utf8_view(cstr);
-    }
-
-    struct utf8_span
-    R(const char* cstr)
-    {
-        return cstr_utf8_span(cstr);
-    }
-
-    cmd_id
-    addCommand(const char* cstr)
-    {
-        return cmd_list_add(
-            &cmds,
-            0,
-            CMD_PARAM_VOID,
-            cstr_utf8_view(cstr),
-            empty_utf8_view(),
-            empty_utf8_view());
-    }
-
-    utf8_idx
-    matchCommand(const char* cstr)
-    {
-        return cmd_list_find(&cmds, cstr_utf8_view(cstr));
-    }
-
-    struct cmd_list cmds;
 };
 
 TEST_F(NAME, empty_list)
 {
-    EXPECT_THAT(matchCommand("randomize"), Eq(0));
+    EXPECT_THAT(parse("randomize"), Eq(-1));
 }
 
 TEST_F(NAME, exact_string)
@@ -71,25 +28,23 @@ TEST_F(NAME, exact_string)
     addCommand("randomize mesh");
     addCommand("read");
 
-    EXPECT_THAT(matchCommand("randomize"), Eq(9));
+    EXPECT_THAT(parse("randomize"), Eq(0));
+    int cmd = ast.nodes[0].block.stmt;
+    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
 }
-/*
+
 TEST_F(NAME, trailing_space)
 {
-    cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "projection matrix4", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"randomize", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "randomize mesh", "",
-cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"read", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
+    addCommand("projection matrix4");
+    addCommand("randomize");
+    addCommand("randomize matrix");
+    addCommand("randomize mesh");
+    addCommand("read");
 
-    auto result = matcher->findLongestCommandMatching("randomize ");
-
-    EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(9));
-}*/
+    EXPECT_THAT(parse("randomize "), Eq(0));
+    int cmd = ast.nodes[0].block.stmt;
+    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
+}
 
 TEST_F(NAME, longer_symbol)
 {
@@ -99,7 +54,7 @@ TEST_F(NAME, longer_symbol)
     addCommand("randomize mesh");
     addCommand("read");
 
-    EXPECT_THAT(matchCommand("randomized"), Eq(0));
+    EXPECT_THAT(parse("randomized"), Eq(-1));
 }
 
 /*

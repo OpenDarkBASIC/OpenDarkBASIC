@@ -1,12 +1,12 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/tests/DBParserTestHarness.hpp"
+#include "odb-compiler/tests/DBParserHelper.hpp"
 #include "gmock/gmock.h"
 
 #define NAME odbcompiler_db_parser_literal_bool
 
 using namespace testing;
 
-class NAME : public DBParserTestHarness
+class NAME : public DBParserHelper
 {
 public:
 };

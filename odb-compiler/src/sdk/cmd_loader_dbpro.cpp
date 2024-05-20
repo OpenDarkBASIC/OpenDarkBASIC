@@ -8,10 +8,10 @@ extern "C" {
 #include "LIEF/PE/Binary.hpp"
 #include "LIEF/PE/ResourceNode.hpp"
 
-static enum cmd_arg_type
+static enum cmd_param_type
 convert_char_to_return_type(char c)
 {
-    switch ((enum cmd_arg_type)c)
+    switch ((enum cmd_param_type)c)
     {
         case CMD_PARAM_VOID:
         case CMD_PARAM_LONG:
@@ -26,17 +26,17 @@ convert_char_to_return_type(char c)
         case CMD_PARAM_ARRAY:
         case CMD_PARAM_LABEL:
         case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_arg_type)c;
+        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
 
         case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
     }
-    return (enum cmd_arg_type)0;
+    return (enum cmd_param_type)0;
 }
 
-static enum cmd_arg_type
+static enum cmd_param_type
 convert_char_to_param_type(char c)
 {
-    switch ((enum cmd_arg_type)c)
+    switch ((enum cmd_param_type)c)
     {
         case CMD_PARAM_VOID:
         case CMD_PARAM_LONG:
@@ -51,17 +51,17 @@ convert_char_to_param_type(char c)
         case CMD_PARAM_ARRAY:
         case CMD_PARAM_LABEL:
         case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_arg_type)c;
+        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
 
         case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
     }
-    return (enum cmd_arg_type)0;
+    return (enum cmd_param_type)0;
 }
 
 int
 load_dbpro_commands(
     struct cmd_list*        commands,
-    plugin_id              plugin_id,
+    plugin_id               plugin_id,
     const LIEF::PE::Binary* pe,
     struct ospathc          filepath)
 {
@@ -111,7 +111,7 @@ load_dbpro_commands(
 
             /* String has format: <command>%<type>%<c symbol>%<help>
              * Split on '%' into the relevant parts. */
-            struct utf8_span cmd_name, type_str, c_symbol, doc;
+            struct utf8_span cmd_name, type_str, c_symbol, db_params;
             utf8_split(
                 entry_str.data,
                 utf8_span(entry_str),
@@ -119,7 +119,7 @@ load_dbpro_commands(
                 &cmd_name,
                 &type_str);
             utf8_split(entry_str.data, type_str, '%', &type_str, &c_symbol);
-            utf8_split(entry_str.data, c_symbol, '%', &c_symbol, &doc);
+            utf8_split(entry_str.data, c_symbol, '%', &c_symbol, &db_params);
             if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
             {
                 log_sdk_warn(
@@ -133,7 +133,7 @@ load_dbpro_commands(
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
-            enum cmd_arg_type return_type = CMD_PARAM_VOID;
+            enum cmd_param_type return_type = CMD_PARAM_VOID;
             if (entry_str.data[cmd_name.off + cmd_name.len - 1] == '[')
             {
                 char type_char = entry_str.data[type_str.off];
@@ -164,21 +164,23 @@ load_dbpro_commands(
                 return_type,
                 utf8_span_view(entry_str.data, cmd_name),
                 utf8_span_view(entry_str.data, c_symbol),
-                utf8_span_view(entry_str.data, doc));
+                empty_utf8_view()); /* DBP doesn't provide links to help files
+                                     */
             if (cmd < 0)
                 goto critical_error;
 
             /* Parse and add each parameter type to the command. If a character
              * is proceeded by an asterisk "*", then it is an out parameter */
-            struct utf8_span param_doc;
+            struct utf8_span db_param_name;
             for (utf8_idx i = 0; i != type_str.len; ++i)
             {
                 char type_char = entry_str.data[type_str.off + i];
-                enum cmd_arg_direction direction = CMD_PARAM_IN;
-                enum cmd_arg_type      type
+                enum cmd_param_direction direction = CMD_PARAM_IN;
+                enum cmd_param_type      type
                     = convert_char_to_param_type(type_char);
 
-                utf8_split(entry_str.data, doc, ',', &param_doc, &doc);
+                utf8_split(
+                    entry_str.data, db_params, ',', &db_param_name, &db_params);
 
                 if (type == 0)
                 {
@@ -205,7 +207,7 @@ load_dbpro_commands(
                         cmd,
                         type,
                         direction,
-                        utf8_span_view(entry_str.data, param_doc))
+                        utf8_span_view(entry_str.data, db_param_name))
                     != 0)
                 {
                     goto critical_error;

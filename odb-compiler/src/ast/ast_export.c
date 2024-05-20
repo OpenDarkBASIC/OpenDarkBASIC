@@ -18,7 +18,7 @@ write_nodes(
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
             break;
-        case AST_PARAMLIST:
+        case AST_ARGLIST:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"paramlist\"];\n", n);
             break;
         case AST_CONST_DECL:
@@ -26,9 +26,9 @@ write_nodes(
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
-                = utf8_list_view(&commands->db_identifiers, nd->command.id);
-            enum cmd_arg_type ret_type
-                = *vec_get(commands->return_types, nd->command.id);
+                = utf8_list_view(&commands->db_cmd_names, nd->cmd.id);
+            enum cmd_param_type ret_type
+                = *vec_get(commands->return_types, nd->cmd.id);
             fprintf(
                 fp,
                 "  n%d [shape=\"doubleoctagon\", fontcolor=\"blue\", "
@@ -39,7 +39,7 @@ write_nodes(
                 ret_type == CMD_PARAM_VOID ? "" : "()");
         }
         break;
-        case AST_ASSIGN_VAR: fprintf(fp, "  n%d [label=\"=\"];\n", n); break;
+        case AST_ASSIGN: fprintf(fp, "  n%d [label=\"=\"];\n", n); break;
         case AST_IDENTIFIER:
             fprintf(
                 fp,
@@ -59,12 +59,54 @@ write_nodes(
                 n,
                 nd->boolean_literal.is_true ? "true" : "false");
             break;
+        case AST_BYTE_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%d\"];\n",
+                n,
+                (int)nd->byte_literal.value);
+            break;
+        case AST_WORD_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%d\"];\n",
+                n,
+                (int)nd->word_literal.value);
+            break;
         case AST_INTEGER_LITERAL:
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%d\"];\n",
                 n,
                 nd->integer_literal.value);
+            break;
+        case AST_DWORD_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%u\"];\n",
+                n,
+                nd->dword_literal.value);
+            break;
+        case AST_DOUBLE_INTEGER_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%" PRId64 "\"];\n",
+                n,
+                nd->double_integer_literal.value);
+            break;
+        case AST_FLOAT_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%f\"];\n",
+                n,
+                (double)nd->float_literal.value);
+            break;
+        case AST_DOUBLE_LITERAL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%f\"];\n",
+                n,
+                nd->double_literal.value);
             break;
         case AST_STRING_LITERAL:
             fprintf(

@@ -57,9 +57,18 @@ CONSTANT        #constant
 BOOL_TRUE       (?i:true)
 BOOL_FALSE      (?i:false)
 STRING_LITERAL  \"[^"]*\"
+DOUBLE_EXP      [eE][\+-]?[0-9]+
+DOUBLE1         [0-9]+\.[0-9]+?
+DOUBLE2         \.[0-9]+
+DOUBLE3         [0-9]+\.[0-9]+?{DOUBLE_EXP}?
+DOUBLE4         \.[0-9]+{DOUBLE_EXP}?
+DOUBLE5         [0-9]+{DOUBLE_EXP}
+DOUBLE          {DOUBLE1}|{DOUBLE2}|{DOUBLE3}|{DOUBLE4}|{DOUBLE5}
+FLOAT           {DOUBLE}[fF]|{INTEGER}[fF]
 INTEGER_BASE2   %[01]+
 INTEGER_BASE16  0[xX][0-9a-fA-F]+
 INTEGER         [0-9]+
+IMAG            {DOUBLE}[iIjJkK]|{INTEGER_BASE2}[iIjJkK]|{INTEGER_BASE16}[iIjJkK]|{INTEGER}[iIjJkK]
 IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
 %x MULTI_COMMENT
@@ -92,6 +101,8 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     {BOOL_TRUE}         { yylval->boolean_value = 1; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {BOOL_FALSE}        { yylval->boolean_value = 0; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
     {STRING_LITERAL}    { yylval->string_value = token_to_ref_strip_quotes(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {FLOAT}             { yylval->float_value = (float)atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
+    {DOUBLE}            { yylval->double_value = atof(yytext); RETURN_TOKEN(TOK_DOUBLE_LITERAL); }
     {INTEGER_BASE2}     { yylval->integer_value = strtol(&yytext[1], NULL, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER_BASE16}    { yylval->integer_value = strtol(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtol(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }

@@ -262,10 +262,12 @@ mem_threadlocal_deinit(void)
 
     /* report details on any g_allocations that were not de-allocated */
     HM_FOR_EACH(&state.report, void*, struct report_info, key, info)
-    log_sdk_err(
-        "un-freed memory at 0x%" PRIx64 ", size 0x%" PRIx32 "\n",
-        info->location,
-        info->size);
+    {
+        log_sdk_err(
+            "un-freed memory at 0x%" PRIx64 ", size 0x%" PRIx32 "\n",
+            info->location,
+            info->size);
+    }
 
 #if defined(ODBSDK_MEM_BACKTRACE)
     {
@@ -285,7 +287,7 @@ mem_threadlocal_deinit(void)
     if (info->size <= ODBSDK_MEM_HEX_DUMP_SIZE)
     {
         intptr_t i;
-        uint8_t*    p = (void*)info->location;
+        uint8_t* p = (void*)info->location;
         log_sdk_note("Hex Dump:\n");
 
         log_raw("  ");
@@ -296,7 +298,7 @@ mem_threadlocal_deinit(void)
             log_raw("%c", "0123456789ABCDEF"[i]);
         log_raw("\n");
 
-        for (i = 0; i < info->size; )
+        for (i = 0; i < info->size;)
         {
             int j;
             log_raw("  ");
@@ -311,7 +313,7 @@ mem_threadlocal_deinit(void)
             log_raw(" ");
             for (j = 0; j != 16 && i + j != info->size; ++j)
             {
-                if (p[i] >= 32 && p[i] < 127)  /* printable ascii */
+                if (p[i] >= 32 && p[i] < 127) /* printable ascii */
                     log_raw("%c", p[i]);
                 else
                     log_raw(".");

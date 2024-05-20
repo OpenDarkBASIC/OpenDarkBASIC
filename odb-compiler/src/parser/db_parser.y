@@ -103,6 +103,8 @@
 %union {
     char boolean_value;
     int64_t integer_value;
+    float float_value;
+    double double_value;
     /* The parser API has been deliberately designed in a way where strings do
      * not have to be copied. Whole source files are mapped into memory, and the
      * lexer passes in string values as a utf8_span, which is an offset and
@@ -127,6 +129,8 @@
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal"
 %token<integer_value> INTEGER_LITERAL "integer literal"
+%token<float_value> FLOAT_LITERAL "float literal"
+%token<double_value> DOUBLE_LITERAL "double literal"
 %token<string_value> STRING_LITERAL "string literal"
 
 /* Identifiers */
@@ -202,7 +206,9 @@ var_ref
   : annotated_identifier                    { $$ = $1; }
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
-  | INTEGER_LITERAL                         { $$ = ast_integer_literal(ctx->ast, $1, @$); }
+  | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }
+  | FLOAT_LITERAL                           { $$ = ast_float_literal(ctx->ast, $1, @$); }
+  | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
   ;
 annotated_identifier

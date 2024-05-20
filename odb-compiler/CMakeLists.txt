@@ -150,6 +150,13 @@ add_gperf_bison_dependency (db-keyword db-parser)
 ###############################################################################
 
 add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
+    "templates/config.h.in"
+    "include/odb-compiler/build_info.h"
+    "templates/build_info.c.in"
+    "${PROJECT_BINARY_DIR}/include/odb-compiler/config.h"
+    "${BULIDINFOGENERATED_HEADER}"
+    "${PROJECT_BINARY_DIR}/src/build_info.c"
+
     "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
     "src/sdk/cmd_list.c"
@@ -157,13 +164,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_loader_dbpro.cpp"
     "src/sdk/cmd_loader_odb.cpp"
     "src/sdk/plugin_list.c"
-    #"src/sdk/CommandLoader.cpp"
-    #"src/sdk/CommandLoader.cpp"
-    #"src/sdk/ODBCommandLoader.cpp"
-    #"src/sdk/DBPCommandLoader.cpp"
-    #"src/sdk/Command.cpp"
-    #"src/sdk/CommandIndex.cpp"
-    #"src/sdk/CommandMatcher.cpp"
 
     "include/odb-compiler/parser/db_keyword.h"
     "include/odb-compiler/parser/db_parser.h"
@@ -176,11 +176,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${Gperf_db-keyword_OUTPUTS}"
     "${BISON_db-parser_OUTPUTS}"
     "${FLEX_db-scanner_OUTPUTS}"
-
-    #"src/parsers/db/Driver.cpp"
-    #"src/parsers/PluginInfo.cpp"
-    #"${BISON_DarkBASICParser_OUTPUTS}"
-    #"${FLEX_DarkBASICScanner_OUTPUTS}"
    
     "include/odb-compiler/ast/ast.h"
     "include/odb-compiler/ast/ast_ops.h"
@@ -234,7 +229,13 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/ast/VariableScope.cpp"
     #"src/ast/VarRef.cpp"
     #"src/ast/Visitor.cpp"
-    
+   
+    "include/odb-compiler/semantic/semantic.h"
+    "src/semantic/semantic.c"
+    "src/semantic/expand_constant_declarations.c"
+    "src/semantic/resolve_cmd_overloads.c"
+    "src/semantic/type_check_expressions.c"
+    #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EnforceSingleDefaultCase.cpp"
     #"src/astpost/Process.cpp"
@@ -242,23 +243,14 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/astpost/ResolveLabels.cpp"
     #"src/astpost/ValidateUDTFieldNames.cpp"
     
+    "include/odb-compiler/codegen/codegen.h"
+    "src/codegen/codegen.cpp"
     #"src/codegen/internal/CodeGenerator.cpp"
     #"src/codegen/internal/ODBEngineInterface.cpp"
     #"src/codegen/internal/DBPEngineInterface.cpp"
     
-    "include/odb-compiler/codegen/codegen.h"
-    "src/codegen/codegen.cpp"
-    
     "include/odb-compiler/link/link.h"
-    "src/link/link.cpp"
-    
-    "${PROJECT_BINARY_DIR}/include/odb-compiler/config.h"
-    "templates/config.h.in"
-
-    "include/odb-compiler/build_info.h"
-    "${BULIDINFOGENERATED_HEADER}"
-    "${PROJECT_BINARY_DIR}/src/build_info.c"
-    "templates/build_info.c.in")
+    "src/link/link.cpp") 
 target_include_directories (odb-compiler
     PUBLIC
         $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
@@ -312,6 +304,7 @@ FetchContent_Declare (
     lief
     URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
     URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable (lief)
 
@@ -426,8 +419,8 @@ target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
 # Unit tests
 ###############################################################################
 
-if (${ODBCOMPILER_TESTS})
-    add_executable (test_odb-compiler
+if (ODBCOMPILER_TESTS)
+    target_sources (odb-tests PRIVATE
         #"tests/src/ast/test_ast_treeiterator.cpp"
         #"tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
         #"tests/src/astpost/test_astpost_resolve_labels.cpp"
@@ -480,30 +473,20 @@ if (${ODBCOMPILER_TESTS})
         #"tests/src/parser/test_db_parser_var_ref.cpp"
         #"tests/src/test_SourceLocation.cpp"
 
-        "tests/include/odb-compiler/tests/DBParserTestHarness.hpp"
-        "tests/src/DBParserTestHarness.cpp"
-        "tests/src/env_odbsdk_init.cpp"
+        "tests/include/odb-compiler/tests/DBParserHelper.hpp"
+        "tests/src/DBParserHelper.cpp"
+
+        "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
 
         "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
-        "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
-        "tests/src/sdk/test_odbcompiler_cmd_matcher.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
 
-        "tests/src/main.cpp")
-    target_link_libraries (test_odb-compiler
-        PRIVATE
-            gmock
-            odb-compiler)
-    target_include_directories (test_odb-compiler
-        PRIVATE
-            $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
-	target_compile_options (test_odb-compiler
-		PRIVATE
-			$<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
-    odb_target_properties (test_odb-compiler
-        PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp")
+    target_link_libraries (odb-tests PRIVATE odb-compiler)
+    target_include_directories (odb-tests
+        PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
 endif ()
 
 ###############################################################################
@@ -513,7 +496,6 @@ endif ()
 install (
     TARGETS
         odb-compiler
-        #odb-link
     EXPORT OpenDarkBASICConfig
     ARCHIVE DESTINATION ${ODB_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${ODB_INSTALL_LIBDIR}

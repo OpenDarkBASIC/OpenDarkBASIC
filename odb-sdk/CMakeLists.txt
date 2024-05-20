@@ -161,8 +161,7 @@ target_link_libraries (odb-sdk
 include (FetchContent)
 
 if (ODBSDK_TESTS)
-    add_executable (test_odb-sdk
-        "tests/env_odbsdk_init.cpp"
+    target_sources (odb-tests PRIVATE
         "tests/test_odbsdk_btree.cpp"
         "tests/test_odbsdk_btree_as_set.cpp"
         "tests/test_odbsdk_log.cpp"
@@ -173,16 +172,7 @@ if (ODBSDK_TESTS)
         "tests/test_odbsdk_utf8.cpp"
         "tests/test_odbsdk_utf8_list.cpp"
         "tests/test_odbsdk_vec.cpp")
-        #"tests/test_DynamicLibrary.cpp")
-    target_link_libraries (test_odb-sdk PUBLIC
-        odb-sdk
-        gmock
-        gmock_main)
-    odb_target_properties (test_odb-sdk PROPERTIES
-        VS_DEBUGGER_WORKING_DIRECTORY ${ODB_BUILD_BINDIR}
-        ARCHIVE_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-        LIBRARY_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
+    target_link_libraries (odb-tests PUBLIC odb-sdk)
 endif ()
 
 add_subdirectory ("plugins")
