@@ -628,6 +628,13 @@ enum token
     TOK_COMMA = ',',
     TOK_ASTERISK = '*',
     TOK_ODB_COMMAND = 256,
+    TOK_COMMAND_NAME,
+    TOK_COMMAND_DESCRIPTION,
+    TOK_COMMAND_PARAM,
+    TOK_COMMAND_RETURNS,
+    TOK_COMMAND_EXAMPLE,
+    TOK_COMMAND_SEE_ALSO,
+    TOK_ELLIPSIS,
     TOK_IDENTIFIER,
     TOK_STRING,
 };
@@ -650,7 +657,30 @@ scan_next_token(struct parser* p)
     p->tail = p->head;
     while (p->head != p->len)
     {
-        /* ".*?" */
+        /* Skip comments */
+        if (p->data[p->head] == '/' && p->data[p->head + 1] == '*')
+        {
+            for (p->head += 2; p->head != p->len; p->head++)
+                if (p->data[p->head] == '*' && p->data[p->head] == '/')
+                {
+                    p->head += 2;
+                    break;
+                }
+            p->tail = p->head;
+            continue;
+        }
+        if (p->data[p->head] == '/' && p->data[p->head + 1] == '/')
+        {
+            for (p->head += 2; p->head != p->len; p->head++)
+                if (p->data[p->head] == '\n')
+                {
+                    p->head += 2;
+                    break;
+                }
+            p->tail = p->head;
+            continue;
+        }
+        /* String literals. Regex: ".*?" */
         if (p->data[p->head] == '"')
         {
             p->value.str.off = ++p->head;
@@ -678,6 +708,45 @@ scan_next_token(struct parser* p)
             while (p->head != p->len && isdigit(p->data[p->head]))
                 p->head++;
             return TOK_ODB_COMMAND;
+        }
+        if (memcmp(p->data + p->head, "NAME", sizeof("NAME") - 1) == 0)
+        {
+            p->head += sizeof("NAME") - 1;
+            return TOK_COMMAND_NAME;
+        }
+        if (memcmp(p->data + p->head, "DESCRIPTION", sizeof("DESCRIPTION") - 1)
+            == 0)
+        {
+            p->head += sizeof("DESCRIPTION") - 1;
+            return TOK_COMMAND_DESCRIPTION;
+        }
+        if (memcmp(p->data + p->head, "PARAMETER", sizeof("PARAMETER") - 1)
+            == 0)
+        {
+            p->head += sizeof("PARAMETER") - 1;
+            while (p->head != p->len && isdigit(p->data[p->head]))
+                p->head++;
+            return TOK_COMMAND_PARAM;
+        }
+        if (memcmp(p->data + p->head, "RETURNS", sizeof("RETURNS") - 1) == 0)
+        {
+            p->head += sizeof("RETURNS") - 1;
+            return TOK_COMMAND_RETURNS;
+        }
+        if (memcmp(p->data + p->head, "EXAMPLE", sizeof("EXAMPLE") - 1) == 0)
+        {
+            p->head += sizeof("EXAMPLE") - 1;
+            return TOK_COMMAND_EXAMPLE;
+        }
+        if (memcmp(p->data + p->head, "SEE_ALSO", sizeof("SEE_ALSO") - 1) == 0)
+        {
+            p->head += sizeof("SEE_ALSO") - 1;
+            return TOK_COMMAND_SEE_ALSO;
+        }
+        if (memcmp(p->data + p->head, "...", 3) == 0)
+        {
+            p->head += 3;
+            return TOK_ELLIPSIS;
         }
         if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
         {
@@ -741,7 +810,6 @@ struct cmd
     const char* source;
 
     struct str_view name;
-    struct str_view help;
     struct str_view symbol;
     struct param    ret;
 };
@@ -785,8 +853,9 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
         {
             case TOK_ERROR:
             case TOK_END:
-            default: return TOK_ERROR;
+            default: return tok;
 
+            /* Do any post processing on the parameter and then return */
             case ',':
             case ')':
                 if (param)
@@ -803,8 +872,10 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
                 }
                 return tok;
 
+            /* Alloc if not yet done */
             case '*':
             case TOK_IDENTIFIER:
+            case TOK_ELLIPSIS:
                 if (param == NULL)
                     param = is_ret ? &command->ret : new_param(command);
                 break;
@@ -813,6 +884,7 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
         switch (tok)
         {
             case '*': param->is_ptr = 1; break;
+            case TOK_ELLIPSIS: param->type = PARAM_USER_DEFINED_VAR_PTR; break;
             case TOK_IDENTIFIER:
                 /* C qualifiers */
                 if (memcmp(p->data + p->value.str.off, "const", 5) == 0)
@@ -882,53 +954,9 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
 }
 
 static enum token
-parse_command(struct parser* p, struct cmd* command)
+parse_c_parameters(struct parser* p, struct cmd* command)
 {
     enum token tok;
-
-    command->source = p->data;
-
-    if (scan_next_token(p) != '(')
-        return print_error(p, "Error: Expected parameter list\n");
-
-    if (scan_next_token(p) != TOK_STRING)
-        return print_error(
-            p,
-            "Error: Expected command name string as first parameter to "
-            "ODB_COMMAND()\n");
-    command->name = p->value.str;
-
-    if (scan_next_token(p) != ',')
-        return print_error(p, "Error: Expected next parameter\n");
-
-    if (scan_next_token(p) != TOK_STRING)
-        return print_error(
-            p,
-            "Error: Expected help file string as second parameter to "
-            "ODB_COMMAND()\n");
-    command->help = p->value.str;
-
-    if (scan_next_token(p) != ',')
-        return print_error(p, "Error: Expected next parameter\n");
-
-    switch (parse_parameter(p, command, 1))
-    {
-        case ',': break;
-        case ')': return print_error(p, "Error: Expected next parameter\n");
-        default:
-            return print_error(
-                p,
-                "Error: Expected function return type as third parameter to "
-                "ODB_COMMAND()\n");
-    }
-
-    if (scan_next_token(p) != TOK_IDENTIFIER)
-        return print_error(
-            p,
-            "Error: Expected function name as fourth parameter to "
-            "ODB_COMMAND()\n");
-    command->symbol = p->value.str;
-
     while (1)
     {
         switch ((tok = parse_parameter(p, command, 0)))
@@ -937,6 +965,107 @@ parse_command(struct parser* p, struct cmd* command)
             default: return tok;
         }
     }
+}
+
+static enum token
+parse_doc_parameters(struct parser* p, struct cmd* command, enum token tok)
+{
+    while (1)
+    {
+        switch (tok)
+        {
+            case TOK_COMMAND_NAME:
+                if (scan_next_token(p) != '(')
+                    return print_error(
+                        p, "Error: Expected argument to NAME() macro\n");
+
+                if (scan_next_token(p) != TOK_STRING)
+                    return print_error(
+                        p,
+                        "Error: Expected command name string as argument to "
+                        "NAME() macro\n");
+                command->name = p->value.str;
+
+                if (scan_next_token(p) != ')')
+                    return print_error(p, "Error: Missing closing ')'\n");
+                break;
+
+            case TOK_COMMAND_DESCRIPTION:
+            case TOK_COMMAND_PARAM:
+            case TOK_COMMAND_RETURNS:
+            case TOK_COMMAND_EXAMPLE:
+            case TOK_COMMAND_SEE_ALSO:
+                if (scan_next_token(p) != '(')
+                    return print_error(
+                        p, "Error: Expected argument to NAME() macro\n");
+                while (1)
+                {
+                    switch ((tok = scan_next_token(p)))
+                    {
+                        case '(':
+                        case ',':
+                        case TOK_STRING: break;
+
+                        default: goto out;
+                    }
+                }
+            out:
+                return tok;
+
+            default: return tok;
+        }
+
+        tok = scan_next_token(p);
+    }
+}
+
+static enum token
+parse_command(struct parser* p, struct cmd* command)
+{
+    enum token tok;
+
+    command->source = p->data;
+
+    if (scan_next_token(p) != '(')
+        return print_error(p, "Error: Expected argument list\n");
+
+    /* C function return value */
+    switch (parse_parameter(p, command, 1))
+    {
+        case ',': break;
+        case ')':
+            return print_error(
+                p,
+                "Error: Expected C function name as second argument, but "
+                "ODB_COMMAND() macro was only given 1 argument\n");
+        default:
+            return print_error(
+                p,
+                "Error: Expected function return type as first argument to "
+                "ODB_COMMAND()\n");
+    }
+
+    if (scan_next_token(p) != TOK_IDENTIFIER)
+        return print_error(
+            p,
+            "Error: Expected function name as second argument to ODB_COMMAND() "
+            "macro\n");
+    command->symbol = p->value.str;
+
+    switch ((tok = parse_c_parameters(p, command)))
+    {
+        case TOK_ERROR:
+        case TOK_END:
+        case ')':
+            return print_error(
+                p,
+                "Error: Expected NAME(\"<command name>\") as next argument to "
+                "ODB_COMMAND()\n");
+
+        default: break;
+    }
+
+    return parse_doc_parameters(p, command, tok);
 }
 
 static int
@@ -950,7 +1079,7 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
             case TOK_END: return 0;
             case TOK_ODB_COMMAND:
                 if (parse_command(p, new_command(root)) != ')')
-                    return -1;
+                    return TOK_ERROR;
             default: break;
         }
     }
@@ -1006,7 +1135,7 @@ gen_command_string(struct mstream* ms, const struct cmd* cmd)
     }
 
     mstream_putc(ms, '%');
-    mstream_fmt(ms, "%S", cmd->help, cmd->source);
+    // mstream_fmt(ms, "%S", cmd->help, cmd->source);
 }
 
 static void

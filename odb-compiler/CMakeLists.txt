@@ -304,7 +304,6 @@ FetchContent_Declare (
     lief
     URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
     URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
-    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 FetchContent_MakeAvailable (lief)
 
@@ -317,7 +316,6 @@ target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 #FetchContent_Declare (
 #    reproc
 #    URL https://github.com/DaanDeMeyer/reproc/archive/refs/tags/v14.2.4.tar.gz
-#    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 #)
 #FetchContent_MakeAvailable (reproc)
 
