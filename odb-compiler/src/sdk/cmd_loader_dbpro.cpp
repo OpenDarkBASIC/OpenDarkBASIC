@@ -155,8 +155,8 @@ load_dbpro_commands(
             }
 
             /* Command names are case-insensitive. By convention we store them
-             * in lower case in the command list for this reason */
-            utf8_tolower_span(entry_str.data, cmd_name);
+             * in upper case in the command list for this reason */
+            utf8_toupper_span(entry_str.data, cmd_name);
 
             cmd_id cmd = cmd_list_add(
                 commands,

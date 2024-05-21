@@ -50,6 +50,7 @@ db_parser_deinit(struct db_parser* parser)
 static struct token*
 scan_next_token(
     struct token_queue*    tokens,
+    struct utf8*           cmd_buf,
     const struct cmd_list* commands,
     const char*            source_text,
     dbscan_t               scanner,
@@ -100,13 +101,19 @@ scan_next_token(
         || token->pushed_char == TOK_INTEGER_LITERAL) /* Commands can start with
                                                          an integer literal */
     {
-        cmd_id          longest_match_cmd_idx;
+        cmd_id           longest_match_cmd_idx;
         int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
         for (i = 0; candidate.len <= commands->longest_command; ++i)
         {
-            cmd_id cmd = cmd_list_find(
-                commands, utf8_span_view(source_text, candidate));
+            /* Commands are stored in the command list in upper case by
+             * convention. For performance reasons we do the conversion to
+             * upper here */
+            if (utf8_set(cmd_buf, utf8_span_view(source_text, candidate)) != 0)
+                return NULL;
+            utf8_toupper(*cmd_buf);
+
+            cmd_id cmd = cmd_list_find(commands, utf8_view(*cmd_buf));
             if (cmd > -1)
             {
                 longest_match_cmd_idx = cmd;
@@ -173,7 +180,8 @@ db_parse(
     struct token_queue tokens;
     YY_BUFFER_STATE    buffer_state;
     int                parse_result = -1;
-    DBLTYPE            scanner_location = empty_utf8_span();
+    struct utf8_span   scanner_location = empty_utf8_span();
+    struct utf8        cmd_buf = empty_utf8();
     struct parse_param parse_param = {filename, source.text.data, ast};
 
     buffer_state = db_scan_buffer(
@@ -201,6 +209,7 @@ db_parse(
     {
         struct token* token = scan_next_token(
             &tokens,
+            &cmd_buf,
             commands,
             source.text.data,
             parser->scanner,
@@ -222,5 +231,6 @@ parse_failed:
 init_token_queue_failed:
     db_delete_buffer(buffer_state, parser->scanner);
 init_buffer_failed:
+    utf8_deinit(cmd_buf);
     return parse_result == 0 ? 0 : -1;
 }

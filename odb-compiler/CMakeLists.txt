@@ -306,7 +306,11 @@ FetchContent_Declare (
     URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
 )
 FetchContent_MakeAvailable (lief)
-
+target_compile_options (LIB_LIEF
+    PRIVATE
+        $<$<CXX_COMPILER_ID:GNU>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
+        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
+        $<$<CXX_COMPILER_ID:AppleClang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>)
 target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 # reproc

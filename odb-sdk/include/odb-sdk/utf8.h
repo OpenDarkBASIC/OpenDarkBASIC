@@ -91,8 +91,6 @@ static inline struct utf8_view
 utf8_view(struct utf8 str)
 {
     struct utf8_view view;
-    if (str.len)
-        str.data[str.len] = '\0';
     view.data = str.data;
     view.off = 0;
     view.len = str.len;
@@ -200,10 +198,17 @@ utf8_split(
 }
 
 static inline void
-utf8_tolower_span(char* data, struct utf8_span span)
+utf8_toupper(struct utf8 str)
+{
+    while (str.len--)
+        str.data[str.len] = toupper(str.data[str.len]);
+}
+
+static inline void
+utf8_toupper_span(char* data, struct utf8_span span)
 {
     for (; span.len; span.len--, span.off++)
-        data[span.off] = tolower(data[span.off]);
+        data[span.off] = toupper(data[span.off]);
 }
 
 /* Query functions ---------------------------------------------------------- */

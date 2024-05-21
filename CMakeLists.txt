@@ -1,7 +1,9 @@
-cmake_minimum_required (VERSION 3.22)
+cmake_minimum_required (VERSION 3.21)
 
-# DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-#cmake_policy (SET CMP0135 NEW)
+# Make CMake shut the hell up about DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24) 
+    cmake_policy (SET CMP0135 NEW)
+endif ()
 
 # Default to a release build on non-Windows platforms
 if (NOT DEFINED CMAKE_BUILD_TYPE)

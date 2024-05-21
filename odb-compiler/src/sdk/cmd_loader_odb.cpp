@@ -107,10 +107,10 @@ parse_command_string(
         return 1;
     }
 
-    /* Command names are case-insensitive. By convention we store them in lower
+    /* Command names are case-insensitive. By convention we store them in upper
      * case in the command list */
     for (int c = 0; c != cmd_name.len; ++c)
-        if (tolower(data[cmd_name.off + c]) != data[cmd_name.off + c])
+        if (toupper(data[cmd_name.off + c]) != data[cmd_name.off + c])
         {
             log_sdk_warn(
                 "Command names must be stored as lower case. Command string "

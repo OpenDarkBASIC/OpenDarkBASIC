@@ -230,7 +230,7 @@ vfprintf_with_color(FILE* fp, const char* fmt, struct varef* args)
     }
 }
 
-ODBSDK_PRINTF_FORMAT(2, 3) static void
+static void
 fprintf_with_color(FILE* fp, const char* fmt, ...)
 {
     struct varef args;
@@ -267,8 +267,8 @@ log_vimpl(
     if (is_progress)
         progress_active = 1;
 
-    fprintf_with_color(stderr, "%s", group);
-    fprintf_with_color(stderr, "%s", severity);
+    fprintf_with_color(stderr, group);
+    fprintf_with_color(stderr, severity);
     vfprintf_with_color(stderr, fmt, &args);
 }
 
@@ -309,7 +309,7 @@ log_vflc(
     }
 
     fprintf_with_color(stderr, "{emph:%s:%d:%d:} ", filename, l1, c1);
-    fprintf_with_color(stderr, "%s", severity);
+    fprintf_with_color(stderr, severity);
 
     va_copy(args.ap, ap);
     vfprintf_with_color(stderr, fmt, &args);
