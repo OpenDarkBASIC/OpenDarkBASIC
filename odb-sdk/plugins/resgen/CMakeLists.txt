@@ -71,6 +71,7 @@ macro (odb_resgen_target name)
                 --output-target elf64-x86-64
                 --binary-architecture i386:x86-64
                 --rename-section .data=.odbres,CONTENTS,ALLOC,LOAD,READONLY,DATA
+                --add-section .note.GNU-stack=/dev/null  # silence warnings about executable stack
                 odbres odbres.o
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             DEPENDS ${PROJECT_BINARY_DIR}/odbres

@@ -20,13 +20,21 @@
 #   define ODBPLUGIN_EXTERN_C
 #endif
 
-#define ODB_COMMAND0(name, help, ret_type, symbol) \
+#define ODB_COMMAND0(ret_type, symbol, NAME, BRIEF, DESCRIPTION, RETURNS, EXAMPLE, SEE_ALSO) \
     ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(void)
-#define ODB_COMMAND1(name, help, ret_type, symbol, arg1) \
+#define ODB_COMMAND1(ret_type, symbol, arg1, NAME, BRIEF, DESCRIPTION, PARAM1, RETURNS, EXAMPLE, SEE_ALSO) \
     ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1)
-#define ODB_COMMAND2(name, help, ret_type, symbol, arg1, arg2) \
+#define ODB_COMMAND2(ret_type, symbol, arg1, arg2, NAME, BRIEF, DESCRIPTION, PARAM1, PARAM2, RETURNS, EXAMPLE, SEE_ALSO) \
     ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2)
-//#define ODB_COMMAND3(name, help, ret_type, symbol, arg1, arg2, arg3) \
-//  ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
-#define ODB_COMMAND3(ret_type, symbol, arg1, arg2, arg3, NAME, DESCRIPTION, PARAM1, PARAM2, PARAM3, RETURNS, EXAMPLE, SEE_ALSO) \
-    ret_type symbol(arg1, arg2, arg3)
+#define ODB_COMMAND3(ret_type, symbol, arg1, arg2, arg3, NAME, BRIEF, DESCRIPTION, PARAM1, PARAM2, PARAM3, RETURNS, EXAMPLE, SEE_ALSO) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
+
+#define ODB_OVERLOAD0(ret_type, symbol, NAME) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(void)
+#define ODB_OVERLOAD1(ret_type, symbol, arg1, NAME) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1)
+#define ODB_OVERLOAD2(ret_type, symbol, arg1, arg2) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2)
+#define ODB_OVERLOAD3(ret_type, symbol, arg1, arg2, arg3) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
+
