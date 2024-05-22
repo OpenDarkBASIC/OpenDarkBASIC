@@ -213,6 +213,8 @@ load_dbpro_commands(
                     goto critical_error;
                 }
             }
+
+            printf("%s\n", utf8_cstr(entry_str));
         }
 
     utf8_deinit(entry_str);

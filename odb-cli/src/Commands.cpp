@@ -167,13 +167,27 @@ dumpCommandNames(const std::vector<std::string>& args)
         printf("%c ", ret_type);
         printf("%s", utf8_list_cstr(&commands.db_cmd_names, i));
         printf("(");
-        struct param_types_list* params = vec_get(commands.param_types, i);
-        struct cmd_param*        param;
-        vec_for_each(*params, param)
+        const struct param_types_list* param_types
+            = vec_get(commands.param_types, i);
+        const struct utf8_list* param_names
+            = vec_get(commands.db_param_names, i);
+        struct cmd_param* param;
+        vec_for_each(*param_types, param)
         {
             printf("%c", param->type);
             if (param->direction == CMD_PARAM_OUT)
                 printf("*");
+        }
+        printf(") (");
+
+        if (strcmp(utf8_list_cstr(&commands.db_cmd_names, i), "MAXIMIZE WINDOW") == 0)
+            puts("oh oh");
+
+        for (int n = 0; n != utf8_list_count(param_names); ++n)
+        {
+            if (n)
+                printf(", ");
+            printf("%s", utf8_list_cstr(param_names, n));
         }
         printf(")\n");
     }

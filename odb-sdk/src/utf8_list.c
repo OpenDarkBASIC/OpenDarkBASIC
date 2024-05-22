@@ -58,7 +58,7 @@ utf8_list_add(struct utf8_list* l, struct utf8_view str)
     ref->off = l->str_used;
     ref->len = str.len;
 
-    memcpy(l->data + ref->off, str.data, str.len);
+    memcpy(l->data + ref->off, str.data + str.off, str.len);
 
     l->str_used += str.len + 1; /* Potential null terminator */
     l->count++;

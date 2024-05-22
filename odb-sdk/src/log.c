@@ -171,6 +171,10 @@ next_control_sequence(
                 return 1;
             }
             break;
+        case 'u':
+            *start = underline_style();
+            *end = reset_style();
+            return 1;
     }
 
     return 0;

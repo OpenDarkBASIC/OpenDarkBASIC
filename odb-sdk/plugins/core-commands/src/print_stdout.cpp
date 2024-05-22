@@ -66,7 +66,7 @@ ODB_COMMAND1(
             "PRINT 123\n"
             "PRINT 420.69\n"
             "WAIT KEY\n"),
-    SEE_ALSO("PRINTC"))
+    SEE_ALSO("PRINTC", "STR$"))
 {
     puts(str);
 }
