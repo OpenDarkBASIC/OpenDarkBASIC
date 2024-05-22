@@ -23,7 +23,7 @@ log_last_error_win32(FILE* fp)
             (LPSTR)&error,
             0,
             NULL)
-        != 0)
+        == 0)
     {
         fprintf(fp, "(Failed to get error from FormatMessage())");
         return;
@@ -182,6 +182,13 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
     const char* start;
     const char* end;
     const char* content;
+
+    if (memcmp(fmt, "{win32error}", 12) == 0)
+    {
+        log_last_error_win32(fp);
+        return fmt + 12;
+    }
+
     for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end);)
     {
     }

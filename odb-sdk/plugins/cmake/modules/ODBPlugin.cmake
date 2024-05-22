@@ -8,8 +8,12 @@ macro (odb_add_plugin PLUGIN)
       "${PLUGIN_CONFIG_TEMPLATE_PATH}/config.h.in"
       "${PROJECT_BINARY_DIR}/include/${PLUGIN}/config.h")
 
+    set (RESGEN_TARGET "elf")
+    if (WIN32 OR CYGWIN)
+        set (RESGEN_TARGET "winres")
+    endif ()
     odb_resgen_target (${PLUGIN}
-        TARGET $<IF:$<PLATFORM_ID:Windows>,winres,elf>
+        TARGET ${RESGEN_TARGET}
         INPUT
             ${${PLUGIN}_SOURCES}
             ${${PLUGIN}_HEADERS})

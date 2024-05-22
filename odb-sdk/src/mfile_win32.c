@@ -11,69 +11,120 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int 
 {
     HANDLE hFile;
     LARGE_INTEGER liFileSize;
-    HANDLE mapping;
-    DWORD map_size;
+    HANDLE hMapping;
+    void* address;
     struct utf16 utf16_filename = empty_utf16();
-    struct utf8_view filepath_view = {utf8c_cstr(filepath.str), 0, filepath.len};
 
-    if (utf8_to_utf16(&utf16_filename, filepath_view) != 0)
+    if (utf8_to_utf16(&utf16_filename, ospathc_view(filepath)) != 0)
         goto utf16_conv_failed;
 
     /* Try to open the file */
     hFile = CreateFileW(
         utf16_cstr(utf16_filename), /* File name */
         GENERIC_READ,           /* Read only */
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        FILE_SHARE_READ,
         NULL,                   /* Default security */
         OPEN_EXISTING,          /* File must exist */
         FILE_ATTRIBUTE_NORMAL,  /* Default attributes */
         NULL);                  /* No attribute template */
     if (hFile == INVALID_HANDLE_VALUE)
+    {
+        log_sdk_err(
+            "Failed to open file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
         goto open_failed;
+    }
 
+    hMapping = CreateFileMappingW(
+        hFile,                 /* File handle */
+        NULL,                  /* Default security attributes */
+        PAGE_READONLY,         /* Read-only */
+        0, 0,                  /* High/Low size of mapping. Zero means entire file */
+        NULL);                 /* Don't name the mapping */
+    if (hMapping == NULL)
+    {
+        log_sdk_err(
+            "Failed to create file mapping for file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
+        goto create_file_mapping_failed;
+    }
+
+    address = MapViewOfFile(
+        hMapping,               /* File mapping handle */
+        FILE_MAP_READ,         /* Copy-on-Write */
+        0, 0,                  /* High/Low offset of where the mapping should begin in the file */
+        0);                    /* Length of mapping. Zero means entire file */
+    if (address == NULL)
+    {
+        log_sdk_err(
+            "Failed to map view of file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
+        goto map_view_failed;
+    }
+
+    /*
+     *    Can't copy-on-write a larger range without changing the file on disk
+                                        ..::..                             
+                                     .-=+==+++=-:.                         
+                                   :=-----======+=:                        
+                                  .=-=-----=====++=:                       
+                                  :====-----===+**+=.                      
+                                  :==+*+---=******++=.                     
+                                  --=+*+===**+*+***#*=                     
+                                  :=======++==+=+**#+-                     
+                                  .=======+*===+**#*=                      
+                                   :-==++=***++****=.                      
+                                     -======+*+***#%#*+*#***=.             
+                              .:-+***+=++=++**+**#%%###########-           
+                            :+*######*+=======+*#%%#############-          
+                           .+*#########*====+*#%%%##########%####:         
+                           *###############%%%%%%##########%%#####         
+                           *###############%%%%%###########%%####%+        
+                          .#############################%##%%#####%-       
+                          :###############################%%%##%###*       
+                          -############################%##%%%%#%%###-      
+         :-==-....        -############################%##%%%%######*      
+           ..:==----=.    +#%#######################*=++##%%%%#######-     
+             .------==+*.-#%%#####################*=-=++*#%@%%######%*.    
+         .--=--===----=+#%%%%####################+===+*%%#%@%%#######%=    
+       .=======----=+**#%%%%%%#################*---===*%%%%%%%%%%%%####:   
+        ..:=*+=++++*#%%%%%%%%@################*----==*%%@%%%%%%%%%%%%%%*   
+                   .+%%%%%%%%%%###############=-==+*#%@@@%%%%%%%%%%%%%%%#  
+                     .*%%%%%%@%#############++-=**#%%%@@%%%%%%%%%%%%%%%%#. 
+                       :#%%%%%%#####################%%%%%%%%%%%%%%%%%%%%*  
+                         .=##%%%###################%%%%%%%%%%%%%%%%%%%%#   
+                             .-+##################%%%%%%%@@@@@@%%%%%%%+    
+
+                Guess I'll copy the entire fucking file
+                thanks windows
+     */
     /* Determine file size in bytes */
     if (!GetFileSizeEx(hFile, &liFileSize))
         goto get_file_size_failed;
-    liFileSize.QuadPart += padding;
-    if (liFileSize.QuadPart > (1ULL << 32) - 1)  /* mf->size is an int */
+    if (liFileSize.QuadPart + padding > (1ULL << 31) - 1)  /* mf->size is an int */
     {
         log_sdk_err(
             "Failed to map file {quote:%s}: Mapping files >4GiB is not implemented\n",
             ospathc_cstr(filepath));
         goto get_file_size_failed;
     }
-    map_size = liFileSize.LowPart;
+    if (mfile_map_mem(mf, liFileSize.LowPart + padding) != 0)
+        goto alloc_copy_failed;
 
-    mapping = CreateFileMapping(
-        hFile,                 /* File handle */
-        NULL,                  /* Default security attributes */
-        PAGE_READONLY,         /* Read only (or copy on write, but we don't write) */
-        0, map_size,           /* High/Low size of mapping. Zero means entire file */
-        NULL);                 /* Don't name the mapping */
-    if (mapping == NULL)
-        goto create_file_mapping_failed;
+    memcpy(mf->address, address, liFileSize.LowPart);
 
-    mf->address = MapViewOfFile(
-        mapping,               /* File mapping handle */
-        FILE_MAP_COPY,         /* Copy-on-Write */
-        0, 0,                  /* High/Low offset of where the mapping should begin in the file */
-        map_size);             /* Length of mapping. Zero means entire file */
-    if (mf->address == NULL)
-        goto map_view_failed;
-
-    /* The file mapping isn't required anymore */
-    CloseHandle(mapping);
+    /* Don't need mapped file anymore */
+    UnmapViewOfFile(address);
+    CloseHandle(hMapping);
     CloseHandle(hFile);
     utf16_deinit(utf16_filename);
 
-    mem_track_allocation(mf->address);
-    mf->size = map_size;
-
     return 0;
 
-    map_view_failed            : CloseHandle(mapping);
-    create_file_mapping_failed :
-    get_file_size_failed       : CloseHandle(hFile);
+    alloc_copy_failed          :
+    get_file_size_failed       : UnmapViewOfFile(address);
+    map_view_failed            : CloseHandle(hMapping);
+    create_file_mapping_failed : CloseHandle(hFile);
     open_failed                : utf16_deinit(utf16_filename);
     utf16_conv_failed          : return -1;
 }
@@ -88,7 +139,12 @@ mfile_map_mem(struct mfile* mf, int size)
         0, size,               /* High/Low size of mapping. Zero means entire file */
         NULL);                 /* Don't name the mapping */
     if (mapping == NULL)
+    {
+        log_sdk_err(
+            "Failed to create file mapping of size {emph:%d}: {win32error}\n",
+            size);
         goto create_file_mapping_failed;
+    }
 
     mf->address = MapViewOfFile(
         mapping,               /* File mapping handle */
@@ -96,7 +152,12 @@ mfile_map_mem(struct mfile* mf, int size)
         0, 0,                  /* High/Low offset of where the mapping should begin in the file */
         size);                 /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
+    {
+        log_sdk_err(
+            "Failed to map memory of size {emph:%d}: {win32error}\n",
+            size);
         goto map_view_failed;
+    }
 
     CloseHandle(mapping);
 
