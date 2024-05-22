@@ -346,17 +346,21 @@ find_package (LLVM REQUIRED CONFIG)
 if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
     set (llvm_use_shared USE_SHARED)
 endif()
-llvm_config (odb-compiler ${llvm_use_shared}
-    Core
-    BitWriter
-    AArch64AsmParser
-    AArch64CodeGen
-    ARMAsmParser
-    ARMCodeGen
-    WebAssemblyAsmParser
-    WebAssemblyCodeGen
-    X86AsmParser
-    X86CodeGen)
+# NOTE: It seems when linking the LLD libraries, these are all already included
+#       Linking them twice causes multiple instances of the same LLVM objects
+#       to be registered, resulting in the error:
+#           "LLVM ERROR: inconsistency in registered CommandLine options"
+#llvm_config (odb-compiler ${llvm_use_shared}
+#    Core
+#    BitWriter
+#    AArch64AsmParser
+#    AArch64CodeGen
+#    ARMAsmParser
+#    ARMCodeGen
+#    WebAssemblyAsmParser
+#    WebAssemblyCodeGen
+#    X86AsmParser
+#    X86CodeGen)
 find_package (LLD REQUIRED CONFIG)
 target_link_libraries (odb-compiler
     PRIVATE

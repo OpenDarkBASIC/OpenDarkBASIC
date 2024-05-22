@@ -225,7 +225,7 @@ report_error(
                 if (i)
                     log_raw(", ");
                 name = utf8_list_view(param_names, i);
-                log_raw("{emph:%.*s}", name.len, name.data + name.off);
+                log_raw("{u:%.*s}", name.len, name.data + name.off);
             }
             log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
         }
@@ -277,7 +277,7 @@ report_error(
                 if (i)
                     log_raw(", ");
                 name = utf8_list_view(param_names, i);
-                log_raw("{emph:%.*s}", name.len, name.data + name.off);
+                log_raw("{u:%.*s}", name.len, name.data + name.off);
             }
             log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
         }
