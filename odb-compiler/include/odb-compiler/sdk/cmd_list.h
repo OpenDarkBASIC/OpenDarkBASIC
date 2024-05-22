@@ -57,7 +57,6 @@ struct cmd_list
 {
     struct utf8_list         db_cmd_names;
     struct utf8_list         c_symbols;
-    struct utf8_list         help_files;
     struct plugin_ids        plugin_ids;
     struct return_types_list return_types;
     struct param_types_lists param_types;
@@ -70,7 +69,6 @@ cmd_list_init(struct cmd_list* cmds)
 {
     utf8_list_init(&cmds->db_cmd_names);
     utf8_list_init(&cmds->c_symbols);
-    utf8_list_init(&cmds->help_files);
     plugin_ids_init(&cmds->plugin_ids);
     return_types_list_init(&cmds->return_types);
     param_types_lists_init(&cmds->param_types);
@@ -94,7 +92,6 @@ cmd_list_deinit(struct cmd_list* cmds)
 
     return_types_list_deinit(&cmds->return_types);
     plugin_ids_deinit(&cmds->plugin_ids);
-    utf8_list_deinit(&cmds->help_files);
     utf8_list_deinit(&cmds->c_symbols);
     utf8_list_deinit(&cmds->db_cmd_names);
 }
@@ -105,8 +102,7 @@ cmd_list_add(
     plugin_id           plugin_id,
     enum cmd_param_type return_type,
     struct utf8_view    db_cmd_name,
-    struct utf8_view    c_symbol,
-    struct utf8_view    help_file);
+    struct utf8_view    c_symbol);
 
 ODBCOMPILER_PUBLIC_API void
 cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id);

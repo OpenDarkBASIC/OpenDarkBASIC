@@ -85,7 +85,6 @@ DBParserHelper::addCommand(
         0,
         return_type,
         cstr_utf8_view(name),
-        empty_utf8_view(),
         empty_utf8_view());
     if (cmd < 0)
         return cmd;

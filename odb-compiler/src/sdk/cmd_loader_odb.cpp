@@ -66,11 +66,10 @@ parse_command_string(
     struct utf8_span str,
     struct ospathc   filepath)
 {
-    struct utf8_span cmd_name, type_str, c_symbol, db_params, doc;
+    struct utf8_span cmd_name, type_str, c_symbol, db_params;
     utf8_split(data, str, '%', &cmd_name, &type_str);
     utf8_split(data, type_str, '%', &type_str, &c_symbol);
     utf8_split(data, c_symbol, '%', &c_symbol, &db_params);
-    utf8_split(data, db_params, '%', &db_params, &doc);
 
     if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
     {
@@ -127,8 +126,7 @@ parse_command_string(
         plugin_id,
         return_type,
         utf8_span_view(data, cmd_name),
-        utf8_span_view(data, c_symbol),
-        utf8_span_view(data, doc));
+        utf8_span_view(data, c_symbol));
     if (cmd < 0)
         goto critical_error;
 

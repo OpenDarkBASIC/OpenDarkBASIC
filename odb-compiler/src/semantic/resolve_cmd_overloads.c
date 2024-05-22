@@ -91,21 +91,21 @@ type_can_be_promoted_to(enum cmd_param_type from, enum cmd_param_type to)
     static enum type_promotion_result rules[15][15] = {
 /*       TO */
 /*FROM   0  R  D  L  W  Y  B  F  O  S  H  P  Q  X  E */
-/* 0 */ {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0}, /* VOID */
-/* R */ {0, 1, 2, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 1, 0}, /* LONG */
-/* D */ {0, 1, 1, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 1, 0}, /* DWORD */
-/* L */ {0, 1, 2, 1, 2, 2, 3, 2, 2, 0, 0, 0, 0, 1, 0}, /* INTEGER */
-/* W */ {0, 1, 1, 1, 1, 2, 3, 2, 2, 0, 0, 0, 0, 1, 0}, /* WORD */
-/* Y */ {0, 1, 1, 1, 1, 1, 3, 2, 2, 0, 0, 0, 0, 1, 0}, /* BYTE */
-/* B */ {0, 3, 3, 3, 3, 3, 1, 3, 3, 0, 0, 0, 0, 1, 0}, /* BOOLEAN */
-/* F */ {0, 2, 2, 2, 2, 2, 3, 1, 1, 0, 0, 0, 0, 1, 0}, /* FLOAT */
-/* O */ {0, 2, 2, 2, 2, 2, 3, 2, 1, 0, 0, 0, 0, 1, 0}, /* DOUBLE */
-/* S */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0}, /* STRING */
-/* H */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0}, /* ARRAY */
-/* P */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0}, /* LABEL */
-/* Q */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0}, /* DLABEL */
-/* X */ {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}, /* ANY (reinterpret)*/
-/* E */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1}, /* USER DEFINED */
+/* 0 */ {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0}, /* VOID */
+/* R */ {0, 1, 2, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* LONG */
+/* D */ {0, 1, 1, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* DWORD */
+/* L */ {0, 1, 2, 1, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* INTEGER */
+/* W */ {0, 1, 1, 1, 1, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* WORD */
+/* Y */ {0, 1, 1, 1, 1, 1, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* BYTE */
+/* B */ {0, 3, 3, 3, 3, 3, 1, 3, 3, 0, 0, 0, 0, 3, 0}, /* BOOLEAN */
+/* F */ {0, 2, 2, 2, 2, 2, 3, 1, 1, 0, 0, 0, 0, 3, 0}, /* FLOAT */
+/* O */ {0, 2, 2, 2, 2, 2, 3, 2, 1, 0, 0, 0, 0, 3, 0}, /* DOUBLE */
+/* S */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 0}, /* STRING */
+/* H */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0}, /* ARRAY */
+/* P */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0}, /* LABEL */
+/* Q */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0}, /* DLABEL */
+/* X */ {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0}, /* ANY (reinterpret)*/
+/* E */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, /* USER DEFINED */
     };
     /* clang-format on */
     return rules[type_to_idx(from)][type_to_idx(to)];
@@ -124,7 +124,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 }
 
 static int
-eliminate_parameter_mismatches(cmd_id* cmd_id, void* user)
+eliminate_disallowed_casts(cmd_id* cmd_id, void* user)
 {
     int                      i, arglist;
     struct ctx*              ctx = user;
@@ -149,7 +149,7 @@ eliminate_parameter_mismatches(cmd_id* cmd_id, void* user)
     return 1;
 }
 static int
-eliminate_all_but_exact_mismatches(cmd_id* cmd_id, void* user)
+eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 {
     int                      i, arglist;
     struct ctx*              ctx = user;
@@ -172,6 +172,50 @@ eliminate_all_but_exact_mismatches(cmd_id* cmd_id, void* user)
     }
 
     return 1;
+}
+static int
+eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
+{
+    int                      i, arglist;
+    struct ctx*              ctx = user;
+    struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
+
+    for (i = 0, arglist = ctx->arglist; i != ctx->argcount; ++i)
+    {
+        int                 expr = ctx->ast->nodes[arglist].arglist.expr;
+        enum cmd_param_type arg = vec_get(*args, i)->type;
+        enum cmd_param_type param = expr_to_type(ctx->ast, expr, ctx->cmds);
+
+        if (param != arg)
+            return 0;
+    }
+
+    return 1;
+}
+
+static const char*
+type_as_name(enum cmd_param_type type)
+{
+    switch (type)
+    {
+        case CMD_PARAM_VOID: break;
+        case CMD_PARAM_LONG: return "AS DOUBLE INTEGER";
+        case CMD_PARAM_DWORD: return "AS DWORD";
+        case CMD_PARAM_INTEGER: return "AS INTEGER";
+        case CMD_PARAM_WORD: return "AS WORD";
+        case CMD_PARAM_BYTE: return "AS BYTE";
+        case CMD_PARAM_BOOLEAN: return "AS BOOLEAN";
+        case CMD_PARAM_FLOAT: return "AS FLOAT";
+        case CMD_PARAM_DOUBLE: return "AS DOUBLE";
+        case CMD_PARAM_STRING: return "AS STRING";
+        case CMD_PARAM_ARRAY: break;
+        case CMD_PARAM_LABEL: break;
+        case CMD_PARAM_DABEL: break;
+        case CMD_PARAM_ANY: return "AS ANY"; break;
+        case CMD_PARAM_USER_DEFINED_VAR_PTR: return "...";
+    }
+
+    return "";
 }
 
 static void
@@ -212,11 +256,13 @@ report_error(
         {
             int              i;
             struct utf8_view name = utf8_list_view(&cmds->db_cmd_names, *pcmd);
+            const struct param_types_list* param_types
+                = vec_get(cmds->param_types, *pcmd);
             const struct utf8_list* param_names
                 = vec_get(cmds->db_param_names, *pcmd);
             enum cmd_param_type ret_type = *vec_get(cmds->return_types, *pcmd);
             log_raw(
-                "  %.*s%s",
+                "  {emph:%.*s}%s",
                 name.len,
                 name.data + name.off,
                 ret_type == CMD_PARAM_VOID ? " " : "(");
@@ -224,8 +270,10 @@ report_error(
             {
                 if (i)
                     log_raw(", ");
-                name = utf8_list_view(param_names, i);
-                log_raw("{u:%.*s}", name.len, name.data + name.off);
+                log_raw(
+                    "%s {u:%s}",
+                    utf8_list_cstr(param_names, i),
+                    type_as_name(vec_get(*param_types, i)->type));
             }
             log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
         }
@@ -264,11 +312,13 @@ report_error(
              ++cmd)
         {
             int                 i;
-            struct utf8_view    name;
             enum cmd_param_type ret_type = *vec_get(cmds->return_types, cmd);
-            struct utf8_list* param_names = vec_get(cmds->db_param_names, cmd);
+            const struct param_types_list* param_types
+                = vec_get(cmds->param_types, cmd);
+            const struct utf8_list* param_names
+                = vec_get(cmds->db_param_names, cmd);
             log_raw(
-                "  %.*s%s",
+                "  {emph:%.*s}%s",
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
                 ret_type == CMD_PARAM_VOID ? " " : "(");
@@ -276,8 +326,10 @@ report_error(
             {
                 if (i)
                     log_raw(", ");
-                name = utf8_list_view(param_names, i);
-                log_raw("{u:%.*s}", name.len, name.data + name.off);
+                log_raw(
+                    "%s {u:%s}",
+                    utf8_list_cstr(param_names, i),
+                    type_as_name(vec_get(*param_types, i)->type));
             }
             log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
         }
@@ -332,11 +384,15 @@ resolve_cmd_overloads(
 
         candidates_retain(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
-        candidates_retain(candidates, eliminate_parameter_mismatches, &ctx);
+        candidates_retain(candidates, eliminate_disallowed_casts, &ctx);
+        
+        if (vec_count(candidates) > 1)
+            candidates_retain(
+                candidates, eliminate_all_but_exact_matches, &ctx);
 
         if (vec_count(candidates) > 1)
             candidates_retain(
-                candidates, eliminate_all_but_exact_mismatches, &ctx);
+                candidates, eliminate_problematic_casts, &ctx);
 
         if (vec_count(candidates) != 1)
         {

@@ -1016,7 +1016,6 @@ struct param
 {
     struct param* next;
 
-    struct str_view name;
     enum param_type type;
 
     unsigned is_ptr : 1;
@@ -1027,16 +1026,34 @@ struct param
     unsigned is_struct : 1;
 };
 
+/* Description can span multiple lines, split into string fragments */
+struct param_doc_desc
+{
+    struct param_doc_desc* next;
+    struct str_view        text;
+};
+
+struct param_doc
+{
+    struct param_doc* next;
+
+    struct str_view        name;
+    struct param_doc_desc* desc;
+};
+
 struct cmd
 {
-    struct cmd*   next;
-    struct param* params;
+    struct cmd*       next;
+    struct param*     params;
+    struct param_doc* param_docs;
 
     const char* source;
 
     struct str_view name;
     struct str_view symbol;
     struct param    ret;
+
+    unsigned is_overload : 1;
 };
 
 struct root
@@ -1064,6 +1081,28 @@ new_param(struct cmd* command)
 
     *param = calloc(1, sizeof **param);
     return *param;
+}
+
+static struct param_doc*
+new_param_doc(struct cmd* cmd)
+{
+    struct param_doc** doc = &cmd->param_docs;
+    while (*doc)
+        doc = &(*doc)->next;
+
+    *doc = calloc(1, sizeof **doc);
+    return *doc;
+}
+
+static struct param_doc_desc*
+new_param_doc_desc(struct param_doc* doc)
+{
+    struct param_doc_desc** desc = &doc->desc;
+    while (*desc)
+        desc = &(*desc)->next;
+
+    *desc = calloc(1, sizeof **desc);
+    return *desc;
 }
 
 static enum token
@@ -1158,7 +1197,6 @@ parse_parameter(struct parser* p, struct cmd* command, char is_ret)
                     param->type = PARAM_BOOLEAN;
                 else
                 {
-                    param->name = p->value.str;
                     if (param->type == PARAM_NONE)
                         return print_loc_error(
                             p,
@@ -1190,48 +1228,76 @@ parse_c_parameters(struct parser* p, struct cmd* command)
 }
 
 static enum token
-parse_doc_parameters(struct parser* p, struct cmd* command, enum token tok)
+parse_doc_parameters(struct parser* p, struct cmd* cmd)
 {
+    enum token tok;
     while (1)
     {
-        switch (tok)
+        switch ((tok = scan_next_token(p)))
         {
+            case ',': break;
+            default: return tok;
+
             case TOK_COMMAND_BRIEF:
             case TOK_COMMAND_DESCRIPTION:
-            case TOK_COMMAND_PARAM:
             case TOK_COMMAND_RETURNS:
             case TOK_COMMAND_EXAMPLE:
             case TOK_COMMAND_SEE_ALSO:
                 if (scan_next_token(p) != '(')
                     return print_loc_error(
-                        p, "Expected argument to NAME() macro\n");
+                        p, "Expected argument to BRIEF() macro\n");
                 while (1)
                 {
                     switch ((tok = scan_next_token(p)))
                     {
-                        case '(':
                         case ',':
-                        case TOK_STRING: break;
+                        case TOK_STRING: continue;
+                        case ')': break;
 
-                        default: goto out;
+                        default: return tok;
                     }
+                    break;
                 }
-            out:
                 break;
 
-            case ',': break;
-            default: return tok;
-        }
+            case TOK_COMMAND_PARAM: {
+                struct param_doc* doc;
 
-        tok = scan_next_token(p);
+                if (scan_next_token(p) != '(')
+                    return print_loc_error(
+                        p, "Expected argument to PARAMETER() macro\n");
+                if (scan_next_token(p) != TOK_STRING)
+                    return print_loc_error(
+                        p,
+                        "Expected parameter name as argument to PARAMETER() "
+                        "macro\n");
+
+                doc = new_param_doc(cmd);
+                doc->name = p->value.str;
+
+                if (scan_next_token(p) != ',')
+                    return print_loc_error(
+                        p,
+                        "Expected a string containing a description of this "
+                        "parameter\n");
+
+                while ((tok = scan_next_token(p)) == TOK_STRING)
+                {
+                    struct param_doc_desc* desc = new_param_doc_desc(doc);
+                    desc->text = p->value.str;
+                }
+
+                if (tok != ')')
+                    return print_loc_error(p, "Missing closing ')'\n");
+                break;
+            }
+        }
     }
 }
 
 static enum token
 parse_command(struct parser* p, struct cmd* command, char is_overload)
 {
-    enum token tok;
-
     command->source = p->data;
 
     if (scan_next_token(p) != '(')
@@ -1261,7 +1327,7 @@ parse_command(struct parser* p, struct cmd* command, char is_overload)
     command->symbol = p->value.str;
 
     /* Parse parameter types of C function */
-    if ((tok = parse_c_parameters(p, command)) != TOK_COMMAND_NAME)
+    if (parse_c_parameters(p, command) != TOK_COMMAND_NAME)
         return print_loc_error(
             p,
             "Expected NAME(\"<command name>\") as next argument to "
@@ -1277,21 +1343,39 @@ parse_command(struct parser* p, struct cmd* command, char is_overload)
             "Expected command name string as argument to "
             "NAME() macro\n");
     command->name = p->value.str;
-    while ((tok = scan_next_token(p)) == TOK_STRING)
-        command->name.len
-            = p->value.str.off - command->name.off + p->value.str.len;
 
-    if (tok != ')')
+    if (scan_next_token(p) != ')')
         return print_loc_error(p, "Missing closing ')'\n");
 
-    if (is_overload && scan_next_token(p) != ')')
-        return print_loc_error(
-            p,
-            "Too many arguments passed to ODB_OVERLOAD. Note that ODB_OVERLOAD "
-            "does not accept any of the documentation arguments that "
-            "ODB_COMMAND accepts. The documentation of overloaded functions is "
-            "shared between all overloads.\n");
-    return parse_doc_parameters(p, command, tok);
+    if (is_overload)
+    {
+        if (scan_next_token(p) != ')')
+            return print_loc_error(
+                p,
+                "Too many arguments passed to ODB_OVERLOAD. Note that "
+                "ODB_OVERLOAD "
+                "does not accept any of the documentation arguments that "
+                "ODB_COMMAND accepts. The documentation of overloaded "
+                "functions is "
+                "shared between all overloads.\n");
+
+        command->is_overload = 1;
+        return ')';
+    }
+    return parse_doc_parameters(p, command);
+}
+
+static struct cmd*
+find_command_by_name(
+    const struct parser* p, const struct root* root, struct str_view name)
+{
+    struct cmd* cmd;
+    for (cmd = root->commands; cmd; cmd = cmd->next)
+        if (name.len == cmd->name.len
+            && memcmp(p->data + name.off, p->data + cmd->name.off, name.len)
+                   == 0)
+            return cmd;
+    return NULL;
 }
 
 static int
@@ -1306,11 +1390,45 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
             case TOK_END: return 0;
 
             case TOK_ODB_COMMAND:
-            case TOK_ODB_OVERLOAD:
-                if (parse_command(p, new_command(root), tok == TOK_ODB_OVERLOAD)
-                    != ')')
+                if (parse_command(p, new_command(root), 0) != ')')
                     return print_loc_error(
                         p, "Unexpected token encountered.\n");
+                break;
+
+            case TOK_ODB_OVERLOAD: {
+                struct cmd*       base;
+                struct cmd*       ol;
+                struct param*     ol_param;
+                struct param_doc* base_doc;
+
+                ol = new_command(root);
+                if (parse_command(p, ol, 1) != ')')
+                    return print_loc_error(
+                        p, "Unexpected token encountered.\n");
+
+                base = find_command_by_name(p, root, ol->name);
+                if (base == NULL)
+                    return print_loc_error(
+                        p,
+                        "Command overload not found for \"%.*s\"\n",
+                        ol->name.len,
+                        p->data + ol->name.off);
+
+                /* Copy parameter names from base command, since they are shared
+                 */
+                base_doc = base->param_docs;
+                ol_param = ol->params;
+                while (ol_param && base_doc)
+                {
+                    struct param_doc* ol_doc = new_param_doc(ol);
+                    ol_doc->name = base_doc->name;
+
+                    ol_param = ol_param->next;
+                    base_doc = base_doc->next;
+                }
+            }
+            break;
+
             default: break;
         }
     }
@@ -1319,7 +1437,8 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
 static void
 gen_command_string(struct mstream* ms, const struct cmd* cmd)
 {
-    struct param* param;
+    struct param*     param;
+    struct param_doc* param_doc;
     mstream_fmt(ms, "%S", cmd->name, cmd->source);
     mstream_putc(ms, '%');
     mstream_putc(ms, cmd->ret.type);
@@ -1338,35 +1457,16 @@ gen_command_string(struct mstream* ms, const struct cmd* cmd)
     mstream_putc(ms, '%');
 
     param = cmd->params;
-    while (param)
+    param_doc = cmd->param_docs;
+    while (param && param_doc)
     {
         if (param != cmd->params)
             mstream_cstr(ms, ", ");
-        mstream_fmt(ms, "%S", param->name, cmd->source);
-        switch (param->type)
-        {
-            case PARAM_NONE: break;
-            case PARAM_VOID: break;
-            case PARAM_LONG: mstream_cstr(ms, " AS DOUBLE INTEGER"); break;
-            case PARAM_DWORD: mstream_cstr(ms, " AS DWORD"); break;
-            case PARAM_INTEGER: mstream_cstr(ms, " AS INTEGER"); break;
-            case PARAM_WORD: mstream_cstr(ms, " AS WORD"); break;
-            case PARAM_BYTE: mstream_cstr(ms, " AS BYTE"); break;
-            case PARAM_BOOLEAN: mstream_cstr(ms, " AS BOOLEAN"); break;
-            case PARAM_FLOAT: mstream_cstr(ms, " AS FLOAT"); break;
-            case PARAM_DOUBLE: mstream_cstr(ms, " AS DOUBLE"); break;
-            case PARAM_STRING: mstream_cstr(ms, " AS STRING"); break;
-            case PARAM_ARRAY: break;
-            case PARAM_LABEL: break;
-            case PARAM_DABEL: break;
-            case PARAM_ANY: break;
-            case PARAM_USER_DEFINED_VAR_PTR: mstream_cstr(ms, "..."); break;
-        }
-        param = param->next;
-    }
 
-    mstream_putc(ms, '%');
-    // mstream_fmt(ms, "%S", cmd->help, cmd->source);
+        mstream_fmt(ms, "%S", param_doc->name, cmd->source);
+        param = param->next;
+        param_doc = param_doc->next;
+    }
 }
 
 static void

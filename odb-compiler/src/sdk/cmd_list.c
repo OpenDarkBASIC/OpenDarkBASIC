@@ -14,8 +14,7 @@ cmd_list_add(
     plugin_id           plugin_id,
     enum cmd_param_type return_type,
     struct utf8_view    db_cmd_name,
-    struct utf8_view    c_symbol,
-    struct utf8_view    help_file)
+    struct utf8_view    c_symbol)
 {
     struct param_types_list* param_types;
     struct utf8_list*        db_param_names;
@@ -42,8 +41,6 @@ cmd_list_add(
         goto db_cmd_name_failed;
     if (utf8_list_insert(&cmds->c_symbols, insert, c_symbol) < 0)
         goto c_identifier_failed;
-    if (utf8_list_insert(&cmds->help_files, insert, help_file) < 0)
-        goto help_file_failed;
     if (plugin_ids_insert(&cmds->plugin_ids, insert, plugin_id) < 0)
         goto plugin_insert_failed;
     if (return_types_list_insert(&cmds->return_types, insert, return_type) < 0)
@@ -70,8 +67,6 @@ param_types_failed:
 return_type_failed:
     plugin_ids_erase(cmds->plugin_ids, insert);
 plugin_insert_failed:
-    utf8_list_erase(&cmds->help_files, insert);
-help_file_failed:
     utf8_list_erase(&cmds->c_symbols, insert);
 c_identifier_failed:
     utf8_list_erase(&cmds->db_cmd_names, insert);
@@ -89,11 +84,12 @@ cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id)
     if (span.len == cmds->longest_command)
         recalc_longest_command = 1;
 
+    utf8_list_deinit(vec_get(cmds->db_param_names, cmd_id));
+    db_param_names_erase(cmds->db_param_names, cmd_id);
     param_types_list_deinit(vec_get(cmds->param_types, cmd_id));
     param_types_lists_erase(cmds->param_types, cmd_id);
     return_types_list_erase(cmds->return_types, cmd_id);
     plugin_ids_erase(cmds->plugin_ids, cmd_id);
-    utf8_list_erase(&cmds->help_files, cmd_id);
     utf8_list_erase(&cmds->c_symbols, cmd_id);
     utf8_list_erase(&cmds->db_cmd_names, cmd_id);
 

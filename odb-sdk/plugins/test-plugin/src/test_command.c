@@ -8,7 +8,7 @@ ODB_COMMAND1(
     NAME("TEST COMMAND"),
     BRIEF(),
     DESCRIPTION(),
-    PARAMETER1(),
+    PARAMETER1("", ""),
     RETURNS(),
     EXAMPLE(),
     SEE_ALSO())

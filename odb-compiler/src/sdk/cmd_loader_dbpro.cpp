@@ -163,14 +163,14 @@ load_dbpro_commands(
                 plugin_id,
                 return_type,
                 utf8_span_view(entry_str.data, cmd_name),
-                utf8_span_view(entry_str.data, c_symbol),
-                empty_utf8_view()); /* DBP doesn't provide links to help files
-                                     */
+                utf8_span_view(entry_str.data, c_symbol));
             if (cmd < 0)
                 goto critical_error;
 
             /* Parse and add each parameter type to the command. If a character
-             * is proceeded by an asterisk "*", then it is an out parameter */
+             * is proceeded by an asterisk "*", then it is an out parameter.
+             * Some commands have void parameters. These need to be skipped so
+             * that the parameter count is correct */
             struct utf8_span db_param_name;
             for (utf8_idx i = 0; i != type_str.len; ++i)
             {
@@ -195,6 +195,9 @@ load_dbpro_commands(
                     continue;
                 }
 
+                if (type == CMD_PARAM_VOID)
+                    continue;
+
                 if (i + 1 < type_str.len
                     && entry_str.data[type_str.off + i + 1] == '*')
                 {
@@ -213,8 +216,6 @@ load_dbpro_commands(
                     goto critical_error;
                 }
             }
-
-            printf("%s\n", utf8_cstr(entry_str));
         }
 
     utf8_deinit(entry_str);
