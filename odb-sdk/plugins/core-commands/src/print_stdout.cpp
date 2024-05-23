@@ -96,7 +96,7 @@ ODB_OVERLOAD1(
 }
 ODB_OVERLOAD1(
     /* clang-format off */
-    void, print_i16, uint16_t value,
+    void, print_u16, uint16_t value,
     /* clang-format on */
     NAME("PRINT"))
 {
@@ -104,11 +104,11 @@ ODB_OVERLOAD1(
 }
 ODB_OVERLOAD1(
     /* clang-format off */
-    void, print_i8, char value,
+    void, print_u8, uint8_t value,
     /* clang-format on */
     NAME("PRINT"))
 {
-    printf("%c\n", value);
+    printf("%d\n", (int)value);
 }
 ODB_OVERLOAD1(
     /* clang-format off */

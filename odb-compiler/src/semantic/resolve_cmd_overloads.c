@@ -90,22 +90,22 @@ type_can_be_promoted_to(enum cmd_param_type from, enum cmd_param_type to)
     /* clang-format off */
     static enum type_promotion_result rules[15][15] = {
 /*       TO */
-/*FROM   0  R  D  L  W  Y  B  F  O  S  H  P  Q  X  E */
-/* 0 */ {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0}, /* VOID */
-/* R */ {0, 1, 2, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* LONG */
-/* D */ {0, 1, 1, 2, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* DWORD */
-/* L */ {0, 1, 2, 1, 2, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* INTEGER */
-/* W */ {0, 1, 1, 1, 1, 2, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* WORD */
-/* Y */ {0, 1, 1, 1, 1, 1, 3, 2, 2, 0, 0, 0, 0, 3, 0}, /* BYTE */
-/* B */ {0, 3, 3, 3, 3, 3, 1, 3, 3, 0, 0, 0, 0, 3, 0}, /* BOOLEAN */
-/* F */ {0, 2, 2, 2, 2, 2, 3, 1, 1, 0, 0, 0, 0, 3, 0}, /* FLOAT */
-/* O */ {0, 2, 2, 2, 2, 2, 3, 2, 1, 0, 0, 0, 0, 3, 0}, /* DOUBLE */
-/* S */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 3, 0}, /* STRING */
-/* H */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 3, 0}, /* ARRAY */
-/* P */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 3, 0}, /* LABEL */
-/* Q */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3, 0}, /* DLABEL */
-/* X */ {3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1, 0}, /* ANY (reinterpret)*/
-/* E */ {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, /* USER DEFINED */
+/*FROM   0 R D L W Y B F O S H P Q X E */
+/* 0 */ {1,0,0,0,0,0,0,0,0,0,0,0,0,3,0}, /* VOID */
+/* R */ {0,1,2,2,2,2,3,2,2,0,0,0,0,3,0}, /* LONG */
+/* D */ {0,1,1,2,2,2,3,2,2,0,0,0,0,3,0}, /* DWORD */
+/* L */ {0,1,2,1,2,2,3,2,2,0,0,0,0,3,0}, /* INTEGER */
+/* W */ {0,1,1,1,1,2,3,2,2,0,0,0,0,3,0}, /* WORD */
+/* Y */ {0,1,1,1,1,1,3,2,2,0,0,0,0,3,0}, /* BYTE */
+/* B */ {0,3,3,3,3,3,1,3,3,0,0,0,0,3,0}, /* BOOLEAN */
+/* F */ {0,2,2,2,2,2,3,1,1,0,0,0,0,3,0}, /* FLOAT */
+/* O */ {0,2,2,2,2,2,3,2,1,0,0,0,0,3,0}, /* DOUBLE */
+/* S */ {0,0,0,0,0,0,0,0,0,1,0,0,0,3,0}, /* STRING */
+/* H */ {0,0,0,0,0,0,0,0,0,0,1,0,0,3,0}, /* ARRAY */
+/* P */ {0,0,0,0,0,0,0,0,0,0,0,1,0,3,0}, /* LABEL */
+/* Q */ {0,0,0,0,0,0,0,0,0,0,0,0,1,3,0}, /* DLABEL */
+/* X */ {3,3,3,3,3,3,3,3,3,3,3,3,3,1,0}, /* ANY (reinterpret)*/
+/* E */ {0,0,0,0,0,0,0,0,0,0,0,0,0,0,1}, /* USER DEFINED */
     };
     /* clang-format on */
     return rules[type_to_idx(from)][type_to_idx(to)];
@@ -114,21 +114,13 @@ type_can_be_promoted_to(enum cmd_param_type from, enum cmd_param_type to)
 static int
 eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 {
-    struct ctx*              ctx = user;
-    struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
-
-    if (vec_count(*args) != ctx->argcount)
-        return 0;
-
-    return 1;
-}
-
-static int
-eliminate_disallowed_casts(cmd_id* cmd_id, void* user)
-{
     int                      i, arglist;
     struct ctx*              ctx = user;
     struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
+
+    /* param count mismatch */
+    if (vec_count(*args) != ctx->argcount)
+        return 0;
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount; ++i)
     {
@@ -136,6 +128,7 @@ eliminate_disallowed_casts(cmd_id* cmd_id, void* user)
         enum cmd_param_type arg = vec_get(*args, i)->type;
         enum cmd_param_type param = expr_to_type(ctx->ast, expr, ctx->cmds);
 
+        /* Incompatible types */
         switch (type_can_be_promoted_to(param, arg))
         {
             case DISALLOW: return 0;
@@ -148,6 +141,7 @@ eliminate_disallowed_casts(cmd_id* cmd_id, void* user)
 
     return 1;
 }
+
 static int
 eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 {
@@ -384,15 +378,13 @@ resolve_cmd_overloads(
 
         candidates_retain(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
-        candidates_retain(candidates, eliminate_disallowed_casts, &ctx);
-        
+
         if (vec_count(candidates) > 1)
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
 
         if (vec_count(candidates) > 1)
-            candidates_retain(
-                candidates, eliminate_problematic_casts, &ctx);
+            candidates_retain(candidates, eliminate_problematic_casts, &ctx);
 
         if (vec_count(candidates) != 1)
         {

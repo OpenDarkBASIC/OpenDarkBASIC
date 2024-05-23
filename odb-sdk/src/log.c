@@ -187,11 +187,13 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
     const char* end;
     const char* content;
 
+#if defined(ODBSDK_PLATFORM_WINDOWS)
     if (memcmp(fmt, "{win32error}", 12) == 0)
     {
         log_last_error_win32(fp);
         return fmt + 12;
     }
+#endif
 
     for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end);)
     {

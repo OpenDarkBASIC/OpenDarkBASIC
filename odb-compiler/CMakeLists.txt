@@ -157,8 +157,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${BULIDINFOGENERATED_HEADER}"
     "${PROJECT_BINARY_DIR}/src/build_info.c"
 
+    "include/odb-compiler/sdk/cmd_cache.h"
     "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
+    "src/sdk/cmd_cache.c"
     "src/sdk/cmd_list.c"
     "src/sdk/cmd_loader.cpp"
     "src/sdk/cmd_loader_dbpro.cpp"

@@ -5,6 +5,7 @@
 #include "odb-compiler/sdk/sdk.h"
 
 extern "C" {
+#include "odb-compiler/sdk/cmd_cache.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
 }
@@ -26,6 +27,7 @@ load_odb_commands(
 struct on_plugin_ctx
 {
     plugin_id                 current, total;
+    struct cmd_cache*         cmd_cache;
     struct cmd_list*          commands;
     enum sdk_type             sdk_type;
     enum odb_codegen_platform target_platform;
@@ -36,6 +38,10 @@ on_plugin(struct plugin_info* plugin, void* user)
 {
     std::unique_ptr<LIEF::Binary> binary;
     auto                          ctx = static_cast<on_plugin_ctx*>(user);
+
+    if (!cmd_cache_plugin_needs_reload(ctx->cmd_cache, plugin))
+        return 1;
+
     switch (ctx->target_platform)
     {
         case ODB_CODEGEN_WINDOWS: {
@@ -130,6 +136,9 @@ on_plugin(struct plugin_info* plugin, void* user)
             break;
     }
 
+    if (cmd_cache_add_plugin(ctx->cmd_cache, plugin) != 0)
+        return -1;
+
     ctx->current++;
     return 1;
 }
@@ -141,11 +150,32 @@ cmd_list_load_from_plugins(
     enum odb_codegen_platform target_platform,
     struct plugin_list        plugins)
 {
-    struct on_plugin_ctx ctx = {
-        0, (plugin_id)vec_count(plugins), commands, sdk_type, target_platform};
+    int                  cmd_cache_loaded;
+    struct cmd_cache     cache;
+    struct on_plugin_ctx ctx
+        = {0,
+           (plugin_id)vec_count(plugins),
+           &cache,
+           commands,
+           sdk_type,
+           target_platform};
+
+    cmd_cache_init(&cache);
+    cmd_cache_loaded = cmd_cache_load(&cache);
+    if (cmd_cache_loaded != 0)
+        log_sdk_warn("All plugins will be parsed.\n");
 
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
-        return -1;
+        goto parse_plugins_failed;
+
+    if (cmd_cache_loaded && cmd_cache_save(&cache) != 0)
+        log_sdk_warn("All plugins will be parsed next time.\n");
+
+    cmd_cache_deinit(&cache);
 
     return 0;
+
+parse_plugins_failed:
+    cmd_cache_deinit(&cache);
+    return -1;
 }

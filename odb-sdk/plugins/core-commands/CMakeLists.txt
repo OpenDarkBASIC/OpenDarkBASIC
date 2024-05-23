@@ -6,7 +6,7 @@ project ("core-commands"
 
 odb_add_plugin (core-commands
     SOURCES
-        "src/sys.c"
+        "src/exit.c"
         "src/print_stdout.cpp"
         "src/str.cpp"
     INCLUDE_DIRECTORIES
