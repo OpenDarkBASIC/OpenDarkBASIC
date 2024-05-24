@@ -6,6 +6,7 @@ extern "C" {
 
 #include "LIEF/Abstract/Binary.hpp"
 #include "LIEF/ELF.hpp"
+#include "LIEF/PE.hpp"
 #include <iostream>
 
 static enum cmd_param_type
@@ -181,11 +182,11 @@ critical_error:
 
 static int
 parse_string_section(
-    struct cmd_list* commands,
-    plugin_id        plugin_id,
     const char*      data,
     struct utf8_span sec,
-    struct ospathc   filepath)
+    struct ospathc   filepath,
+    plugin_id        plugin_id,
+    struct cmd_list* commands)
 {
     struct utf8_span str;
     struct utf8_span next = sec;
@@ -201,6 +202,43 @@ parse_string_section(
     } while (next.len > 0);
 
     return 1;
+}
+
+static int
+parse_string_table(
+    const LIEF::PE::Binary* pe,
+    struct ospathc filepath,
+    plugin_id plugin_id,
+    struct cmd_list* commands)
+{
+    struct utf8 entry_str = empty_utf8();
+
+    for (const auto& entry : pe->resources_manager().value().string_table())
+    {
+        const std::u16string& u16 = entry.name();
+        struct utf16_view     u16v =
+            {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
+        if (utf16_to_utf8(&entry_str, u16v) != 0)
+            goto fatal_error;
+
+        switch (parse_command_string(
+            commands, plugin_id, entry_str.data, utf8_span(entry_str), filepath))
+        {
+            case 1: break;
+            case 0: goto bad_command;
+            default: goto fatal_error;
+        }
+    }
+
+    utf8_deinit(entry_str);
+    return 1;
+
+bad_command:
+    utf8_deinit(entry_str);
+    return 0;
+fatal_error:
+    utf8_deinit(entry_str);
+    return -1;
 }
 
 int
@@ -223,15 +261,27 @@ load_odb_commands(
             auto             content = odbres->content();
             struct utf8_span span = {0, (utf8_idx)content.size()};
             return parse_string_section(
-                commands,
-                plugin_id,
                 (const char*)content.data(),
                 span,
-                filepath);
+                filepath,
+                plugin_id,
+                commands);
+        }
+                              
+        case LIEF::Binary::PE: {
+            auto pe = static_cast<const LIEF::PE::Binary*>(binary);
+            
+            if (pe->resources() == nullptr)
+            {
+                log_sdk_warn("No resources found in pluign {emph:%s}.\n",
+                    ospathc_cstr(filepath));
+                return 0;
+            }
+            
+            return parse_string_table(pe, filepath, plugin_id, commands);
         }
 
         case LIEF::Binary::UNKNOWN:
-        case LIEF::Binary::PE:
         case LIEF::Binary::MACHO:
         case LIEF::Binary::OAT:
         default:

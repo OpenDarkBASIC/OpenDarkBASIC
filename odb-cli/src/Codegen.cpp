@@ -94,13 +94,13 @@ output(const std::vector<std::string>& args)
         objs[0],
         "module",
         ODB_CODEGEN_ObjectFile,
-        ODB_CODEGEN_i386,
+        ODB_CODEGEN_x86_64,
         ODB_CODEGEN_WINDOWS,
         getCommandList(),
         getSourceFilename(),
         getSource());
     odb_link(
-        objs, 1, outputName.c_str(), ODB_CODEGEN_i386, ODB_CODEGEN_WINDOWS);
+        objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
 #else
     static const char* objs[] = {"module.o"};
     odb_codegen(

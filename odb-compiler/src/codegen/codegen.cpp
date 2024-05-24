@@ -25,6 +25,15 @@ extern "C" {
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/TargetParser/Host.h"
 
+static std::string
+to_string(const llvm::Type* ty)
+{
+    std::string              str;
+    llvm::raw_string_ostream rso(str);
+    ty->print(rso);
+    return rso.str();
+}
+
 static int
 create_global_string_table(
     llvm::StringMap<llvm::GlobalVariable*>* string_table,
@@ -44,15 +53,17 @@ create_global_string_table(
         if (result.second == false)
             continue; // String already exists
 
-        result.first->setValue(new llvm::GlobalVariable(
-            *mod,
-            llvm::PointerType::get(llvm::Type::getInt8Ty(mod->getContext()), 0),
-            /*isConstant*/ true,
-            llvm::GlobalValue::PrivateLinkage,
-            llvm::ConstantDataArray::getString(
+        llvm::Constant* S = llvm::ConstantDataArray::getString(
                 mod->getContext(),
                 str_ref,
-                /* Add NULL */ true),
+                /* Add NULL */ true);
+        result.first->setValue(new llvm::GlobalVariable(
+            *mod,
+            //llvm::PointerType::get(llvm::Type::getInt8Ty(mod->getContext()), 0),
+            S->getType(),
+            /*isConstant*/ true,
+            llvm::GlobalValue::PrivateLinkage,
+            S,
             llvm::Twine(".str") + llvm::Twine(string_table->size() - 1)));
         result.first->getValue()->setAlignment(llvm::Align::Constant<1>());
     }
@@ -160,15 +171,6 @@ create_global_plugin_symbol_table(
     }
 
     return 0;
-}
-
-static std::string
-to_string(const llvm::Type* ty)
-{
-    std::string              str;
-    llvm::raw_string_ostream rso(str);
-    ty->print(rso);
-    return rso.str();
 }
 
 ODBSDK_PRINTF_FORMAT(4, 5)
@@ -385,49 +387,59 @@ odb_codegen(
     b.SetInsertPoint(BB);
 
     // Finish off the function.
-    switch (platform)
-    {
-        case ODB_CODEGEN_LINUX: {
-            llvm::Function* FExitProcess = llvm::Function::Create(
-                llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(ctx),
-                    {llvm::Type::getInt32Ty(ctx)},
-                    false),
-                llvm::Function::ExternalLinkage,
-                "exit",
-                &mod);
-            FExitProcess->setDoesNotReturn();
-            b.CreateCall(
-                FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
-        }
-        break;
-
-        case ODB_CODEGEN_WINDOWS: {
-            llvm::Function* FExitProcess = llvm::Function::Create(
-                llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(ctx),
-                    {llvm::Type::getInt32Ty(ctx)},
-                    false),
-                llvm::Function::ExternalLinkage,
-                "ExitProcess",
-                &mod);
-            FExitProcess->setCallingConv(llvm::CallingConv::C);
-            FExitProcess->setDLLStorageClass(
-                llvm::Function::DLLImportStorageClass);
-            FExitProcess->setDoesNotReturn();
-            b.CreateCall(
-                FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
-        }
-        break;
-
-        case ODB_CODEGEN_MACOS: break;
-    }
+    llvm::Function* FExitProcess = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::Type::getVoidTy(ctx),
+            {llvm::Type::getInt32Ty(ctx)},
+            false),
+        llvm::Function::ExternalLinkage,
+        platform == ODB_CODEGEN_WINDOWS ? "ExitProcess" : "_exit",
+        &mod);
+    FExitProcess->setDoesNotReturn();
+    b.CreateCall(
+        FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
     b.CreateRet(nullptr);
+
+    if (platform == ODB_CODEGEN_WINDOWS)
+    {
+        llvm::Constant* rpath_data = llvm::ConstantDataArray::getString(
+            ctx,
+            llvm::StringRef("odb-sdk\\plugins\\"),
+            /* Add NULL */ true);
+        llvm::GlobalVariable* rpath_const = new llvm::GlobalVariable(
+            mod,
+            rpath_data->getType(),
+            /*isConstant*/ true,
+            llvm::GlobalValue::PrivateLinkage,
+            rpath_data,
+            ".rpath");
+        rpath_const->setAlignment(llvm::Align::Constant<1>());
+
+        llvm::Function* rpath_func = llvm::Function::Create(
+            llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(ctx),
+                {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx), 0)},
+                false),
+            llvm::Function::ExternalLinkage,
+            "SetDllDirectoryA",
+            &mod);
+        
+        b.SetInsertPoint(BB->getFirstNonPHI());
+        b.CreateCall(rpath_func, rpath_const);
+    }
 
     // Validate the generated code, checking for consistency.
     llvm::verifyFunction(*F);
 
     mod.print(llvm::outs(), nullptr);
+
+    /* clang-format off */
+    static const char* target_triples[3][3] = {
+        {"i386-pc-windows-msvc", "x86_64-pc-windows-msvc", ""},
+        {"i386-linux-gnu",       "x86_64-linux-gnu", ""},
+        {"i386-",                "x86_64-", ""}
+    };
+    /* clang-format on */
 
     llvm::InitializeAllTargetInfos();
     llvm::InitializeAllTargets();
@@ -437,7 +449,7 @@ odb_codegen(
 
     std::string Error;
     auto        TargetTriple = llvm::sys::getDefaultTargetTriple();
-    // TargetTriple = "i386-pc-windows-msvc";
+    TargetTriple = target_triples[platform][arch];
     auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
 
     // Print an error and exit if we couldn't find the requested target.

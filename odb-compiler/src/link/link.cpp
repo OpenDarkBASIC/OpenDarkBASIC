@@ -23,8 +23,6 @@ link_windows(
     args.push_back("-nodefaultlib");
     args.push_back("-entry:main");
     args.push_back("-subsystem:console");
-    std::string outNameArg = "-out:" + std::string(output_name);
-    args.push_back(outNameArg.c_str());
 
     switch (arch)
     {
@@ -33,7 +31,14 @@ link_windows(
         case ODB_CODEGEN_AArch64: args.push_back("-machine:aarch64"); break;
     }
 
-    args.push_back("./kernel32.lib");
+    std::string outNameArg = "-out:" + std::string(output_name);
+    args.push_back(outNameArg.c_str());
+    
+    args.push_back("kernel32.lib");
+    
+    args.push_back("./odb-sdk/plugins/core-commands.lib");
+    args.push_back("./odb-sdk/plugins/test-plugin.lib");
+
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 

@@ -20,12 +20,12 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
     /* Try to open the file */
     hFile = CreateFileW(
         utf16_cstr(utf16_filename), /* File name */
-        GENERIC_READ,           /* Read only */
+        GENERIC_READ,               /* Read only */
         FILE_SHARE_READ,
-        NULL,                   /* Default security */
-        OPEN_EXISTING,          /* File must exist */
-        FILE_ATTRIBUTE_NORMAL,  /* Default attributes */
-        NULL);                  /* No attribute template */
+        NULL,                       /* Default security */
+        OPEN_EXISTING,              /* File must exist */
+        FILE_ATTRIBUTE_NORMAL,      /* Default attributes */
+        NULL);                      /* No attribute template */
     if (hFile == INVALID_HANDLE_VALUE)
     {
         log_sdk_err(
@@ -61,10 +61,10 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
     }
 
     mf->address = MapViewOfFile(
-        hMapping,              /* File mapping handle */
-        FILE_MAP_READ,         /* Read-Only */
-        0, mf->size,           /* High/Low offset of where the mapping should begin in the file */
-        0);                    /* Length of mapping. Zero means entire file */
+        hMapping,               /* File mapping handle */
+        FILE_MAP_READ,          /* Read-Only */
+        0, 0,                   /* High/Low offset of where the mapping should begin in the file */
+        0);                     /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
     {
         log_sdk_err(

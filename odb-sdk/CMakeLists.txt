@@ -175,10 +175,6 @@ if (ODBSDK_TESTS)
     target_link_libraries (odb-tests PUBLIC odb-sdk)
 endif ()
 
-add_subdirectory ("plugins")
-#add_subdirectory ("runtime")
-#add_subdirectory ("runtime-dbp")
-
 ###############################################################################
 # Installation
 ###############################################################################
