@@ -83,7 +83,7 @@ output(const std::vector<std::string>& args)
     std::string outputName = args[0];
 
     if (semantic_checks_run(
-            getAST(), getCommandList(), getSourceFilename(), getSource())
+            getAST(), getPluginList(), getCommandList(), getSourceFilename(), getSource())
         != 0)
         return false;
 

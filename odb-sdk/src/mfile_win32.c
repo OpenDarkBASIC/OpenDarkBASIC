@@ -7,12 +7,11 @@
 #include "odb-sdk/log.h"
 
 int
-mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int padding)
+mfile_map_read(struct mfile* mf, struct ospathc filepath)
 {
     HANDLE hFile;
     LARGE_INTEGER liFileSize;
     HANDLE hMapping;
-    void* address;
     struct utf16 utf16_filename = empty_utf16();
 
     if (utf8_to_utf16(&utf16_filename, ospathc_view(filepath)) != 0)
@@ -34,12 +33,24 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int 
             ospathc_cstr(filepath));
         goto open_failed;
     }
+    
+    /* Determine file size in bytes */
+    if (!GetFileSizeEx(hFile, &liFileSize))
+        goto get_file_size_failed;
+    if (liFileSize.QuadPart > (1ULL << 31) - 1)  /* mf->size is an int */
+    {
+        log_sdk_err(
+            "Failed to map file {quote:%s}: Mapping files >4GiB is not implemented\n",
+            ospathc_cstr(filepath));
+        goto get_file_size_failed;
+    }
+    mf->size = (int)liFileSize.LowPart;
 
     hMapping = CreateFileMappingW(
         hFile,                 /* File handle */
         NULL,                  /* Default security attributes */
         PAGE_READONLY,         /* Read-only */
-        0, 0,                  /* High/Low size of mapping. Zero means entire file */
+        0, mf->size,           /* High/Low size of mapping. Zero means entire file */
         NULL);                 /* Don't name the mapping */
     if (hMapping == NULL)
     {
@@ -49,12 +60,12 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int 
         goto create_file_mapping_failed;
     }
 
-    address = MapViewOfFile(
-        hMapping,               /* File mapping handle */
-        FILE_MAP_READ,         /* Copy-on-Write */
-        0, 0,                  /* High/Low offset of where the mapping should begin in the file */
+    mf->address = MapViewOfFile(
+        hMapping,              /* File mapping handle */
+        FILE_MAP_READ,         /* Read-Only */
+        0, mf->size,           /* High/Low offset of where the mapping should begin in the file */
         0);                    /* Length of mapping. Zero means entire file */
-    if (address == NULL)
+    if (mf->address == NULL)
     {
         log_sdk_err(
             "Failed to map view of file {quote:%s}: {win32error}\n",
@@ -62,69 +73,18 @@ mfile_map_cow_with_extra_padding(struct mfile* mf, struct ospathc filepath, int 
         goto map_view_failed;
     }
 
-    /*
-     *    Can't copy-on-write a larger range without changing the file on disk
-                                        ..::..                             
-                                     .-=+==+++=-:.                         
-                                   :=-----======+=:                        
-                                  .=-=-----=====++=:                       
-                                  :====-----===+**+=.                      
-                                  :==+*+---=******++=.                     
-                                  --=+*+===**+*+***#*=                     
-                                  :=======++==+=+**#+-                     
-                                  .=======+*===+**#*=                      
-                                   :-==++=***++****=.                      
-                                     -======+*+***#%#*+*#***=.             
-                              .:-+***+=++=++**+**#%%###########-           
-                            :+*######*+=======+*#%%#############-          
-                           .+*#########*====+*#%%%##########%####:         
-                           *###############%%%%%%##########%%#####         
-                           *###############%%%%%###########%%####%+        
-                          .#############################%##%%#####%-       
-                          :###############################%%%##%###*       
-                          -############################%##%%%%#%%###-      
-         :-==-....        -############################%##%%%%######*      
-           ..:==----=.    +#%#######################*=++##%%%%#######-     
-             .------==+*.-#%%#####################*=-=++*#%@%%######%*.    
-         .--=--===----=+#%%%%####################+===+*%%#%@%%#######%=    
-       .=======----=+**#%%%%%%#################*---===*%%%%%%%%%%%%####:   
-        ..:=*+=++++*#%%%%%%%%@################*----==*%%@%%%%%%%%%%%%%%*   
-                   .+%%%%%%%%%%###############=-==+*#%@@@%%%%%%%%%%%%%%%#  
-                     .*%%%%%%@%#############++-=**#%%%@@%%%%%%%%%%%%%%%%#. 
-                       :#%%%%%%#####################%%%%%%%%%%%%%%%%%%%%*  
-                         .=##%%%###################%%%%%%%%%%%%%%%%%%%%#   
-                             .-+##################%%%%%%%@@@@@@%%%%%%%+    
+    mem_track_allocation(mf->address);
 
-                Guess I'll copy the entire fucking file
-                thanks windows
-     */
-    /* Determine file size in bytes */
-    if (!GetFileSizeEx(hFile, &liFileSize))
-        goto get_file_size_failed;
-    if (liFileSize.QuadPart + padding > (1ULL << 31) - 1)  /* mf->size is an int */
-    {
-        log_sdk_err(
-            "Failed to map file {quote:%s}: Mapping files >4GiB is not implemented\n",
-            ospathc_cstr(filepath));
-        goto get_file_size_failed;
-    }
-    if (mfile_map_mem(mf, liFileSize.LowPart + padding) != 0)
-        goto alloc_copy_failed;
-
-    memcpy(mf->address, address, liFileSize.LowPart);
-
-    /* Don't need mapped file anymore */
-    UnmapViewOfFile(address);
+    /* Don't need these anymore */
     CloseHandle(hMapping);
     CloseHandle(hFile);
     utf16_deinit(utf16_filename);
 
     return 0;
 
-    alloc_copy_failed          :
-    get_file_size_failed       : UnmapViewOfFile(address);
-    map_view_failed            : CloseHandle(hMapping);
-    create_file_mapping_failed : CloseHandle(hFile);
+    map_view_failed            :
+    create_file_mapping_failed : CloseHandle(hMapping);
+    get_file_size_failed       : CloseHandle(hFile);
     open_failed                : utf16_deinit(utf16_filename);
     utf16_conv_failed          : return -1;
 }

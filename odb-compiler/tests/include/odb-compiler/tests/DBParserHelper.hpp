@@ -21,8 +21,9 @@ public:
     int addCommand(cmd_param_type return_type, const char* name);
     int addCommand(cmd_param_type return_type, const char* name, std::initializer_list<cmd_param_type> param_types);
 
-    struct cmd_list  cmds;
-    struct db_parser p;
-    struct db_source src;
-    struct ast       ast;
+    struct plugin_list plugins;
+    struct cmd_list    cmds;
+    struct db_parser   p;
+    struct db_source   src;
+    struct ast         ast;
 };

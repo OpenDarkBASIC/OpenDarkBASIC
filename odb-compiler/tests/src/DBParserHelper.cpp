@@ -10,6 +10,7 @@ extern "C" {
 void
 DBParserHelper::SetUp()
 {
+    plugin_list_init(&plugins);
     cmd_list_init(&cmds);
     db_parser_init(&p);
     memset(&src, 0, sizeof(src));
@@ -36,6 +37,7 @@ DBParserHelper::TearDown()
     if (src.text.data)
         db_source_close(&src);
     cmd_list_deinit(&cmds);
+    plugin_list_deinit(&plugins);
 }
 
 int
@@ -81,11 +83,7 @@ DBParserHelper::addCommand(
     std::initializer_list<cmd_param_type> param_types)
 {
     cmd_id cmd = cmd_list_add(
-        &cmds,
-        0,
-        return_type,
-        cstr_utf8_view(name),
-        empty_utf8_view());
+        &cmds, 0, return_type, cstr_utf8_view(name), empty_utf8_view());
     if (cmd < 0)
         return cmd;
 

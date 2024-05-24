@@ -195,6 +195,12 @@ dumpCommandNames(const std::vector<std::string>& args)
     return true;
 }
 
+struct plugin_list*
+getPluginList(void)
+{
+    return &plugins;
+}
+
 struct cmd_list*
 getCommandList(void)
 {

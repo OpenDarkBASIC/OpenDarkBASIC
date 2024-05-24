@@ -3,10 +3,11 @@
 
 static int
 type_check_expressions(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source)
+    struct ast*               ast,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source)
 {
     int n;
     for (n = 0; n != ast->node_count; ++n)

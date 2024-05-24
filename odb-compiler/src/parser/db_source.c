@@ -4,20 +4,31 @@
 int
 db_source_open_file(struct db_source* s, struct ospathc filepath)
 {
-    struct mfile mf;
+    struct mfile mf_orig;
+    struct mfile mf_flex;
 
     /* FLEX expects to find an "EOB marker" at the end of its buffer, which is a
      * sequence of two NULL bytes. */
-    if (mfile_map_cow_with_extra_padding(&mf, filepath, 2) != 0)
-        return -1;
+    if (mfile_map_read(&mf_orig, filepath) != 0)
+        goto map_file_failed;
+    if (mfile_map_mem(&mf_flex, mf_orig.size + 2) != 0)
+        goto map_flex_failed;
 
-    ((char*)mf.address)[mf.size - 1] = '\0';
-    ((char*)mf.address)[mf.size - 2] = '\0';
+    memcpy(mf_flex.address, mf_orig.address, mf_orig.size);
+    ((char*)mf_flex.address)[mf_flex.size - 1] = '\0';
+    ((char*)mf_flex.address)[mf_flex.size - 2] = '\0';
 
-    s->text.data = (char*)mf.address;
-    s->text.len = mf.size - 2; /* two EOB bytes -- also function as a null
-                                  terminator */
+    s->text.data = (char*)mf_flex.address;
+    s->text.len = mf_flex.size - 2; /* two EOB bytes -- also function as a null
+                                       terminator */
+
+    mfile_unmap(&mf_orig);
     return 0;
+
+map_flex_failed:
+    mfile_unmap(&mf_orig);
+map_file_failed:
+    return -1;
 }
 
 int

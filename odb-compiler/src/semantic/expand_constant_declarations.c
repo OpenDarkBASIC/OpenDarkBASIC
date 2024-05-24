@@ -3,10 +3,11 @@
 
 static int
 expand_constant_declarations(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source)
+    struct ast*               ast,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source)
 {
     return 0;
 }

@@ -116,26 +116,27 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 {
     int                      i, arglist;
     struct ctx*              ctx = user;
-    struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
+    struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
     /* param count mismatch */
-    if (vec_count(*args) != ctx->argcount)
+    if (vec_count(*params) != ctx->argcount)
         return 0;
 
-    for (i = 0, arglist = ctx->arglist; i != ctx->argcount; ++i)
+    for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
+         ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
         int                 expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum cmd_param_type arg = vec_get(*args, i)->type;
-        enum cmd_param_type param = expr_to_type(ctx->ast, expr, ctx->cmds);
+        enum cmd_param_type param = vec_get(*params, i)->type;
+        enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
         /* Incompatible types */
-        switch (type_can_be_promoted_to(param, arg))
+        switch (type_can_be_promoted_to(arg, param))
         {
             case DISALLOW: return 0;
 
             case LOSS_OF_INFO:
             case STRANGE:
-            case ALLOW: return 1;
+            case ALLOW: continue;
         }
     }
 
@@ -147,21 +148,22 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 {
     int                      i, arglist;
     struct ctx*              ctx = user;
-    struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
+    struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
-    for (i = 0, arglist = ctx->arglist; i != ctx->argcount; ++i)
+    for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
+         ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
         int                 expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum cmd_param_type arg = vec_get(*args, i)->type;
-        enum cmd_param_type param = expr_to_type(ctx->ast, expr, ctx->cmds);
+        enum cmd_param_type param = vec_get(*params, i)->type;
+        enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
-        switch (type_can_be_promoted_to(param, arg))
+        switch (type_can_be_promoted_to(arg, param))
         {
             case DISALLOW:
             case LOSS_OF_INFO:
             case STRANGE: return 0;
 
-            case ALLOW: return 1;
+            case ALLOW: continue;
         }
     }
 
@@ -172,15 +174,16 @@ eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
 {
     int                      i, arglist;
     struct ctx*              ctx = user;
-    struct param_types_list* args = vec_get(ctx->cmds->param_types, *cmd_id);
+    struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
-    for (i = 0, arglist = ctx->arglist; i != ctx->argcount; ++i)
+    for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
+         ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
         int                 expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum cmd_param_type arg = vec_get(*args, i)->type;
-        enum cmd_param_type param = expr_to_type(ctx->ast, expr, ctx->cmds);
+        enum cmd_param_type param = vec_get(*params, i)->type;
+        enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
-        if (param != arg)
+        if (arg != param)
             return 0;
     }
 
@@ -214,13 +217,14 @@ type_as_name(enum cmd_param_type type)
 
 static void
 report_error(
-    const struct ast*      ast,
-    int                    arglist,
-    const struct cmd_list* cmds,
-    cmd_id                 cmd,
-    const char*            source_filename,
-    struct db_source       source,
-    struct candidates      candidates)
+    const struct ast*         ast,
+    int                       arglist,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    cmd_id                    cmd,
+    const char*               source_filename,
+    struct db_source          source,
+    struct candidates         candidates)
 {
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
@@ -255,6 +259,8 @@ report_error(
             const struct utf8_list* param_names
                 = vec_get(cmds->db_param_names, *pcmd);
             enum cmd_param_type ret_type = *vec_get(cmds->return_types, *pcmd);
+            plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
+            struct plugin_info* plugin = vec_get(*plugins, plugin_id);
             log_raw(
                 "  {emph:%.*s}%s",
                 name.len,
@@ -270,6 +276,7 @@ report_error(
                     type_as_name(vec_get(*param_types, i)->type));
             }
             log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
+            log_raw("(%s)\n", utf8_cstr(plugin->name));
         }
         log_flc(
             "{n:note:} ",
@@ -290,7 +297,7 @@ report_error(
             source.text.data,
             params_loc,
             "Parameter mismatch: No version of this command takes the "
-            "parameter types used here.\n");
+            "argument types used here.\n");
         log_excerpt(source_filename, source.text.data, params_loc);
 
         log_flc(
@@ -307,6 +314,8 @@ report_error(
         {
             int                 i;
             enum cmd_param_type ret_type = *vec_get(cmds->return_types, cmd);
+            plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
+            struct plugin_info* plugin = vec_get(*plugins, plugin_id);
             const struct param_types_list* param_types
                 = vec_get(cmds->param_types, cmd);
             const struct utf8_list* param_names
@@ -325,17 +334,19 @@ report_error(
                     utf8_list_cstr(param_names, i),
                     type_as_name(vec_get(*param_types, i)->type));
             }
-            log_raw("%s\n", ret_type == CMD_PARAM_VOID ? "" : ")");
+            log_raw("%s  ", ret_type == CMD_PARAM_VOID ? "" : ")");
+            log_raw("(%s)\n", utf8_cstr(plugin->name));
         }
     }
 }
 
 static int
 resolve_cmd_overloads(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source)
+    struct ast*               ast,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source)
 {
     struct utf8_view  cmd_name;
     struct candidates candidates;
@@ -391,6 +402,7 @@ resolve_cmd_overloads(
             report_error(
                 ast,
                 ast->nodes[n].cmd.arglist,
+                plugins,
                 cmds,
                 ast->nodes[n].cmd.id,
                 source_filename,

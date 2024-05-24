@@ -1,7 +1,7 @@
 #define _LARGEFILE64_SOURCE
 #include "odb-sdk/log.h"
-#include "odb-sdk/mfile.h"
 #include "odb-sdk/mem.h"
+#include "odb-sdk/mfile.h"
 #include <errno.h>
 #include <string.h>
 #include <sys/fcntl.h>
@@ -10,12 +10,11 @@
 #include <unistd.h>
 
 int
-mfile_map_cow_with_extra_padding(
-    struct mfile* mf, struct ospathc file, int padding)
+mfile_map_read(struct mfile* mf, struct ospathc filepath)
 {
     struct stat stbuf;
     int         fd;
-    const char* c_file_name = ospathc_cstr(file);
+    const char* c_file_name = ospathc_cstr(filepath);
 
     fd = open(c_file_name, O_RDONLY | O_LARGEFILE);
     if (fd < 0)
@@ -49,8 +48,8 @@ mfile_map_cow_with_extra_padding(
 
     mf->address = mmap(
         NULL,
-        (size_t)(stbuf.st_size + padding),
-        PROT_READ | PROT_WRITE,
+        (size_t)(stbuf.st_size),
+        PROT_READ,
         MAP_PRIVATE | MAP_NORESERVE,
         fd,
         0);
@@ -65,13 +64,13 @@ mfile_map_cow_with_extra_padding(
 
     /* file descriptor no longer required */
     close(fd);
-    
+
     mem_track_allocation(mf->address);
-    mf->size = (int)(stbuf.st_size + padding);
+    mf->size = (int)stbuf.st_size;
     return 0;
 
 mmap_failed:
-/*file_too_large :*/
+/*file_too_large: */
 fstat_failed:
     close(fd);
 open_failed:
@@ -89,7 +88,7 @@ mfile_map_mem(struct mfile* mf, int size)
             "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
         return -1;
     }
-    
+
     mem_track_allocation(mf->address);
     mf->size = size;
     return 0;

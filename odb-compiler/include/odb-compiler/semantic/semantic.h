@@ -5,12 +5,14 @@
 
 struct ast;
 struct cmd_list;
+struct plugin_list;
 
 typedef int (*semantic_check_func)(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source);
+    struct ast*               ast,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source);
 
 struct semantic_check
 {
@@ -20,10 +22,11 @@ struct semantic_check
 
 ODBCOMPILER_PUBLIC_API int
 semantic_checks_run(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source);
+    struct ast*               ast,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source);
 
 /*!
  * The DBPro #constant declaration functions essentially exactly like a C
@@ -33,7 +36,8 @@ semantic_checks_run(
  * This pass expands all references to #constant declarations, and eliminates
  * all AST_CONST_DECL nodes from the AST.
  */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_expand_constant_declarations;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_expand_constant_declarations;
 
 /*!
  * Analyzes all expression trees and ensures that the types of the operands are
@@ -43,7 +47,8 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_expand_consta
  * commands are checked by @see semantic_resolve_cmd_overloads. Commands
  * appearing as expressions have their return values checked, though.
  */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_type_check_expressions;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_type_check_expressions;
 
 /*!
  * When the parser creates the command node in the AST, it sets the command ID
@@ -58,4 +63,5 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_type_check_ex
  * assume thereafter that the parameter list in the AST will match the command's
  * signature.
  */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_resolve_cmd_overloads;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_resolve_cmd_overloads;
