@@ -34,14 +34,6 @@ struct report_info
 static ODBSDK_THREADLOCAL struct state state;
 
 /* ------------------------------------------------------------------------- */
-int
-mem_report_oom(mem_size bytes, const char* func_name)
-{
-    log_sdk_err("Failed to allocate %u bytes in %s\n", bytes, func_name);
-    return -1;
-}
-
-/* ------------------------------------------------------------------------- */
 static int
 report_info_cmp(const void* a, const void* b, int size)
 {

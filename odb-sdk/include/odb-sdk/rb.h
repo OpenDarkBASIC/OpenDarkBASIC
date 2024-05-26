@@ -18,6 +18,7 @@
 #pragma once
 
 #include "odb-sdk/config.h"
+#include "odb-sdk/log.h"
 #include <stdint.h>
 
 #define RB_DECLARE_TYPE(name, T, bits)                                         \
@@ -207,7 +208,7 @@
         ODBSDK_DEBUG_ASSERT(IS_POWER_OF_2(elems));                             \
         new_mem = mem_realloc(rb->mem, bytes);                                 \
         if (new_mem == NULL)                                                   \
-            return mem_report_oom(bytes, "rb_resize()");                       \
+            return log_oom(bytes, "rb_resize()");                              \
         if (rb->mem == NULL)                                                   \
         {                                                                      \
             *(void**)&rb->mem = new_mem;                                       \

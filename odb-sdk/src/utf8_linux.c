@@ -27,7 +27,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
     new_mem = mem_realloc(out->data, outcapacity + 1);
     if (new_mem == NULL)
     {
-        mem_report_oom(outcapacity, "utf16_to_utf8()");
+        log_oom(outcapacity, "utf16_to_utf8()");
         goto alloc_outbuf_failed;
     }
     out->data = new_mem;
@@ -45,7 +45,7 @@ utf16_to_utf8(struct utf8* out, struct utf16_view in)
                     void* new_mem = mem_realloc(out->data, outcapacity * 2 + 1);
                     if (new_mem == NULL)
                     {
-                        mem_report_oom(outcapacity * 2, "utf16_to_utf8()");
+                        log_oom(outcapacity * 2, "utf16_to_utf8()");
                         goto grow_outbuf_failed;
                     }
                     out->data = new_mem;

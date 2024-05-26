@@ -7,7 +7,7 @@
 static void
 write_nodes(
     const struct ast*       ast,
-    int                     n,
+    ast_id                  n,
     FILE*                   fp,
     const struct db_source* source,
     const struct cmd_list*  commands)
@@ -90,7 +90,8 @@ write_nodes(
         case AST_DOUBLE_INTEGER_LITERAL:
             fprintf(
                 fp,
-                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%" PRId64 "\"];\n",
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%" PRId64
+                "\"];\n",
                 n,
                 nd->double_integer_literal.value);
             break;
@@ -128,7 +129,7 @@ write_nodes(
 static void
 write_edges(const struct ast* ast, FILE* fp)
 {
-    int n;
+    ast_id n;
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].base.left >= 0)
@@ -138,7 +139,7 @@ write_edges(const struct ast* ast, FILE* fp)
     }
 }
 
-int
+ast_id
 ast_export_dot(
     const struct ast*       ast,
     struct utf8_view        filepath,
@@ -154,7 +155,7 @@ ast_export_dot(
     return 0;
 }
 
-int
+ast_id
 ast_export_dot_fp(
     const struct ast*       ast,
     FILE*                   fp,

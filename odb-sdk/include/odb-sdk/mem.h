@@ -19,18 +19,15 @@ static inline int mem_allocated_size(void* p) { return (int)_msize(p); }
 typedef uint32_t mem_size;
 typedef int32_t mem_idx;
 
-ODBSDK_PUBLIC_API
-int mem_report_oom(mem_size bytes, const char* func_name);
-
 #if !defined(ODBSDK_MEM_DEBUGGING)
 #   include <stdlib.h>
 #   define mem_threadlocal_init() (0)
-#   define mem_threadlocal_deinit() (0)
+#   define mem_threadlocal_deinit()
 #   define mem_alloc     malloc
 #   define mem_free      free
 #   define mem_realloc   realloc
-#   define mem_track_allocation()
-#   define mem_track_deallocation()
+#   define mem_track_allocation(p)
+#   define mem_track_deallocation(p)
 #else
 
 /*!

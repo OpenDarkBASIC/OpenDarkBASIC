@@ -4,6 +4,8 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-sdk/utf8.h"
 
+typedef int ast_id;
+
 enum type_annotation
 {
     TA_NONE,
@@ -61,115 +63,115 @@ union ast_node
     struct base
     {
         struct info info;
-        int parent;
-        int left;
-        int right;
+        ast_id parent;
+        ast_id left;
+        ast_id right;
     } base;
 
     struct block {
         struct info info;
-        int parent;
-        int stmt;
-        int next;
+        ast_id parent;
+        ast_id stmt;
+        ast_id next;
     } block;
 
     struct arglist
     {
         struct info info;
-        int parent;
-        int expr;
-        int next;
+        ast_id parent;
+        ast_id expr;
+        ast_id next;
     } arglist;
 
     struct const_decl
     {
         struct info info;
-        int parent;
-        int identifier;
-        int expr;
+        ast_id parent;
+        ast_id identifier;
+        ast_id expr;
     } const_decl;
 
     struct cmd
     {
         struct info info;
-        int parent;
-        int arglist;
-        int _pad;
+        ast_id parent;
+        ast_id arglist;
+        ast_id _pad;
         cmd_id id;
     } cmd;
 
     struct assign_var
     {
         struct info info;
-        int parent;
-        int var_ref;
-        int expr;
+        ast_id parent;
+        ast_id var_ref;
+        ast_id expr;
     } assign_var;
 
     struct identifier
     {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         struct utf8_span name;
         enum type_annotation annotation;
     } identifier;
 
     struct boolean_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         char is_true;
     } boolean_literal;
 
     struct byte_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         uint8_t value;
     } byte_literal;
     struct word_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         uint16_t value;
     } word_literal;
     struct integer_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         int32_t value;
     } integer_literal;
     struct dword_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         uint32_t value;
     } dword_literal;
     struct double_integer_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         int64_t value;
     } double_integer_literal;
 
     struct float_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         float value;
     } float_literal;
     struct double_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         double value;
     } double_literal;
 
     struct string_literal {
         struct info info;
-        int parent;
-        int _pad1, _pad2;
+        ast_id parent;
+        ast_id _pad1, _pad2;
         struct utf8_span str;
     } string_literal;
 };
@@ -177,8 +179,8 @@ union ast_node
 struct ast
 {
     union ast_node* nodes;
-    int node_count;
-    int node_capacity;
+    ast_id node_count;
+    ast_id node_capacity;
 };
 
 static inline void
@@ -192,17 +194,17 @@ ast_init(struct ast* ast)
 ODBCOMPILER_PUBLIC_API void 
 ast_deinit(struct ast* ast);
 
-int ast_block(struct ast* ast, int stmt, struct utf8_span location);
-int ast_block_append(struct ast* ast, int block, int stmt, struct utf8_span location);
-int ast_arglist(struct ast* ast, int expr, struct utf8_span location);
-int ast_arglist_append(struct ast* ast, int arglist, int expr, struct utf8_span location);
-int ast_const_decl(struct ast* ast, int identifier, int expr, struct utf8_span location);
-int ast_command(struct ast* ast, cmd_id cmd_id, int arglist, struct utf8_span location);
-int ast_assign_var(struct ast* ast, int var_ref, int expr, struct utf8_span location);
-int ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-int ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
-int ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);
-int ast_float_literal(struct ast* ast, float value, struct utf8_span location);
-int ast_double_literal(struct ast* ast, double value, struct utf8_span location);
-int ast_string_literal(struct ast* ast, struct utf8_span str, struct utf8_span location);
+ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
+ast_id ast_block_append(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
+ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
+ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
+ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
+ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
+ast_id ast_assign_var(struct ast* ast, ast_id var_ref, ast_id expr, struct utf8_span location);
+ast_id ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
+ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
+ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);
+ast_id ast_float_literal(struct ast* ast, float value, struct utf8_span location);
+ast_id ast_double_literal(struct ast* ast, double value, struct utf8_span location);
+ast_id ast_string_literal(struct ast* ast, struct utf8_span str, struct utf8_span location);
 /* clang-format on */

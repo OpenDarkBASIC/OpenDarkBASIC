@@ -20,7 +20,7 @@ fs_get_path_to_self(struct ospath* path)
     {
         void* new_mem = mem_realloc(path->str.data, PATH_MAX);
         if (new_mem == NULL)
-            return mem_report_oom(PATH_MAX, "fs_get_path_to_self()");
+            return log_oom(PATH_MAX, "fs_get_path_to_self()");
         path->str.data = new_mem;
         capacity = PATH_MAX;
     }
@@ -46,7 +46,7 @@ fs_get_path_to_self(struct ospath* path)
         capacity *= 2;
         void* new_mem = mem_realloc(path->str.data, capacity);
         if (new_mem == NULL)
-            return mem_report_oom(capacity, "fs_get_path_to_self()");
+            return log_oom(capacity, "fs_get_path_to_self()");
         path->str.data = new_mem;
     }
 

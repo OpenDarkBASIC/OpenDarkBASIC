@@ -33,7 +33,7 @@ rbobj_resize(struct rbobj* rb, int16_t elems)
     ODBSDK_DEBUG_ASSERT(IS_POWER_OF_2(elems));
     new_mem = mem_realloc(rb->mem, bytes);
     if (new_mem == NULL)
-        return mem_report_oom(bytes, "rb_resize()");
+        return log_oom(bytes, "rb_resize()");
     if (rb->mem == NULL)
     {
         *(void**)&rb->mem = new_mem;
@@ -290,7 +290,9 @@ TEST_F(NAME, peek)
     for (int i = 0; i != rbobj_count(rbobj); ++i)
     {
         num_left--;
-        ASSERT_THAT(rbobj_peek(rbobj, i), Pointee(obj{num_left, num_left, num_left, num_left}))
+        ASSERT_THAT(
+            rbobj_peek(rbobj, i),
+            Pointee(obj{num_left, num_left, num_left, num_left}))
             << "num_left: " << num_left;
     }
 }

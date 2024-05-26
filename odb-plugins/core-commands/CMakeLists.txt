@@ -8,5 +8,6 @@ odb_add_plugin (core-commands
     SOURCES
         "src/print_stdout.c"
         "src/str.c"
+        "src/val.c"
     INCLUDE_DIRECTORIES
         "include")

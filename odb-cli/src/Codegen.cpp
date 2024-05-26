@@ -1,6 +1,7 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
+#include "odb-cli/SDK.hpp"
 #include <optional>
 
 extern "C" {
@@ -107,6 +108,7 @@ output(const std::vector<std::string>& args)
         getAST(),
         objs[0],
         "module",
+        getSDKType(),
         ODB_CODEGEN_ObjectFile,
         ODB_CODEGEN_x86_64,
         ODB_CODEGEN_LINUX,

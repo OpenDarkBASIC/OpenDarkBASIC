@@ -94,3 +94,9 @@ ODBSDK_PRINTF_FORMAT(1, 2) static inline int
 log_parser_err(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_verr("[parser] ", fmt, ap); va_end(ap); return -1; }
 
+/* Memory functions --------------------------------------------------------- */
+static inline int
+log_oom(size_t bytes, const char* func_name)
+{ log_sdk_err("Failed to allocate %zu bytes in %s\n", bytes, func_name); return -1; }
+
+

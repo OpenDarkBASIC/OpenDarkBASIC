@@ -15,7 +15,7 @@ option (ODB_TESTS "Enable/disable unit tests in all subprojects" ON)
 set (ODB_VERSION "0.0.1" CACHE STRING "OpenDarkBASIC version")
 
 project ("OpenDarkBASIC"
-    LANGUAGES
+    LANGUAGES C
     VERSION ${ODB_VERSION})
 
 list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
@@ -71,4 +71,5 @@ add_subdirectory ("odb-cli")
 add_subdirectory ("odb-resgen")
 add_subdirectory ("odb-runtime")
 add_subdirectory ("odb-plugins")
+add_subdirectory ("odb-editor")
 #add_subdirectory ("odb-interpreter")

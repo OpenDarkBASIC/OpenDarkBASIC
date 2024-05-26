@@ -33,9 +33,9 @@ link_windows(
 
     std::string outNameArg = "-out:" + std::string(output_name);
     args.push_back(outNameArg.c_str());
-    
+
     args.push_back("kernel32.lib");
-    
+
     args.push_back("./odb-sdk/plugins/core-commands.lib");
     args.push_back("./odb-sdk/plugins/test-plugin.lib");
 
@@ -65,19 +65,19 @@ link_linux(
     switch (arch)
     {
         case ODB_CODEGEN_i386:
+            args.push_back("-melf_i386");
             args.push_back("--dynamic-linker=/lib/ld-linux.so.2");
+            args.push_back("-L/usr/lib");
             break;
         case ODB_CODEGEN_x86_64:
+            args.push_back("-melf_x86_64");
             args.push_back("--dynamic-linker=/lib64/ld-linux-x86-64.so.2");
+            args.push_back("-L/usr/lib64");
             break;
-        case ODB_CODEGEN_AArch64: return -1; break;
-    }
-
-    switch (arch)
-    {
-        case ODB_CODEGEN_x86_64: args.push_back("-melf_x86_64"); break;
-        case ODB_CODEGEN_i386: args.push_back("-melf_i386"); break;
-        case ODB_CODEGEN_AArch64: args.push_back("-melf_aarch64"); break;
+        case ODB_CODEGEN_AArch64:
+            args.push_back("-melf_aarch64");
+            return -1;
+            break;
     }
 
     args.push_back("-o");
@@ -85,6 +85,11 @@ link_linux(
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
+
+    args.push_back("-L./lib");
+    args.push_back("-lodb-sdk");
+
+    args.push_back("-lc");
 
     args.push_back("./odb-sdk/plugins/core-commands.so");
     args.push_back("./odb-sdk/plugins/test-plugin.so");

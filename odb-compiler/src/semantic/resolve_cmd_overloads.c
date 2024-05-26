@@ -13,12 +13,12 @@ struct ctx
 {
     struct ast*            ast;
     const struct cmd_list* cmds;
-    int                    argcount;
-    int                    arglist;
+    ast_id                 argcount;
+    ast_id                 arglist;
 };
 
 static enum cmd_param_type
-expr_to_type(const struct ast* ast, int expr, const struct cmd_list* cmds)
+expr_to_type(const struct ast* ast, ast_id expr, const struct cmd_list* cmds)
 {
     ODBSDK_DEBUG_ASSERT(expr > -1);
     switch (ast->nodes[expr].info.type)
@@ -114,7 +114,8 @@ type_can_be_promoted_to(enum cmd_param_type from, enum cmd_param_type to)
 static int
 eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 {
-    int                      i, arglist;
+    int                      i;
+    ast_id                   arglist;
     struct ctx*              ctx = user;
     struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
@@ -125,7 +126,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
-        int                 expr = ctx->ast->nodes[arglist].arglist.expr;
+        ast_id              expr = ctx->ast->nodes[arglist].arglist.expr;
         enum cmd_param_type param = vec_get(*params, i)->type;
         enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
@@ -146,14 +147,15 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 static int
 eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 {
-    int                      i, arglist;
+    int                      i;
+    ast_id                   arglist;
     struct ctx*              ctx = user;
     struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
-        int                 expr = ctx->ast->nodes[arglist].arglist.expr;
+        ast_id              expr = ctx->ast->nodes[arglist].arglist.expr;
         enum cmd_param_type param = vec_get(*params, i)->type;
         enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
@@ -172,14 +174,15 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 static int
 eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
 {
-    int                      i, arglist;
+    int                      i;
+    ast_id                   arglist;
     struct ctx*              ctx = user;
     struct param_types_list* params = vec_get(ctx->cmds->param_types, *cmd_id);
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
          ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
     {
-        int                 expr = ctx->ast->nodes[arglist].arglist.expr;
+        ast_id              expr = ctx->ast->nodes[arglist].arglist.expr;
         enum cmd_param_type param = vec_get(*params, i)->type;
         enum cmd_param_type arg = expr_to_type(ctx->ast, expr, ctx->cmds);
 
@@ -218,7 +221,7 @@ type_as_name(enum cmd_param_type type)
 static void
 report_error(
     const struct ast*         ast,
-    int                       arglist,
+    ast_id                    arglist,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     cmd_id                    cmd,
@@ -350,8 +353,8 @@ resolve_cmd_overloads(
 {
     struct utf8_view  cmd_name;
     struct candidates candidates;
-    int               n;
-    int               paramlist;
+    ast_id            n;
+    ast_id            paramlist;
     cmd_id            cmd;
 
     struct ctx ctx = {ast, cmds, 0, -1};

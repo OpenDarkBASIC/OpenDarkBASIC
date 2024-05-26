@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_source.h"
+#include "odb-compiler/sdk/sdk.h"
 
 enum odb_codegen_output_type
 {
@@ -32,7 +33,7 @@ odb_codegen(
     struct ast* program,
     const char* output_name,
     const char* module_name,
-    /*enum odb_sdk_type sdkType,*/
+    enum sdk_type sdkType,
     enum odb_codegen_output_type output_type,
     enum odb_codegen_arch        arch,
     enum odb_codegen_platform    platform,

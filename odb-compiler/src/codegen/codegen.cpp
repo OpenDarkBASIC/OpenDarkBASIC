@@ -1,3 +1,4 @@
+#include "odb-compiler/sdk/sdk.h"
 extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/codegen/codegen.h"
@@ -41,7 +42,7 @@ create_global_string_table(
     struct db_source                        source,
     llvm::Module*                           mod)
 {
-    for (int n = 0; n != ast->node_count; ++n)
+    for (ast_id n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.type != AST_STRING_LITERAL)
             continue;
@@ -54,12 +55,13 @@ create_global_string_table(
             continue; // String already exists
 
         llvm::Constant* S = llvm::ConstantDataArray::getString(
-                mod->getContext(),
-                str_ref,
-                /* Add NULL */ true);
+            mod->getContext(),
+            str_ref,
+            /* Add NULL */ true);
         result.first->setValue(new llvm::GlobalVariable(
             *mod,
-            //llvm::PointerType::get(llvm::Type::getInt8Ty(mod->getContext()), 0),
+            // llvm::PointerType::get(llvm::Type::getInt8Ty(mod->getContext()),
+            // 0),
             S->getType(),
             /*isConstant*/ true,
             llvm::GlobalValue::PrivateLinkage,
@@ -116,7 +118,7 @@ dbpro_cmd_param_type_to_llvm(enum cmd_param_type type, llvm::Module* mod)
 static llvm::FunctionType*
 get_command_function_signature(
     const struct ast*      ast,
-    int                    cmd,
+    ast_id                 cmd,
     const struct cmd_list* cmds,
     llvm::Module*          mod)
 {
@@ -150,7 +152,7 @@ create_global_plugin_symbol_table(
     const struct cmd_list*            cmds,
     llvm::Module*                     mod)
 {
-    for (int n = 0; n != ast->node_count; ++n)
+    for (ast_id n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.type != AST_COMMAND)
             continue;
@@ -193,19 +195,99 @@ log_semantic_err(
 static llvm::Value*
 gen_expr(
     const struct ast*                             ast,
-    int                                           expr,
+    ast_id                                        expr,
+    const struct cmd_list*                        cmds,
     const llvm::Type*                             cmd_param_type,
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    llvm::Module*                                 mod)
+    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    llvm::Module*                                 mod,
+    llvm::BasicBlock*                             BB);
+
+static llvm::Value*
+gen_cmd_call(
+    const struct ast*                             ast,
+    ast_id                                        cmd,
+    const struct cmd_list*                        cmds,
+    const char*                                   source_filename,
+    struct db_source                              source,
+    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
+    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    llvm::Module*                                 mod,
+    llvm::BasicBlock*                             BB)
+{
+    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
+
+    // Function table for commands should be generated at this
+    // point. Look up the command's symbol in the command list and
+    // get the associated llvm::Function
+    struct utf8_view cmd_sym = utf8_list_view(&cmds->c_symbols, cmd_id);
+    llvm::StringRef  cmd_sym_ref(cmd_sym.data + cmd_sym.off, cmd_sym.len);
+    llvm::Function*  F = plugin_symbol_table->find(cmd_sym_ref)->getValue();
+
+    // Match up each function argument with its corresponding
+    // parameter.
+    // Command overload resolution is done in a previous step, so
+    // it should be OK to assume that both lists have the same
+    // length here.
+    // TODO: Store results of each expression in temporary variables
+    //       before passing them to the function call. This makes
+    //       nested function calls possible.
+    llvm::SmallVector<llvm::Value*, 8> param_values;
+    ast_id                             arglist = ast->nodes[cmd].cmd.arglist;
+    for (const llvm::Argument& arg : F->args())
+    {
+        param_values.push_back(gen_expr(
+            ast,
+            ast->nodes[arglist].arglist.expr,
+            cmds,
+            arg.getType(),
+            source_filename,
+            source,
+            string_table,
+            plugin_symbol_table,
+            mod,
+            BB));
+        arglist = ast->nodes[arglist].arglist.next;
+    }
+
+    llvm::IRBuilder<> b(mod->getContext());
+    b.SetInsertPoint(BB);
+    return b.CreateCall(F, param_values);
+}
+
+static llvm::Value*
+gen_expr(
+    const struct ast*                             ast,
+    ast_id                                        expr,
+    const struct cmd_list*                        cmds,
+    const llvm::Type*                             cmd_param_type,
+    const char*                                   source_filename,
+    struct db_source                              source,
+    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
+    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    llvm::Module*                                 mod,
+    llvm::BasicBlock*                             BB)
 {
     switch (ast->nodes[expr].info.type)
     {
         case AST_BLOCK:
         case AST_ARGLIST:
-        case AST_CONST_DECL:
+        case AST_CONST_DECL: break;
+
         case AST_COMMAND:
+            return gen_cmd_call(
+                ast,
+                expr,
+                cmds,
+                source_filename,
+                source,
+                string_table,
+                plugin_symbol_table,
+                mod,
+                BB);
+
         case AST_ASSIGN:
         case AST_IDENTIFIER: break;
 
@@ -257,14 +339,17 @@ gen_expr(
         }
     }
 
-    log_err("[gen] ", "Expression type not implemeneted\n");
+    log_err(
+        "[gen] ",
+        "Expression type %d not implemeneted\n",
+        ast->nodes[expr].info.type);
     return nullptr;
 }
 
 static llvm::BasicBlock*
 gen_block(
     const struct ast*                             ast,
-    int                                           block,
+    ast_id                                        block,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
     const struct db_source                        source,
@@ -285,48 +370,21 @@ gen_block(
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
-        int stmt = ast->nodes[block].block.stmt;
+        ast_id stmt = ast->nodes[block].block.stmt;
         ODBSDK_DEBUG_ASSERT(stmt > -1);
         switch (ast->nodes[stmt].info.type)
         {
             case AST_COMMAND: {
-                cmd_id cmd_id = ast->nodes[stmt].cmd.id;
-
-                // Function table for commands should be generated at this
-                // point. Look up the command's symbol in the command list and
-                // get the associated llvm::Function
-                struct utf8_view cmd_sym
-                    = utf8_list_view(&cmds->c_symbols, cmd_id);
-                llvm::StringRef cmd_sym_ref(
-                    cmd_sym.data + cmd_sym.off, cmd_sym.len);
-                llvm::Function* F
-                    = plugin_symbol_table->find(cmd_sym_ref)->getValue();
-
-                // Match up each function argument with its corresponding
-                // parameter.
-                // Command overload resolution is done in a previous step, so
-                // it should be OK to assume that both lists have the same
-                // length here.
-                // TODO: Store results of each expression in temporary variables
-                //       before passing them to the function call. This makes
-                //       nested function calls possible.
-                llvm::SmallVector<llvm::Value*, 8> param_values;
-                int arglist = ast->nodes[stmt].cmd.arglist;
-                for (const llvm::Argument& arg : F->args())
-                {
-                    param_values.push_back(gen_expr(
-                        ast,
-                        ast->nodes[arglist].arglist.expr,
-                        arg.getType(),
-                        source_filename,
-                        source,
-                        string_table,
-                        mod));
-                    arglist = ast->nodes[arglist].arglist.next;
-                }
-
-                b.CreateCall(F, param_values);
-
+                gen_cmd_call(
+                    ast,
+                    stmt,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    plugin_symbol_table,
+                    mod,
+                    BB);
                 break;
             }
 
@@ -346,7 +404,7 @@ odb_codegen(
     struct ast* program,
     const char* output_name,
     const char* module_name,
-    /*enum odb_sdk_type sdkType,*/
+    enum sdk_type sdkType,
     enum odb_codegen_output_type output_type,
     enum odb_codegen_arch        arch,
     enum odb_codegen_platform    platform,
@@ -386,19 +444,49 @@ odb_codegen(
     BB->insertInto(F);
     b.SetInsertPoint(BB);
 
-    // Finish off the function.
+    // Plugins use odb-sdk. Have to call the global init functions
+    if (sdkType == SDK_ODB)
+    {
+        llvm::Function* FSDKInit = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
+            llvm::Function::ExternalLinkage,
+            "odbsdk_init",
+            &mod);
+        llvm::Function* FSDKInitTL = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
+            llvm::Function::ExternalLinkage,
+            "odbsdk_threadlocal_init",
+            &mod);
+        b.SetInsertPoint(BB->getFirstInsertionPt());
+        b.CreateCall(FSDKInit, {});
+        b.CreateCall(FSDKInitTL, {});
+
+        llvm::Function* FSDKDeInitTL = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
+            llvm::Function::ExternalLinkage,
+            "odbsdk_threadlocal_deinit",
+            &mod);
+        llvm::Function* FSDKDeInit = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
+            llvm::Function::ExternalLinkage,
+            "odbsdk_deinit",
+            &mod);
+
+        b.SetInsertPoint(BB);
+        b.CreateCall(FSDKDeInitTL, {});
+        b.CreateCall(FSDKDeInit, {});
+    }
+
+    // Exit process call
     llvm::Function* FExitProcess = llvm::Function::Create(
         llvm::FunctionType::get(
-            llvm::Type::getVoidTy(ctx),
-            {llvm::Type::getInt32Ty(ctx)},
-            false),
+            llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
         llvm::Function::ExternalLinkage,
         platform == ODB_CODEGEN_WINDOWS ? "ExitProcess" : "_exit",
         &mod);
     FExitProcess->setDoesNotReturn();
-    b.CreateCall(
-        FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
-    b.CreateRet(nullptr);
+    b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
+    b.CreateRetVoid();
 
     if (platform == ODB_CODEGEN_WINDOWS)
     {
@@ -423,7 +511,7 @@ odb_codegen(
             llvm::Function::ExternalLinkage,
             "SetDllDirectoryA",
             &mod);
-        
+
         b.SetInsertPoint(BB->getFirstNonPHI());
         b.CreateCall(rpath_func, rpath_const);
     }

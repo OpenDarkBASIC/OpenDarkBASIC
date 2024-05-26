@@ -4,15 +4,15 @@
 #include <assert.h>
 
 void
-ast_set_root(struct ast* ast, int node)
+ast_set_root(struct ast* ast, ast_id node)
 {
     ast_swap_node_idxs(ast, 0, node);
 }
 
 void
-ast_swap_node_idxs(struct ast* ast, int n1, int n2)
+ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
 {
-    int            n;
+    ast_id         n;
     union ast_node tmp;
 
     for (n = 0; n != ast->node_count; ++n)
@@ -43,7 +43,7 @@ ast_swap_node_idxs(struct ast* ast, int n1, int n2)
 }
 
 void
-ast_swap_node_values(struct ast* ast, int n1, int n2)
+ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
     ODBSDK_DEBUG_ASSERT(ast->nodes[n1].info.type == ast->nodes[n2].info.type);
 
@@ -72,10 +72,8 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
         case AST_DWORD_LITERAL: SWAP(uint32_t, dword_literal, value) break;
         case AST_DOUBLE_INTEGER_LITERAL:
             SWAP(int64_t, double_integer_literal, value) break;
-        case AST_FLOAT_LITERAL:
-            SWAP(float, float_literal, value) break;
-        case AST_DOUBLE_LITERAL:
-            SWAP(double, double_literal, value) break;
+        case AST_FLOAT_LITERAL: SWAP(float, float_literal, value) break;
+        case AST_DOUBLE_LITERAL: SWAP(double, double_literal, value) break;
         case AST_STRING_LITERAL:
             SWAP(struct utf8_span, string_literal, str) break;
     }
@@ -83,17 +81,17 @@ ast_swap_node_values(struct ast* ast, int n1, int n2)
 }
 
 void
-ast_collapse_into(struct ast* ast, int node, int target)
+ast_collapse_into(struct ast* ast, ast_id node, ast_id target)
 {
     ast_swap_node_idxs(ast, node, ast->node_count - 1);
     ast->nodes[target] = ast->nodes[ast->node_count - 1];
     ast->node_count--;
 }
 
-int
-ast_find_parent(const struct ast* ast, int node)
+ast_id
+ast_find_parent(const struct ast* ast, ast_id node)
 {
-    int n;
+    ast_id n;
     for (n = 0; n != ast->node_count; ++n)
         if (ast->nodes[n].base.left == node || ast->nodes[n].base.right == node)
             return n;
@@ -101,9 +99,9 @@ ast_find_parent(const struct ast* ast, int node)
 }
 
 void
-ast_replace_into(struct ast* ast, int node, int target)
+ast_replace_into(struct ast* ast, ast_id node, ast_id target)
 {
-    int parent = ast_find_parent(ast, target);
+    ast_id parent = ast_find_parent(ast, target);
     if (parent < 0)
     {
         ast_set_root(ast, node);
@@ -116,8 +114,8 @@ ast_replace_into(struct ast* ast, int node, int target)
         ast->nodes[parent].base.right = node;
 }
 
-int
-ast_is_in_subtree_of(const struct ast* ast, int node, int root)
+ast_id
+ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root)
 {
     if (node == root)
         return 1;
@@ -132,13 +130,13 @@ ast_is_in_subtree_of(const struct ast* ast, int node, int root)
     return 0;
 }
 
-int
+ast_id
 ast_trees_equal(
     const struct db_source* source,
     const struct ast*       a1,
-    int                     n1,
+    ast_id                  n1,
     const struct ast*       a2,
-    int                     n2)
+    ast_id                  n2)
 {
     if (a1->nodes[n1].info.type != a2->nodes[n2].info.type)
         return 0;
@@ -198,7 +196,7 @@ ast_trees_equal(
                 != a2->nodes[n2].double_integer_literal.value)
                 return 0;
             break;
-        
+
         case AST_FLOAT_LITERAL:
             if (a1->nodes[n1].float_literal.value
                 != a2->nodes[n2].float_literal.value)

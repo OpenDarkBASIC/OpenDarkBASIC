@@ -20,7 +20,7 @@ utf8_set(struct utf8* dst, struct utf8_view src)
          * for that */
         void* new_data = mem_realloc(dst->data, (mem_size)src.len + 1);
         if (new_data == NULL)
-            return mem_report_oom(src.len + 1, "utf8_set()");
+            return log_oom(src.len + 1, "utf8_set()");
         dst->data = new_data;
     }
 
@@ -36,7 +36,7 @@ utf8_append(struct utf8* str, struct utf8_view append)
     mem_size new_size = (mem_size)(str->len + append.len + 1);
     void*    new_data = mem_realloc(str->data, new_size);
     if (new_data == NULL)
-        return mem_report_oom(new_size, "utf8_append()");
+        return log_oom(new_size, "utf8_append()");
 
     str->data = new_data;
     memcpy(str->data + str->len, append.data + append.off, (size_t)append.len);

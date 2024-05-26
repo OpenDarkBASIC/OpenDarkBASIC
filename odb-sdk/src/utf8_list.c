@@ -1,6 +1,6 @@
-#include "odb-sdk/config.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8_list.h"
+#include "odb-sdk/log.h"
 #include <assert.h>
 
 /*
@@ -26,7 +26,7 @@ grow(struct utf8_list* l, utf8_idx str_len)
         mem_size grow_size = l->capacity ? l->capacity : 128;
         void*    new_mem = mem_realloc(l->data, l->capacity + grow_size);
         if (new_mem == NULL)
-            return mem_report_oom(l->capacity + grow_size, "utf8_list_grow()");
+            return log_oom(l->capacity + grow_size, "utf8_list_grow()");
         l->data = new_mem;
         l->capacity += grow_size;
 

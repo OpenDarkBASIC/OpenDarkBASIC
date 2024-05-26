@@ -255,7 +255,7 @@
             = sizeof(*v->mem) + sizeof(v->mem->data[0]) * (elems - 1);         \
         void* new_mem = mem_realloc(v->mem, bytes);                            \
         if (new_mem == NULL)                                                   \
-            return mem_report_oom(bytes, "vec_reserve()");                     \
+            return log_oom(bytes, "vec_reserve()");                            \
         *(void**)&v->mem = new_mem;                                            \
         return 0;                                                              \
     }                                                                          \

@@ -48,7 +48,7 @@ macro (odb_resgen_target name)
             DEPENDS
                 odb-resgen
                 ${odb_resgen_target_arg_INPUT}
-            COMMENT "[odb-resgen] Generating resource strings ${PROJECT_BINARY_DIR}/odbres.rc"
+            COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
         set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/odbres.rc)
     else ()
@@ -62,7 +62,7 @@ macro (odb_resgen_target name)
             DEPENDS
                 odb-resgen
                 ${odb_resgen_target_arg_INPUT}
-            COMMENT "[odb-resgen] Generating resource strings ${PROJECT_BINARY_DIR}/odbres"
+            COMMENT "[odb-resgen] Generating resource strings for ${name}"
             VERBATIM)
 
         add_custom_command (OUTPUT ${PROJECT_BINARY_DIR}/odbres.o
@@ -76,7 +76,7 @@ macro (odb_resgen_target name)
                 odbres odbres.o
             WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
             DEPENDS ${PROJECT_BINARY_DIR}/odbres
-            COMMENT "[odb-resgen] Compiling resource strings ${PROJECT_BINARY_DIR}/odbres.o"
+            COMMENT "[odb-resgen] Compiling resource strings for ${name}"
             VERBATIM)
         set (ODB_RESGEN_${name}_OUTPUTS ${PROJECT_BINARY_DIR}/odbres.o)
     endif ()

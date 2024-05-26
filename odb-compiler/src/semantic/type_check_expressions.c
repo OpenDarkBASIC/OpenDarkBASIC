@@ -9,7 +9,7 @@ type_check_expressions(
     const char*               source_filename,
     struct db_source          source)
 {
-    int n;
+    ast_id n;
     for (n = 0; n != ast->node_count; ++n)
     {
         switch (ast->nodes[n].info.type)
