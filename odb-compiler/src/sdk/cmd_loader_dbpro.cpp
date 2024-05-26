@@ -1,3 +1,4 @@
+#include "odb-compiler/sdk/type.h"
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
@@ -8,54 +9,56 @@ extern "C" {
 #include "LIEF/PE/Binary.hpp"
 #include "LIEF/PE/ResourceNode.hpp"
 
-static enum cmd_param_type
+static enum type
 convert_char_to_return_type(char c)
 {
-    switch ((enum cmd_param_type)c)
+    switch (c)
     {
-        case CMD_PARAM_VOID:
-        case CMD_PARAM_LONG:
-        case CMD_PARAM_DWORD:
-        case CMD_PARAM_INTEGER:
-        case CMD_PARAM_WORD:
-        case CMD_PARAM_BYTE:
-        case CMD_PARAM_BOOLEAN:
-        case CMD_PARAM_FLOAT:
-        case CMD_PARAM_DOUBLE:
-        case CMD_PARAM_STRING:
-        case CMD_PARAM_ARRAY:
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
+        case '0': return TYPE_VOID;
+        case 'R': return TYPE_LONG;
+        case 'D': return TYPE_DWORD;
+        case 'L': return TYPE_INTEGER;
+        case 'W': return TYPE_WORD;
+        case 'Y': return TYPE_BYTE;
+        case 'B': return TYPE_BOOLEAN;
+        case 'F': return TYPE_FLOAT;
+        case 'O': return TYPE_DOUBLE;
+        case 'S': return TYPE_STRING;
+        case 'H': return TYPE_ARRAY;
+        case 'P': return TYPE_LABEL;
+        case 'Q': return TYPE_DABEL;
+        case 'X': return TYPE_ANY;
 
-        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
+        case 'E': break;
     }
-    return (enum cmd_param_type)0;
+
+    return (enum type) - 1;
 }
 
-static enum cmd_param_type
+static enum type
 convert_char_to_param_type(char c)
 {
-    switch ((enum cmd_param_type)c)
+    switch (c)
     {
-        case CMD_PARAM_VOID:
-        case CMD_PARAM_LONG:
-        case CMD_PARAM_DWORD:
-        case CMD_PARAM_INTEGER:
-        case CMD_PARAM_WORD:
-        case CMD_PARAM_BYTE:
-        case CMD_PARAM_BOOLEAN:
-        case CMD_PARAM_FLOAT:
-        case CMD_PARAM_DOUBLE:
-        case CMD_PARAM_STRING:
-        case CMD_PARAM_ARRAY:
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
+        case '0': return TYPE_VOID;
+        case 'R': return TYPE_LONG;
+        case 'D': return TYPE_DWORD;
+        case 'L': return TYPE_INTEGER;
+        case 'W': return TYPE_WORD;
+        case 'Y': return TYPE_BYTE;
+        case 'B': return TYPE_BOOLEAN;
+        case 'F': return TYPE_FLOAT;
+        case 'O': return TYPE_DOUBLE;
+        case 'S': return TYPE_STRING;
+        case 'H': return TYPE_ARRAY;
+        case 'P': return TYPE_LABEL;
+        case 'Q': return TYPE_DABEL;
+        case 'X': return TYPE_ANY;
 
-        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
+        case 'E': break;
     }
-    return (enum cmd_param_type)0;
+
+    return (enum type) - 1;
 }
 
 int
@@ -133,7 +136,7 @@ load_dbpro_commands(
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
-            enum cmd_param_type return_type = CMD_PARAM_VOID;
+            enum type return_type = TYPE_VOID;
             if (entry_str.data[cmd_name.off + cmd_name.len - 1] == '[')
             {
                 char type_char = entry_str.data[type_str.off];
@@ -176,8 +179,7 @@ load_dbpro_commands(
             {
                 char type_char = entry_str.data[type_str.off + i];
                 enum cmd_param_direction direction = CMD_PARAM_IN;
-                enum cmd_param_type      type
-                    = convert_char_to_param_type(type_char);
+                enum type type = convert_char_to_param_type(type_char);
 
                 utf8_split(
                     entry_str.data, db_params, ',', &db_param_name, &db_params);
@@ -195,7 +197,7 @@ load_dbpro_commands(
                     continue;
                 }
 
-                if (type == CMD_PARAM_VOID)
+                if (type == TYPE_VOID)
                     continue;
 
                 if (i + 1 < type_str.len

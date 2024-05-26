@@ -23,7 +23,8 @@ new_node(struct ast* ast, enum ast_type type, struct utf8_span location)
 
     ast_id n = ast->node_count++;
     ast->nodes[n].base.info.location = location;
-    ast->nodes[n].base.info.type = type;
+    ast->nodes[n].base.info.node_type = type;
+    ast->nodes[n].base.info.type_info = TYPE_VOID;
     ast->nodes[n].base.parent = -1;
     ast->nodes[n].base.left = -1;
     ast->nodes[n].base.right = -1;
@@ -57,7 +58,7 @@ ast_block_append(
         return -1;
 
     ODBSDK_DEBUG_ASSERT(block > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[block].base.info.type == AST_BLOCK);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[block].base.info.node_type == AST_BLOCK);
     while (ast->nodes[block].block.next != -1)
         block = ast->nodes[block].block.next;
     ast->nodes[block].block.next = n;
@@ -84,7 +85,7 @@ ast_arglist_append(
         return -1;
 
     ODBSDK_DEBUG_ASSERT(arglist > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].base.info.type == AST_ARGLIST);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].base.info.node_type == AST_ARGLIST);
     while (ast->nodes[arglist].arglist.next != -1)
         arglist = ast->nodes[arglist].arglist.next;
     ast->nodes[arglist].arglist.next = n;
@@ -119,13 +120,13 @@ ast_command(
 
 ast_id
 ast_assign_var(
-    struct ast* ast, ast_id var_ref, ast_id expr, struct utf8_span location)
+    struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location)
 {
-    ast_id n = new_node(ast, AST_ASSIGN, location);
+    ast_id n = new_node(ast, AST_ASSIGNMENT, location);
     if (n < 0)
         return -1;
-    ast->nodes[n].assign_var.var_ref = var_ref;
-    ast->nodes[n].assign_var.expr = expr;
+    ast->nodes[n].assignment.lvalue = identifier;
+    ast->nodes[n].assignment.expr = expr;
     return n;
 }
 
@@ -141,6 +142,34 @@ ast_identifier(
         return -1;
     ast->nodes[n].identifier.name = name;
     ast->nodes[n].identifier.annotation = annotation;
+    return n;
+}
+ast_id
+ast_binop(
+    struct ast*      ast,
+    enum binop_type  op,
+    ast_id           left,
+    ast_id           right,
+    struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_BINOP, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].binop.left = left;
+    ast->nodes[n].binop.right = right;
+    ast->nodes[n].binop.op = op;
+    return n;
+}
+
+ast_id
+ast_unop(
+    struct ast* ast, enum unop_type op, ast_id expr, struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_UNOP, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].unop.expr = expr;
+    ast->nodes[n].unop.op = op;
     return n;
 }
 

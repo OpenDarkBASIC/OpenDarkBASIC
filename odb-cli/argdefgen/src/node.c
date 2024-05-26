@@ -17,7 +17,7 @@
 static void
 init_base(union adg_node* node, enum adg_node_type type, struct ADGLTYPE* loc)
 {
-    node->base.info.type = type;
+    node->base.info.node_type = type;
     node->base.info.loc.l1 = loc->first_line;
     node->base.info.loc.c1 = loc->first_column;
     node->base.info.loc.l2 = loc->last_line;
@@ -84,11 +84,11 @@ void adg_node_append_block(union adg_node* block, union adg_node* next)
 /* ------------------------------------------------------------------------- */
 int adg_node_is_block(union adg_node* node)
 {
-    return node->info.type == ADG_HEADER_PREAMBLE
-        || node->info.type == ADG_HEADER_POSTAMBLE
-        || node->info.type == ADG_SOURCE_PREAMBLE
-        || node->info.type == ADG_SOURCE_POSTAMBLE
-        || node->info.type == ADG_ACTION_TABLE;
+    return node->info.node_type == ADG_HEADER_PREAMBLE
+        || node->info.node_type == ADG_HEADER_POSTAMBLE
+        || node->info.node_type == ADG_SOURCE_PREAMBLE
+        || node->info.node_type == ADG_SOURCE_POSTAMBLE
+        || node->info.node_type == ADG_ACTION_TABLE;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -121,7 +121,7 @@ union adg_node* adg_node_new_runafter(union adg_node* next, char* str, struct AD
     union adg_node* node = MALLOC_AND_INIT(ADG_RUNAFTER, loc);
     if (next)
     {
-        assert(next->info.type == ADG_RUNAFTER);
+        assert(next->info.node_type == ADG_RUNAFTER);
         node->runafter.next = &next->runafter;
     }
 
@@ -135,7 +135,7 @@ union adg_node* adg_node_new_requires(union adg_node* next, char* str, struct AD
     union adg_node* node = MALLOC_AND_INIT(ADG_REQUIRES, loc);
     if (next)
     {
-        assert(next->info.type == ADG_REQUIRES);
+        assert(next->info.node_type == ADG_REQUIRES);
         node->runafter.next = &next->runafter;
     }
 
@@ -149,7 +149,7 @@ union adg_node* adg_node_new_metadep(union adg_node* next, char* str, struct ADG
     union adg_node* node = MALLOC_AND_INIT(ADG_METADEP, loc);
     if (next)
     {
-        assert(next->info.type == ADG_METADEP);
+        assert(next->info.node_type == ADG_METADEP);
         node->runafter.next = &next->runafter;
     }
 
@@ -163,11 +163,11 @@ union adg_node* adg_node_new_arg(union adg_node* next, union adg_node* argnames,
     union adg_node* node = MALLOC_AND_INIT(ADG_ARG, loc);
     if (next)
     {
-        assert(next->info.type == ADG_ARG || next->info.type == ADG_OPTIONAL_ARG);
+        assert(next->info.node_type == ADG_ARG || next->info.node_type == ADG_OPTIONAL_ARG);
         node->arg.next = &next->arg;
     }
 
-    assert(argnames->info.type == ADG_ARGNAME);
+    assert(argnames->info.node_type == ADG_ARGNAME);
     node->arg.argnames = &argnames->argname;
     return node;
 }
@@ -178,11 +178,11 @@ union adg_node* adg_node_new_optional_arg(union adg_node* next, union adg_node* 
     union adg_node* node = MALLOC_AND_INIT(ADG_OPTIONAL_ARG, loc);
     if (next)
     {
-        assert(next->info.type == ADG_OPTIONAL_ARG);
+        assert(next->info.node_type == ADG_OPTIONAL_ARG);
         node->optional_arg.next = &next->optional_arg;
     }
 
-    assert(argnames->info.type == ADG_ARGNAME);
+    assert(argnames->info.node_type == ADG_ARGNAME);
     node->optional_arg.argnames = &argnames->argname;
     node->optional_arg.continued = continued;
     return node;
@@ -194,7 +194,7 @@ union adg_node* adg_node_new_argname(union adg_node* next, char* name, struct AD
     union adg_node* node = MALLOC_AND_INIT(ADG_ARGNAME, loc);
     if (next)
     {
-        assert(next->info.type == ADG_ARGNAME);
+        assert(next->info.node_type == ADG_ARGNAME);
         node->argname.next = &next->argname;
     }
 
@@ -208,7 +208,7 @@ union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, 
     char* longopt_end;
 
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTR);
+    assert(attrs->info.node_type == ADG_ACTIONATTR);
     node->explicit_action.attrs = &attrs->actionattr;
 
     longopt_end = strchr(name, '(');
@@ -223,7 +223,7 @@ union adg_node* adg_node_new_explicit_action(char* name, union adg_node* attrs, 
 union adg_node* adg_node_new_implicit_action(char* name, union adg_node* attrs, struct ADGLTYPE* loc)
 {
     union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTR);
+    assert(attrs->info.node_type == ADG_ACTIONATTR);
     node->implicit_action.attrs = &attrs->actionattr;
     node->implicit_action.name = name;
     return node;
@@ -306,7 +306,7 @@ union adg_node* adg_node_new_explicit_meta_action(char* name, union adg_node* at
     union adg_node* metadeps;
 
     union adg_node* node = MALLOC_AND_INIT(ADG_EXPLICIT_META_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTR);
+    assert(attrs->info.node_type == ADG_ACTIONATTR);
 
     longopt_end = strchr(name, '(');
     *longopt_end = '\0'; /* just terminate string here so longopt is correct */
@@ -333,7 +333,7 @@ union adg_node* adg_node_new_implicit_meta_action(char* name, union adg_node* at
 {
     union adg_node* metadeps;
     union adg_node* node = MALLOC_AND_INIT(ADG_IMPLICIT_META_ACTION, loc);
-    assert(attrs->info.type == ADG_ACTIONATTR);
+    assert(attrs->info.node_type == ADG_ACTIONATTR);
 
     metadeps = parse_meta_arglist(strchr(name, '['), loc);
     if (metadeps == NULL)
@@ -380,8 +380,8 @@ void adg_node_append_section(union adg_node* section, union adg_node* next)
 {
     union adg_node* last = section;
 
-    assert(section->info.type == ADG_SECTION);
-    assert(next->info.type == ADG_SECTION);
+    assert(section->info.node_type == ADG_SECTION);
+    assert(next->info.node_type == ADG_SECTION);
     assert(next->section.next == NULL);
 
     while (last->section.next != NULL)
@@ -395,8 +395,8 @@ void adg_node_append_sectionattr(union adg_node* actionattrs, union adg_node* ne
 {
     union adg_node* last = actionattrs;
 
-    assert(actionattrs->info.type == ADG_SECTIONATTR);
-    assert(next->info.type == ADG_SECTIONATTR);
+    assert(actionattrs->info.node_type == ADG_SECTIONATTR);
+    assert(next->info.node_type == ADG_SECTIONATTR);
     assert(next->sectionattr.next == NULL);
 
     while (last->actionattr.next != NULL)
@@ -425,8 +425,8 @@ void adg_node_append_actionattr(union adg_node* actionattrs, union adg_node* nex
 {
     union adg_node* last = actionattrs;
 
-    assert(actionattrs->info.type == ADG_ACTIONATTR);
-    assert(next->info.type == ADG_ACTIONATTR);
+    assert(actionattrs->info.node_type == ADG_ACTIONATTR);
+    assert(next->info.node_type == ADG_ACTIONATTR);
     assert(next->actionattr.next == NULL);
 
     while (last->actionattr.next != NULL)
@@ -438,7 +438,7 @@ void adg_node_append_actionattr(union adg_node* actionattrs, union adg_node* nex
 /* ------------------------------------------------------------------------- */
 void adg_node_destroy(union adg_node* node)
 {
-    switch (node->info.type)
+    switch (node->info.node_type)
     {
         case ADG_HEADER_PREAMBLE      : free(node->header_preamble.text); break;
         case ADG_HEADER_POSTAMBLE     : free(node->header_postamble.text); break;
@@ -479,7 +479,7 @@ void adg_node_destroy_recursive(union adg_node* node)
 /* ------------------------------------------------------------------------- */
 static void write_connections(union adg_node* node, FILE* fp)
 {
-    switch (node->info.type)
+    switch (node->info.node_type)
     {
         case ADG_HEADER_PREAMBLE :
             if (node->header_preamble.next) fprintf(fp, "    N%p -> N%p [label=\"next\"];\n", node, node->header_preamble.next);
@@ -559,7 +559,7 @@ static void write_connections(union adg_node* node, FILE* fp)
 static void write_names(union adg_node* node, FILE* fp)
 {
     fprintf(fp, "    N%p [label=\"", node);
-    switch (node->info.type)
+    switch (node->info.node_type)
     {
         case ADG_HEADER_PREAMBLE      : fprintf(fp, "hdr preamble"); break;
         case ADG_HEADER_POSTAMBLE     : fprintf(fp, "hdr postamble"); break;
@@ -624,17 +624,17 @@ int adg_node_export_dot(union adg_node* root, const char* filename)
 /* ------------------------------------------------------------------------- */
 int adg_node_is_action(const union adg_node* node)
 {
-    return node->info.type == ADG_EXPLICIT_ACTION
-        || node->info.type == ADG_IMPLICIT_ACTION
-        || node->info.type == ADG_EXPLICIT_META_ACTION
-        || node->info.type == ADG_IMPLICIT_META_ACTION;
+    return node->info.node_type == ADG_EXPLICIT_ACTION
+        || node->info.node_type == ADG_IMPLICIT_ACTION
+        || node->info.node_type == ADG_EXPLICIT_META_ACTION
+        || node->info.node_type == ADG_IMPLICIT_META_ACTION;
 }
 
 /* ------------------------------------------------------------------------- */
 union adg_node* adg_node_find(union adg_node* node, enum adg_node_type type)
 {
     union adg_node* found;
-    if (node->info.type == type)
+    if (node->info.node_type == type)
         return node;
 
     if (node->base.left)
@@ -654,7 +654,7 @@ union adg_node* adg_node_find_action_matching(union adg_node* node, const char* 
     if (adg_node_is_action(node))
     {
         const char* name;
-        switch (node->info.type)
+        switch (node->info.node_type)
         {
             case ADG_EXPLICIT_ACTION      : name = node->explicit_action.longopt; break;
             case ADG_EXPLICIT_META_ACTION : name = node->explicit_meta_action.longopt; break;

@@ -241,7 +241,7 @@
 %token '$' "$"
 %token '#' "#"
 
-/*s */
+/* Keywords */
 %token CONSTANT "constant"
 %token IF "if"
 %token THEN "then"

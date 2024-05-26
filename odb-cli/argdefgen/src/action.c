@@ -65,7 +65,7 @@ static char
 get_short_option(union adg_node* node)
 {
     assert(adg_node_is_action(node));
-    switch (node->info.type)
+    switch (node->info.node_type)
     {
         case ADG_EXPLICIT_ACTION      : return node->explicit_action.shortopt;
         case ADG_EXPLICIT_META_ACTION : return node->explicit_meta_action.shortopt;
@@ -79,7 +79,7 @@ static const char*
 get_long_option(union adg_node* node)
 {
     assert(adg_node_is_action(node));
-    switch (node->info.type)
+    switch (node->info.node_type)
     {
         case ADG_EXPLICIT_ACTION      : return node->explicit_action.longopt;
         case ADG_EXPLICIT_META_ACTION : return node->explicit_meta_action.longopt;
@@ -98,8 +98,8 @@ find_func_name(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTR);
-        if (attr->actionattr.attr->info.type == ADG_FUNC)
+        assert(attr->info.node_type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.node_type == ADG_FUNC)
             return attr->actionattr.attr->func.name;
 
         attr = (union adg_node*)attr->actionattr.next;
@@ -116,8 +116,8 @@ find_help(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTR);
-        if (attr->actionattr.attr->info.type == ADG_HELP)
+        assert(attr->info.node_type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.node_type == ADG_HELP)
             return attr->actionattr.attr->help.text;
 
         attr = (union adg_node*)attr->actionattr.next;
@@ -134,8 +134,8 @@ find_args_node(union adg_node* node)
     union adg_node* attr = (union adg_node*)node->action_base.attrs;
     while (attr)
     {
-        assert(attr->info.type == ADG_ACTIONATTR);
-        if (attr->actionattr.attr->info.type == ADG_ARG || attr->actionattr.attr->info.type == ADG_OPTIONAL_ARG)
+        assert(attr->info.node_type == ADG_ACTIONATTR);
+        if (attr->actionattr.attr->info.node_type == ADG_ARG || attr->actionattr.attr->info.node_type == ADG_OPTIONAL_ARG)
             return (union adg_node*)attr->actionattr.attr;
 
         attr = (union adg_node*)attr->actionattr.next;
@@ -156,7 +156,7 @@ init_action_arg_range(struct adg_action* action, union adg_node* node)
     union adg_node* arg = find_args_node(node);
     while (arg)
     {
-        if (arg->info.type == ADG_ARG)
+        if (arg->info.node_type == ADG_ARG)
         {
             action->arg_range.l++;
             action->arg_range.h++;
@@ -184,7 +184,7 @@ init_action_arg_doc(struct adg_action* action, union adg_node* node)
     union adg_node* arg = find_args_node(node);
     while (arg)
     {
-        if (arg->info.type == ADG_ARG)
+        if (arg->info.node_type == ADG_ARG)
         {
             int i;
             union adg_node* argname;
@@ -259,7 +259,7 @@ populate_action_table_from_tree(struct adg_action*** listp, union adg_node* node
         if (action->action_name == NULL)
             goto init_action_failed;
 
-        switch (node->info.type)
+        switch (node->info.node_type)
         {
             case ADG_EXPLICIT_META_ACTION:
                 action->is_meta = 1;
@@ -337,7 +337,7 @@ populate_action_table_from_tree(struct adg_action*** listp, union adg_node* node
         create_action_failed    : return -1;
     } action_success:
 
-    if (node->info.type == ADG_SECTION)
+    if (node->info.node_type == ADG_SECTION)
         section_name = node->section.name;
 
     if (node->base.left)
@@ -792,7 +792,7 @@ adg_action_table_from_nodes(union adg_node* root)
     int* requires_roots;
 
     /* Root node must be a section. */
-    if (root->info.type != ADG_SECTION)
+    if (root->info.node_type != ADG_SECTION)
     {
         fprintf(stderr, "Error: Expected a section\n");
         return NULL;

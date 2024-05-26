@@ -18,8 +18,8 @@ public:
 
     int parse(const char* code);
     int addCommand(const char* name);
-    int addCommand(cmd_param_type return_type, const char* name);
-    int addCommand(cmd_param_type return_type, const char* name, std::initializer_list<cmd_param_type> param_types);
+    int addCommand(type return_type, const char* name);
+    int addCommand(type return_type, const char* name, std::initializer_list<type> param_types);
 
     struct plugin_list plugins;
     struct cmd_list    cmds;

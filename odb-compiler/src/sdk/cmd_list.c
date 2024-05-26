@@ -3,18 +3,50 @@
 #include "odb-sdk/utf8_list.h"
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
-VEC_DEFINE_API(return_types_list, enum cmd_param_type, 32)
+VEC_DEFINE_API(return_types_list, enum type, 32)
 VEC_DEFINE_API(param_types_list, struct cmd_param, 32)
 VEC_DEFINE_API(param_types_lists, struct param_types_list, 32)
 VEC_DEFINE_API(db_param_names, struct utf8_list, 32)
 
+void
+cmd_list_init(struct cmd_list* cmds)
+{
+    utf8_list_init(&cmds->db_cmd_names);
+    utf8_list_init(&cmds->c_symbols);
+    plugin_ids_init(&cmds->plugin_ids);
+    return_types_list_init(&cmds->return_types);
+    param_types_lists_init(&cmds->param_types);
+    db_param_names_init(&cmds->db_param_names);
+    cmds->longest_command = 0;
+}
+
+void
+cmd_list_deinit(struct cmd_list* cmds)
+{
+    struct utf8_list*        db_param_names;
+    struct param_types_list* param_types;
+
+    vec_for_each(cmds->db_param_names, db_param_names)
+        utf8_list_deinit(db_param_names);
+    db_param_names_deinit(&cmds->db_param_names);
+
+    vec_for_each(cmds->param_types, param_types)
+        param_types_list_deinit(param_types);
+    param_types_lists_deinit(&cmds->param_types);
+
+    return_types_list_deinit(&cmds->return_types);
+    plugin_ids_deinit(&cmds->plugin_ids);
+    utf8_list_deinit(&cmds->c_symbols);
+    utf8_list_deinit(&cmds->db_cmd_names);
+}
+
 cmd_id
 cmd_list_add(
-    struct cmd_list*    cmds,
-    plugin_id           plugin_id,
-    enum cmd_param_type return_type,
-    struct utf8_view    db_cmd_name,
-    struct utf8_view    c_symbol)
+    struct cmd_list* cmds,
+    plugin_id        plugin_id,
+    enum type        return_type,
+    struct utf8_view db_cmd_name,
+    struct utf8_view c_symbol)
 {
     struct param_types_list* param_types;
     struct utf8_list*        db_param_names;
@@ -110,7 +142,7 @@ int
 cmd_add_param(
     struct cmd_list*         cmds,
     cmd_id                   cmd_id,
-    enum cmd_param_type      type,
+    enum type                type,
     enum cmd_param_direction direction,
     struct utf8_view         db_param_name)
 {

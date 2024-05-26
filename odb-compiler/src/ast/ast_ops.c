@@ -45,7 +45,7 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
 void
 ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
-    ODBSDK_DEBUG_ASSERT(ast->nodes[n1].info.type == ast->nodes[n2].info.type);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type);
 
 #define SWAP(T, node_name, field)                                              \
     {                                                                          \
@@ -54,17 +54,19 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         ast->nodes[n2].node_name.field = tmp;                                  \
     }
 
-    switch (ast->nodes[n1].info.type)
+    switch (ast->nodes[n1].info.node_type)
     {
         case AST_BLOCK: break;
         case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
         case AST_COMMAND: SWAP(cmd_id, cmd, id) break;
-        case AST_ASSIGN: break;
+        case AST_ASSIGNMENT: break;
         case AST_IDENTIFIER:
             SWAP(struct utf8_span, identifier, name)
             SWAP(enum type_annotation, identifier, annotation)
             break;
+        case AST_BINOP: SWAP(enum binop_type, binop, op) break;
+        case AST_UNOP: SWAP(enum unop_type, unop, op) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
         case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
@@ -138,24 +140,21 @@ ast_trees_equal(
     const struct ast*       a2,
     ast_id                  n2)
 {
-    if (a1->nodes[n1].info.type != a2->nodes[n2].info.type)
+    if (a1->nodes[n1].info.node_type != a2->nodes[n2].info.node_type)
         return 0;
 
-    switch (a1->nodes[n1].info.type)
+    switch (a1->nodes[n1].info.node_type)
     {
         case AST_BLOCK: break;
         case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
-
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
             if (a1->nodes[n1].cmd.id != a2->nodes[n2].cmd.id)
                 return 0;
             break;
-
-        case AST_ASSIGN: break;
-
+        case AST_ASSIGNMENT: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
                     utf8_span_view(
@@ -164,13 +163,19 @@ ast_trees_equal(
                         source->text.data, a2->nodes[n2].identifier.name)))
                 return 0;
             break;
-
+        case AST_BINOP:
+            if (a1->nodes[n1].binop.op != a2->nodes[n2].binop.op)
+                return 0;
+            break;
+        case AST_UNOP:
+            if (a1->nodes[n1].unop.op != a2->nodes[n2].unop.op)
+                return 0;
+            break;
         case AST_BOOLEAN_LITERAL:
             if (a1->nodes[n1].boolean_literal.is_true
                 != a2->nodes[n2].boolean_literal.is_true)
                 return 0;
             break;
-
         case AST_BYTE_LITERAL:
             if (a1->nodes[n1].byte_literal.value
                 != a2->nodes[n2].byte_literal.value)
@@ -196,7 +201,6 @@ ast_trees_equal(
                 != a2->nodes[n2].double_integer_literal.value)
                 return 0;
             break;
-
         case AST_FLOAT_LITERAL:
             if (a1->nodes[n1].float_literal.value
                 != a2->nodes[n2].float_literal.value)
@@ -207,7 +211,6 @@ ast_trees_equal(
                 != a2->nodes[n2].double_literal.value)
                 return 0;
             break;
-
         case AST_STRING_LITERAL:
             if (!utf8_equal(
                     utf8_span_view(
@@ -248,3 +251,4 @@ ast_trees_equal(
 
     return 1;
 }
+

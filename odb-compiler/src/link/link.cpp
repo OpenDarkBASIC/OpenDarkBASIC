@@ -60,7 +60,7 @@ link_linux(
     args.push_back("ld.lld");
     args.push_back("--nostdlib");
     args.push_back("--entry=main");
-    args.push_back("--rpath=./odb-sdk/plugins");
+    args.push_back("--rpath=./lib:./odb-sdk/plugins");
 
     switch (arch)
     {

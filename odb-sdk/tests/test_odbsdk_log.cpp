@@ -41,5 +41,5 @@ TEST(NAME, excerpt1)
           "    print str$(a)\n"
           "next a\n";
     struct utf8_span loc = {34, 15}; /* a = 7 ... print */
-    log_excerpt("some/file.dba", source, loc);
+    log_excerpt("some/file.dba", source, loc, "");
 }

@@ -17,26 +17,26 @@ TEST_F(NAME, print_command)
     ASSERT_THAT(parse("print \"hello world\"\n"), Eq(0));
 
     ASSERT_THAT(ast.node_count, Eq(4));
-    ASSERT_THAT(ast.nodes[0].info.type, Eq(AST_BLOCK));
+    ASSERT_THAT(ast.nodes[0].info.node_type, Eq(AST_BLOCK));
     ASSERT_THAT(ast.nodes[0].block.next, Eq(-1));
     int stmt = ast.nodes[0].block.stmt;
     ASSERT_THAT(stmt, Gt(0));
-    ASSERT_THAT(ast.nodes[stmt].info.type, Eq(AST_COMMAND));
+    ASSERT_THAT(ast.nodes[stmt].info.node_type, Eq(AST_COMMAND));
     ASSERT_THAT(ast.nodes[stmt].cmd.id, Eq(1));
     int arglist = ast.nodes[stmt].cmd.arglist;
     ASSERT_THAT(arglist, Gt(0));
-    ASSERT_THAT(ast.nodes[arglist].info.type, Eq(AST_ARGLIST));
+    ASSERT_THAT(ast.nodes[arglist].info.node_type, Eq(AST_ARGLIST));
     ASSERT_THAT(ast.nodes[arglist].arglist.next, Eq(-1));
     int expr = ast.nodes[arglist].arglist.expr;
     ASSERT_THAT(expr, Gt(0));
-    ASSERT_THAT(ast.nodes[expr].info.type, Eq(AST_STRING_LITERAL));
+    ASSERT_THAT(ast.nodes[expr].info.node_type, Eq(AST_STRING_LITERAL));
     ASSERT_THAT(ast.nodes[expr].string_literal.str.off, Eq(7));
     ASSERT_THAT(ast.nodes[expr].string_literal.str.len, Eq(11));
 }
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)
 {
-    addCommand(CMD_PARAM_LONG, "get dir&");
+    addCommand(TYPE_LONG, "get dir&");
 
     ASSERT_THAT(parse("OriginalDirectory& = get dir&()"), Eq(0));
 }

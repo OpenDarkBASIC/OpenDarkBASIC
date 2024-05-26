@@ -4,7 +4,56 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-sdk/utf8.h"
 
+/*!
+ * @brief All of the DarkBASIC operators that can exist
+ */
+/* clang-format off */
+#define BINOP_LIST              \
+    X(ADD,           "+")       \
+    X(SUB,           "-")       \
+    X(MUL,           "*")       \
+    X(DIV,           "/")       \
+    X(MOD,           "mod")     \
+    X(POW,           "^")       \
+                                \
+    X(SHIFT_LEFT,    "<<")      \
+    X(SHIFT_RIGHT,   ">>")      \
+    X(BITWISE_OR,    "||")      \
+    X(BITWISE_AND,   "&&")      \
+    X(BITWISE_XOR,   "~~")      \
+    X(BITWISE_NOT,   "..")      \
+                                \
+    X(LESS_THAN,     "<")       \
+    X(LESS_EQUAL,    "<=")      \
+    X(GREATER_THAN,  ">")       \
+    X(GREATER_EQUAL, ">=")      \
+    X(EQUAL,         "=")       \
+    X(NOT_EQUAL,     "<>")      \
+    X(LOGICAL_OR,    "or")      \
+    X(LOGICAL_AND,   "and")     \
+    X(LOGICAL_XOR,   "xor")
+
+#define UNOP_LIST               \
+    X(LOGICAL_NOT,  "not")      \
+    X(NEGATE,       "-")        \
+    X(BITWISE_NOT,  "..")
+/* clang-format on */
+
 typedef int ast_id;
+
+enum binop_type
+{
+#define X(op, tok) BINOP_##op,
+    BINOP_LIST
+#undef X
+};
+
+enum unop_type
+{
+#define X(op, tok) UNOP_##op,
+    UNOP_LIST
+#undef X
+};
 
 enum type_annotation
 {
@@ -28,10 +77,14 @@ enum ast_type
     /*! Function call to a plugin. Known in DBPro as a "command" */
     AST_COMMAND,
     /*! Assignment statement, e.g. x=5 */
-    AST_ASSIGN,
+    AST_ASSIGNMENT,
     /*! Any referrable entity, such as a function name, variable, UDT field,
        etc. */
     AST_IDENTIFIER,
+    /*! Binarop operator such as a+b, a-b, a*b, etc. */
+    AST_BINOP,
+    /*! Unary operator such as -a, !a, etc. */
+    AST_UNOP,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
     /*! A literal between 0 and 255. Maps to uint8_t. */
@@ -57,7 +110,8 @@ union ast_node
     struct info
     {
         struct utf8_span location;
-        enum ast_type type;
+        enum ast_type node_type;
+        enum type type_info;
     } info;
 
     struct base
@@ -100,13 +154,13 @@ union ast_node
         cmd_id id;
     } cmd;
 
-    struct assign_var
+    struct assignment
     {
         struct info info;
         ast_id parent;
-        ast_id var_ref;
+        ast_id lvalue;
         ast_id expr;
-    } assign_var;
+    } assignment;
 
     struct identifier
     {
@@ -116,6 +170,24 @@ union ast_node
         struct utf8_span name;
         enum type_annotation annotation;
     } identifier;
+
+    struct binop
+    {
+        struct info info;
+        ast_id parent;
+        ast_id left;
+        ast_id right;
+        enum binop_type op;
+    } binop;
+
+    struct unop
+    {
+        struct info info;
+        ast_id parent;
+        ast_id expr;
+        ast_id _pad;
+        enum unop_type op;
+    } unop;
 
     struct boolean_literal {
         struct info info;
@@ -200,8 +272,10 @@ ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
 ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
-ast_id ast_assign_var(struct ast* ast, ast_id var_ref, ast_id expr, struct utf8_span location);
+ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
 ast_id ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
+ast_id ast_binop(struct ast* ast, enum binop_type op, ast_id left, ast_id right, struct utf8_span location);
+ast_id ast_unop(struct ast* ast, enum unop_type op, ast_id expr, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);
 ast_id ast_float_literal(struct ast* ast, float value, struct utf8_span location);

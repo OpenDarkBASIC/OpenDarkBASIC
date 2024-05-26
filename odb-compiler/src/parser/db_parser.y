@@ -119,11 +119,9 @@
 %token ':' "colon"
 %token ';' "semi-colon"
 
-%token CONSTANT "constant"
-
 /* Keywords */
-%token LAND
-%token AS
+%token CONSTANT "constant"
+%token AS "AS"
 
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal"
@@ -131,6 +129,65 @@
 %token<float_value> FLOAT_LITERAL "float literal"
 %token<double_value> DOUBLE_LITERAL "double literal"
 %token<string_value> STRING_LITERAL "string literal"
+
+/* Operators */
+%token '+' "`+`"
+%token '-' "`-`"
+%token '*' "`*`"
+%token '/' "`/`"
+%token '^' "`^`"
+%token MOD "mod"
+%token '(' "open bracket"
+%token ')' "close bracket"
+%token ',' "comma"
+%token BSHL "left shift"
+%token BSHR "right shift"
+%token BOR "bitwise or"
+%token BAND "bitwise and"
+%token BXOR "bitwise xor"
+%token BNOT "bitwise not"
+%token '<' "`<`"
+%token '>' "`>`"
+%token LE "`<=`"
+%token GE "`>=`"
+%token NE "`<>`"
+%token '=' "`=`"
+%token LOR "or"
+%token LAND "and"
+%token LNOT "not"
+
+/* precedence rules */
+%nonassoc NO_NEXT_SYM
+%nonassoc NO_ELSE
+%nonassoc ELSE ELSEIF
+%nonassoc NO_ANNOTATION
+%nonassoc ':'
+%left LXOR
+%left LOR
+%left LAND
+%right LNOT
+%left BNOT
+%left BXOR
+%left BOR
+%left BAND
+%left '='
+%left '<'
+%left '>'
+%left LE
+%left GE
+%left NE
+%left BSHL
+%left BSHR
+%left '+'
+%left '-'
+%left '*'
+%left MOD
+%left '/'
+%left '^'
+%left '(' ')'
+%right UPLUS
+%right UMINUS
+%right UNOT
 
 /* Identifiers */
 %token<string_value> IDENTIFIER "identifier"
@@ -144,12 +201,8 @@
 %type<node_value> const_decl
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
-%type<node_value> var_ref
 %type<node_value> literal
 %type<node_value> annotated_identifier
-
-/* Precedence rules */
-%nonassoc NO_ANNOTATION
 
 %start program
 
@@ -172,7 +225,21 @@ stmt
   ;
 expr
   : '(' expr ')'                            { $$ = $2; }
+  /* Unary operators */
+  | '+' expr %prec UPLUS                    { $$ = $2; }
+  | '-' expr %prec UMINUS                   { $$ = ast_unop(ctx->ast, UNOP_NEGATE, $2, @$); }
+  | BNOT expr %prec UNOT                    { $$ = ast_unop(ctx->ast, UNOP_BITWISE_NOT, $2, @$); }
+  | LNOT expr                               { $$ = ast_unop(ctx->ast, UNOP_LOGICAL_NOT, $2, @$); }
+  /* Binary operators */
+  | expr '+' expr                           { $$ = ast_binop(ctx->ast, BINOP_ADD, $1, $3, @$); }
+  | expr '-' expr                           { $$ = ast_binop(ctx->ast, BINOP_SUB, $1, $3, @$); }
+  | expr '*' expr                           { $$ = ast_binop(ctx->ast, BINOP_MUL, $1, $3, @$); }
+  | expr '/' expr                           { $$ = ast_binop(ctx->ast, BINOP_DIV, $1, $3, @$); }
+  | expr MOD expr                           { $$ = ast_binop(ctx->ast, BINOP_MOD, $1, $3, @$); }
+  | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @$); }
+  /* Expressions */
   | command_expr                            { $$ = $1; }
+  | annotated_identifier                    { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 arglist
@@ -197,12 +264,10 @@ command_expr
   | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : var_ref '=' expr                        { $$ = ast_assign_var(ctx->ast, $1, $3, @$); }
+  : annotated_identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;
-var_ref
-  : annotated_identifier                    { $$ = $1; }
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
   | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }
@@ -250,7 +315,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
             *yypcontext_location(ctx),
             "Unexpected %s\n",
             yysymbol_name(lookahead));
-        log_excerpt(parse_param->filename, parse_param->source, *yypcontext_location(ctx));
+        log_excerpt(parse_param->filename, parse_param->source, *yypcontext_location(ctx), "");
     }
 
     if (n < 0)

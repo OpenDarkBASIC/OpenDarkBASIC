@@ -96,7 +96,7 @@ static union adg_node*
 find_block(union adg_node* node, enum adg_node_type type)
 {
     union adg_node* found;
-    if (node->info.type == type)
+    if (node->info.node_type == type)
         return node;
 
     if (node->base.left)

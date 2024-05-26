@@ -62,11 +62,14 @@ ODBSDK_PRINTF_FORMAT(5, 6) static inline void
 log_flc(const char* severity, const char* filename, const char* source, struct utf8_span location, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vflc(severity, filename, source, location, fmt, ap); va_end(ap); }
 
-ODBSDK_PUBLIC_API void
-log_excerpt(const char* filename, const char* source, struct utf8_span location);
+ODBSDK_PRINTF_FORMAT(4, 5) ODBSDK_PUBLIC_API void
+log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* fmt, ...);
 
 ODBSDK_PUBLIC_API void
-log_binop_excerpt(const char* filename, struct utf8_view lhs, struct utf8_view op, struct utf8_view rhs);
+log_binop_excerpt(
+    const char* filename, const char* source,
+    struct utf8_span lhs, struct utf8_span op, struct utf8_span rhs,
+    const char* lhs_text, const char* rhs_text);
 
 /* SDK logging functions --------------------------------------------------- */
 ODBSDK_PRINTF_FORMAT(3, 4) static inline void

@@ -9,56 +9,6 @@ extern "C" {
 #include "LIEF/PE.hpp"
 #include <iostream>
 
-static enum cmd_param_type
-convert_char_to_return_type(char c)
-{
-    switch ((enum cmd_param_type)c)
-    {
-        case CMD_PARAM_VOID:
-        case CMD_PARAM_LONG:
-        case CMD_PARAM_DWORD:
-        case CMD_PARAM_INTEGER:
-        case CMD_PARAM_WORD:
-        case CMD_PARAM_BYTE:
-        case CMD_PARAM_BOOLEAN:
-        case CMD_PARAM_FLOAT:
-        case CMD_PARAM_DOUBLE:
-        case CMD_PARAM_STRING:
-        case CMD_PARAM_ARRAY:
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
-
-        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
-    }
-    return (enum cmd_param_type)0;
-}
-
-static enum cmd_param_type
-convert_char_to_param_type(char c)
-{
-    switch ((enum cmd_param_type)c)
-    {
-        case CMD_PARAM_VOID:
-        case CMD_PARAM_LONG:
-        case CMD_PARAM_DWORD:
-        case CMD_PARAM_INTEGER:
-        case CMD_PARAM_WORD:
-        case CMD_PARAM_BYTE:
-        case CMD_PARAM_BOOLEAN:
-        case CMD_PARAM_FLOAT:
-        case CMD_PARAM_DOUBLE:
-        case CMD_PARAM_STRING:
-        case CMD_PARAM_ARRAY:
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY: return (enum cmd_param_type)c;
-
-        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
-    }
-    return (enum cmd_param_type)0;
-}
-
 static int
 parse_command_string(
     struct cmd_list* commands,
@@ -82,8 +32,7 @@ parse_command_string(
         return 1;
     }
 
-    enum cmd_param_type return_type
-        = convert_char_to_return_type(data[type_str.off]);
+    enum type return_type = type_from_char(data[type_str.off]);
     if (return_type == 0)
     {
         log_sdk_warn(
@@ -136,7 +85,7 @@ parse_command_string(
     {
         char                     type_char = data[type_str.off + i];
         enum cmd_param_direction direction = CMD_PARAM_IN;
-        enum cmd_param_type      type = convert_char_to_param_type(type_char);
+        enum type                type = type_from_char(type_char);
 
         utf8_split(data, db_params, ',', &db_param_name, &db_params);
 
@@ -207,22 +156,26 @@ parse_string_section(
 static int
 parse_string_table(
     const LIEF::PE::Binary* pe,
-    struct ospathc filepath,
-    plugin_id plugin_id,
-    struct cmd_list* commands)
+    struct ospathc          filepath,
+    plugin_id               plugin_id,
+    struct cmd_list*        commands)
 {
     struct utf8 entry_str = empty_utf8();
 
     for (const auto& entry : pe->resources_manager().value().string_table())
     {
         const std::u16string& u16 = entry.name();
-        struct utf16_view     u16v =
-            {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
+        struct utf16_view     u16v
+            = {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
         if (utf16_to_utf8(&entry_str, u16v) != 0)
             goto fatal_error;
 
         switch (parse_command_string(
-            commands, plugin_id, entry_str.data, utf8_span(entry_str), filepath))
+            commands,
+            plugin_id,
+            entry_str.data,
+            utf8_span(entry_str),
+            filepath))
         {
             case 1: break;
             case 0: goto bad_command;
@@ -267,17 +220,18 @@ load_odb_commands(
                 plugin_id,
                 commands);
         }
-                              
+
         case LIEF::Binary::PE: {
             auto pe = static_cast<const LIEF::PE::Binary*>(binary);
-            
+
             if (pe->resources() == nullptr)
             {
-                log_sdk_warn("No resources found in pluign {emph:%s}.\n",
+                log_sdk_warn(
+                    "No resources found in pluign {emph:%s}.\n",
                     ospathc_cstr(filepath));
                 return 0;
             }
-            
+
             return parse_string_table(pe, filepath, plugin_id, commands);
         }
 

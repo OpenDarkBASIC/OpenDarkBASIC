@@ -4,6 +4,7 @@
 extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/sdk/type.h"
 #include "odb-sdk/utf8.h"
 }
 
@@ -50,50 +51,22 @@ DBParserHelper::parse(const char* code)
     return db_parse(&p, &ast, "test", src, &cmds);
 }
 
-static const char*
-cmd_param_type_to_db_name(cmd_param_type type)
-{
-    switch (type)
-    {
-        case CMD_PARAM_LONG: return "DOUBLE INTEGER";
-        case CMD_PARAM_DWORD: return "DWORD";
-        case CMD_PARAM_INTEGER: return "INTEGER";
-        case CMD_PARAM_WORD: return "WORD";
-        case CMD_PARAM_BYTE: return "BYTE";
-        case CMD_PARAM_BOOLEAN: return "BOOLEAN";
-        case CMD_PARAM_FLOAT: return "FLOAT";
-        case CMD_PARAM_DOUBLE: return "DOUBLE";
-        case CMD_PARAM_STRING: return "STRING";
-        case CMD_PARAM_ARRAY: return "DIM";
-
-        case CMD_PARAM_VOID:
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL:
-        case CMD_PARAM_ANY:
-        case CMD_PARAM_USER_DEFINED_VAR_PTR: break;
-    }
-
-    return "";
-}
-
 int
 DBParserHelper::addCommand(
-    cmd_param_type                        return_type,
-    const char*                           name,
-    std::initializer_list<cmd_param_type> param_types)
+    type return_type, const char* name, std::initializer_list<type> param_types)
 {
     cmd_id cmd = cmd_list_add(
         &cmds, 0, return_type, cstr_utf8_view(name), empty_utf8_view());
     if (cmd < 0)
         return cmd;
 
-    for (cmd_param_type type : param_types)
+    for (type type : param_types)
         if (cmd_add_param(
                 &cmds,
                 cmd,
                 type,
                 CMD_PARAM_IN,
-                cstr_utf8_view(cmd_param_type_to_db_name(type)))
+                cstr_utf8_view(type_to_db_name(type)))
             < 0)
         {
             cmd_list_erase(&cmds, cmd);
@@ -105,10 +78,10 @@ DBParserHelper::addCommand(
 int
 DBParserHelper::addCommand(const char* name)
 {
-    return addCommand(CMD_PARAM_VOID, name);
+    return addCommand(TYPE_VOID, name);
 }
 int
-DBParserHelper::addCommand(cmd_param_type return_type, const char* name)
+DBParserHelper::addCommand(type return_type, const char* name)
 {
     return addCommand(return_type, name, {});
 }

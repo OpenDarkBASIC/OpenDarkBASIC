@@ -39,7 +39,7 @@ struct adg_node_location
 union adg_node
 {
     struct info {
-        enum adg_node_type type;
+        enum adg_node_type node_type;
         struct adg_node_location loc;
     } info;
 

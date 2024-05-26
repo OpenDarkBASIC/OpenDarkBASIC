@@ -13,7 +13,7 @@ write_nodes(
     const struct cmd_list*  commands)
 {
     union ast_node* nd = &ast->nodes[n];
-    switch (nd->info.type)
+    switch (nd->info.node_type)
     {
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
@@ -27,8 +27,7 @@ write_nodes(
         case AST_COMMAND: {
             struct utf8_view cmd_name
                 = utf8_list_view(&commands->db_cmd_names, nd->cmd.id);
-            enum cmd_param_type ret_type
-                = *vec_get(commands->return_types, nd->cmd.id);
+            enum type ret_type = *vec_get(commands->return_types, nd->cmd.id);
             fprintf(
                 fp,
                 "  n%d [shape=\"doubleoctagon\", fontcolor=\"blue\", "
@@ -36,10 +35,10 @@ write_nodes(
                 n,
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
-                ret_type == CMD_PARAM_VOID ? "" : "()");
+                ret_type == TYPE_VOID ? "" : "()");
         }
         break;
-        case AST_ASSIGN: fprintf(fp, "  n%d [label=\"=\"];\n", n); break;
+        case AST_ASSIGNMENT: fprintf(fp, "  n%d [label=\"=\"];\n", n); break;
         case AST_IDENTIFIER:
             fprintf(
                 fp,
@@ -51,6 +50,28 @@ write_nodes(
                 nd->identifier.annotation ? 1 : 0,
                 nd->identifier.annotation ? (char*)&nd->identifier.annotation
                                           : NULL);
+            break;
+        case AST_BINOP:
+            switch (nd->binop.op)
+            {
+#define X(op, tok)                                                             \
+    case BINOP_##op:                                                           \
+        fprintf(fp, "  n%d [shape=\"\", label=\"%s\"];\n", n, tok);            \
+        break;
+                BINOP_LIST
+#undef X
+            }
+            break;
+        case AST_UNOP:
+            switch (nd->unop.op)
+            {
+#define X(op, tok)                                                             \
+    case UNOP_##op:                                                            \
+        fprintf(fp, "  n%d [shape=\"\", label=\"%s\"];\n", n, tok);            \
+        break;
+                UNOP_LIST
+#undef X
+            }
             break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
@@ -115,8 +136,8 @@ write_nodes(
                 "  n%d [shape=\"record\", fontcolor=\"orange\", "
                 "label=\"\\\"%.*s\\\"\"];\n",
                 n,
-                nd->string_literal.str.len - 2,
-                source->text.data + nd->string_literal.str.off + 1);
+                nd->string_literal.str.len,
+                source->text.data + nd->string_literal.str.off);
             break;
     }
 

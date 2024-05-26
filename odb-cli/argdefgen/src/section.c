@@ -55,7 +55,7 @@ count_sections_in_tree(const union adg_node* node)
     while (node)
     {
         counter++;
-        assert(node->info.type == ADG_SECTION);
+        assert(node->info.node_type == ADG_SECTION);
         node = (union adg_node*)node->section.next;
     }
 
@@ -71,7 +71,7 @@ adg_section_table_from_nodes(union adg_node* node)
     struct adg_section** section_table;
 
     /* Root node must be a section. */
-    if (node->info.type != ADG_SECTION)
+    if (node->info.node_type != ADG_SECTION)
     {
         fprintf(stderr, "Error: Expected a section\n");
         return NULL;
@@ -105,7 +105,7 @@ adg_section_table_from_nodes(union adg_node* node)
             goto new_section_failed;
 
         section_table[i++] = section;
-        assert(node->info.type == ADG_SECTION);
+        assert(node->info.node_type == ADG_SECTION);
         node = (union adg_node*)node->section.next;
     }
 

@@ -163,7 +163,7 @@ dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
     {
-        enum cmd_param_type ret_type = *vec_get(commands.return_types, i);
+        enum type ret_type = *vec_get(commands.return_types, i);
         printf("%c ", ret_type);
         printf("%s", utf8_list_cstr(&commands.db_cmd_names, i));
         printf("(");

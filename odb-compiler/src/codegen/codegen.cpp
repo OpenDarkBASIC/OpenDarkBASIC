@@ -44,7 +44,7 @@ create_global_string_table(
 {
     for (ast_id n = 0; n != ast->node_count; ++n)
     {
-        if (ast->nodes[n].info.type != AST_STRING_LITERAL)
+        if (ast->nodes[n].info.node_type != AST_STRING_LITERAL)
             continue;
 
         struct utf8_span str = ast->nodes[n].string_literal.str;
@@ -74,36 +74,36 @@ create_global_string_table(
 }
 
 static llvm::Type*
-dbpro_cmd_param_type_to_llvm(enum cmd_param_type type, llvm::Module* mod)
+dbpro_cmd_param_type_to_llvm(enum type type, llvm::Module* mod)
 {
     switch (type)
     {
-        case CMD_PARAM_VOID: return llvm::Type::getVoidTy(mod->getContext());
-        case CMD_PARAM_LONG: return llvm::Type::getInt64Ty(mod->getContext());
+        case TYPE_INVALID: break;
 
-        case CMD_PARAM_DWORD:
-        case CMD_PARAM_INTEGER:
-            return llvm::Type::getInt32Ty(mod->getContext());
+        case TYPE_VOID: return llvm::Type::getVoidTy(mod->getContext());
+        case TYPE_LONG: return llvm::Type::getInt64Ty(mod->getContext());
 
-        case CMD_PARAM_WORD: return llvm::Type::getInt16Ty(mod->getContext());
+        case TYPE_DWORD:
+        case TYPE_INTEGER: return llvm::Type::getInt32Ty(mod->getContext());
 
-        case CMD_PARAM_BYTE:
-        case CMD_PARAM_BOOLEAN: return llvm::Type::getInt8Ty(mod->getContext());
+        case TYPE_WORD: return llvm::Type::getInt16Ty(mod->getContext());
 
-        case CMD_PARAM_FLOAT: return llvm::Type::getFloatTy(mod->getContext());
-        case CMD_PARAM_DOUBLE:
-            return llvm::Type::getDoubleTy(mod->getContext());
+        case TYPE_BYTE:
+        case TYPE_BOOLEAN: return llvm::Type::getInt8Ty(mod->getContext());
 
-        case CMD_PARAM_STRING:
-        case CMD_PARAM_ARRAY:
+        case TYPE_FLOAT: return llvm::Type::getFloatTy(mod->getContext());
+        case TYPE_DOUBLE: return llvm::Type::getDoubleTy(mod->getContext());
+
+        case TYPE_STRING:
+        case TYPE_ARRAY:
             return llvm::PointerType::get(
                 llvm::Type::getInt8Ty(mod->getContext()), 0);
 
-        case CMD_PARAM_LABEL:
-        case CMD_PARAM_DABEL: break;
+        case TYPE_LABEL:
+        case TYPE_DABEL: break;
 
-        case CMD_PARAM_ANY:
-        case CMD_PARAM_USER_DEFINED_VAR_PTR:
+        case TYPE_ANY:
+        case TYPE_USER_DEFINED_VAR_PTR:
             return llvm::PointerType::get(
                 llvm::Type::getVoidTy(mod->getContext()), 0);
     }
@@ -122,7 +122,7 @@ get_command_function_signature(
     const struct cmd_list* cmds,
     llvm::Module*          mod)
 {
-    ODBSDK_DEBUG_ASSERT(ast->nodes[cmd].info.type == AST_COMMAND);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[cmd].info.node_type == AST_COMMAND);
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
@@ -137,7 +137,7 @@ get_command_function_signature(
     }
 
     /* Convert return type from command list as well, and create LLVM FT */
-    enum cmd_param_type odb_return_type = *vec_get(cmds->return_types, cmd_id);
+    enum type odb_return_type = *vec_get(cmds->return_types, cmd_id);
     return llvm::FunctionType::get(
         dbpro_cmd_param_type_to_llvm(odb_return_type, mod),
         llvm_param_types,
@@ -154,7 +154,7 @@ create_global_plugin_symbol_table(
 {
     for (ast_id n = 0; n != ast->node_count; ++n)
     {
-        if (ast->nodes[n].info.type != AST_COMMAND)
+        if (ast->nodes[n].info.node_type != AST_COMMAND)
             continue;
 
         cmd_id           cmd_id = ast->nodes[n].cmd.id;
@@ -189,7 +189,7 @@ log_semantic_err(
     log_vflc(
         "{e:semantic error:} ", filename, source.text.data, location, fmt, ap);
     va_end(ap);
-    log_excerpt(filename, source.text.data, location);
+    log_excerpt(filename, source.text.data, location, "");
 }
 
 static llvm::Value*
@@ -197,7 +197,6 @@ gen_expr(
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
-    const llvm::Type*                             cmd_param_type,
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
@@ -242,7 +241,6 @@ gen_cmd_call(
             ast,
             ast->nodes[arglist].arglist.expr,
             cmds,
-            arg.getType(),
             source_filename,
             source,
             string_table,
@@ -262,7 +260,6 @@ gen_expr(
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
-    const llvm::Type*                             cmd_param_type,
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
@@ -270,7 +267,10 @@ gen_expr(
     llvm::Module*                                 mod,
     llvm::BasicBlock*                             BB)
 {
-    switch (ast->nodes[expr].info.type)
+    llvm::IRBuilder<> b(mod->getContext());
+    b.SetInsertPoint(BB);
+
+    switch (ast->nodes[expr].info.node_type)
     {
         case AST_BLOCK:
         case AST_ARGLIST:
@@ -288,8 +288,61 @@ gen_expr(
                 mod,
                 BB);
 
-        case AST_ASSIGN:
+        case AST_ASSIGNMENT:
         case AST_IDENTIFIER: break;
+
+        case AST_BINOP: {
+            llvm::Value* lhs = gen_expr(
+                ast,
+                ast->nodes[expr].binop.left,
+                cmds,
+                source_filename,
+                source,
+                string_table,
+                plugin_symbol_table,
+                mod,
+                BB);
+            llvm::Value* rhs = gen_expr(
+                ast,
+                ast->nodes[expr].binop.right,
+                cmds,
+                source_filename,
+                source,
+                string_table,
+                plugin_symbol_table,
+                mod,
+                BB);
+            llvm::Type* result_type = dbpro_cmd_param_type_to_llvm(
+                ast->nodes[expr].binop.info.type_info, mod);
+            llvm::Value* lhs_cast = b.CreateIntCast(lhs, result_type, true);
+            llvm::Value* rhs_cast = b.CreateIntCast(rhs, result_type, true);
+            switch (ast->nodes[expr].binop.op)
+            {
+                case BINOP_ADD: return b.CreateAdd(lhs_cast, rhs_cast);
+                case BINOP_SUB:
+                case BINOP_MUL:
+                case BINOP_DIV:
+                case BINOP_MOD:
+                case BINOP_POW:
+                case BINOP_SHIFT_LEFT:
+                case BINOP_SHIFT_RIGHT:
+                case BINOP_BITWISE_OR:
+                case BINOP_BITWISE_AND:
+                case BINOP_BITWISE_XOR:
+                case BINOP_BITWISE_NOT:
+                case BINOP_LESS_THAN:
+                case BINOP_LESS_EQUAL:
+                case BINOP_GREATER_THAN:
+                case BINOP_GREATER_EQUAL:
+                case BINOP_EQUAL:
+                case BINOP_NOT_EQUAL:
+                case BINOP_LOGICAL_OR:
+                case BINOP_LOGICAL_AND:
+                case BINOP_LOGICAL_XOR: break;
+            }
+        }
+        break;
+        case AST_UNOP: break;
 
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
@@ -342,7 +395,7 @@ gen_expr(
     log_err(
         "[gen] ",
         "Expression type %d not implemeneted\n",
-        ast->nodes[expr].info.type);
+        ast->nodes[expr].info.node_type);
     return nullptr;
 }
 
@@ -358,7 +411,7 @@ gen_block(
     llvm::Module*                                 mod)
 {
     ODBSDK_DEBUG_ASSERT(block > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.type == AST_BLOCK);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
 
     /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
      * statements from the current node. We name it according to the node's
@@ -372,7 +425,7 @@ gen_block(
     {
         ast_id stmt = ast->nodes[block].block.stmt;
         ODBSDK_DEBUG_ASSERT(stmt > -1);
-        switch (ast->nodes[stmt].info.type)
+        switch (ast->nodes[stmt].info.node_type)
         {
             case AST_COMMAND: {
                 gen_cmd_call(
@@ -401,10 +454,10 @@ gen_block(
 
 int
 odb_codegen(
-    struct ast* program,
-    const char* output_name,
-    const char* module_name,
-    enum sdk_type sdkType,
+    struct ast*                  program,
+    const char*                  output_name,
+    const char*                  module_name,
+    enum sdk_type                sdkType,
     enum odb_codegen_output_type output_type,
     enum odb_codegen_arch        arch,
     enum odb_codegen_platform    platform,
@@ -457,6 +510,7 @@ odb_codegen(
             llvm::Function::ExternalLinkage,
             "odbsdk_threadlocal_init",
             &mod);
+
         b.SetInsertPoint(BB->getFirstInsertionPt());
         b.CreateCall(FSDKInit, {});
         b.CreateCall(FSDKInitTL, {});
