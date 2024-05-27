@@ -230,6 +230,7 @@ set (GTK4_RUNTIMES
 file (GLOB GTK4_RUNTIMES "${GTK4_ROOT}/bin/*.dll")
 set (GTK4_RUNTIMES "${GTK4_RUNTIMES}" PARENT_SCOPE)
 
+set (GTK4_FOUND 1 PARENT_SCOPE)
 foreach (_component IN LISTS GTK4_FIND_COMPONENTS)
     if (GTK4_${_component}_INCLUDE_DIRS AND GTK4_${_component}_LIBRARY)
         if (NOT TARGET GTK4::${_component})
@@ -242,7 +243,8 @@ foreach (_component IN LISTS GTK4_FIND_COMPONENTS)
         endif ()
         set (GTK4_${_component}_FOUND 1 PARENT_SCOPE)
     else ()
-        message (FATAL_ERROR "Failed to find GTK4 component ${_component}\n"
+        set (GTK4_FOUND 0 PARENT_SCOPE)
+        message (NOTICE "Failed to find GTK4 component ${_component}\n"
             "lib: ${GTK4_${_component}_LIBRARY}\n"
             "include: ${GTK4_${_component}_INCLUDE_DIRS}\n")
     endif ()

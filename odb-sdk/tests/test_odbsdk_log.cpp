@@ -33,7 +33,18 @@ TEST(NAME, file_line_column)
     // for some reason\n"))
 }
 
-TEST(NAME, excerpt1)
+TEST(NAME, excerpt_single_line)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a = 5 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+    struct utf8_span loc = {23, 5}; /* a = 5 */
+    log_excerpt("some/file.dba", source, loc, "");
+}
+
+TEST(NAME, excerpt_wrap_to_next_line)
 {
     const char* source
         = "for a = 1 to 10\n"
@@ -41,5 +52,17 @@ TEST(NAME, excerpt1)
           "    print str$(a)\n"
           "next a\n";
     struct utf8_span loc = {34, 15}; /* a = 7 ... print */
+    log_excerpt("some/file.dba", source, loc, "");
+}
+
+TEST(NAME, excerpt_multiple_lines)
+{
+    const char* source
+      = "a = get ground height(\n"
+        "       obj,\n"
+        "    xpos,\n"
+        "          zpos\n"
+        ")\n";
+    struct utf8_span loc = {30, 29}; /* 3 arguments */
     log_excerpt("some/file.dba", source, loc, "");
 }

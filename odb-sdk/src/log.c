@@ -4,7 +4,46 @@
 #include <stdio.h>
 #include <string.h>
 
-static char progress_active;
+#if defined(ODBSDK_PLATFORM_WINDOWS)
+#else
+#include <unistd.h>
+#endif
+
+static char           progress_active;
+static char           use_color;
+static log_write_func write_func;
+
+/* ------------------------------------------------------------------------- */
+static int
+stream_is_terminal(FILE* fp)
+{
+#if defined(ODBSDK_PLATFORM_WINDOWS)
+    return 1;
+#else
+    return isatty(fileno(fp));
+#endif
+}
+
+/* ------------------------------------------------------------------------- */
+static void
+default_write_func(const char* fmt, va_list ap)
+{
+    vfprintf(stderr, fmt, ap);
+}
+
+/* ------------------------------------------------------------------------- */
+void
+log_set_write_func(log_write_func func)
+{
+    write_func = func ? func : default_write_func;
+}
+
+/* ------------------------------------------------------------------------- */
+void
+log_set_color(char enable)
+{
+    use_color = enable;
+}
 
 /* ------------------------------------------------------------------------- */
 #if defined(ODBSDK_PLATFORM_WINDOWS)
@@ -334,8 +373,7 @@ log_excerpt(
     const char*      filename,
     const char*      source,
     struct utf8_span loc,
-    const char*      fmt,
-    ...)
+    const char*      highlight_text)
 {
     utf8_idx         i;
     utf8_idx         l1, c1, l2, c2;
@@ -343,7 +381,6 @@ log_excerpt(
     utf8_idx         gutter_indent;
     utf8_idx         line;
     struct utf8_span block;
-    va_list          ap;
 
     /* Calculate line column as well as beginning of block. The goal is to make
      * "block" point to the first character in the line that contains the
@@ -471,10 +508,7 @@ log_excerpt(
         fprintf(stderr, "%s ", reset_style());
     }
 
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    va_end(ap);
-
+    fprintf(stderr, "%s", highlight_text);
     putc('\n', stderr);
 }
 

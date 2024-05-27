@@ -4,8 +4,12 @@ project (odb-editor
     LANGUAGES C
     VERSION 0.0.1)
 
-find_package (GTK4 REQUIRED COMPONENTS
+find_package (GTK4 COMPONENTS
     gtk glib cairo pango harfbuzz gdk-pixbuf graphene)
+if (NOT GTK4_FOUND)
+    message (WARNING "Could not find all GTK4 libraries. Editor will not be built")
+    return ()
+endif ()
 
 gtk_compile_resource (
     "res/odbeditor.gresource.xml"

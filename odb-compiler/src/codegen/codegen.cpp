@@ -216,6 +216,8 @@ gen_cmd_call(
     llvm::Module*                                 mod,
     llvm::BasicBlock*                             BB)
 {
+    ast_id arglist;
+    size_t a;
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     // Function table for commands should be generated at this
@@ -229,13 +231,10 @@ gen_cmd_call(
     // parameter.
     // Command overload resolution is done in a previous step, so
     // it should be OK to assume that both lists have the same
-    // length here.
-    // TODO: Store results of each expression in temporary variables
-    //       before passing them to the function call. This makes
-    //       nested function calls possible.
+    // length and that the types match here.
     llvm::SmallVector<llvm::Value*, 8> param_values;
-    ast_id                             arglist = ast->nodes[cmd].cmd.arglist;
-    for (const llvm::Argument& arg : F->args())
+    for (a = 0, arglist = ast->nodes[cmd].cmd.arglist; a != F->arg_size();
+         ++a, arglist = ast->nodes[arglist].arglist.next)
     {
         param_values.push_back(gen_expr(
             ast,
@@ -247,7 +246,6 @@ gen_cmd_call(
             plugin_symbol_table,
             mod,
             BB));
-        arglist = ast->nodes[arglist].arglist.next;
     }
 
     llvm::IRBuilder<> b(mod->getContext());

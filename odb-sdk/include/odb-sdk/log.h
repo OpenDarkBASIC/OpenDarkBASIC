@@ -4,6 +4,14 @@
 #include "odb-sdk/utf8.h"
 #include <stdarg.h>
 
+typedef void (*log_write_func)(const char* fmt, va_list ap);
+
+ODBSDK_PUBLIC_API void
+log_set_write_func(log_write_func func);
+
+ODBSDK_PUBLIC_API void
+log_enable_color(char enable);
+
 ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(1, 0) void
 log_vraw(const char* fmt, va_list ap);
 ODBSDK_PRINTF_FORMAT(1, 2) static inline void
@@ -62,8 +70,8 @@ ODBSDK_PRINTF_FORMAT(5, 6) static inline void
 log_flc(const char* severity, const char* filename, const char* source, struct utf8_span location, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vflc(severity, filename, source, location, fmt, ap); va_end(ap); }
 
-ODBSDK_PRINTF_FORMAT(4, 5) ODBSDK_PUBLIC_API void
-log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* fmt, ...);
+ODBSDK_PUBLIC_API void
+log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* highlight_text);
 
 ODBSDK_PUBLIC_API void
 log_binop_excerpt(
