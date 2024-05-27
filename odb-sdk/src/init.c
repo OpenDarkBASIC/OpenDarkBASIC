@@ -1,17 +1,21 @@
 #include "odb-sdk/backtrace.h"
-#include "odb-sdk/mem.h"
 #include "odb-sdk/init.h"
+#include "odb-sdk/log.h"
+#include "odb-sdk/mem.h"
 
 /* ------------------------------------------------------------------------- */
 int
 odbsdk_init(void)
 {
+    log_init();
+
     if (backtrace_init() < 0)
         goto backtrace_init_failed;
 
     return 0;
 
-    backtrace_init_failed : return -1;
+backtrace_init_failed:
+    return -1;
 }
 
 /* ------------------------------------------------------------------------- */

@@ -4,16 +4,15 @@
 #include <stdio.h>
 #include <string.h>
 
+static char                 progress_active;
+static struct log_interface g_log;
+
+/* ------------------------------------------------------------------------- */
 #if defined(ODBSDK_PLATFORM_WINDOWS)
 #else
 #include <unistd.h>
 #endif
 
-static char           progress_active;
-static char           use_color;
-static log_write_func write_func;
-
-/* ------------------------------------------------------------------------- */
 static int
 stream_is_terminal(FILE* fp)
 {
@@ -30,19 +29,36 @@ default_write_func(const char* fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
 }
-
-/* ------------------------------------------------------------------------- */
-void
-log_set_write_func(log_write_func func)
+ODBSDK_PRINTF_FORMAT(1, 2)
+static void
+log_printf(const char* fmt, ...)
 {
-    write_func = func ? func : default_write_func;
+    va_list ap;
+    va_start(ap, fmt);
+    g_log.write(fmt, ap);
+    va_end(ap);
+}
+static void
+log_putc(char c)
+{
+    log_printf("%c", c);
 }
 
 /* ------------------------------------------------------------------------- */
 void
-log_set_color(char enable)
+log_init(void)
 {
-    use_color = enable;
+    g_log.write = default_write_func;
+    g_log.use_color = stream_is_terminal(stderr);
+}
+
+/* ------------------------------------------------------------------------- */
+struct log_interface
+log_configure(struct log_interface iface)
+{
+    struct log_interface old = g_log;
+    g_log = iface;
+    return old;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -64,11 +80,11 @@ log_last_error_win32(FILE* fp)
             NULL)
         == 0)
     {
-        fprintf(fp, "(Failed to get error from FormatMessage())");
+        log_printf("(Failed to get error from FormatMessage())");
         return;
     }
 
-    fprintf(fp, "%s", error);
+    log_printf("%s", error);
     LocalFree(error);
 }
 #endif
@@ -103,7 +119,7 @@ process_standard_format(FILE* fp, const char* fmt, struct varef* args)
              && fmt[-1] != '%');
 
     subfmt[i] = '\0';
-    vfprintf(fp, subfmt, args->ap);
+    g_log.write(subfmt, args->ap);
 
     /* Have to advance to next argument */
     /* XXX: Does this work on all compilers? */
@@ -118,52 +134,52 @@ process_standard_format(FILE* fp, const char* fmt, struct varef* args)
 static const char*
 debug_style(void)
 {
-    return FG_YELLOW;
+    return g_log.use_color ? FG_YELLOW : "";
 }
 static const char*
 info_style(void)
 {
-    return FGB_WHITE;
+    return g_log.use_color ? FGB_WHITE : "";
 }
 static const char*
 note_style(void)
 {
-    return FGB_MAGENTA;
+    return g_log.use_color ? FGB_MAGENTA : "";
 }
 static const char*
 warn_style(void)
 {
-    return FGB_YELLOW;
+    return g_log.use_color ? FGB_YELLOW : "";
 }
 static const char*
 err_style(void)
 {
-    return FGB_RED;
+    return g_log.use_color ? FGB_RED : "";
 }
 static const char*
 emph_style(void)
 {
-    return FGB_WHITE;
+    return g_log.use_color ? FGB_WHITE : "";
 }
 static const char*
 quote_style(void)
 {
-    return "`" FGB_WHITE;
+    return g_log.use_color ? "`" FGB_WHITE : "";
 }
 static const char*
 end_quote_style(void)
 {
-    return COL_RESET "'";
+    return g_log.use_color ? COL_RESET "'" : "";
 }
 static const char*
 underline_style(void)
 {
-    return FGB_BLUE;
+    return g_log.use_color ? FGB_BLUE : "";
 }
 static const char*
 reset_style(void)
 {
-    return COL_RESET;
+    return g_log.use_color ? COL_RESET : "";
 }
 static int
 next_control_sequence(
@@ -240,12 +256,12 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
 
     if (fmt[i] != ':')
     {
-        putc(*fmt, fp);
+        log_putc(*fmt);
         return fmt + 1;
     }
 
     for (i = 0; next_control_sequence(fmt + 1, &i, &start, &end);)
-        fprintf(fp, "%s", start);
+        log_printf("%s", start);
     content = fmt + i + 1;
 
     while (*content)
@@ -256,12 +272,12 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
             content = process_standard_format(fp, content, args);
         else if (*content == '}')
         {
-            fprintf(fp, "%s", end);
+            log_printf("%s", end);
             content++;
             break;
         }
         else
-            putc(*content++, fp);
+            log_putc(*content++);
     }
 
     return content;
@@ -278,7 +294,7 @@ vfprintf_with_color(FILE* fp, const char* fmt, struct varef* args)
         else if (fmt[0] == '%')
             fmt = process_standard_format(fp, fmt, args);
         else
-            putc(*fmt++, fp);
+            log_putc(*fmt++);
     }
 }
 
@@ -313,7 +329,8 @@ log_vimpl(
 
     if (progress_active)
     {
-        fprintf(stderr, "\r\033[A\033[K");
+        if (g_log.use_color)
+            log_printf("\r\033[A\033[K");
         progress_active = 0;
     }
     if (is_progress)
@@ -441,55 +458,55 @@ log_excerpt(
     line = l1;
     for (i = 0; i != block.len;)
     {
-        fprintf(stderr, "%*d | ", gutter_indent - 1, line);
+        log_printf("%*d | ", gutter_indent - 1, line);
 
         if (i >= loc.off - block.off && i <= loc.off - block.off + loc.len)
-            fprintf(stderr, "%s", underline_style());
+            log_printf("%s", underline_style());
 
         indent = 0;
         while (i != block.len)
         {
             if (i == loc.off - block.off)
-                fprintf(stderr, "%s", underline_style());
+                log_printf("%s", underline_style());
             if (i == loc.off - block.off + loc.len)
-                fprintf(stderr, "%s", reset_style());
+                log_printf("%s", reset_style());
 
             if (indent++ >= max_indent)
-                putc(source[block.off + i], stderr);
+                log_putc(source[block.off + i]);
 
             if (source[block.off + i++] == '\n')
             {
                 if (i >= loc.off - block.off
                     && i <= loc.off - block.off + loc.len)
-                    fprintf(stderr, "%s", reset_style());
+                    log_printf("%s", reset_style());
                 break;
             }
         }
         line++;
     }
-    fprintf(stderr, "%s\n", reset_style());
+    log_printf("%s\n", reset_style());
 
     /* print underline */
     if (c2 > c1)
     {
-        fprintf(stderr, "%*s|%*s", gutter_indent, "", c1, "");
-        fprintf(stderr, "%s", underline_style());
-        putc('^', stderr);
+        log_printf("%*s|%*s", gutter_indent, "", c1, "");
+        log_printf("%s", underline_style());
+        log_putc('^');
         for (i = c1 + 1; i < c2; ++i)
-            putc('~', stderr);
-        fprintf(stderr, "%s ", reset_style());
+            log_putc('~');
+        log_printf("%s ", reset_style());
     }
     else
     {
         utf8_idx col, max_col;
 
-        fprintf(stderr, "%*s| ", gutter_indent, "");
-        fprintf(stderr, "%s", underline_style());
+        log_printf("%*s| ", gutter_indent, "");
+        log_printf("%s", underline_style());
         for (i = 1; i < c2; ++i)
-            putc('~', stderr);
+            log_putc('~');
         for (; i < c1; ++i)
-            putc(' ', stderr);
-        putc('^', stderr);
+            log_putc(' ');
+        log_putc('^');
 
         /* Have to find length of the longest line */
         col = 1, max_col = 1;
@@ -504,12 +521,12 @@ log_excerpt(
         max_col -= max_indent;
 
         for (i = c1 + 1; i < max_col; ++i)
-            putc('~', stderr);
-        fprintf(stderr, "%s ", reset_style());
+            log_putc('~');
+        log_printf("%s ", reset_style());
     }
 
-    fprintf(stderr, "%s", highlight_text);
-    putc('\n', stderr);
+    log_printf("%s", highlight_text);
+    log_putc('\n');
 }
 
 /* ------------------------------------------------------------------------- */
@@ -594,55 +611,55 @@ log_binop_excerpt(
     line = l1;
     for (i = 0; i != block.len;)
     {
-        fprintf(stderr, "%*d | ", gutter_indent - 1, line);
+        log_printf("%*d | ", gutter_indent - 1, line);
 
         if (i >= loc.off - block.off && i <= loc.off - block.off + loc.len)
-            fprintf(stderr, "%s", underline_style());
+            log_printf("%s", underline_style());
 
         indent = 0;
         while (i != block.len)
         {
             if (i == loc.off - block.off)
-                fprintf(stderr, "%s", underline_style());
+                log_printf("%s", underline_style());
             if (i == loc.off - block.off + loc.len)
-                fprintf(stderr, "%s", reset_style());
+                log_printf("%s", reset_style());
 
             if (indent++ >= max_indent)
-                putc(source[block.off + i], stderr);
+                log_putc(source[block.off + i]);
 
             if (source[block.off + i++] == '\n')
             {
                 if (i >= loc.off - block.off
                     && i <= loc.off - block.off + loc.len)
-                    fprintf(stderr, "%s", reset_style());
+                    log_printf("%s", reset_style());
                 break;
             }
         }
         line++;
     }
-    fprintf(stderr, "%s\n", reset_style());
+    log_printf("%s\n", reset_style());
 
     /* print underline */
     if (c2 > c1)
     {
-        fprintf(stderr, "%*s|%*s", gutter_indent, "", c1, "");
-        fprintf(stderr, "%s", underline_style());
-        putc('^', stderr);
+        log_printf("%*s|%*s", gutter_indent, "", c1, "");
+        log_printf("%s", underline_style());
+        log_putc('^');
         for (i = c1 + 1; i < c2; ++i)
-            putc('~', stderr);
-        fprintf(stderr, "%s ", reset_style());
+            log_putc('~');
+        log_printf("%s ", reset_style());
     }
     else
     {
         utf8_idx col, max_col;
 
-        fprintf(stderr, "%*s| ", gutter_indent, "");
-        fprintf(stderr, "%s", underline_style());
+        log_printf("%*s| ", gutter_indent, "");
+        log_printf("%s", underline_style());
         for (i = 1; i < c2; ++i)
-            putc('~', stderr);
+            log_putc('~');
         for (; i < c1; ++i)
-            putc(' ', stderr);
-        putc('^', stderr);
+            log_putc(' ');
+        log_putc('^');
 
         /* Have to find length of the longest line */
         col = 1, max_col = 1;
@@ -657,9 +674,9 @@ log_binop_excerpt(
         max_col -= max_indent;
 
         for (i = c1 + 1; i < max_col; ++i)
-            putc('~', stderr);
-        fprintf(stderr, "%s ", reset_style());
+            log_putc('~');
+        log_printf("%s ", reset_style());
     }
 
-    putc('\n', stderr);
+    log_putc('\n');
 }

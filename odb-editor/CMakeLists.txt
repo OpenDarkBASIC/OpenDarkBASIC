@@ -6,7 +6,7 @@ project (odb-editor
 
 find_package (GTK4 COMPONENTS
     gtk glib cairo pango harfbuzz gdk-pixbuf graphene)
-if (NOT GTK4_FOUND)
+if (NOT ${GTK4_FOUND})
     message (WARNING "Could not find all GTK4 libraries. Editor will not be built")
     return ()
 endif ()

@@ -6,11 +6,18 @@
 
 typedef void (*log_write_func)(const char* fmt, va_list ap);
 
-ODBSDK_PUBLIC_API void
-log_set_write_func(log_write_func func);
+struct log_interface
+{
+    ODBSDK_PRINTF_FORMAT(1, 0)
+    void (*write)(const char* fmt, va_list ap);
+    char use_color;
+};
 
 ODBSDK_PUBLIC_API void
-log_enable_color(char enable);
+log_init(void);
+
+ODBSDK_PUBLIC_API struct log_interface
+log_configure(struct log_interface iface);
 
 ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(1, 0) void
 log_vraw(const char* fmt, va_list ap);
