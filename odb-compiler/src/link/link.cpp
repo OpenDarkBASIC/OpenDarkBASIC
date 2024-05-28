@@ -67,17 +67,16 @@ link_linux(
         case ODB_CODEGEN_i386:
             args.push_back("-melf_i386");
             args.push_back("--dynamic-linker=/lib/ld-linux.so.2");
-            args.push_back("-L/usr/lib");
             break;
         case ODB_CODEGEN_x86_64:
             args.push_back("-melf_x86_64");
             args.push_back("--dynamic-linker=/lib64/ld-linux-x86-64.so.2");
             args.push_back("-L/usr/lib64");
+            args.push_back("-L/usr/lib/x86_64-linux-gnu");
             break;
         case ODB_CODEGEN_AArch64:
             args.push_back("-melf_aarch64");
             return -1;
-            break;
     }
 
     args.push_back("-o");

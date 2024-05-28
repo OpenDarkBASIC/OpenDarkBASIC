@@ -57,7 +57,7 @@ resolve_expression(
                     source_filename,
                     source.text.data,
                     ast->nodes[n].info.location,
-                    "Converting from {quote:%s} to {quote:%s} results in loss "
+                    "Converting from {lhs:%s} to {rhs:%s} results in loss "
                     "of information.\n",
                     type_to_db_name(left_type),
                     type_to_db_name(right_type));
@@ -65,7 +65,7 @@ resolve_expression(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
-                    ast->nodes[n].info.location,
+                    ast->nodes[n].binop.op_location,
                     ast->nodes[rhs].info.location,
                     type_to_db_name(left_type),
                     type_to_db_name(right_type));
@@ -78,7 +78,7 @@ resolve_expression(
                     source_filename,
                     source.text.data,
                     ast->nodes[n].info.location,
-                    "Converting from {quote:%s} to {quote:%s} results in loss "
+                    "Converting from {lhs:%s} to {rhs:%s} results in loss "
                     "of information.\n",
                     type_to_db_name(right_type),
                     type_to_db_name(left_type));
@@ -86,7 +86,7 @@ resolve_expression(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
-                    ast->nodes[n].info.location,
+                    ast->nodes[n].binop.op_location,
                     ast->nodes[rhs].info.location,
                     type_to_db_name(left_type),
                     type_to_db_name(right_type));
@@ -99,14 +99,14 @@ resolve_expression(
                 source_filename,
                 source.text.data,
                 ast->nodes[n].info.location,
-                "Cannot convert from {quote:%s} to {quote:%s}\n",
+                "Cannot convert from {lhs:%s} to {rhs:%s} in binary expression\n",
                 type_to_db_name(left_type),
                 type_to_db_name(right_type));
             log_binop_excerpt(
                 source_filename,
                 source.text.data,
                 ast->nodes[lhs].info.location,
-                ast->nodes[n].info.location,
+                ast->nodes[n].binop.op_location,
                 ast->nodes[rhs].info.location,
                 type_to_db_name(left_type),
                 type_to_db_name(right_type));

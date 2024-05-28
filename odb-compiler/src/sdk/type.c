@@ -29,7 +29,7 @@ type_to_db_name(enum type type)
     switch (type)
     {
         case TYPE_INVALID: break;
-        case TYPE_VOID: break;
+        case TYPE_VOID: return "VOID";
         case TYPE_LONG: return "LONG INTEGER";
         case TYPE_DWORD: return "DWORD";
         case TYPE_INTEGER: return "INTEGER";

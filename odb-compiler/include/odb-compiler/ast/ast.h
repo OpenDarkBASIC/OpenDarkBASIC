@@ -177,6 +177,7 @@ union ast_node
         ast_id parent;
         ast_id left;
         ast_id right;
+        struct utf8_span op_location;
         enum binop_type op;
     } binop;
 
@@ -274,7 +275,7 @@ ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct ut
 ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
 ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
 ast_id ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-ast_id ast_binop(struct ast* ast, enum binop_type op, ast_id left, ast_id right, struct utf8_span location);
+ast_id ast_binop(struct ast* ast, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_unop(struct ast* ast, enum unop_type op, ast_id expr, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);

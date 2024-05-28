@@ -231,12 +231,12 @@ expr
   | BNOT expr %prec UNOT                    { $$ = ast_unop(ctx->ast, UNOP_BITWISE_NOT, $2, @$); }
   | LNOT expr                               { $$ = ast_unop(ctx->ast, UNOP_LOGICAL_NOT, $2, @$); }
   /* Binary operators */
-  | expr '+' expr                           { $$ = ast_binop(ctx->ast, BINOP_ADD, $1, $3, @$); }
-  | expr '-' expr                           { $$ = ast_binop(ctx->ast, BINOP_SUB, $1, $3, @$); }
-  | expr '*' expr                           { $$ = ast_binop(ctx->ast, BINOP_MUL, $1, $3, @$); }
-  | expr '/' expr                           { $$ = ast_binop(ctx->ast, BINOP_DIV, $1, $3, @$); }
-  | expr MOD expr                           { $$ = ast_binop(ctx->ast, BINOP_MOD, $1, $3, @$); }
-  | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @$); }
+  | expr '+' expr                           { $$ = ast_binop(ctx->ast, BINOP_ADD, $1, $3, @2, @$); }
+  | expr '-' expr                           { $$ = ast_binop(ctx->ast, BINOP_SUB, $1, $3, @2, @$); }
+  | expr '*' expr                           { $$ = ast_binop(ctx->ast, BINOP_MUL, $1, $3, @2, @$); }
+  | expr '/' expr                           { $$ = ast_binop(ctx->ast, BINOP_DIV, $1, $3, @2, @$); }
+  | expr MOD expr                           { $$ = ast_binop(ctx->ast, BINOP_MOD, $1, $3, @2, @$); }
+  | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
   | annotated_identifier                    { $$ = $1; }

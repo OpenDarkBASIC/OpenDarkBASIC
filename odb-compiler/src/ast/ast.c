@@ -150,6 +150,7 @@ ast_binop(
     enum binop_type  op,
     ast_id           left,
     ast_id           right,
+    struct utf8_span op_location,
     struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_BINOP, location);
@@ -157,6 +158,7 @@ ast_binop(
         return -1;
     ast->nodes[n].binop.left = left;
     ast->nodes[n].binop.right = right;
+    ast->nodes[n].binop.op_location = op_location;
     ast->nodes[n].binop.op = op;
     return n;
 }
