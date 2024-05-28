@@ -29,7 +29,10 @@ odbsdk_deinit(void)
 int
 odbsdk_threadlocal_init(void)
 {
-    return mem_threadlocal_init();
+    if (mem_threadlocal_init() != 0)
+        return -1;
+
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */

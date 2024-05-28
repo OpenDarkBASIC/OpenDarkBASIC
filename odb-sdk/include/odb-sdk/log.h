@@ -13,7 +13,7 @@ struct log_interface
     char use_color;
 };
 
-ODBSDK_PUBLIC_API void
+void
 log_init(void);
 
 ODBSDK_PUBLIC_API struct log_interface

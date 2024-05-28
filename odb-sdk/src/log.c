@@ -8,22 +8,6 @@ static char                 progress_active;
 static struct log_interface g_log;
 
 /* ------------------------------------------------------------------------- */
-#if defined(ODBSDK_PLATFORM_WINDOWS)
-#else
-#include <unistd.h>
-#endif
-
-static int
-stream_is_terminal(FILE* fp)
-{
-#if defined(ODBSDK_PLATFORM_WINDOWS)
-    return 1;
-#else
-    return isatty(fileno(fp));
-#endif
-}
-
-/* ------------------------------------------------------------------------- */
 static void
 default_write_func(const char* fmt, va_list ap)
 {
@@ -49,7 +33,7 @@ void
 log_init(void)
 {
     g_log.write = default_write_func;
-    g_log.use_color = stream_is_terminal(stderr);
+    g_log.use_color = 1;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -255,7 +239,7 @@ next_control_sequence(
             if (memcmp(&fmt[*i], "hs", 2) == 0)
             {
                 (*i) += 2;
-                *start = lhs_style();
+                *start = lhsf_style();
                 *end = reset_style();
                 return 1;
             }
@@ -264,13 +248,13 @@ next_control_sequence(
             if (memcmp(&fmt[*i], "hs", 2) == 0)
             {
                 (*i) += 2;
-                *start = rhs_style();
+                *start = rhsf_style();
                 *end = reset_style();
                 return 1;
             }
             break;
         case 'u':
-            *start = lhs_style();
+            *start = lhsf_style();
             *end = reset_style();
             return 1;
     }
@@ -514,7 +498,7 @@ log_excerpt(
         log_printf("%s\n", reset_style());
 
         /* Gutter, but no line number because this line is for diagnostics */
-        log_printf("%*s | %s", gutter_indent - 1, "", lhsf_style());
+        log_printf("%*s | %s", gutter_indent - 1, "", lhs_style());
 
         /* Print diagnostics */
         for (indent = 0; j != block.len; j++)
@@ -534,13 +518,15 @@ log_excerpt(
                 log_putc('~');
             else if (j == loc.off - block.off + loc.len - 1)
             {
-                log_printf("< %s%s", highlight_text, reset_style());
+                log_printf(
+                    "< %s%s%s", lhsf_style(), highlight_text, reset_style());
                 break;
             }
 
             if (j >= loc.off - block.off + loc.len)
             {
-                log_printf(" %s%s", highlight_text, reset_style());
+                log_printf(
+                    " %s%s%s", lhsf_style(), highlight_text, reset_style());
                 break;
             }
         }
@@ -661,11 +647,11 @@ log_binop_excerpt(
         /* Gutter, but no line number because this line is for diagnostics */
         log_printf("%*s | ", gutter_indent - 1, "");
         if (j >= lhs.off - block.off && j < lhs.off - block.off + lhs.len)
-            log_printf("%s", lhsf_style());
+            log_printf("%s", lhs_style());
         if (j >= op.off - block.off && j < op.off - block.off + op.len)
             log_printf("%s", op_style());
         if (j >= rhs.off - block.off && j < rhs.off - block.off + rhs.len)
-            log_printf("%s", rhsf_style());
+            log_printf("%s", rhs_style());
 
         /* Print diagnostics */
         for (indent = 0; j != block.len; j++)
@@ -674,15 +660,15 @@ log_binop_excerpt(
                 break;
 
             if (j == lhs.off - block.off)
-                log_printf("%s", lhsf_style());
+                log_printf("%s", lhs_style());
             if (j == lhs.off - block.off + lhs.len)
                 log_printf("%s", reset_style());
             if (j == op.off - block.off)
-                log_printf("%s", opf_style());
+                log_printf("%s", op_style());
             if (j == op.off - block.off + op.len)
                 log_printf("%s", reset_style());
             if (j == rhs.off - block.off)
-                log_printf("%s", rhsf_style());
+                log_printf("%s", rhs_style());
             if (j == rhs.off - block.off + rhs.len)
                 log_printf("%s", reset_style());
 

@@ -122,11 +122,11 @@ report_error(
     {
         cmd_id* pcmd;
         log_flc(
-            "{e:semantic error:} ",
+            "{e:error:} ",
             source_filename,
             source.text.data,
             params_loc,
-            "Parameter mismatch: Command has ambiguous overloads.\n");
+            "Command has ambiguous overloads.\n");
         log_excerpt(source_filename, source.text.data, params_loc, "");
         log_flc(
             "{n:note:} ",
@@ -159,7 +159,7 @@ report_error(
                     utf8_list_cstr(param_names, i),
                     type_to_db_name(vec_get(*param_types, i)->type));
             }
-            log_raw("%s\n", ret_type == TYPE_VOID ? "" : ")");
+            log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
             log_raw("[%s]\n", utf8_cstr(plugin->name));
         }
         log_flc(
@@ -176,7 +176,7 @@ report_error(
     {
         struct utf8_view cmd_name;
         log_flc(
-            "{e:semantic error:} ",
+            "{e:error:} ",
             source_filename,
             source.text.data,
             params_loc,
@@ -297,6 +297,8 @@ resolve_cmd_overloads(
 
         /* Update command ID in AST */
         ast->nodes[n].cmd.id = *vec_first(candidates);
+
+        /* TODO: Warn about lossy conversions here */
     }
 
     candidates_deinit(&candidates);

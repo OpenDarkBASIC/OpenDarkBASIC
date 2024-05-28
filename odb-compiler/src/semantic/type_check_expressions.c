@@ -53,7 +53,7 @@ resolve_expression(
             if (left_to_right == TP_LOSS_OF_INFO)
             {
                 log_flc(
-                    "{w:semantic warning:} ",
+                    "{w:warning:} ",
                     source_filename,
                     source.text.data,
                     ast->nodes[n].info.location,
@@ -74,7 +74,7 @@ resolve_expression(
             if (right_to_left == TP_LOSS_OF_INFO)
             {
                 log_flc(
-                    "{w:semantic warning:} ",
+                    "{w:warning:} ",
                     source_filename,
                     source.text.data,
                     ast->nodes[n].info.location,
@@ -95,7 +95,7 @@ resolve_expression(
 
             /* Invalid conversion */
             log_flc(
-                "{e:semantic error:} ",
+                "{e:error:} ",
                 source_filename,
                 source.text.data,
                 ast->nodes[n].info.location,

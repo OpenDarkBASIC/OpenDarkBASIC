@@ -6,6 +6,7 @@ project ("core-commands"
 
 odb_add_plugin (core-commands
     SOURCES
+        "src/dll.c"
         "src/print_stdout.c"
         "src/str.c"
         "src/val.c"

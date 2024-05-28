@@ -309,7 +309,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     if (lookahead != YYSYMBOL_YYEMPTY)
     {
         log_flc(
-            "{e:syntax error: }",
+            "{e:error: }",
             parse_param->filename,
             parse_param->source,
             *yypcontext_location(ctx),
