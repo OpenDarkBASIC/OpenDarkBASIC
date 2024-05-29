@@ -100,7 +100,8 @@ enum ast_type
     AST_FLOAT_LITERAL,
     AST_DOUBLE_LITERAL,
     /*! String. Should be UTF-8 encoded. */
-    AST_STRING_LITERAL
+    AST_STRING_LITERAL,
+    AST_CAST
 };
 
 /* clang-format off */
@@ -247,6 +248,13 @@ union ast_node
         ast_id _pad1, _pad2;
         struct utf8_span str;
     } string_literal;
+
+    struct cast {
+        struct info info;
+        ast_id parent;
+        ast_id expr;
+        ast_id _pad;
+    } cast;
 };
 
 struct ast
@@ -282,4 +290,5 @@ ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span
 ast_id ast_float_literal(struct ast* ast, float value, struct utf8_span location);
 ast_id ast_double_literal(struct ast* ast, double value, struct utf8_span location);
 ast_id ast_string_literal(struct ast* ast, struct utf8_span str, struct utf8_span location);
+ast_id ast_cast(struct ast* ast, ast_id expr, enum type target_type, struct utf8_span location);
 /* clang-format on */

@@ -21,8 +21,8 @@ typedef int32_t mem_idx;
 
 #if !defined(ODBSDK_MEM_DEBUGGING)
 #   include <stdlib.h>
-#   define mem_threadlocal_init() (0)
-#   define mem_threadlocal_deinit()
+#   define mem_init() (0)
+#   define mem_deinit()
 #   define mem_alloc     malloc
 #   define mem_free      free
 #   define mem_realloc   realloc
@@ -31,25 +31,23 @@ typedef int32_t mem_idx;
 #else
 
 /*!
- * @brief Initializes memory tracking for the current thread. Must be
- * called for every thread. This is called from cs_threadlocal_init().
+ * @brief Initializes memory tracking. This is called by odbsdk_init().
  *
  * In release mode this does nothing. In debug mode it will initialize
  * memory reports and backtraces, if enabled.
  */
-ODBSDK_PRIVATE_API int
-mem_threadlocal_init(void);
+int
+mem_init(void);
 
 /*!
- * @brief De-initializes memory tracking for the current thread. This is called
- * from cs_threadlocal_deinit().
+ * @brief De-initializes memory tracking. This is called from odbsdk_deinit().
  *
  * In release mode this does nothing. In debug mode this will output the memory
  * report and print backtraces, if enabled.
  * @return Returns the number of memory leaks.
  */
-ODBSDK_PRIVATE_API mem_size
-mem_threadlocal_deinit(void);
+mem_size
+mem_deinit(void);
 
 /*!
  * @brief Does the same thing as a normal call to malloc(), but does some

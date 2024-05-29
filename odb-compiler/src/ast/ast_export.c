@@ -2,6 +2,7 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/sdk/type.h"
 #include <stdio.h>
 
 static void
@@ -139,6 +140,12 @@ write_nodes(
                 nd->string_literal.str.len,
                 source->text.data + nd->string_literal.str.off);
             break;
+        case AST_CAST:
+            fprintf(
+                fp,
+                "  n%d [label=\"cast<%s>\"];\n",
+                n,
+                type_to_db_name(nd->info.type_info));
     }
 
     if (nd->base.left >= 0)

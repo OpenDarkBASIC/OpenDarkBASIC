@@ -230,8 +230,8 @@ gen_cmd_call(
     // Match up each function argument with its corresponding
     // parameter.
     // Command overload resolution is done in a previous step, so
-    // it should be OK to assume that both lists have the same
-    // length and that the types match here.
+    // it's OK to assume that both lists have the same length and matching
+    // types.
     llvm::SmallVector<llvm::Value*, 8> param_values;
     for (a = 0, arglist = ast->nodes[cmd].cmd.arglist; a != F->arg_size();
          ++a, arglist = ast->nodes[arglist].arglist.next)
@@ -290,6 +290,7 @@ gen_expr(
         case AST_IDENTIFIER: break;
 
         case AST_BINOP: {
+            enum type    result_type = ast->nodes[expr].binop.info.type_info;
             llvm::Value* lhs = gen_expr(
                 ast,
                 ast->nodes[expr].binop.left,
@@ -310,16 +311,25 @@ gen_expr(
                 plugin_symbol_table,
                 mod,
                 BB);
-            llvm::Type* result_type = dbpro_cmd_param_type_to_llvm(
-                ast->nodes[expr].binop.info.type_info, mod);
-            llvm::Value* lhs_cast = b.CreateIntCast(lhs, result_type, true);
-            llvm::Value* rhs_cast = b.CreateIntCast(rhs, result_type, true);
             switch (ast->nodes[expr].binop.op)
             {
-                case BINOP_ADD: return b.CreateAdd(lhs_cast, rhs_cast);
+                case BINOP_ADD:
+                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
+                        return b.CreateFAdd(lhs, rhs);
+                    return b.CreateAdd(lhs, rhs);
                 case BINOP_SUB:
+                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
+                        return b.CreateFSub(lhs, rhs);
+                    return b.CreateSub(lhs, rhs);
                 case BINOP_MUL:
+                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
+                        return b.CreateFMul(lhs, rhs);
+                    return b.CreateMul(lhs, rhs);
                 case BINOP_DIV:
+                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
+                        return b.CreateFDiv(lhs, rhs);
+                    //return b.CreateUDiv(lhs, rhs);
+                    break;
                 case BINOP_MOD:
                 case BINOP_POW:
                 case BINOP_SHIFT_LEFT:
@@ -388,6 +398,51 @@ gen_expr(
             llvm::StringRef  str_ref(source.text.data + span.off, span.len);
             return string_table->find(str_ref)->getValue();
         }
+
+        case AST_CAST: {
+            /* clang-format off */
+            using Op = llvm::Instruction::CastOps;
+            Op O = Op::CastOpsBegin;
+            static const Op llvm_cast_ops[16][16] = {
+     /*          0 R          D          L          W          Y          B           F           O          S H P Q X           E */
+              {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
+     /* 0 */  {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
+     /* R */  {O,O,Op::SExt,  Op::Trunc, Op::Trunc, Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* D */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* L */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* W */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* Y */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* B */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,   Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* F */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPExt,  Op::FPExt, O,O,O,O,Op::BitCast,O},
+     /* O */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPTrunc,Op::FPExt, O,O,O,O,Op::BitCast,O},
+     /* S */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* H */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* P */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* Q */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* X */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* E */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+            };
+            /* clang-format on */
+
+            llvm::Value* value = gen_expr(
+                ast,
+                ast->nodes[expr].cast.expr,
+                cmds,
+                source_filename,
+                source,
+                string_table,
+                plugin_symbol_table,
+                mod,
+                BB);
+            enum type from
+                = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
+            enum type to = ast->nodes[expr].cast.info.type_info;
+            return b.CreateCast(
+                llvm_cast_ops[from][to],
+                value,
+                dbpro_cmd_param_type_to_llvm(to, mod));
+        }
+        break;
     }
 
     log_err(
@@ -476,11 +531,14 @@ odb_codegen(
 
     // Entry point of the program
     llvm::Function* F = llvm::Function::Create(
-        llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
+        llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ctx),
+            {llvm::Type::getInt32Ty(ctx), llvm::PointerType::getUnqual(ctx)},
+            false),
         llvm::Function::ExternalLinkage,
         "main",
         &mod);
-    F->setDoesNotReturn();
+    // F->setDoesNotReturn();
 
     // Translate AST
     llvm::BasicBlock* BB = gen_block(
@@ -503,42 +561,32 @@ odb_codegen(
             llvm::Function::ExternalLinkage,
             "odbsdk_init",
             &mod);
-        llvm::Function* FSDKInitTL = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ctx), {}, false),
-            llvm::Function::ExternalLinkage,
-            "odbsdk_threadlocal_init",
-            &mod);
-
         b.SetInsertPoint(BB->getFirstInsertionPt());
         b.CreateCall(FSDKInit, {});
-        b.CreateCall(FSDKInitTL, {});
 
-        llvm::Function* FSDKDeInitTL = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
-            llvm::Function::ExternalLinkage,
-            "odbsdk_threadlocal_deinit",
-            &mod);
         llvm::Function* FSDKDeInit = llvm::Function::Create(
             llvm::FunctionType::get(llvm::Type::getVoidTy(ctx), {}, false),
             llvm::Function::ExternalLinkage,
             "odbsdk_deinit",
             &mod);
-
         b.SetInsertPoint(BB);
-        b.CreateCall(FSDKDeInitTL, {});
         b.CreateCall(FSDKDeInit, {});
     }
 
     // Exit process call
-    llvm::Function* FExitProcess = llvm::Function::Create(
-        llvm::FunctionType::get(
-            llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
-        llvm::Function::ExternalLinkage,
-        platform == ODB_CODEGEN_WINDOWS ? "ExitProcess" : "_exit",
-        &mod);
-    FExitProcess->setDoesNotReturn();
-    b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
-    b.CreateRetVoid();
+    // llvm::Function* FExitProcess = llvm::Function::Create(
+    //    llvm::FunctionType::get(
+    //        llvm::Type::getVoidTy(ctx), {llvm::Type::getInt32Ty(ctx)}, false),
+    //    llvm::Function::ExternalLinkage,
+    //    platform == ODB_CODEGEN_WINDOWS ? "ExitProcess" : "_exit",
+    //    &mod);
+    // FExitProcess->setDoesNotReturn();
+    // b.CreateCall(FExitProcess, llvm::ConstantInt::get(ctx, llvm::APInt(32,
+    // 0)));
+
+    // Finish off block
+    // b.CreateRetVoid();
+    b.CreateRet(llvm::ConstantInt::get(ctx, llvm::APInt(32, 0)));
 
     if (platform == ODB_CODEGEN_WINDOWS)
     {

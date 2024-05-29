@@ -15,12 +15,10 @@ public:
     {
         testing::FLAGS_gtest_death_test_style = "threadsafe";
         ASSERT_THAT(odbsdk_init(), Eq(0));
-        ASSERT_THAT(odbsdk_threadlocal_init(), Eq(0));
     }
 
     virtual void TearDown()
     {
-        odbsdk_threadlocal_deinit();
         odbsdk_deinit();
     }
 };

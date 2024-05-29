@@ -78,7 +78,13 @@ log_flc(const char* severity, const char* filename, const char* source, struct u
 { va_list ap; va_start(ap, fmt); log_vflc(severity, filename, source, location, fmt, ap); va_end(ap); }
 
 ODBSDK_PUBLIC_API void
-log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* highlight_text);
+log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* annotation);
+
+ODBSDK_PUBLIC_API void
+log_excerpt2(
+    const char* filename, const char* source,
+    struct utf8_span loc1, struct utf8_span loc2,
+    const char* annotation1, const char* annotation2);
 
 ODBSDK_PUBLIC_API void
 log_binop_excerpt(

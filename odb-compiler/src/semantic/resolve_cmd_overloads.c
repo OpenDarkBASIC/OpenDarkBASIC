@@ -297,8 +297,6 @@ resolve_cmd_overloads(
 
         /* Update command ID in AST */
         ast->nodes[n].cmd.id = *vec_first(candidates);
-
-        /* TODO: Warn about lossy conversions here */
     }
 
     candidates_deinit(&candidates);

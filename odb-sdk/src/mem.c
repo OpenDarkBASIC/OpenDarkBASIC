@@ -31,7 +31,7 @@ struct report_info
 #endif
 };
 
-static ODBSDK_THREADLOCAL struct state state;
+static struct state state;
 
 /* ------------------------------------------------------------------------- */
 static int
@@ -40,7 +40,7 @@ report_info_cmp(const void* a, const void* b, int size)
     return memcmp(a, b, (size_t)size);
 }
 int
-mem_threadlocal_init(void)
+mem_init(void)
 {
     state.allocations = 0;
     state.deallocations = 0;
@@ -243,7 +243,7 @@ mem_free(void* p)
 
 /* ------------------------------------------------------------------------- */
 mem_size
-mem_threadlocal_deinit(void)
+mem_deinit(void)
 {
     uintptr_t leaks;
 

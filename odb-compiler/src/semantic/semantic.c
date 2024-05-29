@@ -20,6 +20,10 @@ semantic_checks_run(
             ast, plugins, cmds, source_filename, source)
         != 0)
         return -1;
+    if (semantic_insert_explicit_type_casts.execute(
+            ast, plugins, cmds, source_filename, source)
+        != 0)
+        return -1;
 
     return 0;
 }

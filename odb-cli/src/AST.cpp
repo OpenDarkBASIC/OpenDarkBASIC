@@ -6,6 +6,7 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_source.h"
+#include "odb-compiler/semantic/semantic.h"
 #include "odb-sdk/log.h"
 }
 
@@ -45,8 +46,13 @@ parseDBA(const std::vector<std::string>& args)
         auto& result = results.emplace_back();
 
         result.source_filename = arg;
-        log_info("[ast] ", "Parsing file {quote:%s}\n", result.source_filename.c_str());
-        if (db_source_open_file(&result.source, cstr_ospathc(result.source_filename.c_str())) != 0)
+        log_info(
+            "[ast] ",
+            "Parsing file {quote:%s}\n",
+            result.source_filename.c_str());
+        if (db_source_open_file(
+                &result.source, cstr_ospathc(result.source_filename.c_str()))
+            != 0)
             goto open_source_failed;
 
         if (db_parser_init(&result.parser) != 0)
@@ -59,6 +65,15 @@ parseDBA(const std::vector<std::string>& args)
                 result.source_filename.c_str(),
                 result.source,
                 getCommandList())
+            != 0)
+            goto parse_failed;
+
+        if (semantic_checks_run(
+                getAST(),
+                getPluginList(),
+                getCommandList(),
+                getSourceFilename(),
+                getSource())
             != 0)
             goto parse_failed;
 

@@ -237,6 +237,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/semantic.h"
     "src/semantic/semantic.c"
     "src/semantic/expand_constant_declarations.c"
+    "src/semantic/insert_explicit_type_casts.c"
     "src/semantic/resolve_cmd_overloads.c"
     "src/semantic/type_check_expressions.c"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
@@ -373,7 +374,10 @@ target_link_libraries (odb-compiler
         lldELF
         lldMachO)
 
-target_include_directories (odb-compiler PRIVATE ${LLVM_INCLUDE_DIRS})
+target_include_directories (odb-compiler
+    PRIVATE 
+        ${LLVM_INCLUDE_DIRS}
+        ${LLD_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
 
 # Push LLVM binary dir to parent scope.

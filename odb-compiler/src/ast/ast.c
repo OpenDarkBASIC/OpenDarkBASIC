@@ -282,3 +282,18 @@ ast_string_literal(
     ast->nodes[n].string_literal.str = str;
     return n;
 }
+
+ast_id
+ast_cast(
+    struct ast*      ast,
+    ast_id           expr,
+    enum type        target_type,
+    struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_CAST, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].cast.expr = expr;
+    ast->nodes[n].info.type_info = target_type;
+    return n;
+}

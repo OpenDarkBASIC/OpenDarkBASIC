@@ -59,7 +59,7 @@ link_linux(
 
     args.push_back("ld.lld");
     args.push_back("--nostdlib");
-    args.push_back("--entry=main");
+    //args.push_back("--entry=main");
     args.push_back("--rpath=./lib:./odb-sdk/plugins");
 
     switch (arch)
@@ -84,14 +84,15 @@ link_linux(
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
+    
+    args.push_back("./odb-sdk/plugins/core-commands.so");
+    //args.push_back("./odb-sdk/plugins/test-plugin.so");
 
     args.push_back("-L./lib");
     args.push_back("-lodb-sdk");
 
+    args.push_back("/usr/lib64/crt1.o");
     args.push_back("-lc");
-
-    args.push_back("./odb-sdk/plugins/core-commands.so");
-    args.push_back("./odb-sdk/plugins/test-plugin.so");
 
     if (lld::elf::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;

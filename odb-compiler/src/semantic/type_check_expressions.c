@@ -99,7 +99,8 @@ resolve_expression(
                 source_filename,
                 source.text.data,
                 ast->nodes[n].info.location,
-                "Cannot convert from {lhs:%s} to {rhs:%s} in binary expression\n",
+                "Cannot convert from {lhs:%s} to {rhs:%s} in binary "
+                "expression\n",
                 type_to_db_name(left_type),
                 type_to_db_name(right_type));
             log_binop_excerpt(
@@ -134,6 +135,36 @@ resolve_expression(
             return ast->nodes[n].double_literal.info.type_info = TYPE_DOUBLE;
         case AST_STRING_LITERAL:
             return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
+        case AST_CAST: {
+            int       expr = ast->nodes[n].cast.expr;
+            enum type from
+                = resolve_expression(ast, expr, cmds, source_filename, source);
+            enum type to = ast->nodes[n].info.type_info;
+
+            if (type_promote(from, to) == TP_DISALLOW)
+            {
+                log_flc(
+                    "{e:error:} ",
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[n].info.location,
+                    "Cannot cast from {lhs:%s} to {rhs:%s} -- Types are "
+                    "incompatible\n",
+                    type_to_db_name(from),
+                    type_to_db_name(to));
+                log_excerpt2(
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[expr].info.location,
+                    ast->nodes[n].info.location,
+                    type_to_db_name(from),
+                    type_to_db_name(to));
+                break;
+            }
+
+            return to;
+        }
+        break;
     }
 
     return (enum type) - 1;
@@ -192,7 +223,8 @@ resolve_assignments(
             case AST_DOUBLE_INTEGER_LITERAL:
             case AST_FLOAT_LITERAL:
             case AST_DOUBLE_LITERAL:
-            case AST_STRING_LITERAL: break;
+            case AST_STRING_LITERAL:
+            case AST_CAST: break;
         }
 
     return 0;

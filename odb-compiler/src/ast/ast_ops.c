@@ -45,7 +45,8 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
 void
 ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
-    ODBSDK_DEBUG_ASSERT(ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type);
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type);
 
 #define SWAP(T, node_name, field)                                              \
     {                                                                          \
@@ -78,6 +79,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_DOUBLE_LITERAL: SWAP(double, double_literal, value) break;
         case AST_STRING_LITERAL:
             SWAP(struct utf8_span, string_literal, str) break;
+        case AST_CAST: break;
     }
 #undef SWAP
 }
@@ -141,6 +143,8 @@ ast_trees_equal(
     ast_id                  n2)
 {
     if (a1->nodes[n1].info.node_type != a2->nodes[n2].info.node_type)
+        return 0;
+    if (a1->nodes[n1].info.type_info != a2->nodes[n2].info.type_info)
         return 0;
 
     switch (a1->nodes[n1].info.node_type)
@@ -219,6 +223,7 @@ ast_trees_equal(
                         source->text.data, a2->nodes[n2].string_literal.str)))
                 return 0;
             break;
+        case AST_CAST: break;
     }
 
     if (a1->nodes[n1].base.left >= 0 && a2->nodes[n2].base.left < 0)
@@ -251,4 +256,3 @@ ast_trees_equal(
 
     return 1;
 }
-

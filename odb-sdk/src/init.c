@@ -11,9 +11,13 @@ odbsdk_init(void)
 
     if (backtrace_init() < 0)
         goto backtrace_init_failed;
+    if (mem_init() != 0)
+        goto init_mem_failed;
 
     return 0;
 
+init_mem_failed:
+    backtrace_deinit();
 backtrace_init_failed:
     return -1;
 }
@@ -22,22 +26,7 @@ backtrace_init_failed:
 void
 odbsdk_deinit(void)
 {
+    mem_deinit();
     backtrace_deinit();
 }
 
-/* ------------------------------------------------------------------------- */
-int
-odbsdk_threadlocal_init(void)
-{
-    if (mem_threadlocal_init() != 0)
-        return -1;
-
-    return 0;
-}
-
-/* ------------------------------------------------------------------------- */
-void
-odbsdk_threadlocal_deinit(void)
-{
-    mem_threadlocal_deinit();
-}
