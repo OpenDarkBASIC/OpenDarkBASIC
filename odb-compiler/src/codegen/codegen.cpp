@@ -1,3 +1,4 @@
+#include "llvm/IR/Intrinsics.h"
 #include "odb-compiler/sdk/sdk.h"
 extern "C" {
 #include "odb-compiler/ast/ast.h"
@@ -290,10 +291,14 @@ gen_expr(
         case AST_IDENTIFIER: break;
 
         case AST_BINOP: {
+            ast_id       lhs_node = ast->nodes[expr].binop.left;
+            ast_id       rhs_node = ast->nodes[expr].binop.right;
+            enum type    lhs_type = ast->nodes[lhs_node].info.type_info;
+            enum type    rhs_type = ast->nodes[rhs_node].info.type_info;
             enum type    result_type = ast->nodes[expr].binop.info.type_info;
             llvm::Value* lhs = gen_expr(
                 ast,
-                ast->nodes[expr].binop.left,
+                lhs_node,
                 cmds,
                 source_filename,
                 source,
@@ -303,7 +308,7 @@ gen_expr(
                 BB);
             llvm::Value* rhs = gen_expr(
                 ast,
-                ast->nodes[expr].binop.right,
+                rhs_node,
                 cmds,
                 source_filename,
                 source,
@@ -311,27 +316,186 @@ gen_expr(
                 plugin_symbol_table,
                 mod,
                 BB);
+
+            /* Handle string operations seperately from arithmetic, since there
+             * are only a handful of ops that are valid */
+            if (result_type == TYPE_STRING)
+            {
+                // TODO
+                return nullptr;
+            }
+
+            enum TypeFamily
+            {
+                INT,
+                UINT,
+                FLOAT
+            } type_family
+                = INT;
+            switch (result_type)
+            {
+                case TYPE_INVALID:
+                case TYPE_VOID:
+                case TYPE_STRING:
+                case TYPE_ARRAY:
+                case TYPE_LABEL:
+                case TYPE_DABEL:
+                case TYPE_ANY:
+                case TYPE_USER_DEFINED_VAR_PTR:
+                    ODBSDK_DEBUG_ASSERT(false);
+                    return nullptr;
+
+                case TYPE_BOOLEAN:
+                case TYPE_INTEGER:
+                case TYPE_LONG: type_family = INT; break;
+
+                case TYPE_DWORD:
+                case TYPE_WORD:
+                case TYPE_BYTE: type_family = UINT; break;
+
+                case TYPE_FLOAT:
+                case TYPE_DOUBLE: type_family = FLOAT; break;
+            }
+
             switch (ast->nodes[expr].binop.op)
             {
                 case BINOP_ADD:
-                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
-                        return b.CreateFAdd(lhs, rhs);
-                    return b.CreateAdd(lhs, rhs);
+                    switch (type_family)
+                    {
+                        case INT: return b.CreateNSWAdd(lhs, rhs);
+                        case UINT: return b.CreateAdd(lhs, rhs);
+                        case FLOAT: return b.CreateFAdd(lhs, rhs);
+                    }
+                    break;
                 case BINOP_SUB:
-                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
-                        return b.CreateFSub(lhs, rhs);
-                    return b.CreateSub(lhs, rhs);
+                    switch (type_family)
+                    {
+                        case INT: return b.CreateNSWSub(lhs, rhs);
+                        case UINT: return b.CreateSub(lhs, rhs);
+                        case FLOAT: return b.CreateFSub(lhs, rhs);
+                    }
+                    break;
                 case BINOP_MUL:
-                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
-                        return b.CreateFMul(lhs, rhs);
-                    return b.CreateMul(lhs, rhs);
+                    switch (type_family)
+                    {
+                        case INT: return b.CreateNSWMul(lhs, rhs);
+                        case UINT: return b.CreateMul(lhs, rhs);
+                        case FLOAT: return b.CreateFMul(lhs, rhs);
+                    }
+                    break;
                 case BINOP_DIV:
-                    if (result_type == TYPE_FLOAT || result_type == TYPE_DOUBLE)
-                        return b.CreateFDiv(lhs, rhs);
-                    //return b.CreateUDiv(lhs, rhs);
+                    switch (type_family)
+                    {
+                        case INT: return b.CreateSDiv(lhs, rhs);
+                        case UINT: return b.CreateUDiv(lhs, rhs);
+                        case FLOAT: return b.CreateFDiv(lhs, rhs);
+                    }
                     break;
                 case BINOP_MOD:
+                    switch (type_family)
+                    {
+                        case INT: return b.CreateSRem(lhs, rhs);
+                        case UINT: return b.CreateURem(lhs, rhs);
+                        case FLOAT: return b.CreateFRem(lhs, rhs);
+                    }
+                    break;
                 case BINOP_POW:
+                    switch (lhs_type)
+                    {
+                        case TYPE_FLOAT: {
+                            switch (rhs_type)
+                            {
+                                case TYPE_INVALID:
+                                case TYPE_VOID:
+                                case TYPE_STRING:
+                                case TYPE_ARRAY:
+                                case TYPE_LABEL:
+                                case TYPE_DABEL:
+                                case TYPE_ANY:
+                                case TYPE_USER_DEFINED_VAR_PTR: break;
+
+                                case TYPE_LONG:
+                                case TYPE_DWORD:
+                                case TYPE_INTEGER:
+                                case TYPE_WORD:
+                                case TYPE_BYTE:
+                                case TYPE_BOOLEAN: {
+                                    llvm::Function* FPowi
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::powi,
+                                            llvm::Type::getFloatTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPowi, {lhs, rhs});
+                                }
+                                case TYPE_FLOAT: {
+                                    llvm::Function* FPow
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::pow,
+                                            llvm::Type::getFloatTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPow, {lhs, rhs});
+                                }
+                                case TYPE_DOUBLE: {
+                                    llvm::Function* FPow
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::pow,
+                                            llvm::Type::getDoubleTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPow, {lhs, rhs});
+                                }
+                            }
+                        }
+                        case TYPE_DOUBLE: {
+                            switch (rhs_type)
+                            {
+                                case TYPE_INVALID:
+                                case TYPE_VOID:
+                                case TYPE_STRING:
+                                case TYPE_ARRAY:
+                                case TYPE_LABEL:
+                                case TYPE_DABEL:
+                                case TYPE_ANY:
+                                case TYPE_USER_DEFINED_VAR_PTR: break;
+
+                                case TYPE_LONG:
+                                case TYPE_DWORD:
+                                case TYPE_INTEGER:
+                                case TYPE_WORD:
+                                case TYPE_BYTE:
+                                case TYPE_BOOLEAN: {
+                                    llvm::Function* FPowi
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::powi,
+                                            llvm::Type::getFloatTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPowi, {lhs, rhs});
+                                }
+                                case TYPE_FLOAT: {
+                                    llvm::Function* FPow
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::pow,
+                                            llvm::Type::getFloatTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPow, {lhs, rhs});
+                                }
+                                case TYPE_DOUBLE: {
+                                    llvm::Function* FPow
+                                        = llvm::Intrinsic::getDeclaration(
+                                            mod,
+                                            llvm::Intrinsic::pow,
+                                            llvm::Type::getDoubleTy(
+                                                mod->getContext()));
+                                    return b.CreateCall(FPow, {lhs, rhs});
+                                }
+                            }
+                        }
+                    }
+                    break;
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
                 case BINOP_BITWISE_OR:

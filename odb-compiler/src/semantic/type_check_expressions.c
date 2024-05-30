@@ -4,7 +4,8 @@
 #include "odb-sdk/log.h"
 
 #define LOSSY_BINOP                                                            \
-    "Narrowing conversion from {lhs:%s} to {rhs:%s} in binary expression\n"
+    "Value is truncated when converting from {lhs:%s} to {rhs:%s} in binary "  \
+    "expression\n"
 #define STRANGE_BINOP                                                          \
     "Strange conversion from {lhs:%s} to {rhs:%s} in binary expression\n"
 #define ERROR_BINOP                                                            \
@@ -153,46 +154,139 @@ resolve_expression(
             enum type right_type
                 = resolve_expression(ast, rhs, cmds, source_filename, source);
 
-            enum type_promotion_result left_to_right
-                = type_promote(left_type, right_type);
-            enum type_promotion_result right_to_left
-                = type_promote(right_type, left_type);
-
-            /* Prefer TP_ALLOW over TP_STRANGE */
-            if (left_to_right == TP_ALLOW)
-                return ast->nodes[n].info.type_info = right_type;
-            if (right_to_left == TP_ALLOW)
-                return ast->nodes[n].info.type_info = left_type;
-
-            if (left_to_right == TP_STRANGE)
+            switch (ast->nodes[n].binop.op)
             {
-                ast->nodes[n].info.type_info = right_type;
-                log_strange_binop(ast, n, lhs, rhs, source_filename, source);
-                return right_type;
-            }
-            if (right_to_left == TP_STRANGE)
-            {
-                ast->nodes[n].info.type_info = left_type;
-                log_strange_binop(ast, n, rhs, lhs, source_filename, source);
-                return left_type;
-            }
+                case BINOP_ADD:
+                case BINOP_SUB:
+                case BINOP_MUL:
+                case BINOP_DIV:
+                case BINOP_MOD: {
+                    enum type_promotion_result left_to_right
+                        = type_promote(left_type, right_type);
+                    enum type_promotion_result right_to_left
+                        = type_promote(right_type, left_type);
 
-            /* Fall back to conversions with loss of info, but log a warning */
-            if (left_to_right == TP_NARROWING)
-            {
-                ast->nodes[n].info.type_info = right_type;
-                log_narrow_binop(ast, n, lhs, rhs, source_filename, source);
-                return right_type;
-            }
-            if (right_to_left == TP_NARROWING)
-            {
-                ast->nodes[n].info.type_info = left_type;
-                log_narrow_binop(ast, n, rhs, lhs, source_filename, source);
-                return left_type;
-            }
+                    /* Prefer TP_ALLOW over TP_STRANGE */
+                    if (left_to_right == TP_ALLOW)
+                        return ast->nodes[n].info.type_info = right_type;
+                    if (right_to_left == TP_ALLOW)
+                        return ast->nodes[n].info.type_info = left_type;
 
-            /* Invalid conversion */
-            log_error_binop(ast, lhs, n, source_filename, source);
+                    if (left_to_right == TP_STRANGE)
+                    {
+                        ast->nodes[n].info.type_info = right_type;
+                        log_strange_binop(
+                            ast, n, lhs, rhs, source_filename, source);
+                        return right_type;
+                    }
+                    if (right_to_left == TP_STRANGE)
+                    {
+                        ast->nodes[n].info.type_info = left_type;
+                        log_strange_binop(
+                            ast, n, rhs, lhs, source_filename, source);
+                        return left_type;
+                    }
+
+                    /* Fall back to conversions with loss of info, but log a
+                     * warning
+                     */
+                    if (left_to_right == TP_NARROWING)
+                    {
+                        ast->nodes[n].info.type_info = right_type;
+                        log_narrow_binop(
+                            ast, n, lhs, rhs, source_filename, source);
+                        return right_type;
+                    }
+                    if (right_to_left == TP_NARROWING)
+                    {
+                        ast->nodes[n].info.type_info = left_type;
+                        log_narrow_binop(
+                            ast, n, rhs, lhs, source_filename, source);
+                        return left_type;
+                    }
+
+                    /* Invalid conversion */
+                    log_error_binop(ast, lhs, n, source_filename, source);
+                }
+                break;
+
+                case BINOP_POW:
+                    switch (right_type)
+                    {
+                        case TYPE_INVALID:
+                        case TYPE_VOID:
+                        case TYPE_STRING:
+                        case TYPE_ARRAY:
+                        case TYPE_LABEL:
+                        case TYPE_DABEL:
+                        case TYPE_ANY:
+                        case TYPE_USER_DEFINED_VAR_PTR: break;
+
+                        case TYPE_LONG:
+                        case TYPE_DWORD:
+                        case TYPE_INTEGER:
+                        case TYPE_WORD:
+                        case TYPE_BYTE:
+                        case TYPE_BOOLEAN:
+                            /* pow(f32/f64, i32) -- lhs is forced to f32 or
+                             * f64, rhs is forced to i32 */
+                            switch (type_promote(right_type, TYPE_INTEGER))
+                            {
+                                case TP_DISALLOW:
+                                case TP_ALLOW:
+                                case TP_NARROWING:
+                                case TP_STRANGE: break;
+                            }
+                            switch (type_promote(left_type, TYPE_DOUBLE))
+                            {
+                                case TP_DISALLOW:
+                                case TP_ALLOW:
+                                case TP_NARROWING:
+                                case TP_STRANGE: break;
+                            }
+                            break;
+                        case TYPE_FLOAT:
+                            /* pow(f32, f32) -- lhs is forced to f32 */
+                            switch (type_promote(left_type, TYPE_FLOAT))
+                            {
+                                case TP_DISALLOW:
+                                case TP_ALLOW:
+                                case TP_NARROWING:
+                                case TP_STRANGE: break;
+                            }
+                            break;
+                        case TYPE_DOUBLE:
+                            /* pow(f64, f64) -- lhs is forced to f64 */
+                            switch (type_promote(right_type, TYPE_DOUBLE))
+                            {
+                                case TP_DISALLOW:
+                                case TP_ALLOW:
+                                case TP_NARROWING:
+                                case TP_STRANGE: break;
+                            }
+                            break;
+                    }
+
+                    /* Invalid conversion */
+                    break;
+
+                case BINOP_SHIFT_LEFT:
+                case BINOP_SHIFT_RIGHT:
+                case BINOP_BITWISE_OR:
+                case BINOP_BITWISE_AND:
+                case BINOP_BITWISE_XOR:
+                case BINOP_BITWISE_NOT:
+
+                case BINOP_LESS_THAN:
+                case BINOP_LESS_EQUAL:
+                case BINOP_GREATER_THAN:
+                case BINOP_GREATER_EQUAL:
+                case BINOP_EQUAL:
+                case BINOP_NOT_EQUAL:
+                case BINOP_LOGICAL_OR:
+                case BINOP_LOGICAL_AND:
+                case BINOP_LOGICAL_XOR: break;
+            }
         }
         break;
 
@@ -251,8 +345,8 @@ resolve_expression(
                         source_filename,
                         source.text.data,
                         ast->nodes[n].info.location,
-                        "Narrowing conversion from {lhs:%s} to {rhs:%s} in "
-                        "expression\n",
+                        "Value is truncated when converting from {lhs:%s} to "
+                        "{rhs:%s} in expression\n",
                         type_to_db_name(source_type),
                         type_to_db_name(target_type));
                     log_excerpt2(

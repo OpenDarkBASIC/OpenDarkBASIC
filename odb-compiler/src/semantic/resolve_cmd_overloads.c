@@ -231,7 +231,7 @@ log_cmd_signature(
 
     log_note(
         "",
-        "{emph:%.*s}%s",
+        "Calling command: {emph:%.*s}%s",
         name.len,
         name.data + name.off,
         ret_type == TYPE_VOID ? " " : "(");
@@ -283,7 +283,7 @@ typecheck_arguments(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
-                    "Narrowing conversion argument %d from {lhs:%s} to "
+                    "Argument %d is truncated in conversion from {lhs:%s} to "
                     "{rhs:%s} in command call\n",
                     i + 1,
                     type_to_db_name(arg_type),
