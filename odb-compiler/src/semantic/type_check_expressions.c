@@ -3,6 +3,123 @@
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-sdk/log.h"
 
+#define LOSSY_BINOP                                                            \
+    "Narrowing conversion from {lhs:%s} to {rhs:%s} in binary expression\n"
+#define STRANGE_BINOP                                                          \
+    "Strange conversion from {lhs:%s} to {rhs:%s} in binary expression\n"
+#define ERROR_BINOP                                                            \
+    "Invalid conversion from {lhs:%s} to {rhs:%s} in binary expression. "      \
+    "Types are incompatible\n"
+
+static void
+log_narrow_binop(
+    struct ast*      ast,
+    ast_id           op,
+    ast_id           source_node,
+    ast_id           target_node,
+    const char*      source_filename,
+    struct db_source source)
+{
+    ast_id    lhs = ast->nodes[op].binop.left;
+    ast_id    rhs = ast->nodes[op].binop.right;
+    enum type source_type = ast->nodes[source_node].info.type_info;
+    enum type target_type = ast->nodes[target_node].info.type_info;
+
+    log_flc(
+        "{w:warning:} ",
+        source_filename,
+        source.text.data,
+        ast->nodes[op].info.location,
+        LOSSY_BINOP,
+        type_to_db_name(source_type),
+        type_to_db_name(target_type));
+    log_binop_excerpt(
+        source_filename,
+        source.text.data,
+        ast->nodes[lhs].info.location,
+        ast->nodes[op].binop.op_location,
+        ast->nodes[rhs].info.location,
+        type_to_db_name(source_type),
+        type_to_db_name(target_type));
+}
+
+static void
+log_strange_binop(
+    struct ast*      ast,
+    ast_id           op,
+    ast_id           source_node,
+    ast_id           target_node,
+    const char*      source_filename,
+    struct db_source source)
+{
+    ast_id    lhs = ast->nodes[op].binop.left;
+    ast_id    rhs = ast->nodes[op].binop.right;
+    enum type source_type = ast->nodes[source_node].info.type_info;
+    enum type target_type = ast->nodes[target_node].info.type_info;
+
+    log_flc(
+        "{w:warning:} ",
+        source_filename,
+        source.text.data,
+        ast->nodes[op].info.location,
+        STRANGE_BINOP,
+        type_to_db_name(source_type),
+        type_to_db_name(target_type));
+    if (lhs == source_node)
+    {
+        log_binop_excerpt(
+            source_filename,
+            source.text.data,
+            ast->nodes[lhs].info.location,
+            ast->nodes[op].binop.op_location,
+            ast->nodes[rhs].info.location,
+            type_to_db_name(source_type),
+            type_to_db_name(target_type));
+    }
+    else
+    {
+        log_binop_excerpt(
+            source_filename,
+            source.text.data,
+            ast->nodes[lhs].info.location,
+            ast->nodes[op].binop.op_location,
+            ast->nodes[rhs].info.location,
+            type_to_db_name(target_type),
+            type_to_db_name(source_type));
+    }
+}
+
+static void
+log_error_binop(
+    struct ast*      ast,
+    ast_id           source_node,
+    ast_id           op,
+    const char*      source_filename,
+    struct db_source source)
+{
+    ast_id    lhs = ast->nodes[op].binop.left;
+    ast_id    rhs = ast->nodes[op].binop.right;
+    enum type source_type = ast->nodes[source_node].info.type_info;
+    enum type target_type = ast->nodes[op].info.type_info;
+
+    log_flc(
+        "{e:error:} ",
+        source_filename,
+        source.text.data,
+        ast->nodes[op].info.location,
+        ERROR_BINOP,
+        type_to_db_name(source_type),
+        type_to_db_name(target_type));
+    log_binop_excerpt(
+        source_filename,
+        source.text.data,
+        ast->nodes[lhs].info.location,
+        ast->nodes[op].binop.op_location,
+        ast->nodes[rhs].info.location,
+        type_to_db_name(source_type),
+        type_to_db_name(target_type));
+}
+
 static enum type
 resolve_expression(
     struct ast*            ast,
@@ -11,6 +128,9 @@ resolve_expression(
     const char*            source_filename,
     struct db_source       source)
 {
+    if (ast->nodes[n].info.type_info != TYPE_VOID)
+        return ast->nodes[n].info.type_info;
+
     switch (ast->nodes[n].info.node_type)
     {
         /* Nodes that don't return a value should be marked as TYPE_VOID */
@@ -45,72 +165,34 @@ resolve_expression(
                 return ast->nodes[n].info.type_info = left_type;
 
             if (left_to_right == TP_STRANGE)
-                return ast->nodes[n].info.type_info = right_type;
+            {
+                ast->nodes[n].info.type_info = right_type;
+                log_strange_binop(ast, n, lhs, rhs, source_filename, source);
+                return right_type;
+            }
             if (right_to_left == TP_STRANGE)
-                return ast->nodes[n].info.type_info = left_type;
+            {
+                ast->nodes[n].info.type_info = left_type;
+                log_strange_binop(ast, n, rhs, lhs, source_filename, source);
+                return left_type;
+            }
 
             /* Fall back to conversions with loss of info, but log a warning */
-            if (left_to_right == TP_LOSS_OF_INFO)
+            if (left_to_right == TP_NARROWING)
             {
-                log_flc(
-                    "{w:warning:} ",
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[n].info.location,
-                    "Converting from {lhs:%s} to {rhs:%s} results in loss "
-                    "of information.\n",
-                    type_to_db_name(left_type),
-                    type_to_db_name(right_type));
-                log_binop_excerpt(
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[lhs].info.location,
-                    ast->nodes[n].binop.op_location,
-                    ast->nodes[rhs].info.location,
-                    type_to_db_name(left_type),
-                    type_to_db_name(right_type));
-                return ast->nodes[n].info.type_info = right_type;
+                ast->nodes[n].info.type_info = right_type;
+                log_narrow_binop(ast, n, lhs, rhs, source_filename, source);
+                return right_type;
             }
-            if (right_to_left == TP_LOSS_OF_INFO)
+            if (right_to_left == TP_NARROWING)
             {
-                log_flc(
-                    "{w:warning:} ",
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[n].info.location,
-                    "Converting from {lhs:%s} to {rhs:%s} results in loss "
-                    "of information.\n",
-                    type_to_db_name(right_type),
-                    type_to_db_name(left_type));
-                log_binop_excerpt(
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[lhs].info.location,
-                    ast->nodes[n].binop.op_location,
-                    ast->nodes[rhs].info.location,
-                    type_to_db_name(left_type),
-                    type_to_db_name(right_type));
-                return ast->nodes[n].info.type_info = left_type;
+                ast->nodes[n].info.type_info = left_type;
+                log_narrow_binop(ast, n, rhs, lhs, source_filename, source);
+                return left_type;
             }
 
             /* Invalid conversion */
-            log_flc(
-                "{e:error:} ",
-                source_filename,
-                source.text.data,
-                ast->nodes[n].info.location,
-                "Cannot convert from {lhs:%s} to {rhs:%s} in binary "
-                "expression\n",
-                type_to_db_name(left_type),
-                type_to_db_name(right_type));
-            log_binop_excerpt(
-                source_filename,
-                source.text.data,
-                ast->nodes[lhs].info.location,
-                ast->nodes[n].binop.op_location,
-                ast->nodes[rhs].info.location,
-                type_to_db_name(left_type),
-                type_to_db_name(right_type));
+            log_error_binop(ast, lhs, n, source_filename, source);
         }
         break;
 
@@ -137,32 +219,72 @@ resolve_expression(
             return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
         case AST_CAST: {
             int       expr = ast->nodes[n].cast.expr;
-            enum type from
+            enum type source_type
                 = resolve_expression(ast, expr, cmds, source_filename, source);
-            enum type to = ast->nodes[n].info.type_info;
+            enum type target_type = ast->nodes[n].info.type_info;
 
-            if (type_promote(from, to) == TP_DISALLOW)
+            switch (type_promote(source_type, target_type))
             {
-                log_flc(
-                    "{e:error:} ",
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[n].info.location,
-                    "Cannot cast from {lhs:%s} to {rhs:%s} -- Types are "
-                    "incompatible\n",
-                    type_to_db_name(from),
-                    type_to_db_name(to));
-                log_excerpt2(
-                    source_filename,
-                    source.text.data,
-                    ast->nodes[expr].info.location,
-                    ast->nodes[n].info.location,
-                    type_to_db_name(from),
-                    type_to_db_name(to));
-                break;
+                case TP_ALLOW: return target_type;
+                case TP_DISALLOW:
+                    log_flc(
+                        "{e:error:} ",
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[n].info.location,
+                        "Cannot cast from {lhs:%s} to {rhs:%s}: Types are "
+                        "incompatible\n",
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    log_excerpt2(
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[expr].info.location,
+                        ast->nodes[n].info.location,
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    break;
+
+                case TP_NARROWING:
+                    log_flc(
+                        "{w:warning:} ",
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[n].info.location,
+                        "Narrowing conversion from {lhs:%s} to {rhs:%s} in "
+                        "expression\n",
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    log_excerpt2(
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[expr].info.location,
+                        ast->nodes[n].info.location,
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    break;
+
+                case TP_STRANGE:
+                    log_flc(
+                        "{w:warning:} ",
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[n].info.location,
+                        "Strange conversion from {lhs:%s} to {rhs:%s} in "
+                        "expression\n",
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    log_excerpt2(
+                        source_filename,
+                        source.text.data,
+                        ast->nodes[expr].info.location,
+                        ast->nodes[n].info.location,
+                        type_to_db_name(source_type),
+                        type_to_db_name(target_type));
+                    break;
             }
 
-            return to;
+            return target_type;
         }
         break;
     }
@@ -179,12 +301,11 @@ resolve_expressions(
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)
-    {
-        if (ast->nodes[n].info.type_info == TYPE_VOID)
-            if (resolve_expression(ast, n, cmds, source_filename, source)
-                == (enum type) - 1)
-                return -1;
-    }
+        if (resolve_expression(ast, n, cmds, source_filename, source)
+            == (enum type) - 1)
+        {
+            return -1;
+        }
 
     return 0;
 }

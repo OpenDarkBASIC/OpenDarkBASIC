@@ -534,15 +534,13 @@ log_excerpt(
                 log_putc('~');
             else if (j == loc.off - block.off + loc.len - 1)
             {
-                log_printf(
-                    "< %s%s%s", lhsf_style(), annotation, reset_style());
+                log_printf("< %s%s%s", lhsf_style(), annotation, reset_style());
                 break;
             }
 
             if (j >= loc.off - block.off + loc.len)
             {
-                log_printf(
-                    " %s%s%s", lhsf_style(), annotation, reset_style());
+                log_printf(" %s%s%s", lhsf_style(), annotation, reset_style());
                 break;
             }
         }
@@ -682,14 +680,19 @@ log_excerpt2(
             else if (j == loc1.off - block.off)
                 log_putc('^');
             else if (
-                j > loc1.off - block.off && j < loc1.off - block.off + loc1.len)
+                j > loc1.off - block.off
+                && j < loc1.off - block.off + loc1.len - 1)
                 log_putc('~');
+            else if (j == loc1.off - block.off + loc1.len - 1)
+                log_putc('<');
             else if (j == loc2.off - block.off)
                 log_putc('^');
             else if (
                 j > loc2.off - block.off
                 && j < loc2.off - block.off + loc2.len - 1)
                 log_putc('~');
+            else if (j == loc2.off - block.off + loc2.len - 1)
+                log_putc('<');
 
             if (j >= loc2.off - block.off + loc2.len)
             {

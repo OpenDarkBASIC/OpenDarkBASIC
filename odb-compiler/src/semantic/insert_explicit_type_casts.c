@@ -1,8 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/config.h"
-#include "odb-sdk/log.h"
 #include <assert.h>
 
 static int
@@ -22,17 +20,20 @@ insert_explicit_type_casts(
             case AST_CONST_DECL: break;
 
             case AST_ASSIGNMENT: {
-                ast_id    expr = ast->nodes[n].assignment.expr;
-                enum type from = ast->nodes[expr].info.type_info;
-                enum type to = ast->nodes[n].info.type_info;
+                ast_id    rvalue = ast->nodes[n].assignment.expr;
+                ast_id    lvalue = ast->nodes[n].assignment.lvalue;
+                enum type source_type = ast->nodes[rvalue].info.type_info;
+                enum type target_type = ast->nodes[lvalue].info.type_info;
 
-                if (from != to)
+                if (source_type != target_type)
                 {
                     ast_id cast = ast_cast(
-                        ast, expr, to, ast->nodes[expr].info.location);
+                        ast,
+                        rvalue,
+                        target_type,
+                        ast->nodes[rvalue].info.location);
                     if (cast < -1)
                         return -1;
-
                     ast->nodes[n].assignment.expr = cast;
                 }
             }
@@ -48,17 +49,19 @@ insert_explicit_type_casts(
                 for (i = 0; i != vec_count(*params);
                      ++i, arglist = ast->nodes[arglist].arglist.next)
                 {
-                    ast_id    expr = ast->nodes[arglist].arglist.expr;
-                    enum type from = ast->nodes[expr].info.type_info;
-                    enum type to = vec_get(*params, i)->type;
+                    ast_id    arg = ast->nodes[arglist].arglist.expr;
+                    enum type arg_type = ast->nodes[arg].info.type_info;
+                    enum type param_type = vec_get(*params, i)->type;
 
-                    if (from != to)
+                    if (arg_type != param_type)
                     {
                         ast_id cast = ast_cast(
-                            ast, expr, to, ast->nodes[expr].info.location);
+                            ast,
+                            arg,
+                            param_type,
+                            ast->nodes[arg].info.location);
                         if (cast < -1)
                             return -1;
-
                         ast->nodes[arglist].arglist.expr = cast;
                     }
                 }
@@ -70,37 +73,36 @@ insert_explicit_type_casts(
             case AST_BINOP: {
                 ast_id    lhs = ast->nodes[n].binop.left;
                 ast_id    rhs = ast->nodes[n].binop.right;
-                enum type to = ast->nodes[n].info.type_info;
+                enum type target_type = ast->nodes[n].info.type_info;
 
-                if (ast->nodes[lhs].info.type_info != to)
+                if (ast->nodes[lhs].info.type_info != target_type)
                 {
-                    ast_id cast
-                        = ast_cast(ast, lhs, to, ast->nodes[lhs].info.location);
-                    if (cast < -1)
+                    ast_id cast_lhs = ast_cast(
+                        ast, lhs, target_type, ast->nodes[lhs].info.location);
+                    if (cast_lhs < -1)
                         return -1;
-
-                    ast->nodes[n].binop.left = cast;
+                    ast->nodes[n].binop.left = cast_lhs;
                 }
-                if (ast->nodes[rhs].info.type_info != to)
-                {
-                    ast_id cast
-                        = ast_cast(ast, rhs, to, ast->nodes[rhs].info.location);
-                    if (cast < -1)
-                        return -1;
 
-                    ast->nodes[n].binop.right = cast;
+                if (ast->nodes[rhs].info.type_info != target_type)
+                {
+                    ast_id cast_rhs = ast_cast(
+                        ast, rhs, target_type, ast->nodes[rhs].info.location);
+                    if (cast_rhs < -1)
+                        return -1;
+                    ast->nodes[n].binop.right = cast_rhs;
                 }
             }
             break;
 
             case AST_UNOP: {
                 ast_id    expr = ast->nodes[n].unop.expr;
-                enum type to = ast->nodes[n].info.type_info;
+                enum type target_type = ast->nodes[n].info.type_info;
 
-                if (ast->nodes[expr].info.type_info != to)
+                if (ast->nodes[expr].info.type_info != target_type)
                 {
                     ast_id cast = ast_cast(
-                        ast, expr, to, ast->nodes[expr].info.location);
+                        ast, expr, target_type, ast->nodes[expr].info.location);
                     if (cast < -1)
                         return -1;
 

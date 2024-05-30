@@ -2,6 +2,7 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/vec.h"
 #include <assert.h>
@@ -41,7 +42,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
         {
             case TP_DISALLOW: return 0;
 
-            case TP_LOSS_OF_INFO:
+            case TP_NARROWING:
             case TP_STRANGE:
             case TP_ALLOW: continue;
         }
@@ -68,7 +69,7 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
         switch (type_promote(arg, param))
         {
             case TP_DISALLOW:
-            case TP_LOSS_OF_INFO:
+            case TP_NARROWING:
             case TP_STRANGE: return 0;
 
             case TP_ALLOW: continue;
@@ -128,12 +129,7 @@ report_error(
             params_loc,
             "Command has ambiguous overloads.\n");
         log_excerpt(source_filename, source.text.data, params_loc, "");
-        log_flc(
-            "{n:note:} ",
-            source_filename,
-            source.text.data,
-            params_loc,
-            "Available candidates:\n");
+        log_note("", "Available candidates:\n");
         vec_for_each(candidates, pcmd)
         {
             int              i;
@@ -183,13 +179,7 @@ report_error(
             "Parameter mismatch: No version of this command takes the "
             "argument types used here.\n");
         log_excerpt(source_filename, source.text.data, params_loc, "");
-
-        log_flc(
-            "{n:note:} ",
-            source_filename,
-            source.text.data,
-            params_loc,
-            "Available candidates:\n");
+        log_note("", "Available candidates:\n");
         cmd_name = utf8_list_view(&cmds->db_cmd_names, cmd);
         for (;
              cmd < cmd_list_count(cmds)
@@ -220,6 +210,110 @@ report_error(
             }
             log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
             log_raw("[%s]\n", utf8_cstr(plugin->name));
+        }
+    }
+}
+
+static void
+log_cmd_signature(
+    cmd_id                    cmd_id,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds)
+{
+    int              i;
+    struct utf8_view name = utf8_list_view(&cmds->db_cmd_names, cmd_id);
+    const struct param_types_list* param_types
+        = vec_get(cmds->param_types, cmd_id);
+    const struct utf8_list* param_names = vec_get(cmds->db_param_names, cmd_id);
+    enum type               ret_type = *vec_get(cmds->return_types, cmd_id);
+    plugin_id               plugin_id = *vec_get(cmds->plugin_ids, cmd_id);
+    const struct plugin_info* plugin = vec_get(*plugins, plugin_id);
+
+    log_note(
+        "",
+        "{emph:%.*s}%s",
+        name.len,
+        name.data + name.off,
+        ret_type == TYPE_VOID ? " " : "(");
+    for (i = 0; i != utf8_list_count(param_names); ++i)
+    {
+        if (i)
+            log_raw(", ");
+        log_raw(
+            "%s {rhs:AS %s}",
+            utf8_list_cstr(param_names, i),
+            type_to_db_name(vec_get(*param_types, i)->type));
+    }
+    log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
+    log_raw("[%s]\n", utf8_cstr(plugin->name));
+}
+
+static void
+typecheck_arguments(
+    struct ast*               ast,
+    ast_id                    cmd_node,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const char*               source_filename,
+    struct db_source          source)
+{
+    int                            i;
+    cmd_id                         cmd_id = ast->nodes[cmd_node].cmd.id;
+    ast_id                         arglist = ast->nodes[cmd_node].cmd.arglist;
+    const struct param_types_list* params = vec_get(cmds->param_types, cmd_id);
+
+    ODBSDK_DEBUG_ASSERT(ast->nodes[cmd_node].info.node_type == AST_COMMAND);
+    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].info.node_type == AST_ARGLIST);
+
+    for (i = 0; i != vec_count(*params);
+         ++i, arglist = ast->nodes[arglist].arglist.next)
+    {
+        ast_id    arg = ast->nodes[arglist].arglist.expr;
+        enum type arg_type = ast->nodes[arg].info.type_info;
+        enum type param_type = vec_get(*params, i)->type;
+
+        switch (type_promote(arg_type, param_type))
+        {
+            case TP_DISALLOW: ODBSDK_DEBUG_ASSERT(0); break;
+            case TP_ALLOW: break;
+
+            case TP_NARROWING:
+                log_flc(
+                    "{w:warning:} ",
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[arg].info.location,
+                    "Narrowing conversion argument %d from {lhs:%s} to "
+                    "{rhs:%s} in command call\n",
+                    i + 1,
+                    type_to_db_name(arg_type),
+                    type_to_db_name(param_type));
+                log_excerpt(
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[arg].info.location,
+                    type_to_db_name(arg_type));
+                log_cmd_signature(cmd_id, plugins, cmds);
+                break;
+
+            case TP_STRANGE:
+                log_flc(
+                    "{w:warning:} ",
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[arg].info.location,
+                    "Strange conversion of argument %d from {lhs:%s} to "
+                    "{rhs:%s} in command call\n",
+                    i + 1,
+                    type_to_db_name(arg_type),
+                    type_to_db_name(param_type));
+                log_excerpt(
+                    source_filename,
+                    source.text.data,
+                    ast->nodes[arg].info.location,
+                    type_to_db_name(arg_type));
+                log_cmd_signature(cmd_id, plugins, cmds);
+                break;
         }
     }
 }
@@ -268,16 +362,13 @@ resolve_cmd_overloads(
              paramlist = ast->nodes[paramlist].arglist.next)
             ctx.argcount++;
 
-        /* Set up context */
+        /* Filter list of candidates with increasingly strict rules */
         ctx.arglist = ast->nodes[n].cmd.arglist;
-
         candidates_retain(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
-
         if (vec_count(candidates) > 1)
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
-
         if (vec_count(candidates) > 1)
             candidates_retain(candidates, eliminate_problematic_casts, &ctx);
 
@@ -297,6 +388,8 @@ resolve_cmd_overloads(
 
         /* Update command ID in AST */
         ast->nodes[n].cmd.id = *vec_first(candidates);
+
+        typecheck_arguments(ast, n, plugins, cmds, source_filename, source);
     }
 
     candidates_deinit(&candidates);

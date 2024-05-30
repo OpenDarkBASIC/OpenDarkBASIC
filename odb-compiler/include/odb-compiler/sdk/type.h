@@ -40,7 +40,7 @@ enum type_promotion_result
 {
     TP_DISALLOW = 0,
     TP_ALLOW = 1,
-    TP_LOSS_OF_INFO = 2,
+    TP_NARROWING = 2,
     TP_STRANGE = 3
 };
 

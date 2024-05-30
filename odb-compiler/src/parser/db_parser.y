@@ -256,7 +256,7 @@ command_stmt
   : COMMAND                                 { $$ = ast_command(ctx->ast, $1, -1, @$); }
   | COMMAND arglist                         { $$ = ast_command(ctx->ast, $1, $2, @$); }
   | COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
-//| COMMAND '(' arglist ')'  <-- this case is already handled by expr
+  | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 // Commands appearing as expressions must be csalled with arguments in brackets
 command_expr

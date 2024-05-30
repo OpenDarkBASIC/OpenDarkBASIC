@@ -1,5 +1,20 @@
 #include "core-commands/config.h"
 
+ODB_COMMAND2(
+    /* clang-format off */
+    void, load_dll, const char* dll_name, int dll_number,
+    /* clang-format on */
+    NAME("LOAD DLL"),
+    BRIEF(""),
+    DESCRIPTION(""),
+    PARAMETER1("File Name", ""),
+    PARAMETER2("DLL Number", ""),
+    RETURNS(""),
+    EXAMPLE(""),
+    SEE_ALSO())
+{
+}
+
 // ODB_COMMAND3(
 //     /* clang-format off */
 //     void*, call_dll_vararg, int dll_number, const char* func_name, ...,
