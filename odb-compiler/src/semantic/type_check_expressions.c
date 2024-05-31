@@ -156,6 +156,9 @@ resolve_expression(
 
             switch (ast->nodes[n].binop.op)
             {
+                /* These operations require that both LHS and RHS have the same
+                 * type. The result type will be the "wider" of the two types.
+                 */
                 case BINOP_ADD:
                 case BINOP_SUB:
                 case BINOP_MUL:
@@ -210,6 +213,13 @@ resolve_expression(
                 }
                 break;
 
+                /* 
+                 * The supported instructions are:
+                 *   powi(f32, i32)
+                 *   powi(f64, i32)
+                 *   pow(f32, f32)
+                 *   pow(f64, f64)
+                 */
                 case BINOP_POW:
                     switch (right_type)
                     {
@@ -228,8 +238,9 @@ resolve_expression(
                         case TYPE_WORD:
                         case TYPE_BYTE:
                         case TYPE_BOOLEAN:
-                            /* pow(f32/f64, i32) -- lhs is forced to f32 or
-                             * f64, rhs is forced to i32 */
+                            /* pow(f32/f64, i32)
+                             *   lhs is forced to f32 or f64
+                             *   rhs is forced to i32 */
                             switch (type_promote(right_type, TYPE_INTEGER))
                             {
                                 case TP_DISALLOW:
