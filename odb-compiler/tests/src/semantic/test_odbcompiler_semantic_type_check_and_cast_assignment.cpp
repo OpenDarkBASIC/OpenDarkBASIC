@@ -11,7 +11,7 @@ struct NAME : public DBParserHelper
 {
 };
 
-TEST_F(NAME, exponent_truncated_from_double)
+TEST_F(NAME, circular_dependencies)
 {
     const char* source = 
         "a = b + c\n"

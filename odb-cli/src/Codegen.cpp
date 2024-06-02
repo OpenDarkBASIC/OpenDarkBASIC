@@ -88,6 +88,7 @@ output(const std::vector<std::string>& args)
         getAST(),
         objs[0],
         "module",
+        getSDKType(),
         ODB_CODEGEN_ObjectFile,
         ODB_CODEGEN_x86_64,
         ODB_CODEGEN_WINDOWS,

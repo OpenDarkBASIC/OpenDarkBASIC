@@ -182,15 +182,30 @@ resolve_assignments(
 }
 
 static int
-type_check_expressions(
+type_check_and_cast(
     struct ast*               ast,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     const char*               source_filename,
     struct db_source          source)
 {
-    if (resolve_expressions(ast, cmds, source_filename, source) != 0)
-        return -1;
+    /* 
+     * It's necessary to traverse the AST in a way where statements are
+     * evaluated in the order they appear in the source code, and in a way
+     * where the scope of each block is visited depth-first.
+     * 
+     * This will make it a lot easier to propagate the type information of
+     * variables, because they will be processed in the same order the data
+     * flows.
+     */
+    ast_id block = 0;
+    ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
+    for (; block > -1; block = ast->nodes[block].block.next)
+    {
+        ast_id stmt = ast->nodes[block].block.statement;
+        if (resolve_node_type(ast, stmt, cmds, source_filename, source) < 0)
+            return -1;
+    }
 
     return 0;
 }
@@ -198,4 +213,4 @@ type_check_expressions(
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations, NULL};
 const struct semantic_check semantic_type_check_and_cast
-    = {depends, type_check_expressions};
+    = {depends, type_check_and_cast};

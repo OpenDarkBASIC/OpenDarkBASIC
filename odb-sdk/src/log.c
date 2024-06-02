@@ -67,7 +67,7 @@ log_configure(struct log_interface iface)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 static void
-log_last_error_win32(FILE* fp)
+log_last_error_win32(void)
 {
     char* error;
     if (FormatMessageA(
@@ -289,7 +289,7 @@ process_color_format(const char* fmt, struct varef* args)
 #if defined(ODBSDK_PLATFORM_WINDOWS)
     if (memcmp(fmt, "{win32error}", 12) == 0)
     {
-        log_last_error_win32(fp);
+        log_last_error_win32();
         return fmt + 12;
     }
 #endif
