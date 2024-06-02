@@ -25,11 +25,12 @@ struct cmd_param
     // struct utf8_span         doc;
 };
 
-VEC_DECLARE_API(plugin_ids, int16_t, 16)
-VEC_DECLARE_API(return_types_list, enum type, 32)
-VEC_DECLARE_API(param_types_list, struct cmd_param, 32)
-VEC_DECLARE_API(param_types_lists, struct param_types_list, 32)
-VEC_DECLARE_API(db_param_names, struct utf8_list, 32)
+VEC_DECLARE_API(plugin_ids, int16_t, 16, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(return_types_list, enum type, 32, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(param_types_list, struct cmd_param, 32, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(
+    param_types_lists, struct param_types_list, 32, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(db_param_names, struct utf8_list, 32, ODBCOMPILER_PUBLIC_API)
 
 struct cmd_list
 {

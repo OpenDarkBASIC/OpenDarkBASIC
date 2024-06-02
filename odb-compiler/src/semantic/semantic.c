@@ -12,7 +12,7 @@ semantic_checks_run(
             ast, plugins, cmds, source_filename, source)
         != 0)
         return -1;
-    if (semantic_type_check_expressions.execute(
+    if (semantic_type_check_and_cast.execute(
             ast, plugins, cmds, source_filename, source)
         != 0)
         return -1;

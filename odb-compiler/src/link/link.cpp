@@ -95,6 +95,7 @@ link_linux(
     if (fs_file_exists(cstr_ospathc("/usr/lib/x86_64-linux-gnu/crt1.o")))
         args.push_back("/usr/lib/x86_64-linux-gnu/crt1.o");
     args.push_back("-lc");
+    args.push_back("-lm");
 
     if (lld::elf::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;

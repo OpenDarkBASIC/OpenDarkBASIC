@@ -11,9 +11,9 @@ struct NAME : public DBParserHelper
 
 TEST_F(NAME, print_command)
 {
-    addCommand("prinp");
-    addCommand("print");
-    addCommand("print stdout");
+    addCommand("PRINP");
+    addCommand("PRINT");
+    addCommand("PRINT STDOUT");
     ASSERT_THAT(parse("print \"hello world\"\n"), Eq(0));
 
     ASSERT_THAT(ast.node_count, Eq(4));
@@ -36,14 +36,14 @@ TEST_F(NAME, print_command)
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)
 {
-    addCommand(TYPE_LONG, "get dir&");
+    addCommand(TYPE_LONG, "GET DIR&");
 
     ASSERT_THAT(parse("OriginalDirectory& = get dir&()"), Eq(0));
 }
 
 TEST_F(NAME, command_with_spaces)
 {
-    addCommand("make object sphere");
+    addCommand("MAKE OBJECT SPHERE");
     ASSERT_THAT(parse("make object sphere 1, 10\n"), Eq(0));
 
     /*

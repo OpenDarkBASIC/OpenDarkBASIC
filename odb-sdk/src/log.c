@@ -1,6 +1,7 @@
 #include "odb-sdk/cli_colors.h"
 #include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -107,7 +108,7 @@ struct varef
     va_list ap;
 };
 static const char*
-process_standard_format(FILE* fp, const char* fmt, struct varef* args)
+process_standard_format(const char* fmt, struct varef* args)
 {
     int  i = 0;
     char subfmt[16];
@@ -278,7 +279,7 @@ next_control_sequence(
     return 0;
 }
 static const char*
-process_color_format(FILE* fp, const char* fmt, struct varef* args)
+process_color_format(const char* fmt, struct varef* args)
 {
     int         i;
     const char* start;
@@ -310,9 +311,9 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
     while (*content)
     {
         if (*content == '{')
-            content = process_color_format(fp, content, args);
+            content = process_color_format(content, args);
         else if (*content == '%')
-            content = process_standard_format(fp, content, args);
+            content = process_standard_format(content, args);
         else if (*content == '}')
         {
             log_printf("%s", end);
@@ -328,25 +329,25 @@ process_color_format(FILE* fp, const char* fmt, struct varef* args)
 
 /* ------------------------------------------------------------------------- */
 static void
-vfprintf_with_color(FILE* fp, const char* fmt, struct varef* args)
+vfprintf_with_color(const char* fmt, struct varef* args)
 {
     while (*fmt)
     {
         if (fmt[0] == '{')
-            fmt = process_color_format(fp, fmt, args);
+            fmt = process_color_format(fmt, args);
         else if (fmt[0] == '%')
-            fmt = process_standard_format(fp, fmt, args);
+            fmt = process_standard_format(fmt, args);
         else
             log_putc(*fmt++);
     }
 }
 
 static void
-fprintf_with_color(FILE* fp, const char* fmt, ...)
+fprintf_with_color(const char* fmt, ...)
 {
     struct varef args;
     va_start(args.ap, fmt);
-    vfprintf_with_color(fp, fmt, &args);
+    vfprintf_with_color(fmt, &args);
     va_end(args.ap);
 }
 /* ------------------------------------------------------------------------- */
@@ -355,7 +356,7 @@ log_vraw(const char* fmt, va_list ap)
 {
     struct varef args;
     va_copy(args.ap, ap);
-    vfprintf_with_color(stderr, fmt, &args);
+    vfprintf_with_color(fmt, &args);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -379,9 +380,9 @@ log_vimpl(
     if (is_progress)
         progress_active = 1;
 
-    fprintf_with_color(stderr, group);
-    fprintf_with_color(stderr, severity);
-    vfprintf_with_color(stderr, fmt, &args);
+    fprintf_with_color(group);
+    fprintf_with_color(severity);
+    vfprintf_with_color(fmt, &args);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -420,15 +421,15 @@ log_vflc(
             l1++, c1 = 1;
     }
 
-    fprintf_with_color(stderr, "{emph:%s:%d:%d:} ", filename, l1, c1);
-    fprintf_with_color(stderr, severity);
+    fprintf_with_color("{emph:%s:%d:%d:} ", filename, l1, c1);
+    fprintf_with_color(severity);
 
     va_copy(args.ap, ap);
-    vfprintf_with_color(stderr, fmt, &args);
+    vfprintf_with_color(fmt, &args);
 }
 
 /* ------------------------------------------------------------------------- */
-void
+int
 log_excerpt(
     const char*      filename,
     const char*      source,
@@ -547,10 +548,12 @@ log_excerpt(
 
         log_printf("%s\n", reset_style());
     }
+
+    return gutter_indent;
 }
 
 /* ------------------------------------------------------------------------- */
-void
+int
 log_excerpt2(
     const char*      filename,
     const char*      source,
@@ -570,6 +573,7 @@ log_excerpt2(
     char             postpone_annotation1 = 0;
 
     /* Calculate an overall location for LHS,op,RHS */
+    ODBSDK_DEBUG_ASSERT(loc1.off < loc2.off);
     loc.off = loc1.off;
     loc.len = loc2.off - loc1.off + loc2.len;
 
@@ -738,10 +742,12 @@ log_excerpt2(
             }
     lhs_text_done:;
     }
+
+    return gutter_indent;
 }
 
 /* ------------------------------------------------------------------------- */
-void
+int
 log_binop_excerpt(
     const char*      filename,
     const char*      source,
@@ -937,4 +943,19 @@ log_binop_excerpt(
             }
     lhs_text_done:;
     }
+
+    return gutter_indent;
 }
+
+void
+log_excerpt_note(int gutter_indent, const char* fmt, ...)
+{
+    struct varef args;
+    log_printf("%*s = ", gutter_indent - 1, "");
+    log_printf("%s%s%s", note_style(), "note: ", reset_style());
+
+    va_start(args.ap, fmt);
+    vfprintf_with_color(fmt, &args);
+    va_end(args.ap);
+}
+

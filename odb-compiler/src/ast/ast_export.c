@@ -120,7 +120,7 @@ write_nodes(
         case AST_FLOAT_LITERAL:
             fprintf(
                 fp,
-                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%f\"];\n",
+                "  n%d [shape=\"record\", fontcolor=\"red\", label=\"%ff\"];\n",
                 n,
                 (double)nd->float_literal.value);
             break;

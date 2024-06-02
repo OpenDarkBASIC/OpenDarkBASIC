@@ -70,30 +70,7 @@ insert_explicit_type_casts(
 
             case AST_IDENTIFIER: break;
 
-            case AST_BINOP: {
-                ast_id    lhs = ast->nodes[n].binop.left;
-                ast_id    rhs = ast->nodes[n].binop.right;
-                enum type target_type = ast->nodes[n].info.type_info;
-
-                if (ast->nodes[lhs].info.type_info != target_type)
-                {
-                    ast_id cast_lhs = ast_cast(
-                        ast, lhs, target_type, ast->nodes[lhs].info.location);
-                    if (cast_lhs < -1)
-                        return -1;
-                    ast->nodes[n].binop.left = cast_lhs;
-                }
-
-                if (ast->nodes[rhs].info.type_info != target_type)
-                {
-                    ast_id cast_rhs = ast_cast(
-                        ast, rhs, target_type, ast->nodes[rhs].info.location);
-                    if (cast_rhs < -1)
-                        return -1;
-                    ast->nodes[n].binop.right = cast_rhs;
-                }
-            }
-            break;
+            case AST_BINOP: break;
 
             case AST_UNOP: {
                 ast_id    expr = ast->nodes[n].unop.expr;
@@ -127,6 +104,6 @@ insert_explicit_type_casts(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_type_check_expressions, &semantic_resolve_cmd_overloads, NULL};
+    = {&semantic_type_check_and_cast, &semantic_resolve_cmd_overloads, NULL};
 const struct semantic_check semantic_insert_explicit_type_casts
     = {depends, insert_explicit_type_casts};

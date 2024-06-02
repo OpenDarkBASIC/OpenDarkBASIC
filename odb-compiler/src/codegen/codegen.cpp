@@ -400,102 +400,46 @@ gen_expr(
                     }
                     break;
                 case BINOP_POW:
-                    switch (lhs_type)
+                    if (lhs_type == TYPE_FLOAT && rhs_type == TYPE_INTEGER)
                     {
-                        case TYPE_FLOAT: {
-                            switch (rhs_type)
-                            {
-                                case TYPE_INVALID:
-                                case TYPE_VOID:
-                                case TYPE_STRING:
-                                case TYPE_ARRAY:
-                                case TYPE_LABEL:
-                                case TYPE_DABEL:
-                                case TYPE_ANY:
-                                case TYPE_USER_DEFINED_VAR_PTR: break;
+                        llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
+                            mod,
+                            llvm::Intrinsic::powi,
+                            {llvm::Type::getFloatTy(mod->getContext()),
+                             llvm::Type::getInt32Ty(mod->getContext())});
+                        return b.CreateCall(FPowi, {lhs, rhs});
+                    }
+                    else if (
+                        lhs_type == TYPE_DOUBLE && rhs_type == TYPE_INTEGER)
+                    {
+                        llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
+                            mod,
+                            llvm::Intrinsic::powi,
+                            {llvm::Type::getDoubleTy(mod->getContext()),
+                             llvm::Type::getInt32Ty(mod->getContext())});
+                        return b.CreateCall(FPowi, {lhs, rhs});
+                    }
+                    else if (lhs_type == TYPE_FLOAT && rhs_type == TYPE_FLOAT)
+                    {
+                        llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
+                            mod,
+                            llvm::Intrinsic::pow,
+                            {llvm::Type::getFloatTy(mod->getContext()),
+                             llvm::Type::getFloatTy(mod->getContext())});
+                        return b.CreateCall(FPow, {lhs, rhs});
+                    }
+                    else if (lhs_type == TYPE_DOUBLE && rhs_type == TYPE_DOUBLE)
+                    {
 
-                                case TYPE_LONG:
-                                case TYPE_DWORD:
-                                case TYPE_INTEGER:
-                                case TYPE_WORD:
-                                case TYPE_BYTE:
-                                case TYPE_BOOLEAN: {
-                                    llvm::Function* FPowi
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::powi,
-                                            llvm::Type::getFloatTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPowi, {lhs, rhs});
-                                }
-                                case TYPE_FLOAT: {
-                                    llvm::Function* FPow
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::pow,
-                                            llvm::Type::getFloatTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPow, {lhs, rhs});
-                                }
-                                case TYPE_DOUBLE: {
-                                    llvm::Function* FPow
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::pow,
-                                            llvm::Type::getDoubleTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPow, {lhs, rhs});
-                                }
-                            }
-                        }
-                        case TYPE_DOUBLE: {
-                            switch (rhs_type)
-                            {
-                                case TYPE_INVALID:
-                                case TYPE_VOID:
-                                case TYPE_STRING:
-                                case TYPE_ARRAY:
-                                case TYPE_LABEL:
-                                case TYPE_DABEL:
-                                case TYPE_ANY:
-                                case TYPE_USER_DEFINED_VAR_PTR: break;
-
-                                case TYPE_LONG:
-                                case TYPE_DWORD:
-                                case TYPE_INTEGER:
-                                case TYPE_WORD:
-                                case TYPE_BYTE:
-                                case TYPE_BOOLEAN: {
-                                    llvm::Function* FPowi
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::powi,
-                                            llvm::Type::getFloatTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPowi, {lhs, rhs});
-                                }
-                                case TYPE_FLOAT: {
-                                    llvm::Function* FPow
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::pow,
-                                            llvm::Type::getFloatTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPow, {lhs, rhs});
-                                }
-                                case TYPE_DOUBLE: {
-                                    llvm::Function* FPow
-                                        = llvm::Intrinsic::getDeclaration(
-                                            mod,
-                                            llvm::Intrinsic::pow,
-                                            llvm::Type::getDoubleTy(
-                                                mod->getContext()));
-                                    return b.CreateCall(FPow, {lhs, rhs});
-                                }
-                            }
-                        }
+                        llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
+                            mod,
+                            llvm::Intrinsic::pow,
+                            {llvm::Type::getDoubleTy(mod->getContext()),
+                             llvm::Type::getDoubleTy(mod->getContext())});
+                        return b.CreateCall(FPow, {lhs, rhs});
                     }
                     break;
+
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
                 case BINOP_BITWISE_OR:

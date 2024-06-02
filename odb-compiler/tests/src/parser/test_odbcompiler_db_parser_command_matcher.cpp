@@ -17,29 +17,29 @@ struct NAME : DBParserHelper
 
 TEST_F(NAME, empty_list)
 {
-    EXPECT_THAT(parse("randomize"), Eq(-1));
+    EXPECT_THAT(parse("RANDOMIZE"), Eq(-1));
 }
 
 TEST_F(NAME, exact_string)
 {
-    addCommand("projection matrix4");
-    addCommand("randomize");
-    addCommand("randomize matrix");
-    addCommand("randomize mesh");
-    addCommand("read");
+    addCommand("PROJECTION MATRIX4");
+    addCommand("RANDOMIZE");
+    addCommand("RANDOMIZE MATRIX");
+    addCommand("RANDOMIZE MESH");
+    addCommand("READ");
 
-    EXPECT_THAT(parse("randomize"), Eq(0));
+    EXPECT_THAT(parse("RANDOMIZE"), Eq(0));
     int cmd = ast.nodes[0].block.stmt;
     EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
 }
 
 TEST_F(NAME, trailing_space)
 {
-    addCommand("projection matrix4");
-    addCommand("randomize");
-    addCommand("randomize matrix");
-    addCommand("randomize mesh");
-    addCommand("read");
+    addCommand("PROJECTION MATRIX4");
+    addCommand("RANDOMIZE");
+    addCommand("RANDOMIZE MATRIX");
+    addCommand("RANDOMIZE MESH");
+    addCommand("READ");
 
     EXPECT_THAT(parse("randomize "), Eq(0));
     int cmd = ast.nodes[0].block.stmt;
@@ -48,11 +48,11 @@ TEST_F(NAME, trailing_space)
 
 TEST_F(NAME, longer_symbol)
 {
-    addCommand("projection matrix4");
-    addCommand("randomize");
-    addCommand("randomize matrix");
-    addCommand("randomize mesh");
-    addCommand("read");
+    addCommand("PROJECTION MATRIX4");
+    addCommand("RANDOMIZE");
+    addCommand("RANDOMIZE MATRIX");
+    addCommand("RANDOMIZE MESH");
+    addCommand("READ");
 
     EXPECT_THAT(parse("randomized"), Eq(-1));
 }
@@ -61,18 +61,18 @@ TEST_F(NAME, longer_symbol)
 TEST_F(NAME, match_longer_string_to_shorter_command)
 {
     cmd::CommandIndex cmdIndex;
-    cmdIndex.addCommand(new cmd::Command(nullptr, "projection matrix4", "",
+    cmdIndex.addCommand(new cmd::Command(nullptr, "PROJECTION MATRIX4", "",
 cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"randomize", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
-cmd::Command(nullptr, "randomize matrix", "", cmd::Command::Type::Void, {}));
-    cmdIndex.addCommand(new cmd::Command(nullptr, "randomize mesh", "",
+"RANDOMIZE", "", cmd::Command::Type::Void, {})); cmdIndex.addCommand(new
+cmd::Command(nullptr, "RANDOMIZE MATRIX", "", cmd::Command::Type::Void, {}));
+    cmdIndex.addCommand(new cmd::Command(nullptr, "RANDOMIZE MESH", "",
 cmd::Command::Type::Void, {})); cmdIndex.addCommand(new cmd::Command(nullptr,
-"read", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
+"READ", "", cmd::Command::Type::Void, {})); matcher->updateFromIndex(&cmdIndex);
 
     auto result = matcher->findLongestCommandMatching("randomize timer");
 
     EXPECT_THAT(result.found, IsTrue());
-    EXPECT_THAT(result.matchedLength, Eq(9)); // strlen("randomize")
+    EXPECT_THAT(result.matchedLength, Eq(9)); // strlen("RANDOMIZE")
 }
 
 TEST_F(NAME, dont_match_shorter_string_to_longer_command)

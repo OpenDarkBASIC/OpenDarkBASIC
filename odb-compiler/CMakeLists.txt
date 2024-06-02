@@ -239,7 +239,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/expand_constant_declarations.c"
     "src/semantic/insert_explicit_type_casts.c"
     "src/semantic/resolve_cmd_overloads.c"
-    "src/semantic/type_check_expressions.c"
+    "src/semantic/type_check_and_cast.c"
+    "src/semantic/type_check_and_cast_binop_arithmetic.c"
+    "src/semantic/type_check_and_cast_binop_pow.c"
+    "src/semantic/type_check_and_cast_casts.c"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
     #"src/astpost/EnforceSingleDefaultCase.cpp"
@@ -497,7 +500,8 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
 
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp")
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

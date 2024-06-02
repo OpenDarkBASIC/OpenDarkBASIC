@@ -13,9 +13,12 @@ struct NAME : public DBParserHelper
 
 TEST_F(NAME, ambiguous_integer_overloads)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER, TYPE_INTEGER});
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER, TYPE_BYTE});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER, TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER, TYPE_BYTE});
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(-1));
@@ -23,8 +26,11 @@ TEST_F(NAME, ambiguous_integer_overloads)
 
 TEST_F(NAME, float_accepts_integer)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_FLOAT});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
     ASSERT_THAT(parse("print 5"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(0));
@@ -32,8 +38,11 @@ TEST_F(NAME, float_accepts_integer)
 
 TEST_F(NAME, integer_accepts_float_with_warning)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(0));
@@ -41,11 +50,14 @@ TEST_F(NAME, integer_accepts_float_with_warning)
 
 TEST_F(NAME, prefer_exact_overload)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
     cmd_id expected_cmd
-        = addCommand(TYPE_VOID, "print", {TYPE_FLOAT});
-    addCommand(TYPE_VOID, "print", {TYPE_STRING});
+        = addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(0));
@@ -60,11 +72,14 @@ TEST_F(NAME, prefer_exact_overload)
 
 TEST_F(NAME, prefer_closer_matching_overload)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
     cmd_id expected_cmd
-        = addCommand(TYPE_VOID, "print", {TYPE_DOUBLE});
-    addCommand(TYPE_VOID, "print", {TYPE_STRING});
+        = addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(0));
@@ -79,11 +94,14 @@ TEST_F(NAME, prefer_closer_matching_overload)
 
 TEST_F(NAME, command_expr_passed_as_argument)
 {
-    addCommand(TYPE_FLOAT, "get float#", {});
-    addCommand(TYPE_VOID, "print", {TYPE_INTEGER});
-    addCommand(TYPE_VOID, "print", {TYPE_FLOAT});
-    addCommand(TYPE_VOID, "print", {TYPE_STRING});
+    addCommand(TYPE_FLOAT, "GET FLOAT#", {});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print get float#()"), Eq(0));
+    ASSERT_THAT(
+        semantic_type_check_and_cast.execute(&ast, &plugins, &cmds, "test", src),
+        Eq(0));
     ASSERT_THAT(
         semantic_resolve_cmd_overloads.execute(&ast, &plugins, &cmds, "test", src),
         Eq(0));

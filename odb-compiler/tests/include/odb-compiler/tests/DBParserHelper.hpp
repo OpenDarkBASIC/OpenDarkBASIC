@@ -7,6 +7,7 @@ extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_source.h"
+#include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/cmd_list.h"
 }
 

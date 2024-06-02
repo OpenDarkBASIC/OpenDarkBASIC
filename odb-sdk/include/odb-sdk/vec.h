@@ -26,7 +26,7 @@
         }* mem;                                                                \
     };
 
-#define VEC_DECLARE_API(prefix, T, bits)                                       \
+#define VEC_DECLARE_API(prefix, T, bits, API)                                  \
     VEC(prefix, T, bits)                                                       \
                                                                                \
     /*!                                                                        \
@@ -52,7 +52,7 @@
      * @param[in] num Number of elements to reserve memory for.                \
      * @return Returns 0 on success, negative on error.                        \
      */                                                                        \
-    int prefix##_reserve(struct prefix* v, int##bits##_t count);               \
+    API int prefix##_reserve(struct prefix* v, int##bits##_t count);           \
                                                                                \
     /*!                                                                        \
      * @brief Reallocates the underlying memory to fit exactly "num" amount of \
@@ -79,7 +79,7 @@
      * current number of elements.                                             \
      * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
      */                                                                        \
-    void prefix##_compact(struct prefix* v);                                   \
+    API void prefix##_compact(struct prefix* v);                               \
                                                                                \
     /*!                                                                        \
      * @brief A combination of @see vec_clear() and @see vec_compact(). Resets \
@@ -115,7 +115,7 @@
      * @param[in] element The element to copy into the vector.                 \
      * @return Returns a pointer to the inserted space.                        \
      */                                                                        \
-    T* prefix##_emplace(struct prefix* v);                                     \
+    API T* prefix##_emplace(struct prefix* v);                                 \
                                                                                \
     /*!                                                                        \
      * @brief Inserts (copies) a new element into the vector at the specified  \
@@ -151,7 +151,7 @@
      * - vec_count().                                                          \
      * @return Returns a pointer to the inserted space.                        \
      */                                                                        \
-    T* prefix##_insert_emplace(struct prefix* v, int##bits##_t i);             \
+    API T* prefix##_insert_emplace(struct prefix* v, int##bits##_t i);         \
                                                                                \
     /*!                                                                        \
      * @brief Removes an element from the end of the vector.                   \
@@ -174,7 +174,7 @@
      * @param[in] i The position of the element in the vector to erase. The    \
      * index ranges from 0 to vec_count()-1.                                   \
      */                                                                        \
-    void prefix##_erase(struct prefix v, int##bits##_t i);                     \
+    API void prefix##_erase(struct prefix v, int##bits##_t i);                 \
                                                                                \
     /*!                                                                        \
      * @brief Removes all elements for which the callback function returns     \
@@ -191,7 +191,7 @@
      * negative value. This allows propagating errors from within the callback \
      * function.                                                               \
      */                                                                        \
-    int prefix##_retain(                                                       \
+    API int prefix##_retain(                                                   \
         struct prefix v, int (*on_element)(T * elem, void* user), void* user); \
                                                                                \
     static inline void prefix##_init(struct prefix* v)                         \

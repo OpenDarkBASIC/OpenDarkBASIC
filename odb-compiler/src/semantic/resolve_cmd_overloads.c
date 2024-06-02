@@ -2,12 +2,11 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/vec.h"
 #include <assert.h>
 
-VEC_DECLARE_API(candidates, cmd_id, 8)
+VEC_DECLARE_API(candidates, cmd_id, 8, ODBCOMPILER_PRIVATE_API)
 VEC_DEFINE_API(candidates, cmd_id, 8)
 
 struct ctx
@@ -42,7 +41,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
         {
             case TP_DISALLOW: return 0;
 
-            case TP_NARROWING:
+            case TP_TRUNCATE:
             case TP_STRANGE:
             case TP_ALLOW: continue;
         }
@@ -69,7 +68,7 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
         switch (type_promote(arg, param))
         {
             case TP_DISALLOW:
-            case TP_NARROWING:
+            case TP_TRUNCATE:
             case TP_STRANGE: return 0;
 
             case TP_ALLOW: continue;
@@ -122,14 +121,15 @@ report_error(
     if (vec_count(candidates) > 1)
     {
         cmd_id* pcmd;
+        int     gutter;
         log_flc(
             "{e:error:} ",
             source_filename,
             source.text.data,
             params_loc,
             "Command has ambiguous overloads.\n");
-        log_excerpt(source_filename, source.text.data, params_loc, "");
-        log_note("", "Available candidates:\n");
+        gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+        log_excerpt_note(gutter, "Available candidates:\n");
         vec_for_each(candidates, pcmd)
         {
             int              i;
@@ -142,7 +142,9 @@ report_error(
             plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
             struct plugin_info* plugin = vec_get(*plugins, plugin_id);
             log_raw(
-                "  {emph:%.*s}%s",
+                "%*s|   {emph:%.*s}%s",
+                gutter,
+                "",
                 name.len,
                 name.data + name.off,
                 ret_type == TYPE_VOID ? " " : "(");
@@ -170,6 +172,7 @@ report_error(
 
     if (vec_count(candidates) == 0)
     {
+        int              gutter;
         struct utf8_view cmd_name;
         log_flc(
             "{e:error:} ",
@@ -178,8 +181,8 @@ report_error(
             params_loc,
             "Parameter mismatch: No version of this command takes the "
             "argument types used here.\n");
-        log_excerpt(source_filename, source.text.data, params_loc, "");
-        log_note("", "Available candidates:\n");
+        gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+        log_excerpt_note(gutter, "Available candidates:\n");
         cmd_name = utf8_list_view(&cmds->db_cmd_names, cmd);
         for (;
              cmd < cmd_list_count(cmds)
@@ -195,7 +198,9 @@ report_error(
             const struct utf8_list* param_names
                 = vec_get(cmds->db_param_names, cmd);
             log_raw(
-                "  {emph:%.*s}%s",
+                "%*s|   {emph:%.*s}%s",
+                gutter,
+                "",
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
                 ret_type == TYPE_VOID ? " " : "(");
@@ -218,7 +223,8 @@ static void
 log_cmd_signature(
     cmd_id                    cmd_id,
     const struct plugin_list* plugins,
-    const struct cmd_list*    cmds)
+    const struct cmd_list*    cmds,
+    int                       gutter)
 {
     int              i;
     struct utf8_view name = utf8_list_view(&cmds->db_cmd_names, cmd_id);
@@ -229,8 +235,8 @@ log_cmd_signature(
     plugin_id               plugin_id = *vec_get(cmds->plugin_ids, cmd_id);
     const struct plugin_info* plugin = vec_get(*plugins, plugin_id);
 
-    log_note(
-        "",
+    log_excerpt_note(
+        gutter,
         "Calling command: {emph:%.*s}%s",
         name.len,
         name.data + name.off,
@@ -263,11 +269,12 @@ typecheck_arguments(
     const struct param_types_list* params = vec_get(cmds->param_types, cmd_id);
 
     ODBSDK_DEBUG_ASSERT(ast->nodes[cmd_node].info.node_type == AST_COMMAND);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].info.node_type == AST_ARGLIST);
 
     for (i = 0; i != vec_count(*params);
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
+        ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].info.node_type == AST_ARGLIST);
+        int       gutter;
         ast_id    arg = ast->nodes[arglist].arglist.expr;
         enum type arg_type = ast->nodes[arg].info.type_info;
         enum type param_type = vec_get(*params, i)->type;
@@ -277,7 +284,7 @@ typecheck_arguments(
             case TP_DISALLOW: ODBSDK_DEBUG_ASSERT(0); break;
             case TP_ALLOW: break;
 
-            case TP_NARROWING:
+            case TP_TRUNCATE:
                 log_flc(
                     "{w:warning:} ",
                     source_filename,
@@ -288,12 +295,12 @@ typecheck_arguments(
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                log_excerpt(
+                gutter = log_excerpt(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
-                log_cmd_signature(cmd_id, plugins, cmds);
+                log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
 
             case TP_STRANGE:
@@ -307,12 +314,12 @@ typecheck_arguments(
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                log_excerpt(
+                gutter = log_excerpt(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
-                log_cmd_signature(cmd_id, plugins, cmds);
+                log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
         }
     }
@@ -367,10 +374,10 @@ resolve_cmd_overloads(
         candidates_retain(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
         if (vec_count(candidates) > 1)
+            candidates_retain(candidates, eliminate_problematic_casts, &ctx);
+        if (vec_count(candidates) > 1)
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
-        if (vec_count(candidates) > 1)
-            candidates_retain(candidates, eliminate_problematic_casts, &ctx);
 
         if (vec_count(candidates) != 1)
         {
@@ -402,7 +409,7 @@ fail:
 
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations,
-       &semantic_type_check_expressions,
+       &semantic_type_check_and_cast,
        NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads

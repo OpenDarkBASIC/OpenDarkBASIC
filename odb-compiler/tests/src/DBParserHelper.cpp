@@ -16,6 +16,11 @@ DBParserHelper::SetUp()
     db_parser_init(&p);
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
+
+    struct plugin_info* plugin = plugin_list_emplace(&plugins);
+    plugin_info_init(plugin);
+    utf8_set_cstr(&plugin->name, "test");
+    ospath_set_cstr(&plugin->filepath, "test");
 }
 
 void
@@ -31,6 +36,13 @@ DBParserHelper::TearDown()
         std::filesystem::create_directory("ast");
         ast_export_dot(&ast, cstr_utf8_view(filename.c_str()), &src, &cmds);
 #endif
+    }
+
+    struct plugin_info* plugin;
+    vec_for_each(plugins, plugin)
+    {
+        ospath_deinit(plugin->filepath);
+        utf8_deinit(plugin->name);
     }
 
     ast_deinit(&ast);

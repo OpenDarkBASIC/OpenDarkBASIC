@@ -5,12 +5,12 @@
 
 #define LOSSY_BINOP                                                            \
     "Value is truncated when converting from {lhs:%s} to {rhs:%s} in binary "  \
-    "expression\n"
+    "expression.\n"
 #define STRANGE_BINOP                                                          \
-    "Strange conversion from {lhs:%s} to {rhs:%s} in binary expression\n"
+    "Strange conversion from {lhs:%s} to {rhs:%s} in binary expression.\n"
 #define ERROR_BINOP                                                            \
     "Invalid conversion from {lhs:%s} to {rhs:%s} in binary expression. "      \
-    "Types are incompatible\n"
+    "Types are incompatible.\n"
 
 static void
 log_narrow_binop(
@@ -40,8 +40,8 @@ log_narrow_binop(
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
-        type_to_db_name(source_type),
-        type_to_db_name(target_type));
+        type_to_db_name(lhs == source_node ? source_type : target_type),
+        type_to_db_name(lhs == source_node ? target_type : source_type));
 }
 
 static void
@@ -66,28 +66,14 @@ log_strange_binop(
         STRANGE_BINOP,
         type_to_db_name(source_type),
         type_to_db_name(target_type));
-    if (lhs == source_node)
-    {
-        log_binop_excerpt(
-            source_filename,
-            source.text.data,
-            ast->nodes[lhs].info.location,
-            ast->nodes[op].binop.op_location,
-            ast->nodes[rhs].info.location,
-            type_to_db_name(source_type),
-            type_to_db_name(target_type));
-    }
-    else
-    {
-        log_binop_excerpt(
-            source_filename,
-            source.text.data,
-            ast->nodes[lhs].info.location,
-            ast->nodes[op].binop.op_location,
-            ast->nodes[rhs].info.location,
-            type_to_db_name(target_type),
-            type_to_db_name(source_type));
-    }
+    log_binop_excerpt(
+        source_filename,
+        source.text.data,
+        ast->nodes[lhs].info.location,
+        ast->nodes[op].binop.op_location,
+        ast->nodes[rhs].info.location,
+        type_to_db_name(lhs == source_node ? source_type : target_type),
+        type_to_db_name(lhs == source_node ? target_type : source_type));
 }
 
 static void
@@ -117,8 +103,8 @@ log_error_binop(
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
-        type_to_db_name(source_type),
-        type_to_db_name(target_type));
+        type_to_db_name(lhs == source_node ? source_type : target_type),
+        type_to_db_name(lhs == source_node ? target_type : source_type));
 }
 
 static enum type
@@ -156,7 +142,8 @@ resolve_expression(
 
             switch (ast->nodes[n].binop.op)
             {
-                /* These operations require that both LHS and RHS have the same
+                /*
+                 * These operations require that both LHS and RHS have the same
                  * type. The result type will be the "wider" of the two types.
                  */
                 case BINOP_ADD:
@@ -164,122 +151,299 @@ resolve_expression(
                 case BINOP_MUL:
                 case BINOP_DIV:
                 case BINOP_MOD: {
+                    enum type                  target_type;
                     enum type_promotion_result left_to_right
                         = type_promote(left_type, right_type);
                     enum type_promotion_result right_to_left
                         = type_promote(right_type, left_type);
 
-                    /* Prefer TP_ALLOW over TP_STRANGE */
                     if (left_to_right == TP_ALLOW)
-                        return ast->nodes[n].info.type_info = right_type;
+                    {
+                        target_type = right_type;
+                        goto binop_add_success;
+                    }
                     if (right_to_left == TP_ALLOW)
-                        return ast->nodes[n].info.type_info = left_type;
+                    {
+                        target_type = left_type;
+                        goto binop_add_success;
+                    }
 
                     if (left_to_right == TP_STRANGE)
                     {
-                        ast->nodes[n].info.type_info = right_type;
+                        target_type = right_type;
                         log_strange_binop(
                             ast, n, lhs, rhs, source_filename, source);
-                        return right_type;
+                        goto binop_add_success;
                     }
                     if (right_to_left == TP_STRANGE)
                     {
-                        ast->nodes[n].info.type_info = left_type;
+                        target_type = left_type;
                         log_strange_binop(
                             ast, n, rhs, lhs, source_filename, source);
-                        return left_type;
+                        goto binop_add_success;
                     }
 
-                    /* Fall back to conversions with loss of info, but log a
-                     * warning
-                     */
-                    if (left_to_right == TP_NARROWING)
+                    if (left_to_right == TP_TRUNCATE)
                     {
-                        ast->nodes[n].info.type_info = right_type;
+                        target_type = right_type;
                         log_narrow_binop(
                             ast, n, lhs, rhs, source_filename, source);
-                        return right_type;
+                        goto binop_add_success;
                     }
-                    if (right_to_left == TP_NARROWING)
+                    if (right_to_left == TP_TRUNCATE)
                     {
-                        ast->nodes[n].info.type_info = left_type;
+                        target_type = left_type;
                         log_narrow_binop(
                             ast, n, rhs, lhs, source_filename, source);
-                        return left_type;
+                        goto binop_add_success;
                     }
 
                     /* Invalid conversion */
                     log_error_binop(ast, lhs, n, source_filename, source);
+                    break;
+
+                binop_add_success:;
+                    /* Insert casts to result type, if necessary */
+                    if (ast->nodes[lhs].info.type_info != target_type)
+                    {
+                        ast_id cast_lhs = ast_cast(
+                            ast,
+                            lhs,
+                            target_type,
+                            ast->nodes[lhs].info.location);
+                        if (cast_lhs < -1)
+                            return -1;
+                        ast->nodes[n].binop.left = cast_lhs;
+                    }
+
+                    if (ast->nodes[rhs].info.type_info != target_type)
+                    {
+                        ast_id cast_rhs = ast_cast(
+                            ast,
+                            rhs,
+                            target_type,
+                            ast->nodes[rhs].info.location);
+                        if (cast_rhs < -1)
+                            return -1;
+                        ast->nodes[n].binop.right = cast_rhs;
+                    }
+
+                    /* Set result type and return */
+                    return ast->nodes[n].info.type_info = target_type;
                 }
                 break;
 
-                /* 
-                 * The supported instructions are:
-                 *   powi(f32, i32)
-                 *   powi(f64, i32)
-                 *   pow(f32, f32)
-                 *   pow(f64, f64)
-                 */
-                case BINOP_POW:
-                    switch (right_type)
-                    {
-                        case TYPE_INVALID:
-                        case TYPE_VOID:
-                        case TYPE_STRING:
-                        case TYPE_ARRAY:
-                        case TYPE_LABEL:
-                        case TYPE_DABEL:
-                        case TYPE_ANY:
-                        case TYPE_USER_DEFINED_VAR_PTR: break;
+                case BINOP_POW: {
+                    /*
+                     * The supported instructions are as of this writing:
+                     *   powi(f32, i32)
+                     *   powi(f64, i32)
+                     *   pow(f32, f32)
+                     *   pow(f64, f64)
+                     */
+                    enum type lhs_target_type
+                        = left_type == TYPE_DOUBLE ? TYPE_DOUBLE : TYPE_FLOAT;
+                    enum type rhs_target_type
+                        = right_type == TYPE_DOUBLE  ? TYPE_DOUBLE
+                          : right_type == TYPE_FLOAT ? TYPE_FLOAT
+                                                     : TYPE_INTEGER;
+                    /*
+                     * It makes sense to prioritize the LHS type higher than the
+                     * RHS type. For example, if the LHS is a f32, but the RHS
+                     * is a f64, then the RHS should be cast to a f32.
+                     */
+                    if (rhs_target_type != TYPE_INTEGER)
+                        rhs_target_type = lhs_target_type;
 
-                        case TYPE_LONG:
-                        case TYPE_DWORD:
-                        case TYPE_INTEGER:
-                        case TYPE_WORD:
-                        case TYPE_BYTE:
-                        case TYPE_BOOLEAN:
-                            /* pow(f32/f64, i32)
-                             *   lhs is forced to f32 or f64
-                             *   rhs is forced to i32 */
-                            switch (type_promote(right_type, TYPE_INTEGER))
-                            {
-                                case TP_DISALLOW:
-                                case TP_ALLOW:
-                                case TP_NARROWING:
-                                case TP_STRANGE: break;
-                            }
-                            switch (type_promote(left_type, TYPE_DOUBLE))
-                            {
-                                case TP_DISALLOW:
-                                case TP_ALLOW:
-                                case TP_NARROWING:
-                                case TP_STRANGE: break;
-                            }
-                            break;
-                        case TYPE_FLOAT:
-                            /* pow(f32, f32) -- lhs is forced to f32 */
-                            switch (type_promote(left_type, TYPE_FLOAT))
-                            {
-                                case TP_DISALLOW:
-                                case TP_ALLOW:
-                                case TP_NARROWING:
-                                case TP_STRANGE: break;
-                            }
-                            break;
-                        case TYPE_DOUBLE:
-                            /* pow(f64, f64) -- lhs is forced to f64 */
-                            switch (type_promote(right_type, TYPE_DOUBLE))
-                            {
-                                case TP_DISALLOW:
-                                case TP_ALLOW:
-                                case TP_NARROWING:
-                                case TP_STRANGE: break;
-                            }
-                            break;
+                    if (left_type != lhs_target_type)
+                    {
+                        ast_id cast_lhs;
+                        switch (type_promote(left_type, lhs_target_type))
+                        {
+                            case TP_ALLOW: break;
+                            case TP_STRANGE:
+                                log_flc(
+                                    "{w:warning:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    STRANGE_BINOP,
+                                    type_to_db_name(left_type),
+                                    type_to_db_name(lhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    ast->nodes[n].binop.op_location,
+                                    type_to_db_name(left_type),
+                                    "");
+                                log_note(
+                                    "",
+                                    "The left operand (base) must be a "
+                                    "{rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                break;
+
+                            case TP_TRUNCATE:
+                                log_flc(
+                                    "{w:warning:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    LOSSY_BINOP,
+                                    type_to_db_name(left_type),
+                                    type_to_db_name(lhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    ast->nodes[n].binop.op_location,
+                                    type_to_db_name(left_type),
+                                    "");
+                                log_note(
+                                    "",
+                                    "The left operand (base) must be a "
+                                    "{rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                break;
+
+                            case TP_DISALLOW:
+                                log_flc(
+                                    "{e:error:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    ERROR_BINOP,
+                                    type_to_db_name(left_type),
+                                    type_to_db_name(lhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[lhs].info.location,
+                                    ast->nodes[n].binop.op_location,
+                                    type_to_db_name(left_type),
+                                    "");
+                                log_note(
+                                    "",
+                                    "The left operand (base) must be a "
+                                    "{rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                goto binop_pow_error;
+                        }
+
+                        /* Cast is required, insert one in the AST */
+                        cast_lhs = ast_cast(
+                            ast,
+                            lhs,
+                            lhs_target_type,
+                            ast->nodes[lhs].info.location);
+                        if (cast_lhs < -1)
+                            goto binop_pow_error;
+                        ast->nodes[n].binop.left = cast_lhs;
                     }
 
-                    /* Invalid conversion */
-                    break;
+                    if (right_type != rhs_target_type)
+                    {
+                        ast_id cast_rhs;
+                        switch (type_promote(right_type, rhs_target_type))
+                        {
+                            case TP_ALLOW: break;
+                            case TP_STRANGE:
+                                log_flc(
+                                    "{w:warning:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[rhs].info.location,
+                                    STRANGE_BINOP,
+                                    type_to_db_name(right_type),
+                                    type_to_db_name(rhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[n].binop.op_location,
+                                    ast->nodes[rhs].info.location,
+                                    "",
+                                    type_to_db_name(right_type));
+                                log_note(
+                                    "",
+                                    "The right operand (exponent) must be a "
+                                    "{rhs:%s}, {rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_INTEGER),
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                break;
+
+                            case TP_TRUNCATE:
+                                log_flc(
+                                    "{w:warning:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[rhs].info.location,
+                                    LOSSY_BINOP,
+                                    type_to_db_name(right_type),
+                                    type_to_db_name(rhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[n].binop.op_location,
+                                    ast->nodes[rhs].info.location,
+                                    "",
+                                    type_to_db_name(right_type));
+                                log_note(
+                                    "",
+                                    "The right operand (exponent) must be a "
+                                    "{rhs:%s}, {rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_INTEGER),
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                break;
+
+                            case TP_DISALLOW:
+                                log_flc(
+                                    "{e:error:} ",
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[rhs].info.location,
+                                    ERROR_BINOP,
+                                    type_to_db_name(right_type),
+                                    type_to_db_name(rhs_target_type));
+                                log_excerpt2(
+                                    source_filename,
+                                    source.text.data,
+                                    ast->nodes[n].binop.op_location,
+                                    ast->nodes[rhs].info.location,
+                                    "",
+                                    type_to_db_name(right_type));
+                                log_note(
+                                    "",
+                                    "The right operand (exponent) must be a "
+                                    "{rhs:%s}, {rhs:%s} or {rhs:%s}\n",
+                                    type_to_db_name(TYPE_INTEGER),
+                                    type_to_db_name(TYPE_FLOAT),
+                                    type_to_db_name(TYPE_DOUBLE));
+                                goto binop_pow_error;
+                        }
+
+                        /* Cast is required, insert one in the AST */
+                        cast_rhs = ast_cast(
+                            ast,
+                            rhs,
+                            rhs_target_type,
+                            ast->nodes[rhs].info.location);
+                        if (cast_rhs < -1)
+                            goto binop_pow_error;
+                        ast->nodes[n].binop.right = cast_rhs;
+                    }
+
+                    /* The result type is the same as LHS */
+                    return ast->nodes[n].binop.info.type_info = lhs_target_type;
+
+                binop_pow_error:;
+                }
+                break;
 
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
@@ -350,13 +514,14 @@ resolve_expression(
                         type_to_db_name(target_type));
                     break;
 
-                case TP_NARROWING:
+                case TP_TRUNCATE:
                     log_flc(
                         "{w:warning:} ",
                         source_filename,
                         source.text.data,
                         ast->nodes[n].info.location,
-                        "Value is truncated when converting from {lhs:%s} to "
+                        "Value is truncated when converting from {lhs:%s} "
+                        "to "
                         "{rhs:%s} in expression\n",
                         type_to_db_name(source_type),
                         type_to_db_name(target_type));

@@ -19,7 +19,8 @@ operator==(const struct obj& a, const struct obj& b)
     return a.a == b.a && a.b == b.b && a.c == b.c && a.d == b.d;
 }
 
-VEC_DECLARE_API(vobj, struct obj, 16)
+#define NO_API
+VEC_DECLARE_API(vobj, struct obj, 16, NO_API)
 VEC_DEFINE_API(vobj, struct obj, 16)
 
 static void*
@@ -46,7 +47,7 @@ VEC_DEFINE_API(shitty_vobj, struct obj, 16)
 #else
 #define mem_alloc   shitty_alloc
 #define mem_realloc shitty_realloc
-VEC_DECLARE_API(shitty_vobj, struct obj, 16)
+VEC_DECLARE_API(shitty_vobj, struct obj, 16, NO_API)
 VEC_DEFINE_API(shitty_vobj, struct obj, 16)
 #undef mem_alloc
 #undef mem_realloc
@@ -94,7 +95,9 @@ TEST_F(NAME, resizing_larger_than_capacity_reallocates_and_updates_size)
     *old_ptr = obj{42, 42, 42, 42};
     ASSERT_THAT(vobj_resize(&vobj, ODBSDK_VEC_MIN_CAPACITY * 32), Eq(0));
     obj* new_ptr = vec_get(vobj, 0);
-    EXPECT_THAT(old_ptr, Ne(new_ptr));
+    EXPECT_THAT(
+        old_ptr, Ne(new_ptr)); // XXX: realloc() is not guaranteed to return a
+                               // new address. This test will fail sometimes.
     EXPECT_THAT(new_ptr, Pointee(obj{42, 42, 42, 42}));
     EXPECT_THAT(vobj.mem->capacity, Eq(ODBSDK_VEC_MIN_CAPACITY * 32));
     EXPECT_THAT(vec_count(vobj), Eq(ODBSDK_VEC_MIN_CAPACITY * 32));

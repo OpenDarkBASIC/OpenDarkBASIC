@@ -15,9 +15,9 @@ struct NAME : DBParserHelper
 
 TEST_F(NAME, add_command_returns_ref)
 {
-    cmd_id a = addCommand("projection matrix4");
-    cmd_id b = addCommand("randomize");
-    cmd_id c = addCommand("randomize matrix");
+    cmd_id a = addCommand("PROJECTION MATRIX4");
+    cmd_id b = addCommand("RANDOMIZE");
+    cmd_id c = addCommand("RANDOMIZE MATRIX");
 
     EXPECT_THAT(a, Eq(0));
     EXPECT_THAT(b, Eq(1));
@@ -26,10 +26,10 @@ TEST_F(NAME, add_command_returns_ref)
 
 TEST_F(NAME, added_commands_are_lexicographically_sorted)
 {
-    EXPECT_THAT(addCommand("randomize mesh"), Eq(0));
-    EXPECT_THAT(addCommand("randomize"), Eq(0));
-    EXPECT_THAT(addCommand("projection matrix4"), Eq(0));
-    EXPECT_THAT(addCommand("randomize matrix"), Eq(2));
-    EXPECT_THAT(addCommand("read"), Eq(4));
+    EXPECT_THAT(addCommand("RANDOMIZE MESH"), Eq(0));
+    EXPECT_THAT(addCommand("RANDOMIZE"), Eq(0));
+    EXPECT_THAT(addCommand("PROJECTION MATRIX4"), Eq(0));
+    EXPECT_THAT(addCommand("RANDOMIZE MATRIX"), Eq(2));
+    EXPECT_THAT(addCommand("READ"), Eq(4));
 }
 

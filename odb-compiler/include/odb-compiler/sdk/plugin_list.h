@@ -23,7 +23,7 @@ struct plugin_info
     struct utf8 name;
 };
 
-VEC_DECLARE_API(plugin_list, struct plugin_info, 16)
+VEC_DECLARE_API(plugin_list, struct plugin_info, 16, ODBCOMPILER_PUBLIC_API)
 
 static inline void
 plugin_info_init(struct plugin_info* plugin)

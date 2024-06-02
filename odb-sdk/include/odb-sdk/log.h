@@ -77,20 +77,23 @@ ODBSDK_PRINTF_FORMAT(5, 6) static inline void
 log_flc(const char* severity, const char* filename, const char* source, struct utf8_span location, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_vflc(severity, filename, source, location, fmt, ap); va_end(ap); }
 
-ODBSDK_PUBLIC_API void
+ODBSDK_PUBLIC_API int
 log_excerpt(const char* filename, const char* source, struct utf8_span location, const char* annotation);
 
-ODBSDK_PUBLIC_API void
+ODBSDK_PUBLIC_API int
 log_excerpt2(
     const char* filename, const char* source,
     struct utf8_span loc1, struct utf8_span loc2,
     const char* annotation1, const char* annotation2);
 
-ODBSDK_PUBLIC_API void
+ODBSDK_PUBLIC_API int
 log_binop_excerpt(
     const char* filename, const char* source,
     struct utf8_span lhs, struct utf8_span op, struct utf8_span rhs,
     const char* lhs_text, const char* rhs_text);
+
+ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(2, 3) void
+log_excerpt_note(int gutter_indent, const char* fmt, ...);
 
 /* SDK logging functions --------------------------------------------------- */
 ODBSDK_PRINTF_FORMAT(3, 4) static inline void
@@ -121,6 +124,5 @@ log_parser_err(const char* fmt, ...)
 /* Memory functions --------------------------------------------------------- */
 static inline int
 log_oom(size_t bytes, const char* func_name)
-{ log_sdk_err("Failed to allocate %zu bytes in %s\n", bytes, func_name); return -1; }
-
+{ log_sdk_err("Failed to allocate %lu bytes in %s\n", bytes, func_name); return -1; }
 
