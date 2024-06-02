@@ -3,14 +3,208 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 
-#define ODBSDK_HM_SLOT_UNUSED  0
-#define ODBSDK_HM_SLOT_RIP     1
-#define ODBSDK_HM_SLOT_INVALID 2
+#define HM_SLOT_UNUSED  0
+#define HM_SLOT_RIP     1
+#define HM_SLOT_INVALID 2
 
-typedef uint32_t hm_size;
-typedef int32_t  hm_idx;
+#define HM(name, KC, VC, bits)                                                 \
+    struct name                                                                \
+    {                                                                          \
+        KC keys;                                                               \
+        VC values;                                                             \
+        struct                                                                 \
+        {                                                                      \
+            int##bits##_t count, capacity;                                     \
+            hash32        table[1];                                            \
+        }* mem;                                                                \
+    }
 
-typedef int (*hm_compare_func)(const void* a, const void* b, int size);
+#define HM_DECLARE_API_EXTRA(prefix, K, V, KC, VC, bits, API)                  \
+    HM(name, KC, VC, bits);                                                    \
+                                                                               \
+    /*!                                                                        \
+     * @brief This must be called before operating on any hashmap. Initializes \
+     * the structure to a defined state.                                       \
+     * @param[in] hm Pointer to a hashmap of type HM(K,V)*                     \
+     */                                                                        \
+    API void prefix_##init(struct prefix* hm);                                 \
+                                                                               \
+    /*!                                                                        \
+     * @brief Destroys an existing hashmap and frees all memory allocated by   \
+     * inserted elements.                                                      \
+     * @param[in] hm Hashmap of type HM(K,V)                                   \
+     */                                                                        \
+    API void prefix_##deinit(struct prefix hm);                                \
+                                                                               \
+    /*!                                                                        \
+     * @brief Allocates space for a new                                        \
+     * @brief insert_or_get()                                                  \
+     */                                                                        \
+    API V* prefix##_emplace_new(struct prefix* hm, K key);                     \
+    API V* prefix##_insert_or_get(struct prefix* hm, K key, V value);          \
+                                                                               \
+    API V* prefix##_erase(struct prefix* hm, K key);                           \
+    API V* prefix##_find(struct prefix* hm, K key);
+
+#define HM_DEFINE_API_EXTRA(                                                   \
+    prefix,                                                                    \
+    K,                                                                         \
+    V,                                                                         \
+    bits,                                                                      \
+    hm_hash,                                                                   \
+    hm_keys_init,                                                              \
+    hm_keys_deinit,                                                            \
+    hm_keys_get,                                                               \
+    hm_keys_equal,                                                             \
+    hm_keys_insert,                                                            \
+    hm_keys_erase,                                                             \
+    hm_values_init,                                                            \
+    hm_values_deinit,                                                          \
+    hm_values_get,                                                             \
+    hm_values_emplace,                                                         \
+    hm_values_erase)                                                           \
+    static int resize_rehash(struct prefix* hm, int##bits##_t new_capacity)    \
+    {                                                                          \
+        struct prefix new_hm;                                                  \
+        int##bits##_t i;                                                       \
+                                                                               \
+        /* Must be power of 2 */                                               \
+        ODBSDK_DEBUG_ASSERT((new_capacity & (new_capacity - 1)) == 0);         \
+                                                                               \
+        new_hm.keys = hm->keys;                                                \
+        new_hm.values = hm->values;                                            \
+        new_hm.mem = mem_alloc(new_capacity);                                  \
+    }                                                                          \
+    void prefix##_init(struct prefix* hm)                                      \
+    {                                                                          \
+        hm->mem = NULL;                                                        \
+        hm_keys_init(&hm->keys);                                               \
+        hm_values_init(&hm->values);                                           \
+    }                                                                          \
+    void prefix##_deinit(struct prefix* hm)                                    \
+    {                                                                          \
+        hm_values_deinit(&hm->values);                                         \
+        hm_keys_deinit(&hm->values);                                           \
+        if (hm->mem)                                                           \
+            mem_free(hm->mem);                                                 \
+    }                                                                          \
+    V* prefix##_insert_new(struct prefix* hm, K key)                           \
+    {                                                                          \
+        V*            new_value;                                               \
+        hash32        h;                                                       \
+        int##bits##_t pos = (int##bits##_t)(h & (hm->capacity - 1));           \
+        int##bits##_t i = 0;                                                   \
+        int##bits##_t last_rip = HM_SLOT_INVALID;                              \
+                                                                               \
+        /* NOTE: Rehashing may change table count, make sure to calculate hash \
+         * after this */                                                       \
+        if (hm->capacity * 100 >= REHASH_AT_PERCENT * hm->count)               \
+            if (resize_rehash(                                                 \
+                    hm, hm->capacity ? hm->capacity * 2 : MIN_CAPACITY)        \
+                != 0)                                                          \
+                return NULL;                                                   \
+                                                                               \
+        h = hm_hash(key);                                                      \
+        while (hm->table[pos] != HM_SLOT_UNUSED)                               \
+        {                                                                      \
+            /* If the same hash already exists in this slot, and this isn't    \
+             * the result of a hash collision (which we can verify by          \
+             * comparing the original keys), then we can conclude this key was \
+             * already inserted */                                             \
+            if (hm->table[pos] == h)                                           \
+                if (hm_key_equal(hm_key_get(&hm->keys, pos), key))             \
+                    return NULL;                                               \
+            /* Keep track of visited tombstones, as it's possible to insert    \
+             * into them */                                                    \
+            if (hm->table[pos] == HM_SLOT_RIP)                                 \
+                last_rip = pos;                                                \
+            /* Quadratic probing following p(K,i)=(i^2+i)/2. If the hash table \
+             * size is a power of two, this will visit every slot. */          \
+            i++;                                                               \
+            pos = (int##bits##_t)((pos + i) & (hm->capacity - 1));             \
+            goto probe;                                                        \
+        }                                                                      \
+                                                                               \
+        /* Prefer inserting into a tombstone. Note that there is no way to     \
+         * exit early when probing for insert positions, because it's not      \
+         * possible to know if the key exists or not without completing the    \
+         * entire probing sequence. */                                         \
+        if (last_rip != HM_SLOT_INVALID)                                       \
+            pos = last_rip;                                                    \
+                                                                               \
+        if (hm_key_insert(&hm->keys, pos, key) != 0)                           \
+            return -1;                                                         \
+        new_value = hm_value_emplace(&hm->values, pos);                        \
+        if (new_value == NULL)                                                 \
+        {                                                                      \
+            hm_key_erase(&hm->keys, pos);                                      \
+            return -1;                                                         \
+        }                                                                      \
+        hm->table[pos] = h;                                                    \
+        hm->count++;                                                           \
+        return new_value;                                                      \
+    }                                                                          \
+    API V* prefix##_insert_or_get(struct prefix* hm, K key, V value)           \
+    {                                                                          \
+        V*            new_value;                                               \
+        hash32        h;                                                       \
+        int##bits##_t pos = (int##bits##_t)(h & (hm->capacity - 1));           \
+        int##bits##_t i = 0;                                                   \
+        int##bits##_t last_rip = HM_SLOT_INVALID;                              \
+                                                                               \
+        /* NOTE: Rehashing may change table count, make sure to calculate hash \
+         * after this */                                                       \
+        if (hm->capacity * 100 >= REHASH_AT_PERCENT * hm->count)               \
+            if (resize_rehash(                                                 \
+                    hm, hm->capacity ? hm->capacity * 2 : MIN_CAPACITY)        \
+                != 0)                                                          \
+                return NULL;                                                   \
+                                                                               \
+        h = hm_hash(key);                                                      \
+        while (hm->table[pos] != HM_SLOT_UNUSED)                               \
+        {                                                                      \
+            /* If the same hash already exists in this slot, and this isn't    \
+             * the result of a hash collision (which we can verify by          \
+             * comparing the original keys), then we can conclude this key was \
+             * already inserted */                                             \
+            if (hm->table[pos] == h)                                           \
+                if (hm_key_equal(hm_key_get(&hm->keys, pos), key))             \
+                    return hm_value_get(&hm->values, pos);                     \
+            /* Keep track of visited tombstones, as it's possible to insert    \
+             * into them */                                                    \
+            if (hm->table[pos] == HM_SLOT_RIP)                                 \
+                last_rip = pos;                                                \
+            /* Quadratic probing following p(K,i)=(i^2+i)/2. If the hash table \
+             * size is a power of two, this will visit every slot. */          \
+            i++;                                                               \
+            pos = (int##bits##_t)((pos + i) & (hm->capacity - 1));             \
+            goto probe;                                                        \
+        }                                                                      \
+                                                                               \
+        /* Prefer inserting into a tombstone. Note that there is no way to     \
+         * exit early when probing for insert positions, because it's not      \
+         * possible to know if the key exists or not without completing the    \
+         * entire probing sequence. */                                         \
+        if (last_rip != HM_SLOT_INVALID)                                       \
+            pos = last_rip;                                                    \
+                                                                               \
+        if (hm_key_insert(&hm->keys, pos, key) != 0)                           \
+            return -1;                                                         \
+        new_value = hm_value_emplace(&hm->values, pos);                        \
+        if (new_value == NULL)                                                 \
+        {                                                                      \
+            hm_key_erase(&hm->keys, pos);                                      \
+            return -1;                                                         \
+        }                                                                      \
+        *new_value = value;                                                    \
+        hm->table[pos] = h;                                                    \
+        hm->count++;                                                           \
+        return new_value;                                                      \
+    }
+
+typedef int32_t hm_size;
+typedef int32_t hm_idx;
+typedef int     (*hm_compare_func)(const void* a, const void* b, int size);
 
 struct hm
 {
@@ -157,9 +351,8 @@ hm_exists(const struct hm* hm, const void* key);
             hash32 slot_##value                                                \
                 = *(hash32*)((hm)->storage                                     \
                              + (hm_idx)sizeof(hash32) * pos_##value);          \
-            if (slot_##value == ODBSDK_HM_SLOT_UNUSED                          \
-                || slot_##value == ODBSDK_HM_SLOT_RIP                          \
-                || slot_##value == ODBSDK_HM_SLOT_INVALID)                     \
+            if (slot_##value == HM_SLOT_UNUSED || slot_##value == HM_SLOT_RIP  \
+                || slot_##value == HM_SLOT_INVALID)                            \
                 continue;                                                      \
             {
 

@@ -101,7 +101,7 @@ static hash32
 hash_wrapper(const struct hm* hm, const void* data, int len)
 {
     hash32 hash = hm->hash(data, len);
-    if (hash == ODBSDK_HM_SLOT_UNUSED || hash == ODBSDK_HM_SLOT_RIP || hash == ODBSDK_HM_SLOT_INVALID)
+    if (hash == HM_SLOT_UNUSED || hash == HM_SLOT_RIP || hash == HM_SLOT_INVALID)
         return 3;
     return hash;
 }
@@ -118,7 +118,7 @@ malloc_and_init_storage(hm_size key_size, hm_size value_size, hm_size table_coun
     if (storage == NULL)
         return NULL;
 
-    /* Initialize hash table -- NOTE: Only works if HM_ODBSDK_HM_SLOT_UNUSED is 0 */
+    /* Initialize hash table -- NOTE: Only works if HM_HM_SLOT_UNUSED is 0 */
     memset(storage, 0, (sizeof(hash32) + key_size) * table_count);
     return storage;
 }
@@ -143,7 +143,7 @@ resize_rehash(struct hm* hm, hm_size new_table_count)
 
     for (i = 0; i != (int)hm->table_count; ++i)
     {
-        if (SLOT(hm, i) == ODBSDK_HM_SLOT_UNUSED || SLOT(hm, i) == ODBSDK_HM_SLOT_RIP)
+        if (SLOT(hm, i) == HM_SLOT_UNUSED || SLOT(hm, i) == HM_SLOT_RIP)
             continue;
         if (hm_insert(&new_hm, KEY(hm, i), &new_value) != 1)
         {
@@ -265,9 +265,9 @@ hm_insert(struct hm* hm, const void* key, void** value)
     hash = hash_wrapper(hm, key, (int)hm->key_size);
     pos = (int)(hash & (hash32)(hm->table_count - 1));
     i = 0;
-    last_tombstone = ODBSDK_HM_SLOT_INVALID;
+    last_tombstone = HM_SLOT_INVALID;
 
-    while (SLOT(hm, pos) != ODBSDK_HM_SLOT_UNUSED)
+    while (SLOT(hm, pos) != HM_SLOT_UNUSED)
     {
         /* If the same hash already exists in this slot, and this isn't the
          * result of a hash collision (which we can verify by comparing the
@@ -281,7 +281,7 @@ hm_insert(struct hm* hm, const void* key, void** value)
             }
         }
         else
-            if (SLOT(hm, pos) == ODBSDK_HM_SLOT_RIP)
+            if (SLOT(hm, pos) == HM_SLOT_RIP)
                 last_tombstone = pos;
 
         /* Quadratic probing following p(K,i)=(i^2+i)/2. If the hash table
@@ -293,7 +293,7 @@ hm_insert(struct hm* hm, const void* key, void** value)
     }
 
     /* It's safe to insert new values at the end of a probing sequence */
-    if (last_tombstone != ODBSDK_HM_SLOT_INVALID)
+    if (last_tombstone != HM_SLOT_INVALID)
     {
         pos = last_tombstone;
         STATS_INSERTED_IN_TOMBSTONE(hm);
@@ -330,7 +330,7 @@ hm_erase(struct hm* hm, const void* key)
         }
         else
         {
-            if (SLOT(hm, pos) == ODBSDK_HM_SLOT_UNUSED)
+            if (SLOT(hm, pos) == HM_SLOT_UNUSED)
                 return NULL;
         }
 
@@ -345,7 +345,7 @@ hm_erase(struct hm* hm, const void* key)
     hm->slots_used--;
     STATS_DELETED(hm);
 
-    SLOT(hm, pos) = ODBSDK_HM_SLOT_RIP;
+    SLOT(hm, pos) = HM_SLOT_RIP;
     return VALUE(hm, pos);
 }
 
@@ -353,7 +353,7 @@ hm_erase(struct hm* hm, const void* key)
 void
 hm_clear(struct hm* hm)
 {
-    /* Re-Initialize hash table -- NOTE: Only works if HM_ODBSDK_HM_SLOT_UNUSED is 0 */
+    /* Re-Initialize hash table -- NOTE: Only works if HM_HM_SLOT_UNUSED is 0 */
     memset(hm->storage, 0, (sizeof(hash32) + hm->key_size) * hm->table_count);
     hm->slots_used = 0;
 }
@@ -374,7 +374,7 @@ hm_find(const struct hm* hm, const void* key)
         }
         else
         {
-            if (SLOT(hm, pos) == ODBSDK_HM_SLOT_UNUSED)
+            if (SLOT(hm, pos) == HM_SLOT_UNUSED)
                 return NULL;
         }
 
@@ -404,7 +404,7 @@ hm_exists(const struct hm* hm, const void* key)
         }
         else
         {
-            if (SLOT(hm, pos) == ODBSDK_HM_SLOT_UNUSED)
+            if (SLOT(hm, pos) == HM_SLOT_UNUSED)
                 return 0;
         }
 

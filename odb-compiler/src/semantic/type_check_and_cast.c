@@ -2,6 +2,7 @@
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-sdk/log.h"
+#include <assert.h>
 
 enum type
 type_check_and_cast_binop_arithmetic(
@@ -25,7 +26,7 @@ type_check_and_cast_casts(
     struct db_source source);
 
 static enum type
-resolve_expression(
+resolve_node_type(
     struct ast*            ast,
     ast_id                 n,
     const struct cmd_list* cmds,
@@ -52,9 +53,9 @@ resolve_expression(
         case AST_BINOP: {
             ast_id lhs = ast->nodes[n].binop.left;
             ast_id rhs = ast->nodes[n].binop.right;
-            if (resolve_expression(ast, lhs, cmds, source_filename, source) < 0)
+            if (resolve_node_type(ast, lhs, cmds, source_filename, source) < 0)
                 return -1;
-            if (resolve_expression(ast, rhs, cmds, source_filename, source) < 0)
+            if (resolve_node_type(ast, rhs, cmds, source_filename, source) < 0)
                 return -1;
 
             switch (ast->nodes[n].binop.op)
@@ -114,71 +115,12 @@ resolve_expression(
             return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
 
         case AST_CAST:
-            if (resolve_expression(ast, n, cmds, source_filename, source) < 0)
+            if (resolve_node_type(ast, n, cmds, source_filename, source) < 0)
                 return -1;
             return type_check_and_cast_casts(ast, n, source_filename, source);
     }
 
     return (enum type) - 1;
-}
-
-static int
-resolve_expressions(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source)
-{
-    ast_id n;
-    for (n = 0; n != ast->node_count; ++n)
-        if (resolve_expression(ast, n, cmds, source_filename, source)
-            == (enum type) - 1)
-        {
-            return -1;
-        }
-
-    return 0;
-}
-
-static int
-resolve_assignments(
-    struct ast*            ast,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source)
-{
-    ast_id n;
-    for (n = 0; n != ast->node_count; ++n)
-        switch (ast->nodes[n].info.node_type)
-        {
-            case AST_BLOCK:
-            case AST_ARGLIST:
-            case AST_CONST_DECL: break;
-
-            /* Assignments themselves are not expressions and thus don't
-             * return a value, but the rvalue is often used to determine the
-             * type of the lvalue. */
-            case AST_ASSIGNMENT: {
-            }
-            break;
-
-            case AST_COMMAND:
-            case AST_IDENTIFIER:
-            case AST_BINOP:
-            case AST_UNOP:
-            case AST_BOOLEAN_LITERAL:
-            case AST_BYTE_LITERAL:
-            case AST_WORD_LITERAL:
-            case AST_DWORD_LITERAL:
-            case AST_INTEGER_LITERAL:
-            case AST_DOUBLE_INTEGER_LITERAL:
-            case AST_FLOAT_LITERAL:
-            case AST_DOUBLE_LITERAL:
-            case AST_STRING_LITERAL:
-            case AST_CAST: break;
-        }
-
-    return 0;
 }
 
 static int
@@ -202,7 +144,7 @@ type_check_and_cast(
     ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
     for (; block > -1; block = ast->nodes[block].block.next)
     {
-        ast_id stmt = ast->nodes[block].block.statement;
+        ast_id stmt = ast->nodes[block].block.stmt;
         if (resolve_node_type(ast, stmt, cmds, source_filename, source) < 0)
             return -1;
     }

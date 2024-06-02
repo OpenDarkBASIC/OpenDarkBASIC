@@ -24,10 +24,10 @@
             int##bits##_t count, capacity;                                     \
             T             data[1];                                             \
         }* mem;                                                                \
-    };
+    }
 
 #define VEC_DECLARE_API(prefix, T, bits, API)                                  \
-    VEC(prefix, T, bits)                                                       \
+    VEC(prefix, T, bits);                                                      \
                                                                                \
     /*!                                                                        \
      * @brief This must be called before operating on any vector. Initializes  \
@@ -39,9 +39,9 @@
     /*!                                                                        \
      * @brief Destroys an existing vector object and frees all memory          \
      * allocated by inserted elements.                                         \
-     * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
+     * @param[in] v Vector of type VEC(T,B)                                    \
      */                                                                        \
-    static inline void prefix##_deinit(struct prefix* v);                      \
+    static inline void prefix##_deinit(struct prefix v);                       \
                                                                                \
     /*!                                                                        \
      * @brief Allocates memory to fit exactly "num" amount of elements.        \
@@ -199,10 +199,10 @@
         v->mem = NULL;                                                         \
     }                                                                          \
                                                                                \
-    static inline void prefix##_deinit(struct prefix* v)                       \
+    static inline void prefix##_deinit(struct prefix v)                        \
     {                                                                          \
-        if (v->mem)                                                            \
-            mem_free(v->mem);                                                  \
+        if (v.mem)                                                             \
+            mem_free(v.mem);                                                   \
     }                                                                          \
                                                                                \
     static inline int prefix##_resize(struct prefix* v, int##bits##_t elems)   \

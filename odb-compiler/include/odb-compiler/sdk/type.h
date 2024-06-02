@@ -11,6 +11,7 @@
  * ODB shares most types with DBPro.
  */
 #define TYPE_LIST                                                              \
+    /* DBPro types */                                                          \
     X(VOID,    '0')                                                            \
     X(LONG,    'R') /* 8 bytes -- signed int */                                \
     X(DWORD,   'D') /* 4 bytes -- unsigned int */                              \
