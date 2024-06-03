@@ -10,13 +10,10 @@
 #define HM(name, KC, VC, bits)                                                 \
     struct name                                                                \
     {                                                                          \
-        KC keys;                                                               \
-        VC values;                                                             \
-        struct                                                                 \
-        {                                                                      \
-            int##bits##_t count, capacity;                                     \
-            hash32        table[1];                                            \
-        }* mem;                                                                \
+        KC            keys;                                                    \
+        VC            values;                                                  \
+        int##bits##_t count, capacity;                                         \
+        hash32        table[1];                                                \
     }
 
 #define HM_DECLARE_API_EXTRA(prefix, K, V, KC, VC, bits, API)                  \
@@ -27,21 +24,21 @@
      * the structure to a defined state.                                       \
      * @param[in] hm Pointer to a hashmap of type HM(K,V)*                     \
      */                                                                        \
-    API void prefix_##init(struct prefix* hm);                                 \
+    API void prefix_##init(struct prefix** hm);                                \
                                                                                \
     /*!                                                                        \
      * @brief Destroys an existing hashmap and frees all memory allocated by   \
      * inserted elements.                                                      \
      * @param[in] hm Hashmap of type HM(K,V)                                   \
      */                                                                        \
-    API void prefix_##deinit(struct prefix hm);                                \
+    API void prefix_##deinit(struct prefix* hm);                               \
                                                                                \
     /*!                                                                        \
      * @brief Allocates space for a new                                        \
      * @brief insert_or_get()                                                  \
      */                                                                        \
-    API V* prefix##_emplace_new(struct prefix* hm, K key);                     \
-    API V* prefix##_insert_or_get(struct prefix* hm, K key, V value);          \
+    API V* prefix##_emplace_new(struct prefix** hm, K key);                    \
+    API V* prefix##_insert_or_get(struct prefix** hm, K key, V value);         \
                                                                                \
     API V* prefix##_erase(struct prefix* hm, K key);                           \
     API V* prefix##_find(struct prefix* hm, K key);
@@ -63,17 +60,18 @@
     hm_values_get,                                                             \
     hm_values_emplace,                                                         \
     hm_values_erase)                                                           \
-    static int resize_rehash(struct prefix* hm, int##bits##_t new_capacity)    \
+    static int resize_rehash(struct prefix** hm, int##bits##_t new_capacity)   \
     {                                                                          \
-        struct prefix new_hm;                                                  \
-        int##bits##_t i;                                                       \
-                                                                               \
         /* Must be power of 2 */                                               \
         ODBSDK_DEBUG_ASSERT((new_capacity & (new_capacity - 1)) == 0);         \
                                                                                \
-        new_hm.keys = hm->keys;                                                \
-        new_hm.values = hm->values;                                            \
-        new_hm.mem = mem_alloc(new_capacity);                                  \
+        mem_size bytes                                                         \
+            = sizeof(**hm) + sizeof((*hm)->data[0]) * (new_capacity - 1);      \
+        void* new_mem = mem_realloc(*hm, bytes);                               \
+        if (new_mem == NULL)                                                   \
+            return log_oom(bytes, "hm_resize_rehash()");                       \
+        *(void**)hm = new_mem;                                                 \
+        return 0;                                                              \
     }                                                                          \
     void prefix##_init(struct prefix* hm)                                      \
     {                                                                          \
