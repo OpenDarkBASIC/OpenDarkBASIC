@@ -44,13 +44,14 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", fontcolor=\"purple\", "
-                "label=\"%.*s%.*s\"];\n",
+                "label=\"{%.*s%.*s|%s}\"];\n",
                 n,
                 nd->identifier.name.len,
                 source->text.data + nd->identifier.name.off,
                 nd->identifier.annotation ? 1 : 0,
                 nd->identifier.annotation ? (char*)&nd->identifier.annotation
-                                          : NULL);
+                                          : NULL,
+                type_to_db_name(nd->identifier.info.type_info));
             break;
         case AST_BINOP:
             switch (nd->binop.op)

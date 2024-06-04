@@ -50,13 +50,22 @@
     API V* prefix##_erase(struct prefix* hm, const K key);                     \
     API V* prefix##_find(struct prefix* hm, const K key);                      \
                                                                                \
-    API int prefix##_insert_new(                                               \
+    static inline int prefix##_insert_new(                                     \
         struct prefix** hm, const K key, const V value)                        \
     {                                                                          \
         V* emplaced = prefix##_emplace_new(hm, key);                           \
         if (emplaced == NULL)                                                  \
             return -1;                                                         \
         *emplaced = value;                                                     \
+        return 0;                                                              \
+    }                                                                          \
+    static inline int prefix##_insert_always(                                  \
+        struct prefix** hm, const K key, const V value)                        \
+    {                                                                          \
+        V* ins_value = prefix##_insert_or_get(hm, key, value);                 \
+        if (ins_value == NULL)                                                 \
+            return -1;                                                         \
+        *ins_value = value;                                                    \
         return 0;                                                              \
     }
 

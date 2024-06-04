@@ -126,26 +126,26 @@ type_check_and_cast_binop_arithmetic(
 
     if (left_to_right == TP_ALLOW)
         target_type = rhs_type;
-    if (right_to_left == TP_ALLOW)
+    else if (right_to_left == TP_ALLOW)
         target_type = lhs_type;
 
-    if (left_to_right == TP_STRANGE)
+    else if (left_to_right == TP_STRANGE)
     {
         target_type = rhs_type;
         log_strange_binop(ast, op, lhs, rhs, source_filename, source);
     }
-    if (right_to_left == TP_STRANGE)
+    else if (right_to_left == TP_STRANGE)
     {
         target_type = lhs_type;
         log_strange_binop(ast, op, rhs, lhs, source_filename, source);
     }
 
-    if (left_to_right == TP_TRUNCATE)
+    else if (left_to_right == TP_TRUNCATE)
     {
         target_type = rhs_type;
         log_narrow_binop(ast, op, lhs, rhs, source_filename, source);
     }
-    if (right_to_left == TP_TRUNCATE)
+    else if (right_to_left == TP_TRUNCATE)
     {
         target_type = lhs_type;
         log_narrow_binop(ast, op, rhs, lhs, source_filename, source);

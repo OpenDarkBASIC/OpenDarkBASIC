@@ -102,6 +102,13 @@ utf8_span_view(const char* data, struct utf8_span span)
     struct utf8_view view = {data, span.off, span.len};
     return view;
 }
+static inline struct utf8_span
+utf8_view_span(const char* data, struct utf8_view view)
+{
+    struct utf8_span span = {view.off, view.len};
+    span.off -= view.data - data;
+    return span;
+}
 
 /* Convert from C strings to structures  ------------------------------------ */
 static inline struct utf8c

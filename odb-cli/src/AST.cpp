@@ -68,6 +68,7 @@ parseDBA(const std::vector<std::string>& args)
             != 0)
             goto parse_failed;
 
+        log_info("[ast] ", "Running semantic checks\n");
         if (semantic_checks_run(
                 getAST(),
                 getPluginList(),
