@@ -101,8 +101,8 @@ static hash32
 hash_wrapper(const struct hm* hm, const void* data, int len)
 {
     hash32 hash = hm->hash(data, len);
-    if (hash == HM_SLOT_UNUSED || hash == HM_SLOT_RIP || hash == HM_SLOT_INVALID)
-        return 3;
+    if (hash == HM_SLOT_UNUSED || hash == HM_SLOT_RIP)
+            return 2;
     return hash;
 }
 
@@ -265,7 +265,7 @@ hm_insert(struct hm* hm, const void* key, void** value)
     hash = hash_wrapper(hm, key, (int)hm->key_size);
     pos = (int)(hash & (hash32)(hm->table_count - 1));
     i = 0;
-    last_tombstone = HM_SLOT_INVALID;
+    last_tombstone = -1;
 
     while (SLOT(hm, pos) != HM_SLOT_UNUSED)
     {
@@ -293,7 +293,7 @@ hm_insert(struct hm* hm, const void* key, void** value)
     }
 
     /* It's safe to insert new values at the end of a probing sequence */
-    if (last_tombstone != HM_SLOT_INVALID)
+    if (last_tombstone != -1)
     {
         pos = last_tombstone;
         STATS_INSERTED_IN_TOMBSTONE(hm);

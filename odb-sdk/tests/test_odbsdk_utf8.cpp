@@ -52,7 +52,7 @@ TEST_F(NAME, utf16_to_utf8_weirdness)
     std::u16string u16 = u"xxxxMay";
     struct utf16_view in = {
         (const uint16_t*)u16.data() + 4,
-        (utf16_idx)u16.length()
+        (utf16_idx)u16.length() - 4
     };
 
     struct utf8 out = empty_utf8();
