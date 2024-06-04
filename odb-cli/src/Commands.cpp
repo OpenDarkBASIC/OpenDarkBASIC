@@ -31,7 +31,7 @@ deinitCommands(void)
     {
         plugin_info_deinit(plugin);
     }
-    plugin_list_deinit(&plugins);
+    plugin_list_deinit(plugins);
 }
 
 // ----------------------------------------------------------------------------

@@ -50,7 +50,7 @@ DBParserHelper::TearDown()
     if (src.text.data)
         db_source_close(&src);
     cmd_list_deinit(&cmds);
-    plugin_list_deinit(&plugins);
+    plugin_list_deinit(plugins);
 }
 
 int

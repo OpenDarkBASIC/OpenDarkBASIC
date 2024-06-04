@@ -183,7 +183,7 @@
                                                                                \
         return slot;                                                           \
     }                                                                          \
-    static int prefix##_grow2(struct prefix** hm)                              \
+    static int prefix##_grow(struct prefix** hm)                               \
     {                                                                          \
         int##bits##_t i;                                                       \
         int##bits##_t new_capacity                                             \
@@ -244,7 +244,7 @@
             mem_free(hm);                                                      \
         }                                                                      \
     }                                                                          \
-    V* prefix##_emplace_new2(struct prefix** hm, const K key)                  \
+    V* prefix##_emplace_new(struct prefix** hm, const K key)                   \
     {                                                                          \
         H             h;                                                       \
         int##bits##_t slot;                                                    \

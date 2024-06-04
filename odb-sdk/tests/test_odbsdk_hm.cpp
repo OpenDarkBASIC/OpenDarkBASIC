@@ -82,9 +82,6 @@ test_set_value(struct kvs* kvs, int16_t slot, const float* value)
     kvs->values[slot] = *value;
 }
 
-static int
-hm_test_grow(struct hm_test** hm);
-
 #define NO_API
 HM_DECLARE_API_FULL(hm_test, hash32, char*, float, 16, NO_API, struct kvs)
 HM_DEFINE_API_FULL(
@@ -103,78 +100,6 @@ HM_DEFINE_API_FULL(
     test_set_value,
     MIN_CAPACITY,
     70);
-
-static int
-hm_test_grow(struct hm_test** hm)
-{
-    int16_t i;
-    int16_t new_capacity = (*hm)->capacity ? (*hm)->capacity * 2 : MIN_CAPACITY;
-    /* Must be power of 2 */
-    ODBSDK_DEBUG_ASSERT((new_capacity & (new_capacity - 1)) == 0);
-
-    mem_size bytes
-        = sizeof(**hm) + sizeof((*hm)->hashes[0]) * (new_capacity - 1);
-    struct hm_test* new_hm = (struct hm_test*)mem_alloc(bytes);
-    if (new_hm == NULL)
-        goto alloc_hm_failed;
-    if (test_storage_alloc(&new_hm->kvs, new_capacity) != 0)
-        goto alloc_storage_failed;
-
-    memset(new_hm->hashes, 0, sizeof(hash32) * new_capacity);
-    new_hm->count = 0;
-    new_hm->capacity = new_capacity;
-
-    /* This should never fail so we don't error check */
-    for (i = 0; i != (*hm)->capacity; ++i)
-    {
-        int16_t slot;
-        hash32  h;
-        if ((*hm)->hashes[i] == HM_SLOT_UNUSED
-            || (*hm)->hashes[i] == HM_SLOT_RIP)
-            continue;
-
-        h = test_hash(test_get_key(&(*hm)->kvs, i));
-        slot = hm_test_find_slot(new_hm, test_get_key(&(*hm)->kvs, i), h);
-        ODBSDK_DEBUG_ASSERT(slot >= 0);
-        new_hm->hashes[slot] = h;
-        test_set_key(&new_hm->kvs, slot, test_get_key(&(*hm)->kvs, i));
-        test_set_value(&new_hm->kvs, slot, test_get_value(&(*hm)->kvs, i));
-        new_hm->count++;
-    }
-
-    /* Free old hashmap */
-    hm_test_deinit(*hm);
-    *hm = new_hm;
-
-    return 0;
-
-alloc_storage_failed:
-    mem_free(new_hm);
-alloc_hm_failed:
-    return log_oom(bytes, "hm_grow()");
-}
-float*
-hm_test_emplace_new(struct hm_test** hm, const char* key)
-{
-    hash32  h;
-    int16_t slot;
-
-    /* NOTE: Rehashing may change table count, make sure to calculate hash
-     * after this */
-    if ((*hm)->count * 100 >= 70 * (*hm)->capacity)
-        if (hm_test_grow(hm) != 0)
-            return NULL;
-
-    h = test_hash(key);
-    slot = hm_test_find_slot(*hm, key, h);
-    if (slot < 0)
-        return NULL;
-
-    (*hm)->count++;
-    (*hm)->hashes[slot] = h;
-    test_set_key(&(*hm)->kvs, slot, key);
-    return test_get_value(&(*hm)->kvs, slot);
-}
 
 struct NAME : Test
 {

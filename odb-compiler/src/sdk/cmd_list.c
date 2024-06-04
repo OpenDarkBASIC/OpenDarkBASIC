@@ -28,14 +28,14 @@ cmd_list_deinit(struct cmd_list* cmds)
 
     vec_for_each(cmds->db_param_names, db_param_names)
         utf8_list_deinit(db_param_names);
-    db_param_names_deinit(&cmds->db_param_names);
+    db_param_names_deinit(cmds->db_param_names);
 
     vec_for_each(cmds->param_types, param_types)
-        param_types_list_deinit(param_types);
-    param_types_lists_deinit(&cmds->param_types);
+        param_types_list_deinit(*param_types);
+    param_types_lists_deinit(cmds->param_types);
 
-    return_types_list_deinit(&cmds->return_types);
-    plugin_ids_deinit(&cmds->plugin_ids);
+    return_types_list_deinit(cmds->return_types);
+    plugin_ids_deinit(cmds->plugin_ids);
     utf8_list_deinit(&cmds->c_symbols);
     utf8_list_deinit(&cmds->db_cmd_names);
 }
@@ -118,7 +118,7 @@ cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id)
 
     utf8_list_deinit(vec_get(cmds->db_param_names, cmd_id));
     db_param_names_erase(cmds->db_param_names, cmd_id);
-    param_types_list_deinit(vec_get(cmds->param_types, cmd_id));
+    param_types_list_deinit(*vec_get(cmds->param_types, cmd_id));
     param_types_lists_erase(cmds->param_types, cmd_id);
     return_types_list_erase(cmds->return_types, cmd_id);
     plugin_ids_erase(cmds->plugin_ids, cmd_id);

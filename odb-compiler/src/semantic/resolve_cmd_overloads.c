@@ -399,11 +399,11 @@ resolve_cmd_overloads(
         typecheck_arguments(ast, n, plugins, cmds, source_filename, source);
     }
 
-    candidates_deinit(&candidates);
+    candidates_deinit(candidates);
     return 0;
 
 fail:
-    candidates_deinit(&candidates);
+    candidates_deinit(candidates);
     return -1;
 }
 
