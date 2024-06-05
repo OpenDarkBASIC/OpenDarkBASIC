@@ -534,14 +534,13 @@ log_excerpt(
                 && j < loc.off - block.off + loc.len - 1)
                 log_putc('~');
             else if (j == loc.off - block.off + loc.len - 1)
-            {
-                log_printf("< %s%s%s", lhsf_style(), annotation, reset_style());
-                break;
-            }
+                log_putc('<');
 
             if (j >= loc.off - block.off + loc.len - 1)
             {
-                log_printf(" %s%s%s", lhsf_style(), annotation, reset_style());
+                if (*annotation)
+                    log_printf(
+                        " %s%s%s", lhsf_style(), annotation, reset_style());
                 break;
             }
         }
@@ -920,7 +919,7 @@ log_binop_excerpt(
         log_printf("%s\n", reset_style());
     }
 
-    if (!lhs_text_written && postpone_lhs_text)
+    if (!lhs_text_written && postpone_lhs_text && *lhs_text)
     {
         log_printf("%*s | ", gutter_indent - 1, "");
         for (i = 0; i != block.len;)
@@ -958,4 +957,3 @@ log_excerpt_note(int gutter_indent, const char* fmt, ...)
     vfprintf_with_color(fmt, &args);
     va_end(args.ap);
 }
-

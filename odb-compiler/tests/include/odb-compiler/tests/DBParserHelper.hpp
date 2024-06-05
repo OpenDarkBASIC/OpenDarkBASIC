@@ -1,7 +1,6 @@
 #pragma once
 
 #include <initializer_list>
-#include "gmock/gmock.h"
 
 extern "C" {
 #include "odb-compiler/ast/ast.h"
@@ -11,11 +10,10 @@ extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 }
 
-class DBParserHelper : public testing::Test
+struct DBParserHelper
 {
-public:
-    void SetUp() override;
-    void TearDown() override;
+    DBParserHelper();
+    ~DBParserHelper();
 
     int parse(const char* code);
     int addCommand(const char* name);

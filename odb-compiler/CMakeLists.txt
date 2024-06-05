@@ -492,7 +492,9 @@ if (ODBCOMPILER_TESTS)
         #"tests/src/test_SourceLocation.cpp"
 
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
+        "tests/include/odb-compiler/tests/LogHelper.hpp"
         "tests/src/DBParserHelper.cpp"
+        "tests/src/LogHelper.cpp"
 
         "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
 

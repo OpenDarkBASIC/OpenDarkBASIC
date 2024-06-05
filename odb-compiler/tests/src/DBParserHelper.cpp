@@ -1,5 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 #include <filesystem>
+#include <gtest/gtest.h>
 
 extern "C" {
 #include "odb-compiler/ast/ast_export.h"
@@ -8,8 +9,7 @@ extern "C" {
 #include "odb-sdk/utf8.h"
 }
 
-void
-DBParserHelper::SetUp()
+DBParserHelper::DBParserHelper()
 {
     plugin_list_init(&plugins);
     cmd_list_init(&cmds);
@@ -23,8 +23,7 @@ DBParserHelper::SetUp()
     ospath_set_cstr(&plugin->filepath, "test");
 }
 
-void
-DBParserHelper::TearDown()
+DBParserHelper::~DBParserHelper()
 {
     if (ast.node_count)
     {

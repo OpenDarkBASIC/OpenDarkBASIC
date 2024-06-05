@@ -165,11 +165,11 @@ resolve_node_type(
         case AST_BLOCK: {
             for (; n > -1; n = ast->nodes[n].block.next)
             {
-                ast_id stmt = ast->nodes[n].block.stmt;
-                if (resolve_node_type(
-                        ast, stmt, cmds, source_filename, source, typemap, 0)
-                    < 0)
-                    return -1;
+                ast_id    stmt = ast->nodes[n].block.stmt;
+                enum type type = resolve_node_type(
+                    ast, stmt, cmds, source_filename, source, typemap, 0);
+                if (type == TYPE_INVALID)
+                    return TYPE_INVALID;
             }
             return TYPE_VOID;
         }
@@ -178,12 +178,12 @@ resolve_node_type(
         case AST_ARGLIST:
         case AST_CONST_DECL:
         case AST_ASSIGNMENT: {
-            ast_id lhs = ast->nodes[n].assignment.lvalue;
-            ast_id rhs = ast->nodes[n].assignment.expr;
-            if (resolve_node_type(
-                    ast, rhs, cmds, source_filename, source, typemap, scope)
-                < 0)
-                return -1;
+            ast_id    lhs = ast->nodes[n].assignment.lvalue;
+            ast_id    rhs = ast->nodes[n].assignment.expr;
+            enum type rhs_type = resolve_node_type(
+                ast, rhs, cmds, source_filename, source, typemap, scope);
+            if (rhs_type == TYPE_INVALID)
+                return TYPE_INVALID;
 
             /* When assigning to variables, the type of that variable is
              * inherited from the type of the assignment, if that variable has
@@ -192,7 +192,6 @@ resolve_node_type(
              * RHS type */
             if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
-                enum type          rhs_type = ast->nodes[rhs].info.type_info;
                 struct type_origin lhs_type_origin = {rhs_type, lhs};
                 struct utf8_view   name = utf8_span_view(
                     source.text.data, ast->nodes[lhs].identifier.name);
@@ -200,7 +199,7 @@ resolve_node_type(
                 struct type_origin* lhs_type = typemap_insert_or_get(
                     typemap, view_scope, lhs_type_origin);
                 if (lhs_type == NULL)
-                    return -1;
+                    return TYPE_INVALID;
                 ast->nodes[lhs].info.type_info = lhs_type->type;
 
                 if (rhs_type
@@ -222,7 +221,7 @@ resolve_node_type(
                         lhs_type->type,
                         ast->nodes[rhs].info.location);
                     if (cast < -1)
-                        return -1;
+                        return TYPE_INVALID;
                     ast->nodes[n].assignment.expr = cast;
 
                     switch (type_promote(rhs_type, lhs_type->type))
@@ -338,7 +337,7 @@ resolve_node_type(
                                 source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
-                            return -1;
+                            return TYPE_INVALID;
                     }
                 }
             }
@@ -346,9 +345,20 @@ resolve_node_type(
         }
         break;
 
-        case AST_COMMAND:
+        case AST_COMMAND: {
+            ast_id arglist = ast->nodes[n].cmd.arglist;
+            for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
+            {
+                ast_id    expr = ast->nodes[arglist].arglist.expr;
+                enum type type = resolve_node_type(
+                    ast, expr, cmds, source_filename, source, typemap, scope);
+                if (type == TYPE_INVALID)
+                    return TYPE_INVALID;
+            }
+
             return ast->nodes[n].cmd.info.type_info
                    = *vec_get(cmds->return_types, ast->nodes[n].cmd.id);
+        }
 
         case AST_IDENTIFIER: {
             struct utf8_view name = utf8_span_view(
@@ -363,7 +373,7 @@ resolve_node_type(
             struct type_origin* type_origin = typemap_insert_or_get(
                 typemap, view_scope, default_type_origin);
             if (type_origin == NULL)
-                return -1;
+                return TYPE_INVALID;
             return ast->nodes[n].identifier.info.type_info = type_origin->type;
         }
         break;
@@ -374,11 +384,11 @@ resolve_node_type(
             if (resolve_node_type(
                     ast, lhs, cmds, source_filename, source, typemap, scope)
                 < 0)
-                return -1;
+                return TYPE_INVALID;
             if (resolve_node_type(
                     ast, rhs, cmds, source_filename, source, typemap, scope)
                 < 0)
-                return -1;
+                return TYPE_INVALID;
 
             switch (ast->nodes[n].binop.op)
             {
@@ -436,15 +446,16 @@ resolve_node_type(
         case AST_STRING_LITERAL:
             return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
 
-        case AST_CAST:
-            if (resolve_node_type(
-                    ast, n, cmds, source_filename, source, typemap, scope)
-                < 0)
-                return -1;
+        case AST_CAST: {
+            enum type type = resolve_node_type(
+                ast, n, cmds, source_filename, source, typemap, scope);
+            if (type == TYPE_INVALID)
+                return TYPE_INVALID;
             return type_check_and_cast_casts(ast, n, source_filename, source);
+        }
     }
 
-    return -1;
+    return TYPE_INVALID;
 }
 
 static int
@@ -469,7 +480,7 @@ type_check_and_cast(
      */
     ODBSDK_DEBUG_ASSERT(ast->nodes[0].info.node_type == AST_BLOCK);
     if (resolve_node_type(ast, 0, cmds, source_filename, source, &typemap, 0)
-        < 0)
+        == TYPE_INVALID)
     {
         typemap_deinit(typemap);
         return -1;

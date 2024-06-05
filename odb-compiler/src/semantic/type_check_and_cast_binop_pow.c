@@ -55,7 +55,7 @@ type_check_and_cast_binop_pow(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     "Strange conversion of base value from {lhs:%s} to "
-                    "{rhs:%s}\n",
+                    "{rhs:%s}.\n",
                     type_to_db_name(lhs_type),
                     type_to_db_name(lhs_target_type));
                 gutter = log_excerpt2(
@@ -92,7 +92,7 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(rhs_type));
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}\n",
+                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 break;
@@ -116,17 +116,17 @@ type_check_and_cast_binop_pow(
                     "");
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}\n",
+                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
-                return -1;
+                return TYPE_INVALID;
         }
 
         /* Cast is required, insert one in the AST */
         cast_lhs = ast_cast(
             ast, lhs, lhs_target_type, ast->nodes[lhs].info.location);
-        if (cast_lhs < -1)
-            return -1;
+        if (cast_lhs == TYPE_INVALID)
+            return TYPE_INVALID;
         ast->nodes[op].binop.left = cast_lhs;
     }
 
@@ -165,7 +165,13 @@ type_check_and_cast_binop_pow(
                     log_excerpt_note(
                         gutter,
                         "{rhs:INTEGER} is the largest possible integral type "
-                        "for exponents\n");
+                        "for exponents.\n");
+                log_excerpt_note(
+                    gutter,
+                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    type_to_db_name(TYPE_INTEGER),
+                    type_to_db_name(TYPE_FLOAT),
+                    type_to_db_name(TYPE_DOUBLE));
                 break;
 
             case TP_TRUNCATE:
@@ -184,18 +190,25 @@ type_check_and_cast_binop_pow(
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
                     ast->nodes[rhs].info.location,
-                    "",
+                    rhs_target_type == TYPE_FLOAT ? type_to_db_name(TYPE_FLOAT)
+                                                  : "",
                     type_to_db_name(rhs_type));
                 if (rhs_target_type == TYPE_FLOAT)
                     log_excerpt_note(
                         gutter,
-                        "The exponent needs to be the same type as the base "
-                        "when working with floating point types.\n");
+                        "The exponent is always converted to the same type as "
+                        "the base when using floating point exponents.\n");
                 if (rhs_target_type == TYPE_INTEGER)
                     log_excerpt_note(
                         gutter,
                         "{rhs:INTEGER} is the largest possible integral type "
-                        "for exponents\n");
+                        "for exponents.\n");
+                log_excerpt_note(
+                    gutter,
+                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    type_to_db_name(TYPE_INTEGER),
+                    type_to_db_name(TYPE_FLOAT),
+                    type_to_db_name(TYPE_DOUBLE));
                 break;
 
             case TP_DISALLOW:
@@ -218,22 +231,21 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(rhs_type));
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}\n",
+                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
-                return -1;
+                return TYPE_INVALID;
         }
 
         /* Cast is required, insert one in the AST */
         cast_rhs = ast_cast(
             ast, rhs, rhs_target_type, ast->nodes[rhs].info.location);
-        if (cast_rhs < -1)
-            return -1;
+        if (cast_rhs == TYPE_INVALID)
+            return TYPE_INVALID;
         ast->nodes[op].binop.right = cast_rhs;
     }
 
     /* The result type is the same as LHS */
-    ast->nodes[op].binop.info.type_info = lhs_target_type;
-    return 0;
+    return ast->nodes[op].binop.info.type_info = lhs_target_type;
 }

@@ -1,6 +1,6 @@
 #include <string>
-
 #include <gmock/gmock.h>
+#include "odb-compiler/tests/LogHelper.hpp"
 
 extern "C" {
 #include "odb-sdk/log.h"
@@ -11,75 +11,8 @@ extern "C" {
 
 using namespace testing;
 
-struct LogOutput
+struct NAME : LogHelper, Test
 {
-    std::string text;
-};
-
-struct LogEqMatcher : testing::MatcherInterface<const LogOutput&>
-{
-    explicit LogEqMatcher(const char* expected) : expected(expected) {}
-
-    bool
-    MatchAndExplain(
-        const LogOutput&              logOutput,
-        testing::MatchResultListener* listener) const override
-    {
-        *listener << "Log:\n" << logOutput.text;
-        return logOutput.text == expected;
-    }
-    void
-    DescribeTo(::std::ostream* os) const override
-    {
-        *os << "Log output equals:\n" << expected;
-    }
-    void
-    DescribeNegationTo(::std::ostream* os) const override
-    {
-        *os << "Log output does not equal:\n" << expected;
-    }
-
-    std::string expected;
-};
-
-inline testing::Matcher<const LogOutput&>
-LogEq(const char* expected)
-{
-    return testing::MakeMatcher(new LogEqMatcher(expected));
-}
-
-static LogOutput log_output;
-static void
-write_str(const char* fmt, va_list ap)
-{
-    va_list ap2;
-    va_copy(ap2, ap);
-    int len = vsnprintf(NULL, 0, fmt, ap2);
-    va_end(ap2);
-
-    size_t off = log_output.text.size();
-    log_output.text.resize(log_output.text.size() + len + 1);
-    vsprintf(log_output.text.data() + off, fmt, ap);
-    log_output.text.resize(log_output.text.size() - 1);
-}
-
-struct NAME : public Test
-{
-    void
-    SetUp() override
-    {
-        struct log_interface i = {write_str, 0};
-        old_log_interface = log_configure(i);
-    }
-
-    void
-    TearDown() override
-    {
-        log_configure(old_log_interface);
-        log_output.text.clear();
-    }
-
-    struct log_interface old_log_interface;
 };
 
 TEST_F(NAME, file_line_column)
@@ -100,7 +33,7 @@ TEST_F(NAME, file_line_column)
         "for some reason");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq("some/file.dba:2:8: error: Assignment is bad for some reason\n"));
 }
 
@@ -116,7 +49,7 @@ TEST_F(NAME, excerpt_one_sized_location)
     log_excerpt("some/file.dba", source, loc, "test");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | if a = 5 then a = 7\n"
               "   |    ^ test\n"));
 }
@@ -129,7 +62,7 @@ TEST_F(NAME, excerpt_annotation_at_end)
     log_excerpt("some/file.dba", source, loc, "test");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 1 | a = b + c\n"
               "   |         ^ test\n"));
 }
@@ -146,7 +79,7 @@ TEST_F(NAME, excerpt_single_line)
     log_excerpt("some/file.dba", source, loc, "test");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | if a = 5 then a = 7\n"
               "   |    ^~~~< test\n"));
 }
@@ -163,7 +96,7 @@ TEST_F(NAME, excerpt_wrap_to_next_line)
     log_excerpt("some/file.dba", source, loc, "test");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | if a = 5 then a = 7\n"
               "   |               ^~~~~\n"
               " 3 | print str$(a)\n"
@@ -183,7 +116,7 @@ TEST_F(NAME, excerpt_multiple_lines)
     log_excerpt("some/file.dba", source, loc, "test");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 |    obj,\n"
               "   |    ^~~~\n"
               " 3 | xpos,\n"
@@ -208,7 +141,7 @@ TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable and 333\n"
               "   |            ^        ^^^ ~~< constant\n"
               "   |            variable\n"));
@@ -230,7 +163,7 @@ TEST_F(NAME, excerpt_binop_one_sized_op_location)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable and 333\n"
               "   |            >~~~~~~~ ^   ~~< constant\n"
               "   |            variable\n"));
@@ -252,7 +185,7 @@ TEST_F(NAME, excerpt_binop_one_sized_rhs_location)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable and 333\n"
               "   |            >~~~~~~~ ^^^ ^ constant\n"
               "   |            variable\n"));
@@ -274,7 +207,7 @@ TEST_F(NAME, excerpt_binop_single_line)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable and 333\n"
               "   |            >~~~~~~~ ^^^ ~~< constant\n"
               "   |            variable\n"));
@@ -297,7 +230,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line1)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable\n"
               "   |            >~~~~~~~ variable\n"
               " 3 |             and 333\n"
@@ -321,7 +254,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line2)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable and\n"
               "   |            >~~~~~~~ ^^^ variable\n"
               " 3 |             333\n"
@@ -346,7 +279,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line3)
         "some/file.dba", source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = variable\n"
               "   |            >~~~~~~~ variable\n"
               " 3 |               and\n"
@@ -383,7 +316,7 @@ TEST_F(NAME, excerpt_binop_everything_wraps)
         "second operand");
 
     EXPECT_THAT(
-        log_output,
+        log(),
         LogEq(" 2 | variable = some_func(\n"
               "   |            >~~~~~~~~~\n"
               " 3 |     arg1,\n"

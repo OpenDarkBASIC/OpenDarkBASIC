@@ -9,7 +9,7 @@ extern "C" {
 
 using namespace testing;
 
-struct NAME : DBParserHelper
+struct NAME : DBParserHelper, Test
 {
 };
 

@@ -155,7 +155,7 @@ type_check_and_cast_binop_arithmetic(
     if (target_type == TYPE_VOID)
     {
         log_error_binop(ast, lhs, op, source_filename, source);
-        return -1;
+        return TYPE_INVALID;
     }
 
     /* Insert casts to result type, if necessary */
@@ -163,8 +163,8 @@ type_check_and_cast_binop_arithmetic(
     {
         ast_id cast_lhs
             = ast_cast(ast, lhs, target_type, ast->nodes[lhs].info.location);
-        if (cast_lhs < -1)
-            return -1;
+        if (cast_lhs == TYPE_INVALID)
+            return TYPE_INVALID;
         ast->nodes[op].binop.left = cast_lhs;
     }
 
@@ -172,12 +172,11 @@ type_check_and_cast_binop_arithmetic(
     {
         ast_id cast_rhs
             = ast_cast(ast, rhs, target_type, ast->nodes[rhs].info.location);
-        if (cast_rhs < -1)
-            return -1;
+        if (cast_rhs == TYPE_INVALID)
+            return TYPE_INVALID;
         ast->nodes[op].binop.right = cast_rhs;
     }
 
     /* Set result type and return success */
-    ast->nodes[op].info.type_info = target_type;
-    return 0;
+    return ast->nodes[op].info.type_info = target_type;
 }

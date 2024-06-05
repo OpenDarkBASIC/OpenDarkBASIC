@@ -1,19 +1,21 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 
+#include <gmock/gmock.h>
+
 #define NAME odbcompiler_db_parser_integer_literal
 
 using namespace testing;
 
-class NAME : public DBParserHelper
+struct NAME : DBParserHelper, Test
 {
-public:
 };
 
 TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 {
-    ASSERT_THAT(parse(
-        "x = 0\n"
-        "y = 1\n"), Eq(0));
+    ASSERT_THAT(
+        parse("x = 0\n"
+              "y = 1\n"),
+        Eq(0));
 
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -27,10 +29,11 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
 
 TEST_F(NAME, byte_literal)
 {
-    ASSERT_THAT(parse(
-        "x = 2\n"
-        "y = 255\n"), Eq(0));
-    
+    ASSERT_THAT(
+        parse("x = 2\n"
+              "y = 255\n"),
+        Eq(0));
+
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int litx = ast.nodes[assx].assignment.expr;
@@ -43,10 +46,11 @@ TEST_F(NAME, byte_literal)
 
 TEST_F(NAME, word_literal)
 {
-    ASSERT_THAT(parse(
-        "x = 256\n"
-        "y = 65535\n"), Eq(0));
-    
+    ASSERT_THAT(
+        parse("x = 256\n"
+              "y = 65535\n"),
+        Eq(0));
+
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int litx = ast.nodes[assx].assignment.expr;
@@ -59,10 +63,11 @@ TEST_F(NAME, word_literal)
 
 TEST_F(NAME, integer_literal)
 {
-    ASSERT_THAT(parse(
-        "x = 65536\n"
-        "y = 2147483647\n"), Eq(0));
-    
+    ASSERT_THAT(
+        parse("x = 65536\n"
+              "y = 2147483647\n"),
+        Eq(0));
+
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int litx = ast.nodes[assx].assignment.expr;
@@ -75,10 +80,11 @@ TEST_F(NAME, integer_literal)
 
 TEST_F(NAME, dword_literal)
 {
-    ASSERT_THAT(parse(
-        "x = 2147483648\n"
-        "y = 4294967295\n"), Eq(0));
-    
+    ASSERT_THAT(
+        parse("x = 2147483648\n"
+              "y = 4294967295\n"),
+        Eq(0));
+
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int litx = ast.nodes[assx].assignment.expr;
@@ -91,10 +97,11 @@ TEST_F(NAME, dword_literal)
 
 TEST_F(NAME, double_integer_literal)
 {
-    ASSERT_THAT(parse(
-        "x = 4294967296\n"
-        "y = 9223372036854775807\n"), Eq(0));
-    
+    ASSERT_THAT(
+        parse("x = 4294967296\n"
+              "y = 9223372036854775807\n"),
+        Eq(0));
+
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int litx = ast.nodes[assx].assignment.expr;
@@ -102,7 +109,8 @@ TEST_F(NAME, double_integer_literal)
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(4294967296));
-    EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(9223372036854775807));
+    EXPECT_THAT(
+        ast.nodes[lity].double_integer_literal.value, Eq(9223372036854775807));
 }
 
 /*
@@ -120,20 +128,23 @@ TEST_F(NAME, hex_literals)
     exp = EXPECT_CALL(v, visitProgram(_));
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a",
+Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
+visitByteLiteral(ByteLiteralEq(0xFF))).After(exp); exp = EXPECT_CALL(v,
+visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp); exp =
+EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d",
+Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
+visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp); exp = EXPECT_CALL(v,
+visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v,
+visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
     visitAST(ast, v);
 }
@@ -145,8 +156,8 @@ TEST_F(NAME, binary_literals)
         "#constant b %1111111111111111\n"
         "#constant c %1111111111111111111111111111111\n"
         "#constant d %11111111111111111111111111111111\n"
-        "#constant e %111111111111111111111111111111111111111111111111111111111111111\n",
-        matcher);
+        "#constant e
+%111111111111111111111111111111111111111111111111111111111111111\n", matcher);
     ASSERT_THAT(ast, NotNull());
 
     StrictMock<ASTMockVisitor> v;
@@ -154,21 +165,23 @@ TEST_F(NAME, binary_literals)
     exp = EXPECT_CALL(v, visitProgram(_));
     exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitByteLiteral(ByteLiteralEq(0xFF))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a",
+Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
+visitByteLiteral(ByteLiteralEq(0xFF))).After(exp); exp = EXPECT_CALL(v,
+visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp); exp =
+EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
     exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp);
-    exp = EXPECT_CALL(v, visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
+    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d",
+Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
+visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp); exp = EXPECT_CALL(v,
+visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
+visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp); exp =
+EXPECT_CALL(v,
+visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
     visitAST(ast, v);
 }*/
-

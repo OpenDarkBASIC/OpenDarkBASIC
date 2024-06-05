@@ -6,9 +6,8 @@
 
 using namespace testing;
 
-class NAME : public DBParserHelper
+struct NAME : DBParserHelper, Test
 {
-public:
 };
 
 TEST_F(NAME, bool_true)

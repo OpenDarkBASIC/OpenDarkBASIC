@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/tests/DBParserHelper.hpp"
 
@@ -5,7 +6,7 @@
 
 using namespace testing;
 
-struct NAME : public DBParserHelper
+struct NAME : DBParserHelper, Test
 {
 };
 

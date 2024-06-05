@@ -1,17 +1,16 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
-#include "odb-sdk/utf8.h"
+#include "odb-compiler/tests/LogHelper.hpp"
 
 #include "gmock/gmock.h"
 
 extern "C" {
-#include "odb-compiler/sdk/cmd_list.h"
 }
 
 #define NAME odbcompiler_cmd_matcher
 
 using namespace testing;
 
-struct NAME : DBParserHelper
+struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 

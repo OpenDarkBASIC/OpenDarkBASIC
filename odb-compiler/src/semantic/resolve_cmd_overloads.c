@@ -100,7 +100,7 @@ eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
 }
 
 static void
-report_error(
+report_no_commands_found(
     const struct ast*         ast,
     ast_id                    arglist,
     const struct plugin_list* plugins,
@@ -110,6 +110,9 @@ report_error(
     struct db_source          source,
     struct candidates         candidates)
 {
+    int              gutter;
+    struct utf8_view cmd_name;
+
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
     struct utf8_span params_loc = ast->nodes[arglist].info.location;
@@ -118,105 +121,114 @@ report_error(
     params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
                      + ast->nodes[arglist].info.location.len;
 
-    if (vec_count(candidates) > 1)
+    log_flc(
+        "{e:error:} ",
+        source_filename,
+        source.text.data,
+        params_loc,
+        "Parameter mismatch: No version of this command takes the "
+        "argument types used here.\n");
+    gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+    log_excerpt_note(gutter, "Available candidates:\n");
+    cmd_name = utf8_list_view(&cmds->db_cmd_names, cmd);
+    for (; cmd < cmd_list_count(cmds)
+           && utf8_equal(cmd_name, utf8_list_view(&cmds->db_cmd_names, cmd));
+         ++cmd)
     {
-        cmd_id* pcmd;
-        int     gutter;
-        log_flc(
-            "{e:error:} ",
-            source_filename,
-            source.text.data,
-            params_loc,
-            "Command has ambiguous overloads.\n");
-        gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
-        log_excerpt_note(gutter, "Available candidates:\n");
-        vec_for_each(candidates, pcmd)
+        int                 i;
+        enum type           ret_type = *vec_get(cmds->return_types, cmd);
+        plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
+        struct plugin_info* plugin = vec_get(*plugins, plugin_id);
+        const struct param_types_list* param_types
+            = vec_get(cmds->param_types, cmd);
+        const struct utf8_list* param_names
+            = vec_get(cmds->db_param_names, cmd);
+        log_raw(
+            "%*s|   {emph:%.*s}%s",
+            gutter,
+            "",
+            cmd_name.len,
+            cmd_name.data + cmd_name.off,
+            ret_type == TYPE_VOID ? " " : "(");
+        for (i = 0; i != utf8_list_count(param_names); ++i)
         {
-            int              i;
-            struct utf8_view name = utf8_list_view(&cmds->db_cmd_names, *pcmd);
-            const struct param_types_list* param_types
-                = vec_get(cmds->param_types, *pcmd);
-            const struct utf8_list* param_names
-                = vec_get(cmds->db_param_names, *pcmd);
-            enum type           ret_type = *vec_get(cmds->return_types, *pcmd);
-            plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
-            struct plugin_info* plugin = vec_get(*plugins, plugin_id);
+            if (i)
+                log_raw(", ");
             log_raw(
-                "%*s|   {emph:%.*s}%s",
-                gutter,
-                "",
-                name.len,
-                name.data + name.off,
-                ret_type == TYPE_VOID ? " " : "(");
-            for (i = 0; i != utf8_list_count(param_names); ++i)
-            {
-                if (i)
-                    log_raw(", ");
-                log_raw(
-                    "%s {u:AS %s}",
-                    utf8_list_cstr(param_names, i),
-                    type_to_db_name(vec_get(*param_types, i)->type));
-            }
-            log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
-            log_raw("[%s]\n", utf8_cstr(plugin->name));
+                "%s {u:AS %s}",
+                utf8_list_cstr(param_names, i),
+                type_to_db_name(vec_get(*param_types, i)->type));
         }
-        log_flc(
-            "{n:note:} ",
-            source_filename,
-            source.text.data,
-            params_loc,
-            "This is usually an issue with conflicting plugins, or poorly "
-            "designed plugins. You can try to fix it by passing more "
-            "explicit parameter types to the command.\n");
+        log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
+        log_raw("[%s]\n", utf8_cstr(plugin->name));
     }
+}
 
-    if (vec_count(candidates) == 0)
+static void
+report_ambiguous_overloads(
+    const struct ast*         ast,
+    ast_id                    arglist,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    cmd_id                    cmd,
+    const char*               source_filename,
+    struct db_source          source,
+    struct candidates         candidates)
+{
+    cmd_id* pcmd;
+    int     gutter;
+
+    /* We want to highlight the entire argument list, not just the first. Merge
+     * locations of first and last */
+    struct utf8_span params_loc = ast->nodes[arglist].info.location;
+    while (ast->nodes[arglist].arglist.next > -1)
+        arglist = ast->nodes[arglist].arglist.next;
+    params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
+                     + ast->nodes[arglist].info.location.len;
+
+    log_flc(
+        "{e:error:} ",
+        source_filename,
+        source.text.data,
+        params_loc,
+        "Command has ambiguous overloads.\n");
+    gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+    log_excerpt_note(gutter, "Conflicting overloads are:\n");
+    vec_for_each(candidates, pcmd)
     {
-        int              gutter;
-        struct utf8_view cmd_name;
-        log_flc(
-            "{e:error:} ",
-            source_filename,
-            source.text.data,
-            params_loc,
-            "Parameter mismatch: No version of this command takes the "
-            "argument types used here.\n");
-        gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
-        log_excerpt_note(gutter, "Available candidates:\n");
-        cmd_name = utf8_list_view(&cmds->db_cmd_names, cmd);
-        for (;
-             cmd < cmd_list_count(cmds)
-             && utf8_equal(cmd_name, utf8_list_view(&cmds->db_cmd_names, cmd));
-             ++cmd)
+        int              i;
+        struct utf8_view name = utf8_list_view(&cmds->db_cmd_names, *pcmd);
+        const struct param_types_list* param_types
+            = vec_get(cmds->param_types, *pcmd);
+        const struct utf8_list* param_names
+            = vec_get(cmds->db_param_names, *pcmd);
+        enum type           ret_type = *vec_get(cmds->return_types, *pcmd);
+        plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
+        struct plugin_info* plugin = vec_get(*plugins, plugin_id);
+        log_raw(
+            "%*s|   {emph:%.*s}%s",
+            gutter,
+            "",
+            name.len,
+            name.data + name.off,
+            ret_type == TYPE_VOID ? " " : "(");
+        for (i = 0; i != utf8_list_count(param_names); ++i)
         {
-            int                 i;
-            enum type           ret_type = *vec_get(cmds->return_types, cmd);
-            plugin_id           plugin_id = *vec_get(cmds->plugin_ids, cmd);
-            struct plugin_info* plugin = vec_get(*plugins, plugin_id);
-            const struct param_types_list* param_types
-                = vec_get(cmds->param_types, cmd);
-            const struct utf8_list* param_names
-                = vec_get(cmds->db_param_names, cmd);
+            if (i)
+                log_raw(", ");
             log_raw(
-                "%*s|   {emph:%.*s}%s",
-                gutter,
-                "",
-                cmd_name.len,
-                cmd_name.data + cmd_name.off,
-                ret_type == TYPE_VOID ? " " : "(");
-            for (i = 0; i != utf8_list_count(param_names); ++i)
-            {
-                if (i)
-                    log_raw(", ");
-                log_raw(
-                    "%s {u:AS %s}",
-                    utf8_list_cstr(param_names, i),
-                    type_to_db_name(vec_get(*param_types, i)->type));
-            }
-            log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
-            log_raw("[%s]\n", utf8_cstr(plugin->name));
+                "%s {u:AS %s}",
+                utf8_list_cstr(param_names, i),
+                type_to_db_name(vec_get(*param_types, i)->type));
         }
+        log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
+        log_raw("[%s]\n", utf8_cstr(plugin->name));
     }
+    log_excerpt_note(
+        gutter,
+        "This is usually an issue with conflicting plugins, or poorly designed "
+        "plugins. You can try to fix it by casting the arguments to the types "
+        "required.\n");
 }
 
 static void
@@ -255,7 +267,7 @@ log_cmd_signature(
 }
 
 static void
-typecheck_arguments(
+typecheck_warnings(
     struct ast*               ast,
     ast_id                    cmd_node,
     const struct plugin_list* plugins,
@@ -291,7 +303,7 @@ typecheck_arguments(
                     source.text.data,
                     ast->nodes[arg].info.location,
                     "Argument %d is truncated in conversion from {lhs:%s} to "
-                    "{rhs:%s} in command call\n",
+                    "{rhs:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
@@ -310,7 +322,7 @@ typecheck_arguments(
                     source.text.data,
                     ast->nodes[arg].info.location,
                     "Strange conversion of argument %d from {lhs:%s} to "
-                    "{rhs:%s} in command call\n",
+                    "{rhs:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
@@ -335,13 +347,15 @@ resolve_cmd_overloads(
 {
     struct utf8_view  cmd_name;
     struct candidates candidates;
+    struct candidates prev_candidates;
     ast_id            n;
-    ast_id            paramlist;
+    ast_id            arglist;
     cmd_id            cmd;
 
     struct ctx ctx = {ast, cmds, 0, -1};
 
     candidates_init(&candidates);
+    candidates_init(&prev_candidates);
 
     for (n = 0; n != ast->node_count; ++n)
     {
@@ -365,8 +379,8 @@ resolve_cmd_overloads(
 
         /* Count number of arguments in the AST */
         ctx.argcount = 0;
-        for (paramlist = ast->nodes[n].cmd.arglist; paramlist > -1;
-             paramlist = ast->nodes[paramlist].arglist.next)
+        for (arglist = ast->nodes[n].cmd.arglist; arglist > -1;
+             arglist = ast->nodes[arglist].arglist.next)
             ctx.argcount++;
 
         /* Filter list of candidates with increasingly strict rules */
@@ -375,13 +389,31 @@ resolve_cmd_overloads(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
         if (vec_count(candidates) > 1)
             candidates_retain(candidates, eliminate_problematic_casts, &ctx);
+
+        /* Have to be as strict as possible. This might eliminate all commands,
+         * in which case we want to report an ambiguous overload error using the
+         * candidates list as it is now */
+        if (candidates_resize(&prev_candidates, vec_count(candidates)) < 0)
+            goto fail;
+        memcpy(
+            prev_candidates.mem->data,
+            candidates.mem->data,
+            sizeof(*candidates.mem->data) * vec_count(candidates));
+
         if (vec_count(candidates) > 1)
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
 
-        if (vec_count(candidates) != 1)
+        /* Update command ID in AST */
+        if (vec_count(candidates) == 1)
         {
-            report_error(
+            ast->nodes[n].cmd.id = *vec_first(candidates);
+            typecheck_warnings(ast, n, plugins, cmds, source_filename, source);
+            continue;
+        }
+
+        if (vec_count(prev_candidates) == 0)
+            report_no_commands_found(
                 ast,
                 ast->nodes[n].cmd.arglist,
                 plugins,
@@ -390,19 +422,26 @@ resolve_cmd_overloads(
                 source_filename,
                 source,
                 candidates);
-            goto fail;
-        }
+        else
+            report_ambiguous_overloads(
+                ast,
+                ast->nodes[n].cmd.arglist,
+                plugins,
+                cmds,
+                ast->nodes[n].cmd.id,
+                source_filename,
+                source,
+                prev_candidates);
 
-        /* Update command ID in AST */
-        ast->nodes[n].cmd.id = *vec_first(candidates);
-
-        typecheck_arguments(ast, n, plugins, cmds, source_filename, source);
+        goto fail;
     }
 
+    candidates_deinit(prev_candidates);
     candidates_deinit(candidates);
     return 0;
 
 fail:
+    candidates_deinit(prev_candidates);
     candidates_deinit(candidates);
     return -1;
 }
