@@ -27,14 +27,6 @@ insert_explicit_type_casts(
 
                 if (source_type != target_type)
                 {
-                    ast_id cast = ast_cast(
-                        ast,
-                        rvalue,
-                        target_type,
-                        ast->nodes[rvalue].info.location);
-                    if (cast < -1)
-                        return -1;
-                    ast->nodes[n].assignment.expr = cast;
                 }
             }
             break;

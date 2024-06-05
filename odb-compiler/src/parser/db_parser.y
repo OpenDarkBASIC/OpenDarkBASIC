@@ -264,7 +264,7 @@ command_expr
   | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : annotated_identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @$); }
+  : annotated_identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;

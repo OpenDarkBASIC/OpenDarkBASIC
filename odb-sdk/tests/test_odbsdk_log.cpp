@@ -121,6 +121,19 @@ TEST_F(NAME, excerpt_one_sized_location)
               "   |    ^ test\n"));
 }
 
+TEST_F(NAME, excerpt_annotation_at_end)
+{
+    const char* source = "a = b + c\n";
+
+    struct utf8_span loc = {8, 1};
+    log_excerpt("some/file.dba", source, loc, "test");
+
+    EXPECT_THAT(
+        log_output,
+        LogEq(" 1 | a = b + c\n"
+              "   |         ^ test\n"));
+}
+
 TEST_F(NAME, excerpt_single_line)
 {
     const char* source
@@ -361,7 +374,13 @@ TEST_F(NAME, excerpt_binop_everything_wraps)
     struct utf8_span op = {88, 3};
     struct utf8_span rhs = {103, 50};
     log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "first operand", "second operand");
+        "some/file.dba",
+        source,
+        lhs,
+        op,
+        rhs,
+        "first operand",
+        "second operand");
 
     EXPECT_THAT(
         log_output,

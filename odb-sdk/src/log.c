@@ -539,7 +539,7 @@ log_excerpt(
                 break;
             }
 
-            if (j >= loc.off - block.off + loc.len)
+            if (j >= loc.off - block.off + loc.len - 1)
             {
                 log_printf(" %s%s%s", lhsf_style(), annotation, reset_style());
                 break;

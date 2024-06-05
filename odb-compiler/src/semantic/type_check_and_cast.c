@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 #include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"
@@ -18,15 +19,20 @@ struct view_scope
     struct utf8_view view;
     int16_t          scope;
 };
+struct type_origin
+{
+    enum type type;
+    ast_id    original_declaration;
+};
 
 VEC_DECLARE_API(spanlist, struct span_scope, 32, static)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct typemap_kvs
 {
-    const char*     text;
-    struct spanlist keys;
-    enum type*      values;
+    const char*         text;
+    struct spanlist     keys;
+    struct type_origin* values;
 };
 
 static hash32
@@ -82,14 +88,14 @@ typemap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
 {
     return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
 }
-static enum type*
+static struct type_origin*
 typemap_kvs_get_value(struct typemap_kvs* kvs, int32_t slot)
 {
     return &kvs->values[slot];
 }
 static void
 typemap_kvs_set_value(
-    struct typemap_kvs* kvs, int32_t slot, const enum type* value)
+    struct typemap_kvs* kvs, int32_t slot, const struct type_origin* value)
 {
     kvs->values[slot] = *value;
 }
@@ -98,7 +104,7 @@ HM_DECLARE_API_FULL(
     typemap,
     hash32,
     struct view_scope,
-    enum type,
+    struct type_origin,
     32,
     static,
     struct typemap_kvs)
@@ -106,7 +112,7 @@ HM_DEFINE_API_FULL(
     typemap,
     hash32,
     struct view_scope,
-    enum type,
+    struct type_origin,
     32,
     typemap_kvs_hash,
     typemap_kvs_alloc,
@@ -153,10 +159,22 @@ resolve_node_type(
     if (ast->nodes[n].info.type_info != TYPE_VOID)
         return ast->nodes[n].info.type_info;
 
+    /* Nodes that don't return a value should be marked as TYPE_VOID */
     switch (ast->nodes[n].info.node_type)
     {
-        /* Nodes that don't return a value should be marked as TYPE_VOID */
-        case AST_BLOCK:
+        case AST_BLOCK: {
+            for (; n > -1; n = ast->nodes[n].block.next)
+            {
+                ast_id stmt = ast->nodes[n].block.stmt;
+                if (resolve_node_type(
+                        ast, stmt, cmds, source_filename, source, typemap, 0)
+                    < 0)
+                    return -1;
+            }
+            return TYPE_VOID;
+        }
+        break;
+
         case AST_ARGLIST:
         case AST_CONST_DECL:
         case AST_ASSIGNMENT: {
@@ -167,17 +185,162 @@ resolve_node_type(
                 < 0)
                 return -1;
 
+            /* When assigning to variables, the type of that variable is
+             * inherited from the type of the assignment, if that variable has
+             * not yet been declared. If it has been declared, then we need to
+             * insert a cast to the variable's type instead of transferring the
+             * RHS type */
             if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
-                enum type        rhs_type = ast->nodes[rhs].info.type_info;
-                struct utf8_view name = utf8_span_view(
+                enum type          rhs_type = ast->nodes[rhs].info.type_info;
+                struct type_origin lhs_type_origin = {rhs_type, lhs};
+                struct utf8_view   name = utf8_span_view(
                     source.text.data, ast->nodes[lhs].identifier.name);
-                struct view_scope view_scope = {name, scope};
-                if (typemap_insert_always(
-                        typemap, view_scope, ast->nodes[rhs].info.type_info)
-                    != 0)
+                struct view_scope   view_scope = {name, scope};
+                struct type_origin* lhs_type = typemap_insert_or_get(
+                    typemap, view_scope, lhs_type_origin);
+                if (lhs_type == NULL)
                     return -1;
-                ast->nodes[lhs].info.type_info = rhs_type;
+                ast->nodes[lhs].info.type_info = lhs_type->type;
+
+                if (rhs_type
+                    != lhs_type->type) /* The variable already exists and has a
+                                          type different from RHS */
+                {
+                    int    gutter;
+                    ast_id orig_node = lhs_type->original_declaration;
+                    ODBSDK_DEBUG_ASSERT(
+                        ast->nodes[orig_node].info.node_type == AST_IDENTIFIER);
+                    struct utf8_span orig_name
+                        = ast->nodes[orig_node].identifier.name;
+                    struct utf8_span orig_loc
+                        = ast->nodes[orig_node].info.location;
+
+                    ast_id cast = ast_cast(
+                        ast,
+                        rhs,
+                        lhs_type->type,
+                        ast->nodes[rhs].info.location);
+                    if (cast < -1)
+                        return -1;
+                    ast->nodes[n].assignment.expr = cast;
+
+                    switch (type_promote(rhs_type, lhs_type->type))
+                    {
+                        case TP_ALLOW: break;
+                        case TP_STRANGE:
+                            log_flc(
+                                "{w:warning:} ",
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[rhs].info.location,
+                                "Strange conversion from {lhs:%s} to {rhs:%s} "
+                                "in assignment\n",
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            gutter = log_binop_excerpt(
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            log_excerpt_note(
+                                gutter,
+                                "{lhs:%.*s} was previously declared as "
+                                "{lhs:%s} at ",
+                                orig_name.len,
+                                source.text.data + orig_name.off,
+                                type_to_db_name(lhs_type->type));
+                            log_flc(
+                                "",
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                "\n");
+                            log_excerpt(
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                type_to_db_name(lhs_type->type));
+                            break;
+                        case TP_TRUNCATE:
+                            log_flc(
+                                "{w:warning:} ",
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[rhs].info.location,
+                                "Value is truncated when converting from "
+                                "{lhs:%s} to {rhs:%s} in assignment\n",
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            gutter = log_binop_excerpt(
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            log_excerpt_note(
+                                gutter,
+                                "{lhs:%.*s} was previously declared as "
+                                "{lhs:%s} at ",
+                                orig_name.len,
+                                source.text.data + orig_name.off,
+                                type_to_db_name(lhs_type->type));
+                            log_flc(
+                                "",
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                "\n");
+                            log_excerpt(
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                type_to_db_name(lhs_type->type));
+                            break;
+                        case TP_DISALLOW:
+                            log_flc(
+                                "{e:error:} ",
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[rhs].info.location,
+                                "Value is truncated when converting from "
+                                "{lhs:%s} to {rhs:%s} in assignment\n",
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            gutter = log_binop_excerpt(
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            log_excerpt_note(
+                                gutter,
+                                "{lhs:%.*s} was previously declared as "
+                                "{lhs:%s} at ",
+                                orig_name.len,
+                                source.text.data + orig_name.off,
+                                type_to_db_name(lhs_type->type));
+                            log_flc(
+                                "",
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                "\n");
+                            log_excerpt(
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                type_to_db_name(lhs_type->type));
+                            return -1;
+                    }
+                }
             }
             return TYPE_VOID;
         }
@@ -191,14 +354,17 @@ resolve_node_type(
             struct utf8_view name = utf8_span_view(
                 source.text.data, ast->nodes[n].identifier.name);
             struct view_scope view_scope = {name, scope};
-            enum type*        type = typemap_insert_or_get(
-                typemap,
-                view_scope,
-                /* XXX: Use type annotation to determine default type */
-                ast->nodes[n].info.type_info == TYPE_VOID
-                           ? TYPE_INTEGER
-                           : ast->nodes[n].info.type_info);
-            return ast->nodes[n].identifier.info.type_info = *type;
+            enum type         default_type
+                = ast->nodes[n].info.type_info != TYPE_VOID
+                      ? ast->nodes[n].info.type_info
+                      /* XXX: Use type annotation to determine default type */
+                      : TYPE_INTEGER;
+            struct type_origin  default_type_origin = {default_type, n};
+            struct type_origin* type_origin = typemap_insert_or_get(
+                typemap, view_scope, default_type_origin);
+            if (type_origin == NULL)
+                return -1;
+            return ast->nodes[n].identifier.info.type_info = type_origin->type;
         }
         break;
 
@@ -278,7 +444,7 @@ resolve_node_type(
             return type_check_and_cast_casts(ast, n, source_filename, source);
     }
 
-    return (enum type) - 1;
+    return -1;
 }
 
 static int
@@ -290,6 +456,7 @@ type_check_and_cast(
     struct db_source          source)
 {
     struct typemap* typemap;
+    typemap_init(&typemap);
 
     /*
      * It's necessary to traverse the AST in a way where statements are
@@ -300,24 +467,16 @@ type_check_and_cast(
      * variables, because they will be processed in the same order the data
      * flows.
      */
-    ast_id block = 0;
-    typemap_init(&typemap);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
-    for (; block > -1; block = ast->nodes[block].block.next)
+    ODBSDK_DEBUG_ASSERT(ast->nodes[0].info.node_type == AST_BLOCK);
+    if (resolve_node_type(ast, 0, cmds, source_filename, source, &typemap, 0)
+        < 0)
     {
-        ast_id stmt = ast->nodes[block].block.stmt;
-        if (resolve_node_type(
-                ast, stmt, cmds, source_filename, source, &typemap, 0)
-            < 0)
-            goto error;
+        typemap_deinit(typemap);
+        return -1;
     }
 
     typemap_deinit(typemap);
     return 0;
-
-error:
-    typemap_deinit(typemap);
-    return -1;
 }
 
 static const struct semantic_check* depends[]

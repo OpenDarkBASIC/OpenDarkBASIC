@@ -120,13 +120,19 @@ ast_command(
 
 ast_id
 ast_assign_var(
-    struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location)
+    struct ast*      ast,
+    ast_id           identifier,
+    ast_id           expr,
+    struct utf8_span op_location,
+    struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_ASSIGNMENT, location);
     if (n < 0)
         return -1;
     ast->nodes[n].assignment.lvalue = identifier;
     ast->nodes[n].assignment.expr = expr;
+    ast->nodes[n].assignment.op_location = op_location;
+    
     return n;
 }
 
