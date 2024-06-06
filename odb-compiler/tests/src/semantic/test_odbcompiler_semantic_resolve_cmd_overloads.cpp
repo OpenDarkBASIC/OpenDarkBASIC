@@ -22,12 +22,13 @@ TEST_F(NAME, ambiguous_overloads)
     addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER, TYPE_BYTE});
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(-1));
     EXPECT_THAT(
         log(),
@@ -48,12 +49,13 @@ TEST_F(NAME, float_accepts_integer_with_warning)
     addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
     ASSERT_THAT(parse("print 5"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -69,12 +71,13 @@ TEST_F(NAME, integer_accepts_float_with_warning)
     addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -93,12 +96,13 @@ TEST_F(NAME, prefer_exact_overload)
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(0));
 
     int cmd = ast.nodes[0].block.stmt;
@@ -116,12 +120,13 @@ TEST_F(NAME, prefer_closer_matching_overload)
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(0));
 
     int cmd = ast.nodes[0].block.stmt;
@@ -140,12 +145,13 @@ TEST_F(NAME, command_expr_passed_as_argument)
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print get float#()"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(
-        semantic_resolve_cmd_overloads.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            &plugins,
+            &cmds,
+            "test",
+            src),
         Eq(0));
 
     int cmd = ast.nodes[0].block.stmt;

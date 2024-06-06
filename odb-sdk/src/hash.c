@@ -43,27 +43,6 @@ hash32_ptr(const void* ptr, uintptr_t len)
 #endif
 
 /* ------------------------------------------------------------------------- */
-#if ODBSDK_SIZEOF_VOID_P == 8
-hash32
-hash32_aligned_ptr(const void* ptr, int len)
-{
-    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
-    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
-
-    return (hash32)((*(uintptr_t*)ptr / sizeof(void*)) & 0xFFFFFFFF);
-}
-#elif ODBSDK_SIZEOF_VOID_P == 4
-hash32
-hash32_aligned_ptr(const void* ptr, uintptr_t len)
-{
-    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
-    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
-
-    return (hash32)(*(uintptr_t*)ptr / sizeof(void*));
-}
-#endif
-
-/* ------------------------------------------------------------------------- */
 hash32
 hash32_combine(hash32 lhs, hash32 rhs)
 {

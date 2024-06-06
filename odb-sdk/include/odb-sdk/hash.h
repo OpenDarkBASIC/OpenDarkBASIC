@@ -27,8 +27,21 @@ hash32_ptr(const void* ptr, int len);
 /*!
  * @brief Get a hash value of an aligned pointer.
  */
-ODBSDK_PUBLIC_API hash32
-hash32_aligned_ptr(const void* ptr, int len);
+#if ODBSDK_SIZEOF_VOID_P == 8
+static inline hash32
+hash32_aligned_ptr(const void* ptr)
+{
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
+    return (hash32)((*(uintptr_t*)ptr / sizeof(void*)) & 0xFFFFFFFF);
+}
+#elif ODBSDK_SIZEOF_VOID_P == 4
+static inline hash32
+hash32_aligned_ptr(const void* ptr)
+{
+    ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
+    return (hash32)(*(uintptr_t*)ptr / sizeof(void*));
+}
+#endif
 
 /*!
  * @brief Taken from boost::hash_combine. Combines two hash values into a

@@ -421,8 +421,12 @@ log_vflc(
             l1++, c1 = 1;
     }
 
-    fprintf_with_color("{emph:%s:%d:%d:} ", filename, l1, c1);
-    fprintf_with_color(severity);
+    fprintf_with_color("{emph:%s:%d:%d:}", filename, l1, c1);
+    if (*severity)
+    {
+        log_putc(' ');
+        fprintf_with_color(severity);
+    }
 
     va_copy(args.ap, ap);
     vfprintf_with_color(fmt, &args);

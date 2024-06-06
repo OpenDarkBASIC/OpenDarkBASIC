@@ -3,6 +3,7 @@
 
 #include <gmock/gmock.h>
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/semantic.h"
 }
 
@@ -19,8 +20,8 @@ TEST_F(NAME, exponent_truncated_from_double)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0f ^ 2.0"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -31,7 +32,16 @@ TEST_F(NAME, exponent_truncated_from_double)
               "   |       FLOAT\n"
               "   = note: The exponent is always converted to the same type as "
               "the base when using floating point exponents.\n"
-              "   = note: The exponent can be a INTEGER, FLOAT or DOUBLE.\n"));
+              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+    ast_id cmd = ast.nodes[0].block.stmt;
+    ast_id args = ast.nodes[cmd].cmd.arglist;
+    ast_id op = ast.nodes[args].arglist.expr;
+    ast_id lhs = ast.nodes[op].binop.left;
+    ast_id rhs = ast.nodes[op].binop.right;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_FLOAT_LITERAL));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_FLOAT));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_FLOAT));
 }
 
 TEST_F(NAME, exponent_cast_to_integer)
@@ -39,10 +49,21 @@ TEST_F(NAME, exponent_cast_to_integer)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(log(), LogEq(""));
+    ast_id cmd = ast.nodes[0].block.stmt;
+    ast_id args = ast.nodes[cmd].cmd.arglist;
+    ast_id op = ast.nodes[args].arglist.expr;
+    ast_id lhs = ast.nodes[op].binop.left;
+    ast_id rhs = ast.nodes[op].binop.right;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    EXPECT_THAT(
+        ast.nodes[rhs].info.node_type,
+        Eq(AST_CAST)); // BYTE literal cast to INTEGER
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
 }
 
 TEST_F(NAME, exponent_strange_conversion)
@@ -50,8 +71,8 @@ TEST_F(NAME, exponent_strange_conversion)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0 ^ true"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -59,7 +80,18 @@ TEST_F(NAME, exponent_strange_conversion)
               "BOOLEAN to INTEGER.\n"
               " 1 | print 2.0 ^ true\n"
               "   |       >~~ ^ ~~~< BOOLEAN\n"
-              "   = note: The exponent can be a INTEGER, FLOAT or DOUBLE.\n"));
+              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+    ast_id cmd = ast.nodes[0].block.stmt;
+    ast_id args = ast.nodes[cmd].cmd.arglist;
+    ast_id op = ast.nodes[args].arglist.expr;
+    ast_id lhs = ast.nodes[op].binop.left;
+    ast_id rhs = ast.nodes[op].binop.right;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    EXPECT_THAT(
+        ast.nodes[rhs].info.node_type,
+        Eq(AST_CAST)); // BOOLEAN literal cast to INTEGER
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
 }
 
 TEST_F(NAME, exponent_truncated_from_dword)
@@ -67,8 +99,8 @@ TEST_F(NAME, exponent_truncated_from_dword)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0 ^ 4294967295"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -78,7 +110,18 @@ TEST_F(NAME, exponent_truncated_from_dword)
               "   |       >~~ ^ ~~~~~~~~~< DWORD\n"
               "   = note: INTEGER is the largest possible integral type for "
               "exponents.\n"
-              "   = note: The exponent can be a INTEGER, FLOAT or DOUBLE.\n"));
+              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+    ast_id cmd = ast.nodes[0].block.stmt;
+    ast_id args = ast.nodes[cmd].cmd.arglist;
+    ast_id op = ast.nodes[args].arglist.expr;
+    ast_id lhs = ast.nodes[op].binop.left;
+    ast_id rhs = ast.nodes[op].binop.right;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    EXPECT_THAT(
+        ast.nodes[rhs].info.node_type,
+        Eq(AST_CAST)); // DWORD literal cast to INTEGER
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
 }
 
 TEST_F(NAME, exponent_truncated_from_long_integer)
@@ -86,8 +129,8 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0 ^ 99999999999999"), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -97,7 +140,18 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
               "   |       >~~ ^ ~~~~~~~~~~~~~< LONG INTEGER\n"
               "   = note: INTEGER is the largest possible integral type for "
               "exponents.\n"
-              "   = note: The exponent can be a INTEGER, FLOAT or DOUBLE.\n"));
+              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+    ast_id cmd = ast.nodes[0].block.stmt;
+    ast_id args = ast.nodes[cmd].cmd.arglist;
+    ast_id op = ast.nodes[args].arglist.expr;
+    ast_id lhs = ast.nodes[op].binop.left;
+    ast_id rhs = ast.nodes[op].binop.right;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    EXPECT_THAT(
+        ast.nodes[rhs].info.node_type,
+        Eq(AST_CAST)); // LONG INTEGER literal cast to INTEGER
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
 }
 
 TEST_F(NAME, exponent_invalid_type)
@@ -105,8 +159,8 @@ TEST_F(NAME, exponent_invalid_type)
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     ASSERT_THAT(parse("print 2.0 ^ \"oops\""), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
         Eq(-1));
     EXPECT_THAT(
         log(),
@@ -114,5 +168,5 @@ TEST_F(NAME, exponent_invalid_type)
               "converted to INTEGER.\n"
               " 1 | print 2.0 ^ \"oops\"\n"
               "   |       >~~ ^ ~~~~~< STRING\n"
-              "   = note: The exponent can be a INTEGER, FLOAT or DOUBLE.\n"));
+              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
 }

@@ -67,7 +67,7 @@ type_check_and_cast_binop_pow(
                     "");
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}\n",
+                    "The base can be an {rhs:%s} or {rhs:%s}\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 break;
@@ -92,7 +92,7 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(rhs_type));
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
+                    "The base can be an {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 break;
@@ -116,7 +116,7 @@ type_check_and_cast_binop_pow(
                     "");
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
+                    "The base can be an {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 return TYPE_INVALID;
@@ -168,7 +168,7 @@ type_check_and_cast_binop_pow(
                         "for exponents.\n");
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
@@ -205,7 +205,7 @@ type_check_and_cast_binop_pow(
                         "for exponents.\n");
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
@@ -231,7 +231,7 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(rhs_type));
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be a {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));

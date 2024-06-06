@@ -3,6 +3,8 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 #include "odb-sdk/log.h"
+#include "odb-sdk/mem.h"
+#include <assert.h>
 
 #define HM_SLOT_UNUSED 0 /* SLOT_UNUSED must be 0 for memset() to work */
 #define HM_SLOT_RIP    1
@@ -42,16 +44,14 @@
     /*!                                                                        \
      * @brief Allocates space for a new                                        \
      */                                                                        \
-    API V* prefix##_emplace_new(struct prefix** hm, const K key);              \
-    API V* prefix##_insert_or_get(                                             \
-        struct prefix** hm, const K key, const V value);                       \
-    API int prefix##_insert(struct prefix** hm, const K key, const V value);   \
+    API V*  prefix##_emplace_new(struct prefix** hm, K key);                   \
+    API V*  prefix##_insert_or_get(struct prefix** hm, K key, V value);        \
+    API int prefix##_insert(struct prefix** hm, K key, V value);               \
                                                                                \
-    API V* prefix##_erase(struct prefix* hm, const K key);                     \
-    API V* prefix##_find(struct prefix* hm, const K key);                      \
+    API V* prefix##_erase(struct prefix* hm, K key);                           \
+    API V* prefix##_find(struct prefix* hm, K key);                            \
                                                                                \
-    static inline int prefix##_insert_new(                                     \
-        struct prefix** hm, const K key, const V value)                        \
+    static inline int prefix##_insert_new(struct prefix** hm, K key, V value)  \
     {                                                                          \
         V* emplaced = prefix##_emplace_new(hm, key);                           \
         if (emplaced == NULL)                                                  \
@@ -60,7 +60,7 @@
         return 0;                                                              \
     }                                                                          \
     static inline int prefix##_insert_always(                                  \
-        struct prefix** hm, const K key, const V value)                        \
+        struct prefix** hm, K key, V value)                                    \
     {                                                                          \
         V* ins_value = prefix##_insert_or_get(hm, key, value);                 \
         if (ins_value == NULL)                                                 \
@@ -91,25 +91,25 @@
         mem_free(kvs->values);                                                 \
         mem_free(kvs->keys);                                                   \
     }                                                                          \
-    static K* kvs_get_key(struct prefix##_kvs* kvs, int##bits##_t slot)        \
+    static K kvs_get_key(const struct prefix##_kvs* kvs, int##bits##_t slot)   \
     {                                                                          \
-        return &kvs->keys[slot];                                               \
+        return kvs->keys[slot];                                                \
     }                                                                          \
     static void kvs_set_key(                                                   \
-        struct prefix##_kvs* kvs, int##bits##_t slot, const K* key)            \
+        struct prefix##_kvs* kvs, int##bits##_t slot, K key)                   \
     {                                                                          \
-        kvs->keys[slot] = *key;                                                \
+        kvs->keys[slot] = key;                                                 \
     }                                                                          \
-    static int kvs_keys_equal(const K* k1, const K* k2)                        \
+    static int kvs_keys_equal(K k1, K k2)                                      \
     {                                                                          \
-        return memcmp(k1, k2, sizeof(K)) == 0;                                 \
+        return memcmp(&k1, &k2, sizeof(K)) == 0;                               \
     }                                                                          \
     static V* kvs_get_value(struct prefix##_kvs* kvs, int##bits##_t slot)      \
     {                                                                          \
         return &kvs->values[slot];                                             \
     }                                                                          \
     static void kvs_set_value(                                                 \
-        struct prefix##_kvs* kvs, int##bits##_t slot, const V* value)          \
+        struct prefix##_kvs* kvs, int##bits##_t slot, V* value)                \
     {                                                                          \
         kvs->values[slot] = *value;                                            \
     }                                                                          \
@@ -152,7 +152,7 @@
      *         If key does not exist: slot                                     \
      */                                                                        \
     static int##bits##_t prefix##_find_slot(                                   \
-        const struct prefix* hm, const K key, H h)                             \
+        const struct prefix* hm, K key, H h)                                   \
     {                                                                          \
         int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
         int##bits##_t i = 0;                                                   \
@@ -253,7 +253,7 @@
             mem_free(hm);                                                      \
         }                                                                      \
     }                                                                          \
-    V* prefix##_emplace_new(struct prefix** hm, const K key)                   \
+    V* prefix##_emplace_new(struct prefix** hm, K key)                         \
     {                                                                          \
         H             h;                                                       \
         int##bits##_t slot;                                                    \
@@ -274,7 +274,7 @@
         hm_set_key(&(*hm)->kvs, slot, key);                                    \
         return hm_get_value(&(*hm)->kvs, slot);                                \
     }                                                                          \
-    V* prefix##_insert_or_get(struct prefix** hm, const K key, const V value)  \
+    V* prefix##_insert_or_get(struct prefix** hm, K key, V value)              \
     {                                                                          \
         hash32        h;                                                       \
         int##bits##_t slot;                                                    \
@@ -296,7 +296,7 @@
         hm_set_value(&(*hm)->kvs, slot, &value);                               \
         return hm_get_value(&(*hm)->kvs, slot);                                \
     }                                                                          \
-    V* prefix##_find(struct prefix* hm, const K key)                           \
+    V* prefix##_find(struct prefix* hm, K key)                                 \
     {                                                                          \
         H             h = hm_hash(key);                                        \
         int##bits##_t slot = prefix##_find_slot(hm, key, h);                   \
@@ -305,7 +305,7 @@
                                                                                \
         return hm_get_value(&hm->kvs, -1 - slot);                              \
     }                                                                          \
-    V* prefix##_erase(struct prefix* hm, const K key)                          \
+    V* prefix##_erase(struct prefix* hm, K key)                                \
     {                                                                          \
         H             h = hm_hash(key);                                        \
         int##bits##_t slot = prefix##_find_slot(hm, key, h);                   \
@@ -319,7 +319,7 @@
 
 typedef int32_t hm_size;
 typedef int32_t hm_idx;
-typedef int     (*hm_compare_func)(const void* a, const void* b, int size);
+typedef int (*hm_compare_func)(const void* a, const void* b, int size);
 
 struct hm
 {

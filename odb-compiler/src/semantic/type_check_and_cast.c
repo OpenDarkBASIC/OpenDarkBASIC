@@ -192,12 +192,19 @@ resolve_node_type(
              * RHS type */
             if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
-                struct type_origin lhs_type_origin = {rhs_type, lhs};
-                struct utf8_view   name = utf8_span_view(
+                struct utf8_view lhs_name = utf8_span_view(
                     source.text.data, ast->nodes[lhs].identifier.name);
-                struct view_scope   view_scope = {name, scope};
-                struct type_origin* lhs_type = typemap_insert_or_get(
-                    typemap, view_scope, lhs_type_origin);
+                struct view_scope lhs_name_scope = {lhs_name, scope};
+                /* If the RHS is a smaller type, e.g. BYTE or WORD, prefer to
+                 * set the identifier's type to INTEGER */
+                enum type lhs_default_type
+                    = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
+                          ? TYPE_INTEGER
+                          : rhs_type;
+                struct type_origin lhs_default_type_origin
+                    = {lhs_default_type, lhs};
+                const struct type_origin* lhs_type = typemap_insert_or_get(
+                    typemap, lhs_name_scope, lhs_default_type_origin);
                 if (lhs_type == NULL)
                     return TYPE_INVALID;
                 ast->nodes[lhs].info.type_info = lhs_type->type;
@@ -234,7 +241,7 @@ resolve_node_type(
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
                                 "Strange conversion from {lhs:%s} to {rhs:%s} "
-                                "in assignment\n",
+                                "in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_binop_excerpt(
@@ -243,8 +250,8 @@ resolve_node_type(
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
                                 ast->nodes[rhs].info.location,
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
+                                type_to_db_name(lhs_type->type),
+                                type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
                                 "{lhs:%.*s} was previously declared as "
@@ -271,7 +278,7 @@ resolve_node_type(
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
                                 "Value is truncated when converting from "
-                                "{lhs:%s} to {rhs:%s} in assignment\n",
+                                "{lhs:%s} to {rhs:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_binop_excerpt(
@@ -280,8 +287,8 @@ resolve_node_type(
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
                                 ast->nodes[rhs].info.location,
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
+                                type_to_db_name(lhs_type->type),
+                                type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
                                 "{lhs:%.*s} was previously declared as "
@@ -307,8 +314,8 @@ resolve_node_type(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
-                                "Value is truncated when converting from "
-                                "{lhs:%s} to {rhs:%s} in assignment\n",
+                                "Cannot assign {lhs:%s} to {rhs:%s}. Types are "
+                                "incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_binop_excerpt(
@@ -317,8 +324,8 @@ resolve_node_type(
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
                                 ast->nodes[rhs].info.location,
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
+                                type_to_db_name(lhs_type->type),
+                                type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
                                 "{lhs:%.*s} was previously declared as "

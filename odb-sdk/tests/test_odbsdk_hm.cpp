@@ -83,11 +83,11 @@ test_set_value(struct kvs* kvs, int16_t slot, const float* value)
 }
 
 #define NO_API
-HM_DECLARE_API_FULL(hm_test, hash32, char*, float, 16, NO_API, struct kvs)
+HM_DECLARE_API_FULL(hm_test, hash32, const char*, float, 16, NO_API, struct kvs)
 HM_DEFINE_API_FULL(
     hm_test,
     hash32,
-    char*,
+    const char*,
     float,
     16,
     test_hash,

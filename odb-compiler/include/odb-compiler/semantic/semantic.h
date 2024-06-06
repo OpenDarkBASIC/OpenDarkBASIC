@@ -21,7 +21,16 @@ struct semantic_check
 };
 
 ODBCOMPILER_PUBLIC_API int
-semantic_checks_run(
+semantic_check_run(
+    const struct semantic_check* check,
+    struct ast*                  ast,
+    const struct plugin_list*    plugins,
+    const struct cmd_list*       cmds,
+    const char*                  source_filename,
+    struct db_source             source);
+
+ODBCOMPILER_PUBLIC_API int
+semantic_run_essential_checks(
     struct ast*               ast,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
