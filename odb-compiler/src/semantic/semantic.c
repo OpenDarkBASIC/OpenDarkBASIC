@@ -37,7 +37,7 @@ ptr_kvs_keys_equal(
 static void*
 ptr_kvs_get_value(struct ptr_kvs* kvs, int16_t slot)
 {
-    return NULL;
+    return (void*)1;  // So insert_new() returns success
 }
 static void
 ptr_kvs_set_value(struct ptr_kvs* kvs, int16_t slot, void* value)

@@ -1,10 +1,11 @@
-#include "llvm/IR/Intrinsics.h"
-#include "odb-compiler/sdk/sdk.h"
 extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/codegen/codegen.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/sdk/sdk.h"
+#include "odb-sdk/hash.h"
+#include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"
 }
 
@@ -15,17 +16,139 @@ extern "C" {
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 #include "llvm/TargetParser/Host.h"
+#include "llvm/Transforms/InstCombine/InstCombine.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Transforms/Scalar/GVN.h"
+#include "llvm/Transforms/Scalar/Reassociate.h"
+#include "llvm/Transforms/Scalar/SimplifyCFG.h"
+#include "llvm/Transforms/Utils/Mem2Reg.h"
+
+struct span_scope
+{
+    struct utf8_span span;
+    int16_t          scope;
+};
+struct view_scope
+{
+    struct utf8_view view;
+    int16_t          scope;
+};
+
+VEC_DECLARE_API(spanlist, struct span_scope, 32, static)
+VEC_DEFINE_API(spanlist, struct span_scope, 32)
+
+struct allocamap_kvs
+{
+    const char*        text;
+    struct spanlist    keys;
+    llvm::AllocaInst** values;
+};
+
+static hash32
+allocamap_kvs_hash(struct view_scope key)
+{
+    return hash32_jenkins_oaat(key.view.data + key.view.off, key.view.len)
+           + key.scope;
+}
+static int
+allocamap_kvs_alloc(struct allocamap_kvs* kvs, int32_t capacity)
+{
+    kvs->text = NULL;
+
+    spanlist_init(&kvs->keys);
+    if (spanlist_resize(&kvs->keys, capacity) != 0)
+        return -1;
+
+    kvs->values
+        = (llvm::AllocaInst**)mem_alloc(sizeof(llvm::AllocaInst*) * capacity);
+    if (kvs->values == NULL)
+    {
+        spanlist_deinit(kvs->keys);
+        return log_oom(sizeof(enum type) * capacity, "allocamap_kvs_alloc()");
+    }
+
+    return 0;
+}
+static void
+allocamap_kvs_free(struct allocamap_kvs* kvs)
+{
+    mem_free(kvs->values);
+    spanlist_deinit(kvs->keys);
+}
+static struct view_scope
+allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
+{
+    ODBSDK_DEBUG_ASSERT(kvs->text != NULL);
+    struct span_scope span_scope = *vec_get(kvs->keys, slot);
+    struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
+    struct view_scope view_scope = {view, span_scope.scope};
+    return view_scope;
+}
+static void
+allocamap_kvs_set_key(
+    struct allocamap_kvs* kvs, int32_t slot, struct view_scope key)
+{
+    ODBSDK_DEBUG_ASSERT(kvs->text == NULL || kvs->text == key.view.data);
+    kvs->text = key.view.data;
+    struct utf8_span  span = utf8_view_span(kvs->text, key.view);
+    struct span_scope span_scope = {span, key.scope};
+    *vec_get(kvs->keys, slot) = span_scope;
+}
+static int
+allocamap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
+{
+    return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
+}
+static llvm::AllocaInst**
+allocamap_kvs_get_value(struct allocamap_kvs* kvs, int32_t slot)
+{
+    return &kvs->values[slot];
+}
+static void
+allocamap_kvs_set_value(
+    struct allocamap_kvs* kvs, int32_t slot, llvm::AllocaInst** value)
+{
+    kvs->values[slot] = *value;
+}
+
+HM_DECLARE_API_FULL(
+    allocamap,
+    hash32,
+    struct view_scope,
+    llvm::AllocaInst*,
+    32,
+    static,
+    struct allocamap_kvs)
+HM_DEFINE_API_FULL(
+    allocamap,
+    hash32,
+    struct view_scope,
+    llvm::AllocaInst*,
+    32,
+    allocamap_kvs_hash,
+    allocamap_kvs_alloc,
+    allocamap_kvs_free,
+    allocamap_kvs_get_key,
+    allocamap_kvs_set_key,
+    allocamap_kvs_keys_equal,
+    allocamap_kvs_get_value,
+    allocamap_kvs_set_value,
+    128,
+    70)
 
 static std::string
 to_string(const llvm::Type* ty)
@@ -75,7 +198,7 @@ create_global_string_table(
 }
 
 static llvm::Type*
-dbpro_cmd_param_type_to_llvm(enum type type, llvm::Module* mod)
+type_to_llvm(enum type type, llvm::Module* mod)
 {
     switch (type)
     {
@@ -133,14 +256,13 @@ get_command_function_signature(
     struct cmd_param*                 odb_param;
     vec_for_each(*odb_param_types, odb_param)
     {
-        llvm_param_types.push_back(
-            dbpro_cmd_param_type_to_llvm(odb_param->type, mod));
+        llvm_param_types.push_back(type_to_llvm(odb_param->type, mod));
     }
 
     /* Convert return type from command list as well, and create LLVM FT */
     enum type odb_return_type = *vec_get(cmds->return_types, cmd_id);
     return llvm::FunctionType::get(
-        dbpro_cmd_param_type_to_llvm(odb_return_type, mod),
+        type_to_llvm(odb_return_type, mod),
         llvm_param_types,
         /* isVarArg */ false);
 }
@@ -202,6 +324,7 @@ gen_expr(
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    struct allocamap**                            allocamap,
     llvm::Module*                                 mod,
     llvm::BasicBlock*                             BB);
 
@@ -214,6 +337,7 @@ gen_cmd_call(
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    struct allocamap**                            allocamap,
     llvm::Module*                                 mod,
     llvm::BasicBlock*                             BB)
 {
@@ -245,6 +369,7 @@ gen_cmd_call(
             source,
             string_table,
             plugin_symbol_table,
+            allocamap,
             mod,
             BB));
     }
@@ -263,6 +388,7 @@ gen_expr(
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    struct allocamap**                            allocamap,
     llvm::Module*                                 mod,
     llvm::BasicBlock*                             BB)
 {
@@ -284,11 +410,27 @@ gen_expr(
                 source,
                 string_table,
                 plugin_symbol_table,
+                allocamap,
                 mod,
                 BB);
 
-        case AST_ASSIGNMENT:
-        case AST_IDENTIFIER: break;
+        case AST_ASSIGNMENT: break;
+
+        case AST_IDENTIFIER: {
+            struct utf8_view name = utf8_span_view(
+                source.text.data, ast->nodes[expr].identifier.name);
+            struct view_scope  name_scope = {name, 0};
+            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
+            /* The AST should be constructed in a way where we do not have to
+             * create a default value for variables that have not yet been
+             * declared */
+            ODBSDK_DEBUG_ASSERT(*A != NULL);
+
+            return b.CreateLoad(
+                (*A)->getAllocatedType(),
+                *A,
+                llvm::StringRef(name.data + name.off, name.len));
+        }
 
         case AST_BINOP: {
             ast_id       lhs_node = ast->nodes[expr].binop.left;
@@ -304,6 +446,7 @@ gen_expr(
                 source,
                 string_table,
                 plugin_symbol_table,
+                allocamap,
                 mod,
                 BB);
             llvm::Value* rhs = gen_expr(
@@ -314,6 +457,7 @@ gen_expr(
                 source,
                 string_table,
                 plugin_symbol_table,
+                allocamap,
                 mod,
                 BB);
 
@@ -540,15 +684,14 @@ gen_expr(
                 source,
                 string_table,
                 plugin_symbol_table,
+                allocamap,
                 mod,
                 BB);
             enum type from
                 = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
             enum type to = ast->nodes[expr].cast.info.type_info;
             return b.CreateCast(
-                llvm_cast_ops[from][to],
-                value,
-                dbpro_cmd_param_type_to_llvm(to, mod));
+                llvm_cast_ops[from][to], value, type_to_llvm(to, mod));
         }
         break;
     }
@@ -569,7 +712,9 @@ gen_block(
     const struct db_source                        source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
-    llvm::Module*                                 mod)
+    struct allocamap**                            allocamap,
+    llvm::Module*                                 mod,
+    llvm::Function*                               F)
 {
     ODBSDK_DEBUG_ASSERT(block > -1);
     ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
@@ -578,7 +723,7 @@ gen_block(
      * statements from the current node. We name it according to the node's
      * index in the AST. Makes it easier to track down issues later on. */
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(
-        mod->getContext(), llvm::Twine("block") + llvm::Twine(block));
+        mod->getContext(), llvm::Twine("block") + llvm::Twine(block), F);
     llvm::IRBuilder<> b(mod->getContext());
     b.SetInsertPoint(BB);
 
@@ -597,8 +742,41 @@ gen_block(
                     source,
                     string_table,
                     plugin_symbol_table,
+                    allocamap,
                     mod,
                     BB);
+                break;
+            }
+
+            case AST_ASSIGNMENT: {
+                ast_id       lhs_node = ast->nodes[stmt].assignment.lvalue;
+                ast_id       rhs_node = ast->nodes[stmt].assignment.expr;
+                llvm::Value* rhs = gen_expr(
+                    ast,
+                    rhs_node,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    plugin_symbol_table,
+                    allocamap,
+                    mod,
+                    BB);
+
+                ODBSDK_DEBUG_ASSERT(
+                    ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER);
+                enum type        type = ast->nodes[lhs_node].info.type_info;
+                struct utf8_view name = utf8_span_view(
+                    source.text.data, ast->nodes[lhs_node].identifier.name);
+                struct view_scope  name_scope = {name, 0};
+                llvm::AllocaInst** A
+                    = allocamap_insert_or_get(allocamap, name_scope, NULL);
+                if (*A == NULL)
+                    *A = b.CreateAlloca(
+                        type_to_llvm(type, mod),
+                        NULL,
+                        llvm::StringRef(name.data + name.off, name.len));
+                b.CreateStore(rhs, *A);
                 break;
             }
 
@@ -628,7 +806,6 @@ odb_codegen(
 {
     llvm::LLVMContext ctx;
     llvm::Module      mod(module_name, ctx);
-    llvm::IRBuilder<> b(ctx);
 
     llvm::StringMap<llvm::GlobalVariable*> string_table;
     create_global_string_table(&string_table, program, source, &mod);
@@ -649,6 +826,8 @@ odb_codegen(
     // F->setDoesNotReturn();
 
     // Translate AST
+    struct allocamap* allocamap;
+    allocamap_init(&allocamap);
     llvm::BasicBlock* BB = gen_block(
         program,
         0,
@@ -657,11 +836,14 @@ odb_codegen(
         source,
         &string_table,
         &plugin_symbol_table,
-        &mod);
-    BB->insertInto(F);
-    b.SetInsertPoint(BB);
+        &allocamap,
+        &mod,
+        F);
+    allocamap_deinit(allocamap);
 
     // Plugins use odb-sdk. Have to call the global init functions
+    llvm::IRBuilder<> b(ctx);
+    b.SetInsertPoint(BB);
     if (sdkType == SDK_ODB)
     {
         llvm::Function* FSDKInit = llvm::Function::Create(
@@ -726,6 +908,37 @@ odb_codegen(
 
     // Validate the generated code, checking for consistency.
     llvm::verifyFunction(*F);
+
+    auto FPM = std::make_unique<llvm::FunctionPassManager>();
+    auto LAM = std::make_unique<llvm::LoopAnalysisManager>();
+    auto FAM = std::make_unique<llvm::FunctionAnalysisManager>();
+    auto CGAM = std::make_unique<llvm::CGSCCAnalysisManager>();
+    auto MAM = std::make_unique<llvm::ModuleAnalysisManager>();
+    auto PIC = std::make_unique<llvm::PassInstrumentationCallbacks>();
+    auto SI = std::make_unique<llvm::StandardInstrumentations>(
+        ctx, /*DebugLogging*/ true);
+
+    SI->registerCallbacks(*PIC, MAM.get());
+
+    // Add transform passes.
+    // Promote allocas to registers.
+    FPM->addPass(llvm::PromotePass());
+    // Do simple "peephole" optimizations and bit-twiddling optzns.
+    FPM->addPass(llvm::InstCombinePass());
+    // Reassociate expressions.
+    FPM->addPass(llvm::ReassociatePass());
+    // Eliminate Common SubExpressions.
+    FPM->addPass(llvm::GVNPass());
+    // Simplify the control flow graph (deleting unreachable blocks, etc).
+    FPM->addPass(llvm::SimplifyCFGPass());
+
+    // Register analysis passes used in these transform passes.
+    llvm::PassBuilder PB;
+    PB.registerModuleAnalyses(*MAM);
+    PB.registerFunctionAnalyses(*FAM);
+    PB.crossRegisterProxies(*LAM, *FAM, *CGAM, *MAM);
+
+    FPM->run(*F, *FAM);
 
     mod.print(llvm::outs(), nullptr);
 
