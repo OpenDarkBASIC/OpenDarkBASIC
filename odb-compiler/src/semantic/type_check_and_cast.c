@@ -209,9 +209,9 @@ resolve_node_type(
                     return TYPE_INVALID;
                 ast->nodes[lhs].info.type_info = lhs_type->type;
 
-                if (rhs_type
-                    != lhs_type->type) /* The variable already exists and has a
-                                          type different from RHS */
+                /* The variable already exists and has a type different from RHS
+                 */
+                if (rhs_type != lhs_type->type)
                 {
                     int    gutter;
                     ast_id orig_node = lhs_type->original_declaration;
@@ -348,6 +348,8 @@ resolve_node_type(
                     }
                 }
             }
+
+            /* Assignments are not expressions, thus they do not evaluate to a type */
             return TYPE_VOID;
         }
         break;
