@@ -32,7 +32,7 @@ convert_char_to_return_type(char c)
         case 'E': break;
     }
 
-    return (enum type) - 1;
+    return TYPE_INVALID;
 }
 
 static enum type
@@ -58,7 +58,7 @@ convert_char_to_param_type(char c)
         case 'E': break;
     }
 
-    return (enum type) - 1;
+    return TYPE_INVALID;
 }
 
 int
@@ -141,7 +141,7 @@ load_dbpro_commands(
             {
                 char type_char = entry_str.data[type_str.off];
                 return_type = convert_char_to_return_type(type_char);
-                if (return_type == 0)
+                if (return_type == TYPE_INVALID)
                 {
                     log_sdk_warn(
                         "Invalid command return type {quote:%c} in string "
@@ -184,7 +184,7 @@ load_dbpro_commands(
                 utf8_split(
                     entry_str.data, db_params, ',', &db_param_name, &db_params);
 
-                if (type == 0)
+                if (type == TYPE_INVALID)
                 {
                     log_sdk_warn(
                         "Invalid command argument type {quote:%c} in string "

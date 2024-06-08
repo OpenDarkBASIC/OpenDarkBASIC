@@ -2,6 +2,7 @@
 
 #include "odb-sdk/config.h"
 #include <stdint.h>
+#include <assert.h>
 
 typedef uint32_t hash32;
 typedef hash32   (*hash32_func)(const void*, int);

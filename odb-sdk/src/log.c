@@ -110,11 +110,14 @@ struct varef
 static const char*
 process_standard_format(const char* fmt, struct varef* args)
 {
-    int  i = 0;
     char subfmt[16];
+    int  i = 0;
+    char num_subargs = 1;
     subfmt[i++] = *fmt++;
     do
     {
+        if (*fmt == '*')
+            num_subargs++;
         subfmt[i++] = *fmt++;
     } while (i != 15 && (!is_ascii_alpha(fmt[-1]) || fmt[-1] == 'l')
              && fmt[-1] != '%');
@@ -125,7 +128,8 @@ process_standard_format(const char* fmt, struct varef* args)
     /* Have to advance to next argument */
     /* XXX: Does this work on all compilers? */
 #if defined(_MSC_VER)
-    (void)va_arg(args->ap, void*);
+    while (num_subargs--)
+        (void)va_arg(args->ap, void*);
 #endif
 
     return fmt;
