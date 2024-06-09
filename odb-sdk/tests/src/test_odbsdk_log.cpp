@@ -1,6 +1,6 @@
 #include <string>
 #include <gmock/gmock.h>
-#include "odb-compiler/tests/LogHelper.hpp"
+#include "odb-sdk/tests/LogHelper.hpp"
 
 extern "C" {
 #include "odb-sdk/log.h"

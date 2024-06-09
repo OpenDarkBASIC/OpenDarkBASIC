@@ -1,12 +1,12 @@
+#include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8_list.h"
-#include "odb-sdk/log.h"
 #include <assert.h>
 
 /*
  *                capacity
  *  |<-------------------------------->|
- *    str_len
+ *    str_used
  *  |<------>|
  * [aaaaabbbbb........[off|len][off|len]]
  * ----------->     <------------------
@@ -14,25 +14,31 @@
  *
  */
 static int
-grow(struct utf8_list* l, utf8_idx str_len)
+grow(struct utf8_list** l, utf8_idx str_len)
 {
-    utf8_idx old_table_size = sizeof(struct utf8_span) * l->count;
-    utf8_idx new_table_size = sizeof(struct utf8_span) * (l->count + 1);
+    utf8_idx old_table_size = sizeof(struct utf8_span) * (*l)->count;
+    utf8_idx new_table_size = sizeof(struct utf8_span) * ((*l)->count + 1);
 
-    /* Need to +1 here for potential null terminator when converting to
-     * utf8_view */
-    while (new_table_size + l->str_used + str_len + 1 > l->capacity)
+    while (new_table_size + (*l)->str_used + str_len + UTF8_APPEND_PADDING
+           > (*l)->capacity)
     {
-        mem_size grow_size = l->capacity ? l->capacity : 128;
-        void*    new_mem = mem_realloc(l->data, l->capacity + grow_size);
+        mem_size cap = (*l)->capacity;
+        mem_size grow_size = cap ? cap : 128;
+        void*    new_mem = mem_realloc(cap ? *l : NULL, cap + grow_size);
         if (new_mem == NULL)
-            return log_oom(l->capacity + grow_size, "utf8_list_grow()");
-        l->data = new_mem;
-        l->capacity += grow_size;
+            return log_oom((*l)->capacity + grow_size, "utf8_list_grow()");
+        *l = new_mem;
+        if (cap == 0)
+        {
+            (*l)->count = 0;
+            (*l)->str_used = 0;
+            (*l)->capacity = 0;
+        }
+        (*l)->capacity += grow_size;
 
         memmove(
-            l->data + l->capacity - old_table_size,
-            l->data + l->capacity - old_table_size - grow_size,
+            (*l)->data + (*l)->capacity - old_table_size,
+            (*l)->data + (*l)->capacity - old_table_size - grow_size,
             old_table_size);
     }
 
@@ -42,70 +48,70 @@ grow(struct utf8_list* l, utf8_idx str_len)
 void
 utf8_list_deinit(struct utf8_list* l)
 {
-    if (l->data)
-        mem_free(l->data);
+    if (l->capacity)
+        mem_free(l);
 }
 
 int
-utf8_list_add(struct utf8_list* l, struct utf8_view str)
+utf8_list_add(struct utf8_list** l, struct utf8_view str)
 {
     struct utf8_span* ref;
 
     if (grow(l, str.len) < 0)
         return -1;
 
-    ref = &UTF8_LIST_TABLE_PTR(l)[-l->count];
-    ref->off = l->str_used;
+    ref = &UTF8_LIST_TABLE_PTR(*l)[-(*l)->count];
+    ref->off = (*l)->str_used;
     ref->len = str.len;
 
-    memcpy(l->data + ref->off, str.data + str.off, str.len);
+    memcpy((*l)->data + ref->off, str.data + str.off, str.len);
 
-    l->str_used += str.len + 1; /* Potential null terminator */
-    l->count++;
+    (*l)->str_used += str.len + UTF8_APPEND_PADDING;
+    (*l)->count++;
 
     return 0;
 }
 
 int
-utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in)
+utf8_list_insert(struct utf8_list** l, utf8_idx insert, struct utf8_view in)
 {
     struct utf8_span* slotspan;
 
     if (grow(l, in.len) < 0)
         return -1;
 
-    slotspan = &UTF8_LIST_TABLE_PTR(l)[-insert];
-    if (insert < l->count)
+    slotspan = &UTF8_LIST_TABLE_PTR(*l)[-insert];
+    if (insert < (*l)->count)
     {
         struct utf8_span* span;
         int               i;
 
         /* Move strings to make space for str.len+1 */
         memmove(
-            l->data + slotspan->off + in.len + 1,
-            l->data + slotspan->off,
-            l->str_used - slotspan->off);
+            (*l)->data + slotspan->off + in.len + 1,
+            (*l)->data + slotspan->off,
+            (*l)->str_used - slotspan->off);
 
         /* Move span table */
         memmove(
-            (struct utf8_span*)(l->data + l->capacity) - l->count - 1,
-            (struct utf8_span*)(l->data + l->capacity) - l->count,
-            sizeof(struct utf8_span) * (l->count - insert));
+            (struct utf8_span*)((*l)->data + (*l)->capacity) - (*l)->count - 1,
+            (struct utf8_span*)((*l)->data + (*l)->capacity) - (*l)->count,
+            sizeof(struct utf8_span) * ((*l)->count - insert));
 
         /* Calculate new offsets */
-        for (span = slotspan - 1, i = l->count - insert; i; i--, span--)
+        for (span = slotspan - 1, i = (*l)->count - insert; i; i--, span--)
             span->off += in.len + 1;
     }
     else
     {
-        slotspan->off = l->str_used;
+        slotspan->off = (*l)->str_used;
     }
 
-    memcpy(l->data + slotspan->off, in.data + in.off, in.len);
+    memcpy((*l)->data + slotspan->off, in.data + in.off, in.len);
     slotspan->len = in.len;
 
-    l->str_used += in.len + 1; /* Potential null terminator */
-    l->count++;
+    (*l)->str_used += in.len + UTF8_APPEND_PADDING;
+    (*l)->count++;
 
     return 0;
 }
@@ -114,7 +120,7 @@ void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 {
     struct utf8_span* span = &UTF8_LIST_TABLE_PTR(l)[-idx];
-    utf8_idx          str_gap = span->len + 1;
+    utf8_idx          str_gap = span->len + UTF8_APPEND_PADDING;
     if (idx < l->count - 1)
     {
         int i;
@@ -156,7 +162,7 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str)
     utf8_idx half, middle, found, len;
 
     found = 0;
-    len = utf8_list_count(l);
+    len = l->count;
 
     while (len)
     {
@@ -182,7 +188,7 @@ utf8_upper_bound(const struct utf8_list* l, struct utf8_view str)
     utf8_idx half, middle, found, len;
 
     found = 0;
-    len = utf8_list_count(l);
+    len = l->count;
 
     while (len)
     {

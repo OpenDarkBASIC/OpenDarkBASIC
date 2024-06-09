@@ -36,14 +36,14 @@ insert_explicit_type_casts(
                 cmd_id                   cmd_id = ast->nodes[n].cmd.id;
                 ast_id                   arglist = ast->nodes[n].cmd.arglist;
                 struct param_types_list* params
-                    = vec_get(cmds->param_types, cmd_id);
+                    = cmds->param_types->data[cmd_id];
 
-                for (i = 0; i != vec_count(*params);
+                for (i = 0; i != params->count;
                      ++i, arglist = ast->nodes[arglist].arglist.next)
                 {
                     ast_id    arg = ast->nodes[arglist].arglist.expr;
                     enum type arg_type = ast->nodes[arg].info.type_info;
-                    enum type param_type = vec_get(*params, i)->type;
+                    enum type param_type = params->data[i].type;
 
                     if (arg_type != param_type)
                     {

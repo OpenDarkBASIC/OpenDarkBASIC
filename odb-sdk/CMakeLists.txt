@@ -22,9 +22,6 @@ option (ODBSDK_BTREE_64BIT_KEYS "Enable 64-bit keys for btrees instead of 32-bit
 option (ODBSDK_BTREE_64BIT_CAPACITY "Enable btrees to allow up to 2^64 entries instead of 2^32" OFF)
 option (ODBSDK_HM_STATS "Track hashmap usage statistics. This will increase
 sizeof(struct hm)!" OFF)
-set (ODBSDK_HM_REHASH_AT_PERCENT "70" CACHE STRING "How full the hash table needs to be before triggering a rehash, in percent")
-set (ODBSDK_HM_MIN_CAPACITY "128" CACHE STRING "Default table size when creating new hashmaps")
-set (ODBSDK_HM_EXPAND_FACTOR "4" CACHE STRING "When reallocating hashmap memory, thiis is the factor with which the buffer grows. WARNING: MUST be a power of 2!")
 option (ODBSDK_MEM_DEBUGGING "Enable tracking malloc/realloc/free calls to detect memory leaks" ${DEBUG_FEATURE})
 cmake_dependent_option (ODBSDK_MEM_BACKTRACE "Enable generating backtraces to every malloc/realloc call, making it easy to find where memory leaks occur" ON "${ODBSDK_MEM_DEBUGGING}" OFF)
 cmake_dependent_option (ODBSDK_MEM_HEX_DUMP "Enable printing out hex dumps of the unfreed memory regions" ON "${ODBSDK_MEM_DEBUGGING}" OFF)
@@ -32,8 +29,6 @@ set (ODBSDK_MEM_BACKTRACE_SIZE "64" CACHE STRING "Sets the maximum stack size (d
 set (ODBSDK_MEM_HEX_DUMP_SIZE "1024" CACHE STRING "Memory blocks larger than this size will not be dumped")
 cmake_dependent_option (ODBSDK_PROFILING "Enable -pg and -fno-omit-frame-pointer" ON "${ODB_PROFILING}" OFF)
 cmake_dependent_option (ODBSDK_TESTS "Build unit tests for the OpenDarkBASIC SDK" ON "${ODB_TESTS}" OFF)
-set (ODBSDK_VEC_EXPAND_FACTOR "2" CACHE STRING "When reallocating vector memory, this is the factor with which the buffer grows")
-set (ODBSDK_VEC_MIN_CAPACITY "32" CACHE STRING "The smallest number of elements to reserve when initializing a vector")
 
 string (TOUPPER ${CMAKE_SYSTEM_NAME} ODBSDK_PLATFORM)
 
@@ -162,16 +157,20 @@ include (FetchContent)
 
 if (ODBSDK_TESTS)
     target_sources (odb-tests PRIVATE
-        "tests/test_odbsdk_btree.cpp"
-        "tests/test_odbsdk_btree_as_set.cpp"
-        "tests/test_odbsdk_log.cpp"
-        "tests/test_odbsdk_mem.cpp"
-        "tests/test_odbsdk_hm.cpp"
-        "tests/test_odbsdk_ospath.cpp"
-        "tests/test_odbsdk_rb.cpp"
-        "tests/test_odbsdk_utf8.cpp"
-        "tests/test_odbsdk_utf8_list.cpp"
-        "tests/test_odbsdk_vec.cpp")
+        "tests/src/LogHelper.cpp"
+        "tests/src/test_odbsdk_btree.cpp"
+        "tests/src/test_odbsdk_btree_as_set.cpp"
+        "tests/src/test_odbsdk_log.cpp"
+        "tests/src/test_odbsdk_mem.cpp"
+        "tests/src/test_odbsdk_hm.cpp"
+        "tests/src/test_odbsdk_hm_full.cpp"
+        "tests/src/test_odbsdk_ospath.cpp"
+        "tests/src/test_odbsdk_rb.cpp"
+        "tests/src/test_odbsdk_utf8.cpp"
+        "tests/src/test_odbsdk_utf8_list.cpp"
+        "tests/src/test_odbsdk_vec.cpp")
+    target_include_directories (odb-tests
+        PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
     target_link_libraries (odb-tests PUBLIC odb-sdk)
 endif ()
 

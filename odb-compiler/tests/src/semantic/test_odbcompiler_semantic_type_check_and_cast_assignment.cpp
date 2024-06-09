@@ -21,7 +21,7 @@ TEST_F(NAME, undeclared_variable_defaults_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
@@ -37,7 +37,7 @@ TEST_F(NAME, variable_assigned_byte_defaults_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
@@ -57,7 +57,7 @@ TEST_F(NAME, variable_assigned_boolean_defaults_to_boolean)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass1 = ast.nodes[0].block.stmt;
     ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -80,7 +80,7 @@ TEST_F(NAME, variable_assigned_dword_defaults_to_dword)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
@@ -96,7 +96,7 @@ TEST_F(NAME, variable_assigned_long_defaults_to_long)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
@@ -112,7 +112,7 @@ TEST_F(NAME, variable_assigned_float_defaults_to_float)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
@@ -132,7 +132,7 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(log(), LogEq(""));
     ast_id ass1 = ast.nodes[0].block.stmt;
@@ -180,7 +180,7 @@ TEST_F(NAME, truncated_assignment)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -228,8 +228,8 @@ TEST_F(NAME, strange_assignment)
           "b = a\n";
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -277,8 +277,8 @@ TEST_F(NAME, invalid_assignment)
           "b = a\n";
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
-        semantic_type_check_and_cast.execute(
-            &ast, &plugins, &cmds, "test", src),
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     EXPECT_THAT(
         log(),

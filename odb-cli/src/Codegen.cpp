@@ -2,56 +2,35 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
+#include "odb-compiler/codegen/target.h"
 #include <optional>
 
 extern "C" {
-#include "odb-compiler/codegen/codegen.h"
+#include "odb-compiler/codegen/ir.h"
 #include "odb-compiler/link/link.h"
+#include "odb-sdk/log.h"
 }
 
-static enum odb_codegen_output_type outputType_ = ODB_CODEGEN_ObjectFile;
-static bool                         outputIsExecutable_ = true;
-static std::optional<enum odb_codegen_arch>     targetTripleArch_;
-static std::optional<enum odb_codegen_platform> targetTriplePlatform_;
-
-// ----------------------------------------------------------------------------
-bool
-setOutputType(const std::vector<std::string>& args)
-{
-    if (args[0] == "llvm-ir")
-    {
-        outputType_ = ODB_CODEGEN_LLVMIR;
-    }
-    else if (args[0] == "llvm-bc")
-    {
-        outputType_ = ODB_CODEGEN_LLVMBitcode;
-    }
-    else if (args[0] == "obj" || args[0] == "exe")
-    {
-        outputType_ = ODB_CODEGEN_ObjectFile;
-    }
-
-    outputIsExecutable_ = args[0] == "exe";
-
-    return true;
-}
+static bool             outputIsExecutable_ = true;
+static enum target_arch arch_ = TARGET_x86_64;
+#if defined(ODBSDK_PLATFORM_LINUX)
+static enum target_platform platform_ = TARGET_LINUX;
+#else
+static enum target_platform platform_ = TARGET_WINDOWS;
+#endif
 
 // ----------------------------------------------------------------------------
 bool
 setArch(const std::vector<std::string>& args)
 {
     if (args[0] == "i386")
-    {
-        targetTripleArch_ = ODB_CODEGEN_i386;
-    }
+        arch_ = TARGET_i386;
     else if (args[0] == "x86_64")
-    {
-        targetTripleArch_ = ODB_CODEGEN_x86_64;
-    }
+        arch_ = TARGET_x86_64;
     else if (args[0] == "aarch64")
-    {
-        targetTripleArch_ = ODB_CODEGEN_AArch64;
-    }
+        arch_ = TARGET_AArch64;
+    else
+        log_err("", "Unknown architecture {quote:%s}\n", args[0].c_str());
 
     return true;
 }
@@ -61,17 +40,13 @@ bool
 setPlatform(const std::vector<std::string>& args)
 {
     if (args[0] == "windows")
-    {
-        targetTriplePlatform_ = ODB_CODEGEN_WINDOWS;
-    }
+        platform_ = TARGET_WINDOWS;
     else if (args[0] == "macos")
-    {
-        targetTriplePlatform_ = ODB_CODEGEN_MACOS;
-    }
+        platform_ = TARGET_MACOS;
     else if (args[0] == "linux")
-    {
-        targetTriplePlatform_ = ODB_CODEGEN_LINUX;
-    }
+        platform_ = TARGET_LINUX;
+    else
+        log_err("", "Unknown platform {quote:%s}\n", args[0].c_str());
 
     return true;
 }
@@ -82,54 +57,44 @@ output(const std::vector<std::string>& args)
 {
     std::string outputName = args[0];
 
-#if defined(ODBCOMPILER_PLATFORM_WINDOWS)
-    static const char* objs[] = {"module.obj"};
-    odb_codegen(
+    std::string       srcfile = getSourceFilename();
+    std::string       objfile = srcfile + ".o";
+    std::string       modname = srcfile.substr(0, srcfile.rfind("."));
+    struct ir_module* ir = ir_alloc(modname.c_str());
+    ir_translate_ast(
+        ir,
         getAST(),
-        objs[0],
-        "module",
         getSDKType(),
-        ODB_CODEGEN_ObjectFile,
-        ODB_CODEGEN_x86_64,
-        ODB_CODEGEN_WINDOWS,
         getCommandList(),
         getSourceFilename(),
         getSource());
-    odb_link(
-        objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_WINDOWS);
-#else
-    static const char* objs[] = {"module.o"};
-    odb_codegen(
-        getAST(),
-        objs[0],
-        "module",
-        getSDKType(),
-        ODB_CODEGEN_ObjectFile,
-        ODB_CODEGEN_x86_64,
-        ODB_CODEGEN_LINUX,
-        getCommandList(),
-        getSourceFilename(),
-        getSource());
-    odb_link(
-        objs, 1, outputName.c_str(), ODB_CODEGEN_x86_64, ODB_CODEGEN_LINUX);
-#endif
+    ir_optimize(ir);
+    ir_compile(ir, objfile.c_str(), arch_, platform_);
+    ir_free(ir);
+
+    ir = ir_alloc("odbruntime");
+    ir_create_runtime(ir, getSDKType(), arch_, platform_);
+    ir_compile(ir, "odbruntime.o", arch_, platform_);
+    ir_free(ir);
+
+    const char* objfiles[] = {objfile.c_str(), "odbruntime.o"};
+    odb_link(objfiles, 2, outputName.c_str(), arch_, platform_);
 
     return true;
 }
 
 // ----------------------------------------------------------------------------
-enum odb_codegen_platform
+enum target_arch
+getTargetArch(void)
+{
+    return arch_;
+}
+
+// ----------------------------------------------------------------------------
+enum target_platform
 getTargetPlatform(void)
 {
-    if (targetTriplePlatform_)
-        return targetTriplePlatform_.value();
-#if defined(ODBCOMPILER_PLATFORM_WINDOWS)
-    return ODB_CODEGEN_WINDOWS;
-#elif defined(ODBCOMPILER_PLATFORM_MACOS)
-    return ODB_CODEGEN_MACOS;
-#else
-    return ODB_CODEGEN_LINUX;
-#endif
+    return platform_;
 }
 
 /*

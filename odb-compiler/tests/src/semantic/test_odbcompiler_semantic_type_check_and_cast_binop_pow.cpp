@@ -21,7 +21,7 @@ TEST_F(NAME, exponent_truncated_from_double)
     ASSERT_THAT(parse("print 2.0f ^ 2.0"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -50,7 +50,7 @@ TEST_F(NAME, exponent_cast_to_integer)
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(log(), LogEq(""));
     ast_id cmd = ast.nodes[0].block.stmt;
@@ -72,7 +72,7 @@ TEST_F(NAME, exponent_strange_conversion)
     ASSERT_THAT(parse("print 2.0 ^ true"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -100,7 +100,7 @@ TEST_F(NAME, exponent_truncated_from_dword)
     ASSERT_THAT(parse("print 2.0 ^ 4294967295"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -130,7 +130,7 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
     ASSERT_THAT(parse("print 2.0 ^ 99999999999999"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(
         log(),
@@ -160,7 +160,7 @@ TEST_F(NAME, exponent_invalid_type)
     ASSERT_THAT(parse("print 2.0 ^ \"oops\""), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, &plugins, &cmds, "test", src),
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     EXPECT_THAT(
         log(),

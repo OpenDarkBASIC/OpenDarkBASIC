@@ -10,13 +10,16 @@
 #define HM_SLOT_RIP    1
 
 #define HM_DECLARE_API(prefix, K, V, bits, API)                                \
+    HM_DECLARE_API_HASH(prefix, hash32, K, V, bits, API)
+
+#define HM_DECLARE_API_HASH(prefix, H, K, V, bits, API)                        \
     /* Default key-value storage malloc()'s two arrays */                      \
     struct prefix##_kvs                                                        \
     {                                                                          \
         K* keys;                                                               \
         V* values;                                                             \
     };                                                                         \
-    HM_DECLARE_API_FULL(prefix, hash32, K, V, bits, API, struct prefix##_kvs)
+    HM_DECLARE_API_FULL(prefix, H, K, V, bits, API, struct prefix##_kvs)
 
 #define HM_DECLARE_API_FULL(prefix, H, K, V, bits, API, KVS)                   \
     struct prefix                                                              \
@@ -70,15 +73,20 @@
     }
 
 #define HM_DEFINE_API(prefix, K, V, bits)                                      \
-    HM_DEFINE_API_HASH(prefix, hash32, K, V, bits, hash32_jenkins_oaat)
+    static inline hash32 prefix##_hash(K key)                                  \
+    {                                                                          \
+        return hash32_jenkins_oaat(&key, sizeof(K));                           \
+    }                                                                          \
+    HM_DEFINE_API_HASH(prefix, hash32, K, V, bits, prefix##_hash)
 
 #define HM_DEFINE_API_HASH(prefix, H, K, V, bits, hm_hash)                     \
     /* Default key-value storage */                                            \
-    static int kvs_alloc(struct prefix##_kvs* kvs, int##bits##_t capacity)     \
+    static int prefix##_kvs_alloc(                                             \
+        struct prefix##_kvs* kvs, int##bits##_t capacity)                      \
     {                                                                          \
-        if ((kvs->keys = mem_alloc(sizeof(K) * capacity)) == NULL)             \
+        if ((kvs->keys = (K*)mem_alloc(sizeof(K) * capacity)) == NULL)         \
             return -1;                                                         \
-        if ((kvs->values = mem_alloc(sizeof(V) * capacity)) == NULL)           \
+        if ((kvs->values = (V*)mem_alloc(sizeof(V) * capacity)) == NULL)       \
         {                                                                      \
             mem_free(kvs->keys);                                               \
             return -1;                                                         \
@@ -86,29 +94,31 @@
                                                                                \
         return 0;                                                              \
     }                                                                          \
-    static void kvs_free(struct prefix##_kvs* kvs)                             \
+    static void prefix##_kvs_free(struct prefix##_kvs* kvs)                    \
     {                                                                          \
         mem_free(kvs->values);                                                 \
         mem_free(kvs->keys);                                                   \
     }                                                                          \
-    static K kvs_get_key(const struct prefix##_kvs* kvs, int##bits##_t slot)   \
+    static K prefix##_kvs_get_key(                                             \
+        const struct prefix##_kvs* kvs, int##bits##_t slot)                    \
     {                                                                          \
         return kvs->keys[slot];                                                \
     }                                                                          \
-    static void kvs_set_key(                                                   \
+    static void prefix##_kvs_set_key(                                          \
         struct prefix##_kvs* kvs, int##bits##_t slot, K key)                   \
     {                                                                          \
         kvs->keys[slot] = key;                                                 \
     }                                                                          \
-    static int kvs_keys_equal(K k1, K k2)                                      \
+    static int prefix##_kvs_keys_equal(K k1, K k2)                             \
     {                                                                          \
-        return memcmp(&k1, &k2, sizeof(K)) == 0;                               \
+        return k1 == k2;                                                       \
     }                                                                          \
-    static V* kvs_get_value(struct prefix##_kvs* kvs, int##bits##_t slot)      \
+    static V* prefix##_kvs_get_value(                                          \
+        struct prefix##_kvs* kvs, int##bits##_t slot)                          \
     {                                                                          \
         return &kvs->values[slot];                                             \
     }                                                                          \
-    static void kvs_set_value(                                                 \
+    static void prefix##_kvs_set_value(                                        \
         struct prefix##_kvs* kvs, int##bits##_t slot, V* value)                \
     {                                                                          \
         kvs->values[slot] = *value;                                            \
@@ -120,13 +130,13 @@
         V,                                                                     \
         bits,                                                                  \
         hm_hash,                                                               \
-        kvs_alloc,                                                             \
-        kvs_free,                                                              \
-        kvs_get_key,                                                           \
-        kvs_set_key,                                                           \
-        kvs_keys_equal,                                                        \
-        kvs_get_value,                                                         \
-        kvs_set_value,                                                         \
+        prefix##_kvs_alloc,                                                    \
+        prefix##_kvs_free,                                                     \
+        prefix##_kvs_get_key,                                                  \
+        prefix##_kvs_set_key,                                                  \
+        prefix##_kvs_keys_equal,                                               \
+        prefix##_kvs_get_value,                                                \
+        prefix##_kvs_set_value,                                                \
         128,                                                                   \
         70)
 
@@ -146,7 +156,9 @@
     hm_set_value,                                                              \
     MIN_CAPACITY,                                                              \
     REHASH_AT_PERCENT)                                                         \
+                                                                               \
     struct prefix prefix##_null_hm;                                            \
+                                                                               \
     /*!                                                                        \
      * @return If key exists: -(1 + slot)                                      \
      *         If key does not exist: slot                                     \
@@ -158,10 +170,7 @@
         int##bits##_t i = 0;                                                   \
         int##bits##_t last_rip = -1;                                           \
                                                                                \
-        /* We use two reserved values for hashes. The hash function could      \
-         * produce them, which would mess up collision resolution */           \
-        if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                           \
-            h = 2;                                                             \
+        ODBSDK_DEBUG_ASSERT(h > 1);                                            \
                                                                                \
         slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
         while (hm->hashes[slot] != HM_SLOT_UNUSED)                             \
@@ -221,7 +230,11 @@
                 || (*hm)->hashes[i] == HM_SLOT_RIP)                            \
                 continue;                                                      \
                                                                                \
+            /* We use two reserved values for hashes. The hash function could  \
+             * produce them, which would mess up collision resolution */       \
             h = hm_hash(hm_get_key(&(*hm)->kvs, i));                           \
+            if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                       \
+                h = 2;                                                         \
             slot = prefix##_find_slot(new_hm, hm_get_key(&(*hm)->kvs, i), h);  \
             ODBSDK_DEBUG_ASSERT(slot >= 0);                                    \
             new_hm->hashes[slot] = h;                                          \
@@ -247,7 +260,7 @@
     }                                                                          \
     void prefix##_deinit(struct prefix* hm)                                    \
     {                                                                          \
-        if (hm != &prefix##_null_hm)                                           \
+        if (hm->capacity)                                                      \
         {                                                                      \
             hm_storage_free(&hm->kvs);                                         \
             mem_free(hm);                                                      \
@@ -264,7 +277,12 @@
             if (prefix##_grow(hm) != 0)                                        \
                 return NULL;                                                   \
                                                                                \
+        /* We use two reserved values for hashes. The hash function could      \
+         * produce them, which would mess up collision resolution */           \
         h = hm_hash(key);                                                      \
+        if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                           \
+            h = 2;                                                             \
+                                                                               \
         slot = prefix##_find_slot(*hm, key, h);                                \
         if (slot < 0)                                                          \
             return NULL;                                                       \
@@ -285,7 +303,12 @@
             if (prefix##_grow(hm) != 0)                                        \
                 return NULL;                                                   \
                                                                                \
+        /* We use two reserved values for hashes. The hash function could      \
+         * produce them, which would mess up collision resolution */           \
         h = hm_hash(key);                                                      \
+        if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                           \
+            h = 2;                                                             \
+                                                                               \
         slot = prefix##_find_slot(*hm, key, h);                                \
         if (slot < 0)                                                          \
             return hm_get_value(&(*hm)->kvs, -1 - slot);                       \
@@ -298,7 +321,12 @@
     }                                                                          \
     V* prefix##_find(struct prefix* hm, K key)                                 \
     {                                                                          \
-        H             h = hm_hash(key);                                        \
+        /* We use two reserved values for hashes. The hash function could      \
+         * produce them, which would mess up collision resolution */           \
+        H h = hm_hash(key);                                                    \
+        if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                           \
+            h = 2;                                                             \
+                                                                               \
         int##bits##_t slot = prefix##_find_slot(hm, key, h);                   \
         if (slot >= 0)                                                         \
             return NULL;                                                       \
@@ -307,7 +335,12 @@
     }                                                                          \
     V* prefix##_erase(struct prefix* hm, K key)                                \
     {                                                                          \
-        H             h = hm_hash(key);                                        \
+        /* We use two reserved values for hashes. The hash function could      \
+         * produce them, which would mess up collision resolution */           \
+        H h = hm_hash(key);                                                    \
+        if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                           \
+            h = 2;                                                             \
+                                                                               \
         int##bits##_t slot = prefix##_find_slot(hm, key, h);                   \
         if (slot >= 0)                                                         \
             return NULL;                                                       \
@@ -317,160 +350,29 @@
         return hm_get_value(&hm->kvs, -1 - slot);                              \
     }
 
-typedef int32_t hm_size;
-typedef int32_t hm_idx;
-typedef int (*hm_compare_func)(const void* a, const void* b, int size);
-
-struct hm
+static inline intptr_t
+hm_next_valid_slot(const hash32* hashes, intptr_t slot, intptr_t capacity)
 {
-    hm_size         table_count;
-    hm_size         key_size;
-    hm_size         value_size;
-    hm_size         slots_used;
-    hash32_func     hash;
-    hm_compare_func compare;
-    char*           storage;
-#if defined(ODBSDK_HM_STATS)
-    struct
+    do
     {
-        int total_insertions;
-        int total_deletions;
-        int total_tombstones;
-        int total_tombstone_reuses;
-        int total_rehashes;
-        int total_insertion_probes;
-        int total_deletion_probes;
-        int max_slots_used;
-        int max_slots_tombstoned;
-        int current_tombstone_count;
-    } stats;
-#endif
-};
+        slot++;
+    } while (
+        slot < capacity
+        && (hashes[slot] == HM_SLOT_UNUSED || hashes[slot] == HM_SLOT_RIP));
+    return slot;
+}
 
-/*!
- * @brief Allocates and initializes a new hm.
- * @param[out] hm A pointer to the new hm is written to this parameter.
- * Example:
- * ```cpp
- * struct hm_t* hm;
- * if (hm_create(&hm, sizeof(key_t), sizeof(value_t)) != ODBSDK_OK)
- *     handle_error();
- * ```
- * @param[in] key_size Specifies how many bytes of the "key" parameter to hash
- * in the hm_insert() call. Due to performance reasons, all keys are
- * identical in size. If you wish to use strings for keys, then you need to
- * specify the maximum possible string length here, and make sure you never
- * use strings that are longer than that (hm_insert_key contains a safety
- * check in debug mode for this case).
- * @note This parameter must be larger than 0.
- * @param[in] value_size Specifies how many bytes long the value type is. When
- * calling hm_insert(), value_size number of bytes are copied from the
- * memory pointed to by value into the hm.
- * @note This parameter may be 0.
- * @return If successful, returns HM_OK. If allocation fails, HM_OOM is
- * returned.
- */
-ODBSDK_PUBLIC_API struct hm*
-hm_alloc(hm_size key_size, hm_size value_size);
+#define hm_for_each(hm, key, value)                                            \
+    for (intptr_t key##_i                                                      \
+         = hm_next_valid_slot((hm)->hashes, -1, (hm)->capacity);               \
+         key##_i != (hm)->capacity && ((key = (hm)->kvs.keys[key##_i]) || 1)   \
+         && ((value = &(hm)->kvs.values[key##_i]) || 1);                       \
+         key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))
 
-ODBSDK_PUBLIC_API struct hm*
-hm_create_with_options(
-    hm_size         key_size,
-    hm_size         value_size,
-    hm_size         table_count,
-    hash32_func     hash_func,
-    hm_compare_func compare_func);
-
-/*!
- * @brief Initializes a new hm. See hm_create() for details on
- * parameters and return values.
- */
-ODBSDK_PUBLIC_API int
-hm_init(struct hm* hm, hm_size key_size, hm_size value_size);
-
-ODBSDK_PUBLIC_API int
-hm_init_with_options(
-    struct hm*      hm,
-    hm_size         key_size,
-    hm_size         value_size,
-    hm_size         table_count,
-    hash32_func     hash_func,
-    hm_compare_func compare_func);
-
-/*!
- * @brief Cleans up internal resources without freeing the hm object itself.
- */
-ODBSDK_PUBLIC_API void
-hm_deinit(struct hm* hm);
-
-/*!
- * @brief Cleans up all resources and frees the hm.
- */
-ODBSDK_PUBLIC_API void
-hm_free(struct hm* hm);
-
-/*!
- * @brief Inserts a key and value into the hm.
- * @note Complexity is generally O(1). Inserting may cause a rehash if the
- * table size exceeds HM_REHASH_AT_PERCENT.
- * @param[in] hm A pointer to a valid hm object.
- * @param[in] key A pointer to where the key is stored. key_size number of
- * bytes are hashed and copied into the hm from this location in
- * memory. @see hm_create() regarding key_size.
- * @param[out] value The address of where the value will be stored in the hm
- * is written to this parameter. The caller should use it to actually insert
- * the value
- * @return If the key already exists, then nothing is copied into the hm
- * and 0 is returned. If the key is successfully inserted, 1
- * is returned. If insertion failed, -1 is returned.
- */
-ODBSDK_PUBLIC_API int
-hm_insert(struct hm* hm, const void* key, void** value);
-
-ODBSDK_PUBLIC_API void*
-hm_erase(struct hm* hm, const void* key);
-
-ODBSDK_PUBLIC_API void
-hm_clear(struct hm* hm);
-
-ODBSDK_PUBLIC_API void*
-hm_find(const struct hm* hm, const void* key);
-
-ODBSDK_PUBLIC_API int
-hm_exists(const struct hm* hm, const void* key);
-
-#define hm_count(hm) ((hm)->slots_used)
-
-#define HM_FOR_EACH(hm, key_t, value_t, key, value)                            \
-    {                                                                          \
-        key_t*   key;                                                          \
-        value_t* value;                                                        \
-        hm_idx   pos_##value;                                                  \
-        for (pos_##value = 0;                                                  \
-             pos_##value != (hm_idx)(hm)->table_count                          \
-             && ((key = (key_t*)((hm)->storage                                 \
-                                 + (hm_idx)sizeof(hash32)                      \
-                                       * (hm_idx)(hm)->table_count             \
-                                 + (hm_idx)(hm)->key_size * pos_##value))      \
-                 || 1)                                                         \
-             && ((value                                                        \
-                  = (value_t*)((hm)->storage                                   \
-                               + (hm_idx)sizeof(hash32)                        \
-                                     * (hm_idx)(hm)->table_count               \
-                               + (hm_idx)(hm)->key_size                        \
-                                     * (hm_idx)(hm)->table_count               \
-                               + (hm_idx)(hm)->value_size * pos_##value))      \
-                 || 1);                                                        \
-             ++pos_##value)                                                    \
-        {                                                                      \
-            hash32 slot_##value                                                \
-                = *(hash32*)((hm)->storage                                     \
-                             + (hm_idx)sizeof(hash32) * pos_##value);          \
-            if (slot_##value == HM_SLOT_UNUSED || slot_##value == HM_SLOT_RIP) \
-                continue;                                                      \
-            {
-
-#define HM_END_EACH                                                            \
-    }                                                                          \
-    }                                                                          \
-    }
+#define hm_for_each_full(hm, key, value, hm_get_key, hm_get_value)             \
+    for (intptr_t key##_i                                                      \
+         = hm_next_valid_slot((hm)->hashes, -1, (hm)->capacity);               \
+         key##_i != (hm)->capacity                                             \
+         && ((key = hm_get_key(&(hm)->kvs, key##_i)) || 1)                     \
+         && ((value = hm_get_value(&(hm)->kvs, key##_i)) || 1);                \
+         key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))

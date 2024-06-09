@@ -4,42 +4,55 @@
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/sdk.h"
 
-enum odb_codegen_output_type
+enum target_arch
 {
-    ODB_CODEGEN_LLVMIR,
-    ODB_CODEGEN_LLVMBitcode,
-    ODB_CODEGEN_ObjectFile
+    TARGET_i386,
+    TARGET_x86_64,
+    TARGET_AArch64
 };
 
-enum odb_codegen_arch
+enum target_platform
 {
-    ODB_CODEGEN_i386,
-    ODB_CODEGEN_x86_64,
-    ODB_CODEGEN_AArch64
-};
-
-enum odb_codegen_platform
-{
-    ODB_CODEGEN_WINDOWS,
-    ODB_CODEGEN_MACOS,
-    ODB_CODEGEN_LINUX
+    TARGET_WINDOWS,
+    TARGET_MACOS,
+    TARGET_LINUX
 };
 
 struct ast;
 struct cmd_list;
+struct ir_module;
+
+ODBCOMPILER_PUBLIC_API struct ir_module*
+ir_module_from_ast(
+    struct ast*            program,
+    const char*            module_name,
+    enum sdk_type          sdk_type,
+    enum target_arch       arch,
+    enum target_platform   platform,
+    const struct cmd_list* cmds,
+    const char*            source_filename,
+    struct db_source       source);
+
+ODBCOMPILER_PUBLIC_API struct ir_module*
+ir_module_create_runtime(
+    const char*          output_name,
+    const char*          module_name,
+    enum sdk_type        sdk_type,
+    enum target_arch     arch,
+    enum target_platform platform);
 
 ODBCOMPILER_PUBLIC_API int
-odb_codegen(
-    struct ast* program,
-    const char* output_name,
-    const char* module_name,
-    enum sdk_type sdkType,
-    enum odb_codegen_output_type output_type,
-    enum odb_codegen_arch        arch,
-    enum odb_codegen_platform    platform,
-    const struct cmd_list*       cmds,
-    const char*                  source_filename,
-    struct db_source             source);
+ir_module_optimize(struct ir_module* ir);
+
+ODBCOMPILER_PUBLIC_API int
+ir_module_compile(
+    struct ir_module*    mod,
+    const char*          filepath,
+    enum target_arch     arch,
+    enum target_platform platform);
+
+ODBCOMPILER_PUBLIC_API void
+ir_module_free(struct ir_module* ir);
 
 /*ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const
    std::filesystem::path& sdkRootDir, const std::filesystem::path& linker,

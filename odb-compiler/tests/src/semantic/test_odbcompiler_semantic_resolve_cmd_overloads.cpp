@@ -25,7 +25,7 @@ TEST_F(NAME, ambiguous_overloads)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -52,7 +52,7 @@ TEST_F(NAME, float_accepts_integer_with_warning)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -74,7 +74,7 @@ TEST_F(NAME, integer_accepts_float_with_warning)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -99,7 +99,7 @@ TEST_F(NAME, prefer_exact_overload)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -108,8 +108,7 @@ TEST_F(NAME, prefer_exact_overload)
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 1;
     EXPECT_THAT(
-        vec_get(*vec_get(cmds.param_types, expected_cmd_id), 0)->type,
-        Eq(TYPE_FLOAT));
+        cmds.param_types->data[expected_cmd_id]->data[0].type, Eq(TYPE_FLOAT));
     EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }
 
@@ -123,7 +122,7 @@ TEST_F(NAME, prefer_closer_matching_overload)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -132,7 +131,7 @@ TEST_F(NAME, prefer_closer_matching_overload)
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 1;
     EXPECT_THAT(
-        vec_get(*vec_get(cmds.param_types, expected_cmd_id), 0)->type,
+        cmds.param_types->data[expected_cmd_id]->data[0].type,
         Eq(TYPE_DOUBLE));
     EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }
@@ -148,7 +147,7 @@ TEST_F(NAME, command_expr_passed_as_argument)
         semantic_check_run(
             &semantic_resolve_cmd_overloads,
             &ast,
-            &plugins,
+            plugins,
             &cmds,
             "test",
             src),
@@ -157,7 +156,7 @@ TEST_F(NAME, command_expr_passed_as_argument)
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 2;
     EXPECT_THAT(
-        vec_get(*vec_get(cmds.param_types, expected_cmd_id), 0)->type,
+        cmds.param_types->data[expected_cmd_id]->data[0].type,
         Eq(TYPE_FLOAT));
     EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }

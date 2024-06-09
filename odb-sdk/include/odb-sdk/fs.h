@@ -16,8 +16,8 @@ fs_get_path_to_self(struct ospath* path);
 ODBSDK_PUBLIC_API int
 fs_list(
     struct ospathc path,
-    int                (*on_entry)(const char* name, void* user),
-    void*              user);
+    int            (*on_entry)(const char* name, void* user),
+    void*          user);
 
 ODBSDK_PUBLIC_API int
 fs_file_exists(struct ospathc path);
@@ -25,11 +25,20 @@ fs_file_exists(struct ospathc path);
 ODBSDK_PUBLIC_API int
 fs_dir_exists(struct ospathc path);
 
+/*!
+ * @brief Creates a directory on the filesystem. Does not work if the parent
+ * directory does not exist.
+ * @return Returns -1 if an error occurs, 0 if successful, and 1 if the
+ * directory already exists.
+ */
 ODBSDK_PUBLIC_API int
-fs_make_dir(const char* path);
+fs_make_dir(struct ospathc path);
 
 ODBSDK_PUBLIC_API int
-fs_remove_file(const char* path);
+fs_make_path(struct ospath path);
 
-ODBSDK_PUBLIC_API struct empty_ospath
-fs_appdata_dir(void);
+ODBSDK_PUBLIC_API int
+fs_remove_file(struct ospathc path);
+
+ODBSDK_PUBLIC_API int
+fs_get_appdata_dir(struct ospath* path);

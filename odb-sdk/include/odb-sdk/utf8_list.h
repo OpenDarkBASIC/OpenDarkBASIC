@@ -8,30 +8,29 @@
 
 struct utf8_list
 {
-    char*    data;
     utf8_idx count;    /* Number of strings in list */
     utf8_idx str_used; /* The total length of all strings concatenated */
     utf8_idx capacity; /* String buffer capacity. Realloc when
                           str_len >= str_capacity */
+    char data[1];
 };
 
+static struct utf8_list utf8_null_list;
+
 static inline void
-utf8_list_init(struct utf8_list* l)
+utf8_list_init(struct utf8_list** l)
 {
-    l->data = NULL;
-    l->count = 0;
-    l->str_used = 0;
-    l->capacity = 0;
+    *l = &utf8_null_list;
 }
 
 ODBSDK_PUBLIC_API void
 utf8_list_deinit(struct utf8_list* l);
 
 ODBSDK_PUBLIC_API int
-utf8_list_add(struct utf8_list* l, struct utf8_view str);
+utf8_list_add(struct utf8_list** l, struct utf8_view str);
 
 ODBSDK_PUBLIC_API int
-utf8_list_insert(struct utf8_list* l, utf8_idx insert, struct utf8_view in);
+utf8_list_insert(struct utf8_list** l, utf8_idx insert, struct utf8_view in);
 
 ODBSDK_PUBLIC_API void
 utf8_list_erase(struct utf8_list* l, utf8_idx idx);
@@ -42,14 +41,14 @@ utf8_list_span(const struct utf8_list* l, utf8_idx i)
     return UTF8_LIST_TABLE_PTR(l)[-i];
 }
 static inline const char*
-utf8_list_cstr(const struct utf8_list* l, utf8_idx i)
+utf8_list_cstr(struct utf8_list* l, utf8_idx i)
 {
     struct utf8_span span = utf8_list_span(l, i);
     l->data[span.off + span.len] = '\0';
     return l->data + span.off;
 }
 static inline struct utf8_view
-utf8_list_view(const struct utf8_list* l, utf8_idx i)
+utf8_list_view(struct utf8_list* l, utf8_idx i)
 {
     struct utf8_span span = UTF8_LIST_TABLE_PTR(l)[-i];
     struct utf8_view view = {l->data, span.off, span.len};
@@ -91,8 +90,6 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str);
  */
 ODBSDK_PUBLIC_API utf8_idx
 utf8_upper_bound_ref(const struct utf8_list* l, struct utf8_view str);
-
-#define utf8_list_count(l) ((l)->count)
 
 #define utf8_for_each_cstr(l, var)                                             \
     for (utf8_idx var##_i = 0;                                                 \

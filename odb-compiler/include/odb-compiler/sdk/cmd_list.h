@@ -1,6 +1,5 @@
 #pragma once
 
-#include "odb-compiler/codegen/codegen.h"
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/type.h"
@@ -29,18 +28,18 @@ VEC_DECLARE_API(plugin_ids, int16_t, 16, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(return_types_list, enum type, 32, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(param_types_list, struct cmd_param, 32, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(
-    param_types_lists, struct param_types_list, 32, ODBCOMPILER_PUBLIC_API)
-VEC_DECLARE_API(db_param_names, struct utf8_list, 32, ODBCOMPILER_PUBLIC_API)
+    param_types_lists, struct param_types_list*, 32, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(db_param_names, struct utf8_list*, 32, ODBCOMPILER_PUBLIC_API)
 
 struct cmd_list
 {
-    struct utf8_list         db_cmd_names;
-    struct utf8_list         c_symbols;
-    struct plugin_ids        plugin_ids;
-    struct return_types_list return_types;
-    struct param_types_lists param_types;
-    struct db_param_names    db_param_names;
-    char                     longest_command;
+    struct utf8_list*         db_cmd_names;
+    struct utf8_list*         c_symbols;
+    struct plugin_ids*        plugin_ids;
+    struct return_types_list* return_types;
+    struct param_types_lists* param_types;
+    struct db_param_names*    db_param_names;
+    char                      longest_command;
 };
 
 ODBCOMPILER_PUBLIC_API void
@@ -70,12 +69,13 @@ cmd_add_param(
 
 ODBCOMPILER_PUBLIC_API int
 cmd_list_load_from_plugins(
-    struct cmd_list*          cmds,
-    enum sdk_type             sdk_type,
-    enum odb_codegen_platform target_platform,
-    struct plugin_list        plugins);
+    struct cmd_list*     cmds,
+    struct plugin_list*  plugins,
+    enum sdk_type        sdk_type,
+    enum target_arch     arch,
+    enum target_platform platform);
 
 ODBCOMPILER_PUBLIC_API cmd_id
 cmd_list_find(const struct cmd_list* cmds, struct utf8_view name);
 
-#define cmd_list_count(commands) (utf8_list_count(&(commands)->db_cmd_names))
+#define cmd_list_count(cmds) ((cmds)->db_cmd_names->count)

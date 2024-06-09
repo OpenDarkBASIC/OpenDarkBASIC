@@ -252,8 +252,13 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     #"src/astpost/ResolveLabels.cpp"
     #"src/astpost/ValidateUDTFieldNames.cpp"
     
-    "include/odb-compiler/codegen/codegen.h"
-    "src/codegen/codegen.cpp"
+    "include/odb-compiler/codegen/ir.h"
+    "include/odb-compiler/codegen/target.h"
+    "src/codegen/ir_internal.hpp"
+    "src/codegen/ir.cpp"
+    "src/codegen/ir_compile.cpp"
+    "src/codegen/ir_optimize.cpp"
+    "src/codegen/ir_runtime.cpp"
     #"src/codegen/internal/CodeGenerator.cpp"
     #"src/codegen/internal/ODBEngineInterface.cpp"
     #"src/codegen/internal/DBPEngineInterface.cpp"
@@ -492,9 +497,7 @@ if (ODBCOMPILER_TESTS)
         #"tests/src/test_SourceLocation.cpp"
 
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
-        "tests/include/odb-compiler/tests/LogHelper.hpp"
         "tests/src/DBParserHelper.cpp"
-        "tests/src/LogHelper.cpp"
 
         "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
 

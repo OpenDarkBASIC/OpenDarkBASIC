@@ -1,7 +1,6 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
-#include "odb-compiler/codegen/codegen.h"
 
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
@@ -9,9 +8,9 @@ extern "C" {
 #include "odb-sdk/log.h"
 }
 
-static plugin_list plugins;
-static cmd_list    commands;
-static ospath_list extra_plugins;
+static plugin_list* plugins;
+static cmd_list     commands;
+static ospath_list  extra_plugins;
 
 void
 initCommands(void)
@@ -25,7 +24,7 @@ deinitCommands(void)
 {
     struct plugin_info* plugin;
 
-    ospath_list_deinit(&extra_plugins);
+    ospath_list_deinit(extra_plugins);
     cmd_list_deinit(&commands);
     vec_for_each(plugins, plugin)
     {
@@ -50,13 +49,17 @@ loadCommands(const std::vector<std::string>& args)
 
     log_sdk_progress(0, 0, "Loading commands...\n");
     if (cmd_list_load_from_plugins(
-            &commands, getSDKType(), getTargetPlatform(), plugins)
+            &commands,
+            plugins,
+            getSDKType(),
+            getTargetArch(),
+            getTargetPlatform())
         != 0)
         return false;
     log_sdk_info(
         "Loaded %d commands from %d plugins\n",
         cmd_list_count(&commands),
-        vec_count(plugins));
+        plugins->count);
 
     /*
     std::unique_ptr<odb::cmd::CommandLoader> loader;
@@ -163,16 +166,15 @@ dumpCommandNames(const std::vector<std::string>& args)
 {
     for (int i = 0; i != cmd_list_count(&commands); ++i)
     {
-        enum type ret_type = *vec_get(commands.return_types, i);
+        enum type ret_type = commands.return_types->data[i];
         printf("%c ", ret_type);
-        printf("%s", utf8_list_cstr(&commands.db_cmd_names, i));
+        printf("%s", utf8_list_cstr(commands.db_cmd_names, i));
         printf("(");
         const struct param_types_list* param_types
-            = vec_get(commands.param_types, i);
-        const struct utf8_list* param_names
-            = vec_get(commands.db_param_names, i);
+            = commands.param_types->data[i];
+        struct utf8_list* param_names = commands.db_param_names->data[i];
         const struct cmd_param* param;
-        vec_for_each(*param_types, param)
+        vec_for_each(param_types, param)
         {
             printf("%c", param->type);
             if (param->direction == CMD_PARAM_OUT)
@@ -180,7 +182,7 @@ dumpCommandNames(const std::vector<std::string>& args)
         }
         printf(") (");
 
-        for (int n = 0; n != utf8_list_count(param_names); ++n)
+        for (int n = 0; n != param_names->count; ++n)
         {
             if (n)
                 printf(", ");
@@ -195,13 +197,13 @@ dumpCommandNames(const std::vector<std::string>& args)
     return true;
 }
 
-struct plugin_list*
+const struct plugin_list*
 getPluginList(void)
 {
-    return &plugins;
+    return plugins;
 }
 
-struct cmd_list*
+const struct cmd_list*
 getCommandList(void)
 {
     return &commands;

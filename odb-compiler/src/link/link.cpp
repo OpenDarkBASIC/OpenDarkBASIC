@@ -3,7 +3,7 @@ extern "C" {
 #include "odb-sdk/fs.h"
 }
 
-#include "odb-compiler/codegen/codegen.h"
+#include "odb-compiler/codegen/target.h"
 #include "lld/Common/Driver.h"
 #include <string>
 
@@ -16,7 +16,7 @@ link_windows(
     const char*           objs[],
     int                   count,
     const char*           output_name,
-    enum odb_codegen_arch arch)
+    enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
 
@@ -27,9 +27,9 @@ link_windows(
 
     switch (arch)
     {
-        case ODB_CODEGEN_x86_64: args.push_back("-machine:X64"); break;
-        case ODB_CODEGEN_i386: args.push_back("-machine:I386"); break;
-        case ODB_CODEGEN_AArch64: args.push_back("-machine:aarch64"); break;
+        case TARGET_x86_64: args.push_back("-machine:X64"); break;
+        case TARGET_i386: args.push_back("-machine:I386"); break;
+        case TARGET_AArch64: args.push_back("-machine:aarch64"); break;
     }
 
     std::string outNameArg = "-out:" + std::string(output_name);
@@ -54,7 +54,7 @@ link_linux(
     const char*           objs[],
     int                   count,
     const char*           output_name,
-    enum odb_codegen_arch arch)
+    enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
 
@@ -65,17 +65,17 @@ link_linux(
 
     switch (arch)
     {
-        case ODB_CODEGEN_i386:
+        case TARGET_i386:
             args.push_back("-melf_i386");
             args.push_back("--dynamic-linker=/lib/ld-linux.so.2");
             break;
-        case ODB_CODEGEN_x86_64:
+        case TARGET_x86_64:
             args.push_back("-melf_x86_64");
             args.push_back("--dynamic-linker=/lib64/ld-linux-x86-64.so.2");
             args.push_back("-L/usr/lib64");
             args.push_back("-L/usr/lib/x86_64-linux-gnu");
             break;
-        case ODB_CODEGEN_AArch64: args.push_back("-melf_aarch64"); return -1;
+        case TARGET_AArch64: args.push_back("-melf_aarch64"); return -1;
     }
 
     args.push_back("-o");
@@ -109,17 +109,17 @@ odb_link(
     int         count,
     const char* output_name,
     /*enum odb_sdk_type sdkType,*/
-    enum odb_codegen_arch     arch,
-    enum odb_codegen_platform platform)
+    enum target_arch     arch,
+    enum target_platform platform)
 {
 
     switch (platform)
     {
-        case ODB_CODEGEN_WINDOWS:
+        case TARGET_WINDOWS:
             return link_windows(objs, count, output_name, arch);
-        case ODB_CODEGEN_LINUX:
+        case TARGET_LINUX:
             return link_linux(objs, count, output_name, arch);
-        case ODB_CODEGEN_MACOS: break;
+        case TARGET_MACOS: break;
     }
 
     return -1;

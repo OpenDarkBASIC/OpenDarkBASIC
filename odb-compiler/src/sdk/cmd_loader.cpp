@@ -26,11 +26,11 @@ load_odb_commands(
 
 struct on_plugin_ctx
 {
-    plugin_id                 current, total;
-    struct cmd_cache*         cmd_cache;
-    struct cmd_list*          commands;
-    enum sdk_type             sdk_type;
-    enum odb_codegen_platform target_platform;
+    plugin_id            current, total;
+    struct cmd_cache*    cmd_cache;
+    struct cmd_list*     commands;
+    enum sdk_type        sdk_type;
+    enum target_platform target_platform;
 };
 
 static int
@@ -44,7 +44,7 @@ on_plugin(struct plugin_info* plugin, void* user)
 
     switch (ctx->target_platform)
     {
-        case ODB_CODEGEN_WINDOWS: {
+        case TARGET_WINDOWS: {
             binary.reset(static_cast<LIEF::Binary*>(
                 LIEF::PE::Parser::parse(
                     ospath_cstr(plugin->filepath),
@@ -59,13 +59,13 @@ on_plugin(struct plugin_info* plugin, void* user)
             break;
         }
 
-        case ODB_CODEGEN_LINUX:
+        case TARGET_LINUX:
             binary.reset(static_cast<LIEF::Binary*>(
                 LIEF::ELF::Parser::parse(ospath_cstr(plugin->filepath))
                     .release()));
             break;
 
-        case ODB_CODEGEN_MACOS:
+        case TARGET_MACOS:
             log_sdk_err("Loading MachO not implemented\n");
             return -1;
             /*
@@ -145,30 +145,27 @@ on_plugin(struct plugin_info* plugin, void* user)
 
 int
 cmd_list_load_from_plugins(
-    struct cmd_list*          commands,
-    enum sdk_type             sdk_type,
-    enum odb_codegen_platform target_platform,
-    struct plugin_list        plugins)
+    struct cmd_list*     cmds,
+    struct plugin_list*  plugins,
+    enum sdk_type        sdk_type,
+    enum target_arch     arch,
+    enum target_platform platform)
 {
-    int                  cmd_cache_loaded;
+    int                  cache_loaded;
     struct cmd_cache     cache;
     struct on_plugin_ctx ctx
-        = {0,
-           (plugin_id)vec_count(plugins),
-           &cache,
-           commands,
-           sdk_type,
-           target_platform};
+        = {0, (plugin_id)plugins->count, &cache, cmds, sdk_type, platform};
 
     cmd_cache_init(&cache);
-    cmd_cache_loaded = cmd_cache_load(&cache);
-    if (cmd_cache_loaded != 0)
+    cache_loaded = (cmd_cache_load(&cache, sdk_type, arch, platform) == 0);
+    if (!cache_loaded)
         log_sdk_warn("All plugins will be parsed.\n");
 
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         goto parse_plugins_failed;
 
-    if (cmd_cache_loaded && cmd_cache_save(&cache) != 0)
+    if (cache_loaded
+        && cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
         log_sdk_warn("All plugins will be parsed next time.\n");
 
     cmd_cache_deinit(&cache);

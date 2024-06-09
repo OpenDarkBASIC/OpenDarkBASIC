@@ -11,16 +11,6 @@
 
 #define BACKTRACE_OMIT_COUNT 2
 
-struct state
-{
-    struct hm report;
-    mem_size  allocations;
-    mem_size  deallocations;
-    mem_size  bytes_in_use;
-    mem_size  bytes_in_use_peak;
-    unsigned  ignore_malloc : 1;
-};
-
 struct report_info
 {
     uintptr_t location;
@@ -30,15 +20,96 @@ struct report_info
     char** backtrace;
 #endif
 };
+struct report_kvs
+{
+    uintptr_t*          keys;
+    struct report_info* values;
+};
+
+static int
+report_kvs_alloc(struct report_kvs* kvs, int32_t capacity)
+{
+    if ((kvs->keys = mem_alloc(sizeof(uintptr_t) * capacity)) == NULL)
+        return -1;
+    if ((kvs->values = mem_alloc(sizeof(struct report_info) * capacity))
+        == NULL)
+    {
+        mem_free(kvs->keys);
+        return -1;
+    }
+
+    return 0;
+}
+static void
+report_kvs_free(struct report_kvs* kvs)
+{
+    mem_free(kvs->values);
+    mem_free(kvs->keys);
+}
+static uintptr_t
+report_kvs_get_key(const struct report_kvs* kvs, int32_t slot)
+{
+    return kvs->keys[slot];
+}
+static void
+report_kvs_set_key(struct report_kvs* kvs, int32_t slot, uintptr_t key)
+{
+    kvs->keys[slot] = key;
+}
+static int
+report_kvs_keys_equal(uintptr_t k1, uintptr_t k2)
+{
+    return k1 == k2;
+}
+static struct report_info*
+report_kvs_get_value(struct report_kvs* kvs, int32_t slot)
+{
+    return &kvs->values[slot];
+}
+static void
+report_kvs_set_value(
+    struct report_kvs* kvs, int32_t slot, struct report_info* value)
+{
+    kvs->values[slot] = *value;
+}
+
+HM_DECLARE_API_FULL(
+    report,
+    hash32,
+    uintptr_t,
+    struct report_info,
+    32,
+    static,
+    struct report_kvs)
+HM_DEFINE_API_FULL(
+    report,
+    hash32,
+    uintptr_t,
+    struct report_info,
+    32,
+    hash32_aligned_ptr,
+    report_kvs_alloc,
+    report_kvs_free,
+    report_kvs_get_key,
+    report_kvs_set_key,
+    report_kvs_keys_equal,
+    report_kvs_get_value,
+    report_kvs_set_value,
+    128,
+    70)
+
+struct state
+{
+    struct report* report;
+    mem_size       allocations;
+    mem_size       deallocations;
+    mem_size       bytes_in_use;
+    mem_size       bytes_in_use_peak;
+    unsigned       ignore_malloc : 1;
+};
 
 static struct state state;
 
-/* ------------------------------------------------------------------------- */
-static int
-report_info_cmp(const void* a, const void* b, int size)
-{
-    return memcmp(a, b, (size_t)size);
-}
 int
 mem_init(void)
 {
@@ -47,23 +118,7 @@ mem_init(void)
     state.bytes_in_use = 0;
     state.bytes_in_use_peak = 0;
 
-    /*
-     * Hashmap will call mem_alloc during init, need to ignore this to avoid
-     * crashing.
-     */
-    state.ignore_malloc = 1;
-    if (hm_init_with_options(
-            &state.report,
-            sizeof(uintptr_t),
-            sizeof(struct report_info),
-            4096,
-            hash32_ptr,
-            report_info_cmp)
-        != 0)
-    {
-        return -1;
-    }
-    state.ignore_malloc = 0;
+    report_init(&state.report);
 
     return 0;
 }
@@ -115,29 +170,21 @@ track_allocation(uintptr_t addr, mem_size size)
     if (state.ignore_malloc)
         return;
 
-    /*
-     * Record allocation info. Call to hashmap and backtrace_get() may allocate
-     * memory, so set flag to ignore the call to malloc() when inserting.
-     */
     state.bytes_in_use += size;
     if (state.bytes_in_use_peak < state.bytes_in_use)
         state.bytes_in_use_peak = state.bytes_in_use;
 
-    state.ignore_malloc = 1;
     /* insert info into hashmap */
-    switch (hm_insert(&state.report, &addr, (void**)&info))
+    state.ignore_malloc = 1;
+    info = report_emplace_new(&state.report, addr);
+    state.ignore_malloc = 0;
+    if (info == NULL)
     {
-        case 1: break;
-        case 0:
-            log_sdk_err(
-                "Double allocation! This is usually caused by calling "
-                "mem_track_allocation() on the same address twice.\n");
-            print_backtrace();
-            break;
-        default:
-            log_sdk_err(
-                "Hashmap insert failed! Expect to see incorrect memory leak "
-                "reports!\n");
+        log_sdk_err(
+            "Double allocation! This is usually caused by calling "
+            "mem_track_allocation() on the same address twice.\n");
+        print_backtrace();
+        return;
     }
 
     /* record the location and size of the allocation */
@@ -146,12 +193,11 @@ track_allocation(uintptr_t addr, mem_size size)
 
     /* Create backtrace to this allocation */
 #if defined(ODBSDK_MEM_BACKTRACE)
+    state.ignore_malloc = 1;
     if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
         log_sdk_warn("Failed to generate backtrace\n");
-#endif
     state.ignore_malloc = 0;
-
-    return;
+#endif
 }
 
 static void
@@ -172,7 +218,7 @@ track_deallocation(uintptr_t addr, const char* free_type)
         return;
 
     /* find matching allocation and remove from hashmap */
-    info = hm_erase(&state.report, &addr);
+    info = report_erase(state.report, addr);
     if (info)
     {
         state.bytes_in_use -= info->size;
@@ -250,89 +296,92 @@ mem_deinit(void)
     --state.allocations; /* this is the single allocation still held by the
                             report hashmap */
 
-    log_sdk_note("Memory report:\n");
-
     /* report details on any g_allocations that were not de-allocated */
-    HM_FOR_EACH(&state.report, void*, struct report_info, key, info)
+    uintptr_t           addr;
+    struct report_info* info;
+    hm_for_each(state.report, addr, info)
     {
         log_sdk_err(
             "un-freed memory at 0x%" PRIx64 ", size 0x%" PRIx32 "\n",
             info->location,
             info->size);
-    }
 
 #if defined(ODBSDK_MEM_BACKTRACE)
-    {
-        int i;
-        log_sdk_note("Backtrace:\n");
-        for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
         {
-            if (strstr(info->backtrace[i], "invoke_main"))
-                break;
-            log_raw("  %s\n", info->backtrace[i]);
+            int i;
+            log_sdk_note("Backtrace:\n");
+            for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
+            {
+                if (strstr(info->backtrace[i], "invoke_main"))
+                    break;
+                log_raw("  %s\n", info->backtrace[i]);
+            }
         }
-    }
-    backtrace_free(
-        info->backtrace); /* this was allocated when malloc() was called */
+        backtrace_free(
+            info->backtrace); /* this was allocated when malloc() was called */
 #endif
+
 #if defined(ODBSDK_MEM_HEX_DUMP)
-    if (info->size <= ODBSDK_MEM_HEX_DUMP_SIZE)
-    {
-        intptr_t i;
-        uint8_t* p = (void*)info->location;
-        log_sdk_note("Hex Dump:\n");
-
-        log_raw("  ");
-        for (i = 0; i != 16; ++i)
-            log_raw("%c  ", "0123456789ABCDEF"[i]);
-        log_raw(" ");
-        for (i = 0; i != 16; ++i)
-            log_raw("%c", "0123456789ABCDEF"[i]);
-        log_raw("\n");
-
-        for (i = 0; i < info->size;)
+        if (info->size <= ODBSDK_MEM_HEX_DUMP_SIZE)
         {
-            int j;
+            intptr_t i;
+            uint8_t* p = (void*)info->location;
+            log_sdk_note("Hex Dump:\n");
+
             log_raw("  ");
-            for (j = 0; j != 16; ++j)
-            {
-                if (i + j < info->size)
-                    log_raw("%02x ", p[i]);
-                else
-                    log_raw("   ");
-            }
-
+            for (i = 0; i != 16; ++i)
+                log_raw("%c  ", "0123456789ABCDEF"[i]);
             log_raw(" ");
-            for (j = 0; j != 16 && i + j != info->size; ++j)
-            {
-                if (p[i] >= 32 && p[i] < 127) /* printable ascii */
-                    log_raw("%c", p[i]);
-                else
-                    log_raw(".");
-            }
-
+            for (i = 0; i != 16; ++i)
+                log_raw("%c", "0123456789ABCDEF"[i]);
             log_raw("\n");
-            i += 16;
+
+            for (i = 0; i < info->size;)
+            {
+                int j;
+                log_raw("  ");
+                for (j = 0; j != 16; ++j)
+                {
+                    if (i + j < info->size)
+                        log_raw("%02x ", p[i]);
+                    else
+                        log_raw("   ");
+                }
+
+                log_raw(" ");
+                for (j = 0; j != 16 && i + j != info->size; ++j)
+                {
+                    if (p[i] >= 32 && p[i] < 127) /* printable ascii */
+                        log_raw("%c", p[i]);
+                    else
+                        log_raw(".");
+                }
+
+                log_raw("\n");
+                i += 16;
+            }
         }
-    }
 #endif
-    HM_END_EACH
+    }
 
     /* overall report */
+    log_sdk_note("Memory report:\n");
     leaks
         = (state.allocations > state.deallocations
                ? state.allocations - state.deallocations
                : state.deallocations - state.allocations);
-    log_sdk_note("  allocations   : %" PRIu32 "\n", state.allocations);
-    log_sdk_note("  deallocations : %" PRIu32 "\n", state.deallocations);
-    log_sdk_note("  memory leaks  : %" PRIu64 "\n", leaks);
-    log_sdk_note(
-        "  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
+    log_raw("  allocations   : %" PRIu32 "\n", state.allocations);
+    log_raw("  deallocations : %" PRIu32 "\n", state.deallocations);
+    if (leaks)
+        log_raw("  {e:memory leaks  : %" PRIu64 "}\n", leaks);
+    else
+        log_raw("  memory leaks  : %" PRIu64 "\n", leaks);
+    log_raw("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
 
     ++state.allocations; /* this is the single allocation still held by the
                             report hashmap */
     state.ignore_malloc = 1;
-    hm_deinit(&state.report);
+    report_deinit(state.report);
     state.ignore_malloc = 0;
 
     return (mem_size)leaks;

@@ -110,7 +110,7 @@ ospath_dirname(struct ospath* path)
     /* Remove joining slash if not root directory */
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;
-    /* Special case on linux -- root directory */
+    /* Set to current directory "." if not root directory */
     if (path->str.len == 1 && path->str.data[path->str.len - 1] != '/')
         path->str.data[0] = '.';
 }

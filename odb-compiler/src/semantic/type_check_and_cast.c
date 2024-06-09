@@ -31,7 +31,7 @@ VEC_DEFINE_API(spanlist, struct span_scope, 32)
 struct typemap_kvs
 {
     const char*         text;
-    struct spanlist     keys;
+    struct spanlist*    keys;
     struct type_origin* values;
 };
 
@@ -68,7 +68,7 @@ static struct view_scope
 typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
 {
     ODBSDK_DEBUG_ASSERT(kvs->text != NULL);
-    struct span_scope span_scope = *vec_get(kvs->keys, slot);
+    struct span_scope span_scope = kvs->keys->data[slot];
     struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
     return view_scope;
@@ -81,7 +81,7 @@ typemap_kvs_set_key(
     kvs->text = key.view.data;
     struct utf8_span  span = utf8_view_span(kvs->text, key.view);
     struct span_scope span_scope = {span, key.scope};
-    *vec_get(kvs->keys, slot) = span_scope;
+    kvs->keys->data[slot] = span_scope;
 }
 static int
 typemap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
@@ -349,7 +349,8 @@ resolve_node_type(
                 }
             }
 
-            /* Assignments are not expressions, thus they do not evaluate to a type */
+            /* Assignments are not expressions, thus they do not evaluate to a
+             * type */
             return TYPE_VOID;
         }
         break;
@@ -366,7 +367,7 @@ resolve_node_type(
             }
 
             return ast->nodes[n].cmd.info.type_info
-                   = *vec_get(cmds->return_types, ast->nodes[n].cmd.id);
+                   = cmds->return_types->data[ast->nodes[n].cmd.id];
         }
 
         case AST_IDENTIFIER: {

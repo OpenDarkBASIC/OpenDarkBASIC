@@ -1,4 +1,4 @@
-#include "odb-compiler/tests/LogHelper.hpp"
+#include "odb-sdk/tests/LogHelper.hpp"
 
 extern "C" {
 #include "odb-sdk/cli_colors.h"

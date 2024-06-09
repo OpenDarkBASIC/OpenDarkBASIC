@@ -14,8 +14,7 @@
 int
 fs_get_path_to_self(struct ospath* path)
 {
-    int capacity
-        = path->str.len + 1; /* paths have space for a null terminator */
+    int capacity = path->str.len + UTF8_APPEND_PADDING;
     if (capacity < PATH_MAX)
     {
         void* new_mem = mem_realloc(path->str.data, PATH_MAX);
@@ -32,15 +31,13 @@ fs_get_path_to_self(struct ospath* path)
          * still have to make sure to reserve the space for a NULL terminator at
          * the end of the buffer for when utf8_view() is called. */
         path->str.len = readlink(
-            "/proc/self/exe",
-            path->str.data,
-            capacity - 1 /* null terminator */);
+            "/proc/self/exe", path->str.data, capacity - UTF8_APPEND_PADDING);
         if (path->str.len < 0)
             return log_sdk_err(
                 "readlink() failed in fs_get_path_to_self(): %s",
                 strerror(errno));
 
-        if (path->str.len < capacity - 1)
+        if (path->str.len < capacity - UTF8_APPEND_PADDING)
             break;
 
         capacity *= 2;
@@ -100,16 +97,58 @@ fs_dir_exists(struct ospathc path)
     return S_ISDIR(st.st_mode);
 }
 
-/*
 int
-fs_make_dir(const char* path)
+fs_make_dir(struct ospathc path)
 {
-    return mkdir(path, 0755) == 0;
+    if (mkdir(ospathc_cstr(path), 0755) == 0)
+        return 0;
+
+    if (errno == EEXIST)
+        return 1;
+
+    log_sdk_err(
+        "Failed to create directory {quote:%s}: %s\n",
+        ospathc_cstr(path),
+        strerror(errno));
+    return -1;
 }
 
-struct str_view
-fs_appdata_dir(void)
+int
+fs_make_path(struct ospath path)
 {
-    return path_view(appdata_dir);
+try_again:
+    if (mkdir(ospath_cstr(path), 0755))
+    {
+        if (errno == EEXIST)
+            return 0;
+
+        if (errno == ENOENT)
+        {
+            int result;
+            int len_store = path.str.len;
+            ospath_dirname(&path);
+            result = fs_make_path(path);
+            path.str.data[path.str.len] = '/';
+            path.str.len = len_store;
+            if (result == 0)
+                goto try_again;
+        }
+
+        return -1;
+    }
+
+    return 0;
 }
-*/
+
+int
+fs_get_appdata_dir(struct ospath* path)
+{
+    struct passwd* pw = getpwuid(getuid());
+
+    if (ospath_set(path, cstr_ospathc(pw->pw_dir)) < 0)
+        return -1;
+    if (ospath_join(path, cstr_ospathc(".local/share/OpenDarkBASIC")) < 0)
+        return -1;
+
+    return fs_make_path(*path);
+}

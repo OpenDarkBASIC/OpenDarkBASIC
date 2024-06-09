@@ -6,6 +6,12 @@
 #include <string.h>
 #include <wchar.h>
 
+/* All strings are padded with 2 bytes extra on the end, because
+ * 1) On linux, empty paths are converted to "."
+ * 2) Potential null terminator when converting to utf8_view
+ */
+#define UTF8_APPEND_PADDING 2
+
 /* Can't do int16_t because the parser uses this to refer to offsets in source
  * files, and source files definitely contain >32768 characters */
 typedef int32_t utf8_idx;

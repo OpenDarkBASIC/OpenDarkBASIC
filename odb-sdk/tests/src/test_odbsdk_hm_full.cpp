@@ -6,7 +6,7 @@ extern "C" {
 #include "odb-sdk/mem.h"
 }
 
-#define NAME         odbsdk_hm
+#define NAME         odbsdk_hm_full
 #define MIN_CAPACITY 64
 
 using namespace ::testing;
@@ -113,28 +113,26 @@ struct NAME : Test
     virtual void
     TearDown()
     {
+        ASSERT_THAT(hm_test_null_hm.count, Eq(0));
+        ASSERT_THAT(hm_test_null_hm.capacity, Eq(0));
         hm_test_deinit(hm);
     }
 
     struct hm_test* hm;
 };
 
-static int
-hm_test_insert_new(struct hm* hm, const char* key, const float* value)
-{
-    float* hm_value;
-    int    ret = hm_insert(hm, key, (void**)&hm_value);
-    if (ret == 1)
-        *hm_value = *value;
-    return ret;
-}
-
 TEST_F(NAME, null_hm_is_set)
 {
+    EXPECT_THAT(hm, Eq(&hm_test_null_hm));
     EXPECT_THAT(hm->count, Eq(0));
     EXPECT_THAT(hm->capacity, Eq(0));
     EXPECT_THAT(hm->kvs.keys, IsNull());
     EXPECT_THAT(hm->kvs.values, IsNull());
+}
+
+TEST_F(NAME, deinit_null_hm_works)
+{
+    hm_test_deinit(hm);
 }
 
 TEST_F(NAME, insert_increases_slots_used)
@@ -155,7 +153,6 @@ TEST_F(NAME, erase_decreases_slots_used)
 
 TEST_F(NAME, insert_same_key_twice_only_works_once)
 {
-    float f = 5.6f;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 7.6f), Eq(-1));
     EXPECT_THAT(hm->count, Eq(1));
@@ -163,7 +160,6 @@ TEST_F(NAME, insert_same_key_twice_only_works_once)
 
 TEST_F(NAME, insert_or_get_returns_inserted_value)
 {
-    float f = 5.6f;
     EXPECT_THAT(hm_test_insert_or_get(&hm, KEY1, 5.6f), Pointee(5.6f));
     EXPECT_THAT(hm_test_insert_or_get(&hm, KEY1, 7.6f), Pointee(5.6f));
     EXPECT_THAT(hm->count, Eq(1));
@@ -171,7 +167,6 @@ TEST_F(NAME, insert_or_get_returns_inserted_value)
 
 TEST_F(NAME, erasing_same_key_twice_only_works_once)
 {
-    float f = 5.6f;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
     EXPECT_THAT(hm_test_erase(hm, KEY1), IsNull());
@@ -180,21 +175,16 @@ TEST_F(NAME, erasing_same_key_twice_only_works_once)
 
 TEST_F(NAME, hash_collision_insert_ab_erase_ba)
 {
-    float a = 5.6f;
-    float b = 3.4f;
-    hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
     EXPECT_THAT(hm->count, Eq(2));
-    EXPECT_THAT(hm_test_erase(hm, KEY2), Pointee(b));
-    EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(a));
+    EXPECT_THAT(hm_test_erase(hm, KEY2), Pointee(3.4f));
+    EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
     EXPECT_THAT(hm->count, Eq(0));
 }
 
 TEST_F(NAME, hash_collision_insert_ab_erase_ab)
 {
-    float a = 5.6f;
-    float b = 3.4f;
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
@@ -215,8 +205,6 @@ TEST_F(NAME, hash_collision_insert_ab_find_ab)
 
 TEST_F(NAME, hash_collision_insert_ab_erase_a_find_b)
 {
-    float a = 5.6f;
-    float b = 3.4f;
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
@@ -237,8 +225,6 @@ TEST_F(NAME, hash_collision_insert_ab_erase_b_find_a)
 
 TEST_F(NAME, hash_collision_insert_at_tombstone)
 {
-    float a = 5.6f;
-    float b = 3.4f;
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
@@ -255,8 +241,6 @@ TEST_F(NAME, hash_collision_insert_at_tombstone)
 
 TEST_F(NAME, hash_collision_insert_at_tombstone_with_existing_key)
 {
-    float a = 5.6f;
-    float b = 3.4f;
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
@@ -269,8 +253,6 @@ TEST_F(NAME, hash_collision_insert_at_tombstone_with_existing_key)
 
 TEST_F(NAME, remove_probing_sequence_scenario_1)
 {
-    float a = 5.6f;
-    float b = 3.4f;
     // Creates a tombstone in the probing sequence to KEY2
     hash_mode = SHITTY;
     hm_test_insert_new(&hm, KEY1, 5.6f);
@@ -328,4 +310,77 @@ TEST_F(NAME, rehash_test)
         sprintf(key, "%d", i);
         EXPECT_THAT(hm_test_erase(hm, key), Pointee(value));
     }
+}
+
+TEST_F(NAME, foreach_empty)
+{
+    uintptr_t key;
+    float*    value;
+    int       counter = 0;
+    hm_for_each(hm, key, value)
+    {
+        counter++;
+    }
+    EXPECT_THAT(counter, Eq(0));
+}
+
+TEST_F(NAME, foreach)
+{
+    char key[16];
+    for (int i = 0; i != 16; ++i)
+    {
+        memset(key, 0, sizeof key);
+        sprintf(key, "%d", i);
+        ASSERT_THAT(hm_test_insert_new(&hm, key, float(i)), Eq(0));
+    }
+
+    auto erase_key = [&key](struct hm_test* hm, const char* k)
+    {
+        memset(key, 0, sizeof(key));
+        memcpy(key, k, strlen(k));
+        return hm_test_erase(hm, key);
+    };
+
+    ASSERT_THAT(erase_key(hm, "5"), NotNull());
+    ASSERT_THAT(erase_key(hm, "8"), NotNull());
+    ASSERT_THAT(erase_key(hm, "14"), NotNull());
+    ASSERT_THAT(erase_key(hm, "3"), NotNull());
+    ASSERT_THAT(erase_key(hm, "11"), NotNull());
+    ASSERT_THAT(erase_key(hm, "6"), NotNull());
+
+    for (int i = 16; i != 20; ++i)
+    {
+        memset(key, 0, sizeof key);
+        sprintf(key, "%d", i);
+        ASSERT_THAT(hm_test_insert_new(&hm, key, float(i)), Eq(0));
+    }
+
+    std::unordered_map<float, int> expected_values = {
+        {0, 0},
+        {1, 0},
+        {2, 0},
+        {4, 0},
+        {7, 0},
+        {9, 0},
+        {10, 0},
+        {12, 0},
+        {13, 0},
+        {15, 0},
+        {16, 0},
+        {17, 0},
+        {18, 0},
+        {19, 0},
+    };
+
+    const char* k;
+    float*      value;
+    hm_for_each_full(hm, k, value, test_get_key, test_get_value)
+    {
+        expected_values[*value] += 1;
+    }
+
+    EXPECT_THAT(hm->count, Eq(14));
+    EXPECT_THAT(expected_values.size(), Eq(14));
+    for (const auto& [k, v] : expected_values)
+        EXPECT_THAT(v, Eq(1)) << k;
 }

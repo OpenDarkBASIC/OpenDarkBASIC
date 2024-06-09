@@ -22,7 +22,7 @@ initSDK(void)
 void
 deinitSDK(void)
 {
-    ospath_list_deinit(&plugin_dirs);
+    ospath_list_deinit(plugin_dirs);
     ospath_deinit(sdk_root_dir);
 }
 

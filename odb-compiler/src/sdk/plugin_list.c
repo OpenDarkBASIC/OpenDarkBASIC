@@ -1,4 +1,3 @@
-#include "odb-compiler/codegen/codegen.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
@@ -28,9 +27,9 @@ static const char* macos_extensions[]
 
 struct on_plugin_entry_ctx
 {
-    struct plugin_list* plugins;
-    struct ospathc      dir;
-    const char**        extensions;
+    struct plugin_list** plugins;
+    struct ospathc       dir;
+    const char**         extensions;
 };
 
 static int
@@ -64,9 +63,9 @@ on_plugin_entry(const char* cname, void* user)
 
 int
 plugin_list_populate(
-    struct plugin_list*       plugins,
+    struct plugin_list**      plugins,
     enum sdk_type             sdk_type,
-    enum odb_codegen_platform target_platform,
+    enum target_platform      target_platform,
     struct ospathc            sdk_root,
     const struct ospath_list* extra_plugins)
 {
@@ -91,9 +90,9 @@ plugin_list_populate(
     }
     switch (target_platform)
     {
-        case ODB_CODEGEN_WINDOWS: ctx.extensions = windows_extensions; break;
-        case ODB_CODEGEN_MACOS: ctx.extensions = macos_extensions; break;
-        case ODB_CODEGEN_LINUX: ctx.extensions = linux_extensions; break;
+        case TARGET_WINDOWS: ctx.extensions = windows_extensions; break;
+        case TARGET_MACOS: ctx.extensions = macos_extensions; break;
+        case TARGET_LINUX: ctx.extensions = linux_extensions; break;
     }
 
     for (psubdir = plugin_subdirs; *psubdir; ++psubdir)

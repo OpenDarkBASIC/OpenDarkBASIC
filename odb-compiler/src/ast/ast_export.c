@@ -27,8 +27,8 @@ write_nodes(
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
-                = utf8_list_view(&commands->db_cmd_names, nd->cmd.id);
-            enum type ret_type = *vec_get(commands->return_types, nd->cmd.id);
+                = utf8_list_view(commands->db_cmd_names, nd->cmd.id);
+            enum type ret_type = commands->return_types->data[nd->cmd.id];
             fprintf(
                 fp,
                 "  n%d [shape=\"doubleoctagon\", fontcolor=\"blue\", "

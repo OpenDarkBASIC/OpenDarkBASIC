@@ -1,8 +1,8 @@
 #pragma once
 
+#include "odb-compiler/codegen/target.h"
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/sdk.h"
-#include "odb-compiler/codegen/codegen.h"
 #include "odb-sdk/ospath_list.h"
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"
@@ -41,8 +41,8 @@ plugin_info_deinit(struct plugin_info* plugin)
 
 ODBCOMPILER_PUBLIC_API int
 plugin_list_populate(
-    struct plugin_list*       plugins,
+    struct plugin_list**      plugins,
     enum sdk_type             sdk_type,
-    enum odb_codegen_platform target_platform,
+    enum target_platform      target_platform,
     struct ospathc            sdk_root,
     const struct ospath_list* extra_plugins);
