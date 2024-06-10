@@ -25,7 +25,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath);
  * \return Returns 0 on success, negative on failure.
  */
 ODBSDK_PUBLIC_API int
-mfile_map_overwrite(struct mfile* mf, struct ospathc filepath);
+mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath);
 
 /*!
  * @brief Allocates memory using mmap. The memory must be freed again using

@@ -50,8 +50,6 @@ gen_init_func(
             llvm::Function::ExternalLinkage,
             "SetDllDirectoryA",
             &ir->mod);
-
-        b.SetInsertPoint(BB->getFirstNonPHI());
         b.CreateCall(rpath_func, rpath_const);
     }
 

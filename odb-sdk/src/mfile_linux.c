@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #define _LARGEFILE64_SOURCE
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
@@ -72,6 +73,62 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
 mmap_failed:
 /*file_too_large: */
 fstat_failed:
+    close(fd);
+open_failed:
+    return -1;
+}
+
+int
+mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
+{
+    int         fd;
+    const char* c_file_name = ospathc_cstr(filepath);
+
+    fd = open(
+        c_file_name,
+        O_CREAT | O_RDWR | O_TRUNC,
+        S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (fd < 0)
+    {
+        log_sdk_err(
+            "Failed to open() file {quote:%s}: %s\n",
+            c_file_name,
+            strerror(errno));
+        goto open_failed;
+    }
+
+    /* When truncating the file, it must be expanded again, otherwise writes to
+     * the memory will cause SIGBUS.
+     * NOTE: If this ever gets ported to non-Linux, see posix_fallocate() */
+    if (fallocate(fd, 0, 0, size) != 0)
+    {
+        log_sdk_err(
+            "Failed to resize file {quote:%s} to {quote:%d}: %s\n",
+            c_file_name,
+            size,
+            strerror(errno));
+        goto mmap_failed;
+    }
+
+    mf->address
+        = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (mf->address == MAP_FAILED)
+    {
+        log_sdk_err(
+            "Failed to mmap() file {quote:%s} for writing: %s\n",
+            c_file_name,
+            strerror(errno));
+        goto mmap_failed;
+    }
+
+    /* file descriptor no longer required */
+    close(fd);
+
+    mem_track_allocation(mf->address);
+    mf->size = size;
+    return 0;
+
+mmap_failed:
     close(fd);
 open_failed:
     return -1;

@@ -42,3 +42,6 @@ fs_remove_file(struct ospathc path);
 
 ODBSDK_PUBLIC_API int
 fs_get_appdata_dir(struct ospath* path);
+
+ODBSDK_PUBLIC_API uint64_t
+fs_mtime_ms(struct ospathc path);

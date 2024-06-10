@@ -4,7 +4,7 @@
 #include <vector>
 
 extern "C" {
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-compiler/sdk/sdk_type.h"
 #include "odb-sdk/ospath.h"
 }
 

@@ -26,8 +26,8 @@ load_odb_commands(
 struct on_plugin_ctx
 {
     plugin_id            current, total;
-    struct cmd_cache*    cmd_cache;
-    struct cmd_list*     commands;
+    struct plugin_ids*   cached_plugins;
+    struct cmd_list*     cmds;
     enum sdk_type        sdk_type;
     enum target_platform target_platform;
 };
@@ -38,8 +38,16 @@ on_plugin(struct plugin_info* plugin, void* user)
     std::unique_ptr<LIEF::Binary> binary;
     auto                          ctx = static_cast<on_plugin_ctx*>(user);
 
-    if (!cmd_cache_plugin_needs_reload(ctx->cmd_cache, plugin))
-        return 1;
+    /* Check if current plugin_id has been cached. If so we can skip */
+    plugin_id* cached_plugin_id;
+    vec_for_each(ctx->cached_plugins, cached_plugin_id)
+    {
+        if (ctx->current == *cached_plugin_id)
+        {
+            ctx->current++;
+            return 1;
+        }
+    }
 
     switch (ctx->target_platform)
     {
@@ -104,7 +112,7 @@ on_plugin(struct plugin_info* plugin, void* user)
                 return 0;
             }
             switch (load_dbpro_commands(
-                ctx->commands,
+                ctx->cmds,
                 ctx->current,
                 static_cast<const LIEF::PE::Binary*>(binary.get()),
                 ospathc(plugin->filepath)))
@@ -120,7 +128,7 @@ on_plugin(struct plugin_info* plugin, void* user)
 
         case SDK_ODB:
             switch (load_odb_commands(
-                ctx->commands,
+                ctx->cmds,
                 ctx->current,
                 binary.get(),
                 ospathc(plugin->filepath)))
@@ -135,9 +143,6 @@ on_plugin(struct plugin_info* plugin, void* user)
             break;
     }
 
-    if (cmd_cache_add_plugin(ctx->cmd_cache, plugin) != 0)
-        return -1;
-
     ctx->current++;
     return 1;
 }
@@ -150,28 +155,27 @@ cmd_list_load_from_plugins(
     enum target_arch     arch,
     enum target_platform platform)
 {
-    int                  cache_loaded;
-    struct cmd_cache     cache;
     struct on_plugin_ctx ctx
-        = {0, (plugin_id)plugins->count, &cache, cmds, sdk_type, platform};
+        = {0, (plugin_id)plugins->count, NULL, cmds, sdk_type, platform};
+    plugin_ids_init(&ctx.cached_plugins);
 
-    cmd_cache_init(&cache);
-    //cache_loaded = (cmd_cache_load(&cache, sdk_type, arch, platform) == 0);
-    if (!cache_loaded)
-        log_sdk_warn("All plugins will be parsed.\n");
+    log_sdk_progress(0, 1, "Loading command cache");
+    if (cmd_cache_load(
+            &ctx.cached_plugins, plugins, cmds, sdk_type, arch, platform)
+        != 0)
+        log_sdk_note("All plugins will be parsed.\n");
 
+    log_sdk_progress(0, 1, "Parsing plugins");
     if (plugin_list_retain(plugins, on_plugin, &ctx) != 0)
         goto parse_plugins_failed;
 
-    if (cache_loaded
-        && cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
-        log_sdk_warn("All plugins will be parsed next time.\n");
+    if (cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
+        log_sdk_note("All plugins will be parsed next time.\n");
 
-    cmd_cache_deinit(&cache);
-
+    plugin_ids_deinit(ctx.cached_plugins);
     return 0;
 
 parse_plugins_failed:
-    cmd_cache_deinit(&cache);
+    plugin_ids_deinit(ctx.cached_plugins);
     return -1;
 }

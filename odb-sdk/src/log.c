@@ -286,9 +286,9 @@ static const char*
 process_color_format(const char* fmt, struct varef* args)
 {
     int         i;
-    const char* start;
-    const char* end;
     const char* content;
+    const char* start = "";
+    const char* end = "";
 
 #if defined(ODBSDK_PLATFORM_WINDOWS)
     if (memcmp(fmt, "{win32error}", 12) == 0)

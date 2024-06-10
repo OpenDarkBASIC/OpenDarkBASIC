@@ -51,6 +51,13 @@ ospathc(struct ospath path)
 }
 
 static inline struct ospathc
+utf8_ospathc(struct utf8 str)
+{
+    struct ospathc pathc = {utf8_utf8c(str), str.len};
+    return pathc;
+}
+
+static inline struct ospathc
 cstr_ospathc(const char* cstr)
 {
     struct ospathc pathc = {cstr_utf8c(cstr), (utf8_idx)strlen(cstr)};
@@ -140,4 +147,11 @@ static inline int
 ospath_ends_with_i_cstr(struct ospathc path, const char* cstr)
 {
     return ospath_ends_with_i(path, cstr_utf8_view(cstr));
+}
+
+static inline int
+ospathc_equal(struct ospathc p1, struct ospathc p2)
+{
+    return p1.len == p2.len
+           && memcmp(p1.str.data, p2.str.data, (size_t)p1.len) == 0;
 }

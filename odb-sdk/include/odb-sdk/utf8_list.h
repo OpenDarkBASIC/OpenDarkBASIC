@@ -50,7 +50,7 @@ utf8_list_cstr(struct utf8_list* l, utf8_idx i)
 static inline struct utf8_view
 utf8_list_view(struct utf8_list* l, utf8_idx i)
 {
-    struct utf8_span span = UTF8_LIST_TABLE_PTR(l)[-i];
+    struct utf8_span span = utf8_list_span(l, i);
     struct utf8_view view = {l->data, span.off, span.len};
     l->data[span.off + span.len] = '\0';
     return view;
@@ -58,7 +58,7 @@ utf8_list_view(struct utf8_list* l, utf8_idx i)
 static inline char*
 utf8_list_data(struct utf8_list* l, utf8_idx i)
 {
-    return l->data + UTF8_LIST_TABLE_PTR(l)[-i].off;
+    return l->data + utf8_list_span(l, i).off;
 }
 
 /*!
@@ -91,7 +91,12 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str);
 ODBSDK_PUBLIC_API utf8_idx
 utf8_upper_bound_ref(const struct utf8_list* l, struct utf8_view str);
 
+#define utf8_for_each(l, var)                                                  \
+    for (utf8_idx var##_i = 0;                                                 \
+         var##_i != (l)->count && ((var = utf8_list_view((l), var##_i)), 1);   \
+         ++var##_i)
+
 #define utf8_for_each_cstr(l, var)                                             \
     for (utf8_idx var##_i = 0;                                                 \
-         var##_i != (l)->count && ((var = utf8_list_cstr((l), var##_i)) || 1); \
+         var##_i != (l)->count && ((var = utf8_list_cstr((l), var##_i)), 1);   \
          ++var##_i)

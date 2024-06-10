@@ -2,7 +2,7 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-compiler/sdk/sdk_type.h"
 #include "odb-sdk/fs.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/ospath.h"

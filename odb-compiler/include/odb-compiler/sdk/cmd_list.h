@@ -24,7 +24,7 @@ struct cmd_param
     // struct utf8_span         doc;
 };
 
-VEC_DECLARE_API(plugin_ids, int16_t, 16, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(plugin_ids, plugin_id, 16, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(return_types_list, enum type, 32, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(param_types_list, struct cmd_param, 32, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(
@@ -51,6 +51,15 @@ cmd_list_deinit(struct cmd_list* cmds);
 ODBCOMPILER_PUBLIC_API cmd_id
 cmd_list_add(
     struct cmd_list* cmds,
+    plugin_id        plugin_id,
+    enum type        return_type,
+    struct utf8_view db_cmd_name,
+    struct utf8_view c_symbol);
+
+cmd_id
+cmd_list_insert(
+    struct cmd_list* cmds,
+    utf8_idx         insert,
     plugin_id        plugin_id,
     enum type        return_type,
     struct utf8_view db_cmd_name,

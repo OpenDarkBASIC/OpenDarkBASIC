@@ -41,8 +41,9 @@ cmd_list_deinit(struct cmd_list* cmds)
 }
 
 cmd_id
-cmd_list_add(
+cmd_list_insert(
     struct cmd_list* cmds,
+    utf8_idx         insert,
     plugin_id        plugin_id,
     enum type        return_type,
     struct utf8_view db_cmd_name,
@@ -50,7 +51,6 @@ cmd_list_add(
 {
     struct param_types_list** param_types;
     struct utf8_list**        db_param_names;
-    utf8_idx insert = utf8_lower_bound(cmds->db_cmd_names, db_cmd_name);
 
     /* NOTE: DBPro supports command overloading, so there will be duplicates.
      * The check for whether an overload is ambiguous occurs later when the
@@ -104,6 +104,19 @@ c_identifier_failed:
     utf8_list_erase(cmds->db_cmd_names, insert);
 db_cmd_name_failed:
     return -1;
+}
+
+cmd_id
+cmd_list_add(
+    struct cmd_list* cmds,
+    plugin_id        plugin_id,
+    enum type        return_type,
+    struct utf8_view db_cmd_name,
+    struct utf8_view c_symbol)
+{
+    utf8_idx insert = utf8_lower_bound(cmds->db_cmd_names, db_cmd_name);
+    return cmd_list_insert(
+        cmds, insert, plugin_id, return_type, db_cmd_name, c_symbol);
 }
 
 void

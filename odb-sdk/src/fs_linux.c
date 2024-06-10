@@ -53,8 +53,8 @@ fs_get_path_to_self(struct ospath* path)
 int
 fs_list(
     struct ospathc path,
-    int (*on_entry)(const char* name, void* user),
-    void* user)
+    int            (*on_entry)(const char* name, void* user),
+    void*          user)
 {
     DIR*           dp;
     struct dirent* ep;
@@ -151,4 +151,14 @@ fs_get_appdata_dir(struct ospath* path)
         return -1;
 
     return 0;
+}
+
+uint64_t
+fs_mtime_ms(struct ospathc path)
+{
+    struct stat st;
+    if (stat(ospathc_cstr(path), &st))
+        return 0;
+    return ((uint64_t)st.st_mtim.tv_sec * 1000)
+           + ((uint64_t)st.st_mtim.tv_nsec / 1000000);
 }
