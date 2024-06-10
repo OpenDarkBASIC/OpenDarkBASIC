@@ -2,7 +2,7 @@
 
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/config.h"
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-compiler/sdk/sdk_type.h"
 #include "odb-sdk/ospath_list.h"
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"

@@ -3,7 +3,6 @@ extern "C" {
 #include "odb-compiler/codegen/ir.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/sdk/sdk.h"
 #include "odb-sdk/hash.h"
 #include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"

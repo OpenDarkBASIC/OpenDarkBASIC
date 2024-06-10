@@ -157,6 +157,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "${BULIDINFOGENERATED_HEADER}"
     "${PROJECT_BINARY_DIR}/src/build_info.c"
 
+    "include/odb-compiler/sdk/sdk_type.h"
     "include/odb-compiler/sdk/cmd_cache.h"
     "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
@@ -168,6 +169,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_loader_odb.cpp"
     "src/sdk/plugin_list.c"
     "src/sdk/type.c"
+    "src/sdk/sdk_type.c"
 
     "include/odb-compiler/parser/db_keyword.h"
     "include/odb-compiler/parser/db_parser.h"
@@ -254,6 +256,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     
     "include/odb-compiler/codegen/ir.h"
     "include/odb-compiler/codegen/target.h"
+    "src/codegen/target.c"
     "src/codegen/ir_internal.hpp"
     "src/codegen/ir.cpp"
     "src/codegen/ir_compile.cpp"

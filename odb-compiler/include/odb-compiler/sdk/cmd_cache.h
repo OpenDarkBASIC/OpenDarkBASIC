@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/codegen/target.h"
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-compiler/sdk/sdk_type.h"
 
 struct plugin_info;
 struct plugin_list;
@@ -18,7 +18,8 @@ cmd_cache_deinit(struct cmd_cache* cache);
 
 int
 cmd_cache_load(
-    struct cmd_cache*    cache,
+    struct plugin_list** plugins,
+    struct cmd_list*     cmds,
     enum sdk_type        sdk_type,
     enum target_arch     arch,
     enum target_platform platform);

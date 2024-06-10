@@ -2,7 +2,6 @@
 #include "LIEF/MachO.hpp"
 #include "LIEF/PE.hpp"
 #include "LIEF/PE/ParserConfig.hpp"
-#include "odb-compiler/sdk/sdk.h"
 
 extern "C" {
 #include "odb-compiler/sdk/cmd_cache.h"
@@ -157,7 +156,7 @@ cmd_list_load_from_plugins(
         = {0, (plugin_id)plugins->count, &cache, cmds, sdk_type, platform};
 
     cmd_cache_init(&cache);
-    cache_loaded = (cmd_cache_load(&cache, sdk_type, arch, platform) == 0);
+    //cache_loaded = (cmd_cache_load(&cache, sdk_type, arch, platform) == 0);
     if (!cache_loaded)
         log_sdk_warn("All plugins will be parsed.\n");
 

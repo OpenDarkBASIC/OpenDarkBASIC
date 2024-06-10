@@ -167,6 +167,9 @@ utf8_append_cstr(struct utf8* str, const char* cstr)
     return utf8_append(str, cstr_utf8_view(cstr));
 }
 
+ODBSDK_PUBLIC_API int
+utf8_fmt(struct utf8* str, const char* fmt, ...);
+
 ODBSDK_PUBLIC_API void
 utf8_deinit(struct utf8 str);
 

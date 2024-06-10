@@ -3,7 +3,7 @@
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_source.h"
-#include "odb-compiler/sdk/sdk.h"
+#include "odb-compiler/sdk/sdk_type.h"
 
 struct ast;
 struct cmd_list;
@@ -40,64 +40,3 @@ ir_compile(
     const char*          output_filepath,
     enum target_arch     arch,
     enum target_platform platform);
-
-/*ODBCOMPILER_PUBLIC_API bool linkExecutable(SDKType sdkType, const
-   std::filesystem::path& sdkRootDir, const std::filesystem::path& linker,
-   TargetTriple targetTriple, std::vector<std::string> inputFilenames,
-   std::string& outputFilename);*/
-
-/*
-struct TargetTriple
-{
-    enum class Arch
-    {
-        i386,
-        x86_64,
-        AArch64,
-    };
-
-    enum class Platform
-    {
-        Windows,
-        macOS,
-        Linux,
-    };
-
-    Arch arch;
-    Platform platform;
-
-    std::string getLLVMTargetTriple() const
-    {
-        // Examples:
-        //   i386-pc-windows-msvc
-        //   x86_64-pc-linux-gnu
-        std::string target_triple;
-        switch (arch)
-        {
-        case TargetTriple::Arch::i386:
-            target_triple += "i386";
-            break;
-        case TargetTriple::Arch::x86_64:
-            target_triple += "x86_64";
-            break;
-        case TargetTriple::Arch::AArch64:
-            target_triple += "aarch64";
-            break;
-        }
-        target_triple += "-";
-        switch (platform)
-        {
-        case TargetTriple::Platform::Windows:
-            target_triple += "pc-windows-msvc";
-            break;
-        case TargetTriple::Platform::macOS:
-            target_triple += "apple-darwin";
-            break;
-        case TargetTriple::Platform::Linux:
-            target_triple += "pc-linux-gnu";
-            break;
-        }
-        return target_triple;
-    }
-};
-*/

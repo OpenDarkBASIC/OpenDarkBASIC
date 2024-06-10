@@ -53,8 +53,8 @@ fs_get_path_to_self(struct ospath* path)
 int
 fs_list(
     struct ospathc path,
-    int            (*on_entry)(const char* name, void* user),
-    void*          user)
+    int (*on_entry)(const char* name, void* user),
+    void* user)
 {
     DIR*           dp;
     struct dirent* ep;
@@ -150,5 +150,5 @@ fs_get_appdata_dir(struct ospath* path)
     if (ospath_join(path, cstr_ospathc(".local/share/OpenDarkBASIC")) < 0)
         return -1;
 
-    return fs_make_path(*path);
+    return 0;
 }
