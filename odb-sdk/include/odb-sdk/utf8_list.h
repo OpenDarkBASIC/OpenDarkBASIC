@@ -10,8 +10,8 @@ struct utf8_list
 {
     utf8_idx count;    /* Number of strings in list */
     utf8_idx str_used; /* The total length of all strings concatenated */
-    utf8_idx capacity; /* String buffer capacity. Realloc when
-                          str_len >= str_capacity */
+    utf8_idx capacity; /* Capacity in bytes of "data" (excluding the rest of the
+                          struct). Realloc when str_len >= str_capacity */
     char data[1];
 };
 

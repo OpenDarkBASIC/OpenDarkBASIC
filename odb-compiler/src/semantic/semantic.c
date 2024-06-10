@@ -6,6 +6,11 @@ struct ptr_kvs
 {
     const struct semantic_check** keys;
 };
+static hash32
+ptr_kvs_hash(const struct semantic_check* key)
+{
+    return hash32_aligned_ptr((uintptr_t)key);
+}
 static int
 ptr_kvs_alloc(struct ptr_kvs* kvs, int16_t capacity)
 {
@@ -37,7 +42,7 @@ ptr_kvs_keys_equal(
 static void*
 ptr_kvs_get_value(struct ptr_kvs* kvs, int16_t slot)
 {
-    return (void*)1;  // So insert_new() returns success
+    return (void*)1; // So insert_new() returns success
 }
 static void
 ptr_kvs_set_value(struct ptr_kvs* kvs, int16_t slot, void* value)
@@ -58,7 +63,7 @@ HM_DEFINE_API_FULL(
     const struct semantic_check*,
     void*,
     16,
-    hash32_aligned_ptr,
+    ptr_kvs_hash,
     ptr_kvs_alloc,
     ptr_kvs_free,
     ptr_kvs_get_key,

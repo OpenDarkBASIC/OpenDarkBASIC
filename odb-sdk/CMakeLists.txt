@@ -89,14 +89,12 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     "src/btree.c"
     "src/fs_common.c"
     "src/hash.c"
-    "src/hm.c"
     "src/init.c"
     "src/log.c"
     "src/mstream.c"
     "src/rb.c"
     "src/utf8.c"
     "src/utf8_list.c"
-    "src/vec.c"
 
     $<$<BOOL:${ODBSDK_MEM_DEBUGGING}>:src/mem.c>
 

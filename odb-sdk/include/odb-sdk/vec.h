@@ -188,8 +188,8 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int            (*on_element)(T * elem, void* user),                    \
-        void*          user);                                                           \
+        int (*on_element)(T * elem, void* user),                               \
+        void* user);                                                           \
                                                                                \
     static inline void prefix##_init(struct prefix** v)                        \
     {                                                                          \
@@ -250,10 +250,12 @@
 #define VEC_DEFINE_API_FULL(prefix, T, bits, MIN_CAPACITY, EXPAND_FACTOR)      \
     static int prefix##_realloc(struct prefix** v, int##bits##_t elems)        \
     {                                                                          \
-        mem_size bytes = sizeof(**v) + sizeof((*v)->data[0]) * (elems - 1);    \
-        void*    new_mem = mem_realloc((*v)->capacity ? *v : NULL, bytes);     \
+        mem_size header = sizeof(**v) - sizeof((*v)->data[0]);                 \
+        mem_size data = sizeof((*v)->data[0]) * elems;                         \
+        void*    new_mem                                                       \
+            = mem_realloc(((*v)->capacity ? *v : NULL), header + data);        \
         if (new_mem == NULL)                                                   \
-            return log_oom(bytes, "vec_reserve()");                            \
+            return log_oom(header + data, "vec_reserve()");                    \
         *(void**)v = new_mem;                                                  \
         return 0;                                                              \
     }                                                                          \
@@ -268,7 +270,7 @@
     }                                                                          \
     void prefix##_compact(struct prefix** v)                                   \
     {                                                                          \
-        if (*v == NULL)                                                        \
+        if ((*v)->capacity == 0)                                               \
             return;                                                            \
                                                                                \
         if ((*v)->count == 0)                                                  \
@@ -278,8 +280,9 @@
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            void* new_mem = mem_realloc(                                       \
-                *v, sizeof(**v) + sizeof((*v)->data[0]) * ((*v)->count - 1));  \
+            mem_size header = sizeof(**v) - sizeof((*v)->data[0]);             \
+            mem_size data = sizeof((*v)->data[0]) * (*v)->count;               \
+            void*    new_mem = mem_realloc(*v, header + data);                 \
             *(void**)v = new_mem;                                              \
             (*v)->capacity = (*v)->count;                                      \
         }                                                                      \
@@ -369,7 +372,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->data[(v)->count - (i)-1])
+#define vec_rget(v, i) (&(v)->data[(v)->count - (i) - 1])
 
 /*!
  * @brief Iterates over the elements in a vector.

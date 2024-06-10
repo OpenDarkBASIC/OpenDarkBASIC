@@ -23,7 +23,8 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str)
 int
 ospath_join(struct ospath* path, struct ospathc trailing)
 {
-    struct utf8_view trailing_view = {utf8c_cstr(trailing.str), 0, trailing.len};
+    struct utf8_view trailing_view
+        = {utf8c_cstr(trailing.str), 0, trailing.len};
 
     /* Append joining slash */
     if (path->str.len && path->str.data[path->str.len - 1] != '/')
@@ -101,6 +102,10 @@ cpath_basename_view(const char* path)
 void
 ospath_dirname(struct ospath* path)
 {
+    /* There will always be at least one character left */
+    if (path->str.len == 0)
+        path->str.len = 1;
+
     /* Remove trailing slashes (if not root) */
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;

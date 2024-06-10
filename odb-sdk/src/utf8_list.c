@@ -24,7 +24,8 @@ grow(struct utf8_list** l, utf8_idx str_len)
     {
         mem_size cap = (*l)->capacity;
         mem_size grow_size = cap ? cap : 128;
-        void*    new_mem = mem_realloc(cap ? *l : NULL, cap + grow_size);
+        mem_size struct_header = sizeof(**l) - sizeof((*l)->data[0]);
+        void*    new_mem = mem_realloc(cap ? *l : NULL, cap + grow_size + struct_header);
         if (new_mem == NULL)
             return log_oom((*l)->capacity + grow_size, "utf8_list_grow()");
         *l = new_mem;
