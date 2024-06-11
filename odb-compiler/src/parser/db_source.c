@@ -9,7 +9,7 @@ db_source_open_file(struct db_source* s, struct ospathc filepath)
 
     /* FLEX expects to find an "EOB marker" at the end of its buffer, which is a
      * sequence of two NULL bytes. */
-    if (mfile_map_read(&mf_orig, filepath) != 0)
+    if (mfile_map_read(&mf_orig, filepath, 1) != 0)
         goto map_file_failed;
     if (mfile_map_mem(&mf_flex, mf_orig.size + 2) != 0)
         goto map_flex_failed;

@@ -41,46 +41,6 @@ ODB_OVERLOAD1(
 }
 ODB_OVERLOAD1(
     /* clang-format off */
-    void, print_u32, uint32_t value,
-    /* clang-format on */
-    NAME("PRINT"))
-{
-    printf("%" PRIu32 "\n", value);
-}
-ODB_OVERLOAD1(
-    /* clang-format off */
-    void, print_i32, int32_t value,
-    /* clang-format on */
-    NAME("PRINT"))
-{
-    printf("%" PRIi32 "\n", value);
-}
-ODB_OVERLOAD1(
-    /* clang-format off */
-    void, print_u16, uint16_t value,
-    /* clang-format on */
-    NAME("PRINT"))
-{
-    printf("%" PRIi16 "\n", value);
-}
-ODB_OVERLOAD1(
-    /* clang-format off */
-    void, print_u8, uint8_t value,
-    /* clang-format on */
-    NAME("PRINT"))
-{
-    printf("%d\n", (int)value);
-}
-ODB_OVERLOAD1(
-    /* clang-format off */
-    void, print_f32, float value,
-    /* clang-format on */
-    NAME("PRINT"))
-{
-    printf("%f\n", value);
-}
-ODB_OVERLOAD1(
-    /* clang-format off */
     void, print_f64, double value,
     /* clang-format on */
     NAME("PRINT"))

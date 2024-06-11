@@ -291,6 +291,23 @@ utf8_equal_cstr(struct utf8_view str, const char* cstr)
     return utf8_equal(str, cstr_utf8_view(cstr));
 }
 
+static inline int
+utf8_count_substrings(struct utf8_view str, struct utf8_view sub)
+{
+    int count = 0;
+    if (sub.len == 0)
+        return 0;
+    while (str.len-- >= sub.len)
+        if (memcmp(str.data + str.off++, sub.data + sub.off, sub.len) == 0)
+            count++;
+    return count;
+}
+static inline int
+utf8_count_substrings_cstr(struct utf8_view str, const char* cstr)
+{
+    return utf8_count_substrings(str, cstr_utf8_view(cstr));
+}
+
 /* UTF-16 ------------------------------------------------------------------- */
 typedef int32_t utf16_idx;
 

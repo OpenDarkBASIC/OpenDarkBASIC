@@ -78,11 +78,11 @@ cmd_add_param(
 
 ODBCOMPILER_PUBLIC_API int
 cmd_list_load_from_plugins(
-    struct cmd_list*     cmds,
-    struct plugin_list*  plugins,
-    enum sdk_type        sdk_type,
-    enum target_arch     arch,
-    enum target_platform platform);
+    struct cmd_list*          cmds,
+    const struct plugin_list* plugins,
+    enum sdk_type             sdk_type,
+    enum target_arch          arch,
+    enum target_platform      platform);
 
 ODBCOMPILER_PUBLIC_API cmd_id
 cmd_list_find(const struct cmd_list* cmds, struct utf8_view name);

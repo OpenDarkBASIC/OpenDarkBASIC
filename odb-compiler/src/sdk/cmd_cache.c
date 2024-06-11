@@ -47,15 +47,13 @@ cmd_cache_load(
     if (ospath_join(&path, utf8_ospathc(fname)) != 0)
         goto error;
 
-    if (mfile_map_read(&mf, ospathc(path)) != 0)
+    if (mfile_map_read(&mf, ospathc(path), 0) != 0)
         goto error;
     ms = mstream_from_mfile(&mf);
 
     /* Version */
     if (mstream_read_u8(&ms) != VERSION)
-    {
         goto error;
-    }
 
     /* Load list of plugins. If a plugin is outdated, we don't add it to the
      * returned list and we don't load its commands */
@@ -70,8 +68,12 @@ cmd_cache_load(
 
         uint64_t       cached_stamp = mstream_read_lu64(&ms);
         struct ospathc cached_path = mstream_read_ospath(&ms);
+        uint64_t       stamp = fs_mtime_ms(cached_path);
 
-        uint64_t stamp = fs_mtime_ms(cached_path);
+        /* Map to invalid plugin by default. Don't forget this, resize() does
+         * NOT initialize values in the vector! */
+        cached_plugin_map->data[cached_plugin_id] = -1;
+
         if (stamp != cached_stamp)
             continue;
 
@@ -92,30 +94,26 @@ cmd_cache_load(
     {
         int              i;
         cmd_id           cmd;
-        const plugin_id* cached_plugin_id;
         struct utf8_view db_cmd_name = mstream_read_utf8(&ms);
         struct utf8_view c_symbol = mstream_read_utf8(&ms);
-        plugin_id        plugin_id = mstream_read_li16(&ms);
+        plugin_id        cached_plugin_id = mstream_read_li16(&ms);
         enum type        return_type = mstream_read_u8(&ms);
         int              param_count = mstream_read_u8(&ms);
 
-        vec_for_each(cached_plugin_map, cached_plugin_id)
+        if (cached_plugin_id < 0 || cached_plugin_id >= cached_plugin_map->count
+            || cached_plugin_map->data[cached_plugin_id] == -1)
         {
-            if (*cached_plugin_id == plugin_id)
-                goto load_command_from_cache;
+            for (i = 0; i != param_count; ++i)
+            {
+                mstream_read_u8(&ms);
+                mstream_read_utf8(&ms);
+            }
+            continue;
         }
-        for (i = 0; i != param_count; ++i)
-        {
-            mstream_read_u8(&ms);
-            mstream_read_utf8(&ms);
-        }
-        continue;
 
-    load_command_from_cache:
-        cmd = cmd_list_insert(
+        cmd = cmd_list_add(
             cmds,
-            cached_cmd,
-            cached_plugin_map->data[plugin_id],
+            cached_plugin_map->data[cached_plugin_id],
             return_type,
             db_cmd_name,
             c_symbol);

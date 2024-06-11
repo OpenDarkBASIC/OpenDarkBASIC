@@ -13,10 +13,12 @@ struct mfile
  * \brief Memory-maps a file in read-only mode.
  * \param[out] mf Pointer to mfile structure. Struct can be uninitialized.
  * \param[in] file Utf8 encoded file path.
+ * \param[in] log_error If set to 0, no log messages are written. This is used
+ * in cases where failure to map the file is not fatal.
  * \return Returns 0 on success, negative on failure.
  */
 ODBSDK_PUBLIC_API int
-mfile_map_read(struct mfile* mf, struct ospathc filepath);
+mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error);
 
 /*!
  * \brief Memory-maps a file for writing. The existing file is overwritten.

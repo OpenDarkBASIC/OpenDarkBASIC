@@ -61,6 +61,18 @@ convert_char_to_param_type(char c)
     return TYPE_INVALID;
 }
 
+static int
+looks_like_command_string(struct utf8 entry_str, struct utf8_span type_str)
+{
+    /* Only log a warning if the string "looks" like a command
+     * string. This is an attempt to filter out resource strings
+     * that are used for other purposes. */
+    return utf8_count_substrings_cstr(utf8_view(entry_str), "%") >= 2
+           && utf8_count_substrings_cstr(
+                  utf8_span_view(entry_str.data, type_str), " ")
+                  == 0;
+}
+
 int
 load_dbpro_commands(
     struct cmd_list*        commands,
@@ -106,11 +118,13 @@ load_dbpro_commands(
     if (auto resmgr = pe->resources_manager())
         for (const auto& entry : resmgr.value().string_table())
         {
+            enum type             return_type;
+            cmd_id                cmd;
             const std::u16string& u16 = entry.name();
             struct utf16_view     u16v
                 = {(const uint16_t*)u16.data(), (utf16_idx)u16.length()};
             if (utf16_to_utf8(&entry_str, u16v) != 0)
-                goto bad_plugin;
+                goto critical_error;
 
             /* String has format: <command>%<type>%<c symbol>%<help>
              * Split on '%' into the relevant parts. */
@@ -125,31 +139,37 @@ load_dbpro_commands(
             utf8_split(entry_str.data, c_symbol, '%', &c_symbol, &db_params);
             if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
             {
-                log_sdk_warn(
-                    "Invalid string table entry {quote:%s} in plugin "
-                    "{emph:%s}\n",
-                    utf8_cstr(entry_str),
-                    ospathc_cstr(filepath));
-                goto bad_plugin;
+                if (looks_like_command_string(entry_str, type_str))
+                {
+                    log_sdk_warn(
+                        "Invalid string table entry {quote:%s} in plugin "
+                        "{emph:%s}\n",
+                        utf8_cstr(entry_str),
+                        ospathc_cstr(filepath));
+                }
+                goto bad_command;
             }
 
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
-            enum type return_type = TYPE_VOID;
+            return_type = TYPE_VOID;
             if (entry_str.data[cmd_name.off + cmd_name.len - 1] == '[')
             {
                 char type_char = entry_str.data[type_str.off];
                 return_type = convert_char_to_return_type(type_char);
                 if (return_type == TYPE_INVALID)
                 {
-                    log_sdk_warn(
-                        "Invalid command return type {quote:%c} in string "
-                        "{quote:%s} in plugin {emph:%s}\n",
-                        type_char,
-                        utf8_cstr(entry_str),
-                        ospathc_cstr(filepath));
-                    goto bad_plugin;
+                    if (looks_like_command_string(entry_str, type_str))
+                    {
+                        log_sdk_warn(
+                            "Invalid command return type {quote:%c} in string "
+                            "{quote:%s} in plugin {emph:%s}\n",
+                            type_char,
+                            utf8_cstr(entry_str),
+                            ospathc_cstr(filepath));
+                    }
+                    goto bad_command;
                 }
 
                 type_str.off++;
@@ -161,7 +181,7 @@ load_dbpro_commands(
              * in upper case in the command list for this reason */
             utf8_toupper_span(entry_str.data, cmd_name);
 
-            cmd_id cmd = cmd_list_add(
+            cmd = cmd_list_add(
                 commands,
                 plugin_id,
                 return_type,
@@ -186,15 +206,20 @@ load_dbpro_commands(
 
                 if (type == TYPE_INVALID)
                 {
-                    log_sdk_warn(
-                        "Invalid command argument type {quote:%c} in string "
-                        "{quote:%s} in plugin {emph:%s}\n",
-                        type_char,
-                        utf8_cstr(entry_str),
-                        ospathc_cstr(filepath));
+                    if (looks_like_command_string(entry_str, type_str))
+                    {
+                        log_sdk_warn(
+                            "Invalid command argument type {quote:%c} in "
+                            "string "
+                            "{quote:%s} in plugin {emph:%s}\n",
+                            type_char,
+                            utf8_cstr(entry_str),
+                            ospathc_cstr(filepath));
+                    }
+
                     /* Skip command, but plugin is still usable hopefully */
                     cmd_list_erase(commands, cmd);
-                    continue;
+                    goto bad_command;
                 }
 
                 if (type == TYPE_VOID)
@@ -218,14 +243,14 @@ load_dbpro_commands(
                     goto critical_error;
                 }
             }
+
+        bad_command:
+            continue;
         }
 
     utf8_deinit(entry_str);
-    return 1;
-
-bad_plugin:
-    utf8_deinit(entry_str);
     return 0;
+
 critical_error:
     utf8_deinit(entry_str);
     return -1;

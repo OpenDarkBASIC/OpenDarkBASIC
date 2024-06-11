@@ -29,7 +29,7 @@ parse_command_string(
             str.len,
             data + str.off,
             ospathc_cstr(filepath));
-        return 1;
+        return 0;
     }
 
     enum type return_type = type_from_char(data[type_str.off]);
@@ -42,7 +42,7 @@ parse_command_string(
             str.len,
             data + str.off,
             ospathc_cstr(filepath));
-        return 1;
+        return 0;
     }
 
     if (data[type_str.off + 1] != '(')
@@ -53,7 +53,7 @@ parse_command_string(
             str.len,
             data + str.off,
             ospathc_cstr(filepath));
-        return 1;
+        return 0;
     }
 
     /* Command names are case-insensitive. By convention we store them in upper
@@ -68,7 +68,7 @@ parse_command_string(
                 str.len,
                 data + str.off,
                 ospathc_cstr(filepath));
-            return 1;
+            return 0;
         }
 
     cmd_id cmd = cmd_list_add(
@@ -100,7 +100,7 @@ parse_command_string(
                 ospathc_cstr(filepath));
             /* Skip command, but plugin is still usable hopefully */
             cmd_list_erase(commands, cmd);
-            return 1;
+            return 0;
         }
 
         if (i + 1 < type_str.len && data[type_str.off + i + 1] == '*')
@@ -121,10 +121,8 @@ parse_command_string(
         }
     }
 
-    return 1;
+    return 0;
 
-// bad_plugin:
-//     return 0;
 critical_error:
     return -1;
 }
@@ -142,15 +140,11 @@ parse_string_section(
     do
     {
         utf8_split(data, next, '\n', &str, &next);
-        switch (parse_command_string(commands, plugin_id, data, str, filepath))
-        {
-            case 1: break;
-            case 0: return 0;
-            default: return -1;
-        }
+        if (parse_command_string(commands, plugin_id, data, str, filepath) != 0)
+            return -1;
     } while (next.len > 0);
 
-    return 1;
+    return 0;
 }
 
 static int
@@ -170,25 +164,21 @@ parse_string_table(
         if (utf16_to_utf8(&entry_str, u16v) != 0)
             goto fatal_error;
 
-        switch (parse_command_string(
-            commands,
-            plugin_id,
-            entry_str.data,
-            utf8_span(entry_str),
-            filepath))
+        if (parse_command_string(
+                commands,
+                plugin_id,
+                entry_str.data,
+                utf8_span(entry_str),
+                filepath)
+            != 0)
         {
-            case 1: break;
-            case 0: goto bad_command;
-            default: goto fatal_error;
+            goto fatal_error;
         }
     }
 
     utf8_deinit(entry_str);
-    return 1;
-
-bad_command:
-    utf8_deinit(entry_str);
     return 0;
+
 fatal_error:
     utf8_deinit(entry_str);
     return -1;

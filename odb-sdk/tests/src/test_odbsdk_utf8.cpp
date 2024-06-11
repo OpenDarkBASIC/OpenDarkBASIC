@@ -51,7 +51,7 @@ TEST_F(NAME, format)
 {
     utf8_fmt(&str, "%s, %d, %x", "test", 42, 0xB00B);
     EXPECT_THAT(str.len, Eq(14));
-    EXPECT_THAT(str.data, StrEq("test, 42, B00B"));
+    EXPECT_THAT(str.data, StrEq("test, 42, b00b"));
 }
 
 TEST_F(NAME, utf16_to_utf8_weirdness)
@@ -65,4 +65,25 @@ TEST_F(NAME, utf16_to_utf8_weirdness)
 
     EXPECT_THAT(utf8_cstr(out), StrEq("May"));
     utf8_deinit(out);
+}
+
+TEST_F(NAME, count_substrings)
+{
+    struct utf8_view str = cstr_utf8_view("this is a test string");
+    EXPECT_THAT(utf8_count_substrings_cstr(str, ""), Eq(0));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "test"), Eq(1));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "is"), Eq(2));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "s"), Eq(4));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "g"), Eq(1));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "t"), Eq(4));
+}
+
+
+TEST_F(NAME, count_substrings_in_substring)
+{
+    struct utf8_view str {"this is a test string", 5, 9};  // "is a test"
+    EXPECT_THAT(utf8_count_substrings_cstr(str, ""), Eq(0));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "test"), Eq(1));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "is"), Eq(1));
+    EXPECT_THAT(utf8_count_substrings_cstr(str, "s"), Eq(2));
 }

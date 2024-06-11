@@ -11,7 +11,7 @@
 #include <unistd.h>
 
 int
-mfile_map_read(struct mfile* mf, struct ospathc filepath)
+mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
 {
     struct stat stbuf;
     int         fd;
@@ -20,27 +20,30 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
     fd = open(c_file_name, O_RDONLY | O_LARGEFILE);
     if (fd < 0)
     {
-        log_sdk_err(
-            "Failed to open() file {quote:%s}: %s\n",
-            c_file_name,
-            strerror(errno));
+        if (log_error)
+            log_sdk_err(
+                "Failed to open() file {quote:%s}: %s\n",
+                c_file_name,
+                strerror(errno));
         goto open_failed;
     }
 
     if (fstat(fd, &stbuf) != 0)
     {
-        log_sdk_err(
-            "Failed to fstat() file {quote:%s}: %s\n",
-            c_file_name,
-            strerror(errno));
+        if (log_error)
+            log_sdk_err(
+                "Failed to fstat() file {quote:%s}: %s\n",
+                c_file_name,
+                strerror(errno));
         goto fstat_failed;
     }
 
     if (!S_ISREG(stbuf.st_mode))
     {
-        log_sdk_err(
-            "Cannot map file {quote:%s}: File is not a regular file\n",
-            c_file_name);
+        if (log_error)
+            log_sdk_err(
+                "Cannot map file {quote:%s}: File is not a regular file\n",
+                c_file_name);
         goto fstat_failed;
     }
 
@@ -56,10 +59,11 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
         0);
     if (mf->address == MAP_FAILED)
     {
-        log_sdk_err(
-            "Failed to mmap() file {quote:%s}: %s\n",
-            c_file_name,
-            strerror(errno));
+        if (log_error)
+            log_sdk_err(
+                "Failed to mmap() file {quote:%s}: %s\n",
+                c_file_name,
+                strerror(errno));
         goto mmap_failed;
     }
 
