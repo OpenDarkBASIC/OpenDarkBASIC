@@ -3,10 +3,10 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
-#include "odb-compiler/sdk/sdk_type.h"
 
 extern "C" {
 #include "odb-compiler/codegen/ir.h"
+#include "odb-compiler/sdk/sdk_type.h"
 }
 
 static int
@@ -97,24 +97,80 @@ gen_deinit_odb(
 
 int
 ir_create_runtime(
-    struct ir_module*    ir,
-    const char*          main_dba_name,
-    enum sdk_type        sdk_type,
-    enum target_arch     arch,
-    enum target_platform platform)
+    struct ir_module*     ir,
+    const struct cmd_ids* used_cmds,
+    const char*           main_dba_name,
+    enum sdk_type         sdk_type,
+    enum target_arch      arch,
+    enum target_platform  platform)
 {
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
             llvm::Type::getInt32Ty(ir->ctx),
             {llvm::Type::getInt32Ty(ir->ctx),
-             llvm::PointerType::getUnqual(llvm::Type::getVoidTy(ir->ctx))},
-            /* isVarArg */ false),
+             llvm::PointerType::getUnqual(
+                 llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(ir->ctx)))},
+            /*isVarArg=*/false),
         llvm::Function::ExternalLinkage,
         "main",
         ir->mod);
 
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
     llvm::IRBuilder<> b(BB);
+
+    llvm::Function* FDLOpen = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::PointerType::getUnqual(ir->ctx),
+            {llvm::PointerType::getUnqual(ir->ctx),
+             llvm::Type::getInt32Ty(ir->ctx)},
+            /*isVarArg=*/false),
+        llvm::Function::ExternalLinkage,
+        "dlopen",
+        ir->mod);
+    llvm::Function* FDLSym = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::PointerType::getUnqual(ir->ctx),
+            {llvm::PointerType::getUnqual(ir->ctx),
+             llvm::PointerType::getUnqual(ir->ctx)},
+            /*isVarArg=*/false),
+        llvm::Function::ExternalLinkage,
+        "dlsym",
+        ir->mod);
+
+    llvm::GlobalVariable* GVprint_str_func = new llvm::GlobalVariable(
+        ir->mod,
+        llvm::PointerType::getUnqual(ir->ctx),
+        /*isConstant=*/false,
+        llvm::GlobalVariable::ExternalLinkage,
+        llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(ir->ctx)),
+        "print_str");
+
+    llvm::Constant* CPath = llvm::ConstantDataArray::getString(
+        ir->ctx, "./odb-sdk/plugins/core-commands.so", /*AddNull*/ true);
+    llvm::GlobalVariable* GVPath = new llvm::GlobalVariable(
+        ir->mod,
+        CPath->getType(),
+        /*isConstant=*/true,
+        llvm::GlobalVariable::PrivateLinkage,
+        CPath,
+        "core_commands_path");
+    llvm::Constant* CRTLD_LAZY
+        = llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0x00001));
+    llvm::Value* core_commands_lib
+        = b.CreateCall(FDLOpen, {GVPath, CRTLD_LAZY});
+
+    llvm::Constant* Sprint_str = llvm::ConstantDataArray::getString(
+        ir->ctx, "print_str", /*AddNull*/ true);
+    llvm::GlobalVariable* GVprint_str = new llvm::GlobalVariable(
+        ir->mod,
+        Sprint_str->getType(),
+        /*isConstant=*/true,
+        llvm::GlobalVariable::PrivateLinkage,
+        Sprint_str,
+        "print_str_name");
+    llvm::Value* print_str_sym
+        = b.CreateCall(FDLSym, {core_commands_lib, GVprint_str});
+    b.CreateStore(print_str_sym, GVprint_str_func);
 
     switch (sdk_type)
     {
@@ -132,7 +188,7 @@ ir_create_runtime(
     llvm::Function* FMainDBA = llvm::Function::Create(
         llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
         llvm::Function::ExternalLinkage,
-        "test",
+        main_dba_name,
         ir->mod);
     b.CreateCall(FMainDBA, {});
 

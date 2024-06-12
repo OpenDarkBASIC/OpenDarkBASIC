@@ -159,10 +159,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
 
     "include/odb-compiler/sdk/sdk_type.h"
     "include/odb-compiler/sdk/cmd_cache.h"
+    "include/odb-compiler/sdk/used_cmds.h"
     "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
     "include/odb-compiler/sdk/type.h"
     "src/sdk/cmd_cache.c"
+    "src/sdk/used_cmds.c"
     "src/sdk/cmd_list.c"
     "src/sdk/cmd_loader.cpp"
     "src/sdk/cmd_loader_dbpro.cpp"

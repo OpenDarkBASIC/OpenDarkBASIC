@@ -168,8 +168,6 @@ create_global_string_table(
             /* Add NULL */ true);
         result.first->setValue(new llvm::GlobalVariable(
             ir->mod,
-            // llvm::PointerType::get(llvm::Type::getInt8Ty(ir->ctx),
-            // 0),
             S->getType(),
             /*isConstant*/ true,
             llvm::GlobalValue::PrivateLinkage,
@@ -252,12 +250,12 @@ get_command_function_signature(
 }
 
 static int
-create_global_plugin_symbol_table(
-    struct ir_module*                 ir,
-    llvm::StringMap<llvm::Function*>* plugin_symbol_table,
-    const struct ast*                 ast,
-    struct db_source                  source,
-    const struct cmd_list*            cmds)
+create_global_command_function_table(
+    struct ir_module*                       ir,
+    llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const struct ast*                       ast,
+    struct db_source                        source,
+    const struct cmd_list*                  cmds)
 {
     for (ast_id n = 0; n != ast->node_count; ++n)
     {
@@ -268,15 +266,23 @@ create_global_plugin_symbol_table(
         struct utf8_view c_sym = utf8_list_view(cmds->c_symbols, cmd_id);
         llvm::StringRef  c_sym_ref(c_sym.data + c_sym.off, c_sym.len);
 
-        auto result = plugin_symbol_table->try_emplace(c_sym_ref, nullptr);
+        auto result = cmd_func_table->try_emplace(c_sym_ref, nullptr);
         if (result.second == false) // Command already in table
             continue;
 
-        result.first->setValue(llvm::Function::Create(
-            get_command_function_signature(ir, ast, n, cmds),
-            llvm::Function::ExternalLinkage,
-            c_sym_ref,
-            ir->mod));
+        result.first->setValue(new llvm::GlobalVariable(
+            ir->mod,
+            llvm::PointerType::getUnqual(ir->ctx),
+            /*isConstant=*/true,
+            llvm::GlobalVariable::ExternalLinkage,
+            /*Initializer=*/nullptr,
+            c_sym_ref));
+
+        // result.first->setValue(llvm::Function::Create(
+        //     get_command_function_signature(ir, ast, n, cmds),
+        //     llvm::Function::ExternalLinkage,
+        //     c_sym_ref,
+        //     ir->mod));
     }
 
     return 0;
@@ -309,7 +315,7 @@ gen_expr(
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap);
 
 static llvm::Value*
@@ -322,19 +328,18 @@ gen_cmd_call(
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
-    ast_id arglist;
-    size_t a;
-    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     // Function table for commands should be generated at this
     // point. Look up the command's symbol in the command list and
     // get the associated llvm::Function
-    struct utf8_view cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
-    llvm::StringRef  cmd_sym_ref(cmd_sym.data + cmd_sym.off, cmd_sym.len);
-    llvm::Function*  F = plugin_symbol_table->find(cmd_sym_ref)->getValue();
+    cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
+    struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
+    llvm::StringRef       cmd_sym_ref(cmd_sym.data + cmd_sym.off, cmd_sym.len);
+    llvm::GlobalVariable* cmd_func_ptr
+        = cmd_func_table->find(cmd_sym_ref)->getValue();
 
     // Match up each function argument with its corresponding
     // parameter.
@@ -342,25 +347,27 @@ gen_cmd_call(
     // it's OK to assume that both lists have the same length and matching
     // types.
     llvm::SmallVector<llvm::Value*, 8> param_values;
-    for (a = 0, arglist = ast->nodes[cmd].cmd.arglist; a != F->arg_size();
-         ++a, arglist = ast->nodes[arglist].arglist.next)
+    for (ast_id arg = ast->nodes[cmd].cmd.arglist; arg > -1;
+         arg = ast->nodes[arg].arglist.next)
     {
         param_values.push_back(gen_expr(
             ir,
             BB,
             ast,
-            ast->nodes[arglist].arglist.expr,
+            ast->nodes[arg].arglist.expr,
             cmds,
             source_filename,
             source,
             string_table,
-            plugin_symbol_table,
+            cmd_func_table,
             allocamap));
     }
 
-    llvm::IRBuilder<> b(ir->ctx);
-    b.SetInsertPoint(BB);
-    return b.CreateCall(F, param_values);
+    llvm::IRBuilder<>   b(BB);
+    llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
+    llvm::Value*        cmd_func_addr
+        = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
+    return b.CreateCall(FT, cmd_func_addr, param_values);
 }
 
 static llvm::Value*
@@ -373,7 +380,7 @@ gen_expr(
     const char*                                   source_filename,
     struct db_source                              source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
     llvm::IRBuilder<> b(ir->ctx);
@@ -395,7 +402,7 @@ gen_expr(
                 source_filename,
                 source,
                 string_table,
-                plugin_symbol_table,
+                cmd_func_table,
                 allocamap);
 
         case AST_ASSIGNMENT: break;
@@ -431,7 +438,7 @@ gen_expr(
                 source_filename,
                 source,
                 string_table,
-                plugin_symbol_table,
+                cmd_func_table,
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
@@ -442,7 +449,7 @@ gen_expr(
                 source_filename,
                 source,
                 string_table,
-                plugin_symbol_table,
+                cmd_func_table,
                 allocamap);
 
             /* Handle string operations seperately from arithmetic, since there
@@ -669,7 +676,7 @@ gen_expr(
                 source_filename,
                 source,
                 string_table,
-                plugin_symbol_table,
+                cmd_func_table,
                 allocamap);
             enum type from
                 = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
@@ -697,7 +704,7 @@ gen_block(
     const char*                                   source_filename,
     const struct db_source                        source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
     ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
@@ -729,7 +736,7 @@ gen_block(
                     source_filename,
                     source,
                     string_table,
-                    plugin_symbol_table,
+                    cmd_func_table,
                     allocamap);
                 break;
             }
@@ -746,7 +753,7 @@ gen_block(
                     source_filename,
                     source,
                     string_table,
-                    plugin_symbol_table,
+                    cmd_func_table,
                     allocamap);
 
                 ODBSDK_DEBUG_ASSERT(
@@ -791,9 +798,9 @@ ir_translate_ast(
     llvm::StringMap<llvm::GlobalVariable*> string_table;
     create_global_string_table(ir, &string_table, program, source);
 
-    llvm::StringMap<llvm::Function*> plugin_symbol_table;
-    create_global_plugin_symbol_table(
-        ir, &plugin_symbol_table, program, source, cmds);
+    llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
+    create_global_command_function_table(
+        ir, &cmd_func_table, program, source, cmds);
 
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
@@ -816,7 +823,7 @@ ir_translate_ast(
         source_filename,
         source,
         &string_table,
-        &plugin_symbol_table,
+        &cmd_func_table,
         &allocamap);
     allocamap_deinit(allocamap);
 

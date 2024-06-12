@@ -24,7 +24,7 @@ enum hash_mode
     COLLIDE_WITH_SHITTY_HASH_SECOND_PROBE
 } hash_mode;
 
-struct kvs
+struct used_cmds_hm_keys
 {
     char*  keys;
     float* values;
@@ -44,25 +44,25 @@ test_hash(const char* key)
     return hash32_jenkins_oaat(key, 4);
 }
 static int
-test_storage_alloc(struct kvs* kvs, int16_t capacity)
+test_storage_alloc(struct used_cmds_hm_keys* kvs, int16_t capacity)
 {
     kvs->keys = (char*)mem_alloc(sizeof(char) * capacity * 16);
     kvs->values = (float*)mem_alloc(sizeof(*kvs->values) * capacity);
     return 0;
 }
 static void
-test_storage_free(struct kvs* kvs)
+test_storage_free(struct used_cmds_hm_keys* kvs)
 {
     mem_free(kvs->values);
     mem_free(kvs->keys);
 }
 static char*
-test_get_key(const struct kvs* kvs, int16_t slot)
+test_get_key(const struct used_cmds_hm_keys* kvs, int16_t slot)
 {
     return &kvs->keys[slot * 16];
 }
 static void
-test_set_key(struct kvs* kvs, int16_t slot, const char* key)
+test_set_key(struct used_cmds_hm_keys* kvs, int16_t slot, const char* key)
 {
     memcpy(&kvs->keys[slot * 16], key, 16);
 }
@@ -72,18 +72,18 @@ test_keys_equal(const char* k1, const char* k2)
     return memcmp(k1, k2, 16) == 0;
 }
 static float*
-test_get_value(const struct kvs* kvs, int16_t slot)
+test_get_value(const struct used_cmds_hm_keys* kvs, int16_t slot)
 {
     return &kvs->values[slot];
 }
 static void
-test_set_value(struct kvs* kvs, int16_t slot, const float* value)
+test_set_value(struct used_cmds_hm_keys* kvs, int16_t slot, const float* value)
 {
     kvs->values[slot] = *value;
 }
 
 #define NO_API
-HM_DECLARE_API_FULL(hm_test, hash32, const char*, float, 16, NO_API, struct kvs)
+HM_DECLARE_API_FULL(hm_test, hash32, const char*, float, 16, NO_API, struct used_cmds_hm_keys)
 HM_DEFINE_API_FULL(
     hm_test,
     hash32,

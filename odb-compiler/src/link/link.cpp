@@ -3,8 +3,8 @@ extern "C" {
 #include "odb-sdk/fs.h"
 }
 
-#include "odb-compiler/codegen/target.h"
 #include "lld/Common/Driver.h"
+#include "odb-compiler/codegen/target.h"
 #include <string>
 
 LLD_HAS_DRIVER(coff)
@@ -13,9 +13,9 @@ LLD_HAS_DRIVER(elf)
 
 static int
 link_windows(
-    const char*           objs[],
-    int                   count,
-    const char*           output_name,
+    const char*      objs[],
+    int              count,
+    const char*      output_name,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
@@ -37,8 +37,8 @@ link_windows(
 
     args.push_back("kernel32.lib");
 
-    args.push_back("./odb-sdk/plugins/core-commands.lib");
-    args.push_back("./odb-sdk/plugins/test-plugin.lib");
+    // args.push_back("./odb-sdk/plugins/core-commands.lib");
+    // args.push_back("./odb-sdk/plugins/test-plugin.lib");
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
@@ -51,9 +51,9 @@ link_windows(
 
 static int
 link_linux(
-    const char*           objs[],
-    int                   count,
-    const char*           output_name,
+    const char*      objs[],
+    int              count,
+    const char*      output_name,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
@@ -84,7 +84,7 @@ link_linux(
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 
-    args.push_back("./odb-sdk/plugins/core-commands.so");
+    // args.push_back("./odb-sdk/plugins/core-commands.so");
     // args.push_back("./odb-sdk/plugins/test-plugin.so");
 
     args.push_back("-L./lib");
@@ -117,8 +117,7 @@ odb_link(
     {
         case TARGET_WINDOWS:
             return link_windows(objs, count, output_name, arch);
-        case TARGET_LINUX:
-            return link_linux(objs, count, output_name, arch);
+        case TARGET_LINUX: return link_linux(objs, count, output_name, arch);
         case TARGET_MACOS: break;
     }
 
