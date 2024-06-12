@@ -1,5 +1,6 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
+#include "odb-sdk/log.h"
 #include <assert.h>
 
 /* ------------------------------------------------------------------------- */
@@ -24,7 +25,7 @@ hash32_jenkins_oaat(const void* key, int len)
 hash32
 hash32_ptr(const void* ptr, int len)
 {
-    ODBSDK_DEBUG_ASSERT(len == sizeof(void*));
+    ODBSDK_DEBUG_ASSERT(len == sizeof(void*), log_sdk_err("len: %d\n", len));
     ODBSDK_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return hash32_combine(

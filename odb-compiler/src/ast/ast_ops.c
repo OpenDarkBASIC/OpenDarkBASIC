@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_source.h"
+#include "odb-sdk/log.h"
 #include <assert.h>
 
 void
@@ -46,7 +47,11 @@ void
 ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
     ODBSDK_DEBUG_ASSERT(
-        ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type);
+        ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type,
+        log_sdk_err(
+            "n1: %d, n2: %d\n",
+            ast->nodes[n1].info.node_type,
+            ast->nodes[n2].info.node_type));
 
 #define SWAP(T, node_name, field)                                              \
     {                                                                          \

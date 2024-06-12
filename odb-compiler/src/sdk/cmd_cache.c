@@ -1,5 +1,6 @@
 #include "odb-compiler/sdk/cmd_cache.h"
 #include "odb-sdk/fs.h"
+#include "odb-sdk/log.h"
 #include "odb-sdk/mfile.h"
 #include "odb-sdk/mstream.h"
 #include "odb-sdk/utf8.h"
@@ -27,7 +28,7 @@ cmd_cache_load(
     plugin_ids_init(&cached_plugin_map);
 
     if (fs_get_appdata_dir(&path) != 0)
-        goto error;
+        goto open_mfile_failed;
 
     if (utf8_fmt(
             &fname,
@@ -37,29 +38,29 @@ cmd_cache_load(
             target_platform_to_name(platform))
         != 0)
     {
-        goto error;
+        goto open_mfile_failed;
     }
 
     if (ospath_join_cstr(&path, "cmd-cache") != 0)
-        goto error;
+        goto open_mfile_failed;
     if (fs_make_path(path) != 0)
-        goto error;
+        goto open_mfile_failed;
     if (ospath_join(&path, utf8_ospathc(fname)) != 0)
-        goto error;
+        goto open_mfile_failed;
 
     if (mfile_map_read(&mf, ospathc(path), 0) != 0)
-        goto error;
+        goto open_mfile_failed;
     ms = mstream_from_mfile(&mf);
 
     /* Version */
     if (mstream_read_u8(&ms) != VERSION)
-        goto error;
+        goto parse_failed;
 
     /* Load list of plugins. If a plugin is outdated, we don't add it to the
      * returned list and we don't load its commands */
     cached_plugin_count = mstream_read_li16(&ms);
     if (plugin_ids_resize(&cached_plugin_map, cached_plugin_count) != 0)
-        goto error;
+        goto parse_failed;
     for (cached_plugin_id = 0; cached_plugin_id != cached_plugin_count;
          ++cached_plugin_id)
     {
@@ -111,6 +112,10 @@ cmd_cache_load(
             continue;
         }
 
+        ODBSDK_DEBUG_ASSERT(
+            cached_plugin_id >= 0
+                && cached_plugin_id < cached_plugin_map->count,
+            log_sdk_err("plugin_id: %d\n", cached_plugin_id));
         cmd = cmd_list_add(
             cmds,
             cached_plugin_map->data[cached_plugin_id],
@@ -118,7 +123,7 @@ cmd_cache_load(
             db_cmd_name,
             c_symbol);
         if (cmd < 0)
-            goto error;
+            goto parse_failed;
 
         for (i = 0; i != param_count; ++i)
         {
@@ -130,15 +135,22 @@ cmd_cache_load(
 
             if (cmd_add_param(cmds, cmd, param_type, direction, param_name)
                 != 0)
-                goto error;
+                goto parse_failed;
         }
     }
 
+    mfile_unmap(&mf);
+    plugin_ids_deinit(cached_plugin_map);
+    utf8_deinit(fname);
+    ospath_deinit(path);
     return 0;
 
-error:
-    ospath_deinit(path);
+parse_failed:
+    mfile_unmap(&mf);
+open_mfile_failed:
+    plugin_ids_deinit(cached_plugin_map);
     utf8_deinit(fname);
+    ospath_deinit(path);
     return -1;
 }
 

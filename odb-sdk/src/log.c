@@ -207,6 +207,11 @@ rhsf_style(void)
     return g_log.use_color ? FGB_CYAN : "";
 }
 static const char*
+success_style(void)
+{
+    return g_log.use_color ? FGB_GREEN : "";
+}
+static const char*
 reset_style(void)
 {
     return g_log.use_color ? COL_RESET : "";
@@ -276,6 +281,10 @@ next_control_sequence(
             break;
         case 'u':
             *start = lhsf_style();
+            *end = reset_style();
+            return 1;
+        case 's':
+            *start = success_style();
             *end = reset_style();
             return 1;
     }
@@ -580,7 +589,9 @@ log_excerpt2(
     char             postpone_annotation1 = 0;
 
     /* Calculate an overall location for LHS,op,RHS */
-    ODBSDK_DEBUG_ASSERT(loc1.off < loc2.off);
+    ODBSDK_DEBUG_ASSERT(
+        loc1.off < loc2.off,
+        log_sdk_err("loc1.off: %d, loc2.off: %d\n", loc1.off, loc2.off));
     loc.off = loc1.off;
     loc.len = loc2.off - loc1.off + loc2.len;
 

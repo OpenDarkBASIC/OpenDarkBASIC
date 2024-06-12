@@ -281,12 +281,16 @@ typecheck_warnings(
     ast_id                         arglist = ast->nodes[cmd_node].cmd.arglist;
     const struct param_types_list* params = cmds->param_types->data[cmd_id];
 
-    ODBSDK_DEBUG_ASSERT(ast->nodes[cmd_node].info.node_type == AST_COMMAND);
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[cmd_node].info.node_type == AST_COMMAND,
+        log_sdk_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
 
     for (i = 0; i != params->count;
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
-        ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].info.node_type == AST_ARGLIST);
+        ODBSDK_DEBUG_ASSERT(
+            ast->nodes[arglist].info.node_type == AST_ARGLIST,
+            log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
         int       gutter;
         ast_id    arg = ast->nodes[arglist].arglist.expr;
         enum type arg_type = ast->nodes[arg].info.type_info;
@@ -294,7 +298,7 @@ typecheck_warnings(
 
         switch (type_promote(arg_type, param_type))
         {
-            case TP_DISALLOW: ODBSDK_DEBUG_ASSERT(0); break;
+            case TP_DISALLOW: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
             case TP_ALLOW: break;
 
             case TP_TRUNCATE:

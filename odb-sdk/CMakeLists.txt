@@ -18,6 +18,7 @@ set (ODBSDK_LIB_TYPE "SHARED" CACHE STRING "Build either as SHARED or STATIC lib
 
 set (ODBSDK_BTREE_EXPAND_FACTOR "2" CACHE STRING "When reallocating btree memory, this is the factor with which the buffer grows")
 set (ODBSDK_BTREE_MIN_CAPACITY "32" CACHE STRING "The smallest number of elements to reserve when initializing a btree")
+option (ODBSDK_DEBUG_ASSERT "Enable the ODBSDK_DEBUG_ASSERT macro" ${DEBUG_FEATURE})
 option (ODBSDK_BTREE_64BIT_KEYS "Enable 64-bit keys for btrees instead of 32-bit keys" OFF)
 option (ODBSDK_BTREE_64BIT_CAPACITY "Enable btrees to allow up to 2^64 entries instead of 2^32" OFF)
 option (ODBSDK_HM_STATS "Track hashmap usage statistics. This will increase

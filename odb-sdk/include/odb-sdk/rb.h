@@ -191,7 +191,7 @@
         return &rb.mem->data[offset];                                          \
     }
 
-#define IS_POWER_OF_2(x) (((x) & ((x)-1)) == 0)
+#define IS_POWER_OF_2(x) (((x) & ((x) - 1)) == 0)
 #define RB_DEFINE_API(prefix, T, bits)                                         \
     void prefix##_deinit(struct prefix* rb)                                    \
     {                                                                          \
@@ -205,7 +205,8 @@
         mem_size bytes                                                         \
             = sizeof(*rb->mem) + sizeof(rb->mem->data[0]) * (elems - 1);       \
                                                                                \
-        ODBSDK_DEBUG_ASSERT(IS_POWER_OF_2(elems));                             \
+        ODBSDK_DEBUG_ASSERT(                                                   \
+            IS_POWER_OF_2(elems), log_sdk_err("elems: %d\n", elems));          \
         new_mem = mem_realloc(rb->mem, bytes);                                 \
         if (new_mem == NULL)                                                   \
             return log_oom(bytes, "rb_resize()");                              \

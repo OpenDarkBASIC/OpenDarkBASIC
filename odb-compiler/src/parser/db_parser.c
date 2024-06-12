@@ -62,7 +62,9 @@ scan_next_token(
     if (token_queue_is_empty(*tokens))
     {
         token = token_queue_emplace(*tokens);
-        ODBSDK_DEBUG_ASSERT(token != NULL);
+        ODBSDK_DEBUG_ASSERT(
+            token != NULL,
+            log_sdk_err("token->pushed_char: %d\n", token->pushed_char));
         token->pushed_char
             = dblex(&token->pushed_value, scanner_location, scanner);
         token->pushed_location = *scanner_location;

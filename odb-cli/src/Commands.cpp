@@ -5,6 +5,7 @@
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
+#include "odb-compiler/sdk/type.h"
 #include "odb-sdk/log.h"
 }
 
@@ -167,28 +168,29 @@ dumpCommandNames(const std::vector<std::string>& args)
     for (int i = 0; i != cmd_list_count(&commands); ++i)
     {
         enum type ret_type = commands.return_types->data[i];
-        printf("%c ", ret_type);
+        printf("%s ", type_to_db_name(ret_type));
         printf("%s", utf8_list_cstr(commands.db_cmd_names, i));
-        printf("(");
+        printf("%s", ret_type == TYPE_VOID ? " " : "(");
         const struct param_types_list* param_types
             = commands.param_types->data[i];
-        struct utf8_list* param_names = commands.db_param_names->data[i];
+        struct utf8_list*       param_names = commands.db_param_names->data[i];
         const struct cmd_param* param;
-        vec_for_each(param_types, param)
-        {
-            printf("%c", param->type);
-            if (param->direction == CMD_PARAM_OUT)
-                printf("*");
-        }
-        printf(") (");
-
-        for (int n = 0; n != param_names->count; ++n)
+        int                     n;
+        vec_enumerate(param_types, n, param)
         {
             if (n)
                 printf(", ");
             printf("%s", utf8_list_cstr(param_names, n));
+            if (param->direction == CMD_PARAM_OUT)
+                printf("*");
+            printf(" AS %s", type_to_db_name(param->type));
         }
-        printf(")\n");
+        if (ret_type != TYPE_VOID)
+            printf(")");
+        printf(" -> %s", utf8_list_cstr(commands.c_symbols, i));
+        printf(
+            "  [%s]\n",
+            utf8_cstr(plugins->data[commands.plugin_ids->data[i]].name));
     }
     log_sdk_info(
         "Wrote %d commands to stdout [--dump-commands]\n",

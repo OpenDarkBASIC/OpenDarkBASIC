@@ -1,6 +1,8 @@
+
 #include "gmock/gmock.h"
 
 extern "C" {
+#include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/rb.h"
 
@@ -30,7 +32,8 @@ rbobj_resize(struct rbobj* rb, int16_t elems)
     void*    new_mem;
     mem_size bytes = sizeof(*rb->mem) + sizeof(rb->mem->data[0]) * (elems - 1);
 
-    ODBSDK_DEBUG_ASSERT(IS_POWER_OF_2(elems));
+    ODBSDK_DEBUG_ASSERT(
+        IS_POWER_OF_2(elems), log_sdk_err("elems: %d\n", elems));
     new_mem = mem_realloc(rb->mem, bytes);
     if (new_mem == NULL)
         return log_oom(bytes, "rb_resize()");

@@ -1,7 +1,7 @@
-#include "odb-compiler/sdk/type.h"
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
+#include "odb-compiler/sdk/type.h"
 #include "odb-sdk/utf8.h"
 }
 
@@ -150,6 +150,14 @@ load_dbpro_commands(
                 goto bad_command;
             }
 
+            /* DBPro includes "fake" command keywords so the parser and editor
+             * highlighting is able to function. ODB manages the keywords
+             * separately, so we need to ignore these. The C symbol in these
+             * cases is either empty or contains "??". */
+            if (entry_str.data[c_symbol.off] == '?'
+                && entry_str.data[c_symbol.off + 1] == '?')
+                goto bad_command;
+
             /* If <command> ends with a "[", then the first entry in the type
              * information string is the type of the return value instead of
              * the first parameter. Otherwise the return value is void. */
@@ -203,6 +211,8 @@ load_dbpro_commands(
 
                 utf8_split(
                     entry_str.data, db_params, ',', &db_param_name, &db_params);
+                db_param_name
+                    = utf8_strip_span(entry_str.data, db_param_name, " ");
 
                 if (type == TYPE_INVALID)
                 {
@@ -222,6 +232,7 @@ load_dbpro_commands(
                     goto bad_command;
                 }
 
+                /* A void parameter is no parameter */
                 if (type == TYPE_VOID)
                     continue;
 

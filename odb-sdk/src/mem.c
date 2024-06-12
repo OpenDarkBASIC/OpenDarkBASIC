@@ -293,9 +293,6 @@ mem_deinit(void)
 {
     uintptr_t leaks;
 
-    --state.allocations; /* this is the single allocation still held by the
-                            report hashmap */
-
     /* report details on any g_allocations that were not de-allocated */
     uintptr_t           addr;
     struct report_info* info;
@@ -363,6 +360,10 @@ mem_deinit(void)
         }
 #endif
     }
+    
+    state.ignore_malloc = 1;
+    report_deinit(state.report);
+    state.ignore_malloc = 0;
 
     /* overall report */
     log_sdk_note("Memory report:\n");
@@ -375,14 +376,8 @@ mem_deinit(void)
     if (leaks)
         log_raw("  {e:memory leaks  : %" PRIu64 "}\n", leaks);
     else
-        log_raw("  memory leaks  : %" PRIu64 "\n", leaks);
+        log_raw("  {s:memory leaks  : %" PRIu64 "}\n", leaks);
     log_raw("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
-
-    ++state.allocations; /* this is the single allocation still held by the
-                            report hashmap */
-    state.ignore_malloc = 1;
-    report_deinit(state.report);
-    state.ignore_malloc = 0;
 
     return (mem_size)leaks;
 }

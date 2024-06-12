@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-sdk/config.h"
+#include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include <assert.h>
 
@@ -57,8 +58,10 @@ ast_block_append(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(block > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[block].base.info.node_type == AST_BLOCK);
+    ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[block].base.info.node_type == AST_BLOCK,
+        log_sdk_err("type: %d\n", (ast->nodes[block].base.info.node_type)));
     while (ast->nodes[block].block.next != -1)
         block = ast->nodes[block].block.next;
     ast->nodes[block].block.next = n;
@@ -84,8 +87,10 @@ ast_arglist_append(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(arglist > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[arglist].base.info.node_type == AST_ARGLIST);
+    ODBSDK_DEBUG_ASSERT(arglist > -1, log_sdk_err("arglist: %d\n", arglist));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[arglist].info.node_type == AST_ARGLIST,
+        log_sdk_err("type: %d\n", (ast->nodes[arglist].info.node_type)));
     while (ast->nodes[arglist].arglist.next != -1)
         arglist = ast->nodes[arglist].arglist.next;
     ast->nodes[arglist].arglist.next = n;
@@ -132,7 +137,7 @@ ast_assign_var(
     ast->nodes[n].assignment.lvalue = identifier;
     ast->nodes[n].assignment.expr = expr;
     ast->nodes[n].assignment.op_location = op_location;
-    
+
     return n;
 }
 

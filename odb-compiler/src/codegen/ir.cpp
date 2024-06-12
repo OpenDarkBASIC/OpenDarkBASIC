@@ -75,7 +75,7 @@ allocamap_kvs_free(struct allocamap_kvs* kvs)
 static struct view_scope
 allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text != NULL);
+    ODBSDK_DEBUG_ASSERT(kvs->text != NULL, (void)0);
     struct span_scope span_scope = kvs->keys->data[slot];
     struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
@@ -85,7 +85,8 @@ static void
 allocamap_kvs_set_key(
     struct allocamap_kvs* kvs, int32_t slot, struct view_scope key)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text == NULL || kvs->text == key.view.data);
+    ODBSDK_DEBUG_ASSERT(
+        kvs->text == NULL || kvs->text == key.view.data, (void)0);
     kvs->text = key.view.data;
     struct utf8_span  span = utf8_view_span(kvs->text, key.view);
     struct span_scope span_scope = {span, key.scope};
@@ -227,7 +228,9 @@ get_command_function_signature(
     ast_id                 cmd,
     const struct cmd_list* cmds)
 {
-    ODBSDK_DEBUG_ASSERT(ast->nodes[cmd].info.node_type == AST_COMMAND);
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[cmd].info.node_type == AST_COMMAND,
+        log_sdk_err("type: %d\n", ast->nodes[cmd].info.node_type));
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
@@ -405,7 +408,7 @@ gen_expr(
             /* The AST should be constructed in a way where we do not have to
              * create a default value for variables that have not yet been
              * declared */
-            ODBSDK_DEBUG_ASSERT(*A != NULL);
+            ODBSDK_DEBUG_ASSERT(*A != NULL, (void)0);
 
             return b.CreateLoad(
                 (*A)->getAllocatedType(),
@@ -467,7 +470,7 @@ gen_expr(
                 case TYPE_DABEL:
                 case TYPE_ANY:
                 case TYPE_USER_DEFINED_VAR_PTR:
-                    ODBSDK_DEBUG_ASSERT(false);
+                    ODBSDK_DEBUG_ASSERT(false, (void)0);
                     return nullptr;
 
                 case TYPE_BOOLEAN:
@@ -697,8 +700,10 @@ gen_block(
     const llvm::StringMap<llvm::Function*>*       plugin_symbol_table,
     struct allocamap**                            allocamap)
 {
-    ODBSDK_DEBUG_ASSERT(block > -1);
-    ODBSDK_DEBUG_ASSERT(ast->nodes[block].info.node_type == AST_BLOCK);
+    ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[block].info.node_type == AST_BLOCK,
+        log_sdk_err("type: %d\n", ast->nodes[block].info.node_type));
 
     /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
      * statements from the current node. We name it according to the node's
@@ -711,7 +716,7 @@ gen_block(
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
-        ODBSDK_DEBUG_ASSERT(stmt > -1);
+        ODBSDK_DEBUG_ASSERT(stmt > -1, log_sdk_err("stmt: %d\n", stmt));
         switch (ast->nodes[stmt].info.node_type)
         {
             case AST_COMMAND: {
@@ -745,7 +750,9 @@ gen_block(
                     allocamap);
 
                 ODBSDK_DEBUG_ASSERT(
-                    ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER);
+                    ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER,
+                    log_sdk_err(
+                        "type: %d\n", ast->nodes[lhs_node].info.node_type));
                 enum type        type = ast->nodes[lhs_node].info.type_info;
                 struct utf8_view name = utf8_span_view(
                     source.text.data, ast->nodes[lhs_node].identifier.name);

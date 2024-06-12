@@ -67,7 +67,7 @@ typemap_kvs_free(struct typemap_kvs* kvs)
 static struct view_scope
 typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text != NULL);
+    ODBSDK_DEBUG_ASSERT(kvs->text != NULL, (void)0);
     struct span_scope span_scope = kvs->keys->data[slot];
     struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
@@ -77,7 +77,8 @@ static void
 typemap_kvs_set_key(
     struct typemap_kvs* kvs, int32_t slot, struct view_scope key)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text == NULL || kvs->text == key.view.data);
+    ODBSDK_DEBUG_ASSERT(
+        kvs->text == NULL || kvs->text == key.view.data, (void)0);
     kvs->text = key.view.data;
     struct utf8_span  span = utf8_view_span(kvs->text, key.view);
     struct span_scope span_scope = {span, key.scope};
@@ -216,7 +217,10 @@ resolve_node_type(
                     int    gutter;
                     ast_id orig_node = lhs_type->original_declaration;
                     ODBSDK_DEBUG_ASSERT(
-                        ast->nodes[orig_node].info.node_type == AST_IDENTIFIER);
+                        ast->nodes[orig_node].info.node_type == AST_IDENTIFIER,
+                        log_sdk_err(
+                            "type: %d\n",
+                            ast->nodes[orig_node].info.node_type));
                     struct utf8_span orig_name
                         = ast->nodes[orig_node].identifier.name;
                     struct utf8_span orig_loc
@@ -488,7 +492,9 @@ type_check_and_cast(
      * variables, because they will be processed in the same order the data
      * flows.
      */
-    ODBSDK_DEBUG_ASSERT(ast->nodes[0].info.node_type == AST_BLOCK);
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[0].info.node_type == AST_BLOCK,
+        log_sdk_err("type: %d\n", ast->nodes[0].info.node_type));
     if (resolve_node_type(ast, 0, cmds, source_filename, source, &typemap, 0)
         == TYPE_INVALID)
     {

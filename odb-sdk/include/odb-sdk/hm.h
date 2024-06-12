@@ -170,7 +170,7 @@
         int##bits##_t i = 0;                                                   \
         int##bits##_t last_rip = -1;                                           \
                                                                                \
-        ODBSDK_DEBUG_ASSERT(h > 1);                                            \
+        ODBSDK_DEBUG_ASSERT(h > 1, log_sdk_err("h: %d\n", h));                 \
                                                                                \
         slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
         while (hm->hashes[slot] != HM_SLOT_UNUSED)                             \
@@ -207,7 +207,9 @@
         int##bits##_t new_capacity                                             \
             = (*hm)->capacity ? (*hm)->capacity * 2 : MIN_CAPACITY;            \
         /* Must be power of 2 */                                               \
-        ODBSDK_DEBUG_ASSERT((new_capacity & (new_capacity - 1)) == 0);         \
+        ODBSDK_DEBUG_ASSERT(                                                   \
+            (new_capacity & (new_capacity - 1)) == 0,                          \
+            log_sdk_err("new_capacity: %d\n", new_capacity));                  \
                                                                                \
         mem_size bytes                                                         \
             = sizeof(**hm) + sizeof((*hm)->hashes[0]) * (new_capacity - 1);    \
@@ -236,7 +238,7 @@
             if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                       \
                 h = 2;                                                         \
             slot = prefix##_find_slot(new_hm, hm_get_key(&(*hm)->kvs, i), h);  \
-            ODBSDK_DEBUG_ASSERT(slot >= 0);                                    \
+            ODBSDK_DEBUG_ASSERT(slot >= 0, log_sdk_err("slot: %d\n", slot)); \
             new_hm->hashes[slot] = h;                                          \
             hm_set_key(&new_hm->kvs, slot, hm_get_key(&(*hm)->kvs, i));        \
             hm_set_value(&new_hm->kvs, slot, hm_get_value(&(*hm)->kvs, i));    \

@@ -5,6 +5,7 @@
 #define ODBSDK_${ODBSDK_LIB_TYPE}
 #define ODBSDK_PLATFORM_${ODBSDK_PLATFORM}
 
+#cmakedefine ODBSDK_DEBUG_ASSERT
 #cmakedefine ODBSDK_BTREE_64BIT_KEYS
 #cmakedefine ODBSDK_BTREE_64BIT_CAPACITY
 #cmakedefine ODBSDK_HM_STATS
@@ -41,7 +42,15 @@
 #else
 #   define ODBSDK_STATIC_ASSERT(condition) ${ODBSDK_STATIC_ASSERT}
 #endif
-#define ODBSDK_DEBUG_ASSERT(condition)  assert(condition)
+
+#if defined(ODBSDK_DEBUG_ASSERT)
+#   undef ODBSDK_DEBUG_ASSERT
+#   define ODBSDK_DEBUG_ASSERT(condition, error) do {     \
+        if (!(condition)) { error; assert(condition); }   \
+    } while(0)
+#else
+#   define ODBSDK_DEBUG_ASSERT(condition, error)
+#endif
 
 /* Version string ----------------------------------------------------------- */
 

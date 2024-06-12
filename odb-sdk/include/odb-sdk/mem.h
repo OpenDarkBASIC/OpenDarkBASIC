@@ -3,19 +3,6 @@
 #include "odb-sdk/config.h"
 #include <stdint.h>
 
-#if defined(ODBSDK_PLATFORM_WINDOWS)
-#   include <malloc.h>
-static inline int mem_allocated_size(void* p) { return (int)_msize(p); }
-#elif defined(ODBSDK_PLATFORM_DARWIN)
-#   include <malloc/malloc.h>
-#   define mem_allocated_size  malloc_size
-#elif defined(ODBSDK_PLATFORM_LINUX)
-#   include <malloc.h>
-#   define mem_allocated_size  malloc_usable_size
-#else
-#   error "Unknown Platform"
-#endif
-
 typedef uint32_t mem_size;
 typedef int32_t mem_idx;
 

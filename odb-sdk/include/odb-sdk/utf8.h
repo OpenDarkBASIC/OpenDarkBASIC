@@ -213,6 +213,21 @@ utf8_split(
     right->len = 0;
 }
 
+static inline struct utf8_span
+utf8_strip_span(const char* data, struct utf8_span span, const char* chars)
+{
+    while (span.len && strchr(chars, data[span.off]))
+    {
+        span.off++;
+        span.len--;
+    }
+
+    while (span.len && strchr(chars, data[span.off + span.len - 1]))
+        span.len--;
+
+    return span;
+}
+
 static inline void
 utf8_toupper(struct utf8 str)
 {

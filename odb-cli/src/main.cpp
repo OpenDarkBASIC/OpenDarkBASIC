@@ -26,6 +26,8 @@ main(int argc, char** argv)
     deinitCommands();
     deinitSDK();
 
+    odbsdk_deinit();
+
 odbsdk_init_failed:
     return success ? 0 : -1;
 }

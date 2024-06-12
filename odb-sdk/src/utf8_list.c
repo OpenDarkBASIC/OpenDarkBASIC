@@ -25,7 +25,8 @@ grow(struct utf8_list** l, utf8_idx str_len)
         mem_size cap = (*l)->capacity;
         mem_size grow_size = cap ? cap : 128;
         mem_size struct_header = sizeof(**l) - sizeof((*l)->data[0]);
-        void*    new_mem = mem_realloc(cap ? *l : NULL, cap + grow_size + struct_header);
+        void*    new_mem
+            = mem_realloc(cap ? *l : NULL, cap + grow_size + struct_header);
         if (new_mem == NULL)
             return log_oom((*l)->capacity + grow_size, "utf8_list_grow()");
         *l = new_mem;
@@ -150,6 +151,13 @@ utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 static int
 lexicographically_less(struct utf8_view s1, struct utf8_view s2)
 {
+    //fprintf(
+    //    stderr,
+    //    "compare: %.*s == %.*s\n",
+    //    s1.len,
+    //    s1.data + s1.off,
+    //    s2.len,
+    //    s2.data + s2.off);
     int cmp = memcmp(
         s1.data + s1.off, s2.data + s2.off, s1.len < s2.len ? s1.len : s2.len);
     if (cmp == 0)

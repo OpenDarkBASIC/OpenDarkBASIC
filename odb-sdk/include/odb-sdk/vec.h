@@ -12,6 +12,7 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
+#include <assert.h>
 #include <inttypes.h>
 #include <stddef.h>
 #include <string.h>
@@ -188,8 +189,8 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int            (*on_element)(T * elem, void* user),                    \
-        void*          user);                                                           \
+        int (*on_element)(T * elem, void* user),                               \
+        void* user);                                                           \
                                                                                \
     static inline void prefix##_init(struct prefix** v)                        \
     {                                                                          \
@@ -304,6 +305,10 @@
     }                                                                          \
     T* prefix##_insert_emplace(struct prefix** v, int##bits##_t i)             \
     {                                                                          \
+        ODBSDK_DEBUG_ASSERT(                                                   \
+            i >= 0 && i <= (*v)->count,                                        \
+            log_sdk_err("i: %d, count: %d\n", i, (*v)->count));                \
+                                                                               \
         if (prefix##_emplace(v) == NULL)                                       \
             return NULL;                                                       \
                                                                                \
@@ -372,7 +377,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->data[(v)->count - (i)-1])
+#define vec_rget(v, i) (&(v)->data[(v)->count - (i) - 1])
 
 /*!
  * @brief Iterates over the elements in a vector.
