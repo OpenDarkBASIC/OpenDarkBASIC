@@ -73,7 +73,7 @@ output(const std::vector<std::string>& args)
     ir_free(ir);
 
     ir = ir_alloc("odbruntime");
-    ir_create_runtime(ir, getSDKType(), arch_, platform_);
+    ir_create_runtime(ir, modname.c_str(), getSDKType(), arch_, platform_);
     ir_compile(ir, "odbruntime.o", arch_, platform_);
     ir_free(ir);
 

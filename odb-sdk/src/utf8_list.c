@@ -151,13 +151,6 @@ utf8_list_erase(struct utf8_list* l, utf8_idx idx)
 static int
 lexicographically_less(struct utf8_view s1, struct utf8_view s2)
 {
-    //fprintf(
-    //    stderr,
-    //    "compare: %.*s == %.*s\n",
-    //    s1.len,
-    //    s1.data + s1.off,
-    //    s2.len,
-    //    s2.data + s2.off);
     int cmp = memcmp(
         s1.data + s1.off, s2.data + s2.off, s1.len < s2.len ? s1.len : s2.len);
     if (cmp == 0)

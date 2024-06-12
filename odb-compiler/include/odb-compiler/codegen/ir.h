@@ -27,6 +27,7 @@ ir_translate_ast(
 ODBCOMPILER_PUBLIC_API int
 ir_create_runtime(
     struct ir_module*    ir,
+    const char*          main_dba_name,
     enum sdk_type        sdk_type,
     enum target_arch     arch,
     enum target_platform platform);

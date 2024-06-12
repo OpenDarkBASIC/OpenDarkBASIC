@@ -204,14 +204,14 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
 
         case TYPE_STRING:
         case TYPE_ARRAY:
-            return llvm::PointerType::get(llvm::Type::getInt8Ty(*ctx), 0);
+            return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*ctx));
 
         case TYPE_LABEL:
         case TYPE_DABEL: break;
 
         case TYPE_ANY:
         case TYPE_USER_DEFINED_VAR_PTR:
-            return llvm::PointerType::get(llvm::Type::getVoidTy(*ctx), 0);
+            return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
     }
 
     log_err(

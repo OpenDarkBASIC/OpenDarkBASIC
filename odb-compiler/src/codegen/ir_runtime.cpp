@@ -3,28 +3,39 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
+#include "odb-compiler/sdk/sdk_type.h"
 
 extern "C" {
 #include "odb-compiler/codegen/ir.h"
 }
 
 static int
-gen_init_func(
+gen_init_dbpro(
     struct ir_module*    ir,
-    enum sdk_type        sdk_type,
+    llvm::BasicBlock*    BB,
     enum target_arch     arch,
     enum target_platform platform)
 {
-    llvm::Function* F = llvm::Function::Create(
-        llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ir->ctx),
-            {},
-            /* isVarArg */ false),
-        llvm::Function::ExternalLinkage,
-        "odbruntime_init",
-        ir->mod);
+    return 0;
+}
 
-    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
+static int
+gen_deinit_dbpro(
+    struct ir_module*    ir,
+    llvm::BasicBlock*    BB,
+    enum target_arch     arch,
+    enum target_platform platform)
+{
+    return 0;
+}
+
+static int
+gen_init_odb(
+    struct ir_module*    ir,
+    llvm::BasicBlock*    BB,
+    enum target_arch     arch,
+    enum target_platform platform)
+{
     llvm::IRBuilder<> b(BB);
 
     if (platform == TARGET_WINDOWS)
@@ -54,52 +65,32 @@ gen_init_func(
     }
 
     // Plugins use odb-sdk. Have to call the global init functions
-    if (sdk_type == SDK_ODB)
-    {
-        llvm::Function* FSDKInit = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getInt32Ty(ir->ctx), {}, false),
-            llvm::Function::ExternalLinkage,
-            "odbsdk_init",
-            ir->mod);
-        b.CreateCall(FSDKInit, {});
-    }
-
-    b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
+    llvm::Function* FSDKInit = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getInt32Ty(ir->ctx), {}, false),
+        llvm::Function::ExternalLinkage,
+        "odbsdk_init",
+        ir->mod);
+    b.CreateCall(FSDKInit, {});
 
     return 0;
 }
 
 static int
-gen_deinit_func(
+gen_deinit_odb(
     struct ir_module*    ir,
-    enum sdk_type        sdk_type,
+    llvm::BasicBlock*    BB,
     enum target_arch     arch,
     enum target_platform platform)
 {
-    llvm::Function* F = llvm::Function::Create(
-        llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ir->ctx),
-            {},
-            /* isVarArg */ false),
-        llvm::Function::ExternalLinkage,
-        "odbruntime_deinit",
-        ir->mod);
-
-    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
     llvm::IRBuilder<> b(BB);
 
     // Plugins use odb-sdk. Have to call the global init functions
-    if (sdk_type == SDK_ODB)
-    {
-        llvm::Function* FSDKDeInit = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
-            llvm::Function::ExternalLinkage,
-            "odbsdk_deinit",
-            ir->mod);
-        b.CreateCall(FSDKDeInit, {});
-    }
-
-    b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
+    llvm::Function* FSDKDeInit = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::Function::ExternalLinkage,
+        "odbsdk_deinit",
+        ir->mod);
+    b.CreateCall(FSDKDeInit, {});
 
     return 0;
 }
@@ -107,14 +98,58 @@ gen_deinit_func(
 int
 ir_create_runtime(
     struct ir_module*    ir,
+    const char*          main_dba_name,
     enum sdk_type        sdk_type,
     enum target_arch     arch,
     enum target_platform platform)
 {
-    if (gen_init_func(ir, sdk_type, arch, platform) < 0)
-        return -1;
-    if (gen_deinit_func(ir, sdk_type, arch, platform) < 0)
-        return -1;
+    llvm::Function* F = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            {llvm::Type::getInt32Ty(ir->ctx),
+             llvm::PointerType::getUnqual(llvm::Type::getVoidTy(ir->ctx))},
+            /* isVarArg */ false),
+        llvm::Function::ExternalLinkage,
+        "main",
+        ir->mod);
+
+    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
+    llvm::IRBuilder<> b(BB);
+
+    switch (sdk_type)
+    {
+        case SDK_ODB:
+            if (gen_init_odb(ir, BB, arch, platform) < 0)
+                return -1;
+            break;
+
+        case SDK_DBPRO:
+            if (gen_init_dbpro(ir, BB, arch, platform) < 0)
+                return -1;
+            break;
+    }
+
+    llvm::Function* FMainDBA = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::Function::ExternalLinkage,
+        "test",
+        ir->mod);
+    b.CreateCall(FMainDBA, {});
+
+    switch (sdk_type)
+    {
+        case SDK_ODB:
+            if (gen_deinit_odb(ir, BB, arch, platform) < 0)
+                return -1;
+            break;
+
+        case SDK_DBPRO:
+            if (gen_deinit_dbpro(ir, BB, arch, platform) < 0)
+                return -1;
+            break;
+    }
+
+    b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
 
     ir->mod.print(llvm::outs(), nullptr);
 
