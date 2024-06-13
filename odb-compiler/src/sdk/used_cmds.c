@@ -11,78 +11,63 @@ VEC_DEFINE_API(cmd_ids, cmd_id, 32)
 
 struct kvs
 {
-    const char*      text;
-    struct spanlist* keys;
-    struct cmd_ids*  values;
+    struct cmd_ids* keys;
 };
 
 static hash32
-kvs_hash(struct utf8_view key)
+kvs_hash(cmd_id key)
 {
-    return hash32_jenkins_oaat(key.data + key.off, key.len);
+    return key;
 }
 static int
 kvs_alloc(struct kvs* kvs, int32_t capacity)
 {
-    kvs->text = NULL;
-
-    spanlist_init(&kvs->keys);
-    if (spanlist_resize(&kvs->keys, capacity) != 0)
-        return -1;
-
-    cmd_ids_init(&kvs->values);
-    if (cmd_ids_resize(&kvs->values, capacity) != 0)
-    {
-        spanlist_deinit(kvs->keys);
-        return log_oom(sizeof(enum type) * capacity, "kvs_alloc()");
-    }
-
-    return 0;
+    cmd_ids_init(&kvs->keys);
+    return cmd_ids_resize(&kvs->keys, capacity);
 }
 static void
 kvs_free(struct kvs* kvs)
 {
-    cmd_ids_deinit(kvs->values);
-    spanlist_deinit(kvs->keys);
+    cmd_ids_deinit(kvs->keys);
 }
-static struct utf8_view
+cmd_id
 kvs_get_key(const struct kvs* kvs, int32_t slot)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text != NULL, (void)0);
-    return utf8_span_view(kvs->text, kvs->keys->data[slot]);
+    return kvs->keys->data[slot];
 }
 static void
-kvs_set_key(struct kvs* kvs, int32_t slot, struct utf8_view key)
+kvs_set_key(struct kvs* kvs, int32_t slot, cmd_id key)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text == NULL || kvs->text == key.data, (void)0);
-    kvs->text = key.data;
-    kvs->keys->data[slot] = utf8_view_span(kvs->text, key);
+    kvs->keys->data[slot] = key;
 }
-static cmd_id*
+static int
+kvs_keys_equal(cmd_id k1, cmd_id k2)
+{
+    return k1 == k2;
+}
+static char*
 kvs_get_value(struct kvs* kvs, int32_t slot)
 {
-    return &kvs->values->data[slot];
+    return (void*)1;
 }
 static void
-kvs_set_value(struct kvs* kvs, int32_t slot, cmd_id* value)
+kvs_set_value(struct kvs* kvs, int32_t slot, char* value)
 {
-    kvs->values->data[slot] = *value;
 }
 
-HM_DECLARE_API_FULL(
-    used_cmds_hm, hash32, struct utf8_view, cmd_id, 32, static, struct kvs)
+HM_DECLARE_API_FULL(used_cmds_hm, hash32, cmd_id, char, 32, static, struct kvs)
 HM_DEFINE_API_FULL(
     used_cmds_hm,
     hash32,
-    struct utf8_view,
     cmd_id,
+    char,
     32,
     kvs_hash,
     kvs_alloc,
     kvs_free,
     kvs_get_key,
     kvs_set_key,
-    utf8_equal,
+    kvs_keys_equal,
     kvs_get_value,
     kvs_set_value,
     128,
@@ -94,18 +79,18 @@ used_cmds_init(struct used_cmds_hm** hm)
     used_cmds_hm_init(hm);
 }
 
+#include <stdio.h>
 int
 used_cmds_append(struct used_cmds_hm** used, const struct ast* ast)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; n++)
-    {
-        if (ast->nodes[n].info.node_type != AST_COMMAND)
-            continue;
-
-        cmd_id cmd = ast->nodes[n].cmd.id;
-
-    }
+        if (ast->nodes[n].info.node_type == AST_COMMAND)
+            if (used_cmds_hm_insert_or_get(used, ast->nodes[n].cmd.id, 0)
+                == NULL)
+            {
+                return -1;
+            }
 
     return 0;
 }
@@ -115,7 +100,7 @@ used_cmds_finalize(struct used_cmds_hm* hm)
 {
     int32_t         front = 0;
     int32_t         back = hm->capacity - 1;
-    struct cmd_ids* list = hm->kvs.values;
+    struct cmd_ids* cmds = hm->kvs.keys ? hm->kvs.keys : &cmd_ids_null_vec;
     while (1)
     {
         while (hm->hashes[front] != HM_SLOT_UNUSED
@@ -129,14 +114,18 @@ used_cmds_finalize(struct used_cmds_hm* hm)
         if (front >= back)
             break;
 
-        list->data[front] = list->data[back];
+        cmds->data[front] = cmds->data[back];
+        hm->hashes[front] = hm->hashes[back];
+        hm->hashes[back] = HM_SLOT_UNUSED;
 #if defined(_DEBUG)
         list->data[back] = -1;
 #endif
     }
 
-    hm->kvs.values = &cmd_ids_null_vec;
+    cmds->count = hm->count;
+
+    hm->kvs.keys = &cmd_ids_null_vec;
     used_cmds_hm_deinit(hm);
 
-    return list;
+    return cmds;
 }

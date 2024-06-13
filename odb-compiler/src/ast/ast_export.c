@@ -7,11 +7,11 @@
 
 static void
 write_nodes(
-    const struct ast*       ast,
-    ast_id                  n,
-    FILE*                   fp,
-    const struct db_source* source,
-    const struct cmd_list*  commands)
+    const struct ast*      ast,
+    ast_id                 n,
+    FILE*                  fp,
+    struct db_source       source,
+    const struct cmd_list* commands)
 {
     union ast_node* nd = &ast->nodes[n];
     switch (nd->info.node_type)
@@ -32,8 +32,9 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [shape=\"doubleoctagon\", fontcolor=\"blue\", "
-                "label=\"%.*s%s\"];\n",
+                "label=\"%d %.*s%s\"];\n",
                 n,
+                nd->cmd.id,
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
                 ret_type == TYPE_VOID ? "" : "()");
@@ -47,7 +48,7 @@ write_nodes(
                 "label=\"{%.*s%.*s|%s}\"];\n",
                 n,
                 nd->identifier.name.len,
-                source->text.data + nd->identifier.name.off,
+                source.text.data + nd->identifier.name.off,
                 nd->identifier.annotation ? 1 : 0,
                 nd->identifier.annotation ? (char*)&nd->identifier.annotation
                                           : NULL,
@@ -139,7 +140,7 @@ write_nodes(
                 "label=\"\\\"%.*s\\\"\"];\n",
                 n,
                 nd->string_literal.str.len,
-                source->text.data + nd->string_literal.str.off);
+                source.text.data + nd->string_literal.str.off);
             break;
         case AST_CAST:
             fprintf(
@@ -170,12 +171,12 @@ write_edges(const struct ast* ast, FILE* fp)
 
 ast_id
 ast_export_dot(
-    const struct ast*       ast,
-    struct utf8_view        filepath,
-    const struct db_source* source,
-    const struct cmd_list*  commands)
+    const struct ast*      ast,
+    struct ospathc         filepath,
+    struct db_source       source,
+    const struct cmd_list* commands)
 {
-    FILE* fp = fopen(filepath.data, "w");
+    FILE* fp = fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
         return -1;
     ast_export_dot_fp(ast, fp, source, commands);
@@ -186,10 +187,10 @@ ast_export_dot(
 
 ast_id
 ast_export_dot_fp(
-    const struct ast*       ast,
-    FILE*                   fp,
-    const struct db_source* source,
-    const struct cmd_list*  commands)
+    const struct ast*      ast,
+    FILE*                  fp,
+    struct db_source       source,
+    const struct cmd_list* commands)
 {
     fprintf(fp, "digraph ast {\n");
     write_nodes(ast, 0, fp, source, commands);

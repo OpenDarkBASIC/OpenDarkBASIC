@@ -27,12 +27,14 @@ ir_translate_ast(
 
 ODBCOMPILER_PUBLIC_API int
 ir_create_runtime(
-    struct ir_module*     ir,
-    const struct cmd_ids* used_cmds,
-    const char*           main_dba_name,
-    enum sdk_type         sdk_type,
-    enum target_arch      arch,
-    enum target_platform  platform);
+    struct ir_module*         ir,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct cmd_ids*     used_cmds,
+    const char*               main_dba_name,
+    enum sdk_type             sdk_type,
+    enum target_arch          arch,
+    enum target_platform      platform);
 
 ODBCOMPILER_PUBLIC_API int
 ir_optimize(struct ir_module* ir);

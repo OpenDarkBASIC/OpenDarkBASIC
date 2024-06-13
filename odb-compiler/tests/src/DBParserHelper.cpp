@@ -1,5 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 #include <filesystem>
+
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -33,7 +34,7 @@ DBParserHelper::~DBParserHelper()
         std::string filename = std::string("ast/") + info->test_suite_name()
                                + "__" + info->name() + ".dot";
         std::filesystem::create_directory("ast");
-        ast_export_dot(&ast, cstr_utf8_view(filename.c_str()), &src, &cmds);
+        ast_export_dot(&ast, cstr_ospathc(filename.c_str()), src, &cmds);
 #endif
     }
 

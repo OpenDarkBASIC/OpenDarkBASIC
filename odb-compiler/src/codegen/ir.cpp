@@ -808,7 +808,7 @@ ir_translate_ast(
             {},
             /* isVarArg */ false),
         llvm::Function::ExternalLinkage,
-        ir->mod.getName(),
+        llvm::Twine("dba_") + ir->mod.getName(),
         &ir->mod);
 
     // Translate AST

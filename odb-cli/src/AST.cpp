@@ -134,7 +134,7 @@ dumpASTDOT(const std::vector<std::string>& args)
 
     for (const auto& result : results)
         ast_export_dot_fp(
-            &result.ast, outFile, &result.source, getCommandList());
+            &result.ast, outFile, result.source, getCommandList());
 
     if (!args.empty())
         fclose(outFile);

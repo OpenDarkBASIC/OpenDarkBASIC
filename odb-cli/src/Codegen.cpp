@@ -2,12 +2,12 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Commands.hpp"
 #include "odb-cli/SDK.hpp"
-#include "odb-compiler/codegen/target.h"
-#include <optional>
 
 extern "C" {
 #include "odb-compiler/codegen/ir.h"
+#include "odb-compiler/codegen/target.h"
 #include "odb-compiler/link/link.h"
+#include "odb-compiler/sdk/used_cmds.h"
 #include "odb-sdk/log.h"
 }
 
@@ -72,10 +72,25 @@ output(const std::vector<std::string>& args)
     ir_compile(ir, objfile.c_str(), arch_, platform_);
     ir_free(ir);
 
+    struct used_cmds_hm* used_cmds_hm;
+    used_cmds_init(&used_cmds_hm);
+    used_cmds_append(&used_cmds_hm, getAST());
+    struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds_hm);
+
     ir = ir_alloc("odbruntime");
-    ir_create_runtime(ir, modname.c_str(), getSDKType(), arch_, platform_);
+    ir_create_runtime(
+        ir,
+        getPluginList(),
+        getCommandList(),
+        used_cmds_list,
+        modname.c_str(),
+        getSDKType(),
+        arch_,
+        platform_);
     ir_compile(ir, "odbruntime.o", arch_, platform_);
     ir_free(ir);
+
+    cmd_ids_deinit(used_cmds_list);
 
     const char* objfiles[] = {objfile.c_str(), "odbruntime.o"};
     odb_link(objfiles, 2, outputName.c_str(), arch_, platform_);
