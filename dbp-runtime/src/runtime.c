@@ -10,7 +10,7 @@ static struct GlobStruct* globPtr;
 static DWORD last_dbp_error;
 
 #define DBP_PLUGIN_LIST \
-    X(g_GFX,         "DBProSetupDebug.dll") \
+    X(gb.CreateStructGEP(TGlobStruct, glob_ptr, g_GFX)_GFX,         "DBProSetupDebug.dll") \
     X(g_Basic2D,     "DBProBasic2DDebug.dll") \
     X(g_Text,        "DBProTextDebug.dll") \
     X(g_Transforms,  "DBProTransformsDebug.dll") \

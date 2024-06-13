@@ -101,6 +101,8 @@ used_cmds_finalize(struct used_cmds_hm* hm)
     int32_t         front = 0;
     int32_t         back = hm->capacity - 1;
     struct cmd_ids* cmds = hm->kvs.keys ? hm->kvs.keys : &cmd_ids_null_vec;
+
+    /* Move around values to fill gaps, so it can be used as a vector */
     while (1)
     {
         while (hm->hashes[front] != HM_SLOT_UNUSED
@@ -117,11 +119,7 @@ used_cmds_finalize(struct used_cmds_hm* hm)
         cmds->data[front] = cmds->data[back];
         hm->hashes[front] = hm->hashes[back];
         hm->hashes[back] = HM_SLOT_UNUSED;
-#if defined(_DEBUG)
-        list->data[back] = -1;
-#endif
     }
-
     cmds->count = hm->count;
 
     hm->kvs.keys = &cmd_ids_null_vec;
