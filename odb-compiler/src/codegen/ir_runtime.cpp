@@ -49,11 +49,11 @@ gen_init_odb(
         llvm::Constant* rpath_data = llvm::ConstantDataArray::getString(
             ir->ctx,
             llvm::StringRef("odb-sdk\\plugins\\"),
-            /* Add NULL */ true);
+            /*AddNull=*/true);
         llvm::GlobalVariable* rpath_const = new llvm::GlobalVariable(
             ir->mod,
             rpath_data->getType(),
-            /*isConstant*/ true,
+            /*isConstant=*/true,
             llvm::GlobalValue::PrivateLinkage,
             rpath_data,
             ".rpath");
@@ -264,7 +264,7 @@ gen_cmd_loader(
             /*isConstant=*/true,
             llvm::GlobalVariable::PrivateLinkage,
             PathConstant,
-            llvm::Twine("plugin") + llvm::Twine(plugin_id) + "_path");
+            llvm::Twine(".plugin") + llvm::Twine(plugin_id) + "_path");
         llvm::Value* lib_handle
             = call_dlopen(ir, BB, FDLOpen, GVPath, platform);
 
@@ -291,7 +291,7 @@ gen_cmd_loader(
                 /*isConstant=*/true,
                 llvm::GlobalVariable::PrivateLinkage,
                 SymNameConstant,
-                llvm::Twine("cmd") + llvm::Twine(*pcmd) + "_name");
+                llvm::Twine(".cmd") + llvm::Twine(*pcmd) + "_name");
 
             llvm::GlobalVariable* GVCommandPtr = new llvm::GlobalVariable(
                 ir->mod,
@@ -584,6 +584,7 @@ gen_start_dbpro(
         },
         /*isPacked=*/false);
 
+    /* Load GetGlobPtr() function from DBProCore DLL */
     llvm::Constant* CGetGlobPtr = llvm::ConstantDataArray::getString(
         ir->ctx, "?GetGlobPtr@@YAKXZ", /*AddNull=*/true);
     llvm::GlobalVariable* GVGetGlobPtr = new llvm::GlobalVariable(
@@ -592,7 +593,7 @@ gen_start_dbpro(
         /*isConstant=*/true,
         llvm::GlobalVariable::PrivateLinkage,
         CGetGlobPtr,
-        "CORE_GetGlobPtr_name");
+        ".CORE_GetGlobPtr_name");
     llvm::Value* GetGlobPtr = call_dlsym(
         ir,
         BB,
@@ -600,14 +601,205 @@ gen_start_dbpro(
         plugins.find("DBProCore")->getValue(),
         GVGetGlobPtr,
         platform);
+
+    /* Call GetGlobPtr(). Returns a DWORD, but has to be cast to a pointer type
+     */
     llvm::FunctionType* FTGetGlobPtr = llvm::FunctionType::get(
         llvm::Type::getInt32Ty(ir->ctx), {}, /*isVarArg=*/false);
-    llvm::Value* glob_ptr = b.CreateCall(FTGetGlobPtr, GetGlobPtr, {});
+    llvm::Value* glob_ptr_as_dword = b.CreateCall(FTGetGlobPtr, GetGlobPtr, {});
+    llvm::Value* glob_ptr = b.CreateIntToPtr(
+        glob_ptr_as_dword, llvm::PointerType::getUnqual(ir->ctx));
 
-    llvm::Value* DBProSetupDebug = plugins.find("DBProSetupDebug")->getValue();
-    llvm::Value* Member = b.CreateStructGEP(TGlobStruct, glob_ptr, g_GFX);
-    llvm::Value* wat = llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0));
-    b.CreateStore(wat, Member);
+    /* Fill in the "official" plugin handles into the glob struct wherever
+     * applicable */
+#define OFFICIAL_PLUGIN_LIST                                                   \
+    X(g_GFX, "DBProSetupDebug")                                                \
+    X(g_Basic2D, "DBProBasic2DDebug")                                          \
+    X(g_Text, "DBProTextDebug")                                                \
+    X(g_Transforms, "DBProTransformsDebug")                                    \
+    X(g_Sprites, "DBProSpritesDebug")                                          \
+    X(g_Image, "DBProImageDebug")                                              \
+    X(g_Input, "DBProInputDebug")                                              \
+    X(g_System, "DBProSystemDebug")                                            \
+    X(g_Sound, "DBProSoundDebug")                                              \
+    X(g_Music, "DBProMusicDebug")                                              \
+    X(g_File, "DBProFileDebug")                                                \
+    X(g_FTP, "DBProFTPDebug")                                                  \
+    X(g_Memblocks, "DBProMemblocksDebug")                                      \
+    X(g_Animation, "DBProAnimationDebug")                                      \
+    X(g_Bitmap, "DBProBitmapDebug")                                            \
+    X(g_Multiplayer, "DBProMultiplayerDebug")                                  \
+    X(g_Camera3D, "DBProCameraDebug")                                          \
+    X(g_Light3D, "DBProLightDebug")                                            \
+    X(g_Matrix3D, "DBProMatrixDebug")                                          \
+    X(g_Basic3D, "DBProBasic3DDebug")                                          \
+    X(g_World3D, "DBProWorld3DDebug")                                          \
+    X(g_Q2BSP, "DBProQ2BSPDebug")                                              \
+    X(g_OwnBSP, "DBProOwnBSPDebug")                                            \
+    X(g_BSPCompiler, "DBProBSPCompilerDebug")                                  \
+    X(g_Particles, "DBProParticlesDebug")                                      \
+    X(g_PrimObject, "DBProPrimObjectDebug")                                    \
+    X(g_Vectors, "DBProVectorsDebug")                                          \
+    X(g_LODTerrain, "DBProLODTerrainDebug")                                    \
+    X(g_CSG, "DBProCSGDebug")
+#define X(field_name, plugin_name)                                             \
+    {                                                                          \
+        auto it = plugins.find(plugin_name);                                   \
+        if (it != plugins.end())                                               \
+        {                                                                      \
+            llvm::Value* lib_handle = it->getValue();                          \
+            llvm::Value* Member                                                \
+                = b.CreateStructGEP(TGlobStruct, glob_ptr, field_name);        \
+            b.CreateStore(lib_handle, Member);                                 \
+        }                                                                      \
+    }
+    OFFICIAL_PLUGIN_LIST
+#undef X
+
+    /* Set pEXEUnpackDirectory to a temporary path using GetTempPathA()
+     * Code equivalent:
+     *   memset(globPtr->pEXEUnpackDirectory, 0,
+     *       sizeof(globPtr->pEXEUnpackDirectory));
+     *   int tempPathSize = GetTempPathA(MAX_PATH,
+     *       globPtr->pEXEUnpackDirectory);
+     *   char unpackDir[] = "odbc-unpack";
+     *   memcpy(globPtr->pEXEUnpackDirectory + tempPathSize,
+     *       unpackDir, sizeof(unpackDir));
+     */
+    llvm::Function* FGetTempPathA = llvm::Function::Create(
+        llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            {llvm::Type::getInt32Ty(ir->ctx),
+             llvm::PointerType::getUnqual(ir->ctx)},
+            /*isVarArg=*/false),
+        llvm::Function::ExternalLinkage,
+        "GetTempPathA",
+        ir->mod);
+    llvm::Function* FMemset = llvm::Intrinsic::getDeclaration(
+        &ir->mod,
+        llvm::Intrinsic::memset,
+        {llvm::PointerType::getUnqual(ir->ctx),
+         llvm::Type::getInt8Ty(ir->ctx),
+         llvm::Type::getInt32Ty(ir->ctx)});
+    llvm::Function* FMemcpy = llvm::Intrinsic::getDeclaration(
+        &ir->mod,
+        llvm::Intrinsic::memcpy,
+        {llvm::PointerType::getUnqual(ir->ctx),
+         llvm::PointerType::getUnqual(ir->ctx),
+         llvm::Type::getInt32Ty(ir->ctx)});
+    llvm::Value* pEXEUnpackDirectoryPtr
+        = b.CreateStructGEP(TGlobStruct, glob_ptr, pEXEUnpackDirectory);
+    b.CreateCall(
+        FMemset,
+        {pEXEUnpackDirectoryPtr,
+         llvm::ConstantInt::get(llvm::Type::getInt8Ty(ir->ctx), 0),
+         llvm::ConstantInt::get(llvm::Type::getInt32Ty(ir->ctx), 0)});
+    llvm::Value* tempPathSize = b.CreateCall(
+        FGetTempPathA,
+        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ir->ctx), 260),
+         pEXEUnpackDirectoryPtr});
+    llvm::Constant* CODBUnpackDir = llvm::ConstantDataArray::getString(
+        ir->ctx,
+        "odb-unpack",
+        /*AddNull=*/true);
+    llvm::GlobalVariable* GVODBUnpackDir = new llvm::GlobalVariable(
+        ir->mod,
+        CODBUnpackDir->getType(),
+        /*isConstant*/ true,
+        llvm::GlobalValue::PrivateLinkage,
+        CODBUnpackDir,
+        ".ODBUnpackDir");
+    llvm::Value* AppendPathPtr = b.CreateGEP(
+        llvm::Type::getInt8Ty(ir->ctx),
+        pEXEUnpackDirectoryPtr,
+        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ir->ctx), 0),
+         tempPathSize});
+    b.CreateCall(
+        FMemcpy,
+        {AppendPathPtr,
+         GVODBUnpackDir,
+         llvm::ConstantInt::get(
+             llvm::Type::getInt32Ty(ir->ctx), sizeof("odb-unpack"))});
+
+    /* DBP stores a global "errno"-like variable that contains the last error,
+     * if any. The memory for this variable is managed externally, so we have to
+     * pass it in. It is a DWORD */
+    llvm::GlobalVariable* GVLastError = new llvm::GlobalVariable(
+        ir->mod,
+        llvm::Type::getInt32Ty(ir->ctx),
+        /*isConstant=*/false,
+        llvm::GlobalVariable::InternalLinkage,
+        llvm::ConstantInt::get(llvm::Type::getInt32Ty(ir->ctx), 0),
+        "LastDBPError");
+    llvm::Constant* CPassErrorHandlerPtr = llvm::ConstantDataArray::getString(
+        ir->ctx, "?PassErrorHandlerPtr@@YAXPAX@Z", /*AddNull=*/true);
+    llvm::GlobalVariable* GVPassErrorHandlerPtr = new llvm::GlobalVariable(
+        ir->mod,
+        CPassErrorHandlerPtr->getType(),
+        /*isConstant=*/true,
+        llvm::GlobalVariable::PrivateLinkage,
+        CPassErrorHandlerPtr,
+        ".CORE_PassErrorHandlerPtr_name");
+    llvm::Value* PassErrorHandlerPtr = call_dlsym(
+        ir,
+        BB,
+        FDLSym,
+        plugins.find("DBProCore")->getValue(),
+        GVPassErrorHandlerPtr,
+        platform);
+    llvm::FunctionType* FTPassErrorHandlerPtr = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(ir->ctx),
+        {llvm::PointerType::getUnqual(ir->ctx)},
+        /*isVarArg=*/false);
+    b.CreateCall(FTPassErrorHandlerPtr, PassErrorHandlerPtr, {GVLastError});
+
+    /* PassDLLs */
+    llvm::Constant* CPassDLLs = llvm::ConstantDataArray::getString(
+        ir->ctx, "?PassDLLs@@YAXXZ", /*AddNull=*/true);
+    llvm::GlobalVariable* GVPassDLLs = new llvm::GlobalVariable(
+        ir->mod,
+        CPassDLLs->getType(),
+        /*isConstant=*/true,
+        llvm::GlobalVariable::PrivateLinkage,
+        CPassDLLs,
+        ".CORE_PassDLLs_name");
+    llvm::Value* PassDLLs = call_dlsym(
+        ir,
+        BB,
+        FDLSym,
+        plugins.find("DBProCore")->getValue(),
+        GVPassDLLs,
+        platform);
+    llvm::FunctionType* FTPassDLLs = llvm::FunctionType::get(
+        llvm::Type::getVoidTy(ir->ctx),
+        {llvm::PointerType::getUnqual(ir->ctx)},
+        /*isVarArg=*/false);
+    b.CreateCall(FTPassDLLs, PassDLLs, {});
+
+    /* InitDisplay */
+    llvm::Constant* CInitDisplay = llvm::ConstantDataArray::getString(
+        ir->ctx,
+        "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z",
+        /*AddNull=*/true);
+    llvm::GlobalVariable* GVInitDisplay = new llvm::GlobalVariable(
+        ir->mod,
+        CInitDisplay->getType(),
+        /*isConstant=*/true,
+        llvm::GlobalVariable::PrivateLinkage,
+        CInitDisplay,
+        ".CORE_InitDisplay_name");
+    llvm::Value* InitDisplay = call_dlsym(
+        ir,
+        BB,
+        FDLSym,
+        plugins.find("DBProCore")->getValue(),
+        GVInitDisplay,
+        platform);
+    llvm::FunctionType* FTInitDisplay = llvm::FunctionType::get(
+        llvm::Type::getInt32Ty(ir->ctx),
+        {llvm::PointerType::getUnqual(ir->ctx)},
+        /*isVarArg=*/false);
+    b.CreateCall(FTPassDLLs, PassDLLs, {});
 
     return 0;
 }
