@@ -202,7 +202,7 @@
 
 /* non-terminals */
 %type<node_value> program
-%type<node_value> block stmt
+%type<node_value> block cblock stmt
 %type<node_value> expr
 %type<node_value> arglist
 %type<node_value> const_decl
@@ -224,6 +224,11 @@ program
   ;
 block
   : block seps stmt                         { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
+  | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
+  ;
+cblock
+  : cblock ':' stmt                 { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
+  | cblock ';' stmt                 { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
   | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 stmt
@@ -282,12 +287,12 @@ conditional
   | cond_begin                              { $$ = $1; }
   ;
 cond_oneline
-  : IF expr THEN stmt ELSE stmt             { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
+  : IF expr THEN cblock ELSE cblock         { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
-  | IF expr THEN stmt %prec NO_ELSE         { ast_id branch = ast_cond_branch(ctx->ast, $4, -1, @$);
+  | IF expr THEN cblock %prec NO_ELSE       { ast_id branch = ast_cond_branch(ctx->ast, $4, -1, @$);
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
-  | IF expr THEN ELSE stmt                  { ast_id branch = ast_cond_branch(ctx->ast, -1, $5, @$);
-                                              $$ = ast_cond_branch(ctx->ast, $2, branch, @$); }
+  | IF expr THEN ELSE cblock                { ast_id branch = ast_cond_branch(ctx->ast, -1, $5, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
   ;
 cond_begin
   : IF expr seps block seps cond_next       { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);

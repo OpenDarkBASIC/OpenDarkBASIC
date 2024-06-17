@@ -308,7 +308,7 @@ log_semantic_err(
 static llvm::Value*
 gen_expr(
     struct ir_module*                             ir,
-    llvm::BasicBlock*                             BB,
+    llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
@@ -321,7 +321,7 @@ gen_expr(
 static llvm::Value*
 gen_cmd_call(
     struct ir_module*                             ir,
-    llvm::BasicBlock*                             BB,
+    llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     ast_id                                        cmd,
     const struct cmd_list*                        cmds,
@@ -352,7 +352,7 @@ gen_cmd_call(
     {
         param_values.push_back(gen_expr(
             ir,
-            BB,
+            b,
             ast,
             ast->nodes[arg].arglist.expr,
             cmds,
@@ -363,7 +363,6 @@ gen_cmd_call(
             allocamap));
     }
 
-    llvm::IRBuilder<>   b(BB);
     llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
     llvm::Value*        cmd_func_addr
         = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
@@ -373,7 +372,7 @@ gen_cmd_call(
 static llvm::Value*
 gen_expr(
     struct ir_module*                             ir,
-    llvm::BasicBlock*                             BB,
+    llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
@@ -383,9 +382,6 @@ gen_expr(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
-    llvm::IRBuilder<> b(ir->ctx);
-    b.SetInsertPoint(BB);
-
     switch (ast->nodes[expr].info.node_type)
     {
         case AST_BLOCK:
@@ -395,7 +391,7 @@ gen_expr(
         case AST_COMMAND:
             return gen_cmd_call(
                 ir,
-                BB,
+                b,
                 ast,
                 expr,
                 cmds,
@@ -431,7 +427,7 @@ gen_expr(
             enum type    result_type = ast->nodes[expr].binop.info.type_info;
             llvm::Value* lhs = gen_expr(
                 ir,
-                BB,
+                b,
                 ast,
                 lhs_node,
                 cmds,
@@ -442,7 +438,7 @@ gen_expr(
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
-                BB,
+                b,
                 ast,
                 rhs_node,
                 cmds,
@@ -600,7 +596,7 @@ gen_expr(
 
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
-                llvm::Type::getInt8Ty(ir->ctx),
+                llvm::Type::getInt1Ty(ir->ctx),
                 ast->nodes[expr].boolean_literal.is_true,
                 /* isSigned */ true);
 
@@ -672,7 +668,7 @@ gen_expr(
 
             llvm::Value* value = gen_expr(
                 ir,
-                BB,
+                b,
                 ast,
                 ast->nodes[expr].cast.expr,
                 cmds,
@@ -700,7 +696,7 @@ gen_expr(
 int
 gen_block(
     struct ir_module*                             ir,
-    llvm::BasicBlock*                             BB,
+    llvm::IRBuilder<>&                            b,
     const struct ast*                             ast,
     ast_id                                        block,
     const struct cmd_list*                        cmds,
@@ -715,8 +711,6 @@ gen_block(
         ast->nodes[block].info.node_type == AST_BLOCK,
         log_sdk_err("type: %d\n", ast->nodes[block].info.node_type));
 
-    llvm::IRBuilder<> b(BB);
-
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
@@ -726,7 +720,7 @@ gen_block(
             case AST_COMMAND: {
                 gen_cmd_call(
                     ir,
-                    BB,
+                    b,
                     ast,
                     stmt,
                     cmds,
@@ -743,7 +737,7 @@ gen_block(
                 ast_id       rhs_node = ast->nodes[stmt].assignment.expr;
                 llvm::Value* rhs = gen_expr(
                     ir,
-                    BB,
+                    b,
                     ast,
                     rhs_node,
                     cmds,
@@ -778,17 +772,9 @@ gen_block(
                 ast_id yes_node = ast->nodes[branch_node].cond_branch.yes;
                 ast_id no_node = ast->nodes[branch_node].cond_branch.no;
 
-                llvm::Function*   F = BB->getParent();
-                llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node), F);
-                llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
-                    ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
-                llvm::BasicBlock* BBMerge
-                    = llvm::BasicBlock::Create(ir->ctx, "merge");
-
                 llvm::Value* expr = gen_expr(
                     ir,
-                    BB,
+                    b,
                     ast,
                     expr_node,
                     cmds,
@@ -797,38 +783,56 @@ gen_block(
                     string_table,
                     cmd_func_table,
                     allocamap);
-                b.CreateCondBr(expr, BBYes, BBNo);
+                llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node));
+                llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
+                llvm::BasicBlock* BBMerge
+                    = llvm::BasicBlock::Create(ir->ctx, "merge");
+                llvm::Value* cond = b.CreateICmpNE(
+                    expr,
+                    llvm::ConstantInt::get(
+                        llvm::Type::getInt1Ty(ir->ctx), llvm::APInt(1, 0)));
+                b.CreateCondBr(cond, BBYes, BBNo);
 
-                gen_block(
-                    ir,
-                    BBYes,
-                    ast,
-                    yes_node,
-                    cmds,
-                    source_filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    allocamap);
+                llvm::Function* F = b.GetInsertBlock()->getParent();
+                F->insert(F->end(), BBYes);
                 b.SetInsertPoint(BBYes);
+                if (yes_node > -1)
+                {
+                    gen_block(
+                        ir,
+                        b,
+                        ast,
+                        yes_node,
+                        cmds,
+                        source_filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        allocamap);
+                }
                 b.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
                 BBYes = b.GetInsertBlock();
 
                 F->insert(F->end(), BBNo);
-                gen_block(
-                    ir,
-                    BBNo,
-                    ast,
-                    no_node,
-                    cmds,
-                    source_filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    allocamap);
                 b.SetInsertPoint(BBNo);
+                if (no_node > -1)
+                {
+                    gen_block(
+                        ir,
+                        b,
+                        ast,
+                        no_node,
+                        cmds,
+                        source_filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        allocamap);
+                }
                 b.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
@@ -836,7 +840,6 @@ gen_block(
 
                 F->insert(F->end(), BBMerge);
                 b.SetInsertPoint(BBMerge);
-                b.CreateRetVoid();
             }
             break;
 
@@ -884,9 +887,10 @@ ir_translate_ast(
      * index in the AST. Makes it easier to track down issues later on. */
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
+    llvm::IRBuilder<> b(BB);
     gen_block(
         ir,
-        BB,
+        b,
         program,
         0,
         cmds,
@@ -898,7 +902,6 @@ ir_translate_ast(
     allocamap_deinit(allocamap);
 
     // Finish off block
-    llvm::IRBuilder<> b(BB);
     b.CreateRetVoid();
 
     // Validate the generated code, checking for consistency.

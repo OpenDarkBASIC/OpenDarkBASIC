@@ -1,10 +1,10 @@
 extern "C" {
+#include "odb-compiler/codegen/target.h"
 #include "odb-compiler/link/link.h"
 #include "odb-sdk/fs.h"
 }
 
 #include "lld/Common/Driver.h"
-#include "odb-compiler/codegen/target.h"
 #include <string>
 
 LLD_HAS_DRIVER(coff)

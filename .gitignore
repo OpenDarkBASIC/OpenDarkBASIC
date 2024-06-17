@@ -13,6 +13,7 @@
 *.kate-swp
 /compile_commands.json
 /CMakeLists.txt.user
+.obsidian
 
 # valgrind
 /*.grind

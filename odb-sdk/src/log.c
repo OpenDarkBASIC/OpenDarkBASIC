@@ -384,6 +384,8 @@ log_vimpl(
     struct varef args;
     va_copy(args.ap, ap);
 
+    if (is_progress && !progress_active)
+        log_printf("\n");
     if (progress_active)
     {
         if (g_log.use_color)

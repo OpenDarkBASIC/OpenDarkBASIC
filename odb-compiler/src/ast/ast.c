@@ -46,6 +46,9 @@ ast_block(struct ast* ast, ast_id stmt, struct utf8_span location)
     ast_id n = new_node(ast, AST_BLOCK, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(stmt > -1, log_sdk_err("stmt: %d\n", stmt));
+
     ast->nodes[n].block.stmt = stmt;
     return n;
 }
@@ -61,7 +64,8 @@ ast_block_append(
     ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[block].base.info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", (ast->nodes[block].base.info.node_type)));
+        log_sdk_err("type: %d\n", ast->nodes[block].base.info.node_type));
+
     while (ast->nodes[block].block.next != -1)
         block = ast->nodes[block].block.next;
     ast->nodes[block].block.next = n;
@@ -75,6 +79,9 @@ ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location)
     ast_id n = new_node(ast, AST_ARGLIST, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+
     ast->nodes[n].arglist.expr = expr;
     return n;
 }
@@ -90,7 +97,8 @@ ast_arglist_append(
     ODBSDK_DEBUG_ASSERT(arglist > -1, log_sdk_err("arglist: %d\n", arglist));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[arglist].info.node_type == AST_ARGLIST,
-        log_sdk_err("type: %d\n", (ast->nodes[arglist].info.node_type)));
+        log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
+
     while (ast->nodes[arglist].arglist.next != -1)
         arglist = ast->nodes[arglist].arglist.next;
     ast->nodes[arglist].arglist.next = n;
@@ -106,6 +114,11 @@ ast_const_decl(
     ast_id n = new_node(ast, AST_CONST_DECL, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_sdk_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+
     ast->nodes[n].const_decl.identifier = identifier;
     ast->nodes[n].const_decl.expr = expr;
     return n;
@@ -113,12 +126,18 @@ ast_const_decl(
 
 ast_id
 ast_command(
-    struct ast* ast, cmd_id cmd_idx, ast_id arglist, struct utf8_span location)
+    struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_COMMAND, location);
     if (n < 0)
         return -1;
-    ast->nodes[n].cmd.id = cmd_idx;
+
+    ODBSDK_DEBUG_ASSERT(cmd_id > -1, log_sdk_err("cmd_id: %d\n", cmd_id));
+    ODBSDK_DEBUG_ASSERT(
+        arglist == -1 || ast->nodes[arglist].info.node_type == AST_ARGLIST,
+        log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
+
+    ast->nodes[n].cmd.id = cmd_id;
     ast->nodes[n].cmd.arglist = arglist;
     return n;
 }
@@ -134,6 +153,14 @@ ast_assign_var(
     ast_id n = new_node(ast, AST_ASSIGNMENT, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_sdk_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_sdk_err("type: %d\n", ast->nodes[identifier].info.node_type));
+
     ast->nodes[n].assignment.lvalue = identifier;
     ast->nodes[n].assignment.expr = expr;
     ast->nodes[n].assignment.op_location = op_location;
@@ -167,6 +194,10 @@ ast_binop(
     ast_id n = new_node(ast, AST_BINOP, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(left > -1, log_sdk_err("left: %d\n", left));
+    ODBSDK_DEBUG_ASSERT(right > -1, log_sdk_err("right: %d\n", right));
+
     ast->nodes[n].binop.left = left;
     ast->nodes[n].binop.right = right;
     ast->nodes[n].binop.op_location = op_location;
@@ -181,6 +212,9 @@ ast_unop(
     ast_id n = new_node(ast, AST_UNOP, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+
     ast->nodes[n].unop.expr = expr;
     ast->nodes[n].unop.op = op;
     return n;
@@ -192,8 +226,14 @@ ast_cond(
     ast_id n = new_node(ast, AST_COND, location);
     if (n < 0)
         return -1;
-    ODBSDK_DEBUG_ASSERT(expr > -1, (void)0);
-    ODBSDK_DEBUG_ASSERT(cond_branch > -1, (void)0);
+
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(
+        cond_branch > -1, log_sdk_err("cond_branch: %d\n", cond_branch));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
+        log_sdk_err("type: %d\n", ast->nodes[cond_branch].info.node_type));
+
     ast->nodes[n].cond.expr = expr;
     ast->nodes[n].cond.cond_branch = cond_branch;
     return n;
@@ -205,8 +245,17 @@ ast_cond_branch(
     ast_id n = new_node(ast, AST_COND_BRANCH, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        yes == -1 || ast->nodes[yes].info.node_type == AST_BLOCK,
+        log_sdk_err("type: %d\n", ast->nodes[yes].info.node_type));
+    ODBSDK_DEBUG_ASSERT(
+        no == -1 || ast->nodes[no].info.node_type == AST_BLOCK,
+        log_sdk_err("type: %d\n", ast->nodes[no].info.node_type));
+
     ast->nodes[n].cond_branch.yes = yes;
     ast->nodes[n].cond_branch.no = no;
+
     return n;
 }
 
@@ -328,6 +377,8 @@ ast_cast(
     ast_id n = new_node(ast, AST_CAST, location);
     if (n < 0)
         return -1;
+
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
     ast->nodes[n].cast.expr = expr;
     ast->nodes[n].info.type_info = target_type;
     return n;

@@ -731,7 +731,9 @@ TEST_F(NAME, retain_all)
 
     EXPECT_THAT(vobj->count, Eq(8));
     EXPECT_THAT(
-        vobj_retain(vobj, [](obj* o, void* user) { return 1; }, NULL), Eq(0));
+        vobj_retain(
+            vobj, [](obj* o, void* user) { return 1; }, NULL),
+        Eq(0));
     EXPECT_THAT(vobj->count, Eq(8));
 }
 
@@ -761,7 +763,9 @@ TEST_F(NAME, retain_returning_error)
     EXPECT_THAT(vobj->count, Eq(8));
     int i = 0;
     EXPECT_THAT(
-        vobj_retain(vobj, [](obj* o, void* user) { return -5; }, NULL), Eq(-5));
+        vobj_retain(
+            vobj, [](obj* o, void* user) { return -5; }, NULL),
+        Eq(-5));
     EXPECT_THAT(vobj->count, Eq(8));
 }
 
@@ -771,4 +775,21 @@ TEST_F(NAME, insert_up_to_realloc_doesnt_cause_invalid_memmove)
         vobj_insert(&vobj, i, obj{i, i, i, i});
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         EXPECT_THAT(vobj->data[i], Eq(obj{i, i, i, i}));
+}
+
+TEST_F(NAME, resize_from_0_to_0)
+{
+    vobj_resize(&vobj, 0);
+    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+}
+
+TEST_F(NAME, resize_from_8_to_0)
+{
+    vobj_resize(&vobj, 8);
+    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj->capacity, Eq(8));
+    EXPECT_THAT(vobj->data, NotNull());
+
+    vobj_resize(&vobj, 0);
+    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
 }

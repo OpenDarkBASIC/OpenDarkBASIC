@@ -189,8 +189,8 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int (*on_element)(T * elem, void* user),                               \
-        void* user);                                                           \
+        int            (*on_element)(T * elem, void* user),                    \
+        void*          user);                                                           \
                                                                                \
     static inline void prefix##_init(struct prefix** v)                        \
     {                                                                          \
@@ -205,7 +205,13 @@
                                                                                \
     static inline int prefix##_resize(struct prefix** v, int##bits##_t elems)  \
     {                                                                          \
-        if (prefix##_reserve(v, elems) == 0)                                   \
+        if (elems == 0)                                                        \
+        {                                                                      \
+            if ((*v)->capacity)                                                \
+                mem_free(*v);                                                  \
+            *v = &prefix##_null_vec;                                           \
+        }                                                                      \
+        else if (prefix##_reserve(v, elems) == 0)                              \
         {                                                                      \
             (*v)->count = elems;                                               \
             return 0;                                                          \
@@ -256,13 +262,14 @@
         void*    new_mem                                                       \
             = mem_realloc(((*v)->capacity ? *v : NULL), header + data);        \
         if (new_mem == NULL)                                                   \
-            return log_oom(header + data, "vec_reserve()");                    \
+            return log_oom(header + data, "vec_realloc()");                    \
         *(void**)v = new_mem;                                                  \
         return 0;                                                              \
     }                                                                          \
                                                                                \
     int prefix##_reserve(struct prefix** v, int##bits##_t elems)               \
     {                                                                          \
+        ODBSDK_DEBUG_ASSERT(elems > 0, log_sdk_err("elems: %d\n", elems));     \
         if (prefix##_realloc(v, elems) != 0)                                   \
             return -1;                                                         \
         (*v)->count = 0;                                                       \
@@ -377,7 +384,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->data[(v)->count - (i) - 1])
+#define vec_rget(v, i) (&(v)->data[(v)->count - (i)-1])
 
 /*!
  * @brief Iterates over the elements in a vector.

@@ -12,6 +12,7 @@ type_check_and_cast_casts(
     const char*      source_filename,
     struct db_source source)
 {
+    ODBSDK_DEBUG_ASSERT(cast > -1, (void)0);
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[cast].info.node_type == AST_CAST,
         log_sdk_err("type: %d\n", ast->nodes[cast].info.node_type));

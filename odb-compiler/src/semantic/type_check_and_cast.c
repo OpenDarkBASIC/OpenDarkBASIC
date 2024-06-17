@@ -157,6 +157,7 @@ resolve_node_type(
     struct typemap**       typemap,
     int16_t                scope)
 {
+    ODBSDK_DEBUG_ASSERT(n > -1, (void)0);
     if (ast->nodes[n].info.type_info != TYPE_VOID)
         return ast->nodes[n].info.type_info;
 
@@ -456,13 +457,15 @@ resolve_node_type(
             if (ast->nodes[expr].info.type_info == TYPE_INVALID)
                 return TYPE_INVALID;
 
-            if (resolve_node_type(
-                    ast, yes, cmds, source_filename, source, typemap, scope)
-                == TYPE_INVALID)
+            if (yes > -1
+                && resolve_node_type(
+                       ast, yes, cmds, source_filename, source, typemap, scope)
+                       == TYPE_INVALID)
                 return TYPE_INVALID;
-            if (resolve_node_type(
-                    ast, no, cmds, source_filename, source, typemap, scope)
-                == TYPE_INVALID)
+            if (no > -1
+                && resolve_node_type(
+                       ast, no, cmds, source_filename, source, typemap, scope)
+                       == TYPE_INVALID)
                 return TYPE_INVALID;
 
             return TYPE_VOID;

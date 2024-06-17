@@ -79,7 +79,7 @@ bool
 printSDKRootDir(const std::vector<std::string>& args)
 {
     log_sdk_note(
-        "SDK root directory: {quote:%s}'\n", ospath_cstr(sdk_root_dir));
+        "SDK root directory: {quote:%s}\n", ospath_cstr(sdk_root_dir));
     return true;
 }
 
