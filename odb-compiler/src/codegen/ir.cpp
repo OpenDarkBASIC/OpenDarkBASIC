@@ -308,7 +308,7 @@ log_semantic_err(
 static llvm::Value*
 gen_expr(
     struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            b,
+    llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
@@ -321,7 +321,7 @@ gen_expr(
 static llvm::Value*
 gen_cmd_call(
     struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            b,
+    llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        cmd,
     const struct cmd_list*                        cmds,
@@ -352,7 +352,7 @@ gen_cmd_call(
     {
         param_values.push_back(gen_expr(
             ir,
-            b,
+            builder,
             ast,
             ast->nodes[arg].arglist.expr,
             cmds,
@@ -365,14 +365,14 @@ gen_cmd_call(
 
     llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
     llvm::Value*        cmd_func_addr
-        = b.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
-    return b.CreateCall(FT, cmd_func_addr, param_values);
+        = builder.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
+    return builder.CreateCall(FT, cmd_func_addr, param_values);
 }
 
 static llvm::Value*
 gen_expr(
     struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            b,
+    llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        expr,
     const struct cmd_list*                        cmds,
@@ -391,7 +391,7 @@ gen_expr(
         case AST_COMMAND:
             return gen_cmd_call(
                 ir,
-                b,
+                builder,
                 ast,
                 expr,
                 cmds,
@@ -413,7 +413,7 @@ gen_expr(
              * declared */
             ODBSDK_DEBUG_ASSERT(*A != NULL, (void)0);
 
-            return b.CreateLoad(
+            return builder.CreateLoad(
                 (*A)->getAllocatedType(),
                 *A,
                 llvm::StringRef(name.data + name.off, name.len));
@@ -427,7 +427,7 @@ gen_expr(
             enum type    result_type = ast->nodes[expr].binop.info.type_info;
             llvm::Value* lhs = gen_expr(
                 ir,
-                b,
+                builder,
                 ast,
                 lhs_node,
                 cmds,
@@ -438,7 +438,7 @@ gen_expr(
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
-                b,
+                builder,
                 ast,
                 rhs_node,
                 cmds,
@@ -493,41 +493,41 @@ gen_expr(
                 case BINOP_ADD:
                     switch (type_family)
                     {
-                        case INT: return b.CreateNSWAdd(lhs, rhs);
-                        case UINT: return b.CreateAdd(lhs, rhs);
-                        case FLOAT: return b.CreateFAdd(lhs, rhs);
+                        case INT: return builder.CreateNSWAdd(lhs, rhs);
+                        case UINT: return builder.CreateAdd(lhs, rhs);
+                        case FLOAT: return builder.CreateFAdd(lhs, rhs);
                     }
                     break;
                 case BINOP_SUB:
                     switch (type_family)
                     {
-                        case INT: return b.CreateNSWSub(lhs, rhs);
-                        case UINT: return b.CreateSub(lhs, rhs);
-                        case FLOAT: return b.CreateFSub(lhs, rhs);
+                        case INT: return builder.CreateNSWSub(lhs, rhs);
+                        case UINT: return builder.CreateSub(lhs, rhs);
+                        case FLOAT: return builder.CreateFSub(lhs, rhs);
                     }
                     break;
                 case BINOP_MUL:
                     switch (type_family)
                     {
-                        case INT: return b.CreateNSWMul(lhs, rhs);
-                        case UINT: return b.CreateMul(lhs, rhs);
-                        case FLOAT: return b.CreateFMul(lhs, rhs);
+                        case INT: return builder.CreateNSWMul(lhs, rhs);
+                        case UINT: return builder.CreateMul(lhs, rhs);
+                        case FLOAT: return builder.CreateFMul(lhs, rhs);
                     }
                     break;
                 case BINOP_DIV:
                     switch (type_family)
                     {
-                        case INT: return b.CreateSDiv(lhs, rhs);
-                        case UINT: return b.CreateUDiv(lhs, rhs);
-                        case FLOAT: return b.CreateFDiv(lhs, rhs);
+                        case INT: return builder.CreateSDiv(lhs, rhs);
+                        case UINT: return builder.CreateUDiv(lhs, rhs);
+                        case FLOAT: return builder.CreateFDiv(lhs, rhs);
                     }
                     break;
                 case BINOP_MOD:
                     switch (type_family)
                     {
-                        case INT: return b.CreateSRem(lhs, rhs);
-                        case UINT: return b.CreateURem(lhs, rhs);
-                        case FLOAT: return b.CreateFRem(lhs, rhs);
+                        case INT: return builder.CreateSRem(lhs, rhs);
+                        case UINT: return builder.CreateURem(lhs, rhs);
+                        case FLOAT: return builder.CreateFRem(lhs, rhs);
                     }
                     break;
                 case BINOP_POW:
@@ -538,7 +538,7 @@ gen_expr(
                             llvm::Intrinsic::powi,
                             {llvm::Type::getFloatTy(ir->ctx),
                              llvm::Type::getInt32Ty(ir->ctx)});
-                        return b.CreateCall(FPowi, {lhs, rhs});
+                        return builder.CreateCall(FPowi, {lhs, rhs});
                     }
                     else if (
                         lhs_type == TYPE_DOUBLE && rhs_type == TYPE_INTEGER)
@@ -548,7 +548,7 @@ gen_expr(
                             llvm::Intrinsic::powi,
                             {llvm::Type::getDoubleTy(ir->ctx),
                              llvm::Type::getInt32Ty(ir->ctx)});
-                        return b.CreateCall(FPowi, {lhs, rhs});
+                        return builder.CreateCall(FPowi, {lhs, rhs});
                     }
                     else if (lhs_type == TYPE_FLOAT && rhs_type == TYPE_FLOAT)
                     {
@@ -557,7 +557,7 @@ gen_expr(
                             llvm::Intrinsic::pow,
                             {llvm::Type::getFloatTy(ir->ctx),
                              llvm::Type::getFloatTy(ir->ctx)});
-                        return b.CreateCall(FPow, {lhs, rhs});
+                        return builder.CreateCall(FPow, {lhs, rhs});
                     }
                     else if (lhs_type == TYPE_DOUBLE && rhs_type == TYPE_DOUBLE)
                     {
@@ -567,7 +567,7 @@ gen_expr(
                             llvm::Intrinsic::pow,
                             {llvm::Type::getDoubleTy(ir->ctx),
                              llvm::Type::getDoubleTy(ir->ctx)});
-                        return b.CreateCall(FPow, {lhs, rhs});
+                        return builder.CreateCall(FPow, {lhs, rhs});
                     }
                     break;
 
@@ -668,7 +668,7 @@ gen_expr(
 
             llvm::Value* value = gen_expr(
                 ir,
-                b,
+                builder,
                 ast,
                 ast->nodes[expr].cast.expr,
                 cmds,
@@ -680,7 +680,7 @@ gen_expr(
             enum type from
                 = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
             enum type to = ast->nodes[expr].cast.info.type_info;
-            return b.CreateCast(
+            return builder.CreateCast(
                 llvm_cast_ops[from][to], value, type_to_llvm(to, &ir->ctx));
         }
         break;
@@ -696,7 +696,7 @@ gen_expr(
 int
 gen_block(
     struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            b,
+    llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        block,
     const struct cmd_list*                        cmds,
@@ -720,7 +720,7 @@ gen_block(
             case AST_COMMAND: {
                 gen_cmd_call(
                     ir,
-                    b,
+                    builder,
                     ast,
                     stmt,
                     cmds,
@@ -737,7 +737,7 @@ gen_block(
                 ast_id       rhs_node = ast->nodes[stmt].assignment.expr;
                 llvm::Value* rhs = gen_expr(
                     ir,
-                    b,
+                    builder,
                     ast,
                     rhs_node,
                     cmds,
@@ -758,11 +758,11 @@ gen_block(
                 llvm::AllocaInst** A
                     = allocamap_insert_or_get(allocamap, name_scope, NULL);
                 if (*A == NULL)
-                    *A = b.CreateAlloca(
+                    *A = builder.CreateAlloca(
                         type_to_llvm(type, &ir->ctx),
                         NULL,
                         llvm::StringRef(name.data + name.off, name.len));
-                b.CreateStore(rhs, *A);
+                builder.CreateStore(rhs, *A);
                 break;
             }
 
@@ -774,7 +774,7 @@ gen_block(
 
                 llvm::Value* expr = gen_expr(
                     ir,
-                    b,
+                    builder,
                     ast,
                     expr_node,
                     cmds,
@@ -789,20 +789,20 @@ gen_block(
                     ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
                 llvm::BasicBlock* BBMerge
                     = llvm::BasicBlock::Create(ir->ctx, "merge");
-                llvm::Value* cond = b.CreateICmpNE(
+                llvm::Value* cond = builder.CreateICmpNE(
                     expr,
                     llvm::ConstantInt::get(
                         llvm::Type::getInt1Ty(ir->ctx), llvm::APInt(1, 0)));
-                b.CreateCondBr(cond, BBYes, BBNo);
+                builder.CreateCondBr(cond, BBYes, BBNo);
 
-                llvm::Function* F = b.GetInsertBlock()->getParent();
+                llvm::Function* F = builder.GetInsertBlock()->getParent();
                 F->insert(F->end(), BBYes);
-                b.SetInsertPoint(BBYes);
+                builder.SetInsertPoint(BBYes);
                 if (yes_node > -1)
                 {
                     gen_block(
                         ir,
-                        b,
+                        builder,
                         ast,
                         yes_node,
                         cmds,
@@ -812,18 +812,18 @@ gen_block(
                         cmd_func_table,
                         allocamap);
                 }
-                b.CreateBr(BBMerge);
+                builder.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
-                BBYes = b.GetInsertBlock();
+                BBYes = builder.GetInsertBlock();
 
                 F->insert(F->end(), BBNo);
-                b.SetInsertPoint(BBNo);
+                builder.SetInsertPoint(BBNo);
                 if (no_node > -1)
                 {
                     gen_block(
                         ir,
-                        b,
+                        builder,
                         ast,
                         no_node,
                         cmds,
@@ -833,13 +833,13 @@ gen_block(
                         cmd_func_table,
                         allocamap);
                 }
-                b.CreateBr(BBMerge);
+                builder.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
-                BBNo = b.GetInsertBlock();
+                BBNo = builder.GetInsertBlock();
 
                 F->insert(F->end(), BBMerge);
-                b.SetInsertPoint(BBMerge);
+                builder.SetInsertPoint(BBMerge);
             }
             break;
 
@@ -887,10 +887,10 @@ ir_translate_ast(
      * index in the AST. Makes it easier to track down issues later on. */
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
-    llvm::IRBuilder<> b(BB);
+    llvm::IRBuilder<> builder(BB);
     gen_block(
         ir,
-        b,
+        builder,
         program,
         0,
         cmds,
@@ -902,7 +902,7 @@ ir_translate_ast(
     allocamap_deinit(allocamap);
 
     // Finish off block
-    b.CreateRetVoid();
+    builder.CreateRetVoid();
 
     // Validate the generated code, checking for consistency.
     llvm::verifyFunction(*F);
