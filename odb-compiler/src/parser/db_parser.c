@@ -1,3 +1,4 @@
+#include "odb-compiler/parser/db_keyword.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/parser/db_scanner.lex.h"
@@ -14,9 +15,9 @@ extern int dbdebug;
 
 struct token
 {
-    DBLTYPE pushed_location;
-    int     pushed_char;
-    DBSTYPE pushed_value;
+    DBLTYPE        pushed_location;
+    dbtoken_kind_t pushed_char;
+    DBSTYPE        pushed_value;
 };
 
 RB_DECLARE_API(token_queue, struct token, 8)
@@ -138,7 +139,7 @@ scan_next_token(
             }
 
             /* Handle EOF or scanner error */
-            if (token->pushed_char == TOK_END)
+            if (token->pushed_char == TOK_EOF)
                 break;
             if (token->pushed_char < 0)
                 return NULL;
@@ -166,6 +167,16 @@ scan_next_token(
             token->pushed_char = TOK_COMMAND;
             token->pushed_value.cmd_value = longest_match_cmd_idx;
         }
+    }
+
+    /* This identifier could be a keyword */
+    token = token_queue_peek_read(*tokens);
+    if (token->pushed_char == TOK_IDENTIFIER)
+    {
+        dbtoken_kind_t keyword
+            = db_keyword_lookup(source_text, token->pushed_location);
+        if (keyword != TOK_EOF)
+            token->pushed_char = keyword;
     }
 
     return token_queue_take(*tokens);

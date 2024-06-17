@@ -1,7 +1,5 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/log.h"
 
 static int
 resolve_assignments(
@@ -25,6 +23,8 @@ resolve_assignments(
             }
             break;
 
+            case AST_COND:
+            case AST_COND_BRANCH:
             case AST_COMMAND:
             case AST_IDENTIFIER:
             case AST_BINOP:

@@ -85,6 +85,8 @@ enum ast_type
     AST_BINOP,
     /*! Unary operator such as -a, !a, etc. */
     AST_UNOP,
+    AST_COND,
+    AST_COND_BRANCH,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
     /*! A literal between 0 and 255. Maps to uint8_t. */
@@ -192,6 +194,19 @@ union ast_node
         enum unop_type op;
     } unop;
 
+    struct cond {
+        struct info info;
+        ast_id parent;
+        ast_id expr;
+        ast_id cond_branch;
+    } cond;
+    struct cond_branch {
+        struct info info;
+        ast_id parent;
+        ast_id yes;
+        ast_id no;
+    } cond_branch;
+
     struct boolean_literal {
         struct info info;
         ast_id parent;
@@ -286,6 +301,8 @@ ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct ut
 ast_id ast_identifier(struct ast* ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_binop(struct ast* ast, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_unop(struct ast* ast, enum unop_type op, ast_id expr, struct utf8_span location);
+ast_id ast_cond(struct ast* ast, ast_id expr, ast_id cond_branch, struct utf8_span location);
+ast_id ast_cond_branch(struct ast* ast, ast_id yes, ast_id no, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);
 ast_id ast_float_literal(struct ast* ast, float value, struct utf8_span location);

@@ -76,6 +76,12 @@ write_nodes(
 #undef X
             }
             break;
+        case AST_COND:
+            fprintf(fp, "  n%d [shape=\"diamond\", label=\"if\"];\n", n);
+            break;
+        case AST_COND_BRANCH:
+            fprintf(fp, "  n%d [shape=\"diamond\", label=\"branches\"];\n", n);
+            break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
                 fp,

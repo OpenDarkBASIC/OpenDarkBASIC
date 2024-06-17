@@ -114,7 +114,7 @@
 }
 
 /* Add a description to some of the tokens */
-%token END 0 "end of file"
+%token EOF 0 "end of file"
 %token '\n' "end of line"
 %token ':' "colon"
 %token ';' "semi-colon"
@@ -122,6 +122,13 @@
 /* Keywords */
 %token CONSTANT "constant"
 %token AS "AS"
+/* Control flow */
+%token IF "IF"
+%token THEN "THEN"
+%token ELSE "ELSE"
+%token ELSEIF "ELSEIF"
+%token NO_ELSE
+%token ENDIF
 
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal"
@@ -201,6 +208,7 @@
 %type<node_value> const_decl
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
+%type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> literal
 %type<node_value> annotated_identifier
 
@@ -222,6 +230,7 @@ stmt
   : const_decl                              { $$ = $1; }
   | command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
+  | conditional                             { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; }
@@ -256,7 +265,7 @@ command_stmt
   : COMMAND                                 { $$ = ast_command(ctx->ast, $1, -1, @$); }
   | COMMAND arglist                         { $$ = ast_command(ctx->ast, $1, $2, @$); }
   | COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
-  | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
+//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 // Commands appearing as expressions must be csalled with arguments in brackets
 command_expr
@@ -267,6 +276,34 @@ assignment
   : annotated_identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
+  ;
+conditional
+  : cond_oneline                            { $$ = $1; }
+  | cond_begin                              { $$ = $1; }
+  ;
+cond_oneline
+  : IF expr THEN stmt ELSE stmt             { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  | IF expr THEN stmt %prec NO_ELSE         { ast_id branch = ast_cond_branch(ctx->ast, $4, -1, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  | IF expr THEN ELSE stmt                  { ast_id branch = ast_cond_branch(ctx->ast, -1, $5, @$);
+                                              $$ = ast_cond_branch(ctx->ast, $2, branch, @$); }
+  ;
+cond_begin
+  : IF expr seps block seps cond_next       { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  | IF expr seps cond_next                  { ast_id branch = ast_cond_branch(ctx->ast, -1, $4, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  ;
+cond_next
+  : ELSEIF expr seps block seps cond_next   { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
+                                              ast_id cond = ast_cond(ctx->ast, $2, branch, @$);
+                                              $$ = ast_block(ctx->ast, cond, @$); }
+  | ELSEIF expr seps cond_next              { ast_id branch = ast_cond_branch(ctx->ast, -1, $4, @$);
+                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  | ELSE seps block seps ENDIF              { $$ = $3; }
+  | ELSE seps ENDIF                         { $$ = -1; }
+  | ENDIF                                   { $$ = -1; }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }

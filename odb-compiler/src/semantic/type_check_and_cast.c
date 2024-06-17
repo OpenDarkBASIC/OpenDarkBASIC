@@ -440,6 +440,36 @@ resolve_node_type(
 
         case AST_UNOP: break;
 
+        case AST_COND: {
+            ast_id expr = ast->nodes[n].cond.expr;
+            ast_id cond_branch = ast->nodes[n].cond.cond_branch;
+
+            ODBSDK_DEBUG_ASSERT(
+                ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
+                log_sdk_err(
+                    "type: %d\n", ast->nodes[cond_branch].info.node_type));
+            ast_id yes = ast->nodes[cond_branch].cond_branch.yes;
+            ast_id no = ast->nodes[cond_branch].cond_branch.no;
+
+            ast->nodes[expr].info.type_info = resolve_node_type(
+                ast, expr, cmds, source_filename, source, typemap, scope);
+            if (ast->nodes[expr].info.type_info == TYPE_INVALID)
+                return TYPE_INVALID;
+
+            if (resolve_node_type(
+                    ast, yes, cmds, source_filename, source, typemap, scope)
+                == TYPE_INVALID)
+                return TYPE_INVALID;
+            if (resolve_node_type(
+                    ast, no, cmds, source_filename, source, typemap, scope)
+                == TYPE_INVALID)
+                return TYPE_INVALID;
+
+            return TYPE_VOID;
+        }
+        break;
+        case AST_COND_BRANCH: break;
+
         case AST_BOOLEAN_LITERAL:
             return ast->nodes[n].boolean_literal.info.type_info = TYPE_BOOLEAN;
         case AST_BYTE_LITERAL:

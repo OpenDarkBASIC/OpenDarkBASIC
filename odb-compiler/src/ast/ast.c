@@ -185,6 +185,30 @@ ast_unop(
     ast->nodes[n].unop.op = op;
     return n;
 }
+ast_id
+ast_cond(
+    struct ast* ast, ast_id expr, ast_id cond_branch, struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_COND, location);
+    if (n < 0)
+        return -1;
+    ODBSDK_DEBUG_ASSERT(expr > -1, (void)0);
+    ODBSDK_DEBUG_ASSERT(cond_branch > -1, (void)0);
+    ast->nodes[n].cond.expr = expr;
+    ast->nodes[n].cond.cond_branch = cond_branch;
+    return n;
+}
+ast_id
+ast_cond_branch(
+    struct ast* ast, ast_id yes, ast_id no, struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_COND_BRANCH, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].cond_branch.yes = yes;
+    ast->nodes[n].cond_branch.no = no;
+    return n;
+}
 
 ast_id
 ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location)

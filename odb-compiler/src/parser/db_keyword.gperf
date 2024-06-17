@@ -23,8 +23,13 @@ struct db_keyword
 };
 
 %%
-and,              TOK_LAND
 as,               TOK_AS
+if,               TOK_IF
+then,             TOK_THEN
+else,             TOK_ELSE
+elseif,           TOK_ELSEIF
+endif,            TOK_ENDIF
+and,              TOK_LAND
 %%
 
 //boolean,          TOK_BOOLEAN
@@ -94,6 +99,6 @@ db_keyword_lookup(const char* data, struct utf8_span ref)
 {
     const struct db_keyword* kw = db_keyword_lookup_impl(data + ref.off, ref.len);
     if (kw == NULL)
-        return TOK_END;
+        return TOK_EOF;
     return kw->token;
 }

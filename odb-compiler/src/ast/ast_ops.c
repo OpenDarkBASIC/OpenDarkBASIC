@@ -73,6 +73,8 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
             break;
         case AST_BINOP: SWAP(enum binop_type, binop, op) break;
         case AST_UNOP: SWAP(enum unop_type, unop, op) break;
+        case AST_COND: break;
+        case AST_COND_BRANCH: break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
         case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
@@ -180,6 +182,8 @@ ast_trees_equal(
             if (a1->nodes[n1].unop.op != a2->nodes[n2].unop.op)
                 return 0;
             break;
+        case AST_COND: break;
+        case AST_COND_BRANCH: break;
         case AST_BOOLEAN_LITERAL:
             if (a1->nodes[n1].boolean_literal.is_true
                 != a2->nodes[n2].boolean_literal.is_true)

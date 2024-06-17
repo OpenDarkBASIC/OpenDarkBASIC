@@ -595,6 +595,9 @@ gen_expr(
         break;
         case AST_UNOP: break;
 
+        case AST_COND:
+        case AST_COND_BRANCH: break;
+
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
                 llvm::Type::getInt8Ty(ir->ctx),
@@ -694,10 +697,10 @@ gen_expr(
     return nullptr;
 }
 
-static llvm::BasicBlock*
+int
 gen_block(
     struct ir_module*                             ir,
-    llvm::Function*                               F,
+    llvm::BasicBlock*                             BB,
     const struct ast*                             ast,
     ast_id                                        block,
     const struct cmd_list*                        cmds,
@@ -712,13 +715,7 @@ gen_block(
         ast->nodes[block].info.node_type == AST_BLOCK,
         log_sdk_err("type: %d\n", ast->nodes[block].info.node_type));
 
-    /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
-     * statements from the current node. We name it according to the node's
-     * index in the AST. Makes it easier to track down issues later on. */
-    llvm::BasicBlock* BB = llvm::BasicBlock::Create(
-        ir->ctx, llvm::Twine("block") + llvm::Twine(block), F);
-    llvm::IRBuilder<> b(ir->ctx);
-    b.SetInsertPoint(BB);
+    llvm::IRBuilder<> b(BB);
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
@@ -775,15 +772,83 @@ gen_block(
                 break;
             }
 
+            case AST_COND: {
+                ast_id expr_node = ast->nodes[stmt].cond.expr;
+                ast_id branch_node = ast->nodes[stmt].cond.cond_branch;
+                ast_id yes_node = ast->nodes[branch_node].cond_branch.yes;
+                ast_id no_node = ast->nodes[branch_node].cond_branch.no;
+
+                llvm::Function*   F = BB->getParent();
+                llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node), F);
+                llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
+                llvm::BasicBlock* BBMerge
+                    = llvm::BasicBlock::Create(ir->ctx, "merge");
+
+                llvm::Value* expr = gen_expr(
+                    ir,
+                    BB,
+                    ast,
+                    expr_node,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    allocamap);
+                b.CreateCondBr(expr, BBYes, BBNo);
+
+                gen_block(
+                    ir,
+                    BBYes,
+                    ast,
+                    yes_node,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    allocamap);
+                b.SetInsertPoint(BBYes);
+                b.CreateBr(BBMerge);
+                // Codegen of "True" branch can change the current block. Update
+                // BBYes for the PHI.
+                BBYes = b.GetInsertBlock();
+
+                F->insert(F->end(), BBNo);
+                gen_block(
+                    ir,
+                    BBNo,
+                    ast,
+                    no_node,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    allocamap);
+                b.SetInsertPoint(BBNo);
+                b.CreateBr(BBMerge);
+                // Codegen of "True" branch can change the current block. Update
+                // BBYes for the PHI.
+                BBNo = b.GetInsertBlock();
+
+                F->insert(F->end(), BBMerge);
+                b.SetInsertPoint(BBMerge);
+                b.CreateRetVoid();
+            }
+            break;
+
             default:
                 log_err(
                     "[gen] ",
                     "Statement type not implemented while translating block\n");
-                return nullptr;
+                return -1;
         }
     }
 
-    return BB;
+    return 0;
 }
 
 int
@@ -811,12 +876,17 @@ ir_translate_ast(
         llvm::Twine("dba_") + ir->mod.getName(),
         &ir->mod);
 
-    // Translate AST
     struct allocamap* allocamap;
     allocamap_init(&allocamap);
-    llvm::BasicBlock* BB = gen_block(
+
+    /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
+     * statements from the current node. We name it according to the node's
+     * index in the AST. Makes it easier to track down issues later on. */
+    llvm::BasicBlock* BB
+        = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
+    gen_block(
         ir,
-        F,
+        BB,
         program,
         0,
         cmds,

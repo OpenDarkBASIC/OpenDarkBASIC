@@ -80,6 +80,9 @@ insert_explicit_type_casts(
             }
             break;
 
+            case AST_COND:
+            case AST_COND_BRANCH: break;
+
             case AST_BOOLEAN_LITERAL:
             case AST_BYTE_LITERAL:
             case AST_WORD_LITERAL:

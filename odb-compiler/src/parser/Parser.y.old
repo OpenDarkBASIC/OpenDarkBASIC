@@ -233,7 +233,7 @@
 %destructor { TouchRef($$); } <while_loop>
 
 /* Define the semantic types of our grammar. %token for sepINALS and %type for non_sepinals */
-%token END 0 "end of file"
+%token EOF 0 "end of file"
 %token '\n' "end of line"
 %token ':' "colon"
 %token ';' "semi-colon"
