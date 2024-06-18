@@ -16,8 +16,8 @@ typedef int (*semantic_check_func)(
 
 struct semantic_check
 {
-    const struct semantic_check** depends_on;
     semantic_check_func           execute;
+    const struct semantic_check** depends_on;
 };
 
 ODBCOMPILER_PUBLIC_API int

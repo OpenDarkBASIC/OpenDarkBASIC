@@ -17,19 +17,8 @@ insert_explicit_type_casts(
         {
             case AST_BLOCK:
             case AST_ARGLIST:
-            case AST_CONST_DECL: break;
-
-            case AST_ASSIGNMENT: {
-                ast_id    rvalue = ast->nodes[n].assignment.expr;
-                ast_id    lvalue = ast->nodes[n].assignment.lvalue;
-                enum type source_type = ast->nodes[rvalue].info.type_info;
-                enum type target_type = ast->nodes[lvalue].info.type_info;
-
-                if (source_type != target_type)
-                {
-                }
-            }
-            break;
+            case AST_CONST_DECL:
+            case AST_ASSIGNMENT: break;
 
             case AST_COMMAND: {
                 int                      i;
@@ -60,29 +49,11 @@ insert_explicit_type_casts(
             }
             break;
 
-            case AST_IDENTIFIER: break;
-
-            case AST_BINOP: break;
-
-            case AST_UNOP: {
-                ast_id    expr = ast->nodes[n].unop.expr;
-                enum type target_type = ast->nodes[n].info.type_info;
-
-                if (ast->nodes[expr].info.type_info != target_type)
-                {
-                    ast_id cast = ast_cast(
-                        ast, expr, target_type, ast->nodes[expr].info.location);
-                    if (cast < -1)
-                        return -1;
-
-                    ast->nodes[n].unop.expr = cast;
-                }
-            }
-            break;
-
+            case AST_IDENTIFIER:
+            case AST_BINOP:
+            case AST_UNOP:
             case AST_COND:
-            case AST_COND_BRANCH: break;
-
+            case AST_COND_BRANCH:
             case AST_BOOLEAN_LITERAL:
             case AST_BYTE_LITERAL:
             case AST_WORD_LITERAL:

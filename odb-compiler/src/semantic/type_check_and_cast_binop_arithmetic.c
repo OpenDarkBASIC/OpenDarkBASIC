@@ -39,7 +39,7 @@ log_narrow_binop(
 }
 
 static void
-log_strange_binop(
+log_implicit_binop(
     struct ast*      ast,
     ast_id           op,
     ast_id           source_node,
@@ -57,7 +57,7 @@ log_strange_binop(
         source_filename,
         source.text.data,
         ast->nodes[op].info.location,
-        "Strange conversion from {lhs:%s} to {rhs:%s} in binary expression.\n",
+        "Implicit conversion from {lhs:%s} to {rhs:%s} in binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_binop_excerpt(
@@ -133,15 +133,15 @@ type_check_and_cast_binop_arithmetic(
     else if (right_to_left == TP_ALLOW)
         target_type = lhs_type;
 
-    else if (left_to_right == TP_STRANGE)
+    else if (left_to_right == TP_INT_TO_FLOAT || left_to_right == TP_BOOL_PROMOTION)
     {
         target_type = rhs_type;
-        log_strange_binop(ast, op, lhs, rhs, source_filename, source);
+        log_implicit_binop(ast, op, lhs, rhs, source_filename, source);
     }
-    else if (right_to_left == TP_STRANGE)
+    else if (right_to_left == TP_INT_TO_FLOAT || right_to_left == TP_BOOL_PROMOTION)
     {
         target_type = lhs_type;
-        log_strange_binop(ast, op, rhs, lhs, source_filename, source);
+        log_implicit_binop(ast, op, rhs, lhs, source_filename, source);
     }
 
     else if (left_to_right == TP_TRUNCATE)
@@ -153,6 +153,17 @@ type_check_and_cast_binop_arithmetic(
     {
         target_type = lhs_type;
         log_narrow_binop(ast, op, rhs, lhs, source_filename, source);
+    }
+
+    else if (left_to_right == TP_TRUENESS)
+    {
+        target_type = rhs_type;
+        log_implicit_binop(ast, op, lhs, rhs, source_filename, source);
+    }
+    else if (right_to_left == TP_TRUENESS)
+    {
+        target_type = lhs_type;
+        log_implicit_binop(ast, op, rhs, lhs, source_filename, source);
     }
 
     /* Invalid conversion */

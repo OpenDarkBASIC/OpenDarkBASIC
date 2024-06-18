@@ -43,7 +43,9 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
             case TP_DISALLOW: return 0;
 
             case TP_TRUNCATE:
-            case TP_STRANGE:
+            case TP_TRUENESS:
+            case TP_INT_TO_FLOAT:
+            case TP_BOOL_PROMOTION:
             case TP_ALLOW: continue;
         }
     }
@@ -71,7 +73,9 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
         {
             case TP_DISALLOW:
             case TP_TRUNCATE:
-            case TP_STRANGE: return 0;
+            case TP_TRUENESS:
+            case TP_INT_TO_FLOAT:
+            case TP_BOOL_PROMOTION: return 0;
 
             case TP_ALLOW: continue;
         }
@@ -320,13 +324,15 @@ typecheck_warnings(
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
 
-            case TP_STRANGE:
+            case TP_TRUENESS:
+            case TP_INT_TO_FLOAT:
+            case TP_BOOL_PROMOTION:
                 log_flc(
                     "{w:warning:} ",
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
-                    "Strange conversion of argument %d from {lhs:%s} to "
+                    "Implicit conversion of argument %d from {lhs:%s} to "
                     "{rhs:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
@@ -409,7 +415,8 @@ resolve_cmd_overloads(
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
 
-        /* Update command ID in AST */
+        /* Success: Update command ID in AST and perform any necessary type
+         * conversions */
         if (candidates->count == 1)
         {
             ast->nodes[n].cmd.id = *vec_first(candidates);

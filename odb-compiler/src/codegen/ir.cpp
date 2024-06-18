@@ -570,7 +570,6 @@ gen_expr(
                         return builder.CreateCall(FPow, {lhs, rhs});
                     }
                     break;
-
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
                 case BINOP_BITWISE_OR:

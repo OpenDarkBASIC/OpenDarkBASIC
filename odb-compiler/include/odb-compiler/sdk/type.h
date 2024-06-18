@@ -42,7 +42,9 @@ enum type_promotion_result
     TP_DISALLOW = 0,
     TP_ALLOW = 1,
     TP_TRUNCATE = 2,
-    TP_STRANGE = 3
+    TP_TRUENESS = 3,
+    TP_INT_TO_FLOAT = 4,
+    TP_BOOL_PROMOTION = 5,
 };
 
 ODBCOMPILER_PUBLIC_API char

@@ -239,80 +239,6 @@ resolve_node_type(
                     switch (type_promote(rhs_type, lhs_type->type))
                     {
                         case TP_ALLOW: break;
-                        case TP_STRANGE:
-                            log_flc(
-                                "{w:warning:} ",
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[rhs].info.location,
-                                "Strange conversion from {lhs:%s} to {rhs:%s} "
-                                "in assignment.\n",
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
-                            gutter = log_binop_excerpt(
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[lhs].info.location,
-                                ast->nodes[n].assignment.op_location,
-                                ast->nodes[rhs].info.location,
-                                type_to_db_name(lhs_type->type),
-                                type_to_db_name(rhs_type));
-                            log_excerpt_note(
-                                gutter,
-                                "{lhs:%.*s} was previously declared as "
-                                "{lhs:%s} at ",
-                                orig_name.len,
-                                source.text.data + orig_name.off,
-                                type_to_db_name(lhs_type->type));
-                            log_flc(
-                                "",
-                                source_filename,
-                                source.text.data,
-                                orig_loc,
-                                "\n");
-                            log_excerpt(
-                                source_filename,
-                                source.text.data,
-                                orig_loc,
-                                type_to_db_name(lhs_type->type));
-                            break;
-                        case TP_TRUNCATE:
-                            log_flc(
-                                "{w:warning:} ",
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[rhs].info.location,
-                                "Value is truncated when converting from "
-                                "{lhs:%s} to {rhs:%s} in assignment.\n",
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
-                            gutter = log_binop_excerpt(
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[lhs].info.location,
-                                ast->nodes[n].assignment.op_location,
-                                ast->nodes[rhs].info.location,
-                                type_to_db_name(lhs_type->type),
-                                type_to_db_name(rhs_type));
-                            log_excerpt_note(
-                                gutter,
-                                "{lhs:%.*s} was previously declared as "
-                                "{lhs:%s} at ",
-                                orig_name.len,
-                                source.text.data + orig_name.off,
-                                type_to_db_name(lhs_type->type));
-                            log_flc(
-                                "",
-                                source_filename,
-                                source.text.data,
-                                orig_loc,
-                                "\n");
-                            log_excerpt(
-                                source_filename,
-                                source.text.data,
-                                orig_loc,
-                                type_to_db_name(lhs_type->type));
-                            break;
                         case TP_DISALLOW:
                             log_flc(
                                 "{e:error:} ",
@@ -350,6 +276,84 @@ resolve_node_type(
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             return TYPE_INVALID;
+
+                        case TP_TRUENESS:
+                        case TP_INT_TO_FLOAT:
+                        case TP_BOOL_PROMOTION:
+                            log_flc(
+                                "{w:warning:} ",
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[rhs].info.location,
+                                "Implicit conversion from {lhs:%s} to {rhs:%s} "
+                                "in assignment.\n",
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            gutter = log_binop_excerpt(
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
+                                type_to_db_name(lhs_type->type),
+                                type_to_db_name(rhs_type));
+                            log_excerpt_note(
+                                gutter,
+                                "{lhs:%.*s} was previously declared as "
+                                "{lhs:%s} at ",
+                                orig_name.len,
+                                source.text.data + orig_name.off,
+                                type_to_db_name(lhs_type->type));
+                            log_flc(
+                                "",
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                "\n");
+                            log_excerpt(
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                type_to_db_name(lhs_type->type));
+                            break;
+
+                        case TP_TRUNCATE:
+                            log_flc(
+                                "{w:warning:} ",
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[rhs].info.location,
+                                "Value is truncated when converting from "
+                                "{lhs:%s} to {rhs:%s} in assignment.\n",
+                                type_to_db_name(rhs_type),
+                                type_to_db_name(lhs_type->type));
+                            gutter = log_binop_excerpt(
+                                source_filename,
+                                source.text.data,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
+                                type_to_db_name(lhs_type->type),
+                                type_to_db_name(rhs_type));
+                            log_excerpt_note(
+                                gutter,
+                                "{lhs:%.*s} was previously declared as "
+                                "{lhs:%s} at ",
+                                orig_name.len,
+                                source.text.data + orig_name.off,
+                                type_to_db_name(lhs_type->type));
+                            log_flc(
+                                "",
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                "\n");
+                            log_excerpt(
+                                source_filename,
+                                source.text.data,
+                                orig_loc,
+                                type_to_db_name(lhs_type->type));
+                            break;
                     }
                 }
             }
@@ -365,9 +369,9 @@ resolve_node_type(
             for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
             {
                 ast_id    expr = ast->nodes[arglist].arglist.expr;
-                enum type type = resolve_node_type(
+                enum type arg_type = resolve_node_type(
                     ast, expr, cmds, source_filename, source, typemap, scope);
-                if (type == TYPE_INVALID)
+                if (arg_type == TYPE_INVALID)
                     return TYPE_INVALID;
             }
 
@@ -542,4 +546,4 @@ type_check_and_cast(
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations, NULL};
 const struct semantic_check semantic_type_check_and_cast
-    = {depends, type_check_and_cast};
+    = {type_check_and_cast, depends};

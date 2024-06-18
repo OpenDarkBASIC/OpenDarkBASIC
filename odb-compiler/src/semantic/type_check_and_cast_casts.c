@@ -64,13 +64,15 @@ type_check_and_cast_casts(
                 type_to_db_name(target_type));
             break;
 
-        case TP_STRANGE:
+        case TP_TRUENESS:
+        case TP_INT_TO_FLOAT:
+        case TP_BOOL_PROMOTION:
             log_flc(
                 "{w:warning:} ",
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
-                "Strange conversion from {lhs:%s} to {rhs:%s} in expression\n",
+                "Implicit conversion from {lhs:%s} to {rhs:%s} in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt2(
