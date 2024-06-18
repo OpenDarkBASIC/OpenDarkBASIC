@@ -55,6 +55,12 @@ setPlatform(const std::vector<std::string>& args)
 bool
 output(const std::vector<std::string>& args)
 {
+    if (getSDKType() == SDK_DBPRO)
+    {
+        platform_ = TARGET_WINDOWS;
+        arch_ = TARGET_i386;
+    }
+
     std::string outputName = args[0];
 
     std::string       srcfile = getSourceFilename();

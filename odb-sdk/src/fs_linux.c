@@ -134,6 +134,11 @@ try_again:
                 goto try_again;
         }
 
+        log_sdk_err(
+            "Failed to create directory {quote:%s}: %s\n",
+            ospath_cstr(path),
+            strerror(errno));
+
         return -1;
     }
 

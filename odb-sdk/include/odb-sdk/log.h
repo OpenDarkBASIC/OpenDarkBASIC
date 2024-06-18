@@ -66,9 +66,9 @@ log_warn(const char* group, const char* fmt, ...)
 ODBSDK_PRINTF_FORMAT(2, 0) static inline void
 log_verr(const char* group, const char* fmt, va_list ap)
 { log_vimpl(0, "{e:error: }", group, fmt, ap); }
-ODBSDK_PRINTF_FORMAT(2, 3) static inline void
+ODBSDK_PRINTF_FORMAT(2, 3) static inline int
 log_err(const char* group, const char* fmt, ...)
-{ va_list ap; va_start(ap, fmt); log_verr(group, fmt, ap); va_end(ap); }
+{ va_list ap; va_start(ap, fmt); log_verr(group, fmt, ap); va_end(ap); return -1; }
 
 /* Location logging functions ---------------------------------------------- */
 ODBSDK_PRINTF_FORMAT(5, 0) ODBSDK_PUBLIC_API void

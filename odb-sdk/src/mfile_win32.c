@@ -90,6 +90,76 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath)
 }
 
 int
+mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
+{
+    HANDLE hFile;
+    LARGE_INTEGER liFileSize;
+    HANDLE hMapping;
+    struct utf16 utf16_filename = empty_utf16();
+
+    if (utf8_to_utf16(&utf16_filename, ospathc_view(filepath)) != 0)
+        goto utf16_conv_failed;
+
+    /* Try to open the file */
+    hFile = CreateFileW(
+        utf16_cstr(utf16_filename),   /* File name */
+        GENERIC_READ | GENERIC_WRITE, /* Read/write */
+        0,
+        NULL,                         /* Default security */
+        CREATE_ALWAYS,                /* Overwrite any existing, otherwise create */
+        FILE_ATTRIBUTE_NORMAL,        /* Default attributes */
+        NULL);                        /* No attribute template */
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        log_sdk_err(
+            "Failed to open file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
+        goto open_failed;
+    }
+
+    hMapping = CreateFileMappingW(
+        hFile,           /* File handle */
+        NULL,            /* Default security attributes */
+        PAGE_READWRITE,  /* Read + Write */
+        0, size,         /* High/Low size of mapping */
+        NULL);           /* Don't name the mapping */
+    if (hMapping == NULL)
+    {
+        log_sdk_err(
+            "Failed to create file mapping for file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
+        goto create_file_mapping_failed;
+    }
+
+    mf->address = MapViewOfFile(
+        hMapping,                       /* File mapping handle */
+        FILE_MAP_READ | FILE_MAP_WRITE, /* Read + Write */
+        0, 0,                           /* High/Low offset of where the mapping should begin in the file */
+        0);                             /* Length of mapping. Zero means entire file */
+    if (mf->address == NULL)
+    {
+        log_sdk_err(
+            "Failed to map view of file {quote:%s}: {win32error}\n",
+            ospathc_cstr(filepath));
+        goto map_view_failed;
+    }
+
+    mem_track_allocation(mf->address);
+
+    /* Don't need these anymore */
+    CloseHandle(hMapping);
+    CloseHandle(hFile);
+    utf16_deinit(utf16_filename);
+
+    return 0;
+
+    map_view_failed            : CloseHandle(hMapping);
+    create_file_mapping_failed : CloseHandle(hFile);
+    open_failed                : utf16_deinit(utf16_filename);
+    utf16_conv_failed          : return -1;
+}
+
+int
 mfile_map_mem(struct mfile* mf, int size)
 {
     HANDLE mapping = CreateFileMapping(

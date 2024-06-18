@@ -70,44 +70,102 @@ fs_dir_exists(struct ospathc path)
     return !!(attr & FILE_ATTRIBUTE_DIRECTORY);
 }
 
-#if 0
-struct ospath
-fs_appdata_dir(void)
+int
+fs_make_dir(struct ospathc path)
 {
-    /*
-    char* utf8_path;
-    PWSTR path = NULL;
-    HRESULT hr = SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &path);
+    if (CreateDirectory(ospathc_cstr(path), NULL))
+        return 0;
+
+    if (GetLastError() == ERROR_ALREADY_EXISTS)
+        return 1;
+
+    log_sdk_err(
+        "Failed to create directory {quote:%s}: {win32error}\n",
+        ospathc_cstr(path));
+    return -1;
+}
+
+int
+fs_make_path(struct ospath path)
+{
+try_again:
+    if (CreateDirectory(ospath_cstr(path), NULL))
+    {
+        if (GetLastError() == ERROR_ALREADY_EXISTS)
+            return 0;
+
+        if (GetLastError() == ERROR_PATH_NOT_FOUND)
+        {
+            int result;
+            int len_store = path.str.len;
+            ospath_dirname(&path);
+            result = fs_make_path(path);
+            path.str.data[path.str.len] = '\\';
+            path.str.len = len_store;
+            if (result == 0)
+                goto try_again;
+        }
+
+        log_sdk_err(
+            "Failed to create directory {quote:%s}: {win32error}\n",
+            ospath_cstr(path));
+
+        return -1;
+    }
+
+    return 0;
+}
+
+int
+fs_get_appdata_dir(struct ospath* path)
+{
+    int result;
+    PWSTR u16path = NULL;
+    HRESULT hr = SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &u16path);
     if (FAILED(hr))
         goto get_folder_failed;
 
-    utf8_path = utf16_to_utf8(path, (int)wcslen(path));
-    if (utf8_path == NULL)
+    if (utf16_to_utf8(path, cstr_utf16_view(u16path)) != 0)
         goto utf_conversion_failed;
 
-    appdata_dir.data = utf8_path;
-    appdata_dir.len = (int)strlen(utf8_path);
-    */
+    CoTaskMemFree(u16path);
+    return 0;
 
-    return ospath();
-
-//utf_conversion_failed: CoTaskMemFree(path);
-//get_folder_failed: return -1;
+utf_conversion_failed: CoTaskMemFree(u16path);
+get_folder_failed: return -1;
 }
 
-int
-fs_make_dir(const char* path)
+uint64_t
+fs_mtime_ms(struct ospathc path)
 {
-    if (CreateDirectory(path, NULL) == 0)
-        return 0;
-    return -1;
-}
+    FILETIME mtime;
+    LARGE_INTEGER ns100;
+    HANDLE hFile = CreateFile(
+        ospathc_cstr(path),
+        0, 0, NULL,
+        OPEN_EXISTING,
+        FILE_ATTRIBUTE_NORMAL,
+        NULL);
+    if (hFile == INVALID_HANDLE_VALUE)
+    {
+        log_sdk_err("Failed to open file {quote:%s}: {win32error}\n",
+            ospathc_cstr(path));
+        goto open_file_failed;
+    }
 
-int
-fs_remove_file(const char* path)
-{
-    if (DeleteFile(path))
-        return 0;
-    return -1;
+    if (GetFileTime(hFile, NULL, NULL, &mtime) == 0)
+    {
+        log_sdk_err("Failed to open file {quote:%s}: {win32error}\n",
+            ospathc_cstr(path));
+        goto stat_file_failed;
+    }
+    
+    CloseHandle(hFile);
+
+    ns100.LowPart = mtime.dwLowDateTime;
+    ns100.HighPart = mtime.dwHighDateTime;
+    return ns100.QuadPart / 10 / 1000;
+
+stat_file_failed: CloseHandle(hFile);
+open_file_failed: return 0;
 }
-#endif

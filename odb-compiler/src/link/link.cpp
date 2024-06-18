@@ -22,7 +22,7 @@ link_windows(
 
     args.push_back("lld-link");
     args.push_back("-nodefaultlib");
-    args.push_back("-entry:main");
+    args.push_back("-entry:mainCRTStartup");
     args.push_back("-subsystem:console");
 
     switch (arch)
@@ -34,8 +34,14 @@ link_windows(
 
     std::string outNameArg = "-out:" + std::string(output_name);
     args.push_back(outNameArg.c_str());
-
+    
+    // Win32 API
     args.push_back("kernel32.lib");
+
+    // C runtime -- All 3 are needed
+    args.push_back("libucrt.lib");      // /MT of "Universal C-Runtime"
+    args.push_back("libvcruntime.lib"); // /MT of vcruntime
+    args.push_back("libcmt.lib");       // /MT of CRT initialization and termination
 
     // args.push_back("./odb-sdk/plugins/core-commands.lib");
     // args.push_back("./odb-sdk/plugins/test-plugin.lib");
@@ -60,7 +66,7 @@ link_linux(
 
     args.push_back("ld.lld");
     args.push_back("--nostdlib");
-    // args.push_back("--entry=main");
+    args.push_back("--entry=_start");
     args.push_back("--rpath=./lib:./odb-sdk/plugins");
 
     switch (arch)
