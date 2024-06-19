@@ -271,7 +271,7 @@ log_cmd_signature(
     log_raw("[%s]\n", utf8_cstr(plugin->name));
 }
 
-static void
+static int
 typecheck_warnings(
     struct ast*               ast,
     ast_id                    cmd_node,
@@ -345,7 +345,19 @@ typecheck_warnings(
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
         }
+
+        /* Insert cast to correct type if necessary */
+        if (arg_type != param_type)
+        {
+            ast_id cast
+                = ast_cast(ast, arg, param_type, ast->nodes[arg].info.location);
+            if (cast < -1)
+                return -1;
+            ast->nodes[arglist].arglist.expr = cast;
+        }
     }
+
+    return 0;
 }
 
 static int
@@ -464,4 +476,4 @@ static const struct semantic_check* depends[]
        NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads
-    = {depends, resolve_cmd_overloads};
+    = {resolve_cmd_overloads, depends};

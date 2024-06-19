@@ -43,4 +43,3 @@ resolve_assignments(
 
     return 0;
 }
-

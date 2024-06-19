@@ -103,7 +103,7 @@ enum ast_type
     AST_DOUBLE_LITERAL,
     /*! String. Should be UTF-8 encoded. */
     AST_STRING_LITERAL,
-    AST_CAST
+    AST_CAST,
 };
 
 /* clang-format off */

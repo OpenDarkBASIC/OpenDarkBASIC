@@ -74,13 +74,3 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
  */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_resolve_cmd_overloads;
-
-/*!
- * The AST will contain type conversions that are compatible with each other,
- * but do not match exactly. LLVM needs to insert type casts in these locations.
- *
- * This pass will add ast_cast nodes in these locations so that codegen does not
- * have to do any complex type comparisons.
- */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_insert_explicit_type_casts;

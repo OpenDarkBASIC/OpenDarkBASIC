@@ -195,7 +195,7 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_WORD: return llvm::Type::getInt16Ty(*ctx);
 
         case TYPE_BYTE:
-        case TYPE_BOOLEAN: return llvm::Type::getInt8Ty(*ctx);
+        case TYPE_BOOLEAN: return llvm::Type::getInt1Ty(*ctx);
 
         case TYPE_FLOAT: return llvm::Type::getFloatTy(*ctx);
         case TYPE_DOUBLE: return llvm::Type::getDoubleTy(*ctx);
@@ -364,8 +364,8 @@ gen_cmd_call(
     }
 
     llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
-    llvm::Value*        cmd_func_addr
-        = builder.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
+    llvm::Value*        cmd_func_addr = builder.CreateLoad(
+        llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
     return builder.CreateCall(FT, cmd_func_addr, param_values);
 }
 
@@ -641,7 +641,34 @@ gen_expr(
         }
 
         case AST_CAST: {
-            /* clang-format off */
+            enum type from
+                = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
+            enum type    to = ast->nodes[expr].cast.info.type_info;
+            llvm::Value* child_value = gen_expr(
+                ir,
+                builder,
+                ast,
+                ast->nodes[expr].cast.expr,
+                cmds,
+                source_filename,
+                source,
+                string_table,
+                cmd_func_table,
+                allocamap);
+
+            switch (to)
+            {
+                case TYPE_INVALID:
+                case TYPE_VOID: break;
+
+                case TYPE_LONG:
+                case TYPE_DWORD:
+                case TYPE_INTEGER:
+                case TYPE_WORD:
+                case TYPE_BYTE:
+                case TYPE_FLOAT:
+                case TYPE_DOUBLE: {
+                    /* clang-format off */
             using Op = llvm::Instruction::CastOps;
             Op O = Op::CastOpsBegin;
             static const Op llvm_cast_ops[16][16] = {
@@ -663,26 +690,55 @@ gen_expr(
      /* X */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
      /* E */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
             };
-            /* clang-format on */
+                    /* clang-format on */
 
-            llvm::Value* value = gen_expr(
-                ir,
-                builder,
-                ast,
-                ast->nodes[expr].cast.expr,
-                cmds,
-                source_filename,
-                source,
-                string_table,
-                cmd_func_table,
-                allocamap);
-            enum type from
-                = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
-            enum type to = ast->nodes[expr].cast.info.type_info;
-            return builder.CreateCast(
-                llvm_cast_ops[from][to], value, type_to_llvm(to, &ir->ctx));
+                    return builder.CreateCast(
+                        llvm_cast_ops[from][to],
+                        child_value,
+                        type_to_llvm(to, &ir->ctx));
+                }
+
+                case TYPE_BOOLEAN:
+                    switch (from)
+                    {
+                        case TYPE_INVALID: break;
+                        case TYPE_VOID: break;
+
+                        case TYPE_LONG:
+                        case TYPE_DWORD:
+                        case TYPE_INTEGER:
+                        case TYPE_WORD:
+                        case TYPE_BYTE:
+                        case TYPE_BOOLEAN:
+                            return builder.CreateICmpNE(
+                                child_value,
+                                llvm::ConstantInt::get(
+                                    type_to_llvm(from, &ir->ctx), 0));
+
+                        case TYPE_FLOAT:
+                        case TYPE_DOUBLE:
+                            return builder.CreateFCmpONE(
+                                child_value,
+                                llvm::ConstantFP::get(
+                                    ir->ctx, llvm::APFloat(0.0)));
+
+                        case TYPE_STRING:
+                        case TYPE_ARRAY:
+                        case TYPE_LABEL:
+                        case TYPE_DABEL:
+                        case TYPE_ANY:
+                        case TYPE_USER_DEFINED_VAR_PTR: break;
+                    }
+                    break;
+
+                case TYPE_STRING:
+                case TYPE_ARRAY:
+                case TYPE_LABEL:
+                case TYPE_DABEL:
+                case TYPE_ANY:
+                case TYPE_USER_DEFINED_VAR_PTR: break;
+            }
         }
-        break;
     }
 
     log_err(
@@ -788,11 +844,7 @@ gen_block(
                     ir->ctx, llvm::Twine("block") + llvm::Twine(no_node));
                 llvm::BasicBlock* BBMerge
                     = llvm::BasicBlock::Create(ir->ctx, "merge");
-                llvm::Value* cond = builder.CreateICmpNE(
-                    expr,
-                    llvm::ConstantInt::get(
-                        llvm::Type::getInt1Ty(ir->ctx), llvm::APInt(1, 0)));
-                builder.CreateCondBr(cond, BBYes, BBNo);
+                builder.CreateCondBr(expr, BBYes, BBNo);
 
                 llvm::Function* F = builder.GetInsertBlock()->getParent();
                 F->insert(F->end(), BBYes);

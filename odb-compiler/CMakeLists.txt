@@ -241,7 +241,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/semantic.h"
     "src/semantic/semantic.c"
     "src/semantic/expand_constant_declarations.c"
-    "src/semantic/insert_explicit_type_casts.c"
     "src/semantic/resolve_cmd_overloads.c"
     "src/semantic/type_check_and_cast.c"
     "src/semantic/type_check_and_cast_assignment.c"

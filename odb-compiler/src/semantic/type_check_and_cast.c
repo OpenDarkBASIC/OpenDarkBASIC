@@ -472,6 +472,60 @@ resolve_node_type(
                        == TYPE_INVALID)
                 return TYPE_INVALID;
 
+            /* The expression is always evaluated to a bool. If this is not the
+             * case here, then insert a cast */
+            if (ast->nodes[expr].info.type_info != TYPE_BOOLEAN)
+                switch (
+                    type_promote(ast->nodes[expr].info.type_info, TYPE_BOOLEAN))
+                {
+                    case TP_TRUENESS:
+                        log_flc(
+                            "{w:warning:} ",
+                            source_filename,
+                            source.text.data,
+                            ast->nodes[expr].info.location,
+                            "Implicit evaluation of {lhs:%s} as a boolean "
+                            "expression.\n",
+                            type_to_db_name(ast->nodes[expr].info.type_info));
+                        log_excerpt(
+                            source_filename,
+                            source.text.data,
+                            ast->nodes[expr].info.location,
+                            type_to_db_name(ast->nodes[expr].info.type_info));
+                        /* fallthrough */
+                    case TP_ALLOW: {
+                        ast_id cast = ast_cast(
+                            ast,
+                            expr,
+                            TYPE_BOOLEAN,
+                            ast->nodes[expr].info.location);
+                        if (cast < 0)
+                            return TYPE_INVALID;
+                        ast->nodes[n].cond.expr = cast;
+                    }
+                    break;
+
+                    case TP_DISALLOW:
+                        log_flc(
+                            "{e:error:} ",
+                            source_filename,
+                            source.text.data,
+                            ast->nodes[expr].info.location,
+                            "Cannot evaluate {lhs:%s} as a boolean "
+                            "expression.\n",
+                            type_to_db_name(ast->nodes[expr].info.type_info));
+                        log_excerpt(
+                            source_filename,
+                            source.text.data,
+                            ast->nodes[expr].info.location,
+                            type_to_db_name(ast->nodes[expr].info.type_info));
+                        return TYPE_INVALID;
+
+                    case TP_TRUNCATE:
+                    case TP_INT_TO_FLOAT:
+                    case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0);
+                }
+
             return TYPE_VOID;
         }
         break;

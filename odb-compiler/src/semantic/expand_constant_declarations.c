@@ -14,4 +14,4 @@ expand_constant_declarations(
 
 static const struct semantic_check* depends[] = {NULL};
 const struct semantic_check         semantic_expand_constant_declarations
-    = {depends, expand_constant_declarations};
+    = {expand_constant_declarations, depends};

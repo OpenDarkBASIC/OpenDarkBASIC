@@ -154,6 +154,7 @@ write_nodes(
                 "  n%d [label=\"cast<%s>\"];\n",
                 n,
                 type_to_db_name(nd->info.type_info));
+            break;
     }
 
     if (nd->base.left >= 0)

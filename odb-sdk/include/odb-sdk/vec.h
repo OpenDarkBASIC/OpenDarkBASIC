@@ -210,6 +210,7 @@
             if ((*v)->capacity)                                                \
                 mem_free(*v);                                                  \
             *v = &prefix##_null_vec;                                           \
+            return 0;                                                          \
         }                                                                      \
         else if (prefix##_reserve(v, elems) == 0)                              \
         {                                                                      \

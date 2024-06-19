@@ -177,10 +177,9 @@ semantic_run_essential_checks(
         = {&semantic_expand_constant_declarations,
            &semantic_type_check_and_cast,
            &semantic_resolve_cmd_overloads,
-           &semantic_insert_explicit_type_casts,
            NULL};
     static const struct semantic_check essential_check
-        = {essential_checks, dummy_check};
+        = {dummy_check, essential_checks};
 
     return semantic_check_run(
         &essential_check, ast, plugins, cmds, source_filename, source);
