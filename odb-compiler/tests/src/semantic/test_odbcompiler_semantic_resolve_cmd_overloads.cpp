@@ -67,7 +67,7 @@ TEST_F(NAME, float_accepts_integer_with_warning)
         Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:7: warning: Strange conversion of argument 1 from BYTE "
+        LogEq("test:1:7: warning: Implicit conversion of argument 1 from BYTE "
               "to FLOAT in command call.\n"
               " 1 | print 5\n"
               "   |       ^ BYTE\n"

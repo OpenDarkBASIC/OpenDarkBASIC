@@ -1,5 +1,4 @@
 #include <gmock/gmock.h>
-#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/tests/DBParserHelper.hpp"
 
 #define NAME odbcompiler_db_parser_command

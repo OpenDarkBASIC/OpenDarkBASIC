@@ -145,6 +145,8 @@ set_source_files_properties (${Gperf_db-keyword_OUTPUTS}
 #XXX: this is broken
 add_gperf_bison_dependency (db-keyword db-parser)
 
+add_custom_target (db-parser DEPENDS ${BISON_db-parser_OUTPUTS})
+
 ###############################################################################
 # Library definition
 ###############################################################################
@@ -507,6 +509,7 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_conditionals.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
 

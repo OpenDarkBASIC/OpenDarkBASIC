@@ -233,7 +233,7 @@ TEST_F(NAME, strange_assignment)
         Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:3:5: warning: Strange conversion from BOOLEAN to INTEGER "
+        LogEq("test:3:5: warning: Implicit conversion from BOOLEAN to INTEGER "
               "in assignment.\n"
               " 3 | b = a\n"
               "   | ^ ^ ^ BOOLEAN\n"

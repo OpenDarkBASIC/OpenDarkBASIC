@@ -76,7 +76,7 @@ TEST_F(NAME, exponent_strange_conversion)
         Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: warning: Strange conversion of exponent value from "
+        LogEq("test:1:13: warning: Implicit conversion of exponent from "
               "BOOLEAN to INTEGER.\n"
               " 1 | print 2.0 ^ true\n"
               "   |       >~~ ^ ~~~< BOOLEAN\n"
