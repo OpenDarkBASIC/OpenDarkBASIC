@@ -1134,7 +1134,6 @@ ir_create_runtime(
     b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
 
     llvm::verifyFunction(*F);
-    ir->mod.print(llvm::outs(), nullptr);
 
     return 0;
 }

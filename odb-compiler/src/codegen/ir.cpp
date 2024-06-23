@@ -408,7 +408,7 @@ gen_expr(
             /* The AST should be constructed in a way where we do not have to
              * create a default value for variables that have not yet been
              * declared */
-            ODBSDK_DEBUG_ASSERT(*A != NULL, (void)0);
+            ODBSDK_DEBUG_ASSERT(A != NULL, (void)0);
 
             return builder.CreateLoad(
                 (*A)->getAllocatedType(),
@@ -953,8 +953,13 @@ ir_translate_ast(
     // Validate the generated code, checking for consistency.
     llvm::verifyFunction(*F);
 
-    ir->mod.print(llvm::outs(), nullptr);
+    return 0;
+}
 
+int
+ir_dump(const struct ir_module* ir)
+{
+    ir->mod.print(llvm::outs(), nullptr);
     return 0;
 }
 

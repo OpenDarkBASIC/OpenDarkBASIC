@@ -175,11 +175,12 @@ section parser:
     func: autoDetectInput
     runafter: load-commands
 
-  dump-ast-dot():
+  dump-ast():
     help: Dump AST to Graphviz DOT format. The default file is stdout.
     args: [file]
     func: dumpASTDOT
     runafter: dba, dbpro, input
+    requires: dba
 
   #dump-ast-json():
   #  help: Dump AST to JSON format. The default file is stdout.
@@ -207,12 +208,18 @@ section codegen:
     func: setPlatform
     runafter: global
 
+  dump-ir():
+    help: Dump LLVM IR to output.
+    args: [file]
+    func: dumpIR
+
   output(o):
     help: Generate output. If no filename is given then output is written to
           stdout.
     args: <file>
     func: output
     runafter: parser
+    requires: dba
 %}
 
 %source-postamble {
@@ -252,7 +259,7 @@ static void printHelpExamples()
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "    %s ", programName_.c_str());
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dba");
     ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " source.dba ");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dump-ast-dot");
-    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " | dot -Tpdf > out.pdf\n\n");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_LONGOPT, "%s", "--dump-ast");
+    ADG_FPRINTF_COLOR(ADG_FPRINTF, stdout, ADG_COLOR_RESET, "%s", " | dot -Tx11\n\n");
 }
 %}

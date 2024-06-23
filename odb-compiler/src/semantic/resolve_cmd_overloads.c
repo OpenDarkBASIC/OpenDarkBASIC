@@ -160,7 +160,7 @@ report_no_commands_found(
             if (i)
                 log_raw(", ");
             log_raw(
-                "%s {u:AS %s}",
+                "%s {emph1:AS %s}",
                 utf8_list_cstr(param_names, i),
                 type_to_db_name(param_types->data[i].type));
         }
@@ -220,7 +220,7 @@ report_ambiguous_overloads(
             if (i)
                 log_raw(", ");
             log_raw(
-                "%s {u:AS %s}",
+                "%s {emph1:AS %s}",
                 utf8_list_cstr(param_names, i),
                 type_to_db_name(param_types->data[i].type));
         }

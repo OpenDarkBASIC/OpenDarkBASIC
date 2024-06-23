@@ -170,6 +170,8 @@
         int##bits##_t i = 0;                                                   \
         int##bits##_t last_rip = -1;                                           \
                                                                                \
+        ODBSDK_DEBUG_ASSERT(                                                   \
+            hm->capacity > 0, log_sdk_err("capacity: %d\n", hm->capacity));    \
         ODBSDK_DEBUG_ASSERT(h > 1, log_sdk_err("h: %d\n", h));                 \
                                                                                \
         slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
@@ -205,7 +207,7 @@
     {                                                                          \
         int##bits##_t i;                                                       \
         int##bits##_t new_capacity                                             \
-            = (*hm)->capacity ? (*hm)->capacity * 2 : MIN_CAPACITY;            \
+            = *hm == &prefix##_null_hm ? MIN_CAPACITY : (*hm)->capacity * 2;   \
         /* Must be power of 2 */                                               \
         ODBSDK_DEBUG_ASSERT(                                                   \
             (new_capacity & (new_capacity - 1)) == 0,                          \
@@ -238,7 +240,7 @@
             if (h == HM_SLOT_UNUSED || h == HM_SLOT_RIP)                       \
                 h = 2;                                                         \
             slot = prefix##_find_slot(new_hm, hm_get_key(&(*hm)->kvs, i), h);  \
-            ODBSDK_DEBUG_ASSERT(slot >= 0, log_sdk_err("slot: %d\n", slot)); \
+            ODBSDK_DEBUG_ASSERT(slot >= 0, log_sdk_err("slot: %d\n", slot));   \
             new_hm->hashes[slot] = h;                                          \
             hm_set_key(&new_hm->kvs, slot, hm_get_key(&(*hm)->kvs, i));        \
             hm_set_value(&new_hm->kvs, slot, hm_get_value(&(*hm)->kvs, i));    \
@@ -262,7 +264,7 @@
     }                                                                          \
     void prefix##_deinit(struct prefix* hm)                                    \
     {                                                                          \
-        if (hm->capacity)                                                      \
+        if (hm != &prefix##_null_hm)                                           \
         {                                                                      \
             hm_storage_free(&hm->kvs);                                         \
             mem_free(hm);                                                      \
@@ -323,6 +325,9 @@
     }                                                                          \
     V* prefix##_find(struct prefix* hm, K key)                                 \
     {                                                                          \
+        if (hm == &prefix##_null_hm)                                           \
+            return NULL;                                                       \
+                                                                               \
         /* We use two reserved values for hashes. The hash function could      \
          * produce them, which would mess up collision resolution */           \
         H h = hm_hash(key);                                                    \

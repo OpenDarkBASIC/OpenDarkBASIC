@@ -48,8 +48,8 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
               " 1 | if a+b then a = 1\n"
               "   |    ^~< INTEGER\n"
               "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if (a+b) <> 0 then a = 1\n"
-              "   |    ^   ^~~~~<\n"));
+              " 1 | if a+b <> 0 then a = 1\n"
+              "   |       ^~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_float_literal)
@@ -81,13 +81,13 @@ TEST_F(NAME, implicit_evaluation_of_float_expression)
         Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of DOUBLE as a boolean "
+        LogEq("test:1:4: warning: Implicit evaluation of FLOAT as a boolean "
               "expression.\n"
               " 1 | if 3.3f+5.5f then a = 1\n"
-              "   |    ^~~~~~~~< DOUBLE\n"
+              "   |    ^~~~~~~~< FLOAT\n"
               "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if (3.3f+5.5f) <> 0.0f then a = 1\n"
-              "   |    ^         ^~~~~~~~<\n"));
+              " 1 | if 3.3f+5.5f <> 0.0f then a = 1\n"
+              "   |             ^~~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_double_literal)
@@ -106,7 +106,7 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
               "   |    ^~< DOUBLE\n"
               "   = help: You can make it explicit by changing it to:\n"
               " 1 | if 3.3 <> 0.0 then a = 1\n"
-              "   |        ^~~~~<\n"));
+              "   |       ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_double_expression)
@@ -124,8 +124,8 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
               " 1 | if 3.3+5.5 then a = 1\n"
               "   |    ^~~~~~< DOUBLE\n"
               "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if (3.3+5.5) <> 0.0 then a = 1\n"
-              "   |    ^       ^~~~~~~<\n"));
+              " 1 | if 3.3+5.5 <> 0.0 then a = 1\n"
+              "   |           ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_string_literal)
@@ -162,6 +162,6 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
               " 1 | if a$+b$ then a = 1\n"
               "   |    ^~~~< STRING\n"
               "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if (a$+b$) <> \"\" then a = 1\n"
-              "   |    ^     ^~~~~~~<\n"));
+              " 1 | if a$+b$ <> \"\" then a = 1\n"
+              "   |         ^~~~~~<\n"));
 }

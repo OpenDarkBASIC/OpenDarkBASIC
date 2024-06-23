@@ -40,6 +40,9 @@ ODBCOMPILER_PUBLIC_API int
 ir_optimize(struct ir_module* ir);
 
 ODBCOMPILER_PUBLIC_API int
+ir_dump(const struct ir_module* ir);
+
+ODBCOMPILER_PUBLIC_API int
 ir_compile(
     struct ir_module*    mod,
     const char*          output_filepath,

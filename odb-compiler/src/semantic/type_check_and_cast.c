@@ -245,7 +245,8 @@ resolve_node_type(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
-                                "Cannot assign {emph1:%s} to {emph2:%s}. Types are "
+                                "Cannot assign {emph1:%s} to {emph2:%s}. Types "
+                                "are "
                                 "incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
@@ -282,7 +283,8 @@ resolve_node_type(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
-                                "Implicit conversion from {emph1:%s} to {emph2:%s} "
+                                "Implicit conversion from {emph1:%s} to "
+                                "{emph2:%s} "
                                 "in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
@@ -477,40 +479,20 @@ resolve_node_type(
                         struct utf8_span expr_loc = ast->nodes[expr].info.location;
                         utf8_idx expr_start = expr_loc.off;
                         utf8_idx expr_end = expr_start + expr_loc.len;
-                        struct log_excerpt_inst inst_int_single[] = {
+                        struct log_excerpt_inst inst_int[] = {
                             {" <> 0", "", {expr_end, 5}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_int_expr[] = {
-                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
-                            {") <> 0", "", {expr_end, 6}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
-                        };
-                        struct log_excerpt_inst inst_float_single[] = {
+                        struct log_excerpt_inst inst_float[] = {
                             {" <> 0.0f", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_float_expr[] = {
-                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
-                            {") <> 0.0f", "", {expr_end, 9}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
-                        };
-                        struct log_excerpt_inst inst_double_single[] = {
+                        struct log_excerpt_inst inst_double[] = {
                             {" <> 0.0", "", {expr_end, 7}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_double_expr[] = {
-                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
-                            {") <> 0.0", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
-                        };
-                        struct log_excerpt_inst inst_string_single[] = {
-                            {" <> 0.0", "", {expr_end, 7}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
-                        };
-                        struct log_excerpt_inst inst_string_expr[] = {
-                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
-                            {") <> 0.0", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
+                        struct log_excerpt_inst inst_string[] = {
+                            {" <> \"\"", "", {expr_end, 6}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
                         /* clang-format on */
@@ -529,39 +511,39 @@ resolve_node_type(
                         log_excerpt_help(
                             gutter,
                             "You can make it explicit by changing it to:\n");
-                        switch (ast->nodes[expr].info.node_type)
+                        switch (ast->nodes[expr].info.type_info)
                         {
-                            case AST_BLOCK:
-                            case AST_ARGLIST:
-                            case AST_CONST_DECL:
-                            case AST_ASSIGNMENT:
-                            case AST_COND:
-                            case AST_COND_BRANCH:
+                            case TYPE_INVALID:
+                            case TYPE_VOID:
+                            case TYPE_BOOLEAN:
                                 ODBSDK_DEBUG_ASSERT(0, (void)0);
                                 break;
 
-                            /* All nodes that don't need to be surrounded by
-                             * brackets in help output */
-                            case AST_COMMAND:
-                            case AST_IDENTIFIER:
-                            case AST_UNOP:
-                            case AST_BOOLEAN_LITERAL:
-                            case AST_BYTE_LITERAL:
-                            case AST_WORD_LITERAL:
-                            case AST_DWORD_LITERAL:
-                            case AST_INTEGER_LITERAL:
-                            case AST_DOUBLE_INTEGER_LITERAL:
-                            case AST_FLOAT_LITERAL:
-                            case AST_DOUBLE_LITERAL:
-                            case AST_STRING_LITERAL:
-                            case AST_CAST:
-                                log_excerpt(source.text.data, inst_int_single);
+                            case TYPE_LONG:
+                            case TYPE_DWORD:
+                            case TYPE_INTEGER:
+                            case TYPE_WORD:
+                            case TYPE_BYTE:
+                                log_excerpt(source.text.data, inst_int);
                                 break;
 
-                            /* Nodes that need to be surrounded by brackets in
-                             * help output */
-                            case AST_BINOP:
-                                log_excerpt(source.text.data, inst_int_expr);
+                            case TYPE_FLOAT:
+                                log_excerpt(source.text.data, inst_float);
+                                break;
+                            case TYPE_DOUBLE:
+                                log_excerpt(source.text.data, inst_double);
+                                break;
+                            case TYPE_STRING:
+                                log_excerpt(source.text.data, inst_string);
+                                break;
+
+                            case TYPE_ARRAY: break;
+
+                            case TYPE_LABEL:
+                            case TYPE_DABEL:
+                            case TYPE_ANY:
+                            case TYPE_USER_DEFINED_VAR_PTR:
+                                ODBSDK_DEBUG_ASSERT(0, (void)0);
                                 break;
                         }
                     }

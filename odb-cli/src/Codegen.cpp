@@ -12,6 +12,7 @@ extern "C" {
 }
 
 static bool             outputIsExecutable_ = true;
+static bool             dumpIR_ = false;
 static enum target_arch arch_ = TARGET_x86_64;
 #if defined(ODBSDK_PLATFORM_LINUX)
 static enum target_platform platform_ = TARGET_LINUX;
@@ -53,6 +54,14 @@ setPlatform(const std::vector<std::string>& args)
 
 // ----------------------------------------------------------------------------
 bool
+dumpIR(const std::vector<std::string>& args)
+{
+    dumpIR_ = true;
+    return true;
+}
+
+// ----------------------------------------------------------------------------
+bool
 output(const std::vector<std::string>& args)
 {
     if (getSDKType() == SDK_DBPRO)
@@ -75,6 +84,8 @@ output(const std::vector<std::string>& args)
         getSourceFilename(),
         getSource());
     ir_optimize(ir);
+    if (dumpIR_)
+        ir_dump(ir);
     ir_compile(ir, objfile.c_str(), arch_, platform_);
     ir_free(ir);
 
@@ -93,6 +104,8 @@ output(const std::vector<std::string>& args)
         getSDKType(),
         arch_,
         platform_);
+    if (dumpIR_)
+        ir_dump(ir);
     ir_compile(ir, "odbruntime.o", arch_, platform_);
     ir_free(ir);
 
