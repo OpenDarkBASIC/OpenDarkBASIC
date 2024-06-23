@@ -17,10 +17,10 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
               "y = 1\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast.nodes[litx].byte_literal.value, Eq(0u));
@@ -34,10 +34,10 @@ TEST_F(NAME, byte_literal)
               "y = 255\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast.nodes[litx].byte_literal.value, Eq(2u));
@@ -51,10 +51,10 @@ TEST_F(NAME, word_literal)
               "y = 65535\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast.nodes[litx].word_literal.value, Eq(256u));
@@ -68,10 +68,10 @@ TEST_F(NAME, integer_literal)
               "y = 2147483647\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].integer_literal.value, Eq(65536));
@@ -85,10 +85,10 @@ TEST_F(NAME, dword_literal)
               "y = 4294967295\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_DWORD_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DWORD_LITERAL));
     EXPECT_THAT(ast.nodes[litx].dword_literal.value, Eq(2147483648u));
@@ -102,10 +102,10 @@ TEST_F(NAME, double_integer_literal)
               "y = 9223372036854775807\n"),
         Eq(0));
 
-    int assx = ast.nodes[0].block.stmt;
-    int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    int litx = ast.nodes[assx].assignment.expr;
-    int lity = ast.nodes[assy].assignment.expr;
+    ast_id assx = ast.nodes[0].block.stmt;
+    ast_id assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
+    ast_id litx = ast.nodes[assx].assignment.expr;
+    ast_id lity = ast.nodes[assy].assignment.expr;
     EXPECT_THAT(ast.nodes[litx].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(4294967296));

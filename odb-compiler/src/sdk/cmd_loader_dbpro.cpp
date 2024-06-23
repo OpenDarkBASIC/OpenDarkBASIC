@@ -82,7 +82,7 @@ load_dbpro_commands(
 {
     if (pe->resources() == nullptr)
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "No resources found in plugin {emph:%s}.\n",
             ospathc_cstr(filepath));
         return 0;
@@ -100,7 +100,7 @@ load_dbpro_commands(
         });
     if (stringTableNodeIt == std::end(nodes))
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Missing string table in plugin {emph:%s}.\n",
             ospathc_cstr(filepath));
         return 0;
@@ -108,7 +108,7 @@ load_dbpro_commands(
     if (stringTableNodeIt->childs().size() == 0
         || stringTableNodeIt->childs()[0].childs().size() == 0)
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Malformed string table structure in plugin {emph:%s}.\n",
             ospathc_cstr(filepath));
         return 0;
@@ -141,7 +141,7 @@ load_dbpro_commands(
             {
                 if (looks_like_command_string(entry_str, type_str))
                 {
-                    log_sdk_warn(
+                    log_cmd_warn(
                         "Invalid string table entry {quote:%s} in plugin "
                         "{emph:%s}\n",
                         utf8_cstr(entry_str),
@@ -170,7 +170,7 @@ load_dbpro_commands(
                 {
                     if (looks_like_command_string(entry_str, type_str))
                     {
-                        log_sdk_warn(
+                        log_cmd_warn(
                             "Invalid command return type {quote:%c} in string "
                             "{quote:%s} in plugin {emph:%s}\n",
                             type_char,
@@ -218,7 +218,7 @@ load_dbpro_commands(
                 {
                     if (looks_like_command_string(entry_str, type_str))
                     {
-                        log_sdk_warn(
+                        log_cmd_warn(
                             "Invalid command argument type {quote:%c} in "
                             "string "
                             "{quote:%s} in plugin {emph:%s}\n",

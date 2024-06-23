@@ -1,6 +1,7 @@
-#include <string>
-#include <gmock/gmock.h>
 #include "odb-sdk/tests/LogHelper.hpp"
+#include <string>
+
+#include <gmock/gmock.h>
 
 extern "C" {
 #include "odb-sdk/log.h"
@@ -24,8 +25,7 @@ TEST_F(NAME, file_line_column)
           "next a\n";
 
     struct utf8_span loc = {23, 5}; /* a = 5 */
-    log_flc(
-        "{e:error: }",
+    log_flc_err(
         "some/file.dba",
         source,
         loc,
@@ -37,7 +37,7 @@ TEST_F(NAME, file_line_column)
         LogEq("some/file.dba:2:8: error: Assignment is bad for some reason\n"));
 }
 
-TEST_F(NAME, excerpt_one_sized_location)
+TEST_F(NAME, excerpt_1_one_sized_location)
 {
     const char* source
         = "for a = 1 to 10\n"
@@ -46,7 +46,7 @@ TEST_F(NAME, excerpt_one_sized_location)
           "next a\n";
 
     struct utf8_span loc = {23, 1};
-    log_excerpt("some/file.dba", source, loc, "test");
+    log_excerpt_1(source, loc, "test");
 
     EXPECT_THAT(
         log(),
@@ -54,12 +54,12 @@ TEST_F(NAME, excerpt_one_sized_location)
               "   |    ^ test\n"));
 }
 
-TEST_F(NAME, excerpt_annotation_at_end)
+TEST_F(NAME, excerpt_1_annotation_at_end)
 {
     const char* source = "a = b + c\n";
 
     struct utf8_span loc = {8, 1};
-    log_excerpt("some/file.dba", source, loc, "test");
+    log_excerpt_1(source, loc, "test");
 
     EXPECT_THAT(
         log(),
@@ -67,7 +67,7 @@ TEST_F(NAME, excerpt_annotation_at_end)
               "   |         ^ test\n"));
 }
 
-TEST_F(NAME, excerpt_single_line)
+TEST_F(NAME, excerpt_1_single_line)
 {
     const char* source
         = "for a = 1 to 10\n"
@@ -76,7 +76,7 @@ TEST_F(NAME, excerpt_single_line)
           "next a\n";
 
     struct utf8_span loc = {23, 5}; /* a = 5 */
-    log_excerpt("some/file.dba", source, loc, "test");
+    log_excerpt_1(source, loc, "test");
 
     EXPECT_THAT(
         log(),
@@ -84,7 +84,7 @@ TEST_F(NAME, excerpt_single_line)
               "   |    ^~~~< test\n"));
 }
 
-TEST_F(NAME, excerpt_wrap_to_next_line)
+TEST_F(NAME, excerpt_1_wrap_to_next_line)
 {
     const char* source
         = "for a = 1 to 10\n"
@@ -93,17 +93,18 @@ TEST_F(NAME, excerpt_wrap_to_next_line)
           "next a\n";
 
     struct utf8_span loc = {34, 15}; /* a = 7 ... print */
-    log_excerpt("some/file.dba", source, loc, "test");
+    log_excerpt_1(source, loc, "test");
 
     EXPECT_THAT(
         log(),
         LogEq(" 2 | if a = 5 then a = 7\n"
               "   |               ^~~~~\n"
+              "   |               test\n"
               " 3 | print str$(a)\n"
-              "   | ~~~~< test\n"));
+              "   | ~~~~<\n"));
 }
 
-TEST_F(NAME, excerpt_multiple_lines)
+TEST_F(NAME, excerpt_1_multiple_lines)
 {
     const char* source
         = "a = get ground height(\n"
@@ -113,7 +114,137 @@ TEST_F(NAME, excerpt_multiple_lines)
           ")\n";
 
     struct utf8_span loc = {30, 29}; /* 3 arguments */
-    log_excerpt("some/file.dba", source, loc, "test");
+    log_excerpt_1(source, loc, "test");
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 |    obj,\n"
+              "   |    ^~~~\n"
+              "   |    test\n"
+              " 3 | xpos,\n"
+              "   | ~~~~~\n"
+              " 4 |       zpos\n"
+              "   | ~~~~~~~~~<\n"));
+}
+
+TEST_F(NAME, excerpt_3_one_sized_locations_on_same_line)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a = 5 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"", "test1", {23, 1}, LOG_EXCERPT_HIGHLIGHT, 0},
+           {"", "test2", {27, 1}, LOG_EXCERPT_HIGHLIGHT, 0},
+           {"", "test3", {29, 1}, LOG_EXCERPT_HIGHLIGHT, 0},
+           {0}};
+    log_excerpt(source, inst);
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if a = 5 then a = 7\n"
+              "   |    ^   ^ ^ test3\n"
+              "   |    |   test2\n"
+              "   |    test1\n"));
+}
+
+#if 0
+TEST_F(NAME, excerpt_3_annotation_at_end)
+{
+    const char* source = "a = b + c\n";
+
+    struct utf8_span loc = {8, 1};
+    log_excerpt_3(source, loc, "test");
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 1 | a = b + c\n"
+              "   |         ^ test\n"));
+}
+
+TEST_F(NAME, excerpt_3_single_line)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a = 5 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct utf8_span loc = {23, 5}; /* a = 5 */
+    log_excerpt_3(source, loc, "test");
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if a = 5 then a = 7\n"
+              "   |    ^~~~< test\n"));
+}
+#endif
+
+TEST_F(NAME, excerpt_3_wrap_to_next_line)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a = 5 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"", "test1", {23, 5}, LOG_EXCERPT_HIGHLIGHT, 0},  // a = 1
+           {"", "test2", {34, 15}, LOG_EXCERPT_HIGHLIGHT, 0}, // a = 7 .. print
+           {"", "test3", {50, 4}, LOG_EXCERPT_HIGHLIGHT, 0},  // str$
+           {0}};
+    log_excerpt(source, inst);
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if a = 5 then a = 7\n"
+              "   |    ^~~~<      ^~~~~\n"
+              "   |    |          test2\n"
+              "   |    test1\n"
+              " 3 | print str$(a)\n"
+              "   | ~~~~< ^~~< test3\n"));
+}
+TEST_F(NAME, excerpt_3_wrap_to_next_line_overlapping_annotations)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a = 5 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    /* clang-format off */
+    struct log_excerpt_inst inst[]
+        = {{"", "very long annotation", {23, 5}, LOG_EXCERPT_HIGHLIGHT, 0},  // a = 1
+           {"", "test2", {34, 15}, LOG_EXCERPT_HIGHLIGHT, 0}, // a = 7 .. print
+           {"", "test3", {50, 4}, LOG_EXCERPT_HIGHLIGHT, 0},  // str$
+           {0}};
+    log_excerpt(source, inst);
+    /*clang-format on */
+
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if a = 5 then a = 7\n"
+              "   |    ^~~~<      ^~~~~\n"
+              "   |    |          test2\n"
+              "   |    very long annotation\n"
+              " 3 | print str$(a)\n"
+              "   | ~~~~< ^~~< test3\n"));
+}
+
+#if 0
+TEST_F(NAME, excerpt_3_multiple_lines)
+{
+    const char* source
+        = "a = get ground height(\n"
+          "       obj,\n"
+          "    xpos,\n"
+          "          zpos\n"
+          ")\n";
+
+    struct utf8_span loc = {30, 29}; /* 3 arguments */
+    log_excerpt_3(source, loc, "test");
 
     EXPECT_THAT(
         log(),
@@ -124,6 +255,7 @@ TEST_F(NAME, excerpt_multiple_lines)
               " 4 |       zpos\n"
               "   | ~~~~~~~~~< test\n"));
 }
+#endif
 
 TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
 {
@@ -137,8 +269,7 @@ TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
     struct utf8_span lhs = {31, 1};
     struct utf8_span op = {40, 3};
     struct utf8_span rhs = {44, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -159,8 +290,7 @@ TEST_F(NAME, excerpt_binop_one_sized_op_location)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {40, 1};
     struct utf8_span rhs = {44, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -181,8 +311,7 @@ TEST_F(NAME, excerpt_binop_one_sized_rhs_location)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {40, 3};
     struct utf8_span rhs = {44, 1};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -203,8 +332,7 @@ TEST_F(NAME, excerpt_binop_single_line)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {40, 3};
     struct utf8_span rhs = {44, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -226,8 +354,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line1)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {56, 3};
     struct utf8_span rhs = {60, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -250,8 +377,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line2)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {40, 3};
     struct utf8_span rhs = {60, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -275,8 +401,7 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line3)
     struct utf8_span lhs = {31, 8};
     struct utf8_span op = {58, 3};
     struct utf8_span rhs = {77, 3};
-    log_binop_excerpt(
-        "some/file.dba", source, lhs, op, rhs, "variable", "constant");
+    log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
     EXPECT_THAT(
         log(),
@@ -306,14 +431,7 @@ TEST_F(NAME, excerpt_binop_everything_wraps)
     struct utf8_span lhs = {31, 38};
     struct utf8_span op = {88, 3};
     struct utf8_span rhs = {103, 50};
-    log_binop_excerpt(
-        "some/file.dba",
-        source,
-        lhs,
-        op,
-        rhs,
-        "first operand",
-        "second operand");
+    log_excerpt_binop(source, lhs, op, rhs, "first operand", "second operand");
 
     EXPECT_THAT(
         log(),
@@ -331,4 +449,62 @@ TEST_F(NAME, excerpt_binop_everything_wraps)
               "   | ~~~~~~~~~~~~\n"
               " 8 |            333)\n"
               "   | ~~~~~~~~~~~~~~< second operand\n"));
+}
+
+TEST_F(NAME, insert_excerpt1)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a - 2\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"(", "", {23, 1}, LOG_EXCERPT_INSERT, 0},
+           {") <> 0", "", {28, 6}, LOG_EXCERPT_INSERT, 0},
+           {0}};
+    log_excerpt(source, inst);
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if (a - 2) <> 0\n"
+              "   |    ^     ^~~~~<\n"));
+}
+
+
+TEST_F(NAME, insert_excerpt2)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a - 2 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"(", "", {23, 1}, LOG_EXCERPT_INSERT, 0},
+           {") <> 0", "", {28, 6}, LOG_EXCERPT_INSERT, 0},
+           {0}};
+    log_excerpt(source, inst);
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if (a - 2) <> 0 then a = 7\n"
+              "   |    ^     ^~~~~<\n"));
+}
+
+TEST_F(NAME, insert_excerpt3)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a - 2 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"(0 + ", "", {23, 5}, LOG_EXCERPT_INSERT, 0},
+           {") <> 0", "", {28, 6}, LOG_EXCERPT_INSERT, 0},
+           {0}};
+    log_excerpt(source, inst);
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if (0 + a - 2) <> 0 then a = 7\n"
+              "   |    ^~~~<     ^~~~~<\n"));
 }

@@ -15,7 +15,7 @@ type_check_and_cast_casts(
     ODBSDK_DEBUG_ASSERT(cast > -1, (void)0);
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[cast].info.node_type == AST_CAST,
-        log_sdk_err("type: %d\n", ast->nodes[cast].info.node_type));
+        log_semantic_err("type: %d\n", ast->nodes[cast].info.node_type));
 
     ast_id expr = ast->nodes[cast].cast.expr;
 
@@ -27,8 +27,7 @@ type_check_and_cast_casts(
         case TP_ALLOW: return target_type;
 
         case TP_DISALLOW:
-            log_flc(
-                "{e:error:} ",
+            log_flc_err(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
@@ -36,8 +35,7 @@ type_check_and_cast_casts(
                 "incompatible\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
-            log_excerpt2(
-                source_filename,
+            log_excerpt_2(
                 source.text.data,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
@@ -46,8 +44,7 @@ type_check_and_cast_casts(
             break;
 
         case TP_TRUNCATE:
-            log_flc(
-                "{w:warning:} ",
+            log_flc_warn(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
@@ -55,8 +52,7 @@ type_check_and_cast_casts(
                 "in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
-            log_excerpt2(
-                source_filename,
+            log_excerpt_2(
                 source.text.data,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
@@ -67,16 +63,14 @@ type_check_and_cast_casts(
         case TP_TRUENESS:
         case TP_INT_TO_FLOAT:
         case TP_BOOL_PROMOTION:
-            log_flc(
-                "{w:warning:} ",
+            log_flc_warn(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
                 "Implicit conversion from {lhs:%s} to {rhs:%s} in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
-            log_excerpt2(
-                source_filename,
+            log_excerpt_2(
                 source.text.data,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,

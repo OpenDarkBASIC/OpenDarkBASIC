@@ -141,34 +141,34 @@ call_dlsym(
 }
 
 #define OFFICIAL_PLUGIN_LIST                                                   \
-    X(GFX, "DBProSetupDebug")                                                \
-    X(Basic2D, "DBProBasic2DDebug")                                          \
-    X(Text, "DBProTextDebug")                                                \
-    X(Transforms, "DBProTransformsDebug")                                    \
-    X(Sprites, "DBProSpritesDebug")                                          \
-    X(Image, "DBProImageDebug")                                              \
-    X(Input, "DBProInputDebug")                                              \
-    X(System, "DBProSystemDebug")                                            \
-    X(Sound, "DBProSoundDebug")                                              \
-    X(Music, "DBProMusicDebug")                                              \
-    X(File, "DBProFileDebug")                                                \
-    X(FTP, "DBProFTPDebug")                                                  \
-    X(Memblocks, "DBProMemblocksDebug")                                      \
-    X(Animation, "DBProAnimationDebug")                                      \
-    X(Bitmap, "DBProBitmapDebug")                                            \
-    X(Multiplayer, "DBProMultiplayerDebug")                                  \
-    X(Camera3D, "DBProCameraDebug")                                          \
-    X(Light3D, "DBProLightDebug")                                            \
-    X(Matrix3D, "DBProMatrixDebug")                                          \
-    X(Basic3D, "DBProBasic3DDebug")                                          \
-    X(World3D, "DBProWorld3DDebug")                                          \
-    X(Q2BSP, "DBProQ2BSPDebug")                                              \
-    X(OwnBSP, "DBProOwnBSPDebug")                                            \
-    X(BSPCompiler, "DBProBSPCompilerDebug")                                  \
-    X(Particles, "DBProParticlesDebug")                                      \
-    X(PrimObject, "DBProPrimObjectDebug")                                    \
-    X(Vectors, "DBProVectorsDebug")                                          \
-    X(LODTerrain, "DBProLODTerrainDebug")                                    \
+    X(GFX, "DBProSetupDebug")                                                  \
+    X(Basic2D, "DBProBasic2DDebug")                                            \
+    X(Text, "DBProTextDebug")                                                  \
+    X(Transforms, "DBProTransformsDebug")                                      \
+    X(Sprites, "DBProSpritesDebug")                                            \
+    X(Image, "DBProImageDebug")                                                \
+    X(Input, "DBProInputDebug")                                                \
+    X(System, "DBProSystemDebug")                                              \
+    X(Sound, "DBProSoundDebug")                                                \
+    X(Music, "DBProMusicDebug")                                                \
+    X(File, "DBProFileDebug")                                                  \
+    X(FTP, "DBProFTPDebug")                                                    \
+    X(Memblocks, "DBProMemblocksDebug")                                        \
+    X(Animation, "DBProAnimationDebug")                                        \
+    X(Bitmap, "DBProBitmapDebug")                                              \
+    X(Multiplayer, "DBProMultiplayerDebug")                                    \
+    X(Camera3D, "DBProCameraDebug")                                            \
+    X(Light3D, "DBProLightDebug")                                              \
+    X(Matrix3D, "DBProMatrixDebug")                                            \
+    X(Basic3D, "DBProBasic3DDebug")                                            \
+    X(World3D, "DBProWorld3DDebug")                                            \
+    X(Q2BSP, "DBProQ2BSPDebug")                                                \
+    X(OwnBSP, "DBProOwnBSPDebug")                                              \
+    X(BSPCompiler, "DBProBSPCompilerDebug")                                    \
+    X(Particles, "DBProParticlesDebug")                                        \
+    X(PrimObject, "DBProPrimObjectDebug")                                      \
+    X(Vectors, "DBProVectorsDebug")                                            \
+    X(LODTerrain, "DBProLODTerrainDebug")                                      \
     X(CSG, "DBProCSGDebug")
 
 enum official_plugin
@@ -176,7 +176,7 @@ enum official_plugin
 #define X(name, str) OFFICIAL_PLUGIN_##name,
     OFFICIAL_PLUGIN_LIST
 #undef X
-    OFFICIAL_PLUGIN_COUNT
+        OFFICIAL_PLUGIN_COUNT
 };
 
 static const char* official_plugin_name[] = {
@@ -190,6 +190,7 @@ static const char* official_plugin_name[] = {
  *   2) DBDLLCore::ConstructPostDLLItems()
  *   3) Empirically by analyzing crashes using OllyDBG
  */
+/* clang-format off */
 static char OFFICIAL_PLUGIN_GFX_deps[] = {OFFICIAL_PLUGIN_Text, -1};
 static char OFFICIAL_PLUGIN_Basic2D_deps[] = {OFFICIAL_PLUGIN_GFX, -1};
 static char OFFICIAL_PLUGIN_Text_deps[] = {OFFICIAL_PLUGIN_GFX, -1};
@@ -219,21 +220,24 @@ static char OFFICIAL_PLUGIN_Particles_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PL
 static char OFFICIAL_PLUGIN_LODTerrain_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, OFFICIAL_PLUGIN_Camera3D, -1};
 static char OFFICIAL_PLUGIN_CSG_deps[] = {OFFICIAL_PLUGIN_GFX, -1};
 static char OFFICIAL_PLUGIN_PrimObject_deps[] = {-1};
+/* clang-format on */
 
 static int
 process_dependency_list(
-    std::vector<bool>* plugin_is_used,
+    std::vector<bool>*       plugin_is_used,
     const std::vector<char>& official_to_plugin_id,
-    official_plugin official_plugin,
-    const char* deps)
+    official_plugin          official_plugin,
+    const char*              deps)
 {
     int process_more = 0;
     for (const char* dep = deps; *dep > -1; ++dep)
     {
         plugin_id plugin_id = official_to_plugin_id[*dep];
         if (plugin_id < 0)
-            return log_err("[gen] ", "{quote:%s} was not found (rerquired by {quote:%s}\n",
-                official_plugin_name[*dep], official_plugin_name[official_plugin]);
+            return log_codegen_err(
+                "{quote:%s} was not found (rerquired by {quote:%s}\n",
+                official_plugin_name[(int)*dep],
+                official_plugin_name[official_plugin]);
         if ((*plugin_is_used)[plugin_id] == false)
         {
             (*plugin_is_used)[plugin_id] = true;
@@ -245,24 +249,24 @@ process_dependency_list(
 
 static int
 enable_dependent_plugins_dbpro(
-    std::vector<bool>* plugin_is_used,
+    std::vector<bool>*       plugin_is_used,
     const std::vector<char>& official_to_plugin_id)
 {
     plugin_id plugin_id;
-    int process_more = 0;
+    int       process_more = 0;
 
-#define X(name, str) \
-    plugin_id = official_to_plugin_id[OFFICIAL_PLUGIN_##name]; \
-    if (plugin_id > -1 && (*plugin_is_used)[plugin_id]) \
-        switch (process_dependency_list( \
-            plugin_is_used, \
-            official_to_plugin_id, \
-            OFFICIAL_PLUGIN_##name, \
-            OFFICIAL_PLUGIN_##name##_deps)) \
-        { \
-            case 1: process_more = 1; \
-            case 0: break; \
-            default: return -1; \
+#define X(name, str)                                                           \
+    plugin_id = official_to_plugin_id[OFFICIAL_PLUGIN_##name];                 \
+    if (plugin_id > -1 && (*plugin_is_used)[plugin_id])                        \
+        switch (process_dependency_list(                                       \
+            plugin_is_used,                                                    \
+            official_to_plugin_id,                                             \
+            OFFICIAL_PLUGIN_##name,                                            \
+            OFFICIAL_PLUGIN_##name##_deps))                                    \
+        {                                                                      \
+            case 1: process_more = 1;                                          \
+            case 0: break;                                                     \
+            default: return -1;                                                \
         }
     OFFICIAL_PLUGIN_LIST
 #undef X
@@ -271,19 +275,20 @@ enable_dependent_plugins_dbpro(
 }
 
 static int
-handle_plugin_dependencies_dbpro(std::vector<bool>* plugin_is_used, const struct plugin_list* plugins)
+handle_plugin_dependencies_dbpro(
+    std::vector<bool>* plugin_is_used, const struct plugin_list* plugins)
 {
     std::vector<char> official_to_plugin_id(OFFICIAL_PLUGIN_COUNT, -1);
     for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
     {
-#define X(plugin_name, plugin_str) \
-        if (utf8_equal( \
-                utf8_view(plugins->data[plugin_id].name), \
-                cstr_utf8_view(plugin_str))) \
-        {                                                                          \
-            official_to_plugin_id[OFFICIAL_PLUGIN_##plugin_name] = plugin_id; \
-            continue; \
-        }
+#define X(plugin_name, plugin_str)                                             \
+    if (utf8_equal(                                                            \
+            utf8_view(plugins->data[plugin_id].name),                          \
+            cstr_utf8_view(plugin_str)))                                       \
+    {                                                                          \
+        official_to_plugin_id[OFFICIAL_PLUGIN_##plugin_name] = plugin_id;      \
+        continue;                                                              \
+    }
         OFFICIAL_PLUGIN_LIST
 #undef X
     }
@@ -297,7 +302,7 @@ handle_plugin_dependencies_dbpro(std::vector<bool>* plugin_is_used, const struct
             (*plugin_is_used)[plugin_id] = true;
             goto core_found;
         }
-    return log_err("[gen] ", "DBProCore.dll was not found\n");
+    return log_codegen_err("DBProCore.dll was not found\n");
 core_found:;
 
     /* DBProSetup is a dependency of Core */
@@ -309,11 +314,14 @@ core_found:;
             (*plugin_is_used)[plugin_id] = true;
             goto setup_found;
         }
-    return log_err("[gen] ", "{quote:DBProSetupDebug.dll} was not found (required by {quote:DBProCore.dll})\n");
+    return log_codegen_err(
+        "{quote:DBProSetupDebug.dll} was not found (required by "
+        "{quote:DBProCore.dll})\n");
 setup_found:;
 
 process_more:
-    switch (enable_dependent_plugins_dbpro(plugin_is_used, official_to_plugin_id))
+    switch (
+        enable_dependent_plugins_dbpro(plugin_is_used, official_to_plugin_id))
     {
         case 1: goto process_more;
         case 0: break;
@@ -327,8 +335,8 @@ static int
 gen_cmd_loader(
     struct ir_module*              ir,
     llvm::BasicBlock*              BB,
-    llvm::Function* FDLOpen,
-    llvm::Function* FDLSym,
+    llvm::Function*                FDLOpen,
+    llvm::Function*                FDLSym,
     llvm::StringMap<llvm::Value*>* plugin_handles,
     const struct plugin_list*      plugins,
     const struct cmd_list*         cmds,
@@ -347,7 +355,7 @@ gen_cmd_loader(
         plugin_id plugin_id = cmds->plugin_ids->data[*pcmd];
         ODBSDK_DEBUG_ASSERT(
             plugin_id < plugins->count,
-            log_sdk_err("plugin_id: %d\n", plugin_id));
+            log_codegen_err("plugin_id: %d\n", plugin_id));
         plugin_is_used[plugin_id] = true;
     }
 
@@ -422,8 +430,8 @@ static int
 gen_start_dbpro(
     struct ir_module*                    ir,
     llvm::BasicBlock*                    BB,
-    llvm::Function*   FDLOpen,
-    llvm::Function*   FDLSym,
+    llvm::Function*                      FDLOpen,
+    llvm::Function*                      FDLSym,
     const llvm::StringMap<llvm::Value*>& plugins,
     enum target_arch                     arch,
     enum target_platform                 platform)
@@ -434,13 +442,13 @@ gen_start_dbpro(
         &ir->mod,
         llvm::Intrinsic::memset,
         {llvm::PointerType::getUnqual(ir->ctx),
-        llvm::Type::getInt32Ty(ir->ctx)});
+         llvm::Type::getInt32Ty(ir->ctx)});
     llvm::Function* FMemcpy = llvm::Intrinsic::getDeclaration(
         &ir->mod,
         llvm::Intrinsic::memcpy,
         {llvm::PointerType::getUnqual(ir->ctx),
-        llvm::PointerType::getUnqual(ir->ctx),
-        llvm::Type::getInt32Ty(ir->ctx)});
+         llvm::PointerType::getUnqual(ir->ctx),
+         llvm::Type::getInt32Ty(ir->ctx)});
     llvm::Function* FGetTempPathA = llvm::Function::Create(
         llvm::FunctionType::get(
             llvm::Type::getInt32Ty(ir->ctx),
@@ -740,18 +748,18 @@ gen_start_dbpro(
 
     /* Fill in the "official" plugin handles into the glob struct wherever
      * applicable */
-#define X(name, str)                                             \
+#define X(name, str)                                                           \
     {                                                                          \
-        auto it = plugins.find(str);                                   \
+        auto it = plugins.find(str);                                           \
         if (it != plugins.end())                                               \
         {                                                                      \
             llvm::Value* lib_handle = it->getValue();                          \
             llvm::Value* Member                                                \
-                = b.CreateStructGEP(TGlobStruct, glob_ptr, g_##name);        \
+                = b.CreateStructGEP(TGlobStruct, glob_ptr, g_##name);          \
             b.CreateStore(lib_handle, Member);                                 \
         }                                                                      \
     }
-    //OFFICIAL_PLUGIN_LIST
+    // OFFICIAL_PLUGIN_LIST
 #undef X
 
     /* Set pEXEUnpackDirectory to a temporary path using GetTempPathA()
@@ -764,11 +772,10 @@ gen_start_dbpro(
      *   memcpy(globPtr->pEXEUnpackDirectory + tempPathSize,
      *       unpackDir, sizeof(unpackDir));
      */
-    llvm::Value* pEXEUnpackDirectoryPtr
-        = b.CreateGEP(
-            TGlobStruct,
-            glob_ptr,
-            {b.getInt32(0), b.getInt32(pEXEUnpackDirectory), b.getInt32(0)});
+    llvm::Value* pEXEUnpackDirectoryPtr = b.CreateGEP(
+        TGlobStruct,
+        glob_ptr,
+        {b.getInt32(0), b.getInt32(pEXEUnpackDirectory), b.getInt32(0)});
     b.CreateCall(
         FMemset,
         {pEXEUnpackDirectoryPtr,
@@ -776,9 +783,7 @@ gen_start_dbpro(
          b.getInt32(260),
          /*isVolatile=*/b.getInt1(false)});
     llvm::Value* tempPathSize = b.CreateCall(
-        FGetTempPathA,
-        {b.getInt32(260),
-         pEXEUnpackDirectoryPtr});
+        FGetTempPathA, {b.getInt32(260), pEXEUnpackDirectoryPtr});
     llvm::Constant* CODBUnpackDir = llvm::ConstantDataArray::getString(
         ir->ctx,
         "odb-unpack",
@@ -791,16 +796,14 @@ gen_start_dbpro(
         CODBUnpackDir,
         ".ODBUnpackDir");
     llvm::Value* AppendPathPtr = b.CreateGEP(
-        llvm::Type::getInt8Ty(ir->ctx),
-        pEXEUnpackDirectoryPtr,
-        tempPathSize);
+        llvm::Type::getInt8Ty(ir->ctx), pEXEUnpackDirectoryPtr, tempPathSize);
     b.CreateCall(
         FMemcpy,
         {AppendPathPtr,
          GVODBUnpackDir,
          b.getInt32(sizeof("odb-unpack")),
          /*isVolatile=*/b.getInt1(false)});
-    
+
     /* DBP stores a global "errno"-like variable that contains the last error,
      * if any. The memory for this variable is managed externally, so we have to
      * pass it in. It is a DWORD */
@@ -832,7 +835,7 @@ gen_start_dbpro(
         {llvm::PointerType::getUnqual(ir->ctx)},
         /*isVarArg=*/false);
     b.CreateCall(FTPassErrorHandlerPtr, PassErrorHandlerPtr, {GVLastError});
-    
+
     /* PassDLLs */
     llvm::Constant* CPassDLLs = llvm::ConstantDataArray::getString(
         ir->ctx, "?PassDLLs@@YAXXZ", /*AddNull=*/true);
@@ -887,9 +890,13 @@ gen_start_dbpro(
     b.CreateCall(
         FTInitDisplay,
         InitDisplay,
-        {b.getInt32(1), b.getInt32(640), b.getInt32(480), b.getInt32(32),
+        {b.getInt32(1),
+         b.getInt32(640),
+         b.getInt32(480),
+         b.getInt32(32),
          llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(ir->ctx)),
-         llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(ir->ctx))});
+         llvm::ConstantPointerNull::get(
+             llvm::PointerType::getUnqual(ir->ctx))});
 
     /* Pass core data pointer to each plugin */
     llvm::Constant* CReceiveCoreDataPtrCXX = llvm::ConstantDataArray::getString(
@@ -914,20 +921,20 @@ gen_start_dbpro(
         llvm::GlobalVariable::PrivateLinkage,
         CReceiveCoreDataPtrC,
         ".ReceiveCoreDataPtrC_name");
-#define X(name, str)                                             \
+#define X(name, str)                                                           \
     {                                                                          \
-        auto it = plugins.find(str);                                   \
+        auto it = plugins.find(str);                                           \
         if (it != plugins.end())                                               \
         {                                                                      \
             llvm::Value* lib_handle = it->getValue();                          \
-            llvm::Value* ReceiveCoreDataPtrCXX = call_dlsym( \
-                ir,\
-                BB,\
-                FDLSym,\
-                lib_handle,\
-                GVReceiveCoreDataPtrCXX,\
-                platform);\
-            } \
+            llvm::Value* ReceiveCoreDataPtrCXX = call_dlsym(                   \
+                ir,                                                            \
+                BB,                                                            \
+                FDLSym,                                                        \
+                lib_handle,                                                    \
+                GVReceiveCoreDataPtrCXX,                                       \
+                platform);                                                     \
+        }                                                                      \
     }
     OFFICIAL_PLUGIN_LIST
     /* TODO */
@@ -985,9 +992,10 @@ get_dlopen(struct ir_module* ir, enum target_platform platform)
                 llvm::Function::ExternalLinkage,
                 "LoadLibraryA@4",
                 ir->mod);
-            //F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
+            // F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
             return F;
-        } break;
+        }
+        break;
     }
 
     return nullptr;
@@ -1062,8 +1070,8 @@ ir_create_runtime(
             if (gen_cmd_loader(
                     ir,
                     BB,
-                FDLOpen,
-                FDLSym,
+                    FDLOpen,
+                    FDLSym,
                     &plugin_handles,
                     plugins,
                     cmds,
@@ -1083,8 +1091,8 @@ ir_create_runtime(
             if (gen_cmd_loader(
                     ir,
                     BB,
-                FDLOpen,
-                FDLSym,
+                    FDLOpen,
+                    FDLSym,
                     &plugin_handles,
                     plugins,
                     cmds,
@@ -1096,9 +1104,9 @@ ir_create_runtime(
             {
                 return -1;
             }
-            if (gen_start_dbpro(ir, BB, 
-                FDLOpen,
-                FDLSym, plugin_handles, arch, platform) != 0)
+            if (gen_start_dbpro(
+                    ir, BB, FDLOpen, FDLSym, plugin_handles, arch, platform)
+                != 0)
                 return -1;
             break;
     }
@@ -1124,7 +1132,7 @@ ir_create_runtime(
     }
 
     b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));
-    
+
     llvm::verifyFunction(*F);
     ir->mod.print(llvm::outs(), nullptr);
 

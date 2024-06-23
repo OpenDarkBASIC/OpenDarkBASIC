@@ -212,10 +212,8 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
             return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
     }
 
-    log_err(
-        "[gen] ",
-        "Don't know how to convert DBPro type {quote:%c} to LLVM\n",
-        type);
+    log_codegen_err(
+        "Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
     return nullptr;
 }
 
@@ -299,10 +297,9 @@ log_semantic_err(
 {
     va_list ap;
     va_start(ap, fmt);
-    log_vflc(
-        "{e:semantic error:} ", filename, source.text.data, location, fmt, ap);
+    log_flc_verr(filename, source.text.data, location, fmt, ap);
     va_end(ap);
-    log_excerpt(filename, source.text.data, location, "");
+    log_excerpt_1(source.text.data, location, "");
 }
 
 static llvm::Value*
@@ -741,8 +738,7 @@ gen_expr(
         }
     }
 
-    log_err(
-        "[gen] ",
+    log_codegen_err(
         "Expression type %d not implemeneted\n",
         ast->nodes[expr].info.node_type);
     return nullptr;
@@ -761,15 +757,15 @@ gen_block(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
-    ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[block].info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", ast->nodes[block].info.node_type));
+        log_codegen_err("type: %d\n", ast->nodes[block].info.node_type));
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
-        ODBSDK_DEBUG_ASSERT(stmt > -1, log_sdk_err("stmt: %d\n", stmt));
+        ODBSDK_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
         switch (ast->nodes[stmt].info.node_type)
         {
             case AST_COMMAND: {
@@ -804,7 +800,7 @@ gen_block(
 
                 ODBSDK_DEBUG_ASSERT(
                     ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER,
-                    log_sdk_err(
+                    log_codegen_err(
                         "type: %d\n", ast->nodes[lhs_node].info.node_type));
                 enum type        type = ast->nodes[lhs_node].info.type_info;
                 struct utf8_view name = utf8_span_view(
@@ -895,8 +891,7 @@ gen_block(
             break;
 
             default:
-                log_err(
-                    "[gen] ",
+                log_codegen_err(
                     "Statement type not implemented while translating block\n");
                 return -1;
         }

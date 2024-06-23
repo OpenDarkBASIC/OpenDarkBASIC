@@ -8,7 +8,7 @@
 static char                 progress_active;
 static struct log_interface g_log;
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 static void
 default_write_func(const char* fmt, va_list ap)
 {
@@ -29,7 +29,7 @@ log_putc(char c)
     log_printf("%c", c);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 #if defined(ODBSDK_PLATFORM_WINDOWS)
 #else
 #include <unistd.h>
@@ -45,7 +45,7 @@ stream_is_terminal(FILE* fp)
 #endif
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 void
 log_init(void)
 {
@@ -53,7 +53,7 @@ log_init(void)
     g_log.use_color = stream_is_terminal(stderr);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 struct log_interface
 log_configure(struct log_interface iface)
 {
@@ -62,7 +62,7 @@ log_configure(struct log_interface iface)
     return old;
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 #if defined(ODBSDK_PLATFORM_WINDOWS)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -90,7 +90,7 @@ log_last_error_win32(void)
 }
 #endif
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 static int
 is_ascii_alpha(char c)
 {
@@ -102,7 +102,7 @@ is_ascii_numeric(char c)
     return c >= '0' && c <= '9';
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 struct varef
 {
     va_list ap;
@@ -135,7 +135,12 @@ process_standard_format(const char* fmt, struct varef* args)
     return fmt;
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
+static const char*
+help_style(void)
+{
+    return g_log.use_color ? FG_YELLOW : "";
+}
 static const char*
 debug_style(void)
 {
@@ -167,6 +172,32 @@ emph_style(void)
     return g_log.use_color ? FGB_WHITE : "";
 }
 static const char*
+emph1_style(void)
+{
+    return g_log.use_color ? FGB_BLUE : "";
+}
+static const char*
+emph2_style(void)
+{
+    return g_log.use_color ? FGB_CYAN : "";
+}
+static const char*
+emph3_style(void)
+{
+    return g_log.use_color ? FGB_YELLOW : "";
+}
+static const char*
+emphn_style(int n)
+{
+    switch (n % 3)
+    {
+        case 0: return emph1_style();
+        case 1: return emph2_style();
+        case 2: return emph3_style();
+    }
+    return "";
+}
+static const char*
 quote_style(void)
 {
     return g_log.use_color ? "`" FGB_WHITE : "";
@@ -177,39 +208,19 @@ end_quote_style(void)
     return g_log.use_color ? COL_RESET "'" : "";
 }
 static const char*
-lhs_style(void)
-{
-    return g_log.use_color ? FG_BLUE : "";
-}
-static const char*
-lhsf_style(void)
-{
-    return g_log.use_color ? FGB_BLUE : "";
-}
-static const char*
-op_style(void)
-{
-    return g_log.use_color ? FG_YELLOW : "";
-}
-static const char*
-opf_style(void)
-{
-    return g_log.use_color ? FGB_YELLOW : "";
-}
-static const char*
-rhs_style(void)
-{
-    return g_log.use_color ? FG_CYAN : "";
-}
-static const char*
-rhsf_style(void)
-{
-    return g_log.use_color ? FGB_CYAN : "";
-}
-static const char*
 success_style(void)
 {
     return g_log.use_color ? FGB_GREEN : "";
+}
+static const char*
+insert_style(void)
+{
+    return g_log.use_color ? FGB_GREEN : "";
+}
+static const char*
+remove_style(void)
+{
+    return g_log.use_color ? FGB_RED : "";
 }
 static const char*
 reset_style(void)
@@ -225,6 +236,10 @@ next_control_sequence(
 
     switch (fmt[(*i)++])
     {
+        case 'h':
+            *start = help_style();
+            *end = reset_style();
+            return 1;
         case 'd':
             *start = debug_style();
             *end = reset_style();
@@ -242,6 +257,27 @@ next_control_sequence(
             *end = reset_style();
             return 1;
         case 'e':
+            if (memcmp(&fmt[*i], "mph1", 4) == 0)
+            {
+                (*i) += 4;
+                *start = emph1_style();
+                *end = reset_style();
+                return 1;
+            }
+            if (memcmp(&fmt[*i], "mph2", 4) == 0)
+            {
+                (*i) += 4;
+                *start = emph2_style();
+                *end = reset_style();
+                return 1;
+            }
+            if (memcmp(&fmt[*i], "mph3", 4) == 0)
+            {
+                (*i) += 4;
+                *start = emph3_style();
+                *end = reset_style();
+                return 1;
+            }
             if (memcmp(&fmt[*i], "mph", 3) == 0)
             {
                 (*i) += 3;
@@ -261,28 +297,6 @@ next_control_sequence(
                 return 1;
             }
             break;
-        case 'l':
-            if (memcmp(&fmt[*i], "hs", 2) == 0)
-            {
-                (*i) += 2;
-                *start = lhsf_style();
-                *end = reset_style();
-                return 1;
-            }
-            break;
-        case 'r':
-            if (memcmp(&fmt[*i], "hs", 2) == 0)
-            {
-                (*i) += 2;
-                *start = rhsf_style();
-                *end = reset_style();
-                return 1;
-            }
-            break;
-        case 'u':
-            *start = lhsf_style();
-            *end = reset_style();
-            return 1;
         case 's':
             *start = success_style();
             *end = reset_style();
@@ -340,7 +354,7 @@ process_color_format(const char* fmt, struct varef* args)
     return content;
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 static void
 vfprintf_with_color(const char* fmt, struct varef* args)
 {
@@ -363,7 +377,7 @@ fprintf_with_color(const char* fmt, ...)
     vfprintf_with_color(fmt, &args);
     va_end(args.ap);
 }
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 void
 log_vraw(const char* fmt, va_list ap)
 {
@@ -372,7 +386,7 @@ log_vraw(const char* fmt, va_list ap)
     vfprintf_with_color(fmt, &args);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 void
 log_vimpl(
     char        is_progress,
@@ -400,7 +414,7 @@ log_vimpl(
     vfprintf_with_color(fmt, &args);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 void
 log_vprogress(
     const char* group, int current, int total, const char* fmt, va_list ap)
@@ -414,7 +428,7 @@ log_vprogress(
     log_vimpl(1, buf, group, fmt, ap);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 void
 log_vflc(
     const char*      severity,
@@ -447,193 +461,78 @@ log_vflc(
     vfprintf_with_color(fmt, &args);
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 int
-log_excerpt(
-    const char*      filename,
-    const char*      source,
-    struct utf8_span loc,
-    const char*      annotation)
+log_excerpt(const char* source, const struct log_excerpt_inst* inst)
 {
-    utf8_idx         i;
-    utf8_idx         l1, l2;
-    utf8_idx         indent, max_indent;
-    utf8_idx         gutter_indent;
-    utf8_idx         line;
-    struct utf8_span block;
-
-    /* Calculate beginning of block and line number. The goal is to make
-     * "block" point to the first character in the line that contains the
-     * location. */
-    l1 = 1, block.off = 0;
-    for (i = 0; i != loc.off; i++)
-        if (source[i] == '\n')
-            l1++, block.off = i + 1;
-
-    /* Calculate line of where the location ends */
-    l2 = l1;
-    for (i = 0; i != loc.len; i++)
-        if (source[loc.off + i] == '\n')
-            l2++;
-
-    /* Find the end of the line for block */
-    block.len = loc.off - block.off + loc.len;
-    for (; source[loc.off + i]; block.len++, i++)
-        if (source[loc.off + i] == '\n')
-            break;
-
-    /* We also keep track of the minimum indentation. This is used to unindent
-     * the block of code as much as possible when printing out the excerpt. */
-    max_indent = 10000;
-    for (i = 0; i != block.len;)
-    {
-        indent = 0;
-        for (; i != block.len; ++i, ++indent)
-        {
-            if (source[block.off + i] != ' ' && source[block.off + i] != '\t')
-                break;
-        }
-
-        if (max_indent > indent)
-            max_indent = indent;
-
-        while (i != block.len)
-            if (source[block.off + i++] == '\n')
-                break;
-    }
-
-    /* Find width of the largest line number. This sets the indentation of the
-     * gutter */
-    gutter_indent = snprintf(NULL, 0, "%d", l2);
-    gutter_indent += 2; /* Padding on either side of the line number */
-
-    /* Main print loop */
-    line = l1;
-    for (i = 0; i != block.len; line++)
-    {
-        int j = i;
-
-        /* Gutter with line number and padding */
-        log_printf("%*d | ", gutter_indent - 1, line);
-        if (i >= loc.off - block.off)
-            log_printf("%s", lhs_style());
-
-        /* Print line of code */
-        for (indent = 0; i != block.len; indent++)
-        {
-            if (i == loc.off - block.off)
-                log_printf("%s", lhs_style());
-            if (i == loc.off - block.off + loc.len)
-                log_printf("%s", reset_style());
-
-            if (source[block.off + i++] == '\n')
-                break;
-            if (indent >= max_indent)
-                log_putc(source[block.off + i - 1]);
-        }
-        log_printf("%s\n", reset_style());
-
-        /* Gutter, but no line number because this line is for diagnostics */
-        log_printf("%*s | %s", gutter_indent - 1, "", lhs_style());
-
-        /* Print diagnostics */
-        for (indent = 0; j != block.len; j++)
-        {
-            if (source[block.off + j] == '\n')
-                break;
-
-            if (indent < max_indent)
-                indent++;
-            else if (j < loc.off - block.off)
-                log_putc(' ');
-            else if (j == loc.off - block.off)
-                log_putc('^');
-            else if (
-                j > loc.off - block.off
-                && j < loc.off - block.off + loc.len - 1)
-                log_putc('~');
-            else if (j == loc.off - block.off + loc.len - 1)
-                log_putc('<');
-
-            if (j >= loc.off - block.off + loc.len - 1)
-            {
-                if (*annotation)
-                    log_printf(
-                        " %s%s%s", lhsf_style(), annotation, reset_style());
-                break;
-            }
-        }
-
-        log_printf("%s\n", reset_style());
-    }
-
-    return gutter_indent;
-}
-
-/* ------------------------------------------------------------------------- */
-int
-log_excerpt2(
-    const char*      filename,
-    const char*      source,
-    struct utf8_span loc1,
-    struct utf8_span loc2,
-    const char*      annotation1,
-    const char*      annotation2)
-{
-    utf8_idx         i;
-    utf8_idx         l1, l2;
-    utf8_idx         indent, max_indent;
-    utf8_idx         gutter_indent;
-    utf8_idx         line;
+    utf8_idx         i, j, r;
+    utf8_idx         l1, l2, line;
+    utf8_idx         indent, max_indent, gutter_indent;
+    int              num_inst;
     struct utf8_span loc;
     struct utf8_span block;
-    char             annotation1_written = 0;
-    char             postpone_annotation1 = 0;
 
-    /* Calculate an overall location for LHS,op,RHS */
     ODBSDK_DEBUG_ASSERT(
-        loc1.off < loc2.off,
-        log_sdk_err("loc1.off: %d, loc2.off: %d\n", loc1.off, loc2.off));
-    loc.off = loc1.off;
-    loc.len = loc2.off - loc1.off + loc2.len;
+        inst != NULL && inst[0].new_text != NULL,
+        log_sdk_err("Require at least one location"));
+
+    /* Calculate union of all locations */
+    loc = inst[0].loc;
+    for (i = 1; inst[i].new_text; ++i)
+    {
+        ODBSDK_DEBUG_ASSERT(
+            inst[i - 1].loc.off < inst[i].loc.off,
+            log_sdk_err(
+                "i-1: %d, i: %d\n", inst[i - 1].loc.off, inst[i].loc.off));
+        if (inst[i + 1].new_text == NULL)
+        {
+            loc.len = inst[i].loc.off - inst[0].loc.off;
+            if (inst[i].type == LOG_EXCERPT_HIGHLIGHT)
+                loc.len += inst[i].loc.len;
+        }
+    }
+    num_inst = i;
 
     /* Calculate beginning of block and line number. The goal is to make
      * "block" point to the first character in the line that contains the
      * location. */
     l1 = 1, block.off = 0;
-    for (i = 0; i != loc.off; i++)
-        if (source[i] == '\n')
-            l1++, block.off = i + 1;
+    for (r = 0; r != loc.off; r++)
+        if (source[r] == '\n')
+            l1++, block.off = r + 1;
 
     /* Calculate line of where the location ends */
     l2 = l1;
-    for (i = 0; i != loc.len; i++)
-        if (source[loc.off + i] == '\n')
+    for (r = 0; r != loc.len; r++)
+        if (source[loc.off + r] == '\n')
             l2++;
 
     /* Find the end of the line for block */
     block.len = loc.off - block.off + loc.len;
-    for (; source[loc.off + i]; block.len++, i++)
-        if (source[loc.off + i] == '\n')
+    for (; source[loc.off + r]; block.len++, r++)
+        if (source[loc.off + r] == '\n')
+        {
+            block.len++; /* Include the newline */
             break;
+        }
 
-    /* We also keep track of the minimum indentation. This is used to unindent
-     * the block of code as much as possible when printing out the excerpt. */
+    /* Also keep track of the minimum indentation. This is used to unindent the
+     * block of code as much as possible when printing out the excerpt. */
     max_indent = 10000;
-    for (i = 0; i != block.len;)
+    for (r = 0; r != block.len;)
     {
         indent = 0;
-        for (; i != block.len; ++i, ++indent)
+        for (; r != block.len; ++r, ++indent)
         {
-            if (source[block.off + i] != ' ' && source[block.off + i] != '\t')
+            if (source[block.off + r] != ' ' && source[block.off + r] != '\t')
                 break;
         }
 
         if (max_indent > indent)
             max_indent = indent;
 
-        while (i != block.len)
-            if (source[block.off + i++] == '\n')
+        while (r != block.len)
+            if (source[block.off + r++] == '\n')
                 break;
     }
 
@@ -644,132 +543,212 @@ log_excerpt2(
 
     /* Main print loop */
     line = l1;
-    for (i = 0; i != block.len; line++)
+    for (r = 0; r != block.len; line++)
     {
-        int j = i;
+        utf8_idx r_end;
+        utf8_idx r_start = r;
+        utf8_idx r2 = r;
+
+        /* Print line of code ----------------------------------------------- */
 
         /* Gutter with line number and padding */
         log_printf("%*d | ", gutter_indent - 1, line);
-        if (i >= loc1.off - block.off && i < loc1.off - block.off + loc1.len)
-            log_printf("%s", lhs_style());
-        if (i >= loc2.off - block.off && i < loc2.off - block.off + loc2.len)
-            log_printf("%s", rhs_style());
 
-        /* Print line of code */
-        indent = 0;
-        while (i != block.len)
+        /* Enable style, in case the previous line had one */
+        for (i = 0; i != num_inst; i++)
         {
-            if (i == loc1.off - block.off)
-                log_printf("%s", lhs_style());
-            if (i == loc1.off - block.off + loc1.len)
-                log_printf("%s", reset_style());
-            if (i == loc2.off - block.off)
-                log_printf("%s", rhs_style());
-            if (i == loc2.off - block.off + loc2.len)
-                log_printf("%s", reset_style());
+            if (r >= inst[i].loc.off - block.off
+                && r < inst[i].loc.off - block.off + inst[i].loc.len)
+                log_printf("%s", emphn_style(inst[i].highlight_group));
+        }
 
-            if (source[block.off + i++] == '\n')
+        indent = 0;
+        for (; r != block.len; r++)
+        {
+            /* Enable/disable style */
+            for (i = 0; i != num_inst; i++)
+            {
+                if (r == inst[i].loc.off - block.off)
+                    log_printf("%s", emphn_style(inst[i].highlight_group));
+                if (r == inst[i].loc.off - block.off + inst[i].loc.len)
+                    log_printf("%s", reset_style());
+            }
+
+            if (indent++ < max_indent)
+                continue;
+
+            for (i = 0; i != num_inst; i++)
+            {
+                if (inst[i].type == LOG_EXCERPT_INSERT
+                    && r == inst[i].loc.off - block.off)
+                {
+                    log_printf(
+                        "%s%s%s",
+                        insert_style(),
+                        inst[i].new_text,
+                        reset_style());
+                }
+            }
+
+            if (source[block.off + r] == '\n')
+            {
+                r++;
                 break;
-            if (indent++ >= max_indent)
-                log_putc(source[block.off + i - 1]);
+            }
+
+            log_putc(source[block.off + r]);
         }
         log_printf("%s\n", reset_style());
+
+        /* Exclude the newline */
+        r_end = source[block.off + r - 1] == '\n' ? r - 1 : r;
+
+        /* Insertions affect r_end */
+        for (i = 0; i != num_inst; i++)
+            if (inst[i].type == LOG_EXCERPT_INSERT)
+                r_end += inst[i].loc.len;
+
+        /* Print highlights ------------------------------------------------- */
 
         /* Gutter, but no line number because this line is for diagnostics */
         log_printf("%*s | ", gutter_indent - 1, "");
-        if (j >= loc1.off - block.off && j < loc1.off - block.off + loc1.len)
-            log_printf("%s", lhs_style());
-        if (j >= loc2.off - block.off && j < loc2.off - block.off + loc2.len)
-            log_printf("%s", rhs_style());
 
-        /* Print diagnostics */
-        for (indent = 0; j != block.len; j++)
+        /* Enable style, in case the previous line had one */
+        for (i = 0; i != num_inst; i++)
         {
-            if (source[block.off + j] == '\n')
-                break;
-
-            if (j == loc1.off - block.off)
-                log_printf("%s", lhs_style());
-            if (j == loc1.off - block.off + loc1.len)
-                log_printf("%s", reset_style());
-            if (j == loc2.off - block.off)
-                log_printf("%s", rhs_style());
-            if (j == loc2.off - block.off + loc2.len)
-                log_printf("%s", reset_style());
-
-            if (indent < max_indent)
-                indent++;
-            else if (j < loc1.off - block.off)
-                log_putc(' ');
-            else if (j == loc1.off - block.off)
-                log_putc('^');
-            else if (
-                j > loc1.off - block.off
-                && j < loc1.off - block.off + loc1.len - 1)
-                log_putc('~');
-            else if (j == loc1.off - block.off + loc1.len - 1)
-                log_putc('<');
-            else if (j == loc2.off - block.off)
-                log_putc('^');
-            else if (
-                j > loc2.off - block.off
-                && j < loc2.off - block.off + loc2.len - 1)
-                log_putc('~');
-            else if (j == loc2.off - block.off + loc2.len - 1)
-                log_putc('<');
-
-            if (j >= loc2.off - block.off + loc2.len)
-            {
-                log_printf(" %s%s%s", rhsf_style(), annotation2, reset_style());
-                break;
-            }
+            if (r_start >= inst[i].loc.off - block.off
+                && r_end < inst[i].loc.off - block.off + inst[i].loc.len)
+                log_printf(
+                    "%s",
+                    inst[i].type == LOG_EXCERPT_INSERT
+                        ? insert_style()
+                        : emphn_style(inst[i].highlight_group));
         }
 
-        /* Print lhs text if appropriate. If lhs and rhs texts both appear on
-         * the same line, then the lhs text it written later, one line below */
-        if (j >= loc2.off - block.off)
-            postpone_annotation1 = 1;
-        if (j >= loc1.off - block.off + loc1.len && !annotation1_written
-            && !postpone_annotation1)
+        int ins = 0;
+        i = 0;
+        for (indent = 0, r2 = r_start; r2 != r_end; r2++)
         {
-            log_printf(" %s%s%s", lhsf_style(), annotation1, reset_style());
-            annotation1_written = 1;
+            /* Enable/disable style */
+            for (j = 0; j != num_inst; j++)
+            {
+                if (r2 == inst[j].loc.off - block.off + ins)
+                    log_printf(
+                        "%s",
+                        inst[i].type == LOG_EXCERPT_INSERT
+                            ? insert_style()
+                            : emphn_style(inst[j].highlight_group));
+                if (r2 == inst[j].loc.off + ins - block.off + inst[j].loc.len)
+                    log_printf("%s", reset_style());
+            }
+
+            if (indent++ < max_indent)
+                continue;
+
+            for (j = i; j != num_inst; j++)
+            {
+                if (r2 == inst[j].loc.off + ins - block.off)
+                    log_putc('^');
+                else if (
+                    r2 > inst[j].loc.off + ins - block.off
+                    && r2 < inst[j].loc.off + ins - block.off + inst[j].loc.len
+                                - 1)
+                    log_putc('~');
+                else if (
+                    r2
+                    == inst[j].loc.off + ins - block.off + inst[j].loc.len - 1)
+                    log_putc('<');
+                else
+                    continue;
+
+                if (r2
+                    == inst[j].loc.off + ins - block.off + inst[j].loc.len - 1)
+                {
+                    i++;
+                    if (inst[j].type == LOG_EXCERPT_INSERT)
+                        ins += inst[j].loc.len;
+                }
+
+                break;
+            }
+            if (i == num_inst)
+                break;
+            if (j == num_inst
+                && r2 < inst[j - 1].loc.off + ins - block.off
+                            + inst[j - 1].loc.len)
+                log_putc(' ');
+        }
+
+        /* Print annotations ------------------------------------------------ */
+
+        for (i = num_inst - 1; i >= 0; i--)
+        {
+            if (inst[i].loc.off - block.off < r_start
+                || inst[i].loc.off - block.off >= r_end || !*inst[i].annotation)
+            {
+                continue;
+            }
+
+            /* If this is the last annotation on the line, and the highlight
+             * does not span over to the next line, it can be appended to the
+             * current line without adding an extra gutter */
+            int num_anns = 0;
+            for (j = i; j != num_inst; j++)
+                if (inst[j].loc.off - block.off >= r_start
+                    && inst[i].loc.off - block.off + inst[i].loc.len <= r_end
+                    && *inst[i].annotation)
+                    num_anns++;
+            if (num_anns == 1)
+            {
+                log_printf(
+                    " %s%s%s",
+                    emphn_style(inst[i].highlight_group),
+                    inst[i].annotation,
+                    reset_style());
+                continue;
+            }
+
+            /* Gutter without line number because this line is for diagnostics*/
+            log_printf("\n%*s | ", gutter_indent - 1, "");
+
+            for (indent = 0, r2 = r_start; r2 != r_end; r2++)
+            {
+                if (indent++ < max_indent)
+                    continue;
+
+                if (r2 == inst[i].loc.off - block.off)
+                {
+                    log_printf(
+                        "%s%s%s",
+                        emphn_style(inst[i].highlight_group),
+                        inst[i].annotation,
+                        reset_style());
+                    break;
+                }
+
+                for (j = 0; j != num_inst; ++j)
+                    if (r2 == inst[j].loc.off - block.off)
+                    {
+                        log_printf(
+                            "%s|%s",
+                            emphn_style(inst[j].highlight_group),
+                            reset_style());
+                        break;
+                    }
+                if (j == num_inst)
+                    log_putc(' ');
+            }
         }
 
         log_printf("%s\n", reset_style());
-    }
-
-    if (!annotation1_written && postpone_annotation1)
-    {
-        log_printf("%*s | ", gutter_indent - 1, "");
-        for (i = 0; i != block.len;)
-            for (indent = 0; i != block.len; indent++)
-            {
-                if (i == loc1.off - block.off)
-                {
-                    log_printf(
-                        "%s%*s%s%s\n",
-                        lhsf_style(),
-                        indent - max_indent,
-                        "",
-                        annotation1,
-                        reset_style());
-                    goto lhs_text_done;
-                }
-
-                if (source[block.off + i++] == '\n')
-                    break;
-            }
-    lhs_text_done:;
     }
 
     return gutter_indent;
 }
 
-/* ------------------------------------------------------------------------- */
+/* -------------------------------------------------------------------------- */
 int
-log_binop_excerpt(
-    const char*      filename,
+log_excerpt_binop(
     const char*      source,
     struct utf8_span lhs,
     struct utf8_span op,
@@ -792,8 +771,8 @@ log_binop_excerpt(
     loc.len = rhs.off - lhs.off + rhs.len;
 
     /* Calculate beginning of block and line number. The goal is to make
-     * "block" point to the first character in the line that contains the
-     * location. */
+     * "block" point to the first character in the line that contains
+     * the location. */
     l1 = 1, block.off = 0;
     for (i = 0; i != loc.off; i++)
         if (source[i] == '\n')
@@ -811,8 +790,9 @@ log_binop_excerpt(
         if (source[loc.off + i] == '\n')
             break;
 
-    /* We also keep track of the minimum indentation. This is used to unindent
-     * the block of code as much as possible when printing out the excerpt. */
+    /* We also keep track of the minimum indentation. This is used to
+     * unindent the block of code as much as possible when printing out
+     * the excerpt. */
     max_indent = 10000;
     for (i = 0; i != block.len;)
     {
@@ -831,8 +811,8 @@ log_binop_excerpt(
                 break;
     }
 
-    /* Find width of the largest line number. This sets the indentation of the
-     * gutter */
+    /* Find width of the largest line number. This sets the indentation
+     * of the gutter */
     gutter_indent = snprintf(NULL, 0, "%d", l2);
     gutter_indent += 2; /* Padding on either side of the line number */
 
@@ -845,26 +825,26 @@ log_binop_excerpt(
         /* Gutter with line number and padding */
         log_printf("%*d | ", gutter_indent - 1, line);
         if (i >= lhs.off - block.off && i < lhs.off - block.off + lhs.len)
-            log_printf("%s", lhs_style());
+            log_printf("%s", emph1_style());
         if (i >= op.off - block.off && i < op.off - block.off + op.len)
-            log_printf("%s", op_style());
+            log_printf("%s", emph3_style());
         if (i >= rhs.off - block.off && i < rhs.off - block.off + rhs.len)
-            log_printf("%s", rhs_style());
+            log_printf("%s", emph2_style());
 
         /* Print line of code */
         indent = 0;
         while (i != block.len)
         {
             if (i == lhs.off - block.off)
-                log_printf("%s", lhs_style());
+                log_printf("%s", emph1_style());
             if (i == lhs.off - block.off + lhs.len)
                 log_printf("%s", reset_style());
             if (i == op.off - block.off)
-                log_printf("%s", op_style());
+                log_printf("%s", emph3_style());
             if (i == op.off - block.off + op.len)
                 log_printf("%s", reset_style());
             if (i == rhs.off - block.off)
-                log_printf("%s", rhs_style());
+                log_printf("%s", emph2_style());
             if (i == rhs.off - block.off + rhs.len)
                 log_printf("%s", reset_style());
 
@@ -875,14 +855,15 @@ log_binop_excerpt(
         }
         log_printf("%s\n", reset_style());
 
-        /* Gutter, but no line number because this line is for diagnostics */
+        /* Gutter, but no line number because this line is for
+         * diagnostics */
         log_printf("%*s | ", gutter_indent - 1, "");
         if (j >= lhs.off - block.off && j < lhs.off - block.off + lhs.len)
-            log_printf("%s", lhs_style());
+            log_printf("%s", emph1_style());
         if (j >= op.off - block.off && j < op.off - block.off + op.len)
-            log_printf("%s", op_style());
+            log_printf("%s", emph3_style());
         if (j >= rhs.off - block.off && j < rhs.off - block.off + rhs.len)
-            log_printf("%s", rhs_style());
+            log_printf("%s", emph2_style());
 
         /* Print diagnostics */
         for (indent = 0; j != block.len; j++)
@@ -891,15 +872,15 @@ log_binop_excerpt(
                 break;
 
             if (j == lhs.off - block.off)
-                log_printf("%s", lhs_style());
+                log_printf("%s", emph1_style());
             if (j == lhs.off - block.off + lhs.len)
                 log_printf("%s", reset_style());
             if (j == op.off - block.off)
-                log_printf("%s", op_style());
+                log_printf("%s", emph3_style());
             if (j == op.off - block.off + op.len)
                 log_printf("%s", reset_style());
             if (j == rhs.off - block.off)
-                log_printf("%s", rhs_style());
+                log_printf("%s", emph2_style());
             if (j == rhs.off - block.off + rhs.len)
                 log_printf("%s", reset_style());
 
@@ -919,21 +900,22 @@ log_binop_excerpt(
             else if (j == rhs.off - block.off + rhs.len - 1)
             {
                 log_putc(rhs.len > 1 ? '<' : '^');
-                log_printf(" %s%s%s", rhsf_style(), rhs_text, reset_style());
+                log_printf(" %s%s%s", emph2_style(), rhs_text, reset_style());
                 break;
             }
             else
                 log_putc(' ');
         }
 
-        /* Print lhs text if appropriate. If lhs and rhs texts both appear on
-         * the same line, then the lhs text it written later, one line below */
+        /* Print lhs text if appropriate. If lhs and rhs texts both
+         * appear on the same line, then the lhs text it written later,
+         * one line below */
         if (j >= rhs.off - block.off)
             postpone_lhs_text = 1;
         if (j >= lhs.off - block.off + lhs.len && !lhs_text_written
             && !postpone_lhs_text)
         {
-            log_printf(" %s%s%s", lhsf_style(), lhs_text, reset_style());
+            log_printf(" %s%s%s", emph1_style(), lhs_text, reset_style());
             lhs_text_written = 1;
         }
 
@@ -950,7 +932,7 @@ log_binop_excerpt(
                 {
                     log_printf(
                         "%s%*s%s%s\n",
-                        lhsf_style(),
+                        emph1_style(),
                         indent - max_indent,
                         "",
                         lhs_text,
@@ -968,11 +950,11 @@ log_binop_excerpt(
 }
 
 void
-log_excerpt_note(int gutter_indent, const char* fmt, ...)
+log_excerpt_vimpl(int gutter_indent, const char* severity, const char* fmt, ...)
 {
     struct varef args;
     log_printf("%*s = ", gutter_indent - 1, "");
-    log_printf("%s%s%s", note_style(), "note: ", reset_style());
+    fprintf_with_color(severity);
 
     va_start(args.ap, fmt);
     vfprintf_with_color(fmt, &args);

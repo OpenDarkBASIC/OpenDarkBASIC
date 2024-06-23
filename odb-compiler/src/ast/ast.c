@@ -25,8 +25,7 @@ new_node(struct ast* ast, enum ast_type type, struct utf8_span location)
     ast_id n = ast->node_count++;
     ast->nodes[n].base.info.location = location;
     ast->nodes[n].base.info.node_type = type;
-    ast->nodes[n].base.info.type_info = TYPE_VOID;
-    ast->nodes[n].base.parent = -1;
+    ast->nodes[n].base.info.type_info = TYPE_INVALID;
     ast->nodes[n].base.left = -1;
     ast->nodes[n].base.right = -1;
 
@@ -47,7 +46,7 @@ ast_block(struct ast* ast, ast_id stmt, struct utf8_span location)
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(stmt > -1, log_sdk_err("stmt: %d\n", stmt));
+    ODBSDK_DEBUG_ASSERT(stmt > -1, log_parser_err("stmt: %d\n", stmt));
 
     ast->nodes[n].block.stmt = stmt;
     return n;
@@ -61,10 +60,10 @@ ast_block_append(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(block > -1, log_sdk_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(block > -1, log_parser_err("block: %d\n", block));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[block].base.info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", ast->nodes[block].base.info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[block].base.info.node_type));
 
     while (ast->nodes[block].block.next != -1)
         block = ast->nodes[block].block.next;
@@ -80,7 +79,7 @@ ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location)
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
 
     ast->nodes[n].arglist.expr = expr;
     return n;
@@ -94,10 +93,10 @@ ast_arglist_append(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(arglist > -1, log_sdk_err("arglist: %d\n", arglist));
+    ODBSDK_DEBUG_ASSERT(arglist > -1, log_parser_err("arglist: %d\n", arglist));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[arglist].info.node_type == AST_ARGLIST,
-        log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
 
     while (ast->nodes[arglist].arglist.next != -1)
         arglist = ast->nodes[arglist].arglist.next;
@@ -116,8 +115,8 @@ ast_const_decl(
         return -1;
 
     ODBSDK_DEBUG_ASSERT(
-        identifier > -1, log_sdk_err("identifier: %d\n", identifier));
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+        identifier > -1, log_parser_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
 
     ast->nodes[n].const_decl.identifier = identifier;
     ast->nodes[n].const_decl.expr = expr;
@@ -132,10 +131,10 @@ ast_command(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(cmd_id > -1, log_sdk_err("cmd_id: %d\n", cmd_id));
+    ODBSDK_DEBUG_ASSERT(cmd_id > -1, log_parser_err("cmd_id: %d\n", cmd_id));
     ODBSDK_DEBUG_ASSERT(
         arglist == -1 || ast->nodes[arglist].info.node_type == AST_ARGLIST,
-        log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
 
     ast->nodes[n].cmd.id = cmd_id;
     ast->nodes[n].cmd.arglist = arglist;
@@ -155,11 +154,11 @@ ast_assign_var(
         return -1;
 
     ODBSDK_DEBUG_ASSERT(
-        identifier > -1, log_sdk_err("identifier: %d\n", identifier));
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+        identifier > -1, log_parser_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
-        log_sdk_err("type: %d\n", ast->nodes[identifier].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
 
     ast->nodes[n].assignment.lvalue = identifier;
     ast->nodes[n].assignment.expr = expr;
@@ -195,8 +194,8 @@ ast_binop(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(left > -1, log_sdk_err("left: %d\n", left));
-    ODBSDK_DEBUG_ASSERT(right > -1, log_sdk_err("right: %d\n", right));
+    ODBSDK_DEBUG_ASSERT(left > -1, log_parser_err("left: %d\n", left));
+    ODBSDK_DEBUG_ASSERT(right > -1, log_parser_err("right: %d\n", right));
 
     ast->nodes[n].binop.left = left;
     ast->nodes[n].binop.right = right;
@@ -213,7 +212,7 @@ ast_unop(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
 
     ast->nodes[n].unop.expr = expr;
     ast->nodes[n].unop.op = op;
@@ -227,12 +226,12 @@ ast_cond(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ODBSDK_DEBUG_ASSERT(
-        cond_branch > -1, log_sdk_err("cond_branch: %d\n", cond_branch));
+        cond_branch > -1, log_parser_err("cond_branch: %d\n", cond_branch));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
-        log_sdk_err("type: %d\n", ast->nodes[cond_branch].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[cond_branch].info.node_type));
 
     ast->nodes[n].cond.expr = expr;
     ast->nodes[n].cond.cond_branch = cond_branch;
@@ -248,10 +247,10 @@ ast_cond_branch(
 
     ODBSDK_DEBUG_ASSERT(
         yes == -1 || ast->nodes[yes].info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", ast->nodes[yes].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[yes].info.node_type));
     ODBSDK_DEBUG_ASSERT(
         no == -1 || ast->nodes[no].info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", ast->nodes[no].info.node_type));
+        log_parser_err("type: %d\n", ast->nodes[no].info.node_type));
 
     ast->nodes[n].cond_branch.yes = yes;
     ast->nodes[n].cond_branch.no = no;
@@ -378,7 +377,7 @@ ast_cast(
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(expr > -1, log_sdk_err("expr: %d\n", expr));
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ast->nodes[n].cast.expr = expr;
     ast->nodes[n].info.type_info = target_type;
     return n;

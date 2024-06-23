@@ -15,7 +15,7 @@ type_check_and_cast_binop_pow(
     ODBSDK_DEBUG_ASSERT(op > -1, (void)0);
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[op].info.node_type == AST_BINOP,
-        log_sdk_err("type: %d\n", ast->nodes[op].info.node_type));
+        log_semantic_err("type: %d\n", ast->nodes[op].info.node_type));
 
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
@@ -53,8 +53,7 @@ type_check_and_cast_binop_pow(
             case TP_ALLOW: break;
             case TP_TRUENESS:
             case TP_DISALLOW:
-                log_flc(
-                    "{e:error:} ",
+                log_flc_err(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
@@ -62,8 +61,7 @@ type_check_and_cast_binop_pow(
                     "{rhs:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
-                gutter = log_excerpt2(
-                    source_filename,
+                gutter = log_excerpt_2(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
@@ -77,8 +75,7 @@ type_check_and_cast_binop_pow(
                 return TYPE_INVALID;
 
             case TP_TRUNCATE:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
@@ -86,8 +83,7 @@ type_check_and_cast_binop_pow(
                     "{rhs:%s} in binary expression.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
-                gutter = log_binop_excerpt(
-                    source_filename,
+                gutter = log_excerpt_binop(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
@@ -103,16 +99,14 @@ type_check_and_cast_binop_pow(
 
             case TP_BOOL_PROMOTION:
             case TP_INT_TO_FLOAT:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     "Implicit conversion of base from {lhs:%s} to {rhs:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
-                gutter = log_excerpt2(
-                    source_filename,
+                gutter = log_excerpt_2(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
@@ -144,8 +138,7 @@ type_check_and_cast_binop_pow(
             case TP_ALLOW: break;
             case TP_TRUENESS:
             case TP_DISALLOW:
-                log_flc(
-                    "{e:error:} ",
+                log_flc_err(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
@@ -153,8 +146,7 @@ type_check_and_cast_binop_pow(
                     "{rhs:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
-                gutter = log_binop_excerpt(
-                    source_filename,
+                gutter = log_excerpt_binop(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
@@ -170,8 +162,7 @@ type_check_and_cast_binop_pow(
                 return TYPE_INVALID;
 
             case TP_TRUNCATE:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
@@ -179,8 +170,7 @@ type_check_and_cast_binop_pow(
                     "to {lhs:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
-                gutter = log_binop_excerpt(
-                    source_filename,
+                gutter = log_excerpt_binop(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,
@@ -208,8 +198,7 @@ type_check_and_cast_binop_pow(
 
             case TP_INT_TO_FLOAT:
             case TP_BOOL_PROMOTION:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
@@ -217,8 +206,7 @@ type_check_and_cast_binop_pow(
                     "{lhs:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
-                gutter = log_binop_excerpt(
-                    source_filename,
+                gutter = log_excerpt_binop(
                     source.text.data,
                     ast->nodes[lhs].info.location,
                     ast->nodes[op].binop.op_location,

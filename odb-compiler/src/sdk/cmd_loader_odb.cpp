@@ -24,7 +24,7 @@ parse_command_string(
 
     if (cmd_name.len == 0 || type_str.len == 0 || c_symbol.len == 0)
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Invalid command string {quote:%.*s} in plugin {emph:%s}\n",
             str.len,
             data + str.off,
@@ -35,7 +35,7 @@ parse_command_string(
     enum type return_type = type_from_char(data[type_str.off]);
     if (return_type == 0)
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Invalid command return type {quote:%c} in string {quote:%.*s} in "
             "plugin {emph:%s}\n",
             data[type_str.off],
@@ -47,7 +47,7 @@ parse_command_string(
 
     if (data[type_str.off + 1] != '(')
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Expected {quote:(} after return type in command type string "
             "{quote:%.*s} in plugin {emph:%s}\n",
             str.len,
@@ -61,7 +61,7 @@ parse_command_string(
     for (int c = 0; c != cmd_name.len; ++c)
         if (toupper(data[cmd_name.off + c]) != data[cmd_name.off + c])
         {
-            log_sdk_warn(
+            log_cmd_warn(
                 "Command names must be stored as lower case. Command string "
                 "contains upper case characters {quote:%.*s} in plugin "
                 "{emph:%s}\n",
@@ -91,7 +91,7 @@ parse_command_string(
 
         if (type == 0)
         {
-            log_sdk_warn(
+            log_cmd_warn(
                 "Invalid command parameter type {quote:%c} in string "
                 "{quote:%.*s} in plugin {emph:%s}\n",
                 type_char,
@@ -197,7 +197,7 @@ load_odb_commands(
             auto elf = static_cast<const LIEF::ELF::Binary*>(binary);
             const LIEF::Section* odbres = elf->get_section(".odbres");
             if (odbres == nullptr)
-                return log_sdk_err(
+                return log_cmd_err(
                     "Missing .odbres section in plugin {emph:%s}.\n",
                     ospathc_cstr(filepath));
 
@@ -216,7 +216,7 @@ load_odb_commands(
 
             if (pe->resources() == nullptr)
             {
-                log_sdk_warn(
+                log_cmd_warn(
                     "No resources found in pluign {emph:%s}.\n",
                     ospathc_cstr(filepath));
                 return 0;
@@ -229,7 +229,7 @@ load_odb_commands(
         case LIEF::Binary::MACHO:
         case LIEF::Binary::OAT:
         default:
-            log_sdk_err(
+            log_cmd_err(
                 "Loading plugin format %d is not yet supported\n",
                 binary->format());
             break;

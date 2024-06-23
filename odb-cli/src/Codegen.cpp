@@ -30,7 +30,7 @@ setArch(const std::vector<std::string>& args)
     else if (args[0] == "aarch64")
         arch_ = TARGET_AArch64;
     else
-        log_err("", "Unknown architecture {quote:%s}\n", args[0].c_str());
+        log_codegen_err("Unknown architecture {quote:%s}\n", args[0].c_str());
 
     return true;
 }
@@ -46,7 +46,7 @@ setPlatform(const std::vector<std::string>& args)
     else if (args[0] == "linux")
         platform_ = TARGET_LINUX;
     else
-        log_err("", "Unknown platform {quote:%s}\n", args[0].c_str());
+        log_codegen_err("Unknown platform {quote:%s}\n", args[0].c_str());
 
     return true;
 }

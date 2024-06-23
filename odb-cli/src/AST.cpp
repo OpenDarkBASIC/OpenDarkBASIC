@@ -46,10 +46,8 @@ parseDBA(const std::vector<std::string>& args)
         auto& result = results.emplace_back();
 
         result.source_filename = arg;
-        log_info(
-            "[ast] ",
-            "Parsing file {quote:%s}\n",
-            result.source_filename.c_str());
+        log_parser_info(
+            "Parsing file {quote:%s}\n", result.source_filename.c_str());
         if (db_source_open_file(
                 &result.source, cstr_ospathc(result.source_filename.c_str()))
             != 0)
@@ -68,7 +66,7 @@ parseDBA(const std::vector<std::string>& args)
             != 0)
             goto parse_failed;
 
-        log_info("[ast] ", "Running semantic checks\n");
+        log_semantic_info("Running semantic checks\n");
         if (semantic_run_essential_checks(
                 getAST(),
                 getPluginList(),
@@ -117,20 +115,18 @@ dumpASTDOT(const std::vector<std::string>& args)
         outFile = fopen(args[0].c_str(), "w");
         if (!outFile)
         {
-            log_err(
-                "[ast] ",
+            log_parser_err(
                 "Failed to open file {quote:%s}: %s\n",
                 args[0].c_str(),
                 strerror(errno));
             return false;
         }
-        log_info(
-            "[ast] ",
+        log_parser_info(
             "Dumping AST to Graphviz DOT format: {quote:%s}\n",
             args[0].c_str());
     }
     else
-        log_info("[ast] ", "Dumping AST to Graphviz DOT format\n");
+        log_parser_info("Dumping AST to Graphviz DOT format\n");
 
     for (const auto& result : results)
         ast_export_dot_fp(

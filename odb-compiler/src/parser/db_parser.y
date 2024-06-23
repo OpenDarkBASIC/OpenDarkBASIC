@@ -338,7 +338,7 @@ static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    log_verr("[parser] ", fmt, args);
+    log_parser_verr(fmt, args);
     log_raw("\n");
     //odb::Log::vdbParserFatalError(location->getFileLineColumn().c_str(), fmt, args);
     va_end(args);
@@ -356,14 +356,13 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     
     if (lookahead != YYSYMBOL_YYEMPTY)
     {
-        log_flc(
-            "{e:error: }",
+        log_flc_err(
             parse_param->filename,
             parse_param->source,
             *yypcontext_location(ctx),
             "Unexpected %s\n",
             yysymbol_name(lookahead));
-        log_excerpt(parse_param->filename, parse_param->source, *yypcontext_location(ctx), "");
+        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "");
     }
 
     if (n < 0)
@@ -372,8 +371,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     else
     {
         int i;
-        log_flc(
-            "{n:note: }",
+        log_flc_err(
             parse_param->filename,
             parse_param->source,
             *yypcontext_location(ctx),

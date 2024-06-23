@@ -60,7 +60,7 @@ load_binary(const struct plugin_info* plugin, enum target_platform platform)
                     .release());
 
         case TARGET_MACOS:
-            log_sdk_err("Loading MachO not implemented\n");
+            log_cmd_err("Loading MachO not implemented\n");
             return nullptr;
             /*
                 binary.reset(static_cast<LIEF::Binary*>(
@@ -85,11 +85,11 @@ cmd_list_load_from_plugins(
 
     plugin_ids_init(&cached_plugins);
 
-    log_sdk_progress(0, plugins->count, "Loading command cache");
+    log_cmd_progress(0, plugins->count, "Loading command cache");
     if (cmd_cache_load(&cached_plugins, plugins, cmds, sdk_type, arch, platform)
         != 0)
     {
-        log_sdk_warn(
+        log_cmd_warn(
             "Failed to load command cache. All plugins will be parsed.\n");
     }
 
@@ -101,13 +101,13 @@ cmd_list_load_from_plugins(
         std::unique_ptr<LIEF::Binary> binary(load_binary(plugin, platform));
         if (binary.get() == nullptr)
         {
-            log_sdk_warn(
+            log_cmd_warn(
                 "Failed to load plugin {quote:%s}. Plugin will be ignored...\n",
                 ospath_cstr(plugin->filepath));
             continue;
         }
 
-        log_sdk_progress(
+        log_cmd_progress(
             plugin_id,
             plugins->count,
             "Parsing plugin %s\n",
@@ -118,7 +118,7 @@ cmd_list_load_from_plugins(
             case SDK_DBPRO:
                 if (binary->format() != LIEF::Binary::FORMATS::PE)
                 {
-                    log_sdk_warn(
+                    log_cmd_warn(
                         "{quote:%s} is not a valid PE file. Plugin will be "
                         "ignored...\n",
                         ospath_cstr(plugin->filepath));
@@ -150,7 +150,7 @@ cmd_list_load_from_plugins(
     }
 
     if (cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
-        log_sdk_warn(
+        log_cmd_warn(
             "Failed to save command cache. All plugins will be parsed next "
             "time.\n");
 

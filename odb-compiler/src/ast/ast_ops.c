@@ -48,7 +48,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type,
-        log_sdk_err(
+        log_parser_err(
             "n1: %d, n2: %d\n",
             ast->nodes[n1].info.node_type,
             ast->nodes[n2].info.node_type));

@@ -158,27 +158,28 @@ resolve_node_type(
     int16_t                scope)
 {
     ODBSDK_DEBUG_ASSERT(n > -1, (void)0);
-    if (ast->nodes[n].info.type_info != TYPE_VOID)
-        return ast->nodes[n].info.type_info;
 
     /* Nodes that don't return a value should be marked as TYPE_VOID */
     switch (ast->nodes[n].info.node_type)
     {
         case AST_BLOCK: {
-            for (; n > -1; n = ast->nodes[n].block.next)
+            ast_id block;
+            for (block = n; block > -1; block = ast->nodes[block].block.next)
             {
-                ast_id    stmt = ast->nodes[n].block.stmt;
+                ast_id    stmt = ast->nodes[block].block.stmt;
                 enum type type = resolve_node_type(
                     ast, stmt, cmds, source_filename, source, typemap, 0);
                 if (type == TYPE_INVALID)
                     return TYPE_INVALID;
+                /* Blocks are not expressions */
+                ast->nodes[block].info.type_info = TYPE_VOID;
             }
-            return TYPE_VOID;
+            return TYPE_VOID; /* Blocks are not expressions */
         }
-        break;
 
         case AST_ARGLIST:
-        case AST_CONST_DECL:
+        case AST_CONST_DECL: break;
+
         case AST_ASSIGNMENT: {
             ast_id    lhs = ast->nodes[n].assignment.lvalue;
             ast_id    rhs = ast->nodes[n].assignment.expr;
@@ -219,7 +220,7 @@ resolve_node_type(
                     ast_id orig_node = lhs_type->original_declaration;
                     ODBSDK_DEBUG_ASSERT(
                         ast->nodes[orig_node].info.node_type == AST_IDENTIFIER,
-                        log_sdk_err(
+                        log_semantic_err(
                             "type: %d\n",
                             ast->nodes[orig_node].info.node_type));
                     struct utf8_span orig_name
@@ -240,8 +241,7 @@ resolve_node_type(
                     {
                         case TP_ALLOW: break;
                         case TP_DISALLOW:
-                            log_flc(
-                                "{e:error:} ",
+                            log_flc_err(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
@@ -249,8 +249,7 @@ resolve_node_type(
                                 "incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
-                            gutter = log_binop_excerpt(
-                                source_filename,
+                            gutter = log_excerpt_binop(
                                 source.text.data,
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
@@ -270,8 +269,7 @@ resolve_node_type(
                                 source.text.data,
                                 orig_loc,
                                 "\n");
-                            log_excerpt(
-                                source_filename,
+                            log_excerpt_1(
                                 source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
@@ -280,8 +278,7 @@ resolve_node_type(
                         case TP_TRUENESS:
                         case TP_INT_TO_FLOAT:
                         case TP_BOOL_PROMOTION:
-                            log_flc(
-                                "{w:warning:} ",
+                            log_flc_warn(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
@@ -289,8 +286,7 @@ resolve_node_type(
                                 "in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
-                            gutter = log_binop_excerpt(
-                                source_filename,
+                            gutter = log_excerpt_binop(
                                 source.text.data,
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
@@ -310,16 +306,14 @@ resolve_node_type(
                                 source.text.data,
                                 orig_loc,
                                 "\n");
-                            log_excerpt(
-                                source_filename,
+                            log_excerpt_1(
                                 source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             break;
 
                         case TP_TRUNCATE:
-                            log_flc(
-                                "{w:warning:} ",
+                            log_flc_warn(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
@@ -327,8 +321,7 @@ resolve_node_type(
                                 "{lhs:%s} to {rhs:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
-                            gutter = log_binop_excerpt(
-                                source_filename,
+                            gutter = log_excerpt_binop(
                                 source.text.data,
                                 ast->nodes[lhs].info.location,
                                 ast->nodes[n].assignment.op_location,
@@ -348,8 +341,7 @@ resolve_node_type(
                                 source.text.data,
                                 orig_loc,
                                 "\n");
-                            log_excerpt(
-                                source_filename,
+                            log_excerpt_1(
                                 source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
@@ -360,12 +352,12 @@ resolve_node_type(
 
             /* Assignments are not expressions, thus they do not evaluate to a
              * type */
-            return TYPE_VOID;
+            return ast->nodes[n].info.type_info = TYPE_VOID;
         }
-        break;
 
         case AST_COMMAND: {
             ast_id arglist = ast->nodes[n].cmd.arglist;
+            cmd_id cmd_id = ast->nodes[n].cmd.id;
             for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
             {
                 ast_id    expr = ast->nodes[arglist].arglist.expr;
@@ -373,10 +365,12 @@ resolve_node_type(
                     ast, expr, cmds, source_filename, source, typemap, scope);
                 if (arg_type == TYPE_INVALID)
                     return TYPE_INVALID;
+                /* Argument lists are not expressions */
+                ast->nodes[arglist].info.type_info = TYPE_VOID;
             }
 
             return ast->nodes[n].cmd.info.type_info
-                   = cmds->return_types->data[ast->nodes[n].cmd.id];
+                   = cmds->return_types->data[cmd_id];
         }
 
         case AST_IDENTIFIER: {
@@ -384,7 +378,7 @@ resolve_node_type(
                 source.text.data, ast->nodes[n].identifier.name);
             struct view_scope view_scope = {name, scope};
             enum type         default_type
-                = ast->nodes[n].info.type_info != TYPE_VOID
+                = ast->nodes[n].info.type_info != TYPE_INVALID
                       ? ast->nodes[n].info.type_info
                       /* XXX: Use type annotation to determine default type */
                       : TYPE_INTEGER;
@@ -392,10 +386,9 @@ resolve_node_type(
             struct type_origin* type_origin = typemap_insert_or_get(
                 typemap, view_scope, default_type_origin);
             if (type_origin == NULL)
-                return TYPE_INVALID;
+                break;
             return ast->nodes[n].identifier.info.type_info = type_origin->type;
         }
-        break;
 
         case AST_BINOP: {
             ast_id lhs = ast->nodes[n].binop.left;
@@ -446,12 +439,13 @@ resolve_node_type(
         case AST_UNOP: break;
 
         case AST_COND: {
+            int    gutter;
             ast_id expr = ast->nodes[n].cond.expr;
             ast_id cond_branch = ast->nodes[n].cond.cond_branch;
 
             ODBSDK_DEBUG_ASSERT(
                 ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
-                log_sdk_err(
+                log_semantic_err(
                     "type: %d\n", ast->nodes[cond_branch].info.node_type));
             ast_id yes = ast->nodes[cond_branch].cond_branch.yes;
             ast_id no = ast->nodes[cond_branch].cond_branch.no;
@@ -478,20 +472,71 @@ resolve_node_type(
                 switch (
                     type_promote(ast->nodes[expr].info.type_info, TYPE_BOOLEAN))
                 {
-                    case TP_TRUENESS:
-                        log_flc(
-                            "{w:warning:} ",
+                    case TP_TRUENESS: {
+                        /* clang-format off */
+                        utf8_idx expr_start = ast->nodes[expr].info.location.off;
+                        utf8_idx expr_end = expr_start + ast->nodes[expr].info.location.len;
+                        struct log_excerpt_inst inst_single[] = {
+                            {" <> 0", "", {expr_end, 5}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_expr[] = {
+                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
+                            {") <> 0", "", {expr_end, 6}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        /* clang-format on */
+                        log_flc_warn(
                             source_filename,
                             source.text.data,
                             ast->nodes[expr].info.location,
-                            "Implicit evaluation of {lhs:%s} as a boolean "
+                            "Implicit evaluation of {emph1:%s} as a boolean "
                             "expression.\n",
                             type_to_db_name(ast->nodes[expr].info.type_info));
-                        log_excerpt(
-                            source_filename,
+                        gutter = log_excerpt_1(
                             source.text.data,
                             ast->nodes[expr].info.location,
                             type_to_db_name(ast->nodes[expr].info.type_info));
+
+                        log_excerpt_help(
+                            gutter,
+                            "You can make it explicit by changing it to:\n");
+                        switch (ast->nodes[expr].info.node_type)
+                        {
+                            case AST_BLOCK:
+                            case AST_ARGLIST:
+                            case AST_CONST_DECL:
+                            case AST_ASSIGNMENT:
+                            case AST_COND:
+                            case AST_COND_BRANCH:
+                                ODBSDK_DEBUG_ASSERT(0, (void)0);
+                                break;
+
+                            /* All nodes that don't need to be surrounded by
+                             * brackets in help output */
+                            case AST_COMMAND:
+                            case AST_IDENTIFIER:
+                            case AST_UNOP:
+                            case AST_BOOLEAN_LITERAL:
+                            case AST_BYTE_LITERAL:
+                            case AST_WORD_LITERAL:
+                            case AST_DWORD_LITERAL:
+                            case AST_INTEGER_LITERAL:
+                            case AST_DOUBLE_INTEGER_LITERAL:
+                            case AST_FLOAT_LITERAL:
+                            case AST_DOUBLE_LITERAL:
+                            case AST_STRING_LITERAL:
+                            case AST_CAST:
+                                log_excerpt(source.text.data, inst_single);
+                                break;
+
+                            /* Nodes that need to be surrounded by brackets in
+                             * help output */
+                            case AST_BINOP:
+                                log_excerpt(source.text.data, inst_expr);
+                                break;
+                        }
+                    }
                         /* fallthrough */
                     case TP_ALLOW: {
                         ast_id cast = ast_cast(
@@ -506,16 +551,14 @@ resolve_node_type(
                     break;
 
                     case TP_DISALLOW:
-                        log_flc(
-                            "{e:error:} ",
+                        log_flc_err(
                             source_filename,
                             source.text.data,
                             ast->nodes[expr].info.location,
                             "Cannot evaluate {lhs:%s} as a boolean "
                             "expression.\n",
                             type_to_db_name(ast->nodes[expr].info.type_info));
-                        log_excerpt(
-                            source_filename,
+                        log_excerpt_1(
                             source.text.data,
                             ast->nodes[expr].info.location,
                             type_to_db_name(ast->nodes[expr].info.type_info));
@@ -526,6 +569,8 @@ resolve_node_type(
                     case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0);
                 }
 
+            ast->nodes[cond_branch].info.type_info = TYPE_VOID;
+            ast->nodes[n].info.type_info = TYPE_VOID;
             return TYPE_VOID;
         }
         break;
@@ -564,6 +609,37 @@ resolve_node_type(
 }
 
 static int
+sanity_check(
+    struct ast* ast, const char* source_filename, struct db_source source)
+{
+    ast_id n;
+    int    error = 0;
+    int    gutter;
+    for (n = 0; n != ast->node_count; ++n)
+        if (ast->nodes[n].info.type_info == TYPE_INVALID)
+        {
+            log_flc_err(
+                source_filename,
+                source.text.data,
+                ast->nodes[n].info.location,
+                "Failed to determine type of AST node id:%d, node_type: %d.\n",
+                n,
+                ast->nodes[n].info.node_type);
+            gutter = log_excerpt_1(
+                source.text.data, ast->nodes[n].info.location, "");
+            error = -1;
+        }
+
+    if (error)
+        log_excerpt_note(
+            gutter,
+            "This should not happen, and means there is a bug in the semantic "
+            "analysis of the compiler.\n");
+
+    return error;
+}
+
+static int
 type_check_and_cast(
     struct ast*               ast,
     const struct plugin_list* plugins,
@@ -585,7 +661,7 @@ type_check_and_cast(
      */
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[0].info.node_type == AST_BLOCK,
-        log_sdk_err("type: %d\n", ast->nodes[0].info.node_type));
+        log_semantic_err("type: %d\n", ast->nodes[0].info.node_type));
     if (resolve_node_type(ast, 0, cmds, source_filename, source, &typemap, 0)
         == TYPE_INVALID)
     {
@@ -594,7 +670,7 @@ type_check_and_cast(
     }
 
     typemap_deinit(typemap);
-    return 0;
+    return sanity_check(ast, source_filename, source);
 }
 
 static const struct semantic_check* depends[]

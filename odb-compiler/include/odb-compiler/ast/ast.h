@@ -120,14 +120,12 @@ union ast_node
     struct base
     {
         struct info info;
-        ast_id parent;
         ast_id left;
         ast_id right;
     } base;
 
     struct block {
         struct info info;
-        ast_id parent;
         ast_id stmt;
         ast_id next;
     } block;
@@ -135,7 +133,6 @@ union ast_node
     struct arglist
     {
         struct info info;
-        ast_id parent;
         ast_id expr;
         ast_id next;
     } arglist;
@@ -143,7 +140,6 @@ union ast_node
     struct const_decl
     {
         struct info info;
-        ast_id parent;
         ast_id identifier;
         ast_id expr;
     } const_decl;
@@ -151,7 +147,6 @@ union ast_node
     struct cmd
     {
         struct info info;
-        ast_id parent;
         ast_id arglist;
         ast_id _pad;
         cmd_id id;
@@ -160,7 +155,6 @@ union ast_node
     struct assignment
     {
         struct info info;
-        ast_id parent;
         ast_id lvalue;
         ast_id expr;
         struct utf8_span op_location;
@@ -169,7 +163,6 @@ union ast_node
     struct identifier
     {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         struct utf8_span name;
         enum type_annotation annotation;
@@ -178,7 +171,6 @@ union ast_node
     struct binop
     {
         struct info info;
-        ast_id parent;
         ast_id left;
         ast_id right;
         struct utf8_span op_location;
@@ -188,7 +180,6 @@ union ast_node
     struct unop
     {
         struct info info;
-        ast_id parent;
         ast_id expr;
         ast_id _pad;
         enum unop_type op;
@@ -196,78 +187,66 @@ union ast_node
 
     struct cond {
         struct info info;
-        ast_id parent;
         ast_id expr;
         ast_id cond_branch;
     } cond;
     struct cond_branch {
         struct info info;
-        ast_id parent;
         ast_id yes;
         ast_id no;
     } cond_branch;
 
     struct boolean_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         char is_true;
     } boolean_literal;
 
     struct byte_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         uint8_t value;
     } byte_literal;
     struct word_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         uint16_t value;
     } word_literal;
     struct integer_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         int32_t value;
     } integer_literal;
     struct dword_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         uint32_t value;
     } dword_literal;
     struct double_integer_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         int64_t value;
     } double_integer_literal;
 
     struct float_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         float value;
     } float_literal;
     struct double_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         double value;
     } double_literal;
 
     struct string_literal {
         struct info info;
-        ast_id parent;
         ast_id _pad1, _pad2;
         struct utf8_span str;
     } string_literal;
 
     struct cast {
         struct info info;
-        ast_id parent;
         ast_id expr;
         ast_id _pad;
     } cast;

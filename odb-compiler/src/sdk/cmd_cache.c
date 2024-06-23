@@ -115,7 +115,7 @@ cmd_cache_load(
         ODBSDK_DEBUG_ASSERT(
             cached_plugin_id >= 0
                 && cached_plugin_id < cached_plugin_map->count,
-            log_sdk_err("plugin_id: %d\n", cached_plugin_id));
+            log_cmd_err("plugin_id: %d\n", cached_plugin_id));
         cmd = cmd_list_add(
             cmds,
             cached_plugin_map->data[cached_plugin_id],

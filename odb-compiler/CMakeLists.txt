@@ -510,12 +510,14 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_conditionals.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
 
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_conditionals.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp")
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

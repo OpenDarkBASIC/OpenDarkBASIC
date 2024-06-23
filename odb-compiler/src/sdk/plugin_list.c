@@ -77,7 +77,7 @@ plugin_list_populate(
 
     if (!fs_dir_exists(sdk_root))
     {
-        log_sdk_err(
+        log_cmd_err(
             "SDK root directory {quote:%s} does not exist\n",
             ospathc_cstr(sdk_root));
         return -1;

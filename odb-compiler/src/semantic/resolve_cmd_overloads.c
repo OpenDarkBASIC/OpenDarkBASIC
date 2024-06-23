@@ -128,14 +128,13 @@ report_no_commands_found(
     params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
                      + ast->nodes[arglist].info.location.len;
 
-    log_flc(
-        "{e:error:} ",
+    log_flc_err(
         source_filename,
         source.text.data,
         params_loc,
         "Parameter mismatch: No version of this command takes the "
         "argument types used here.\n");
-    gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+    gutter = log_excerpt_1(source.text.data, params_loc, "");
     log_excerpt_note(gutter, "Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
@@ -192,13 +191,12 @@ report_ambiguous_overloads(
     params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
                      + ast->nodes[arglist].info.location.len;
 
-    log_flc(
-        "{e:error:} ",
+    log_flc_err(
         source_filename,
         source.text.data,
         params_loc,
         "Command has ambiguous overloads.\n");
-    gutter = log_excerpt(source_filename, source.text.data, params_loc, "");
+    gutter = log_excerpt_1(source.text.data, params_loc, "");
     log_excerpt_note(gutter, "Conflicting overloads are:\n");
     vec_for_each(candidates, pcmd)
     {
@@ -287,14 +285,14 @@ typecheck_warnings(
 
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[cmd_node].info.node_type == AST_COMMAND,
-        log_sdk_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
+        log_semantic_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
 
     for (i = 0; i != params->count;
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
         ODBSDK_DEBUG_ASSERT(
             ast->nodes[arglist].info.node_type == AST_ARGLIST,
-            log_sdk_err("type: %d\n", ast->nodes[arglist].info.node_type));
+            log_semantic_err("type: %d\n", ast->nodes[arglist].info.node_type));
         int       gutter;
         ast_id    arg = ast->nodes[arglist].arglist.expr;
         enum type arg_type = ast->nodes[arg].info.type_info;
@@ -306,8 +304,7 @@ typecheck_warnings(
             case TP_ALLOW: break;
 
             case TP_TRUNCATE:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
@@ -316,8 +313,7 @@ typecheck_warnings(
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                gutter = log_excerpt(
-                    source_filename,
+                gutter = log_excerpt_1(
                     source.text.data,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
@@ -327,8 +323,7 @@ typecheck_warnings(
             case TP_TRUENESS:
             case TP_INT_TO_FLOAT:
             case TP_BOOL_PROMOTION:
-                log_flc(
-                    "{w:warning:} ",
+                log_flc_warn(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
@@ -337,8 +332,7 @@ typecheck_warnings(
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                gutter = log_excerpt(
-                    source_filename,
+                gutter = log_excerpt_1(
                     source.text.data,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
