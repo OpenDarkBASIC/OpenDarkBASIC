@@ -31,7 +31,7 @@ type_check_and_cast_casts(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
-                "Cannot cast from {lhs:%s} to {rhs:%s}: Types are "
+                "Cannot cast from {emph1:%s} to {emph2:%s}: Types are "
                 "incompatible\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
@@ -48,7 +48,7 @@ type_check_and_cast_casts(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
-                "Value is truncated when converting from {lhs:%s} to {rhs:%s} "
+                "Value is truncated when converting from {emph1:%s} to {emph2:%s} "
                 "in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
@@ -67,7 +67,7 @@ type_check_and_cast_casts(
                 source_filename,
                 source.text.data,
                 ast->nodes[cast].info.location,
-                "Implicit conversion from {lhs:%s} to {rhs:%s} in expression\n",
+                "Implicit conversion from {emph1:%s} to {emph2:%s} in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(

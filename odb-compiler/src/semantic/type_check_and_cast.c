@@ -245,7 +245,7 @@ resolve_node_type(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
-                                "Cannot assign {lhs:%s} to {rhs:%s}. Types are "
+                                "Cannot assign {emph1:%s} to {emph2:%s}. Types are "
                                 "incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
@@ -258,8 +258,8 @@ resolve_node_type(
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
-                                "{lhs:%.*s} was previously declared as "
-                                "{lhs:%s} at ",
+                                "{emph1:%.*s} was previously declared as "
+                                "{emph1:%s} at ",
                                 orig_name.len,
                                 source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
@@ -282,7 +282,7 @@ resolve_node_type(
                                 source_filename,
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
-                                "Implicit conversion from {lhs:%s} to {rhs:%s} "
+                                "Implicit conversion from {emph1:%s} to {emph2:%s} "
                                 "in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
@@ -295,8 +295,8 @@ resolve_node_type(
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
-                                "{lhs:%.*s} was previously declared as "
-                                "{lhs:%s} at ",
+                                "{emph1:%.*s} was previously declared as "
+                                "{emph1:%s} at ",
                                 orig_name.len,
                                 source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
@@ -318,7 +318,7 @@ resolve_node_type(
                                 source.text.data,
                                 ast->nodes[rhs].info.location,
                                 "Value is truncated when converting from "
-                                "{lhs:%s} to {rhs:%s} in assignment.\n",
+                                "{emph1:%s} to {emph2:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
@@ -330,8 +330,8 @@ resolve_node_type(
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
                                 gutter,
-                                "{lhs:%.*s} was previously declared as "
-                                "{lhs:%s} at ",
+                                "{emph1:%.*s} was previously declared as "
+                                "{emph1:%s} at ",
                                 orig_name.len,
                                 source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
@@ -474,15 +474,43 @@ resolve_node_type(
                 {
                     case TP_TRUENESS: {
                         /* clang-format off */
-                        utf8_idx expr_start = ast->nodes[expr].info.location.off;
-                        utf8_idx expr_end = expr_start + ast->nodes[expr].info.location.len;
-                        struct log_excerpt_inst inst_single[] = {
+                        struct utf8_span expr_loc = ast->nodes[expr].info.location;
+                        utf8_idx expr_start = expr_loc.off;
+                        utf8_idx expr_end = expr_start + expr_loc.len;
+                        struct log_excerpt_inst inst_int_single[] = {
                             {" <> 0", "", {expr_end, 5}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_expr[] = {
+                        struct log_excerpt_inst inst_int_expr[] = {
                             {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
                             {") <> 0", "", {expr_end, 6}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_float_single[] = {
+                            {" <> 0.0f", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_float_expr[] = {
+                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
+                            {") <> 0.0f", "", {expr_end, 9}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_double_single[] = {
+                            {" <> 0.0", "", {expr_end, 7}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_double_expr[] = {
+                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
+                            {") <> 0.0", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_string_single[] = {
+                            {" <> 0.0", "", {expr_end, 7}, LOG_EXCERPT_INSERT, 0},
+                            LOG_EXCERPT_SENTINAL
+                        };
+                        struct log_excerpt_inst inst_string_expr[] = {
+                            {"(", "", {expr_start, 1}, LOG_EXCERPT_INSERT, 0},
+                            {") <> 0.0", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
                             LOG_EXCERPT_SENTINAL
                         };
                         /* clang-format on */
@@ -527,13 +555,13 @@ resolve_node_type(
                             case AST_DOUBLE_LITERAL:
                             case AST_STRING_LITERAL:
                             case AST_CAST:
-                                log_excerpt(source.text.data, inst_single);
+                                log_excerpt(source.text.data, inst_int_single);
                                 break;
 
                             /* Nodes that need to be surrounded by brackets in
                              * help output */
                             case AST_BINOP:
-                                log_excerpt(source.text.data, inst_expr);
+                                log_excerpt(source.text.data, inst_int_expr);
                                 break;
                         }
                     }
@@ -555,7 +583,7 @@ resolve_node_type(
                             source_filename,
                             source.text.data,
                             ast->nodes[expr].info.location,
-                            "Cannot evaluate {lhs:%s} as a boolean "
+                            "Cannot evaluate {emph1:%s} as a boolean "
                             "expression.\n",
                             type_to_db_name(ast->nodes[expr].info.type_info));
                         log_excerpt_1(

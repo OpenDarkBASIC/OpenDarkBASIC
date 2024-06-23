@@ -481,7 +481,7 @@ log_excerpt(const char* source, const struct log_excerpt_inst* inst)
     for (i = 1; inst[i].new_text; ++i)
     {
         ODBSDK_DEBUG_ASSERT(
-            inst[i - 1].loc.off < inst[i].loc.off,
+            inst[i - 1].loc.off <= inst[i].loc.off,
             log_sdk_err(
                 "i-1: %d, i: %d\n", inst[i - 1].loc.off, inst[i].loc.off));
         if (inst[i + 1].new_text == NULL)
@@ -950,13 +950,13 @@ log_excerpt_binop(
 }
 
 void
-log_excerpt_vimpl(int gutter_indent, const char* severity, const char* fmt, ...)
+log_excerpt_vimpl(
+    int gutter_indent, const char* severity, const char* fmt, va_list ap)
 {
     struct varef args;
+    va_copy(args.ap, ap);
+
     log_printf("%*s = ", gutter_indent - 1, "");
     fprintf_with_color(severity);
-
-    va_start(args.ap, fmt);
     vfprintf_with_color(fmt, &args);
-    va_end(args.ap);
 }

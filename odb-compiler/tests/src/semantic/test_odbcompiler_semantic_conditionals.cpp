@@ -28,9 +28,9 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal)
               "expression.\n"
               " 1 | if a then a = 1\n"
               "   |    ^ INTEGER\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if a <> 0 then a = 1\n"
-              "   |      ^~~<\n"));
+              "   |     ^~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_integer_expression)
@@ -47,9 +47,9 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
               "expression.\n"
               " 1 | if a+b then a = 1\n"
               "   |    ^~< INTEGER\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if (a+b) <> 0 then a = 1\n"
-              "   |    ^   ^ ^~~<\n"));
+              "   |    ^   ^~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_float_literal)
@@ -66,9 +66,9 @@ TEST_F(NAME, implicit_evaluation_of_float_literal)
               "expression.\n"
               " 1 | if 3.3f then a = 1\n"
               "   |    ^~~< FLOAT\n"
-              "   = help:  You can make it explicit by changing it to:\n"
-              " 1 | if 3.3 <> 0.0f then a = 1\n"
-              "   |        ^~~~~~<\n"));
+              "   = help: You can make it explicit by changing it to:\n"
+              " 1 | if 3.3f <> 0.0f then a = 1\n"
+              "   |        ^~~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_float_expression)
@@ -85,9 +85,9 @@ TEST_F(NAME, implicit_evaluation_of_float_expression)
               "expression.\n"
               " 1 | if 3.3f+5.5f then a = 1\n"
               "   |    ^~~~~~~~< DOUBLE\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if (3.3f+5.5f) <> 0.0f then a = 1\n"
-              "   |    ^         ^ ^~~~~~<\n"));
+              "   |    ^         ^~~~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_double_literal)
@@ -104,7 +104,7 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
               "expression.\n"
               " 1 | if 3.3 then a = 1\n"
               "   |    ^~< DOUBLE\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if 3.3 <> 0.0 then a = 1\n"
               "   |        ^~~~~<\n"));
 }
@@ -123,9 +123,9 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
               "expression.\n"
               " 1 | if 3.3+5.5 then a = 1\n"
               "   |    ^~~~~~< DOUBLE\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if (3.3+5.5) <> 0.0 then a = 1\n"
-              "   |    ^       ^ ^~~~~<\n"));
+              "   |    ^       ^~~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_string_literal)
@@ -142,9 +142,9 @@ TEST_F(NAME, implicit_evaluation_of_string_literal)
               "expression.\n"
               " 1 | if a$ then a = 1\n"
               "   |    ^< STRING\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if a$ <> \"\" then a = 1\n"
-              "   |       ^~~~~<\n"));
+              "   |      ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_string_expression)
@@ -161,7 +161,7 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
               "expression.\n"
               " 1 | if a$+b$ then a = 1\n"
               "   |    ^~~~< STRING\n"
-              "   = help:  You can make it explicit by changing it to:\n"
+              "   = help: You can make it explicit by changing it to:\n"
               " 1 | if (a$+b$) <> \"\" then a = 1\n"
-              "   |    ^     ^ ^~~~~<\n"));
+              "   |    ^     ^~~~~~~<\n"));
 }

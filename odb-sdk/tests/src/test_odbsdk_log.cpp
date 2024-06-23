@@ -508,3 +508,24 @@ TEST_F(NAME, insert_excerpt3)
         LogEq(" 2 | if (0 + a - 2) <> 0 then a = 7\n"
               "   |    ^~~~<     ^~~~~<\n"));
 }
+
+TEST_F(NAME, insert_and_highlight_excerpt)
+{
+    const char* source
+        = "for a = 1 to 10\n"
+          "    if a - 2 then a = 7\n"
+          "    print str$(a)\n"
+          "next a\n";
+
+    struct log_excerpt_inst inst[]
+        = {{"(", "test2", {23, 1}, LOG_EXCERPT_INSERT, 1},
+           {"", "test1", {23, 5}, LOG_EXCERPT_HIGHLIGHT, 0},
+           {") <> 0", "test2", {28, 6}, LOG_EXCERPT_INSERT, 1},
+           {0}};
+    log_excerpt(source, inst);
+    EXPECT_THAT(
+        log(),
+        LogEq(" 2 | if (a - 2) <> 0 then a = 7\n"
+              "   |    ^^~~~<^~~~~< test2\n"
+              "   |     test1"));
+}

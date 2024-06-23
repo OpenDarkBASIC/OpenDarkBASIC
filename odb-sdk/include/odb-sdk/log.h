@@ -233,7 +233,7 @@ log_excerpt_binop(
     const char* lhs_text, const char* rhs_text);
 
 ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(3, 0) void
-log_excerpt_vimpl(int gutter_indent, const char* severity, const char* fmt, ...);
+log_excerpt_vimpl(int gutter_indent, const char* severity, const char* fmt, va_list ap);
 
 ODBSDK_PRINTF_FORMAT(2, 3) static inline void
 log_excerpt_note(int gutter_indent, const char* fmt, ...)

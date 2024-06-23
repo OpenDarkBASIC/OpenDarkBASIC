@@ -23,7 +23,7 @@ log_narrow_binop(
         source_filename,
         source.text.data,
         ast->nodes[op].info.location,
-        "Value is truncated when converting from {lhs:%s} to {rhs:%s} in "
+        "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
         "binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
@@ -54,7 +54,7 @@ log_implicit_binop(
         source_filename,
         source.text.data,
         ast->nodes[op].info.location,
-        "Implicit conversion from {lhs:%s} to {rhs:%s} in binary expression.\n",
+        "Implicit conversion from {emph1:%s} to {emph2:%s} in binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
@@ -83,7 +83,7 @@ log_error_binop(
         source_filename,
         source.text.data,
         ast->nodes[op].info.location,
-        "Invalid conversion from {lhs:%s} to {rhs:%s} in binary expression. "
+        "Invalid conversion from {emph1:%s} to {emph2:%s} in binary expression. "
         "Types are incompatible.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));

@@ -57,8 +57,8 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
-                    "Incompatible base type {lhs:%s} can't be converted to "
-                    "{rhs:%s}.\n",
+                    "Incompatible base type {emph1:%s} can't be converted to "
+                    "{emph2:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_2(
@@ -69,7 +69,7 @@ type_check_and_cast_binop_pow(
                     "");
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
+                    "The base can be a {emph2:%s} or {emph2:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 return TYPE_INVALID;
@@ -79,8 +79,8 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
-                    "Base value is truncated when converting from {lhs:%s} to "
-                    "{rhs:%s} in binary expression.\n",
+                    "Base value is truncated when converting from {emph1:%s} to "
+                    "{emph2:%s} in binary expression.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_binop(
@@ -92,7 +92,7 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(exp_type));
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}.\n",
+                    "The base can be a {emph2:%s} or {emph2:%s}.\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 break;
@@ -103,7 +103,7 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[lhs].info.location,
-                    "Implicit conversion of base from {lhs:%s} to {rhs:%s}.\n",
+                    "Implicit conversion of base from {emph1:%s} to {emph2:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_2(
@@ -114,7 +114,7 @@ type_check_and_cast_binop_pow(
                     "");
                 log_excerpt_note(
                     gutter,
-                    "The base can be a {rhs:%s} or {rhs:%s}\n",
+                    "The base can be a {emph2:%s} or {emph2:%s}\n",
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
                 break;
@@ -142,8 +142,8 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
-                    "Incompatible exponent type {lhs:%s} can't be converted to "
-                    "{rhs:%s}.\n",
+                    "Incompatible exponent type {emph1:%s} can't be converted to "
+                    "{emph2:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
@@ -155,7 +155,7 @@ type_check_and_cast_binop_pow(
                     type_to_db_name(exp_type));
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
@@ -166,8 +166,8 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
-                    "Exponent value is truncated when converting from {rhs:%s} "
-                    "to {lhs:%s}.\n",
+                    "Exponent value is truncated when converting from {emph2:%s} "
+                    "to {emph1:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
@@ -186,11 +186,11 @@ type_check_and_cast_binop_pow(
                 if (exp_target_type == TYPE_INTEGER)
                     log_excerpt_note(
                         gutter,
-                        "{rhs:INTEGER} is the largest possible integral type "
+                        "{emph2:INTEGER} is the largest possible integral type "
                         "for exponents.\n");
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));
@@ -202,8 +202,8 @@ type_check_and_cast_binop_pow(
                     source_filename,
                     source.text.data,
                     ast->nodes[rhs].info.location,
-                    "Implicit conversion of exponent from {rhs:%s} to "
-                    "{lhs:%s}.\n",
+                    "Implicit conversion of exponent from {emph2:%s} to "
+                    "{emph1:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
@@ -221,11 +221,11 @@ type_check_and_cast_binop_pow(
                 if (exp_type == TYPE_LONG || exp_type == TYPE_DWORD)
                     log_excerpt_note(
                         gutter,
-                        "{rhs:INTEGER} is the largest possible integral type "
+                        "{emph2:INTEGER} is the largest possible integral type "
                         "for exponents.\n");
                 log_excerpt_note(
                     gutter,
-                    "The exponent can be an {rhs:%s}, {rhs:%s} or {rhs:%s}.\n",
+                    "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
                     type_to_db_name(TYPE_INTEGER),
                     type_to_db_name(TYPE_FLOAT),
                     type_to_db_name(TYPE_DOUBLE));

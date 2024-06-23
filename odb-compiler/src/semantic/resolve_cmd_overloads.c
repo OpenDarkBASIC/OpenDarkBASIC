@@ -261,7 +261,7 @@ log_cmd_signature(
         if (i)
             log_raw(", ");
         log_raw(
-            "%s {rhs:AS %s}",
+            "%s {emph2:AS %s}",
             utf8_list_cstr(param_names, i),
             type_to_db_name(param_types->data[i].type));
     }
@@ -308,8 +308,8 @@ typecheck_warnings(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
-                    "Argument %d is truncated in conversion from {lhs:%s} to "
-                    "{rhs:%s} in command call.\n",
+                    "Argument %d is truncated in conversion from {emph1:%s} to "
+                    "{emph2:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
@@ -327,8 +327,8 @@ typecheck_warnings(
                     source_filename,
                     source.text.data,
                     ast->nodes[arg].info.location,
-                    "Implicit conversion of argument %d from {lhs:%s} to "
-                    "{rhs:%s} in command call.\n",
+                    "Implicit conversion of argument %d from {emph1:%s} to "
+                    "{emph2:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
