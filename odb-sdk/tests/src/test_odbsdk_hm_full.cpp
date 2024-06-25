@@ -83,7 +83,8 @@ test_set_value(struct used_cmds_hm_keys* kvs, int16_t slot, const float* value)
 }
 
 #define NO_API
-HM_DECLARE_API_FULL(hm_test, hash32, const char*, float, 16, NO_API, struct used_cmds_hm_keys)
+HM_DECLARE_API_FULL(
+    hm_test, hash32, const char*, float, 16, NO_API, struct used_cmds_hm_keys)
 HM_DEFINE_API_FULL(
     hm_test,
     hash32,
@@ -160,8 +161,14 @@ TEST_F(NAME, insert_same_key_twice_only_works_once)
 
 TEST_F(NAME, insert_or_get_returns_inserted_value)
 {
-    EXPECT_THAT(hm_test_insert_or_get(&hm, KEY1, 5.6f), Pointee(5.6f));
-    EXPECT_THAT(hm_test_insert_or_get(&hm, KEY1, 7.6f), Pointee(5.6f));
+    float  f = 0.0f;
+    float* p = &f;
+    EXPECT_THAT(hm_test_emplace_or_get(&hm, KEY1, &p), HM_NEW);
+    *p = 5.6f;
+    p = &f;
+    EXPECT_THAT(hm_test_emplace_or_get(&hm, KEY1, &p), HM_EXISTS);
+    EXPECT_THAT(f, Eq(0.0f));
+    EXPECT_THAT(p, Pointee(5.6f));
     EXPECT_THAT(hm->count, Eq(1));
 }
 

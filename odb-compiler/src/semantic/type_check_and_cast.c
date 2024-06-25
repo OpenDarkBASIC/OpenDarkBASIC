@@ -195,21 +195,24 @@ resolve_node_type(
              * RHS type */
             if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
-                struct utf8_view lhs_name = utf8_span_view(
+                struct type_origin* lhs_type;
+                struct utf8_view    lhs_name = utf8_span_view(
                     source.text.data, ast->nodes[lhs].identifier.name);
                 struct view_scope lhs_name_scope = {lhs_name, scope};
-                /* If the RHS is a smaller type, e.g. BYTE or WORD, prefer to
-                 * set the identifier's type to INTEGER */
-                enum type lhs_default_type
-                    = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
-                          ? TYPE_INTEGER
-                          : rhs_type;
-                struct type_origin lhs_default_type_origin
-                    = {lhs_default_type, lhs};
-                const struct type_origin* lhs_type = typemap_insert_or_get(
-                    typemap, lhs_name_scope, lhs_default_type_origin);
-                if (lhs_type == NULL)
-                    return TYPE_INVALID;
+                switch (
+                    typemap_emplace_or_get(typemap, lhs_name_scope, &lhs_type))
+                {
+                    case HM_OOM: return TYPE_INVALID;
+                    case HM_EXISTS: break;
+                    case HM_NEW:
+                        /* If the RHS is a smaller type, e.g. BYTE or WORD,
+                         * prefer to set the identifier's type to INTEGER */
+                        lhs_type->original_declaration = lhs;
+                        lhs_type->type
+                            = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
+                                  ? TYPE_INTEGER
+                                  : rhs_type;
+                }
                 ast->nodes[lhs].info.type_info = lhs_type->type;
 
                 /* The variable already exists and has a type different from RHS
@@ -376,24 +379,21 @@ resolve_node_type(
         }
 
         case AST_IDENTIFIER: {
-            struct utf8_view name = utf8_span_view(
+            struct type_origin* type_origin;
+            struct utf8_view    name = utf8_span_view(
                 source.text.data, ast->nodes[n].identifier.name);
             struct view_scope view_scope = {name, scope};
-            enum type         default_type
-                = ast->nodes[n].info.type_info != TYPE_INVALID
-                      ? ast->nodes[n].info.type_info
-                      : type_annotation_to_type(
-                            ast->nodes[n].identifier.annotation);
-            struct type_origin  default_type_origin = {default_type, n};
-            struct type_origin* type_origin = typemap_insert_or_get(
-                typemap, view_scope, default_type_origin);
-            switch (typemap_emplace_or_get(typemap, view_scope, &type_origin)) {
-              case 1: break;
-              case 0: break;
-              default: goto error;
+            switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+            {
+                case HM_NEW:
+                    type_origin->original_declaration = n;
+                    type_origin->type = type_annotation_to_type(
+                        ast->nodes[n].identifier.annotation);
+                    break;
+
+                case HM_EXISTS: break;
+                case HM_OOM: goto error;
             }
-            if (type_origin == NULL)
-                break;
             return ast->nodes[n].identifier.info.type_info = type_origin->type;
         }
 
@@ -590,6 +590,9 @@ resolve_node_type(
         }
         break;
         case AST_COND_BRANCH: break;
+
+        case AST_LOOP: return ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_LOOP_EXIT: return ast->nodes[n].info.type_info = TYPE_VOID;
 
         case AST_BOOLEAN_LITERAL:
             return ast->nodes[n].boolean_literal.info.type_info = TYPE_BOOLEAN;

@@ -79,15 +79,15 @@ used_cmds_init(struct used_cmds_hm** hm)
     used_cmds_hm_init(hm);
 }
 
-#include <stdio.h>
 int
 used_cmds_append(struct used_cmds_hm** used, const struct ast* ast)
 {
     ast_id n;
+    char*  c;
     for (n = 0; n != ast->node_count; n++)
         if (ast->nodes[n].info.node_type == AST_COMMAND)
-            if (used_cmds_hm_insert_or_get(used, ast->nodes[n].cmd.id, 0)
-                == NULL)
+            if (used_cmds_hm_emplace_or_get(used, ast->nodes[n].cmd.id, &c)
+                == HM_OOM)
             {
                 return -1;
             }

@@ -82,6 +82,12 @@ write_nodes(
         case AST_COND_BRANCH:
             fprintf(fp, "  n%d [shape=\"diamond\", label=\"branches\"];\n", n);
             break;
+        case AST_LOOP:
+            fprintf(fp, "  n%d [shape=\"diamond\", label=\"loop\"];\n", n);
+            break;
+        case AST_LOOP_EXIT:
+            fprintf(fp, "  n%d [shape=\"record\", label=\"exit loop\"];\n", n);
+            break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
                 fp,

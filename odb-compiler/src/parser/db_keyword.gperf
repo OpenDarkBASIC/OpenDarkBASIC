@@ -23,13 +23,26 @@ struct db_keyword
 };
 
 %%
-as,               TOK_AS
-if,               TOK_IF
-then,             TOK_THEN
-else,             TOK_ELSE
-elseif,           TOK_ELSEIF
-endif,            TOK_ENDIF
-and,              TOK_LAND
+as,                 TOK_AS
+/* Control flow */
+if,                 TOK_IF
+then,               TOK_THEN
+else,               TOK_ELSE
+elseif,             TOK_ELSEIF
+endif,              TOK_ENDIF
+/* Loops */
+while,              TOK_WHILE
+endwhile,           TOK_ENDWHILE
+repeat,             TOK_REPEAT
+until,              TOK_UNTIL
+do,                 TOK_DO
+loop,               TOK_LOOP
+for,                TOK_FOR
+to,                 TOK_TO
+step,               TOK_STEP
+next,               TOK_NEXT
+exit,               TOK_EXIT
+/* Operators */
 %%
 
 //boolean,          TOK_BOOLEAN

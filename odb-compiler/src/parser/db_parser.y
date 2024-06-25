@@ -128,7 +128,19 @@
 %token ELSE "ELSE"
 %token ELSEIF "ELSEIF"
 %token NO_ELSE
-%token ENDIF
+%token ENDIF "ENDIF"
+/* Loops */
+%token WHILE "WHILE"
+%token ENDWHILE "ENDWHILE"
+%token REPEAT "REPEAT"
+%token UNTIL "UNTIL"
+%token DO "DO"
+%token LOOP "LOOP"
+%token FOR "FOR"
+%token TO "TO"
+%token STEP "STEP"
+%token NEXT "NEXT"
+%token EXIT "EXIT"
 
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal"
@@ -206,13 +218,15 @@
 
 /* non-terminals */
 %type<node_value> program
-%type<node_value> block iblock stmt istmt
+%type<node_value> block iblock block_or_seps
+%type<node_value> stmt istmt
 %type<node_value> expr
 %type<node_value> arglist
 %type<node_value> const_decl
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
+%type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_exit
 %type<node_value> literal
 %type<node_value> identifier
 
@@ -232,6 +246,10 @@ block
   : block seps stmt                         { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
   | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
   ;
+block_or_seps
+  : seps block seps                         { $$ = $2; }
+  | seps                                    { $$ = -1; }
+  ;
 iblock
   : iblock iseps istmt                      { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
   | istmt                                   { $$ = ast_block(ctx->ast, $1, @$); }
@@ -239,12 +257,14 @@ iblock
 stmt
   : const_decl                              { $$ = $1; }
   | conditional                             { $$ = $1; }
+  | loop                                    { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
 // Statements that can only appear "inline", e.g. "if x then istmt"
 istmt
   : command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
+  | loop_exit                               { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; }
@@ -304,22 +324,45 @@ cond_oneline
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
   ;
 cond_begin
-  : IF expr seps block seps cond_next       { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
-                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
-  | IF expr seps cond_next                  { ast_id branch = ast_cond_branch(ctx->ast, -1, $4, @$);
+  : IF expr block_or_seps cond_next         { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
   ;
 cond_next
-  : ELSEIF expr seps block seps cond_next   { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
+  : ELSEIF expr block_or_seps cond_next     { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
                                               ast_id cond = ast_cond(ctx->ast, $2, branch, @$);
                                               $$ = ast_block(ctx->ast, cond, @$); }
-  | ELSEIF expr seps cond_next              { ast_id branch = ast_cond_branch(ctx->ast, -1, $4, @$);
-                                              ast_id cond = ast_cond(ctx->ast, $2, branch, @$);
-                                              $$ = ast_block(ctx->ast, cond, @$); }
-  | ELSE seps block seps ENDIF              { $$ = $3; }
-  | ELSE seps ENDIF                         { $$ = -1; }
+  | ELSE block_or_seps ENDIF                { $$ = $2; }
   | ENDIF                                   { $$ = -1; }
   ;
+loop
+  : loop_do                                 { $$ = $1; }
+  | loop_while                              { $$ = $1; }
+  | loop_until                              { $$ = $1; }
+  | loop_for                                { $$ = $1; }
+  ;
+loop_do
+  : DO block_or_seps LOOP                   { $$ = ast_loop(ctx->ast, $2, @$); }
+  ;
+loop_while
+  : WHILE expr block_or_seps ENDWHILE       { $$ = ast_loop_while(ctx->ast, $3, $2, @$); }
+  ;
+loop_until
+  : REPEAT block_or_seps UNTIL expr         { $$ = ast_loop_until(ctx->ast, $2, $4, @$); }
+  ;
+loop_for
+  : FOR assignment TO expr STEP expr
+        block_or_seps
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $7, $2, $4, $6, $8, @$); }
+  | FOR assignment TO expr
+        block_or_seps
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $5, $2, $4, -1, $6, @$); }
+  ;
+loop_next
+  : NEXT identifier                         { $$ = $2; }
+  | NEXT                                    { $$ = -1; }
+  ;
+loop_exit
+  : EXIT                                    { $$ = ast_loop_exit(ctx->ast, @$); }
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
   | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }

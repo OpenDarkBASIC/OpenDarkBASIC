@@ -9,6 +9,13 @@
 #define HM_SLOT_UNUSED 0 /* SLOT_UNUSED must be 0 for memset() to work */
 #define HM_SLOT_RIP    1
 
+enum hm_status
+{
+    HM_OOM = -1,
+    HM_EXISTS = 0,
+    HM_NEW = 1
+};
+
 #define HM_DECLARE_API(prefix, K, V, bits, API)                                \
     HM_DECLARE_API_HASH(prefix, hash32, K, V, bits, API)
 
@@ -47,8 +54,9 @@
     /*!                                                                        \
      * @brief Allocates space for a new                                        \
      */                                                                        \
-    API V*  prefix##_emplace_new(struct prefix** hm, K key);                   \
-    API V*  prefix##_insert_or_get(struct prefix** hm, K key, V value);        \
+    API V*             prefix##_emplace_new(struct prefix** hm, K key);        \
+    API enum hm_status prefix##_emplace_or_get(                                \
+        struct prefix** hm, K key, V** value);                                 \
     API int prefix##_insert(struct prefix** hm, K key, V value);               \
                                                                                \
     API V* prefix##_erase(struct prefix* hm, K key);                           \
@@ -65,10 +73,13 @@
     static inline int prefix##_insert_always(                                  \
         struct prefix** hm, K key, V value)                                    \
     {                                                                          \
-        V* ins_value = prefix##_insert_or_get(hm, key, value);                 \
-        if (ins_value == NULL)                                                 \
-            return -1;                                                         \
-        *ins_value = value;                                                    \
+        V* ins_value;                                                          \
+        switch (prefix##_emplace_or_get(hm, key, &ins_value))                  \
+        {                                                                      \
+            case HM_OOM: return -1;                                            \
+            case HM_EXISTS:                                                    \
+            case HM_NEW: *ins_value = value; break;                            \
+        }                                                                      \
         return 0;                                                              \
     }
 
@@ -296,7 +307,8 @@
         hm_set_key(&(*hm)->kvs, slot, key);                                    \
         return hm_get_value(&(*hm)->kvs, slot);                                \
     }                                                                          \
-    V* prefix##_insert_or_get(struct prefix** hm, K key, V value)              \
+    enum hm_status prefix##_emplace_or_get(                                    \
+        struct prefix** hm, K key, V** value)                                  \
     {                                                                          \
         hash32        h;                                                       \
         int##bits##_t slot;                                                    \
@@ -305,7 +317,7 @@
          * after this */                                                       \
         if ((*hm)->capacity * 100 >= REHASH_AT_PERCENT * (*hm)->count)         \
             if (prefix##_grow(hm) != 0)                                        \
-                return NULL;                                                   \
+                return HM_OOM;                                                 \
                                                                                \
         /* We use two reserved values for hashes. The hash function could      \
          * produce them, which would mess up collision resolution */           \
@@ -315,13 +327,16 @@
                                                                                \
         slot = prefix##_find_slot(*hm, key, h);                                \
         if (slot < 0)                                                          \
-            return hm_get_value(&(*hm)->kvs, -1 - slot);                       \
+        {                                                                      \
+            *value = hm_get_value(&(*hm)->kvs, -1 - slot);                     \
+            return HM_EXISTS;                                                  \
+        }                                                                      \
                                                                                \
         (*hm)->count++;                                                        \
         (*hm)->hashes[slot] = h;                                               \
         hm_set_key(&(*hm)->kvs, slot, key);                                    \
-        hm_set_value(&(*hm)->kvs, slot, &value);                               \
-        return hm_get_value(&(*hm)->kvs, slot);                                \
+        *value = hm_get_value(&(*hm)->kvs, slot);                              \
+        return HM_NEW;                                                         \
     }                                                                          \
     V* prefix##_find(struct prefix* hm, K key)                                 \
     {                                                                          \

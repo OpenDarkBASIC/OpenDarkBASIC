@@ -77,8 +77,14 @@ TEST_F(NAME, insert_same_key_twice_only_works_once)
 
 TEST_F(NAME, insert_or_get_returns_inserted_value)
 {
-    EXPECT_THAT(hm_insert_or_get(&hm, KEY1, 5.6f), Pointee(5.6f));
-    EXPECT_THAT(hm_insert_or_get(&hm, KEY1, 7.6f), Pointee(5.6f));
+    float  f = 0.0f;
+    float* p = &f;
+    EXPECT_THAT(hm_emplace_or_get(&hm, KEY1, &p), HM_NEW);
+    *p = 5.6f;
+    p = &f;
+    EXPECT_THAT(hm_emplace_or_get(&hm, KEY1, &p), HM_EXISTS);
+    EXPECT_THAT(f, Eq(0.0f));
+    EXPECT_THAT(p, Pointee(5.6f));
     EXPECT_THAT(hm->count, Eq(1));
 }
 

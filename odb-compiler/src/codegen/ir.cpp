@@ -590,6 +590,9 @@ gen_expr(
         case AST_COND:
         case AST_COND_BRANCH: break;
 
+        case AST_LOOP: break;
+        case AST_LOOP_EXIT: break;
+
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
                 llvm::Type::getInt1Ty(ir->ctx),
@@ -806,13 +809,18 @@ gen_block(
                 struct utf8_view name = utf8_span_view(
                     source.text.data, ast->nodes[lhs_node].identifier.name);
                 struct view_scope  name_scope = {name, 0};
-                llvm::AllocaInst** A
-                    = allocamap_insert_or_get(allocamap, name_scope, NULL);
-                if (*A == NULL)
-                    *A = builder.CreateAlloca(
-                        type_to_llvm(type, &ir->ctx),
-                        NULL,
-                        llvm::StringRef(name.data + name.off, name.len));
+                llvm::AllocaInst** A;
+                switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+                {
+                    case HM_OOM: return -1;
+                    case HM_EXISTS: ODBSDK_DEBUG_ASSERT(*A, (void)0); break;
+                    case HM_NEW:
+                        *A = builder.CreateAlloca(
+                            type_to_llvm(type, &ir->ctx),
+                            NULL,
+                            llvm::StringRef(name.data + name.off, name.len));
+                        break;
+                }
                 builder.CreateStore(rhs, *A);
                 break;
             }
