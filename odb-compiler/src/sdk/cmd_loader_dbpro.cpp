@@ -15,7 +15,7 @@ convert_char_to_return_type(char c)
     switch (c)
     {
         case '0': return TYPE_VOID;
-        case 'R': return TYPE_LONG;
+        case 'R': return TYPE_DOUBLE_INTEGER;
         case 'D': return TYPE_DWORD;
         case 'L': return TYPE_INTEGER;
         case 'W': return TYPE_WORD;
@@ -41,7 +41,7 @@ convert_char_to_param_type(char c)
     switch (c)
     {
         case '0': return TYPE_VOID;
-        case 'R': return TYPE_LONG;
+        case 'R': return TYPE_DOUBLE_INTEGER;
         case 'D': return TYPE_DWORD;
         case 'L': return TYPE_INTEGER;
         case 'W': return TYPE_WORD;

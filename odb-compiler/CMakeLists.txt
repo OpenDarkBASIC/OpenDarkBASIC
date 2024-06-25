@@ -516,6 +516,7 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/semantic/test_odbcompiler_semantic_conditionals.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)

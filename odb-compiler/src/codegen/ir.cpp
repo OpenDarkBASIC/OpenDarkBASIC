@@ -187,7 +187,7 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_INVALID: break;
 
         case TYPE_VOID: return llvm::Type::getVoidTy(*ctx);
-        case TYPE_LONG: return llvm::Type::getInt64Ty(*ctx);
+        case TYPE_DOUBLE_INTEGER: return llvm::Type::getInt64Ty(*ctx);
 
         case TYPE_DWORD:
         case TYPE_INTEGER: return llvm::Type::getInt32Ty(*ctx);
@@ -475,7 +475,7 @@ gen_expr(
 
                 case TYPE_BOOLEAN:
                 case TYPE_INTEGER:
-                case TYPE_LONG: type_family = INT; break;
+                case TYPE_DOUBLE_INTEGER: type_family = INT; break;
 
                 case TYPE_DWORD:
                 case TYPE_WORD:
@@ -658,7 +658,7 @@ gen_expr(
                 case TYPE_INVALID:
                 case TYPE_VOID: break;
 
-                case TYPE_LONG:
+                case TYPE_DOUBLE_INTEGER:
                 case TYPE_DWORD:
                 case TYPE_INTEGER:
                 case TYPE_WORD:
@@ -701,7 +701,7 @@ gen_expr(
                         case TYPE_INVALID: break;
                         case TYPE_VOID: break;
 
-                        case TYPE_LONG:
+                        case TYPE_DOUBLE_INTEGER:
                         case TYPE_DWORD:
                         case TYPE_INTEGER:
                         case TYPE_WORD:

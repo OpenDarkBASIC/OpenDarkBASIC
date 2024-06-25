@@ -1,5 +1,6 @@
-#include <gmock/gmock.h>
 #include "odb-compiler/tests/DBParserHelper.hpp"
+
+#include <gmock/gmock.h>
 
 #define NAME odbcompiler_db_parser_command
 
@@ -36,7 +37,7 @@ TEST_F(NAME, print_command)
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)
 {
-    addCommand(TYPE_LONG, "GET DIR&");
+    addCommand(TYPE_DOUBLE_INTEGER, "GET DIR&");
 
     ASSERT_THAT(parse("OriginalDirectory& = get dir&()"), Eq(0));
 }

@@ -135,9 +135,9 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
     EXPECT_THAT(
         log(),
         LogEq("test:1:13: warning: Exponent value is truncated when converting "
-              "from LONG INTEGER to INTEGER.\n"
+              "from DOUBLE INTEGER to INTEGER.\n"
               " 1 | print 2.0 ^ 99999999999999\n"
-              "   |       >~~ ^ ~~~~~~~~~~~~~< LONG INTEGER\n"
+              "   |       >~~ ^ ~~~~~~~~~~~~~< DOUBLE INTEGER\n"
               "   = note: INTEGER is the largest possible integral type for "
               "exponents.\n"
               "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));

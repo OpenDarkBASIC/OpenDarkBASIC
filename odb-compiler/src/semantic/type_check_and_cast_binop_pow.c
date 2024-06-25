@@ -218,7 +218,7 @@ type_check_and_cast_binop_pow(
                         gutter,
                         "The exponent needs to be the same type as the base "
                         "when working with floating point types.\n");
-                if (exp_type == TYPE_LONG || exp_type == TYPE_DWORD)
+                if (exp_type == TYPE_DOUBLE_INTEGER || exp_type == TYPE_DWORD)
                     log_excerpt_note(
                         gutter,
                         "{emph2:INTEGER} is the largest possible integral type "

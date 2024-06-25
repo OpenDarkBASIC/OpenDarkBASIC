@@ -17,7 +17,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, implicit_evaluation_of_integer_literal)
 {
     const char* source = "if a then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -36,7 +36,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal)
 TEST_F(NAME, implicit_evaluation_of_integer_expression)
 {
     const char* source = "if a+b then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -55,7 +55,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
 TEST_F(NAME, implicit_evaluation_of_float_literal)
 {
     const char* source = "if 3.3f then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -74,7 +74,7 @@ TEST_F(NAME, implicit_evaluation_of_float_literal)
 TEST_F(NAME, implicit_evaluation_of_float_expression)
 {
     const char* source = "if 3.3f+5.5f then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -112,7 +112,7 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
 TEST_F(NAME, implicit_evaluation_of_double_expression)
 {
     const char* source = "if 3.3+5.5 then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -131,7 +131,7 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
 TEST_F(NAME, implicit_evaluation_of_string_literal)
 {
     const char* source = "if a$ then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -150,7 +150,7 @@ TEST_F(NAME, implicit_evaluation_of_string_literal)
 TEST_F(NAME, implicit_evaluation_of_string_expression)
 {
     const char* source = "if a$+b$ then a = 1\n";
-    ASSERT_THAT(parse(source), Eq(0));
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
@@ -164,4 +164,26 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
               "   = help: You can make it explicit by changing it to:\n"
               " 1 | if a$+b$ <> \"\" then a = 1\n"
               "   |         ^~~~~~<\n"));
+}
+
+TEST_F(NAME, implicit_evaluation_of_integer_literal_multiline)
+{
+    const char* source
+        = "if a\n"
+          "    a = 1\n"
+          "endif\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    EXPECT_THAT(
+        log(),
+        LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
+              "expression.\n"
+              " 1 | if a\n"
+              "   |    ^ INTEGER\n"
+              "   = help: You can make it explicit by changing it to:\n"
+              " 1 | if a <> 0\n"
+              "   |     ^~~~<\n"));
 }

@@ -167,7 +167,6 @@
 %nonassoc NO_NEXT_SYM
 %nonassoc NO_ELSE
 %nonassoc ELSE ELSEIF
-%nonassoc NO_ANNOTATION
 %nonassoc ':'
 %left LXOR
 %left LOR
@@ -198,6 +197,11 @@
 
 /* Identifiers */
 %token<string_value> IDENTIFIER "identifier"
+%token<string_value> IDENTIFIER_DOUBLE_INTEGER "DOUBLE INTEGER identifier"
+%token<string_value> IDENTIFIER_WORD "WORD identifier"
+%token<string_value> IDENTIFIER_DOUBLE "DOUBLE identifier"
+%token<string_value> IDENTIFIER_FLOAT "FLOAT identifier"
+%token<string_value> IDENTIFIER_STRING "STRING identifier"
 %token<cmd_value> COMMAND "command"
 
 /* non-terminals */
@@ -210,7 +214,7 @@
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> literal
-%type<node_value> annotated_identifier
+%type<node_value> identifier
 
 %start program
 
@@ -258,7 +262,7 @@ expr
   | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
-  | annotated_identifier                    { $$ = $1; }
+  | identifier                    { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 arglist
@@ -266,8 +270,8 @@ arglist
   | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
   ;
 const_decl
-  : CONSTANT annotated_identifier expr      { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
-  | CONSTANT annotated_identifier '=' expr  { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
+  : CONSTANT identifier expr      { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
+  | CONSTANT identifier '=' expr  { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
@@ -283,7 +287,7 @@ command_expr
   | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : annotated_identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
+  : identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;
@@ -323,13 +327,13 @@ literal
   | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
   ;
-annotated_identifier
-  : IDENTIFIER %prec NO_ANNOTATION          { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
-  | IDENTIFIER '&'                          { $$ = ast_identifier(ctx->ast, $1, TA_INT64, @$); }
-  | IDENTIFIER '%'                          { $$ = ast_identifier(ctx->ast, $1, TA_INT16, @$); }
-  | IDENTIFIER '!'                          { $$ = ast_identifier(ctx->ast, $1, TA_DOUBLE, @$); }
-  | IDENTIFIER '#'                          { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
-  | IDENTIFIER '$'                          { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
+identifier
+  : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
+  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->ast, $1, TA_INT64, @$); }
+  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_INT16, @$); }
+  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_DOUBLE, @$); }
+  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
+  | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
   ;
 %%
 

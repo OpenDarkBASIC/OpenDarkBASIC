@@ -382,11 +382,16 @@ resolve_node_type(
             enum type         default_type
                 = ast->nodes[n].info.type_info != TYPE_INVALID
                       ? ast->nodes[n].info.type_info
-                      /* XXX: Use type annotation to determine default type */
-                      : TYPE_INTEGER;
+                      : type_annotation_to_type(
+                            ast->nodes[n].identifier.annotation);
             struct type_origin  default_type_origin = {default_type, n};
             struct type_origin* type_origin = typemap_insert_or_get(
                 typemap, view_scope, default_type_origin);
+            switch (typemap_emplace_or_get(typemap, view_scope, &type_origin)) {
+              case 1: break;
+              case 0: break;
+              default: goto error;
+            }
             if (type_origin == NULL)
                 break;
             return ast->nodes[n].identifier.info.type_info = type_origin->type;
@@ -519,7 +524,7 @@ resolve_node_type(
                                 ODBSDK_DEBUG_ASSERT(0, (void)0);
                                 break;
 
-                            case TYPE_LONG:
+                            case TYPE_DOUBLE_INTEGER:
                             case TYPE_DWORD:
                             case TYPE_INTEGER:
                             case TYPE_WORD:
@@ -598,7 +603,7 @@ resolve_node_type(
             return ast->nodes[n].dword_literal.info.type_info = TYPE_DWORD;
         case AST_DOUBLE_INTEGER_LITERAL:
             return ast->nodes[n].double_integer_literal.info.type_info
-                   = TYPE_LONG;
+                   = TYPE_DOUBLE_INTEGER;
         case AST_FLOAT_LITERAL:
             return ast->nodes[n].float_literal.info.type_info = TYPE_FLOAT;
         case AST_DOUBLE_LITERAL:
@@ -615,6 +620,7 @@ resolve_node_type(
         }
     }
 
+error:
     return TYPE_INVALID;
 }
 

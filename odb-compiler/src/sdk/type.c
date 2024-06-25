@@ -15,7 +15,8 @@ type_from_char(char c)
 {
     switch (c)
     {
-#define X(name, c) case c: return TYPE_##name;
+#define X(name, c)                                                             \
+    case c: return TYPE_##name;
         TYPE_LIST;
 #undef X
     }
@@ -30,7 +31,7 @@ type_to_db_name(enum type type)
     {
         case TYPE_INVALID: break;
         case TYPE_VOID: return "VOID";
-        case TYPE_LONG: return "LONG INTEGER";
+        case TYPE_DOUBLE_INTEGER: return "DOUBLE INTEGER";
         case TYPE_DWORD: return "DWORD";
         case TYPE_INTEGER: return "INTEGER";
         case TYPE_WORD: return "WORD";

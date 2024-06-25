@@ -2,6 +2,7 @@
 
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/sdk/type.h"
 #include "odb-sdk/utf8.h"
 
 /*!
@@ -269,6 +270,20 @@ ast_init(struct ast* ast)
 
 ODBCOMPILER_PUBLIC_API void 
 ast_deinit(struct ast* ast);
+
+static inline enum type
+type_annotation_to_type(enum type_annotation annotation)
+{
+  switch (annotation) {
+    case TA_NONE: break;
+    case TA_INT64: return TYPE_DOUBLE_INTEGER;
+    case TA_INT16: return TYPE_WORD;
+    case TA_DOUBLE: return TYPE_DOUBLE;
+    case TA_FLOAT: return TYPE_FLOAT;
+    case TA_STRING: return TYPE_STRING;
+  }
+  return TYPE_INTEGER;
+}
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
 ast_id ast_block_append(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);

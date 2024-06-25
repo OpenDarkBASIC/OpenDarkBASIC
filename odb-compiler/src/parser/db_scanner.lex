@@ -107,6 +107,11 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     {INTEGER_BASE16}    { yylval->integer_value = strtoll(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtoll(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
+    {IDENTIFIER}"&"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
+    {IDENTIFIER}"%"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
+    {IDENTIFIER}"!"      { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
+    {IDENTIFIER}"#"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
+    {IDENTIFIER}"$"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
     {IDENTIFIER}        { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }

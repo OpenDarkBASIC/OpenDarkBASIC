@@ -30,7 +30,106 @@ TEST_F(NAME, undeclared_variable_defaults_to_integer)
     EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_INTEGER));
     EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_NONE));
 }
+
+TEST_F(NAME, undeclared_float_variable_defaults_to_float)
+{
+    const char* source = "a = b#";
+    ASSERT_THAT(parse(source), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    ast_id ass = ast.nodes[0].block.stmt;
+    ast_id lhs = ast.nodes[ass].assignment.lvalue;
+    ast_id rhs = ast.nodes[ass].assignment.expr;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_FLOAT));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_FLOAT));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_FLOAT));
+}
+
+TEST_F(NAME, undeclared_double_variable_defaults_to_double)
+{
+    const char* source = "a = b!";
+    ASSERT_THAT(parse(source), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    ast_id ass = ast.nodes[0].block.stmt;
+    ast_id lhs = ast.nodes[ass].assignment.lvalue;
+    ast_id rhs = ast.nodes[ass].assignment.expr;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_DOUBLE));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_DOUBLE));
+}
+
+TEST_F(NAME, undeclared_double_integer_variable_defaults_to_double_integer)
+{
+    const char* source = "a = b&";
+    ASSERT_THAT(parse(source), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    ast_id ass = ast.nodes[0].block.stmt;
+    ast_id lhs = ast.nodes[ass].assignment.lvalue;
+    ast_id rhs = ast.nodes[ass].assignment.expr;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE_INTEGER));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_DOUBLE_INTEGER));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_INT64));
+}
+
+TEST_F(NAME, undeclared_string_variable_defaults_to_string)
+{
+    const char* source = "a = b$";
+    ASSERT_THAT(parse(source), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    ast_id ass = ast.nodes[0].block.stmt;
+    ast_id lhs = ast.nodes[ass].assignment.lvalue;
+    ast_id rhs = ast.nodes[ass].assignment.expr;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_STRING));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_STRING));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_STRING));
+}
+
+TEST_F(NAME, undeclared_word_variable_defaults_to_word)
+{
+    const char* source = "a = b%";
+    ASSERT_THAT(parse(source), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    ast_id ass = ast.nodes[0].block.stmt;
+    ast_id lhs = ast.nodes[ass].assignment.lvalue;
+    ast_id cast = ast.nodes[ass].assignment.expr;
+    ast_id rhs = ast.nodes[cast].cast.expr;
+    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_INTEGER));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_WORD));
+    EXPECT_THAT(ast.nodes[lhs].identifier.annotation, Eq(TA_NONE));
+    EXPECT_THAT(ast.nodes[rhs].identifier.annotation, Eq(TA_INT16));
+}
+
 TEST_F(NAME, variable_assigned_byte_defaults_to_integer)
 {
     const char* source = "a = 5";
@@ -49,6 +148,7 @@ TEST_F(NAME, variable_assigned_byte_defaults_to_integer)
     EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_INTEGER));
     EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
 }
+
 TEST_F(NAME, variable_assigned_boolean_defaults_to_boolean)
 {
     const char* source
@@ -74,6 +174,7 @@ TEST_F(NAME, variable_assigned_boolean_defaults_to_boolean)
     EXPECT_THAT(ast.nodes[lhs2].info.type_info, Eq(TYPE_BOOLEAN));
     EXPECT_THAT(ast.nodes[rhs2].info.type_info, Eq(TYPE_BOOLEAN));
 }
+
 TEST_F(NAME, variable_assigned_dword_defaults_to_dword)
 {
     const char* source = "a = 4294967295";
@@ -90,7 +191,8 @@ TEST_F(NAME, variable_assigned_dword_defaults_to_dword)
     EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DWORD));
     EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_DWORD));
 }
-TEST_F(NAME, variable_assigned_long_defaults_to_long)
+
+TEST_F(NAME, variable_assigned_double_integer_defaults_to_double_integer)
 {
     const char* source = "a = 99999999999999";
     ASSERT_THAT(parse(source), Eq(0));
@@ -103,9 +205,10 @@ TEST_F(NAME, variable_assigned_long_defaults_to_long)
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_LONG));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_LONG));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE_INTEGER));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_DOUBLE_INTEGER));
 }
+
 TEST_F(NAME, variable_assigned_float_defaults_to_float)
 {
     const char* source = "a = 5.5f";
@@ -220,7 +323,7 @@ TEST_F(NAME, truncated_assignment)
     EXPECT_THAT(ast.nodes[rhs3].info.type_info, Eq(TYPE_INTEGER));
 }
 
-TEST_F(NAME, strange_assignment)
+TEST_F(NAME, implicit_conversion_assignment)
 {
     const char* source
         = "a = true\n"

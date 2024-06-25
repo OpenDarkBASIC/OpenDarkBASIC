@@ -12,20 +12,20 @@
  */
 #define TYPE_LIST                                                              \
     /* DBPro types */                                                          \
-    X(VOID,    '0')                                                            \
-    X(LONG,    'R') /* 8 bytes -- signed int */                                \
-    X(DWORD,   'D') /* 4 bytes -- unsigned int */                              \
-    X(INTEGER, 'L') /* 4 bytes -- signed int */                                \
-    X(WORD,    'W') /* 2 bytes -- unsigned int */                              \
-    X(BYTE,    'Y') /* 1 byte  -- unsigned int */                              \
-    X(BOOLEAN, 'B') /* 1 byte  -- boolean */                                   \
-    X(FLOAT,   'F') /* 4 bytes -- float */                                     \
-    X(DOUBLE,  'O') /* 8 bytes -- double */                                    \
-    X(STRING,  'S') /* 4/8 bytes -- char* (passed as DWORD on 32-bit) */       \
-    X(ARRAY,   'H') /* 4/8 bytes -- Pass array address directly */             \
-    X(LABEL,   'P') /* 4 bytes -- ? */                                         \
-    X(DABEL,   'Q') /* 4 bytes -- ? */                                         \
-    X(ANY,     'X') /* 4 bytes -- (think reinterpret_cast) */                  \
+    X(VOID,           '0')                                                     \
+    X(DOUBLE_INTEGER, 'R') /* 8 bytes -- signed int */                         \
+    X(DWORD,          'D') /* 4 bytes -- unsigned int */                       \
+    X(INTEGER,        'L') /* 4 bytes -- signed int */                         \
+    X(WORD,           'W') /* 2 bytes -- unsigned int */                       \
+    X(BYTE,           'Y') /* 1 byte  -- unsigned int */                       \
+    X(BOOLEAN,        'B') /* 1 byte  -- boolean */                            \
+    X(FLOAT,          'F') /* 4 bytes -- float */                              \
+    X(DOUBLE,         'O') /* 8 bytes -- double */                             \
+    X(STRING,         'S') /* 4/8 bytes -- char* (passed as DWORD on 32-bit) */\
+    X(ARRAY,          'H') /* 4/8 bytes -- Pass array address directly */      \
+    X(LABEL,          'P') /* 4 bytes -- ? */                                  \
+    X(DABEL,          'Q') /* 4 bytes -- ? */                                  \
+    X(ANY,            'X') /* 4 bytes -- (think reinterpret_cast) */           \
     X(USER_DEFINED_VAR_PTR, 'E') /* 4 bytes */
 /* clang-format on */
 
