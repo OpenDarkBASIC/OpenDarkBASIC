@@ -385,11 +385,61 @@ resolve_node_type(
             struct view_scope view_scope = {name, scope};
             switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
             {
-                case HM_NEW:
+                case HM_NEW: {
                     type_origin->original_declaration = n;
                     type_origin->type = type_annotation_to_type(
                         ast->nodes[n].identifier.annotation);
-                    break;
+                    struct utf8_span loc = ast->nodes[n].info.location;
+
+                    ast_id init_value;
+                    switch (type_origin->type)
+                    {
+                        case TYPE_BOOLEAN: init_value = ast_boolean_literal(ast, 0, loc); break;
+                        case TYPE_DOUBLE_INTEGER: init_value = ast_double_integer_literal(ast, 0, loc); break;
+                        case TYPE_DWORD: init_value = ast_dword_literal(ast, 0, loc); break;
+                        case TYPE_INTEGER: init_value = ast_integer_literal(ast, 0, loc); break;
+                        case TYPE_WORD: init_value = ast_word_literal(ast, 0, loc); break;
+                        case TYPE_BYTE: init_value = ast_byte_literal(ast, 0, loc); break;
+                        case TYPE_FLOAT: init_value = ast_float_literal(ast, 0, loc); break;
+                        case TYPE_DOUBLE: init_value = ast_double_literal(ast, 0, loc); break;
+                        case TYPE_STRING: init_value = ast_string_literal(ast, empty_utf8_span(), loc); break;
+
+                        case TYPE_INVALID:
+                        case TYPE_VOID:
+                        case TYPE_ARRAY:
+                        case TYPE_LABEL:
+                        case TYPE_DABEL:
+                        case TYPE_ANY:
+                        case TYPE_USER_DEFINED_VAR_PTR:
+                            ODBSDK_DEBUG_ASSERT(0, (void)0);
+                            break;
+                    }
+                    ast_id init_var = ast_dup_lvalue(ast, n);
+                    ast_id init_ass = ast_assign_var(ast, init_var, init_value, loc);
+                    ast_id init_block = ast_block(ast, init_ass, loc);
+
+                    ast_id child = n;
+                    while (ast->nodes[child].info.node_type != AST_BLOCK)
+                    {
+                        block = ast_find_parent(ast, child);
+                        ODBSDK_DEBUG_ASSERT(child > -1);
+                    }
+
+                    ast_id parent = ast_find_parent(ast, child);
+                    if (parent > -1)
+                    {
+                        if (ast->nodes[parent].base.left == child)
+                            ast->nodes[parent].base.left = init_block;
+                        if (ast->nodes[parent].base.right == child)
+                            ast->nodes[parent].base.right = init_block;
+                        ast->nodes[init_block].block.next = child;
+                    }
+                    else
+                    {
+                        ast_set_root(ast, init_block);
+                        ast->nodes[init_block].block.next = child;
+                    }
+                } break;
 
                 case HM_EXISTS: break;
                 case HM_OOM: goto error;

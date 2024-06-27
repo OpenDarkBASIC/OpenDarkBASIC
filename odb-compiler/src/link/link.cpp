@@ -45,6 +45,8 @@ link_windows(
 
     // args.push_back("./odb-sdk/plugins/core-commands.lib");
     // args.push_back("./odb-sdk/plugins/test-plugin.lib");
+    
+    //args.push_back("./lib/odb-sdk.lib");
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);

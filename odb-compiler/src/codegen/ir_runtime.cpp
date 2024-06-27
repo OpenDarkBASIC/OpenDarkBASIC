@@ -991,6 +991,7 @@ get_dlopen(struct ir_module* ir, enum target_platform platform)
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 "LoadLibraryA@4",
+                //"LoadLibraryA",
                 ir->mod);
             // F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
             return F;
@@ -1026,6 +1027,7 @@ get_dlsym(struct ir_module* ir, enum target_platform platform)
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
                 "GetProcAddress@8",
+                //"GetProcAddress",
                 ir->mod);
     }
 

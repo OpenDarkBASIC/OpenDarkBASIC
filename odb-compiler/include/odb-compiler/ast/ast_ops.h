@@ -12,10 +12,12 @@ void
 ast_swap_node_idxs(struct ast* ast, int n1, int n2);
 void
 ast_swap_node_values(struct ast* ast, int n1, int n2);
-void
-ast_collapse_into(struct ast* ast, int node, int target);
-void
-ast_replace_into(struct ast* ast, int node, int target);
+
+/*!
+ * @brief Creates a new node of an lvalue, such as an identifier.
+ */
+int
+ast_dup_lvalue(struct ast* ast, int lvalue);
 
 int
 ast_find_parent(const struct ast* ast, int node);

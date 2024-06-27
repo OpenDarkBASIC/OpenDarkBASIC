@@ -93,38 +93,28 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 #undef SWAP
 }
 
-void
-ast_collapse_into(struct ast* ast, ast_id node, ast_id target)
+int
+ast_dup_lvalue(struct ast* ast, int lvalue)
 {
-    ast_swap_node_idxs(ast, node, ast->node_count - 1);
-    ast->nodes[target] = ast->nodes[ast->node_count - 1];
-    ast->node_count--;
+    ODBSDK_DEBUG_ASSERT(lvalue > -1, log_parser_err("lvalue: %d\n", lvalue));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[lvalue].info.node_type));
+
+    struct utf8_span name = ast->nodes[lvalue].identifier.name;
+    struct utf8_span location = ast->nodes[lvalue].info.location;
+    enum type_annotation annotation = ast->nodes[lvalue].identifier.annotation;
+    return ast_identifier(ast, name, annotation, location);
 }
 
-ast_id
-ast_find_parent(const struct ast* ast, ast_id node)
+int
+ast_find_parent(const struct ast* ast, int node)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)
         if (ast->nodes[n].base.left == node || ast->nodes[n].base.right == node)
             return n;
     return -1;
-}
-
-void
-ast_replace_into(struct ast* ast, ast_id node, ast_id target)
-{
-    ast_id parent = ast_find_parent(ast, target);
-    if (parent < 0)
-    {
-        ast_set_root(ast, node);
-        return;
-    }
-
-    if (ast->nodes[parent].base.left == target)
-        ast->nodes[parent].base.left = node;
-    if (ast->nodes[parent].base.right == target)
-        ast->nodes[parent].base.right = node;
 }
 
 ast_id
