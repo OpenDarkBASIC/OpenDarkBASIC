@@ -439,6 +439,11 @@ resolve_node_type(
                         = ast_assign_var(ast, init_var, init_value, loc, loc);
                     ast_id init_block = ast_block(ast, init_ass, loc);
 
+                    ast->nodes[init_value].info.type_info = type_origin->type;
+                    ast->nodes[init_var].info.type_info = type_origin->type;
+                    ast->nodes[init_ass].info.type_info = TYPE_VOID;
+                    ast->nodes[init_block].info.type_info = TYPE_VOID;
+
                     ast_id child = n;
                     while (ast->nodes[child].info.node_type != AST_BLOCK)
                     {
@@ -458,8 +463,8 @@ resolve_node_type(
                     }
                     else
                     {
-                        ast_set_root(ast, init_block);
                         ast->nodes[init_block].block.next = child;
+                        ast_set_root(ast, init_block);
                     }
                 }
                 break;
@@ -688,8 +693,9 @@ resolve_node_type(
             return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
 
         case AST_CAST: {
+            ast_id    expr = ast->nodes[n].cast.expr;
             enum type type = resolve_node_type(
-                ast, n, cmds, source_filename, source, typemap, scope);
+                ast, expr, cmds, source_filename, source, typemap, scope);
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
             return type_check_and_cast_casts(ast, n, source_filename, source);

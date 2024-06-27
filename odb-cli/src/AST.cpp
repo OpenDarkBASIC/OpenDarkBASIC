@@ -66,15 +66,15 @@ parseDBA(const std::vector<std::string>& args)
             != 0)
             goto parse_failed;
 
-        //log_semantic_info("Running semantic checks\n");
-        //if (semantic_run_essential_checks(
-        //        getAST(),
-        //        getPluginList(),
-        //        getCommandList(),
-        //        getSourceFilename(),
-        //        getSource())
-        //    != 0)
-        //    goto parse_failed;
+        log_semantic_info("Running semantic checks\n");
+        if (semantic_run_essential_checks(
+                getAST(),
+                getPluginList(),
+                getCommandList(),
+                getSourceFilename(),
+                getSource())
+            != 0)
+            goto parse_failed;
 
         continue;
 
