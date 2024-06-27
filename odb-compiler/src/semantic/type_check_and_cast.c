@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 #include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"
@@ -394,15 +394,35 @@ resolve_node_type(
                     ast_id init_value;
                     switch (type_origin->type)
                     {
-                        case TYPE_BOOLEAN: init_value = ast_boolean_literal(ast, 0, loc); break;
-                        case TYPE_DOUBLE_INTEGER: init_value = ast_double_integer_literal(ast, 0, loc); break;
-                        case TYPE_DWORD: init_value = ast_dword_literal(ast, 0, loc); break;
-                        case TYPE_INTEGER: init_value = ast_integer_literal(ast, 0, loc); break;
-                        case TYPE_WORD: init_value = ast_word_literal(ast, 0, loc); break;
-                        case TYPE_BYTE: init_value = ast_byte_literal(ast, 0, loc); break;
-                        case TYPE_FLOAT: init_value = ast_float_literal(ast, 0, loc); break;
-                        case TYPE_DOUBLE: init_value = ast_double_literal(ast, 0, loc); break;
-                        case TYPE_STRING: init_value = ast_string_literal(ast, empty_utf8_span(), loc); break;
+                        case TYPE_BOOLEAN:
+                            init_value = ast_boolean_literal(ast, 0, loc);
+                            break;
+                        case TYPE_DOUBLE_INTEGER:
+                            init_value
+                                = ast_double_integer_literal(ast, 0, loc);
+                            break;
+                        case TYPE_DWORD:
+                            init_value = ast_dword_literal(ast, 0, loc);
+                            break;
+                        case TYPE_INTEGER:
+                            init_value = ast_integer_literal(ast, 0, loc);
+                            break;
+                        case TYPE_WORD:
+                            init_value = ast_word_literal(ast, 0, loc);
+                            break;
+                        case TYPE_BYTE:
+                            init_value = ast_byte_literal(ast, 0, loc);
+                            break;
+                        case TYPE_FLOAT:
+                            init_value = ast_float_literal(ast, 0, loc);
+                            break;
+                        case TYPE_DOUBLE:
+                            init_value = ast_double_literal(ast, 0, loc);
+                            break;
+                        case TYPE_STRING:
+                            init_value = ast_string_literal(
+                                ast, empty_utf8_span(), loc);
+                            break;
 
                         case TYPE_INVALID:
                         case TYPE_VOID:
@@ -415,14 +435,16 @@ resolve_node_type(
                             break;
                     }
                     ast_id init_var = ast_dup_lvalue(ast, n);
-                    ast_id init_ass = ast_assign_var(ast, init_var, init_value, loc);
+                    ast_id init_ass
+                        = ast_assign_var(ast, init_var, init_value, loc, loc);
                     ast_id init_block = ast_block(ast, init_ass, loc);
 
                     ast_id child = n;
                     while (ast->nodes[child].info.node_type != AST_BLOCK)
                     {
-                        block = ast_find_parent(ast, child);
-                        ODBSDK_DEBUG_ASSERT(child > -1);
+                        child = ast_find_parent(ast, child);
+                        ODBSDK_DEBUG_ASSERT(
+                            child > -1, log_semantic_err("child: %d\n", child));
                     }
 
                     ast_id parent = ast_find_parent(ast, child);
@@ -439,7 +461,8 @@ resolve_node_type(
                         ast_set_root(ast, init_block);
                         ast->nodes[init_block].block.next = child;
                     }
-                } break;
+                }
+                break;
 
                 case HM_EXISTS: break;
                 case HM_OOM: goto error;

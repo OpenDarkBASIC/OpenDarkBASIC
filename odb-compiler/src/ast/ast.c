@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
@@ -52,24 +53,37 @@ ast_block(struct ast* ast, ast_id stmt, struct utf8_span location)
     return n;
 }
 
-ast_id
+void
 ast_block_append(
+    struct ast*      ast,
+    ast_id           block,
+    ast_id           append_block,
+    struct utf8_span location)
+{
+    ODBSDK_DEBUG_ASSERT(block > -1, log_parser_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[block].info.node_type == AST_BLOCK,
+        log_parser_err("type: %d\n", ast->nodes[block].info.node_type));
+    ODBSDK_DEBUG_ASSERT(
+        append_block > -1, log_parser_err("block: %d\n", block));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[append_block].info.node_type == AST_BLOCK,
+        log_parser_err("type: %d\n", ast->nodes[append_block].info.node_type));
+
+    while (ast->nodes[block].block.next != -1)
+        block = ast->nodes[block].block.next;
+    ast->nodes[block].block.next = append_block;
+}
+ast_id
+ast_block_append_new(
     struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_BLOCK, location);
     if (n < 0)
         return -1;
 
-    ODBSDK_DEBUG_ASSERT(block > -1, log_parser_err("block: %d\n", block));
-    ODBSDK_DEBUG_ASSERT(
-        ast->nodes[block].base.info.node_type == AST_BLOCK,
-        log_parser_err("type: %d\n", ast->nodes[block].base.info.node_type));
-
-    while (ast->nodes[block].block.next != -1)
-        block = ast->nodes[block].block.next;
-    ast->nodes[block].block.next = n;
+    ast_block_append(ast, block, n, location);
     ast->nodes[n].block.stmt = stmt;
-
     return n;
 }
 ast_id
@@ -181,6 +195,7 @@ ast_identifier(
     ast->nodes[n].identifier.annotation = annotation;
     return n;
 }
+
 ast_id
 ast_binop(
     struct ast*      ast,
@@ -218,6 +233,22 @@ ast_unop(
     ast->nodes[n].unop.op = op;
     return n;
 }
+
+ast_id
+ast_inc(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
+{
+    ast_id add = ast_binop(ast, BINOP_ADD, var, expr, location, location);
+    var = ast_dup_lvalue(ast, var);
+    return ast_assign_var(ast, var, add, location, location);
+}
+ast_id
+ast_dec(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
+{
+    ast_id add = ast_binop(ast, BINOP_SUB, var, expr, location, location);
+    var = ast_dup_lvalue(ast, var);
+    return ast_assign_var(ast, var, add, location, location);
+}
+
 ast_id
 ast_cond(
     struct ast* ast, ast_id expr, ast_id cond_branch, struct utf8_span location)
@@ -237,6 +268,7 @@ ast_cond(
     ast->nodes[n].cond.cond_branch = cond_branch;
     return n;
 }
+
 ast_id
 ast_cond_branch(
     struct ast* ast, ast_id yes, ast_id no, struct utf8_span location)
@@ -257,6 +289,7 @@ ast_cond_branch(
 
     return n;
 }
+
 ast_id
 ast_loop(struct ast* ast, ast_id body, struct utf8_span location)
 {
@@ -266,6 +299,7 @@ ast_loop(struct ast* ast, ast_id body, struct utf8_span location)
     ast->nodes[n].loop.body = body;
     return n;
 }
+
 ast_id
 ast_loop_while(
     struct ast* ast, ast_id body, ast_id expr, struct utf8_span location)
@@ -275,9 +309,10 @@ ast_loop_while(
     ast_id cond_branch = ast_cond_branch(ast, -1, exit_block, location);
     ast_id cond = ast_cond(ast, expr, cond_branch, location);
     ast_id block = ast_block(ast, cond, location);
-    ast->nodes[block].block.next = body;
+    ast_block_append(ast, block, body, location);
     return ast_loop(ast, block, location);
 }
+
 ast_id
 ast_loop_until(
     struct ast* ast, ast_id body, ast_id expr, struct utf8_span location)
@@ -287,11 +322,21 @@ ast_loop_until(
     ast_id cond_branch = ast_cond_branch(ast, exit_block, -1, location);
     ast_id cond = ast_cond(ast, expr, cond_branch, location);
     if (body > -1)
-        ast_block_append(ast, body, cond, location);
+        ast_block_append_new(ast, body, cond, location);
     else
         body = cond;
     return ast_loop(ast, body, location);
 }
+
+static ast_id
+dup_for_loop_var(struct ast* ast, ast_id init)
+{
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[init].info.node_type == AST_ASSIGNMENT,
+        log_parser_err("type: %d\n", ast->nodes[init].info.node_type));
+    return ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
+}
+
 ast_id
 ast_loop_for(
     struct ast*      ast,
@@ -302,8 +347,25 @@ ast_loop_for(
     ast_id           next,
     struct utf8_span location)
 {
-    return -1;
+    ast_delete_tree(ast, init);
+    ast_delete_tree(ast, end);
+    ast_delete_tree(ast, next);
+    ast_id exit = ast_loop_exit(ast, location);
+    ast_id exit_cond_block = ast_block(ast, exit, location);
+    ast_id exit_cond_branch
+        = ast_cond_branch(ast, exit_cond_block, -1, location);
+    ast_id exit_var = dup_for_loop_var(ast, init);
+    ast_id exit_expr = ast_binop(
+        ast, BINOP_GREATER_EQUAL, exit_var, end, location, location);
+    ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
+    // ast_id inc_var = dup_for_loop_var(ast, init);
+    // ast_id inc_stmt = ast_inc(ast, inc_var, step, location);
+    ast_id block = ast_block(ast, exit_stmt, location);
+    ast_block_append(ast, block, body, location);
+    // ast_block_append_new(ast, block, inc_stmt, location);
+    return ast_loop(ast, block, location);
 }
+
 ast_id
 ast_loop_exit(struct ast* ast, struct utf8_span location)
 {
@@ -320,7 +382,7 @@ ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location)
     return n;
 }
 
-static ast_id
+ast_id
 ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_BYTE_LITERAL, location);
@@ -329,7 +391,7 @@ ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location)
     ast->nodes[n].byte_literal.value = value;
     return n;
 }
-static ast_id
+ast_id
 ast_word_literal(struct ast* ast, uint16_t value, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_WORD_LITERAL, location);
@@ -338,7 +400,7 @@ ast_word_literal(struct ast* ast, uint16_t value, struct utf8_span location)
     ast->nodes[n].word_literal.value = value;
     return n;
 }
-static ast_id
+ast_id
 ast_integer_literal(struct ast* ast, int32_t value, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_INTEGER_LITERAL, location);
@@ -347,7 +409,7 @@ ast_integer_literal(struct ast* ast, int32_t value, struct utf8_span location)
     ast->nodes[n].integer_literal.value = value;
     return n;
 }
-static ast_id
+ast_id
 ast_dword_literal(struct ast* ast, uint32_t value, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_DWORD_LITERAL, location);
@@ -356,9 +418,9 @@ ast_dword_literal(struct ast* ast, uint32_t value, struct utf8_span location)
     ast->nodes[n].dword_literal.value = value;
     return n;
 }
-static ast_id
+ast_id
 ast_double_integer_literal(
-    struct ast* ast, uint64_t value, struct utf8_span location)
+    struct ast* ast, int64_t value, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_DOUBLE_INTEGER_LITERAL, location);
     if (n < 0)

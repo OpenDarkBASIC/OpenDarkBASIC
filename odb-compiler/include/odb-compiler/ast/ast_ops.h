@@ -19,6 +19,11 @@ ast_swap_node_values(struct ast* ast, int n1, int n2);
 int
 ast_dup_lvalue(struct ast* ast, int lvalue);
 
+void
+ast_delete_node(struct ast* ast, int node);
+void
+ast_delete_tree(struct ast* ast, int node);
+
 int
 ast_find_parent(const struct ast* ast, int node);
 

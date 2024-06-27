@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_source.h"
+#include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include <assert.h>
 
@@ -115,6 +116,37 @@ ast_find_parent(const struct ast* ast, int node)
         if (ast->nodes[n].base.left == node || ast->nodes[n].base.right == node)
             return n;
     return -1;
+}
+
+void
+ast_delete_node(struct ast* ast, int node)
+{
+    ODBSDK_DEBUG_ASSERT(
+        ast_find_parent(ast, node) == -1,
+        log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
+    ast_swap_node_idxs(ast, node, --ast->node_count);
+}
+
+static void
+delete_tree_recurse(struct ast* ast, int node)
+{
+    ast_id left = ast->nodes[node].base.left;
+    ast_id right = ast->nodes[node].base.right;
+    if (left > -1)
+        ast_delete_tree(ast, left);
+    if (right > -1)
+        ast_delete_tree(ast, right);
+
+    ast_swap_node_idxs(ast, node, --ast->node_count);
+}
+
+void
+ast_delete_tree(struct ast* ast, int node)
+{
+    ODBSDK_DEBUG_ASSERT(
+        ast_find_parent(ast, node) == -1,
+        log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
+    delete_tree_recurse(ast, node);
 }
 
 ast_id

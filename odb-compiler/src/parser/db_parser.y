@@ -243,7 +243,7 @@ program
   | maybe_seps                              {}
   ;
 block
-  : block seps stmt                         { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
+  : block seps stmt                         { $$ = $1; ast_block_append_new(ctx->ast, $$, $3, @$); }
   | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 block_or_seps
@@ -251,7 +251,7 @@ block_or_seps
   | seps                                    { $$ = -1; }
   ;
 iblock
-  : iblock iseps istmt                      { $$ = $1; ast_block_append(ctx->ast, $$, $3, @$); }
+  : iblock iseps istmt                      { $$ = $1; ast_block_append_new(ctx->ast, $$, $3, @$); }
   | istmt                                   { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 stmt

@@ -299,7 +299,7 @@ type_annotation_to_type(enum type_annotation annotation)
 }
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
-ast_id ast_block_append(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
+ast_id ast_block_append_new(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
@@ -316,6 +316,11 @@ ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_spa
 ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span location);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
+ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);
+ast_id ast_word_literal(struct ast* ast, uint16_t value, struct utf8_span location);
+ast_id ast_integer_literal(struct ast* ast, int32_t value, struct utf8_span location);
+ast_id ast_dword_literal(struct ast* ast, uint32_t value, struct utf8_span location);
+ast_id ast_double_integer_literal(struct ast* ast, int64_t value, struct utf8_span location);
 ast_id ast_integer_like_literal(struct ast* ast, int64_t value, struct utf8_span location);
 ast_id ast_float_literal(struct ast* ast, float value, struct utf8_span location);
 ast_id ast_double_literal(struct ast* ast, double value, struct utf8_span location);
