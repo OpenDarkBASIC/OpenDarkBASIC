@@ -102,8 +102,8 @@ ast_dup_lvalue(struct ast* ast, int lvalue)
         ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
         log_parser_err("type: %d\n", ast->nodes[lvalue].info.node_type));
 
-    struct utf8_span name = ast->nodes[lvalue].identifier.name;
-    struct utf8_span location = ast->nodes[lvalue].info.location;
+    struct utf8_span     name = ast->nodes[lvalue].identifier.name;
+    struct utf8_span     location = ast->nodes[lvalue].info.location;
     enum type_annotation annotation = ast->nodes[lvalue].identifier.annotation;
     return ast_identifier(ast, name, annotation, location);
 }
@@ -147,6 +147,11 @@ ast_delete_tree(struct ast* ast, int node)
         ast_find_parent(ast, node) == -1,
         log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
     delete_tree_recurse(ast, node);
+}
+
+void
+ast_gc(struct ast* ast)
+{
 }
 
 ast_id

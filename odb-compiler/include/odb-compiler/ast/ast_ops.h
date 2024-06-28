@@ -23,6 +23,8 @@ void
 ast_delete_node(struct ast* ast, int node);
 void
 ast_delete_tree(struct ast* ast, int node);
+void
+ast_gc(struct ast* ast);
 
 int
 ast_find_parent(const struct ast* ast, int node);
