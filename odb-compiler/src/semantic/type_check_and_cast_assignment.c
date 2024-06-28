@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-sdk/config.h"
 
 static int
 resolve_assignments(
@@ -12,6 +13,7 @@ resolve_assignments(
     for (n = 0; n != ast->node_count; ++n)
         switch (ast->nodes[n].info.node_type)
         {
+            case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
             case AST_BLOCK:
             case AST_ARGLIST:
             case AST_CONST_DECL: break;

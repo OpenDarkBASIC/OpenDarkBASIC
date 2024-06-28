@@ -381,6 +381,7 @@ gen_expr(
 {
     switch (ast->nodes[expr].info.node_type)
     {
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); return nullptr;
         case AST_BLOCK:
         case AST_ARGLIST:
         case AST_CONST_DECL: break;

@@ -70,7 +70,7 @@ enum ast_type
 {
     /*! Marks a node as being deleted. All unused nodes are removed using
        ast_gc() */
-    AST_UNUSED,
+    AST_GC,
     /*! Linked list of sequential statements */
     AST_BLOCK,
     /*! Linked list of expressions, usually passed as arguments to a function or

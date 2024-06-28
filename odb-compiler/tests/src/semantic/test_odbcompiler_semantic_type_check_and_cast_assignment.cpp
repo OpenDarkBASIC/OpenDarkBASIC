@@ -22,7 +22,8 @@ TEST_F(NAME, undeclared_variable_defaults_to_integer)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
@@ -41,7 +42,8 @@ TEST_F(NAME, undeclared_float_variable_defaults_to_float)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
@@ -60,7 +62,8 @@ TEST_F(NAME, undeclared_double_variable_defaults_to_double)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
@@ -79,8 +82,9 @@ TEST_F(NAME, undeclared_double_integer_variable_defaults_to_double_integer)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass = ast.nodes[0].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
@@ -98,7 +102,8 @@ TEST_F(NAME, undeclared_string_variable_defaults_to_string)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
@@ -117,7 +122,8 @@ TEST_F(NAME, undeclared_word_variable_defaults_to_word)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id cast = ast.nodes[ass].assignment.expr;
@@ -137,8 +143,9 @@ TEST_F(NAME, variable_assigned_byte_defaults_to_integer)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
@@ -158,9 +165,10 @@ TEST_F(NAME, variable_assigned_boolean_defaults_to_boolean)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass1 = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    ast_id ass2 = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass1 = ast.nodes[0].block.stmt;
+    ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id lhs1 = ast.nodes[ass1].assignment.lvalue;
     ast_id rhs1 = ast.nodes[ass1].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
@@ -182,8 +190,9 @@ TEST_F(NAME, variable_assigned_dword_defaults_to_dword)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
@@ -199,8 +208,9 @@ TEST_F(NAME, variable_assigned_double_integer_defaults_to_double_integer)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
@@ -216,8 +226,9 @@ TEST_F(NAME, variable_assigned_float_defaults_to_float)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
-    ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
+        Eq(0))
+        << log().text;
+    ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
@@ -236,12 +247,14 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     EXPECT_THAT(log(), LogEq(""));
-    ast_id ass1 = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    ast_id ass2 = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
-    ast_id ass3
-        = ast.nodes[ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.next].block.stmt;
+    ast_id block = ast.nodes[ast.nodes[0].block.next].block.next;
+    ast_id ass1 = ast.nodes[block].block.stmt;
+    ast_id ass2 = ast.nodes[ast.nodes[block].block.next].block.stmt;
+    ast_id ass3 = ast.nodes[ast.nodes[ast.nodes[block].block.next].block.next]
+                      .block.stmt;
     ast_id lval1 = ast.nodes[ass1].assignment.lvalue;
     ast_id op1 = ast.nodes[ass1].assignment.expr;
     ast_id lhs1 = ast.nodes[op1].binop.left;
@@ -284,7 +297,8 @@ TEST_F(NAME, truncated_assignment)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Value is truncated when converting from "
@@ -295,10 +309,10 @@ TEST_F(NAME, truncated_assignment)
               "   = note: b was previously declared as INTEGER at test:2:1:\n"
               " 2 | b = 2\n"
               "   | ^ INTEGER\n"));
-    ast_id ass1 = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    ast_id ass2 = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
+    ast_id ass1 = ast.nodes[0].block.stmt;
+    ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id ass3
-        = ast.nodes[ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.next].block.stmt;
+        = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
     ast_id lhs1 = ast.nodes[ass1].assignment.lvalue;
     ast_id rhs1 = ast.nodes[ass1].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
@@ -333,7 +347,8 @@ TEST_F(NAME, implicit_conversion_assignment)
     EXPECT_THAT(
         semantic_check_run(
             &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Implicit conversion from BOOLEAN to INTEGER "
@@ -344,10 +359,10 @@ TEST_F(NAME, implicit_conversion_assignment)
               "   = note: b was previously declared as INTEGER at test:2:1:\n"
               " 2 | b = 2\n"
               "   | ^ INTEGER\n"));
-    ast_id ass1 = ast.nodes[ast.nodes[0].block.next].block.stmt;
-    ast_id ass2 = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
+    ast_id ass1 = ast.nodes[0].block.stmt;
+    ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
     ast_id ass3
-        = ast.nodes[ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.next].block.stmt;
+        = ast.nodes[ast.nodes[ast.nodes[0].block.next].block.next].block.stmt;
     ast_id lhs1 = ast.nodes[ass1].assignment.lvalue;
     ast_id rhs1 = ast.nodes[ass1].assignment.expr;
     EXPECT_THAT(ast.nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));

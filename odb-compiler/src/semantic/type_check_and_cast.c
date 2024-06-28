@@ -2,6 +2,7 @@
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-sdk/config.h"
 #include "odb-sdk/hash.h"
 #include "odb-sdk/hm.h"
 #include "odb-sdk/log.h"
@@ -126,6 +127,16 @@ HM_DEFINE_API_FULL(
     32,
     70)
 
+struct ctx
+{
+    struct ast*            ast;
+    ast_id                 root;
+    const struct cmd_list* cmds;
+    const char*            source_filename;
+    struct db_source       source;
+    struct typemap*        typemap;
+};
+
 enum type
 type_check_and_cast_binop_arithmetic(
     struct ast*      ast,
@@ -148,31 +159,25 @@ type_check_and_cast_casts(
     struct db_source source);
 
 static enum type
-resolve_node_type(
-    struct ast*            ast,
-    ast_id                 n,
-    const struct cmd_list* cmds,
-    const char*            source_filename,
-    struct db_source       source,
-    struct typemap**       typemap,
-    int16_t                scope)
+resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 {
     ODBSDK_DEBUG_ASSERT(n > -1, (void)0);
 
     /* Nodes that don't return a value should be marked as TYPE_VOID */
-    switch (ast->nodes[n].info.node_type)
+    switch (ctx->ast->nodes[n].info.node_type)
     {
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
         case AST_BLOCK: {
             ast_id block;
-            for (block = n; block > -1; block = ast->nodes[block].block.next)
+            for (block = n; block > -1;
+                 block = ctx->ast->nodes[block].block.next)
             {
-                ast_id    stmt = ast->nodes[block].block.stmt;
-                enum type type = resolve_node_type(
-                    ast, stmt, cmds, source_filename, source, typemap, 0);
+                ast_id    stmt = ctx->ast->nodes[block].block.stmt;
+                enum type type = resolve_node_type(ctx, stmt, 0);
                 if (type == TYPE_INVALID)
                     return TYPE_INVALID;
                 /* Blocks are not expressions */
-                ast->nodes[block].info.type_info = TYPE_VOID;
+                ctx->ast->nodes[block].info.type_info = TYPE_VOID;
             }
             return TYPE_VOID; /* Blocks are not expressions */
         }
@@ -181,10 +186,9 @@ resolve_node_type(
         case AST_CONST_DECL: break;
 
         case AST_ASSIGNMENT: {
-            ast_id    lhs = ast->nodes[n].assignment.lvalue;
-            ast_id    rhs = ast->nodes[n].assignment.expr;
-            enum type rhs_type = resolve_node_type(
-                ast, rhs, cmds, source_filename, source, typemap, scope);
+            ast_id    lhs = ctx->ast->nodes[n].assignment.lvalue;
+            ast_id    rhs = ctx->ast->nodes[n].assignment.expr;
+            enum type rhs_type = resolve_node_type(ctx, rhs, scope);
             if (rhs_type == TYPE_INVALID)
                 return TYPE_INVALID;
 
@@ -193,14 +197,15 @@ resolve_node_type(
              * not yet been declared. If it has been declared, then we need to
              * insert a cast to the variable's type instead of transferring the
              * RHS type */
-            if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
+            if (ctx->ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
                 struct type_origin* lhs_type;
                 struct utf8_view    lhs_name = utf8_span_view(
-                    source.text.data, ast->nodes[lhs].identifier.name);
+                    ctx->source.text.data,
+                    ctx->ast->nodes[lhs].identifier.name);
                 struct view_scope lhs_name_scope = {lhs_name, scope};
-                switch (
-                    typemap_emplace_or_get(typemap, lhs_name_scope, &lhs_type))
+                switch (typemap_emplace_or_get(
+                    &ctx->typemap, lhs_name_scope, &lhs_type))
                 {
                     case HM_OOM: return TYPE_INVALID;
                     case HM_EXISTS: break;
@@ -213,7 +218,7 @@ resolve_node_type(
                                   ? TYPE_INTEGER
                                   : rhs_type;
                 }
-                ast->nodes[lhs].info.type_info = lhs_type->type;
+                ctx->ast->nodes[lhs].info.type_info = lhs_type->type;
 
                 /* The variable already exists and has a type different from RHS
                  */
@@ -222,42 +227,43 @@ resolve_node_type(
                     int    gutter;
                     ast_id orig_node = lhs_type->original_declaration;
                     ODBSDK_DEBUG_ASSERT(
-                        ast->nodes[orig_node].info.node_type == AST_IDENTIFIER,
+                        ctx->ast->nodes[orig_node].info.node_type
+                            == AST_IDENTIFIER,
                         log_semantic_err(
                             "type: %d\n",
-                            ast->nodes[orig_node].info.node_type));
+                            ctx->ast->nodes[orig_node].info.node_type));
                     struct utf8_span orig_name
-                        = ast->nodes[orig_node].identifier.name;
+                        = ctx->ast->nodes[orig_node].identifier.name;
                     struct utf8_span orig_loc
-                        = ast->nodes[orig_node].info.location;
+                        = ctx->ast->nodes[orig_node].info.location;
 
                     ast_id cast = ast_cast(
-                        ast,
+                        ctx->ast,
                         rhs,
                         lhs_type->type,
-                        ast->nodes[rhs].info.location);
+                        ctx->ast->nodes[rhs].info.location);
                     if (cast < -1)
                         return TYPE_INVALID;
-                    ast->nodes[n].assignment.expr = cast;
+                    ctx->ast->nodes[n].assignment.expr = cast;
 
                     switch (type_promote(rhs_type, lhs_type->type))
                     {
                         case TP_ALLOW: break;
                         case TP_DISALLOW:
                             log_flc_err(
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[rhs].info.location,
+                                ctx->source_filename,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[rhs].info.location,
                                 "Cannot assign {emph1:%s} to {emph2:%s}. Types "
                                 "are "
                                 "incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
-                                source.text.data,
-                                ast->nodes[lhs].info.location,
-                                ast->nodes[n].assignment.op_location,
-                                ast->nodes[rhs].info.location,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[lhs].info.location,
+                                ctx->ast->nodes[n].assignment.op_location,
+                                ctx->ast->nodes[rhs].info.location,
                                 type_to_db_name(lhs_type->type),
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
@@ -265,16 +271,16 @@ resolve_node_type(
                                 "{emph1:%.*s} was previously declared as "
                                 "{emph1:%s} at ",
                                 orig_name.len,
-                                source.text.data + orig_name.off,
+                                ctx->source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
                             log_flc(
                                 "",
-                                source_filename,
-                                source.text.data,
+                                ctx->source_filename,
+                                ctx->source.text.data,
                                 orig_loc,
                                 "\n");
                             log_excerpt_1(
-                                source.text.data,
+                                ctx->source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             return TYPE_INVALID;
@@ -283,19 +289,19 @@ resolve_node_type(
                         case TP_INT_TO_FLOAT:
                         case TP_BOOL_PROMOTION:
                             log_flc_warn(
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[rhs].info.location,
+                                ctx->source_filename,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[rhs].info.location,
                                 "Implicit conversion from {emph1:%s} to "
                                 "{emph2:%s} "
                                 "in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
-                                source.text.data,
-                                ast->nodes[lhs].info.location,
-                                ast->nodes[n].assignment.op_location,
-                                ast->nodes[rhs].info.location,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[lhs].info.location,
+                                ctx->ast->nodes[n].assignment.op_location,
+                                ctx->ast->nodes[rhs].info.location,
                                 type_to_db_name(lhs_type->type),
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
@@ -303,34 +309,34 @@ resolve_node_type(
                                 "{emph1:%.*s} was previously declared as "
                                 "{emph1:%s} at ",
                                 orig_name.len,
-                                source.text.data + orig_name.off,
+                                ctx->source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
                             log_flc(
                                 "",
-                                source_filename,
-                                source.text.data,
+                                ctx->source_filename,
+                                ctx->source.text.data,
                                 orig_loc,
                                 "\n");
                             log_excerpt_1(
-                                source.text.data,
+                                ctx->source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             break;
 
                         case TP_TRUNCATE:
                             log_flc_warn(
-                                source_filename,
-                                source.text.data,
-                                ast->nodes[rhs].info.location,
+                                ctx->source_filename,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[rhs].info.location,
                                 "Value is truncated when converting from "
                                 "{emph1:%s} to {emph2:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
-                                source.text.data,
-                                ast->nodes[lhs].info.location,
-                                ast->nodes[n].assignment.op_location,
-                                ast->nodes[rhs].info.location,
+                                ctx->source.text.data,
+                                ctx->ast->nodes[lhs].info.location,
+                                ctx->ast->nodes[n].assignment.op_location,
+                                ctx->ast->nodes[rhs].info.location,
                                 type_to_db_name(lhs_type->type),
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
@@ -338,16 +344,16 @@ resolve_node_type(
                                 "{emph1:%.*s} was previously declared as "
                                 "{emph1:%s} at ",
                                 orig_name.len,
-                                source.text.data + orig_name.off,
+                                ctx->source.text.data + orig_name.off,
                                 type_to_db_name(lhs_type->type));
                             log_flc(
                                 "",
-                                source_filename,
-                                source.text.data,
+                                ctx->source_filename,
+                                ctx->source.text.data,
                                 orig_loc,
                                 "\n");
                             log_excerpt_1(
-                                source.text.data,
+                                ctx->source.text.data,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             break;
@@ -357,71 +363,72 @@ resolve_node_type(
 
             /* Assignments are not expressions, thus they do not evaluate to a
              * type */
-            return ast->nodes[n].info.type_info = TYPE_VOID;
+            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
         }
 
         case AST_COMMAND: {
-            ast_id arglist = ast->nodes[n].cmd.arglist;
-            cmd_id cmd_id = ast->nodes[n].cmd.id;
-            for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
+            ast_id arglist = ctx->ast->nodes[n].cmd.arglist;
+            cmd_id cmd_id = ctx->ast->nodes[n].cmd.id;
+            for (; arglist > -1;
+                 arglist = ctx->ast->nodes[arglist].arglist.next)
             {
-                ast_id    expr = ast->nodes[arglist].arglist.expr;
-                enum type arg_type = resolve_node_type(
-                    ast, expr, cmds, source_filename, source, typemap, scope);
+                ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
+                enum type arg_type = resolve_node_type(ctx, expr, scope);
                 if (arg_type == TYPE_INVALID)
                     return TYPE_INVALID;
                 /* Argument lists are not expressions */
-                ast->nodes[arglist].info.type_info = TYPE_VOID;
+                ctx->ast->nodes[arglist].info.type_info = TYPE_VOID;
             }
 
-            return ast->nodes[n].cmd.info.type_info
-                   = cmds->return_types->data[cmd_id];
+            return ctx->ast->nodes[n].cmd.info.type_info
+                   = ctx->cmds->return_types->data[cmd_id];
         }
 
         case AST_IDENTIFIER: {
             struct type_origin* type_origin;
             struct utf8_view    name = utf8_span_view(
-                source.text.data, ast->nodes[n].identifier.name);
+                ctx->source.text.data, ctx->ast->nodes[n].identifier.name);
             struct view_scope view_scope = {name, scope};
-            switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+            switch (
+                typemap_emplace_or_get(&ctx->typemap, view_scope, &type_origin))
             {
                 case HM_NEW: {
                     type_origin->original_declaration = n;
                     type_origin->type = type_annotation_to_type(
-                        ast->nodes[n].identifier.annotation);
-                    struct utf8_span loc = ast->nodes[n].info.location;
+                        ctx->ast->nodes[n].identifier.annotation);
+                    struct utf8_span loc = ctx->ast->nodes[n].info.location;
 
                     ast_id init_value;
                     switch (type_origin->type)
                     {
                         case TYPE_BOOLEAN:
-                            init_value = ast_boolean_literal(ast, 0, loc);
+                            init_value = ast_boolean_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_DOUBLE_INTEGER:
                             init_value
-                                = ast_double_integer_literal(ast, 0, loc);
+                                = ast_double_integer_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_DWORD:
-                            init_value = ast_dword_literal(ast, 0, loc);
+                            init_value = ast_dword_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_INTEGER:
-                            init_value = ast_integer_literal(ast, 0, loc);
+                            init_value = ast_integer_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_WORD:
-                            init_value = ast_word_literal(ast, 0, loc);
+                            init_value = ast_word_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_BYTE:
-                            init_value = ast_byte_literal(ast, 0, loc);
+                            init_value = ast_byte_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_FLOAT:
-                            init_value = ast_float_literal(ast, 0, loc);
+                            init_value = ast_float_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_DOUBLE:
-                            init_value = ast_double_literal(ast, 0, loc);
+                            init_value = ast_double_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_STRING:
                             init_value = ast_string_literal(
-                                ast, empty_utf8_span(), loc);
+                                ctx->ast, empty_utf8_span(), loc);
                             break;
 
                         case TYPE_INVALID:
@@ -434,37 +441,39 @@ resolve_node_type(
                             ODBSDK_DEBUG_ASSERT(0, (void)0);
                             break;
                     }
-                    ast_id init_var = ast_dup_lvalue(ast, n);
-                    ast_id init_ass
-                        = ast_assign_var(ast, init_var, init_value, loc, loc);
-                    ast_id init_block = ast_block(ast, init_ass, loc);
+                    ast_id init_var = ast_dup_lvalue(ctx->ast, n);
+                    ast_id init_ass = ast_assign_var(
+                        ctx->ast, init_var, init_value, loc, loc);
+                    ast_id init_block = ast_block(ctx->ast, init_ass, loc);
 
-                    ast->nodes[init_value].info.type_info = type_origin->type;
-                    ast->nodes[init_var].info.type_info = type_origin->type;
-                    ast->nodes[init_ass].info.type_info = TYPE_VOID;
-                    ast->nodes[init_block].info.type_info = TYPE_VOID;
+                    ctx->ast->nodes[init_value].info.type_info
+                        = type_origin->type;
+                    ctx->ast->nodes[init_var].info.type_info
+                        = type_origin->type;
+                    ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
+                    ctx->ast->nodes[init_block].info.type_info = TYPE_VOID;
 
                     ast_id child = n;
-                    while (ast->nodes[child].info.node_type != AST_BLOCK)
+                    while (ctx->ast->nodes[child].info.node_type != AST_BLOCK)
                     {
-                        child = ast_find_parent(ast, child);
+                        child = ast_find_parent(ctx->ast, child);
                         ODBSDK_DEBUG_ASSERT(
                             child > -1, log_semantic_err("child: %d\n", child));
                     }
 
-                    ast_id parent = ast_find_parent(ast, child);
+                    ast_id parent = ast_find_parent(ctx->ast, child);
                     if (parent > -1)
                     {
-                        if (ast->nodes[parent].base.left == child)
-                            ast->nodes[parent].base.left = init_block;
-                        if (ast->nodes[parent].base.right == child)
-                            ast->nodes[parent].base.right = init_block;
-                        ast->nodes[init_block].block.next = child;
+                        if (ctx->ast->nodes[parent].base.left == child)
+                            ctx->ast->nodes[parent].base.left = init_block;
+                        if (ctx->ast->nodes[parent].base.right == child)
+                            ctx->ast->nodes[parent].base.right = init_block;
+                        ctx->ast->nodes[init_block].block.next = child;
                     }
                     else
                     {
-                        ast->nodes[init_block].block.next = child;
-                        ast_set_root(ast, init_block);
+                        ctx->ast->nodes[init_block].block.next = child;
+                        ctx->root = init_block;
                     }
                 }
                 break;
@@ -472,22 +481,19 @@ resolve_node_type(
                 case HM_EXISTS: break;
                 case HM_OOM: goto error;
             }
-            return ast->nodes[n].identifier.info.type_info = type_origin->type;
+            return ctx->ast->nodes[n].identifier.info.type_info
+                   = type_origin->type;
         }
 
         case AST_BINOP: {
-            ast_id lhs = ast->nodes[n].binop.left;
-            ast_id rhs = ast->nodes[n].binop.right;
-            if (resolve_node_type(
-                    ast, lhs, cmds, source_filename, source, typemap, scope)
-                < 0)
+            ast_id lhs = ctx->ast->nodes[n].binop.left;
+            ast_id rhs = ctx->ast->nodes[n].binop.right;
+            if (resolve_node_type(ctx, lhs, scope) < 0)
                 return TYPE_INVALID;
-            if (resolve_node_type(
-                    ast, rhs, cmds, source_filename, source, typemap, scope)
-                < 0)
+            if (resolve_node_type(ctx, rhs, scope) < 0)
                 return TYPE_INVALID;
 
-            switch (ast->nodes[n].binop.op)
+            switch (ctx->ast->nodes[n].binop.op)
             {
                 case BINOP_ADD:
                 case BINOP_SUB:
@@ -495,11 +501,11 @@ resolve_node_type(
                 case BINOP_DIV:
                 case BINOP_MOD:
                     return type_check_and_cast_binop_arithmetic(
-                        ast, n, source_filename, source);
+                        ctx->ast, n, ctx->source_filename, ctx->source);
 
                 case BINOP_POW:
                     return type_check_and_cast_binop_pow(
-                        ast, n, source_filename, source);
+                        ctx->ast, n, ctx->source_filename, ctx->source);
 
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
@@ -525,41 +531,35 @@ resolve_node_type(
 
         case AST_COND: {
             int    gutter;
-            ast_id expr = ast->nodes[n].cond.expr;
-            ast_id cond_branch = ast->nodes[n].cond.cond_branch;
+            ast_id expr = ctx->ast->nodes[n].cond.expr;
+            ast_id cond_branch = ctx->ast->nodes[n].cond.cond_branch;
 
             ODBSDK_DEBUG_ASSERT(
-                ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
+                ctx->ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
                 log_semantic_err(
-                    "type: %d\n", ast->nodes[cond_branch].info.node_type));
-            ast_id yes = ast->nodes[cond_branch].cond_branch.yes;
-            ast_id no = ast->nodes[cond_branch].cond_branch.no;
+                    "type: %d\n", ctx->ast->nodes[cond_branch].info.node_type));
+            ast_id yes = ctx->ast->nodes[cond_branch].cond_branch.yes;
+            ast_id no = ctx->ast->nodes[cond_branch].cond_branch.no;
 
-            ast->nodes[expr].info.type_info = resolve_node_type(
-                ast, expr, cmds, source_filename, source, typemap, scope);
-            if (ast->nodes[expr].info.type_info == TYPE_INVALID)
+            ctx->ast->nodes[expr].info.type_info
+                = resolve_node_type(ctx, expr, scope);
+            if (ctx->ast->nodes[expr].info.type_info == TYPE_INVALID)
                 return TYPE_INVALID;
 
-            if (yes > -1
-                && resolve_node_type(
-                       ast, yes, cmds, source_filename, source, typemap, scope)
-                       == TYPE_INVALID)
+            if (yes > -1 && resolve_node_type(ctx, yes, scope) == TYPE_INVALID)
                 return TYPE_INVALID;
-            if (no > -1
-                && resolve_node_type(
-                       ast, no, cmds, source_filename, source, typemap, scope)
-                       == TYPE_INVALID)
+            if (no > -1 && resolve_node_type(ctx, no, scope) == TYPE_INVALID)
                 return TYPE_INVALID;
 
             /* The expression is always evaluated to a bool. If this is not the
              * case here, then insert a cast */
-            if (ast->nodes[expr].info.type_info != TYPE_BOOLEAN)
-                switch (
-                    type_promote(ast->nodes[expr].info.type_info, TYPE_BOOLEAN))
+            if (ctx->ast->nodes[expr].info.type_info != TYPE_BOOLEAN)
+                switch (type_promote(
+                    ctx->ast->nodes[expr].info.type_info, TYPE_BOOLEAN))
                 {
                     case TP_TRUENESS: {
                         /* clang-format off */
-                        struct utf8_span expr_loc = ast->nodes[expr].info.location;
+                        struct utf8_span expr_loc = ctx->ast->nodes[expr].info.location;
                         utf8_idx expr_start = expr_loc.off;
                         utf8_idx expr_end = expr_start + expr_loc.len;
                         struct log_excerpt_inst inst_int[] = {
@@ -580,21 +580,23 @@ resolve_node_type(
                         };
                         /* clang-format on */
                         log_flc_warn(
-                            source_filename,
-                            source.text.data,
-                            ast->nodes[expr].info.location,
+                            ctx->source_filename,
+                            ctx->source.text.data,
+                            ctx->ast->nodes[expr].info.location,
                             "Implicit evaluation of {emph1:%s} as a boolean "
                             "expression.\n",
-                            type_to_db_name(ast->nodes[expr].info.type_info));
+                            type_to_db_name(
+                                ctx->ast->nodes[expr].info.type_info));
                         gutter = log_excerpt_1(
-                            source.text.data,
-                            ast->nodes[expr].info.location,
-                            type_to_db_name(ast->nodes[expr].info.type_info));
+                            ctx->source.text.data,
+                            ctx->ast->nodes[expr].info.location,
+                            type_to_db_name(
+                                ctx->ast->nodes[expr].info.type_info));
 
                         log_excerpt_help(
                             gutter,
                             "You can make it explicit by changing it to:\n");
-                        switch (ast->nodes[expr].info.type_info)
+                        switch (ctx->ast->nodes[expr].info.type_info)
                         {
                             case TYPE_INVALID:
                             case TYPE_VOID:
@@ -607,17 +609,17 @@ resolve_node_type(
                             case TYPE_INTEGER:
                             case TYPE_WORD:
                             case TYPE_BYTE:
-                                log_excerpt(source.text.data, inst_int);
+                                log_excerpt(ctx->source.text.data, inst_int);
                                 break;
 
                             case TYPE_FLOAT:
-                                log_excerpt(source.text.data, inst_float);
+                                log_excerpt(ctx->source.text.data, inst_float);
                                 break;
                             case TYPE_DOUBLE:
-                                log_excerpt(source.text.data, inst_double);
+                                log_excerpt(ctx->source.text.data, inst_double);
                                 break;
                             case TYPE_STRING:
-                                log_excerpt(source.text.data, inst_string);
+                                log_excerpt(ctx->source.text.data, inst_string);
                                 break;
 
                             case TYPE_ARRAY: break;
@@ -633,28 +635,30 @@ resolve_node_type(
                         /* fallthrough */
                     case TP_ALLOW: {
                         ast_id cast = ast_cast(
-                            ast,
+                            ctx->ast,
                             expr,
                             TYPE_BOOLEAN,
-                            ast->nodes[expr].info.location);
+                            ctx->ast->nodes[expr].info.location);
                         if (cast < 0)
                             return TYPE_INVALID;
-                        ast->nodes[n].cond.expr = cast;
+                        ctx->ast->nodes[n].cond.expr = cast;
                     }
                     break;
 
                     case TP_DISALLOW:
                         log_flc_err(
-                            source_filename,
-                            source.text.data,
-                            ast->nodes[expr].info.location,
+                            ctx->source_filename,
+                            ctx->source.text.data,
+                            ctx->ast->nodes[expr].info.location,
                             "Cannot evaluate {emph1:%s} as a boolean "
                             "expression.\n",
-                            type_to_db_name(ast->nodes[expr].info.type_info));
+                            type_to_db_name(
+                                ctx->ast->nodes[expr].info.type_info));
                         log_excerpt_1(
-                            source.text.data,
-                            ast->nodes[expr].info.location,
-                            type_to_db_name(ast->nodes[expr].info.type_info));
+                            ctx->source.text.data,
+                            ctx->ast->nodes[expr].info.location,
+                            type_to_db_name(
+                                ctx->ast->nodes[expr].info.type_info));
                         return TYPE_INVALID;
 
                     case TP_TRUNCATE:
@@ -662,43 +666,48 @@ resolve_node_type(
                     case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0);
                 }
 
-            ast->nodes[cond_branch].info.type_info = TYPE_VOID;
-            ast->nodes[n].info.type_info = TYPE_VOID;
+            ctx->ast->nodes[cond_branch].info.type_info = TYPE_VOID;
+            ctx->ast->nodes[n].info.type_info = TYPE_VOID;
             return TYPE_VOID;
         }
         break;
         case AST_COND_BRANCH: break;
 
-        case AST_LOOP: return ast->nodes[n].info.type_info = TYPE_VOID;
-        case AST_LOOP_EXIT: return ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_LOOP: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_LOOP_EXIT:
+            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
         case AST_BOOLEAN_LITERAL:
-            return ast->nodes[n].boolean_literal.info.type_info = TYPE_BOOLEAN;
+            return ctx->ast->nodes[n].boolean_literal.info.type_info
+                   = TYPE_BOOLEAN;
         case AST_BYTE_LITERAL:
-            return ast->nodes[n].byte_literal.info.type_info = TYPE_BYTE;
+            return ctx->ast->nodes[n].byte_literal.info.type_info = TYPE_BYTE;
         case AST_WORD_LITERAL:
-            return ast->nodes[n].word_literal.info.type_info = TYPE_WORD;
+            return ctx->ast->nodes[n].word_literal.info.type_info = TYPE_WORD;
         case AST_INTEGER_LITERAL:
-            return ast->nodes[n].integer_literal.info.type_info = TYPE_INTEGER;
+            return ctx->ast->nodes[n].integer_literal.info.type_info
+                   = TYPE_INTEGER;
         case AST_DWORD_LITERAL:
-            return ast->nodes[n].dword_literal.info.type_info = TYPE_DWORD;
+            return ctx->ast->nodes[n].dword_literal.info.type_info = TYPE_DWORD;
         case AST_DOUBLE_INTEGER_LITERAL:
-            return ast->nodes[n].double_integer_literal.info.type_info
+            return ctx->ast->nodes[n].double_integer_literal.info.type_info
                    = TYPE_DOUBLE_INTEGER;
         case AST_FLOAT_LITERAL:
-            return ast->nodes[n].float_literal.info.type_info = TYPE_FLOAT;
+            return ctx->ast->nodes[n].float_literal.info.type_info = TYPE_FLOAT;
         case AST_DOUBLE_LITERAL:
-            return ast->nodes[n].double_literal.info.type_info = TYPE_DOUBLE;
+            return ctx->ast->nodes[n].double_literal.info.type_info
+                   = TYPE_DOUBLE;
         case AST_STRING_LITERAL:
-            return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
+            return ctx->ast->nodes[n].string_literal.info.type_info
+                   = TYPE_STRING;
 
         case AST_CAST: {
-            ast_id    expr = ast->nodes[n].cast.expr;
-            enum type type = resolve_node_type(
-                ast, expr, cmds, source_filename, source, typemap, scope);
+            ast_id    expr = ctx->ast->nodes[n].cast.expr;
+            enum type type = resolve_node_type(ctx, expr, scope);
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
-            return type_check_and_cast_casts(ast, n, source_filename, source);
+            return type_check_and_cast_casts(
+                ctx->ast, n, ctx->source_filename, ctx->source);
         }
     }
 
@@ -714,6 +723,7 @@ sanity_check(
     int    error = 0;
     int    gutter;
     for (n = 0; n != ast->node_count; ++n)
+    {
         if (ast->nodes[n].info.type_info == TYPE_INVALID)
         {
             log_flc_err(
@@ -727,6 +737,12 @@ sanity_check(
                 source.text.data, ast->nodes[n].info.location, "");
             error = -1;
         }
+        if (ast->nodes[n].info.node_type == AST_GC)
+        {
+            log_semantic_err("AST_GC nodes still exist in tree.\n");
+            error = -1;
+        }
+    }
 
     if (error)
         log_excerpt_note(
@@ -745,8 +761,8 @@ type_check_and_cast(
     const char*               source_filename,
     struct db_source          source)
 {
-    struct typemap* typemap;
-    typemap_init(&typemap);
+    struct ctx ctx = {ast, 0, cmds, source_filename, source, NULL};
+    typemap_init(&ctx.typemap);
 
     /*
      * It's necessary to traverse the AST in a way where statements are
@@ -760,14 +776,18 @@ type_check_and_cast(
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[0].info.node_type == AST_BLOCK,
         log_semantic_err("type: %d\n", ast->nodes[0].info.node_type));
-    if (resolve_node_type(ast, 0, cmds, source_filename, source, &typemap, 0)
-        == TYPE_INVALID)
+    if (resolve_node_type(&ctx, 0, 0) == TYPE_INVALID)
     {
-        typemap_deinit(typemap);
+        typemap_deinit(ctx.typemap);
         return -1;
     }
 
-    typemap_deinit(typemap);
+    if (ctx.root != 0)
+        ast_set_root(ast, ctx.root);
+
+    ast_gc(ast);
+
+    typemap_deinit(ctx.typemap);
     return sanity_check(ast, source_filename, source);
 }
 

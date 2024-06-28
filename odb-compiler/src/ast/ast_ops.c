@@ -63,6 +63,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 
     switch (ast->nodes[n1].info.node_type)
     {
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
         case AST_ARGLIST: break;
         case AST_CONST_DECL: break;
@@ -124,7 +125,7 @@ ast_delete_node(struct ast* ast, int node)
     ODBSDK_DEBUG_ASSERT(
         ast_find_parent(ast, node) == -1,
         log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
-    ast_swap_node_idxs(ast, node, --ast->node_count);
+    ast->nodes[node].info.node_type = AST_GC;
 }
 
 static void
@@ -137,7 +138,7 @@ delete_tree_recurse(struct ast* ast, int node)
     if (right > -1)
         ast_delete_tree(ast, right);
 
-    ast_swap_node_idxs(ast, node, --ast->node_count);
+    ast->nodes[node].info.node_type = AST_GC;
 }
 
 void
@@ -152,6 +153,20 @@ ast_delete_tree(struct ast* ast, int node)
 void
 ast_gc(struct ast* ast)
 {
+    ast_id n, n2;
+    for (n = 0; n < ast->node_count; ++n)
+        if (ast->nodes[n].info.node_type == AST_GC)
+        {
+            ast_id last = --ast->node_count;
+            for (n2 = 0; n2 != ast->node_count; ++n2)
+            {
+                if (ast->nodes[n2].base.left == last)
+                    ast->nodes[n2].base.left = n;
+                if (ast->nodes[n2].base.right == last)
+                    ast->nodes[n2].base.right = n;
+            }
+            ast->nodes[n] = ast->nodes[last];
+        }
 }
 
 ast_id
@@ -185,6 +200,7 @@ ast_trees_equal(
 
     switch (a1->nodes[n1].info.node_type)
     {
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
         case AST_ARGLIST: break;
         case AST_CONST_DECL: break;

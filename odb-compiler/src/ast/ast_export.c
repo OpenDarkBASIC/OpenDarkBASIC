@@ -16,6 +16,7 @@ write_nodes(
     union ast_node* nd = &ast->nodes[n];
     switch (nd->info.node_type)
     {
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
             break;
@@ -45,13 +46,10 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", fontcolor=\"purple\", "
-                "label=\"{%.*s%.*s|%s}\"];\n",
+                "label=\"{%.*s|%s}\"];\n",
                 n,
                 nd->identifier.name.len,
                 source.text.data + nd->identifier.name.off,
-                nd->identifier.annotation ? 1 : 0,
-                nd->identifier.annotation ? (char*)&nd->identifier.annotation
-                                          : NULL,
                 type_to_db_name(nd->identifier.info.type_info));
             break;
         case AST_BINOP:
