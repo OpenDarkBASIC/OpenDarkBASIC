@@ -189,8 +189,8 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int            (*on_element)(T * elem, void* user),                    \
-        void*          user);                                                           \
+        int (*on_element)(T * elem, void* user),                               \
+        void* user);                                                           \
                                                                                \
     static inline void prefix##_init(struct prefix** v)                        \
     {                                                                          \
@@ -385,7 +385,7 @@
  * @return A pointer to the element. See warning and use with caution.
  * Vector must not be empty.
  */
-#define vec_rget(v, i) (&(v)->data[(v)->count - (i)-1])
+#define vec_rget(v, i) (&(v)->data[(v)->count - (i) - 1])
 
 /*!
  * @brief Iterates over the elements in a vector.

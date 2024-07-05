@@ -347,8 +347,8 @@ ast_loop_for(
     ast_id           next,
     struct utf8_span location)
 {
-    ast_delete_tree(ast, init);
-    ast_delete_tree(ast, end);
+    //ast_delete_tree(ast, init);
+    //ast_delete_tree(ast, end);
     ast_delete_tree(ast, next);
     ast_id exit = ast_loop_exit(ast, location);
     ast_id exit_cond_block = ast_block(ast, exit, location);
@@ -358,11 +358,11 @@ ast_loop_for(
     ast_id exit_expr = ast_binop(
         ast, BINOP_GREATER_EQUAL, exit_var, end, location, location);
     ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
-    // ast_id inc_var = dup_for_loop_var(ast, init);
-    // ast_id inc_stmt = ast_inc(ast, inc_var, step, location);
+    ast_id inc_var = dup_for_loop_var(ast, init);
+    ast_id inc_stmt = ast_inc(ast, inc_var, step, location);
     ast_id block = ast_block(ast, exit_stmt, location);
     ast_block_append(ast, block, body, location);
-    // ast_block_append_new(ast, block, inc_stmt, location);
+    ast_block_append_new(ast, block, inc_stmt, location);
     return ast_loop(ast, block, location);
 }
 

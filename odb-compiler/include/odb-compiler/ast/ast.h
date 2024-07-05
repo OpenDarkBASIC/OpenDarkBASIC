@@ -40,7 +40,7 @@
     X(BITWISE_NOT,  "..")
 /* clang-format on */
 
-typedef int ast_id;
+typedef int32_t ast_id;
 
 enum binop_type
 {
@@ -290,15 +290,16 @@ ast_deinit(struct ast* ast);
 static inline enum type
 type_annotation_to_type(enum type_annotation annotation)
 {
-  switch (annotation) {
-    case TA_NONE: break;
-    case TA_INT64: return TYPE_DOUBLE_INTEGER;
-    case TA_INT16: return TYPE_WORD;
-    case TA_DOUBLE: return TYPE_DOUBLE;
-    case TA_FLOAT: return TYPE_FLOAT;
-    case TA_STRING: return TYPE_STRING;
-  }
-  return TYPE_INTEGER;
+    switch (annotation)
+    {
+        case TA_NONE: break;
+        case TA_INT64: return TYPE_DOUBLE_INTEGER;
+        case TA_INT16: return TYPE_WORD;
+        case TA_DOUBLE: return TYPE_DOUBLE;
+        case TA_FLOAT: return TYPE_FLOAT;
+        case TA_STRING: return TYPE_STRING;
+    }
+    return TYPE_INTEGER;
 }
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);

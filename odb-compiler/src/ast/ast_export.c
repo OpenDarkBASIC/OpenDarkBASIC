@@ -16,7 +16,7 @@ write_nodes(
     union ast_node* nd = &ast->nodes[n];
     switch (nd->info.node_type)
     {
-        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
+        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
             break;

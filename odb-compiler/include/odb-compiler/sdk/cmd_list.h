@@ -7,7 +7,7 @@
 #include "odb-sdk/vec.h"
 
 struct plugin_list;
-typedef utf8_idx cmd_id;
+typedef int32_t cmd_id;
 
 /* Command parameters can also have out parameters */
 enum cmd_param_direction
@@ -24,6 +24,7 @@ struct cmd_param
     // struct utf8_span         doc;
 };
 
+ODBSDK_STATIC_ASSERT(sizeof(plugin_id) == 2);
 VEC_DECLARE_API(plugin_ids, plugin_id, 16, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(return_types_list, enum type, 32, ODBCOMPILER_PUBLIC_API)
 VEC_DECLARE_API(param_types_list, struct cmd_param, 32, ODBCOMPILER_PUBLIC_API)
