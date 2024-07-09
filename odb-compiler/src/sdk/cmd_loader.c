@@ -12,22 +12,22 @@
 extern "C" {
 #include "odb-compiler/sdk/cmd_cache.h"
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-compiler/sdk/dlparser.h"
 #include "odb-compiler/sdk/plugin_list.h"
-}
 
-int
-load_dbpro_commands(
-    struct cmd_list*        commands,
-    plugin_id               plugin_id,
-    const LIEF::PE::Binary* pe,
-    struct ospathc          filepath);
-
-int
-load_odb_commands(
-    struct cmd_list*    commands,
-    plugin_id           plugin_id,
-    const LIEF::Binary* binary,
-    struct ospathc      filepath);
+// int
+// load_dbpro_commands(
+//     struct cmd_list*        commands,
+//     plugin_id               plugin_id,
+//     const LIEF::PE::Binary* pe,
+//     struct ospathc          filepath);
+//
+// int
+// load_odb_commands(
+//     struct cmd_list*    commands,
+//     plugin_id           plugin_id,
+//     const LIEF::Binary* binary,
+//     struct ospathc      filepath);
 
 static int
 plugin_is_cached(const struct plugin_ids* cached_plugins, plugin_id id)
@@ -41,40 +41,10 @@ plugin_is_cached(const struct plugin_ids* cached_plugins, plugin_id id)
     return 0;
 }
 
-static LIEF::Binary*
-load_binary(const struct plugin_info* plugin, enum target_platform platform)
+static int
+on_plugin_string(const char* str, void* user)
 {
-    switch (platform)
-    {
-        case TARGET_WINDOWS: {
-            return static_cast<LIEF::Binary*>(
-                LIEF::PE::Parser::parse(
-                    ospath_cstr(plugin->filepath),
-                    LIEF::PE::ParserConfig{
-                        false, ///< Parse PE Authenticode signature
-                        true,  ///< Parse PE Exports Directory
-                        false, ///< Parse PE Import Directory
-                        true,  ///< Parse PE resources tree
-                        false, ///< Parse PE relocations
-                    })
-                    .release());
-        }
-
-        case TARGET_LINUX:
-            return static_cast<LIEF::Binary*>(
-                LIEF::ELF::Parser::parse(ospath_cstr(plugin->filepath))
-                    .release());
-
-        case TARGET_MACOS:
-            log_cmd_err("Loading MachO not implemented\n");
-            return nullptr;
-            /*
-                binary.reset(static_cast<LIEF::Binary*>(
-                    LIEF::MachO::Parser::parse(ospath_cstr(plugin->filepath))
-                        .release()));*/
-    }
-
-    return nullptr;
+    return 0;
 }
 
 int
@@ -95,25 +65,27 @@ cmd_list_load_from_plugins(
     if (cmd_cache_load(&cached_plugins, plugins, cmds, sdk_type, arch, platform)
         != 0)
     {
-        log_cmd_warn(
+        log_sdk_warn(
             "Failed to load command cache. All plugins will be parsed.\n");
     }
 
     vec_enumerate(plugins, plugin_id, plugin)
     {
+        dlparser_strings(ospathc(plugin->filepath), on_plugin_string, NULL);
+#if 0
         if (plugin_is_cached(cached_plugins, plugin_id))
             continue;
 
         std::unique_ptr<LIEF::Binary> binary(load_binary(plugin, platform));
         if (binary.get() == nullptr)
         {
-            log_cmd_warn(
+            log_sdk_warn(
                 "Failed to load plugin {quote:%s}. Plugin will be ignored...\n",
                 ospath_cstr(plugin->filepath));
             continue;
         }
 
-        log_cmd_progress(
+        log_sdk_progress(
             plugin_id,
             plugin_list_count(plugins),
             "Parsing plugin %s\n",
@@ -124,7 +96,7 @@ cmd_list_load_from_plugins(
             case SDK_DBPRO:
                 if (binary->format() != LIEF::Binary::FORMATS::PE)
                 {
-                    log_cmd_warn(
+                    log_sdk_warn(
                         "{quote:%s} is not a valid PE file. Plugin will be "
                         "ignored...\n",
                         ospath_cstr(plugin->filepath));
@@ -153,10 +125,11 @@ cmd_list_load_from_plugins(
                 }
                 break;
         }
+#endif
     }
 
     if (cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
-        log_cmd_warn(
+        log_sdk_warn(
             "Failed to save command cache. All plugins will be parsed next "
             "time.\n");
 

@@ -166,9 +166,10 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_cache.c"
     "src/sdk/used_cmds.c"
     "src/sdk/cmd_list.c"
-    "src/sdk/cmd_loader.cpp"
-    "src/sdk/cmd_loader_dbpro.cpp"
-    "src/sdk/cmd_loader_odb.cpp"
+    "src/sdk/cmd_loader.c"
+    #"src/sdk/cmd_loader_dbpro.cpp"
+    #"src/sdk/cmd_loader_odb.cpp"
+    "src/sdk/dlparser.c"
     "src/sdk/plugin_list.c"
     "src/sdk/sdk_type.c"
 
@@ -268,37 +269,34 @@ odb_target_properties (odb-compiler
 # Dependencies.
 ###############################################################################
 
-include (FetchContent)
+#include (FetchContent)
 
 # LIEF is required for loading commands from shared libraries
-set (LIEF_ART OFF CACHE BOOL "")
-set (LIEF_C_API OFF CACHE BOOL "")
-set (LIEF_DEX OFF CACHE BOOL "")
-set (LIEF_ENABLE_JSON OFF CACHE BOOL "")
-set (LIEF_EXAMPLES OFF CACHE BOOL "")
-set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "")
-set (LIEF_INSTALL OFF CACHE BOOL "")
-set (LIEF_LOGGING OFF CACHE BOOL "")
-set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "")
-set (LIEF_OAT OFF CACHE BOOL "")
-set (LIEF_PYTHON_API OFF CACHE BOOL "")
-set (LIEF_USE_CCACHE OFF CACHE BOOL "")
-set (LIEF_VDEX OFF CACHE BOOL "")
-FetchContent_Declare (
-    lief
-    URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
-    URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
-)
-FetchContent_MakeAvailable (lief)
-target_compile_options (LIB_LIEF
-    PRIVATE
-        $<$<CXX_COMPILER_ID:GNU>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
-        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
-        $<$<CXX_COMPILER_ID:AppleClang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>)
-odb_target_properties (LIB_LIEF
-    PROPERTIES
-        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
-target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
+#set (LIEF_ART OFF CACHE BOOL "")
+#set (LIEF_C_API OFF CACHE BOOL "")
+#set (LIEF_DEX OFF CACHE BOOL "")
+#set (LIEF_ENABLE_JSON OFF CACHE BOOL "")
+#set (LIEF_EXAMPLES OFF CACHE BOOL "")
+#set (LIEF_FROZEN_ENABLED OFF CACHE BOOL "")
+#set (LIEF_INSTALL OFF CACHE BOOL "")
+#set (LIEF_LOGGING OFF CACHE BOOL "")
+#set (LIEF_LOGGING_DEBUG OFF CACHE BOOL "")
+#set (LIEF_OAT OFF CACHE BOOL "")
+#set (LIEF_PYTHON_API OFF CACHE BOOL "")
+#set (LIEF_USE_CCACHE OFF CACHE BOOL "")
+#set (LIEF_VDEX OFF CACHE BOOL "")
+#FetchContent_Declare (
+#    lief
+#    URL https://github.com/lief-project/LIEF/archive/refs/tags/0.14.1.tar.gz
+#    URL_HASH SHA256=92916dcb3178353d863aef4f409186889983c56e025b774741d5316a72ec3a7d
+#)
+#FetchContent_MakeAvailable (lief)
+#target_compile_options (LIB_LIEF
+#    PRIVATE
+#        $<$<CXX_COMPILER_ID:GNU>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
+#        $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
+#        $<$<CXX_COMPILER_ID:AppleClang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>)
+#target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 # reproc
 
