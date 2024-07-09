@@ -77,21 +77,21 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 
 %%
 <INITIAL>{
-    (?i:remstart)       { BEGIN(MULTI_COMMENT); dbg("multiline remark"); }
-    "/*"                { BEGIN(MULTI_COMMENT_C); dbg("multiline remark"); }
-    ((?i:rem)|"`"|"//") { BEGIN(SINGLE_COMMENT); dbg("single line remark"); }
+    (?i:remstart)       { BEGIN(MULTI_COMMENT); RETURN_TOKEN(TOK_REMSTART); }
+    "/*"                { BEGIN(MULTI_COMMENT_C); RETURN_TOKEN(TOK_REMSTART); }
+    ((?i:rem)|"`"|"//") { BEGIN(SINGLE_COMMENT); RETURN_TOKEN(TOK_REMSTART); }
 }
 <SINGLE_COMMENT>{
     .
-    \n                  { BEGIN(INITIAL); }
+    \n                  { BEGIN(INITIAL); RETURN_TOKEN(TOK_REMEND); }
 }
 <MULTI_COMMENT>{
-    (?i:remend)         { BEGIN(INITIAL); dbg("multiline remark end"); }
+    (?i:remend)         { BEGIN(INITIAL); RETURN_TOKEN(TOK_REMEND); }
     .
     \n
 }
 <MULTI_COMMENT_C>{
-    "*/"                { BEGIN(INITIAL); dbg("multiline remark end"); }
+    "*/"                { BEGIN(INITIAL); RETURN_TOKEN(TOK_REMEND); }
     .
     \n
 }

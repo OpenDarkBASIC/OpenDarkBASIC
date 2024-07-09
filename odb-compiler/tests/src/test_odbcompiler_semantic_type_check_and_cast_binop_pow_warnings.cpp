@@ -44,28 +44,6 @@ TEST_F(NAME, exponent_truncated_from_double)
     EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_FLOAT));
 }
 
-TEST_F(NAME, exponent_cast_to_integer)
-{
-    addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
-    ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(0));
-    EXPECT_THAT(log(), LogEq(""));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
-    EXPECT_THAT(
-        ast.nodes[rhs].info.node_type,
-        Eq(AST_CAST)); // BYTE literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
-}
-
 TEST_F(NAME, exponent_strange_conversion)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
@@ -152,21 +130,4 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
         Eq(AST_CAST)); // LONG INTEGER literal cast to INTEGER
     EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
     EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
-}
-
-TEST_F(NAME, exponent_invalid_type)
-{
-    addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
-    ASSERT_THAT(parse("print 2.0 ^ \"oops\""), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
-        Eq(-1));
-    EXPECT_THAT(
-        log(),
-        LogEq("test:1:13: error: Incompatible exponent type STRING can't be "
-              "converted to INTEGER.\n"
-              " 1 | print 2.0 ^ \"oops\"\n"
-              "   |       >~~ ^ ~~~~~< STRING\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
 }

@@ -1,12 +1,16 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
+#include "gmock/gmock.h"
+
+extern "C" {
+#include "odb-compiler/ast/ast.h"
+}
 
 #define NAME odbcompiler_db_parser_negative_integer_literal
 
 using namespace testing;
 
-class NAME : public DBParserHelper
+struct NAME : DBParserHelper
 {
-public:
 };
 
 TEST_F(NAME, negative_zero_is_just_zero)

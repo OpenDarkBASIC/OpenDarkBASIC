@@ -119,6 +119,8 @@
 %token '\n' "end of line"
 %token ':' "colon"
 %token ';' "semi-colon"
+%token REMSTART "Remark begin"
+%token REMEND "Remark end"
 
 /* Keywords */
 %token CONSTANT "constant"
@@ -275,7 +277,7 @@ istmt
   | loop_exit                               { $$ = $1; }
   ;
 expr
-  : '(' expr ')'                            { $$ = $2; }
+  : '(' expr ')'                            { $$ = $2; @$ = @2; }
   /* Unary operators */
   | '+' expr %prec UPLUS                    { $$ = $2; }
   | '-' expr %prec UMINUS                   { $$ = ast_unop(ctx->ast, UNOP_NEGATE, $2, @$); }

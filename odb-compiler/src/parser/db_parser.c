@@ -49,7 +49,7 @@ db_parser_deinit(struct db_parser* parser)
 }
 
 static struct token*
-scan_next_token(
+get_next_assembled_token(
     struct token_queue*    tokens,
     struct utf8*           cmd_buf,
     const struct cmd_list* commands,
@@ -63,6 +63,7 @@ scan_next_token(
     if (token_queue_is_empty(*tokens))
     {
         token = token_queue_emplace(*tokens);
+        /* Impossible to run out of memory here */
         ODBSDK_DEBUG_ASSERT(
             token != NULL,
             log_parser_err("token->pushed_char: %d\n", token->pushed_char));
@@ -182,6 +183,43 @@ scan_next_token(
     return token_queue_take(*tokens);
 }
 
+static struct token*
+get_next_token_ignoring_comments(
+    struct token_queue*    tokens,
+    struct utf8*           cmd_buf,
+    const struct cmd_list* commands,
+    const char*            filename,
+    const char*            source_text,
+    dbscan_t               scanner,
+    DBLTYPE*               scanner_location)
+{
+    struct token* expect_remend;
+
+    while (1)
+    {
+        struct token* token = get_next_assembled_token(
+            tokens, cmd_buf, commands, source_text, scanner, scanner_location);
+        if (token == NULL)
+            return NULL;
+        if (token->pushed_char != TOK_REMSTART)
+            return token;
+
+        expect_remend = get_next_assembled_token(
+            tokens, cmd_buf, commands, source_text, scanner, scanner_location);
+        if (expect_remend->pushed_char == TOK_REMEND)
+            continue;
+
+        log_flc_err(
+            filename,
+            source_text,
+            token->pushed_location,
+            "Unterminated remark.\n");
+        log_excerpt_1(
+            source_text, token->pushed_location, "Remark starts here.");
+        return NULL;
+    }
+}
+
 int
 db_parse(
     struct db_parser*      parser,
@@ -220,10 +258,11 @@ db_parse(
 
     do
     {
-        struct token* token = scan_next_token(
+        struct token* token = get_next_token_ignoring_comments(
             &tokens,
             &cmd_buf,
             commands,
+            filename,
             source.text.data,
             parser->scanner,
             &scanner_location);

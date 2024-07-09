@@ -370,17 +370,17 @@ endif()
 #       Linking them twice causes multiple instances of the same LLVM objects
 #       to be registered, resulting in the error:
 #           "LLVM ERROR: inconsistency in registered CommandLine options"
-#llvm_config (odb-compiler ${llvm_use_shared}
-#    Core
-#    BitWriter
-#    AArch64AsmParser
-#    AArch64CodeGen
-#    ARMAsmParser
-#    ARMCodeGen
-#    WebAssemblyAsmParser
-#    WebAssemblyCodeGen
-#    X86AsmParser
-#    X86CodeGen)
+llvm_config (odb-compiler ${llvm_use_shared}
+    Core
+    BitWriter
+    AArch64AsmParser
+    AArch64CodeGen
+    ARMAsmParser
+    ARMCodeGen
+    WebAssemblyAsmParser
+    WebAssemblyCodeGen
+    X86AsmParser
+    X86CodeGen)
 find_package (LLD REQUIRED CONFIG)
 target_link_libraries (odb-compiler
     PRIVATE
@@ -505,21 +505,31 @@ if (ODBCOMPILER_TESTS)
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
         "tests/src/DBParserHelper.cpp"
 
-        "tests/src/sdk/test_odbcompiler_cmd_list.cpp"
+        "tests/src/test_odbcompiler_cmd_list.cpp"
 
-        "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_conditionals.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
+        "tests/src/test_odbcompiler_db_parser_boolean_literal.cpp"
+        "tests/src/test_odbcompiler_db_parser_integer_literal.cpp"
+        "tests/src/test_odbcompiler_db_parser_conditionals.cpp"
+        "tests/src/test_odbcompiler_db_parser_conditionals_errors.cpp"
+        "tests/src/test_odbcompiler_db_parser_command.cpp"
+        "tests/src/test_odbcompiler_db_parser_command_matcher.cpp"
+        "tests/src/test_odbcompiler_db_parser_loop_for.cpp"
+        "tests/src/test_odbcompiler_db_parser_loop_for_warnings.cpp"
+        "tests/src/test_odbcompiler_db_parser_loop_for_errors.cpp"
+        "tests/src/test_odbcompiler_db_parser_remarks.cpp"
+        "tests/src/test_odbcompiler_db_parser_remarks_errors.cpp"
 
-        "tests/src/semantic/test_odbcompiler_semantic_conditionals.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp")
+        "tests/src/test_odbcompiler_semantic_conditionals_warnings.cpp"
+        "tests/src/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_warnings.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_errors.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow_warnings.cpp"
+        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow_errors.cpp"
+        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
+        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
+        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
