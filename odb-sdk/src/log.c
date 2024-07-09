@@ -960,3 +960,40 @@ log_excerpt_vimpl(
     fprintf_with_color(severity);
     vfprintf_with_color(fmt, &args);
 }
+
+void
+log_hex_ascii(const void* data, int len)
+{
+    int i;
+    for (i = 0; i != 16; ++i)
+        log_printf("%c  ", "0123456789ABCDEF"[i]);
+    log_putc(' ');
+    for (i = 0; i != 16; ++i)
+        log_putc("0123456789ABCDEF"[i]);
+    log_putc('\n');
+
+    for (i = 0; i < len;)
+    {
+        int  j;
+        uint8_t c = ((const uint8_t*)data)[i];
+        for (j = 0; j != 16; ++j)
+        {
+            if (i + j < len)
+                log_printf("%02x ", c);
+            else
+                log_printf("   ");
+        }
+
+        log_printf(" ");
+        for (j = 0; j != 16 && i + j != len; ++j)
+        {
+            if (c >= 32 && c < 127) /* printable ascii */
+                log_putc(c);
+            else
+                log_putc('.');
+        }
+
+        log_printf("\n");
+        i += 16;
+    }
+}

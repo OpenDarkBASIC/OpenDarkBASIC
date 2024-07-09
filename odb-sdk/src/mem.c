@@ -320,44 +320,7 @@ mem_deinit(void)
 
 #if defined(ODBSDK_MEM_HEX_DUMP)
         if (info->size <= ODBSDK_MEM_HEX_DUMP_SIZE)
-        {
-            intptr_t i;
-            uint8_t* p = (void*)info->location;
-            log_sdk_note("Hex Dump:\n");
-
-            log_raw("  ");
-            for (i = 0; i != 16; ++i)
-                log_raw("%c  ", "0123456789ABCDEF"[i]);
-            log_raw(" ");
-            for (i = 0; i != 16; ++i)
-                log_raw("%c", "0123456789ABCDEF"[i]);
-            log_raw("\n");
-
-            for (i = 0; i < info->size;)
-            {
-                int j;
-                log_raw("  ");
-                for (j = 0; j != 16; ++j)
-                {
-                    if (i + j < info->size)
-                        log_raw("%02x ", p[i]);
-                    else
-                        log_raw("   ");
-                }
-
-                log_raw(" ");
-                for (j = 0; j != 16 && i + j != info->size; ++j)
-                {
-                    if (p[i] >= 32 && p[i] < 127) /* printable ascii */
-                        log_raw("%c", p[i]);
-                    else
-                        log_raw(".");
-                }
-
-                log_raw("\n");
-                i += 16;
-            }
-        }
+            log_hex_ascii((void*)info->location, info->size);
 #endif
     }
     

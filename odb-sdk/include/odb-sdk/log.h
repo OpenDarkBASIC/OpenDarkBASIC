@@ -248,4 +248,7 @@ static inline int
 log_oom(size_t bytes, const char* func_name)
 { log_sdk_err("Failed to allocate %lu bytes in %s\n", bytes, func_name); return -1; }
 
+ODBSDK_PUBLIC_API void
+log_hex_ascii(const void* data, int len);
+
 /* clang-format on */
