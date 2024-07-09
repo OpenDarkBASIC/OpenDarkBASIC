@@ -1,5 +1,6 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Commands.hpp"
+#include "odb-sdk/utf8.h"
 
 extern "C" {
 #include "odb-compiler/ast/ast.h"
@@ -56,7 +57,6 @@ parseDBA(const std::vector<std::string>& args)
         if (db_parser_init(&result.parser) != 0)
             goto init_parser_failed;
 
-        ast_init(&result.ast);
         if (db_parse(
                 &result.parser,
                 &result.ast,

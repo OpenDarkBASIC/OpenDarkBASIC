@@ -3,6 +3,7 @@
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-sdk/utf8.h"
 
 /*!
@@ -303,6 +304,7 @@ type_annotation_to_type(enum type_annotation annotation)
 }
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
+void ast_block_append(struct ast* ast, ast_id block, ast_id append_block, struct utf8_span location);
 ast_id ast_block_append_new(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
@@ -317,7 +319,7 @@ ast_id ast_cond_branch(struct ast* ast, ast_id yes, ast_id no, struct utf8_span 
 ast_id ast_loop(struct ast* ast, ast_id body, struct utf8_span location);
 ast_id ast_loop_while(struct ast* ast, ast_id body, ast_id expr, struct utf8_span location);
 ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_span location);
-ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span location);
+ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span location, const char* source_filename, struct db_source source);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);

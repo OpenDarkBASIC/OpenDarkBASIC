@@ -4,6 +4,7 @@
 #include "odb-sdk/config.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
+#include "odb-sdk/utf8.h"
 #include <assert.h>
 
 static ast_id
@@ -328,15 +329,6 @@ ast_loop_until(
     return ast_loop(ast, body, location);
 }
 
-static ast_id
-dup_for_loop_var(struct ast* ast, ast_id init)
-{
-    ODBSDK_DEBUG_ASSERT(
-        ast->nodes[init].info.node_type == AST_ASSIGNMENT,
-        log_parser_err("type: %d\n", ast->nodes[init].info.node_type));
-    return ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
-}
-
 ast_id
 ast_loop_for(
     struct ast*      ast,
@@ -345,25 +337,59 @@ ast_loop_for(
     ast_id           end,
     ast_id           step,
     ast_id           next,
-    struct utf8_span location)
+    struct utf8_span location,
+    const char*      source_filename,
+    struct db_source source)
 {
-    //ast_delete_tree(ast, init);
-    //ast_delete_tree(ast, end);
-    ast_delete_tree(ast, next);
+    if (next > -1)
+    {
+        ast_id lvalue = ast->nodes[init].assignment.lvalue;
+        if (!ast_trees_equal(source, ast, lvalue, next))
+        {
+            int gutter;
+            log_flc_warn(
+                source_filename,
+                source.text.data,
+                ast->nodes[next].info.location,
+                "Loop variable in next statement is different from the one "
+                "used in the for-loop statement.\n");
+            gutter = log_excerpt_1(
+                source.text.data, ast->nodes[next].info.location, "");
+            log_excerpt_note(gutter, "Loop variable declared here:\n");
+            log_excerpt_1(
+                source.text.data, ast->nodes[lvalue].info.location, "");
+        }
+        ast_delete_tree(ast, next);
+    }
+
+    ODBSDK_DEBUG_ASSERT(init > -1, log_parser_err("init: %d\n", init));
+    ODBSDK_DEBUG_ASSERT(end > -1, log_parser_err("init: %d\n", end));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[init].info.node_type == AST_ASSIGNMENT,
+        log_parser_err("type: %d\n", ast->nodes[init].info.node_type));
+
+    if (step == -1)
+        step = ast_integer_literal(ast, 1, location);
+
     ast_id exit = ast_loop_exit(ast, location);
     ast_id exit_cond_block = ast_block(ast, exit, location);
     ast_id exit_cond_branch
         = ast_cond_branch(ast, exit_cond_block, -1, location);
-    ast_id exit_var = dup_for_loop_var(ast, init);
+    ast_id exit_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
     ast_id exit_expr = ast_binop(
         ast, BINOP_GREATER_EQUAL, exit_var, end, location, location);
     ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
-    ast_id inc_var = dup_for_loop_var(ast, init);
+    ast_id inc_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
     ast_id inc_stmt = ast_inc(ast, inc_var, step, location);
     ast_id block = ast_block(ast, exit_stmt, location);
-    ast_block_append(ast, block, body, location);
+
+    if (body > -1)
+        ast_block_append(ast, block, body, location);
     ast_block_append_new(ast, block, inc_stmt, location);
-    return ast_loop(ast, block, location);
+    ast_id loop_stmt = ast_loop(ast, block, location);
+    ast_id init_block = ast_block(ast, init, location);
+    ast_block_append_new(ast, init_block, loop_stmt, location);
+    return init_block;
 }
 
 ast_id

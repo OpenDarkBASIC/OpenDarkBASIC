@@ -10,6 +10,7 @@
     #include "odb-sdk/utf8.h"  /* %union contains struct utf8_span */
     #include "odb-compiler/sdk/cmd_list.h"  /* %union contains cmd_id */
     #include "odb-compiler/ast/ast.h"  /* %union contains ast_id */
+    #include "odb-compiler/parser/db_source.h"
 
     typedef void* dbscan_t;
     typedef struct dbpstate dbpstate;
@@ -18,7 +19,7 @@
     struct parse_param
     {
         const char* filename;
-        const char* source;
+        struct db_source source;
         struct ast* ast;
     };
 }
@@ -243,8 +244,15 @@ program
   | maybe_seps                              {}
   ;
 block
-  : block seps stmt                         { $$ = $1; ast_block_append_new(ctx->ast, $$, $3, @$); }
-  | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
+  : block seps stmt                         { $$ = $1; 
+                                              if (ctx->ast->nodes[$3].info.node_type == AST_BLOCK)
+                                                  ast_block_append(ctx->ast, $$, $3, @$);
+                                              else
+                                                  ast_block_append_new(ctx->ast, $$, $3, @$); }
+  | stmt                                    { if (ctx->ast->nodes[$1].info.node_type == AST_BLOCK)
+                                                  $$ = $1;
+                                              else
+                                                  $$ = ast_block(ctx->ast, $1, @$); }
   ;
 block_or_seps
   : seps block seps                         { $$ = $2; }
@@ -349,13 +357,14 @@ loop_while
 loop_until
   : REPEAT block_or_seps UNTIL expr         { $$ = ast_loop_until(ctx->ast, $2, $4, @$); }
   ;
+// NOTE: ast_loop_for() returns a block, not a statement!
 loop_for
   : FOR assignment TO expr STEP expr
         block_or_seps
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $7, $2, $4, $6, $8, @$); }
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $7, $2, $4, $6, $8, @$, ctx->filename, ctx->source); }
   | FOR assignment TO expr
         block_or_seps
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $5, $2, $4, -1, $6, @$); }
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $5, $2, $4, -1, $6, @$, ctx->filename, ctx->source); }
   ;
 loop_next
   : NEXT identifier                         { $$ = $2; }
@@ -405,11 +414,11 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     {
         log_flc_err(
             parse_param->filename,
-            parse_param->source,
+            parse_param->source.text.data,
             *yypcontext_location(ctx),
             "Unexpected %s\n",
             yysymbol_name(lookahead));
-        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "");
+        log_excerpt_1(parse_param->source.text.data, *yypcontext_location(ctx), "");
     }
 
     if (n < 0)
@@ -420,7 +429,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
         int i;
         log_flc_err(
             parse_param->filename,
-            parse_param->source,
+            parse_param->source.text.data,
             *yypcontext_location(ctx),
             "Expected ");
         for (i = 0; i < n; ++i)

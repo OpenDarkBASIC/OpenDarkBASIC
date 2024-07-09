@@ -1,6 +1,6 @@
 #pragma once
 
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/parser/db_source.h"
 
 struct ast;
 struct cmd_list;
@@ -38,21 +38,4 @@ ast_is_in_subtree_of(const struct ast* ast, int node, int root);
 
 int
 ast_trees_equal(
-    const struct db_source* source,
-    const struct ast*       a1,
-    int                     n1,
-    const struct ast*       a2,
-    int                     n2);
-
-/*!
- * Finds the most general type following the type promotion rules of a given
- * expression. For example, if we have the expression "3 + 5.6", then this
- * function will end up returning TYPE_DOUBLE, because the result of this
- * operation results in "3" being promoted to a double.
- *
- * Generally, it only makes sense to call this on nodes that return values, i.e.
- * nodes that are expressions. Since commands can appear in expressions, the
- * command list must be passed into find out the return type.
- */
-enum type
-ast_typeof(const struct ast* ast, int expr, const struct cmd_list* cmds);
+    struct db_source source, const struct ast* ast, int n1, int n2);

@@ -195,7 +195,7 @@ db_parse(
     int                parse_result = -1;
     struct utf8_span   scanner_location = empty_utf8_span();
     struct utf8        cmd_buf = empty_utf8();
-    struct parse_param parse_param = {filename, source.text.data, ast};
+    struct parse_param parse_param = {filename, source, ast};
 
     buffer_state = db_scan_buffer(
         source.text.data, source.text.len + 2, parser->scanner);

@@ -187,18 +187,14 @@ ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root)
 
 ast_id
 ast_trees_equal(
-    const struct db_source* source,
-    const struct ast*       a1,
-    ast_id                  n1,
-    const struct ast*       a2,
-    ast_id                  n2)
+    struct db_source source, const struct ast* ast, ast_id n1, ast_id n2)
 {
-    if (a1->nodes[n1].info.node_type != a2->nodes[n2].info.node_type)
+    if (ast->nodes[n1].info.node_type != ast->nodes[n2].info.node_type)
         return 0;
-    if (a1->nodes[n1].info.type_info != a2->nodes[n2].info.type_info)
+    if (ast->nodes[n1].info.type_info != ast->nodes[n2].info.type_info)
         return 0;
 
-    switch (a1->nodes[n1].info.node_type)
+    switch (ast->nodes[n1].info.node_type)
     {
         case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
@@ -207,24 +203,24 @@ ast_trees_equal(
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */
-            if (a1->nodes[n1].cmd.id != a2->nodes[n2].cmd.id)
+            if (ast->nodes[n1].cmd.id != ast->nodes[n2].cmd.id)
                 return 0;
             break;
         case AST_ASSIGNMENT: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
                     utf8_span_view(
-                        source->text.data, a2->nodes[n1].identifier.name),
+                        source.text.data, ast->nodes[n1].identifier.name),
                     utf8_span_view(
-                        source->text.data, a2->nodes[n2].identifier.name)))
+                        source.text.data, ast->nodes[n2].identifier.name)))
                 return 0;
             break;
         case AST_BINOP:
-            if (a1->nodes[n1].binop.op != a2->nodes[n2].binop.op)
+            if (ast->nodes[n1].binop.op != ast->nodes[n2].binop.op)
                 return 0;
             break;
         case AST_UNOP:
-            if (a1->nodes[n1].unop.op != a2->nodes[n2].unop.op)
+            if (ast->nodes[n1].unop.op != ast->nodes[n2].unop.op)
                 return 0;
             break;
         case AST_COND: break;
@@ -232,81 +228,76 @@ ast_trees_equal(
         case AST_LOOP: break;
         case AST_LOOP_EXIT: break;
         case AST_BOOLEAN_LITERAL:
-            if (a1->nodes[n1].boolean_literal.is_true
-                != a2->nodes[n2].boolean_literal.is_true)
+            if (ast->nodes[n1].boolean_literal.is_true
+                != ast->nodes[n2].boolean_literal.is_true)
                 return 0;
             break;
         case AST_BYTE_LITERAL:
-            if (a1->nodes[n1].byte_literal.value
-                != a2->nodes[n2].byte_literal.value)
+            if (ast->nodes[n1].byte_literal.value
+                != ast->nodes[n2].byte_literal.value)
                 return 0;
             break;
         case AST_WORD_LITERAL:
-            if (a1->nodes[n1].word_literal.value
-                != a2->nodes[n2].word_literal.value)
+            if (ast->nodes[n1].word_literal.value
+                != ast->nodes[n2].word_literal.value)
                 return 0;
             break;
         case AST_INTEGER_LITERAL:
-            if (a1->nodes[n1].integer_literal.value
-                != a2->nodes[n2].integer_literal.value)
+            if (ast->nodes[n1].integer_literal.value
+                != ast->nodes[n2].integer_literal.value)
                 return 0;
             break;
         case AST_DWORD_LITERAL:
-            if (a1->nodes[n1].dword_literal.value
-                != a2->nodes[n2].dword_literal.value)
+            if (ast->nodes[n1].dword_literal.value
+                != ast->nodes[n2].dword_literal.value)
                 return 0;
             break;
         case AST_DOUBLE_INTEGER_LITERAL:
-            if (a1->nodes[n1].double_integer_literal.value
-                != a2->nodes[n2].double_integer_literal.value)
+            if (ast->nodes[n1].double_integer_literal.value
+                != ast->nodes[n2].double_integer_literal.value)
                 return 0;
             break;
         case AST_FLOAT_LITERAL:
-            if (a1->nodes[n1].float_literal.value
-                != a2->nodes[n2].float_literal.value)
+            if (ast->nodes[n1].float_literal.value
+                != ast->nodes[n2].float_literal.value)
                 return 0;
             break;
         case AST_DOUBLE_LITERAL:
-            if (a1->nodes[n1].double_literal.value
-                != a2->nodes[n2].double_literal.value)
+            if (ast->nodes[n1].double_literal.value
+                != ast->nodes[n2].double_literal.value)
                 return 0;
             break;
         case AST_STRING_LITERAL:
             if (!utf8_equal(
                     utf8_span_view(
-                        source->text.data, a1->nodes[n1].string_literal.str),
+                        source.text.data, ast->nodes[n1].string_literal.str),
                     utf8_span_view(
-                        source->text.data, a2->nodes[n2].string_literal.str)))
+                        source.text.data, ast->nodes[n2].string_literal.str)))
                 return 0;
             break;
         case AST_CAST: break;
     }
 
-    if (a1->nodes[n1].base.left >= 0 && a2->nodes[n2].base.left < 0)
+    if (ast->nodes[n1].base.left >= 0 && ast->nodes[n2].base.left < 0)
         return 0;
-    if (a1->nodes[n1].base.left < 0 && a2->nodes[n2].base.left >= 0)
+    if (ast->nodes[n1].base.left < 0 && ast->nodes[n2].base.left >= 0)
         return 0;
-    if (a1->nodes[n1].base.right >= 0 && a2->nodes[n2].base.right < 0)
+    if (ast->nodes[n1].base.right >= 0 && ast->nodes[n2].base.right < 0)
         return 0;
-    if (a1->nodes[n1].base.right < 0 && a2->nodes[n2].base.right >= 0)
+    if (ast->nodes[n1].base.right < 0 && ast->nodes[n2].base.right >= 0)
         return 0;
 
-    if (a1->nodes[n1].base.left >= 0)
+    if (ast->nodes[n1].base.left >= 0)
         if (ast_trees_equal(
-                source,
-                a1,
-                a1->nodes[n1].base.left,
-                a2,
-                a2->nodes[n2].base.left)
+                source, ast, ast->nodes[n1].base.left, ast->nodes[n2].base.left)
             == 0)
             return 0;
-    if (a1->nodes[n1].base.right >= 0)
+    if (ast->nodes[n1].base.right >= 0)
         if (ast_trees_equal(
                 source,
-                a1,
-                a1->nodes[n1].base.right,
-                a2,
-                a2->nodes[n2].base.right)
+                ast,
+                ast->nodes[n1].base.right,
+                ast->nodes[n2].base.right)
             == 0)
             return 0;
 

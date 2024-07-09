@@ -513,6 +513,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
 
         "tests/src/semantic/test_odbcompiler_semantic_conditionals.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
