@@ -353,41 +353,57 @@ target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 ###############################################################################
 
 find_package (LLVM REQUIRED CONFIG)
-
-# This is apparently deprecated since 4 years
-# https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
-#
-#llvm_map_components_to_libnames (llvm_libs <list of LLVM libs>)
-#target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
-#target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
-
-# This is how you're supposed to do it by reading LLVM-Config.cmake
-# https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
-if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
-    set (llvm_use_shared USE_SHARED)
-endif()
-# NOTE: It seems when linking the LLD libraries, these are all already included
-#       Linking them twice causes multiple instances of the same LLVM objects
-#       to be registered, resulting in the error:
-#           "LLVM ERROR: inconsistency in registered CommandLine options"
-#llvm_config (odb-compiler ${llvm_use_shared}
-#    Core
-#    BitWriter
-#    AArch64AsmParser
-#    AArch64CodeGen
-#    ARMAsmParser
-#    ARMCodeGen
-#    WebAssemblyAsmParser
-#    WebAssemblyCodeGen
-#    X86AsmParser
-#    X86CodeGen)
 find_package (LLD REQUIRED CONFIG)
-target_link_libraries (odb-compiler
-    PRIVATE
-        lldCommon
-        lldCOFF
-        lldELF
-        lldMachO)
+
+set (ODBCOMPILER_LLVM_LIBS
+    Core
+    BitWriter
+    AArch64AsmParser
+    AArch64CodeGen
+    ARMAsmParser
+    ARMCodeGen
+    WebAssemblyAsmParser
+    WebAssemblyCodeGen
+    X86AsmParser
+    X86CodeGen)
+
+# These are the LLD libraries we need
+set (ODBCOMPILER_LLD_LIBS
+    lldCOFF
+    lldELF
+    lldMachO
+    lldCommon)
+
+if (${ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS})
+    message (STATUS "Using shared LLVM libs")
+    # Each LLD target is actually just a list of LLVM libraries. The problem is,
+    # they are hardcoded and don't respect USE_SHARED, which results in us linking
+    # both the static AND shared versions of LLVM libraries if we enable
+    # ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS. For this reason, extract all
+    # dependencies of the LLD targets and append them to the LLVM libs list.
+    foreach (target ${ODBCOMPILER_LLD_LIBS})
+        get_target_property (deps ${target} INTERFACE_LINK_LIBRARIES)
+        set_property (TARGET ${target} PROPERTY INTERFACE_LINK_LIBRARIES)
+        list (APPEND ODBCOMPILER_LLVM_LIBS "${deps}")
+    endforeach ()
+    # lldCOFF, lldELF, etc. depend on lldCommon. Remove these
+    list (REMOVE_ITEM ODBCOMPILER_LLVM_LIBS lldCommon)
+    # Remove the LLVM prefix from each item, as these get appended again by llvm_config()
+    list (TRANSFORM ODBCOMPILER_LLVM_LIBS REPLACE "LLVM" "")
+    list (REMOVE_DUPLICATES ODBCOMPILER_LLVM_LIBS)
+
+    # This is apparently deprecated since 4 years
+    # https://lists.llvm.org/pipermail/llvm-dev/2017-November/119054.html
+    #
+    #llvm_map_components_to_libnames (llvm_libs <list of LLVM libs>)
+    #target_link_directories (odb-compiler PUBLIC ${LLVM_LIBRARY_DIRS})
+    #target_link_libraries (odb-compiler PUBLIC ${llvm_libs})
+    #
+    # This is how you're supposed to do it by reading LLVM-Config.cmake
+    # https://github.com/llvm-mirror/llvm/blob/master/cmake/modules/LLVM-Config.cmake#L67
+    llvm_config (odb-compiler USE_SHARED "${ODBCOMPILER_LLVM_LIBS}")
+endif()
+target_link_libraries (odb-compiler PRIVATE ${ODBCOMPILER_LLD_LIBS})
 
 target_include_directories (odb-compiler
     PRIVATE 
