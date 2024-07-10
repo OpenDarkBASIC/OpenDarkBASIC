@@ -236,18 +236,35 @@ ast_unop(
 }
 
 ast_id
-ast_inc(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
+ast_inc_step(
+    struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
 {
     ast_id add = ast_binop(ast, BINOP_ADD, var, expr, location, location);
     var = ast_dup_lvalue(ast, var);
     return ast_assign_var(ast, var, add, location, location);
 }
+
 ast_id
-ast_dec(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
+ast_inc(struct ast* ast, ast_id var, struct utf8_span location)
+{
+    ast_id expr = ast_byte_literal(ast, 1, location);
+    return ast_inc_step(ast, var, expr, location);
+}
+
+ast_id
+ast_dec_step(
+    struct ast* ast, ast_id var, ast_id expr, struct utf8_span location)
 {
     ast_id add = ast_binop(ast, BINOP_SUB, var, expr, location, location);
     var = ast_dup_lvalue(ast, var);
     return ast_assign_var(ast, var, add, location, location);
+}
+
+ast_id
+ast_dec(struct ast* ast, ast_id var, struct utf8_span location)
+{
+    ast_id expr = ast_byte_literal(ast, 1, location);
+    return ast_dec_step(ast, var, expr, location);
 }
 
 ast_id
@@ -376,11 +393,11 @@ ast_loop_for(
     ast_id exit_cond_branch
         = ast_cond_branch(ast, exit_cond_block, -1, location);
     ast_id exit_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
-    ast_id exit_expr = ast_binop(
-        ast, BINOP_GREATER_THAN, exit_var, end, location, location);
+    ast_id exit_expr
+        = ast_binop(ast, BINOP_GREATER_THAN, exit_var, end, location, location);
     ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
     ast_id inc_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
-    ast_id inc_stmt = ast_inc(ast, inc_var, step, location);
+    ast_id inc_stmt = ast_inc_step(ast, inc_var, step, location);
     ast_id block = ast_block(ast, exit_stmt, location);
 
     if (body > -1)

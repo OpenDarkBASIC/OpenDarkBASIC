@@ -24,6 +24,8 @@ struct db_keyword
 
 %%
 as,                 TOK_AS
+inc,                TOK_INC
+dec,                TOK_DEC
 /* Control flow */
 if,                 TOK_IF
 then,               TOK_THEN
@@ -49,7 +51,6 @@ exit,               TOK_EXIT
 //byte,             TOK_BYTE
 //case,             TOK_CASE
 //complex,          TOK_COMPLEX
-//dec,              TOK_DEC
 //dim,              TOK_DIM
 //default,          TOK_DEFAULT
 //do,               TOK_DO
@@ -72,7 +73,6 @@ exit,               TOK_EXIT
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
 //if,               TOK_IF
-//inc,              TOK_INC
 //integer,          TOK_INTEGER
 //local,            TOK_LOCAL
 //loop,             TOK_LOOP

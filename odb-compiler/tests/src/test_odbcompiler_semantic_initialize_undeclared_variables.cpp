@@ -148,7 +148,7 @@ TEST_F(NAME, float_initialized_to_0)
     EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
 }
 
-TEST_F(NAME, string_initialized_to_0)
+TEST_F(NAME, string_initialized_to_empty)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     const char* source = "print a$";
@@ -165,4 +165,26 @@ TEST_F(NAME, string_initialized_to_0)
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_STRING_LITERAL));
     EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+}
+
+TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
+    const char* source
+        = "do\n"
+          "    print a\n"
+          "loop\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    // TODO: Check structure
+}
+
+TEST_F(NAME, variable_in_while_statement_is_initialized_outside_of_loop)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
+    const char* source
+        = "while n > 0\n"
+          "    print a\n"
+          "endwhile\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    // TODO: Check structure
 }

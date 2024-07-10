@@ -349,7 +349,7 @@ target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 #target_link_libraries (odb-compiler PRIVATE reproc++)
 
 ###############################################################################
-# LLVM
+# LLVM and LLD
 ###############################################################################
 
 find_package (LLVM REQUIRED CONFIG)
@@ -410,55 +410,6 @@ target_include_directories (odb-compiler
         ${LLVM_INCLUDE_DIRS}
         ${LLD_INCLUDE_DIRS})
 target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
-
-# Push LLVM binary dir to parent scope.
-#set (LLVM_BINARY_DIR ${LLVM_BINARY_DIR} PARENT_SCOPE)
-
-###############################################################################
-# LLD
-###############################################################################
-
-# LLD can only be linked statically, which increases link times to multiple
-# seconds. Thankfully, it has a very small API, so we can offload the code in
-# odb-compiler/src/link into a separate DLL and link that to odb-compiler
-
-#add_library (odb-link ${ODBCOMPILER_LIB_TYPE}
-#    "include/odb-compiler/link/link.h"
-#    "src/link/link.cpp")
-#target_include_directories (odb-link
-#    PUBLIC
-#        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
-#        $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-#        $<INSTALL_INTERFACE:include>
-#    PRIVATE
-#        $<BUILD_INTERFACE:${LLVM_INCLUDE_DIRS}>)
-#target_compile_definitions (odb-link
-#    PRIVATE
-#        ODBCOMPILER_BUILDING)
-#target_compile_options (odb-link
-#    PRIVATE
-#        $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-#        $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-#        $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-#target_link_libraries (odb-link
-#    PUBLIC
-#        odb-sdk)
-#odb_target_properties (odb-link
-#    PROPERTIES
-#        ARCHIVE_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-#        LIBRARY_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-#        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR}
-#        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
-#
-#find_package (LLD REQUIRED CONFIG)
-#target_link_libraries (odb-link
-#    PRIVATE
-#        lldCommon
-#        lldCOFF
-#        lldELF
-#        lldMachO)
-
-#target_link_libraries (odb-compiler PUBLIC odb-link)
 
 ###############################################################################
 # Unit tests

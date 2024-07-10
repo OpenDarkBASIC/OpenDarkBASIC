@@ -125,6 +125,8 @@
 /* Keywords */
 %token CONSTANT "constant"
 %token AS "AS"
+%token INC "increment"
+%token DEC "decrement"
 /* Control flow */
 %token IF "IF"
 %token THEN "THEN"
@@ -230,6 +232,7 @@
 %type<node_value> expr
 %type<node_value> arglist
 %type<node_value> const_decl
+%type<node_value> inc dec
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
@@ -270,6 +273,8 @@ iblock
   ;
 stmt
   : const_decl                              { $$ = $1; }
+  | inc                                     { $$ = $1; }
+  | dec                                     { $$ = $1; }
   | conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
   | istmt                                   { $$ = $1; }
@@ -339,9 +344,17 @@ command_expr
   | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : identifier '=' expr           { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
+  : identifier '=' expr                     { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
+  ;
+inc
+  : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->ast, $2, $4, @$); }
+  | INC identifier                          { $$ = ast_inc(ctx->ast, $2, @$); }
+  ;
+dec
+  : DEC identifier ',' expr                 { $$ = ast_dec_step(ctx->ast, $2, $4, @$); }
+  | DEC identifier                          { $$ = ast_dec(ctx->ast, $2, @$); }
   ;
 conditional
   : cond_oneline                            { $$ = $1; }

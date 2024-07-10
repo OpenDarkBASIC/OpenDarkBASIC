@@ -441,11 +441,15 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                             ODBSDK_DEBUG_ASSERT(0, (void)0);
                             break;
                     }
+
+                    /* Create initializer for variable, since it is unreferenced
+                     * at this point */
                     ast_id init_var = ast_dup_lvalue(ctx->ast, n);
                     ast_id init_ass = ast_assign_var(
                         ctx->ast, init_var, init_value, loc, loc);
                     ast_id init_block = ast_block(ctx->ast, init_ass, loc);
 
+                    /* Fill in type info */
                     ctx->ast->nodes[init_value].info.type_info
                         = type_origin->type;
                     ctx->ast->nodes[init_var].info.type_info
@@ -453,28 +457,10 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
                     ctx->ast->nodes[init_block].info.type_info = TYPE_VOID;
 
-                    ast_id child = n;
-                    while (ctx->ast->nodes[child].info.node_type != AST_BLOCK)
-                    {
-                        child = ast_find_parent(ctx->ast, child);
-                        ODBSDK_DEBUG_ASSERT(
-                            child > -1, log_semantic_err("child: %d\n", child));
-                    }
-
-                    ast_id parent = ast_find_parent(ctx->ast, child);
-                    if (parent > -1)
-                    {
-                        if (ctx->ast->nodes[parent].base.left == child)
-                            ctx->ast->nodes[parent].base.left = init_block;
-                        if (ctx->ast->nodes[parent].base.right == child)
-                            ctx->ast->nodes[parent].base.right = init_block;
-                        ctx->ast->nodes[init_block].block.next = child;
-                    }
-                    else
-                    {
-                        ctx->ast->nodes[init_block].block.next = child;
-                        ctx->root = init_block;
-                    }
+                    /* Insert the initializer at the very beginning of the
+                     * program */
+                    ctx->ast->nodes[init_block].block.next = ctx->root;
+                    ctx->root = init_block;
                 }
                 break;
 
@@ -682,13 +668,16 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         break;
         case AST_COND_BRANCH: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_LOOP:
-            if (resolve_node_type(ctx, ctx->ast->nodes[n].loop.body, scope)
-                == TYPE_INVALID)
+        case AST_LOOP: {
+            ast_id body = ctx->ast->nodes[n].loop.body;
+            if (body > -1
+                && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
             {
                 return TYPE_INVALID;
             }
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        }
+        break;
 
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
