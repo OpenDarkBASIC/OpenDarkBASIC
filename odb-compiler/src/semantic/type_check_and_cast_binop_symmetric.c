@@ -97,7 +97,7 @@ log_error_binop(
 }
 
 enum type
-type_check_and_cast_binop_arithmetic(
+type_check_and_cast_binop_symmetric(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,
@@ -111,7 +111,7 @@ type_check_and_cast_binop_arithmetic(
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
 
-    enum type target_type = TYPE_VOID;
+    enum type target_type = TYPE_INVALID;
     enum type lhs_type = ast->nodes[lhs].info.type_info;
     enum type rhs_type = ast->nodes[rhs].info.type_info;
 
@@ -161,7 +161,7 @@ type_check_and_cast_binop_arithmetic(
     }
 
     /* Invalid conversion */
-    if (target_type == TYPE_VOID)
+    if (target_type == TYPE_INVALID)
     {
         log_error_binop(ast, lhs, op, source_filename, source);
         return TYPE_INVALID;

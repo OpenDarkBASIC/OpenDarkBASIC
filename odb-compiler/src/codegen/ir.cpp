@@ -568,18 +568,64 @@ gen_expr(
                         return builder.CreateCall(FPow, {lhs, rhs});
                     }
                     break;
+
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
                 case BINOP_BITWISE_OR:
                 case BINOP_BITWISE_AND:
                 case BINOP_BITWISE_XOR:
                 case BINOP_BITWISE_NOT:
+                    break;
+
                 case BINOP_LESS_THAN:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpSLT(lhs, rhs);
+                        case UINT: return builder.CreateICmpULT(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpOLT(lhs, rhs);
+                    }
+                    break;
                 case BINOP_LESS_EQUAL:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpSLE(lhs, rhs);
+                        case UINT: return builder.CreateICmpULE(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpOLE(lhs, rhs);
+                    }
+                    break;
                 case BINOP_GREATER_THAN:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpSGT(lhs, rhs);
+                        case UINT: return builder.CreateICmpUGT(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpOGT(lhs, rhs);
+                    }
+                    break;
                 case BINOP_GREATER_EQUAL:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpSGE(lhs, rhs);
+                        case UINT: return builder.CreateICmpUGE(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpOGE(lhs, rhs);
+                    }
+                    break;
                 case BINOP_EQUAL:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpEQ(lhs, rhs);
+                        case UINT: return builder.CreateICmpEQ(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpOEQ(lhs, rhs);
+                    }
+                    break;
                 case BINOP_NOT_EQUAL:
+                    switch (type_family)
+                    {
+                        case INT: return builder.CreateICmpNE(lhs, rhs);
+                        case UINT: return builder.CreateICmpNE(lhs, rhs);
+                        case FLOAT: return builder.CreateFCmpONE(lhs, rhs);
+                    }
+                    break;
+
                 case BINOP_LOGICAL_OR:
                 case BINOP_LOGICAL_AND:
                 case BINOP_LOGICAL_XOR: break;
@@ -591,7 +637,7 @@ gen_expr(
         case AST_COND:
         case AST_COND_BRANCH: break;
 
-        case AST_LOOP: break;
+        case AST_LOOP:
         case AST_LOOP_EXIT: break;
 
         case AST_BOOLEAN_LITERAL:
@@ -759,6 +805,7 @@ gen_block(
     const struct db_source                        source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    llvm::SmallVector<llvm::BasicBlock*, 8>*      loop_exit_stack,
     struct allocamap**                            allocamap)
 {
     ODBSDK_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
@@ -866,6 +913,7 @@ gen_block(
                         source,
                         string_table,
                         cmd_func_table,
+                        loop_exit_stack,
                         allocamap);
                 }
                 builder.CreateBr(BBMerge);
@@ -887,6 +935,7 @@ gen_block(
                         source,
                         string_table,
                         cmd_func_table,
+                        loop_exit_stack,
                         allocamap);
                 }
                 builder.CreateBr(BBMerge);
@@ -899,9 +948,51 @@ gen_block(
             }
             break;
 
+            case AST_LOOP: {
+                llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
+                llvm::BasicBlock* BBExit = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("exit") + llvm::Twine(stmt));
+
+                builder.CreateBr(BBLoop);
+
+                llvm::Function* F = builder.GetInsertBlock()->getParent();
+                F->insert(F->end(), BBLoop);
+                builder.SetInsertPoint(BBLoop);
+                loop_exit_stack->push_back(BBExit);
+                gen_block(
+                    ir,
+                    builder,
+                    ast,
+                    ast->nodes[stmt].loop.body,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    loop_exit_stack,
+                    allocamap);
+                // Codegen can change the current block. Update
+                // BBYes for the PHI.
+                builder.CreateBr(BBLoop);
+
+                F->insert(F->end(), BBExit);
+                builder.SetInsertPoint(BBExit);
+                loop_exit_stack->pop_back();
+            }
+            break;
+
+            case AST_LOOP_EXIT: {
+                llvm::BasicBlock* BBExit = loop_exit_stack->back();
+                builder.CreateBr(BBExit);
+            }
+            break;
+
             default:
                 log_codegen_err(
-                    "Statement type not implemented while translating block\n");
+                    "Statement type %d not implemented while translating "
+                    "block\n",
+                    stmt);
                 return -1;
         }
     }
@@ -924,6 +1015,8 @@ ir_translate_ast(
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
     create_global_command_function_table(
         ir, &cmd_func_table, program, source, cmds);
+
+    llvm::SmallVector<llvm::BasicBlock*, 8> loop_exit_stack;
 
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
@@ -953,6 +1046,7 @@ ir_translate_ast(
         source,
         &string_table,
         &cmd_func_table,
+        &loop_exit_stack,
         &allocamap);
     allocamap_deinit(allocamap);
 

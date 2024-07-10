@@ -138,7 +138,7 @@ struct ctx
 };
 
 enum type
-type_check_and_cast_binop_arithmetic(
+type_check_and_cast_binop_symmetric(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,
@@ -500,7 +500,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_MUL:
                 case BINOP_DIV:
                 case BINOP_MOD:
-                    return type_check_and_cast_binop_arithmetic(
+                    return type_check_and_cast_binop_symmetric(
                         ctx->ast, n, ctx->source_filename, ctx->source);
 
                 case BINOP_POW:
@@ -512,7 +512,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_BITWISE_OR:
                 case BINOP_BITWISE_AND:
                 case BINOP_BITWISE_XOR:
-                case BINOP_BITWISE_NOT:
+                case BINOP_BITWISE_NOT: break;
 
                 case BINOP_LESS_THAN:
                 case BINOP_LESS_EQUAL:
@@ -520,6 +520,15 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_GREATER_EQUAL:
                 case BINOP_EQUAL:
                 case BINOP_NOT_EQUAL:
+                    if (type_check_and_cast_binop_symmetric(
+                            ctx->ast, n, ctx->source_filename, ctx->source)
+                        == TYPE_INVALID)
+                    {
+                        return TYPE_INVALID;
+                    }
+                    return ctx->ast->nodes[n].binop.info.type_info
+                           = TYPE_BOOLEAN;
+
                 case BINOP_LOGICAL_OR:
                 case BINOP_LOGICAL_AND:
                 case BINOP_LOGICAL_XOR: break;
@@ -671,9 +680,16 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_VOID;
         }
         break;
-        case AST_COND_BRANCH: break;
+        case AST_COND_BRANCH: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_LOOP: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_LOOP:
+            if (resolve_node_type(ctx, ctx->ast->nodes[n].loop.body, scope)
+                == TYPE_INVALID)
+            {
+                return TYPE_INVALID;
+            }
+            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 

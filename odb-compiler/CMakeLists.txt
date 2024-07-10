@@ -246,7 +246,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/resolve_cmd_overloads.c"
     "src/semantic/type_check_and_cast.c"
     "src/semantic/type_check_and_cast_assignment.c"
-    "src/semantic/type_check_and_cast_binop_arithmetic.c"
+    "src/semantic/type_check_and_cast_binop_symmetric.c"
     "src/semantic/type_check_and_cast_binop_pow.c"
     "src/semantic/type_check_and_cast_casts.c"
     #"src/astpost/EliminateBitwiseNotRHS.cpp"
@@ -370,17 +370,17 @@ endif()
 #       Linking them twice causes multiple instances of the same LLVM objects
 #       to be registered, resulting in the error:
 #           "LLVM ERROR: inconsistency in registered CommandLine options"
-llvm_config (odb-compiler ${llvm_use_shared}
-    Core
-    BitWriter
-    AArch64AsmParser
-    AArch64CodeGen
-    ARMAsmParser
-    ARMCodeGen
-    WebAssemblyAsmParser
-    WebAssemblyCodeGen
-    X86AsmParser
-    X86CodeGen)
+#llvm_config (odb-compiler ${llvm_use_shared}
+#    Core
+#    BitWriter
+#    AArch64AsmParser
+#    AArch64CodeGen
+#    ARMAsmParser
+#    ARMCodeGen
+#    WebAssemblyAsmParser
+#    WebAssemblyCodeGen
+#    X86AsmParser
+#    X86CodeGen)
 find_package (LLD REQUIRED CONFIG)
 target_link_libraries (odb-compiler
     PRIVATE
@@ -521,6 +521,7 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/test_odbcompiler_semantic_conditionals_warnings.cpp"
         "tests/src/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
+        "tests/src/test_odbcompiler_semantic_loop_exit.cpp"
         "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
         "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_warnings.cpp"
         "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_errors.cpp"
