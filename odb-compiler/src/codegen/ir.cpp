@@ -574,8 +574,7 @@ gen_expr(
                 case BINOP_BITWISE_OR:
                 case BINOP_BITWISE_AND:
                 case BINOP_BITWISE_XOR:
-                case BINOP_BITWISE_NOT:
-                    break;
+                case BINOP_BITWISE_NOT: break;
 
                 case BINOP_LESS_THAN:
                     switch (type_family)
@@ -916,7 +915,8 @@ gen_block(
                         loop_exit_stack,
                         allocamap);
                 }
-                builder.CreateBr(BBMerge);
+                if (builder.GetInsertBlock()->getTerminator() == nullptr)
+                    builder.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
                 BBYes = builder.GetInsertBlock();
@@ -938,7 +938,8 @@ gen_block(
                         loop_exit_stack,
                         allocamap);
                 }
-                builder.CreateBr(BBMerge);
+                if (builder.GetInsertBlock()->getTerminator() == nullptr)
+                    builder.CreateBr(BBMerge);
                 // Codegen of "True" branch can change the current block. Update
                 // BBYes for the PHI.
                 BBNo = builder.GetInsertBlock();

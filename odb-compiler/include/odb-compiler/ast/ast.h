@@ -1,9 +1,9 @@
 #pragma once
 
 #include "odb-compiler/config.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-sdk/utf8.h"
 
 /*!
@@ -18,13 +18,6 @@
     X(MOD,           "mod")     \
     X(POW,           "^")       \
                                 \
-    X(SHIFT_LEFT,    "<<")      \
-    X(SHIFT_RIGHT,   ">>")      \
-    X(BITWISE_OR,    "||")      \
-    X(BITWISE_AND,   "&&")      \
-    X(BITWISE_XOR,   "~~")      \
-    X(BITWISE_NOT,   "..")      \
-                                \
     X(LESS_THAN,     "<")       \
     X(LESS_EQUAL,    "<=")      \
     X(GREATER_THAN,  ">")       \
@@ -33,7 +26,14 @@
     X(NOT_EQUAL,     "<>")      \
     X(LOGICAL_OR,    "or")      \
     X(LOGICAL_AND,   "and")     \
-    X(LOGICAL_XOR,   "xor")
+    X(LOGICAL_XOR,   "xor")     \
+                                \
+    X(SHIFT_LEFT,    "<<")      \
+    X(SHIFT_RIGHT,   ">>")      \
+    X(BITWISE_OR,    "||")      \
+    X(BITWISE_AND,   "&&")      \
+    X(BITWISE_XOR,   "~~")      \
+    X(BITWISE_NOT,   "..")      
 
 #define UNOP_LIST               \
     X(LOGICAL_NOT,  "not")      \

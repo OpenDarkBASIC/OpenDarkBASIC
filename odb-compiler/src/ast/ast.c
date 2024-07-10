@@ -377,7 +377,7 @@ ast_loop_for(
         = ast_cond_branch(ast, exit_cond_block, -1, location);
     ast_id exit_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
     ast_id exit_expr = ast_binop(
-        ast, BINOP_GREATER_EQUAL, exit_var, end, location, location);
+        ast, BINOP_GREATER_THAN, exit_var, end, location, location);
     ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
     ast_id inc_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
     ast_id inc_stmt = ast_inc(ast, inc_var, step, location);

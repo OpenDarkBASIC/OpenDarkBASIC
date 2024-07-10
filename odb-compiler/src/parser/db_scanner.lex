@@ -107,6 +107,32 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     {INTEGER_BASE16}    { yylval->integer_value = strtoll(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
     {INTEGER}           { yylval->integer_value = strtoll(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
+    "("                   { RETURN_TOKEN('('); }
+    ")"                   { RETURN_TOKEN(')'); }
+    ","                   { RETURN_TOKEN(','); }
+
+    /* Arithmetic operators */
+    "+"                   { RETURN_TOKEN('+'); }
+    "-"                   { RETURN_TOKEN('-'); }
+    "*"                   { RETURN_TOKEN('*'); }
+    "/"                   { RETURN_TOKEN('/'); }
+    "^"                   { RETURN_TOKEN('^'); }
+    /* Logical binops */
+    "<>"                  { RETURN_TOKEN(TOK_NE); }
+    "<="                  { RETURN_TOKEN(TOK_LE); }
+    ">="                  { RETURN_TOKEN(TOK_GE); }
+    "="                   { RETURN_TOKEN('='); }
+    "<"                   { RETURN_TOKEN('<'); }
+    ">"                   { RETURN_TOKEN('>'); }
+    /* NOTE: Logical boolean binops are keywords and are parsed as identifiers */
+    /* Bitwise binops */
+    "<<"                  { RETURN_TOKEN(TOK_BSHL); }
+    ">>"                  { RETURN_TOKEN(TOK_BSHR); }
+    "||"                  { RETURN_TOKEN(TOK_BOR); }
+    "&&"                  { RETURN_TOKEN(TOK_BAND); }
+    "~~"                  { RETURN_TOKEN(TOK_BXOR); }
+    ".."                  { RETURN_TOKEN(TOK_BNOT); }
+
     {IDENTIFIER}"&"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
     {IDENTIFIER}"%"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
     {IDENTIFIER}"!"      { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }

@@ -728,6 +728,12 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
     }
 
 error:
+    log_flc_err(
+        ctx->source_filename,
+        ctx->source.text.data,
+        ctx->ast->nodes[n].info.location,
+        "Type check not yet implemented for this node.\n");
+    log_excerpt_1(ctx->source.text.data, ctx->ast->nodes[n].info.location, "");
     return TYPE_INVALID;
 }
 

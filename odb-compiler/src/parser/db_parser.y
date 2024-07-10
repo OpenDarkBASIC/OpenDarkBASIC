@@ -153,30 +153,34 @@
 %token<string_value> STRING_LITERAL "string literal"
 
 /* Operators */
+%token '(' "open bracket"
+%token ')' "close bracket"
+/* Arithmetic operators */
 %token '+' "`+`"
 %token '-' "`-`"
 %token '*' "`*`"
 %token '/' "`/`"
 %token '^' "`^`"
 %token MOD "mod"
-%token '(' "open bracket"
-%token ')' "close bracket"
+/* Logical binops */
 %token ',' "comma"
-%token BSHL "left shift"
-%token BSHR "right shift"
-%token BOR "bitwise or"
-%token BAND "bitwise and"
-%token BXOR "bitwise xor"
-%token BNOT "bitwise not"
 %token '<' "`<`"
 %token '>' "`>`"
 %token LE "`<=`"
 %token GE "`>=`"
 %token NE "`<>`"
 %token '=' "`=`"
+/* Logical boolean binops */
 %token LOR "or"
 %token LAND "and"
 %token LNOT "not"
+/* Bitwise binops */
+%token BOR "bitwise or"
+%token BAND "bitwise and"
+%token BXOR "bitwise xor"
+%token BNOT "bitwise not"
+%token BSHL "left shift"
+%token BSHR "right shift"
 
 /* precedence rules */
 %nonassoc NO_NEXT_SYM
@@ -283,13 +287,31 @@ expr
   | '-' expr %prec UMINUS                   { $$ = ast_unop(ctx->ast, UNOP_NEGATE, $2, @$); }
   | BNOT expr %prec UNOT                    { $$ = ast_unop(ctx->ast, UNOP_BITWISE_NOT, $2, @$); }
   | LNOT expr                               { $$ = ast_unop(ctx->ast, UNOP_LOGICAL_NOT, $2, @$); }
-  /* Binary operators */
+  /* arithmetic binops */
   | expr '+' expr                           { $$ = ast_binop(ctx->ast, BINOP_ADD, $1, $3, @2, @$); }
   | expr '-' expr                           { $$ = ast_binop(ctx->ast, BINOP_SUB, $1, $3, @2, @$); }
   | expr '*' expr                           { $$ = ast_binop(ctx->ast, BINOP_MUL, $1, $3, @2, @$); }
   | expr '/' expr                           { $$ = ast_binop(ctx->ast, BINOP_DIV, $1, $3, @2, @$); }
   | expr MOD expr                           { $$ = ast_binop(ctx->ast, BINOP_MOD, $1, $3, @2, @$); }
   | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @2, @$); }
+  /* logical binops */
+  | expr '<' expr                           { $$ = ast_binop(ctx->ast, BINOP_LESS_THAN, $1, $3, @2, @$); }
+  | expr '>' expr                           { $$ = ast_binop(ctx->ast, BINOP_GREATER_THAN, $1, $3, @2, @$); }
+  | expr '=' expr                           { $$ = ast_binop(ctx->ast, BINOP_EQUAL, $1, $3, @2, @$); }
+  | expr GE expr                            { $$ = ast_binop(ctx->ast, BINOP_GREATER_EQUAL, $1, $3, @2, @$); }
+  | expr LE expr                            { $$ = ast_binop(ctx->ast, BINOP_LESS_EQUAL, $1, $3, @2, @$); }
+  | expr NE expr                            { $$ = ast_binop(ctx->ast, BINOP_NOT_EQUAL, $1, $3, @2, @$); }
+  /* Logical boolean binops */
+  | expr LOR expr                           { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_OR, $1, $3, @2, @$); }
+  | expr LAND expr                          { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_AND, $1, $3, @2, @$); }
+  | expr LXOR expr                          { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_XOR, $1, $3, @2, @$); }
+  /* Bitwise binops */
+  | expr BOR expr                           { $$ = ast_binop(ctx->ast, BINOP_BITWISE_OR, $1, $3, @2, @$); }
+  | expr BAND expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_AND, $1, $3, @2, @$); }
+  | expr BXOR expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_XOR, $1, $3, @2, @$); }
+  | expr BNOT expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_NOT, $1, $3, @2, @$); }
+  | expr BSHL expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
+  | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
   | identifier                    { $$ = $1; }
