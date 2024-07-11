@@ -113,75 +113,72 @@ TEST_F(NAME, double_integer_literal)
         ast.nodes[lity].double_integer_literal.value, Eq(9223372036854775807));
 }
 
-/*
 TEST_F(NAME, hex_literals)
 {
-    ASSERT_THAT(parse(
-        "#constant a 0xFf\n"
-        "#constant b 0XFfFf\n"
-        "#constant c 0x7fFfFfFf\n"
-        "#constant d 0XFfFfFfFf\n"
-        "#constant e 0x7FfFfFfFfFfFfFfF\n"),
+    ASSERT_THAT(
+        parse("a = 0xFf\n"
+              "b = 0XFfFf\n"
+              "c = 0x7fFfFfFf\n"
+              "d = 0XFfFfFfFf\n"
+              "e = 0x7FfFfFfFfFfFfFfF\n"),
         Eq(0));
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitProgram(_));
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a",
-Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
-visitByteLiteral(ByteLiteralEq(0xFF))).After(exp); exp = EXPECT_CALL(v,
-visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp); exp =
-EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d",
-Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
-visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp); exp = EXPECT_CALL(v,
-visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v,
-visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
 
-    visitAST(ast, v);
+    ast_id assbyte = ast.nodes[0].block.stmt;
+    ast_id blockword = ast.nodes[0].block.next;
+    ast_id assword = ast.nodes[blockword].block.stmt;
+    ast_id blockint = ast.nodes[blockword].block.next;
+    ast_id assint = ast.nodes[blockint].block.stmt;
+    ast_id blockdword = ast.nodes[blockint].block.next;
+    ast_id assdword = ast.nodes[blockdword].block.stmt;
+    ast_id blockdint = ast.nodes[blockdword].block.next;
+    ast_id assdint = ast.nodes[blockdint].block.stmt;
+
+    /* clang-format off */
+    ASSERT_THAT(ast.nodes[ast.nodes[assbyte].assignment.expr].info.node_type, Eq(AST_BYTE_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assbyte].assignment.expr].byte_literal.value, Eq(0xFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assword].assignment.expr].info.node_type, Eq(AST_WORD_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assword].assignment.expr].word_literal.value, Eq(0xFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assint].assignment.expr].info.node_type, Eq(AST_INTEGER_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assint].assignment.expr].integer_literal.value, Eq(0x7FFFFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdword].assignment.expr].info.node_type, Eq(AST_DWORD_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdword].assignment.expr].dword_literal.value, Eq(0xFFFFFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdint].assignment.expr].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdint].assignment.expr].double_integer_literal.value, Eq(0x7FFFFFFFFFFFFFFF));
+    /* clang-format on */
 }
 
 TEST_F(NAME, binary_literals)
 {
-    ast = driver->parse("test",
-        "#constant a %11111111\n"
-        "#constant b %1111111111111111\n"
-        "#constant c %1111111111111111111111111111111\n"
-        "#constant d %11111111111111111111111111111111\n"
-        "#constant e
-%111111111111111111111111111111111111111111111111111111111111111\n", matcher);
-    ASSERT_THAT(ast, NotNull());
+    /* clang-format off */
+    ASSERT_THAT(
+        parse("a = %11111111\n"
+              "b = %1111111111111111\n"
+              "c = %1111111111111111111111111111111\n"
+              "d = %11111111111111111111111111111111\n"
+              "e = %111111111111111111111111111111111111111111111111111111111111111\n"),
+        Eq(0));
+    /* clang-format on */
 
-    StrictMock<ASTMockVisitor> v;
-    Expectation exp;
-    exp = EXPECT_CALL(v, visitProgram(_));
-    exp = EXPECT_CALL(v, visitBlock(BlockStmntCountEq(5))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("a",
-Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
-visitByteLiteral(ByteLiteralEq(0xFF))).After(exp); exp = EXPECT_CALL(v,
-visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("b", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v, visitWordLiteral(WordLiteralEq(0xFFFF))).After(exp); exp =
-EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("c", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v, visitIntegerLiteral(IntegerLiteralEq(0x7FFFFFFF))).After(exp);
-    exp = EXPECT_CALL(v, visitConstDeclExpr(_)).After(exp);
-    exp = EXPECT_CALL(v, visitIdentifier(IdentifierEq("d",
-Annotation::NONE))).After(exp); exp = EXPECT_CALL(v,
-visitDwordLiteral(DwordLiteralEq(0xFFFFFFFF))).After(exp); exp = EXPECT_CALL(v,
-visitConstDeclExpr(_)).After(exp); exp = EXPECT_CALL(v,
-visitIdentifier(IdentifierEq("e", Annotation::NONE))).After(exp); exp =
-EXPECT_CALL(v,
-visitDoubleIntegerLiteral(DoubleIntegerLiteralEq(0x7FFFFFFFFFFFFFFF))).After(exp);
+    ast_id assbyte = ast.nodes[0].block.stmt;
+    ast_id blockword = ast.nodes[0].block.next;
+    ast_id assword = ast.nodes[blockword].block.stmt;
+    ast_id blockint = ast.nodes[blockword].block.next;
+    ast_id assint = ast.nodes[blockint].block.stmt;
+    ast_id blockdword = ast.nodes[blockint].block.next;
+    ast_id assdword = ast.nodes[blockdword].block.stmt;
+    ast_id blockdint = ast.nodes[blockdword].block.next;
+    ast_id assdint = ast.nodes[blockdint].block.stmt;
 
-    visitAST(ast, v);
-}*/
+    /* clang-format off */
+    ASSERT_THAT(ast.nodes[ast.nodes[assbyte].assignment.expr].info.node_type, Eq(AST_BYTE_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assbyte].assignment.expr].byte_literal.value, Eq(0xFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assword].assignment.expr].info.node_type, Eq(AST_WORD_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assword].assignment.expr].word_literal.value, Eq(0xFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assint].assignment.expr].info.node_type, Eq(AST_INTEGER_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assint].assignment.expr].integer_literal.value, Eq(0x7FFFFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdword].assignment.expr].info.node_type, Eq(AST_DWORD_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdword].assignment.expr].dword_literal.value, Eq(0xFFFFFFFF));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdint].assignment.expr].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    ASSERT_THAT(ast.nodes[ast.nodes[assdint].assignment.expr].double_integer_literal.value, Eq(0x7FFFFFFFFFFFFFFF));
+    /* clang-format on */
+}

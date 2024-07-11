@@ -476,6 +476,7 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/test_odbcompiler_db_parser_integer_literal.cpp"
+        "tests/src/test_odbcompiler_db_parser_negative_integer_literal.cpp"
         "tests/src/test_odbcompiler_db_parser_conditionals.cpp"
         "tests/src/test_odbcompiler_db_parser_conditionals_errors.cpp"
         "tests/src/test_odbcompiler_db_parser_command.cpp"

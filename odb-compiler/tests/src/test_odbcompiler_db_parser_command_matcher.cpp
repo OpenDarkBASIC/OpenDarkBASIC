@@ -16,7 +16,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, empty_list)
 {
-    EXPECT_THAT(parse("RANDOMIZE"), Eq(-1));
+    ASSERT_THAT(parse("RANDOMIZE"), Eq(-1));
 }
 
 TEST_F(NAME, match_shorter_command)
@@ -27,9 +27,9 @@ TEST_F(NAME, match_shorter_command)
     addCommand("RANDOMIZE MESH");
     addCommand("READ");
 
-    EXPECT_THAT(parse("RANDOMIZE"), Eq(0));
+    ASSERT_THAT(parse("RANDOMIZE"), Eq(0));
     int cmd = ast.nodes[0].block.stmt;
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
 }
 
 TEST_F(NAME, match_mid_command)
@@ -41,9 +41,9 @@ TEST_F(NAME, match_mid_command)
     addCommand("RANDOMIZE MESH");
     addCommand("READ");
 
-    EXPECT_THAT(parse("randomize matrix"), Eq(0));
+    ASSERT_THAT(parse("randomize matrix"), Eq(0));
     int cmd = ast.nodes[0].block.stmt;
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(2));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(2));
 }
 
 TEST_F(NAME, match_longest_command)
@@ -55,9 +55,9 @@ TEST_F(NAME, match_longest_command)
     addCommand("RANDOMIZE MESH");
     addCommand("READ");
 
-    EXPECT_THAT(parse("randomize matrix normalized"), Eq(0));
+    ASSERT_THAT(parse("randomize matrix normalized"), Eq(0));
     int cmd = ast.nodes[0].block.stmt;
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(3));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(3));
 }
 
 TEST_F(NAME, dont_match_nonexisting_command)
@@ -68,7 +68,7 @@ TEST_F(NAME, dont_match_nonexisting_command)
     addCommand("RANDOMIZE MESH");
     addCommand("READ");
 
-    EXPECT_THAT(parse("randomized"), Eq(-1));
+    ASSERT_THAT(parse("randomized"), Eq(-1));
 }
 
 TEST_F(NAME, match_longer_string_to_shorter_command)

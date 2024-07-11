@@ -19,6 +19,7 @@ TEST_F(NAME, implicit_step_1)
               "    print 5\n"
               "next n\n"),
         Eq(0));
+    // TODO: Check AST structure
 }
 
 TEST_F(NAME, implicit_step_1_empty_loop)
@@ -27,6 +28,7 @@ TEST_F(NAME, implicit_step_1_empty_loop)
         parse("for n=1 to 5\n"
               "next n\n"),
         Eq(0));
+    // TODO: Check AST structure
 }
 
 TEST_F(NAME, implicit_step_1_empty_next)
@@ -37,6 +39,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
               "    print 5\n"
               "next\n"),
         Eq(0));
+    // TODO: Check AST structure
 }
 
 TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
@@ -45,4 +48,5 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
         parse("for n=1 to 5\n"
               "next\n"),
         Eq(0));
+    // TODO: Check AST structure
 }
