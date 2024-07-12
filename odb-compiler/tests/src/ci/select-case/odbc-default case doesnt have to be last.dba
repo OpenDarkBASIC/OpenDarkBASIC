@@ -1,0 +1,9 @@
+select 1
+    case default
+        stdout "default"
+    endcase
+    case 1
+        stdout "1"
+    endcase
+endselect
+

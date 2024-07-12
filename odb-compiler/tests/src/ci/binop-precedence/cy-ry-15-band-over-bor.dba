@@ -1,0 +1,13 @@
+if a() || b() && c() then x=1
+end
+
+function a()
+    print "a"
+endfunction 1
+function b()
+    print "b"
+endfunction 1
+function c()
+    print "c"
+endfunction 1
+

@@ -1,0 +1,16 @@
+select value()
+    case 1
+        stdout "case 1"
+    endcase
+    case 2
+        stdout "case 2"
+    endcase
+endselect
+
+end
+
+function value()
+    stdout "value()"
+    result = 2
+endfunction result
+

@@ -1,0 +1,12 @@
+a = 1
+b = 2
+
+select 3
+    case a+b
+        stdout "a+b"
+    endcase
+    case default
+        stdout "default"
+    endcase
+endselect
+

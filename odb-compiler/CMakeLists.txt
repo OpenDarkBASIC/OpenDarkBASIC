@@ -416,6 +416,26 @@ target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
 ###############################################################################
 
 if (ODBCOMPILER_TESTS)
+    file (GLOB_RECURSE CI_DBA_SOURCES ${PROJECT_SOURCE_DIR}/tests/src/ci/*.dba)
+    file (GLOB_RECURSE CI_RESULTS ${PROJECT_SOURCE_DIR}/tests/src/ci/*.out)
+    file (GLOB_RECURSE CI_ODB_RESULTS ${PROJECT_SOURCE_DIR}/tests/src/ci/*.odbout)
+    set (CIGEN_INPUTS ${CI_DBA_SOURCES} ${CI_RESULTS} ${CI_ODB_RESULTS})
+    set (CIGEN_OUTPUTS ${PROJECT_BINARY_DIR}/tests/src/ci.cpp)
+    add_executable (odb-cigen
+        "tests/src/ci/cigen.c")
+    add_custom_command (
+        OUTPUT ${CIGEN_OUTPUTS}
+        COMMAND odb-cigen
+        ARGS
+            --name "odbcompiler_ci"
+            -i ${CIGEN_INPUTS}
+            -o ${CIGEN_OUTPUTS}
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+        DEPENDS
+            odb-cigen
+            ${CIGEN_INPUTS}
+        COMMENT "[odb-cigen] Generating CI test cases"
+        VERBATIM)
     target_sources (odb-tests PRIVATE
         #"tests/src/ast/test_ast_treeiterator.cpp"
         #"tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
@@ -472,33 +492,33 @@ if (ODBCOMPILER_TESTS)
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
         "tests/src/DBParserHelper.cpp"
 
-        "tests/src/test_odbcompiler_cmd_list.cpp"
+        "tests/src/util/cmd_list.cpp"
 
-        "tests/src/test_odbcompiler_db_parser_boolean_literal.cpp"
-        "tests/src/test_odbcompiler_db_parser_integer_literal.cpp"
-        "tests/src/test_odbcompiler_db_parser_negative_integer_literal.cpp"
-        "tests/src/test_odbcompiler_db_parser_conditionals.cpp"
-        "tests/src/test_odbcompiler_db_parser_conditionals_errors.cpp"
-        "tests/src/test_odbcompiler_db_parser_command.cpp"
-        "tests/src/test_odbcompiler_db_parser_command_matcher.cpp"
-        "tests/src/test_odbcompiler_db_parser_loop_for.cpp"
-        "tests/src/test_odbcompiler_db_parser_loop_for_warnings.cpp"
-        "tests/src/test_odbcompiler_db_parser_loop_for_errors.cpp"
-        "tests/src/test_odbcompiler_db_parser_remarks.cpp"
-        "tests/src/test_odbcompiler_db_parser_remarks_errors.cpp"
+        "tests/src/parser/boolean_literal.cpp"
+        "tests/src/parser/integer_literal.cpp"
+        "tests/src/parser/negative_integer_literal.cpp"
+        "tests/src/parser/conditionals.cpp"
+        "tests/src/parser/conditionals_errors.cpp"
+        "tests/src/parser/command.cpp"
+        "tests/src/parser/command_matcher.cpp"
+        "tests/src/parser/loop_for.cpp"
+        "tests/src/parser/loop_for_warnings.cpp"
+        "tests/src/parser/loop_for_errors.cpp"
+        "tests/src/parser/remarks.cpp"
+        "tests/src/parser/remarks_errors.cpp"
 
-        "tests/src/test_odbcompiler_semantic_conditionals_warnings.cpp"
-        "tests/src/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
-        "tests/src/test_odbcompiler_semantic_loop_exit.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_warnings.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_assignment_errors.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow_warnings.cpp"
-        "tests/src/test_odbcompiler_semantic_type_check_and_cast_binop_pow_errors.cpp"
-        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
-        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
-        "tests/src/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp")
+        "tests/src/semantic/conditionals_warnings.cpp"
+        "tests/src/semantic/initialize_undeclared_variables.cpp"
+        "tests/src/semantic/loop_exit.cpp"
+        "tests/src/semantic/type_check_and_cast_assignment.cpp"
+        "tests/src/semantic/type_check_and_cast_assignment_warnings.cpp"
+        "tests/src/semantic/type_check_and_cast_assignment_errors.cpp"
+        "tests/src/semantic/type_check_and_cast_binop_pow.cpp"
+        "tests/src/semantic/type_check_and_cast_binop_pow_warnings.cpp"
+        "tests/src/semantic/type_check_and_cast_binop_pow_errors.cpp"
+        "tests/src/semantic/resolve_cmd_overloads.cpp"
+        "tests/src/semantic/resolve_cmd_overloads_warnings.cpp"
+        "tests/src/semantic/resolve_cmd_overloads_errors.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
