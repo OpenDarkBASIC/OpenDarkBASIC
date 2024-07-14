@@ -21,7 +21,7 @@ TEST_F(NAME, prefer_exact_overload)
     cmd_id expected_cmd = addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    EXPECT_THAT(
+    ASSERT_THAT(
         semantic_check_run(
             &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
         Eq(0))
@@ -29,9 +29,9 @@ TEST_F(NAME, prefer_exact_overload)
 
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 1;
-    EXPECT_THAT(
+    ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].type, Eq(TYPE_FLOAT));
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, prefer_closer_matching_overload)
@@ -40,7 +40,7 @@ TEST_F(NAME, prefer_closer_matching_overload)
     cmd_id expected_cmd = addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    EXPECT_THAT(
+    ASSERT_THAT(
         semantic_check_run(
             &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
         Eq(0))
@@ -48,9 +48,9 @@ TEST_F(NAME, prefer_closer_matching_overload)
 
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 1;
-    EXPECT_THAT(
+    ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].type, Eq(TYPE_DOUBLE));
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, command_expr_passed_as_argument)
@@ -60,7 +60,7 @@ TEST_F(NAME, command_expr_passed_as_argument)
     addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print get float#()"), Eq(0));
-    EXPECT_THAT(
+    ASSERT_THAT(
         semantic_check_run(
             &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
         Eq(0))
@@ -68,9 +68,9 @@ TEST_F(NAME, command_expr_passed_as_argument)
 
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 2;
-    EXPECT_THAT(
+    ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].type, Eq(TYPE_FLOAT));
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }
 
 TEST_F(NAME, bool_is_promoted_to_integer_overload)
@@ -87,8 +87,8 @@ TEST_F(NAME, bool_is_promoted_to_integer_overload)
 
     int cmd = ast.nodes[0].block.stmt;
     int expected_cmd_id = 0;
-    EXPECT_THAT(
+    ASSERT_THAT(
         cmds.param_types->data[expected_cmd_id]->data[0].type,
         Eq(TYPE_DOUBLE_INTEGER));
-    EXPECT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
+    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(expected_cmd_id));
 }

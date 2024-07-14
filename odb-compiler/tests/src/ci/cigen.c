@@ -961,8 +961,8 @@ write_to_file(const struct mstream* ms, const char* filename)
 {
     struct mfile mf;
 
-    /* Don't write resource if it is identical to the existing one -- causes
-     * less rebuilds */
+    /* Don't write if it is identical to the existing one -- causes less
+     * rebuilds */
     if (mfile_map_read(&mf, filename, 1) == 0)
     {
         if (mf.size == ms->write_ptr
@@ -985,6 +985,8 @@ main(int argc, char** argv)
 {
     struct cfg       cfg = {0};
     struct ci_files* files = &empty_ci_files;
+    struct mstream   ms = mstream_init_writeable();
+
     if (!stream_is_terminal(stderr))
         disable_colors = 1;
 
@@ -994,7 +996,6 @@ main(int argc, char** argv)
     if (collect_ci_files(&cfg, &files) != 0)
         return -1;
 
-    struct mstream ms = mstream_init_writeable();
     if (gen_source(&ms, files, &cfg) != 0)
         return -1;
 

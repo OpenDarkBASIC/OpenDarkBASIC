@@ -489,6 +489,8 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/semantic/conditionals_warnings.cpp"
         "tests/src/semantic/initialize_undeclared_variables.cpp"
+        "tests/src/semantic/loop_for_warnings.cpp"
+        "tests/src/semantic/loop_for_errors.cpp"
         "tests/src/semantic/loop_exit.cpp"
         "tests/src/semantic/type_check_and_cast_assignment.cpp"
         "tests/src/semantic/type_check_and_cast_assignment_warnings.cpp"

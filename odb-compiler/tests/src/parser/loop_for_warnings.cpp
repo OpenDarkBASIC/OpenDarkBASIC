@@ -3,7 +3,7 @@
 
 #include "gmock/gmock.h"
 
-#define NAME odbcompiler_db_parser_loop_for
+#define NAME odbcompiler_db_parser_loop_for_warnings
 
 using namespace testing;
 
