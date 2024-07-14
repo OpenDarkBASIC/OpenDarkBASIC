@@ -1520,7 +1520,6 @@ write_resource(const struct mstream* ms, const char* filename)
     }
 
     /* Write out file */
-    printf("File is different, writing...\n");
     if (mfile_map_write(&mf, filename, ms->write_ptr) != 0)
         return -1;
     memcpy(mf.address, ms->address, ms->write_ptr);

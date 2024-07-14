@@ -416,26 +416,6 @@ target_compile_definitions (odb-compiler PRIVATE ${LLVM_DEFINITIONS})
 ###############################################################################
 
 if (ODBCOMPILER_TESTS)
-    file (GLOB_RECURSE CI_DBA_SOURCES ${PROJECT_SOURCE_DIR}/tests/src/ci/*.dba)
-    file (GLOB_RECURSE CI_RESULTS ${PROJECT_SOURCE_DIR}/tests/src/ci/*.out)
-    file (GLOB_RECURSE CI_ODB_RESULTS ${PROJECT_SOURCE_DIR}/tests/src/ci/*.odbout)
-    set (CIGEN_INPUTS ${CI_DBA_SOURCES} ${CI_RESULTS} ${CI_ODB_RESULTS})
-    set (CIGEN_OUTPUTS ${PROJECT_BINARY_DIR}/tests/src/ci.cpp)
-    add_executable (odb-cigen
-        "tests/src/ci/cigen.c")
-    add_custom_command (
-        OUTPUT ${CIGEN_OUTPUTS}
-        COMMAND odb-cigen
-        ARGS
-            --name "odbcompiler_ci"
-            -i ${CIGEN_INPUTS}
-            -o ${CIGEN_OUTPUTS}
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        DEPENDS
-            odb-cigen
-            ${CIGEN_INPUTS}
-        COMMENT "[odb-cigen] Generating CI test cases"
-        VERBATIM)
     target_sources (odb-tests PRIVATE
         #"tests/src/ast/test_ast_treeiterator.cpp"
         #"tests/src/astpost/test_astpost_eliminate_bitwise_not_rhs.cpp"
@@ -522,6 +502,49 @@ if (ODBCOMPILER_TESTS)
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
+
+    # Continuous integration test cases are written using DBA source files
+    # with associated expected outputs. odb-cigen is a program that converts
+    # these files into GoogleTest test cases. Each subdirectory in the ci/
+    # folder must be listed here explicitly in order to generate the test
+    # cases
+    set (CIGEN_SUITES
+        "binop-precedence"
+        "for-loops"
+        "select-case")
+    add_executable (odb-cigen
+        "tests/src/ci/cigen.c")
+    set (CIGEN_OUTPUTS)
+    foreach (SUITE ${CIGEN_SUITES})
+        string (REPLACE "-" "_" SUITE_NAME ${SUITE})
+        file (GLOB_RECURSE CI_DBA_SOURCES "${PROJECT_SOURCE_DIR}/tests/src/ci/${SUITE}/*.dba")
+        file (GLOB_RECURSE CI_RESULTS "${PROJECT_SOURCE_DIR}/tests/src/ci/${SUITE}/*.out")
+        file (GLOB_RECURSE CI_ODB_RESULTS "${PROJECT_SOURCE_DIR}/tests/src/ci/${SUITE}/*.odbout")
+        set (CIGEN_INPUTS ${CI_DBA_SOURCES} ${CI_RESULTS} ${CI_ODB_RESULTS})
+        set (CIGEN_OUTPUT "${PROJECT_BINARY_DIR}/tests/src/ci/${SUITE_NAME}.cpp")
+        add_custom_command (
+            OUTPUT ${CIGEN_OUTPUT}
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/tests/src/ci"
+            COMMAND odb-cigen
+            ARGS
+                --suite "odbcompiler_ci_${SUITE_NAME}"
+                -i ${CIGEN_INPUTS}
+                -o ${CIGEN_OUTPUT}
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            DEPENDS
+                odb-cigen
+                ${CIGEN_INPUTS}
+            COMMENT "[odb-cigen] Generating CI test cases for ${SUITE_NAME}"
+            VERBATIM)
+        target_sources (odb-tests PRIVATE ${CIGEN_OUTPUT})
+        list (APPEND CIGEN_OUTPUTS ${CIGEN_OUTPUT})
+    endforeach ()
+    # There is an issue in cmake where the output of add_custom_command is not
+    # added to a target's DEPENDS if target_sources() is used. We work around
+    # this by creating a custom target that is a dependency of odb-tests,
+    # which in turn DEPENDS on the outputs of odb-cigen.
+    add_custom_target (odb-tests-cigen ALL DEPENDS ${CIGEN_OUTPUTS})
+    add_dependencies (odb-tests odb-tests-cigen)
 endif ()
 
 ###############################################################################

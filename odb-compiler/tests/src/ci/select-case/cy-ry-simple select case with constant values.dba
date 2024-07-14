@@ -1,13 +1,13 @@
 for n=1 to 3
     select n
         case 1
-            stdout "1"
+            print stdout "1"
         endcase
         case 2
-            stdout "2"
+            print stdout "2"
         endcase
         case 3
-            stdout "3"
+            print stdout "3"
         endcase
     endselect
 next n

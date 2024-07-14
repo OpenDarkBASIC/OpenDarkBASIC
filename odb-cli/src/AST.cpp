@@ -37,56 +37,75 @@ deinitAST(void)
     }
 }
 
-// ----------------------------------------------------------------------------
-bool
-parseDBA(const std::vector<std::string>& args)
+static bool
+doParse(const std::string& filename)
 {
-    struct db_parser parser;
-    for (const auto& arg : args)
-    {
-        auto& result = results.emplace_back();
+    auto& result = results.emplace_back();
 
-        result.source_filename = arg;
+    if (filename.size())
+    {
+        result.source_filename = filename;
         log_parser_info(
             "Parsing file {quote:%s}\n", result.source_filename.c_str());
         if (db_source_open_file(
                 &result.source, cstr_ospathc(result.source_filename.c_str()))
             != 0)
             goto open_source_failed;
-
-        if (db_parser_init(&result.parser) != 0)
-            goto init_parser_failed;
-
-        if (db_parse(
-                &result.parser,
-                &result.ast,
-                result.source_filename.c_str(),
-                result.source,
-                getCommandList())
-            != 0)
-            goto parse_failed;
-
-        log_semantic_info("Running semantic checks\n");
-        if (semantic_run_essential_checks(
-                getAST(),
-                getPluginList(),
-                getCommandList(),
-                getSourceFilename(),
-                getSource())
-            != 0)
-            goto parse_failed;
-
-        continue;
-
-    parse_failed:
-        ast_deinit(&result.ast);
-        db_parser_deinit(&result.parser);
-    init_parser_failed:
-        db_source_close(&result.source);
-    open_source_failed:
-        results.pop_back();
-        return false;
     }
+    else
+    {
+        result.source_filename = "<stdin>";
+        log_parser_info("Parsing source from stdin\n");
+        if (db_source_open_stream(&result.source, stdin) != 0)
+            goto open_source_failed;
+    }
+
+    if (db_parser_init(&result.parser) != 0)
+        goto init_parser_failed;
+
+    if (db_parse(
+            &result.parser,
+            &result.ast,
+            result.source_filename.c_str(),
+            result.source,
+            getCommandList())
+        != 0)
+        goto parse_failed;
+
+    log_semantic_info("Running semantic checks\n");
+    if (semantic_run_essential_checks(
+            getAST(),
+            getPluginList(),
+            getCommandList(),
+            getSourceFilename(),
+            getSource())
+        != 0)
+        goto parse_failed;
+
+    return true;
+
+parse_failed:
+    ast_deinit(&result.ast);
+    db_parser_deinit(&result.parser);
+init_parser_failed:
+    db_source_close(&result.source);
+open_source_failed:
+    results.pop_back();
+    return false;
+}
+
+// ----------------------------------------------------------------------------
+bool
+parseDBA(const std::vector<std::string>& args)
+{
+    struct db_parser parser;
+    if (args.size() == 0)
+        if (doParse("") == false)
+            return false;
+
+    for (const auto& arg : args)
+        if (doParse(arg) == false)
+            return false;
 
     return true;
 }
@@ -117,7 +136,10 @@ dumpASTDOT(const std::vector<std::string>& args)
 
         for (const auto& result : results)
             ast_export_dot(
-                &result.ast, cstr_ospathc(args[0].c_str()), result.source, getCommandList());
+                &result.ast,
+                cstr_ospathc(args[0].c_str()),
+                result.source,
+                getCommandList());
     }
     else
     {

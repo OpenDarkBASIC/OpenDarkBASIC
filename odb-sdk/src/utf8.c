@@ -13,15 +13,24 @@ utf8_deinit(struct utf8 str)
 }
 
 int
+utf8_resize(struct utf8* str, int len)
+{
+    if (str->len < len || str->data == NULL)
+    {
+        void* new_data = mem_realloc(str->data, len + UTF8_APPEND_PADDING);
+        if (new_data == NULL)
+            return log_oom(len + UTF8_APPEND_PADDING, "utf8_resize()");
+        str->data = new_data;
+    }
+
+    return 0;
+}
+
+int
 utf8_set(struct utf8* dst, struct utf8_view src)
 {
-    if (dst->len < src.len || dst->data == NULL)
-    {
-        void* new_data = mem_realloc(dst->data, src.len + UTF8_APPEND_PADDING);
-        if (new_data == NULL)
-            return log_oom(src.len + UTF8_APPEND_PADDING, "utf8_set()");
-        dst->data = new_data;
-    }
+    if (utf8_resize(dst, src.len) != 0)
+        return -1;
 
     dst->len = src.len;
     memcpy(dst->data, src.data + src.off, (size_t)src.len);
@@ -32,12 +41,9 @@ utf8_set(struct utf8* dst, struct utf8_view src)
 int
 utf8_append(struct utf8* str, struct utf8_view append)
 {
-    mem_size new_size = (mem_size)(str->len + append.len + UTF8_APPEND_PADDING);
-    void*    new_data = mem_realloc(str->data, new_size);
-    if (new_data == NULL)
-        return log_oom(new_size, "utf8_append()");
+    if (utf8_resize(str, str->len + append.len) != 0)
+        return -1;
 
-    str->data = new_data;
     memcpy(str->data + str->len, append.data + append.off, (size_t)append.len);
     str->len += append.len;
 

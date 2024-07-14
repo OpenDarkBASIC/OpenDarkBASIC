@@ -104,6 +104,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     $<$<PLATFORM_ID:Linux>:src/fs_linux.c>
     $<$<PLATFORM_ID:Linux>:src/mfile_linux.c>
     $<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/process_linux.c>
     $<$<PLATFORM_ID:Linux>:src/thread_linux.c>
     $<$<PLATFORM_ID:Linux>:src/utf8_linux.c>
 
@@ -112,6 +113,7 @@ add_library (odb-sdk ${ODBSDK_LIB_TYPE}
     $<$<PLATFORM_ID:Windows>:src/fs_win32.c>
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
     $<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
+    $<$<PLATFORM_ID:Windows>:src/process_win32.c>
     $<$<PLATFORM_ID:Windows>:src/thread_win32.c>
     $<$<PLATFORM_ID:Windows>:src/utf8_win32.c>)
 target_include_directories (odb-sdk
@@ -157,6 +159,7 @@ include (FetchContent)
 if (ODBSDK_TESTS)
     target_sources (odb-tests PRIVATE
         "tests/src/LogHelper.cpp"
+        "tests/src/Utf8Helper.cpp"
         "tests/src/test_odbsdk_btree.cpp"
         "tests/src/test_odbsdk_btree_as_set.cpp"
         "tests/src/test_odbsdk_log.cpp"
@@ -164,6 +167,7 @@ if (ODBSDK_TESTS)
         "tests/src/test_odbsdk_hm.cpp"
         "tests/src/test_odbsdk_hm_full.cpp"
         "tests/src/test_odbsdk_ospath.cpp"
+        "tests/src/test_odbsdk_process.cpp"
         "tests/src/test_odbsdk_rb.cpp"
         "tests/src/test_odbsdk_utf8.cpp"
         "tests/src/test_odbsdk_utf8_list.cpp"
@@ -171,6 +175,12 @@ if (ODBSDK_TESTS)
     target_include_directories (odb-tests
         PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)
     target_link_libraries (odb-tests PUBLIC odb-sdk)
+
+    add_executable (odb-echo
+        "tests/src/echo.c")
+    odb_target_properties (odb-echo
+        PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
 endif ()
 
 ###############################################################################

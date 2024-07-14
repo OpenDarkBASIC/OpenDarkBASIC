@@ -5,6 +5,7 @@
 #else
 #define NL "\n"
 #define _GNU_SOURCE
+#include <dirent.h>
 #include <errno.h>
 #include <sys/fcntl.h>
 #include <sys/mman.h>
@@ -12,20 +13,14 @@
 #include <unistd.h>
 #endif
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 /* ----------------------------------------------------------------------------
  * Printing and formatting
  * ------------------------------------------------------------------------- */
-
-/*! All strings are represented as an offset and a length into a buffer. */
-struct str_view
-{
-    int off, len;
-};
 
 static int disable_colors = 0;
 
@@ -63,6 +58,73 @@ print_error(const char* fmt, ...)
 }
 
 /* ----------------------------------------------------------------------------
+ * Settings & Command Line
+ * ------------------------------------------------------------------------- */
+
+struct cfg
+{
+    const char* suite_name;
+    const char* output_file;
+    char**      input_files;
+    int         input_file_count;
+};
+
+static int
+parse_cmdline(int argc, char** argv, struct cfg* cfg)
+{
+    int i;
+    for (i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "--suite") == 0)
+        {
+            if (i + 1 >= argc)
+                return print_error("Missing suite name. Use --suite <name>\n");
+
+            cfg->suite_name = argv[++i];
+        }
+        else if (strcmp(argv[i], "-i") == 0)
+        {
+            if (i + 1 >= argc)
+                return print_error(
+                    "Missing input files. Use -i <file1> [file2...]\n");
+
+            cfg->input_files = &argv[++i];
+            cfg->input_file_count = 1;
+            for (i++; i != argc; ++i)
+            {
+                if (argv[i][0] == '-')
+                {
+                    i--;
+                    break;
+                }
+                cfg->input_file_count++;
+            }
+        }
+        else if (strcmp(argv[i], "-o") == 0)
+        {
+            if (i + 1 >= argc)
+                return print_error(
+                    "Missing output file name. Use -o <output.cpp>\n");
+
+            cfg->output_file = argv[++i];
+        }
+    }
+
+    if (cfg->suite_name == NULL)
+        return print_error("No suite name was specified. Use --suite <name>\n");
+
+    if (cfg->output_file == NULL)
+        return print_error(
+            "No output file name was specified. Use -o <output.cpp>\n");
+
+    if (cfg->input_files == NULL)
+        return print_error(
+            "No input files were specified. Use -i <file1> [file2...]\n");
+
+    return 0;
+}
+
+/* ----------------------------------------------------------------------------
  * Platform abstractions & Utilities
  * ------------------------------------------------------------------------- */
 
@@ -91,29 +153,29 @@ struct mfile
 /*!
  * \brief Memory-maps a file in read-only mode.
  * \param[in] mf Pointer to mfile structure. Struct can be uninitialized.
- * \param[in] file_path Utf8 encoded file path.
+ * \param[in] filepath Utf8 encoded file path.
  * \param[in] silence_open_error If zero, an error is printed to stderr if
  * mapping fails. If one, no errors are printed. When comparing the generated
  * code with an already existing file, we allow the function to fail silently if
  * the file does not exist. \return Returns 0 on success, negative on failure.
  */
 static int
-mfile_map_read(struct mfile* mf, const char* file_path, int silence_open_error)
+mfile_map_read(struct mfile* mf, const char* filepath, int silence_open_error)
 {
 #if defined(WIN32)
     HANDLE        hFile;
     LARGE_INTEGER liFileSize;
     HANDLE        mapping;
-    wchar_t*      utf16_file_path;
+    wchar_t*      utf16_filepath;
 
-    utf16_file_path = utf8_to_utf16(file_path, (int)strlen(file_path));
-    if (utf16_file_path == NULL)
+    utf16_filepath = utf8_to_utf16(filepath, (int)strlen(filepath));
+    if (utf16_filepath == NULL)
         goto utf16_conv_failed;
 
     /* Try to open the file */
     hFile = CreateFileW(
-        utf16_file_path, /* File name */
-        GENERIC_READ,    /* Read only */
+        utf16_filepath, /* File name */
+        GENERIC_READ,   /* Read only */
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         NULL,                  /* Default security */
         OPEN_EXISTING,         /* File must exist */
@@ -150,7 +212,7 @@ mfile_map_read(struct mfile* mf, const char* file_path, int silence_open_error)
     /* The file mapping isn't required anymore */
     CloseHandle(mapping);
     CloseHandle(hFile);
-    utf_free(utf16_file_path);
+    utf_free(utf16_filepath);
 
     mf->size = (int)liFileSize.QuadPart;
 
@@ -162,31 +224,31 @@ create_file_mapping_failed:
 get_file_size_failed:
     CloseHandle(hFile);
 open_failed:
-    utf_free(utf16_file_path);
+    utf_free(utf16_filepath);
 utf16_conv_failed:
     return -1;
 #else
     struct stat stbuf;
     int         fd;
 
-    fd = open(file_path, O_RDONLY);
+    fd = open(filepath, O_RDONLY);
     if (fd < 0)
     {
         if (!silence_open_error)
             print_error(
-                "Failed to open file \"%s\": %s\n", file_path, strerror(errno));
+                "Failed to open file \"%s\": %s\n", filepath, strerror(errno));
         goto open_failed;
     }
 
     if (fstat(fd, &stbuf) != 0)
     {
         print_error(
-            "Failed to stat file \"%s\": %s\n", file_path, strerror(errno));
+            "Failed to stat file \"%s\": %s\n", filepath, strerror(errno));
         goto fstat_failed;
     }
     if (!S_ISREG(stbuf.st_mode))
     {
-        print_error("File \"%s\" is not a regular file!\n", file_path);
+        print_error("File \"%s\" is not a regular file!\n", filepath);
         goto fstat_failed;
     }
 
@@ -200,7 +262,7 @@ utf16_conv_failed:
     if (mf->address == MAP_FAILED)
     {
         print_error(
-            "Failed to mmap() file \"%s\": %s\n", file_path, strerror(errno));
+            "Failed to mmap() file \"%s\": %s\n", filepath, strerror(errno));
         goto mmap_failed;
     }
 
@@ -221,26 +283,26 @@ open_failed:
 /*!
  * \brief Memory-maps a file in read-write mode.
  * \param[in] mf Pointer to mfile structure. Struct can be uninitialized.
- * \param[in] file_path Utf8 encoded file path.
+ * \param[in] filepath Utf8 encoded file path.
  * \param[in] size Size of the file in bytes. This is used to allocate space
  * on the file system.
  * \return Returns 0 on success, negative on failure.
  */
 static int
-mfile_map_write(struct mfile* mf, const char* file_path, int size)
+mfile_map_write(struct mfile* mf, const char* filepath, int size)
 {
 #if defined(WIN32)
     HANDLE   hFile;
     HANDLE   mapping;
-    wchar_t* utf16_file_path;
+    wchar_t* utf16_filepath;
 
-    utf16_file_path = utf8_to_utf16(file_path, (int)strlen(file_path));
-    if (utf16_file_path == NULL)
+    utf16_filepath = utf8_to_utf16(filepath, (int)strlen(filepath));
+    if (utf16_filepath == NULL)
         goto utf16_conv_failed;
 
     /* Try to open the file */
     hFile = CreateFileW(
-        utf16_file_path,              /* File name */
+        utf16_filepath,               /* File name */
         GENERIC_READ | GENERIC_WRITE, /* Read/write */
         0,
         NULL,                  /* Default security */
@@ -275,7 +337,7 @@ mfile_map_write(struct mfile* mf, const char* file_path, int size)
     /* The file mapping isn't required anymore */
     CloseHandle(mapping);
     CloseHandle(hFile);
-    utf_free(utf16_file_path);
+    utf_free(utf16_filepath);
 
     mf->size = size;
 
@@ -286,19 +348,19 @@ map_view_failed:
 create_file_mapping_failed:
     CloseHandle(hFile);
 open_failed:
-    utf_free(utf16_file_path);
+    utf_free(utf16_filepath);
 utf16_conv_failed:
     return -1;
 #else
     int fd = open(
-        file_path,
+        filepath,
         O_CREAT | O_RDWR | O_TRUNC,
         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0)
     {
         print_error(
             "Failed to open file \"%s\" for writing: %s\n",
-            file_path,
+            filepath,
             strerror(errno));
         goto open_failed;
     }
@@ -310,7 +372,7 @@ utf16_conv_failed:
     {
         print_error(
             "Failed to resize file \"%s\" to %d: %s\n",
-            file_path,
+            filepath,
             size,
             strerror(errno));
         goto mmap_failed;
@@ -322,7 +384,7 @@ utf16_conv_failed:
     {
         print_error(
             "Failed to mmap() file \"%s\" for writing: %s\n",
-            file_path,
+            filepath,
             strerror(errno));
         goto mmap_failed;
     }
@@ -354,6 +416,115 @@ mfile_unmap(struct mfile* mf)
 #endif
 }
 
+static int
+fs_list_files_recurse(
+    const char* path,
+    int   (*on_entry)(const char* filepath, const char* filename, void* user),
+    void* user)
+{
+#if defined(WIN32)
+    DWORD           dwError;
+    WIN32_FIND_DATA ffd;
+    char*           correct_path;
+    int             path_len = strlen(path);
+    int             ret = 0;
+    HANDLE          hFind = INVALID_HANDLE_VALUE;
+
+    correct_path = malloc(path_len + 3);
+    if (correct_path == NULL)
+        goto str_set_failed;
+    strcpy(correct_path, path);
+    if (path[path_len - 1] == '/')
+        path[path_len - 1] = '\\';
+    if (path[path_len - 1] != '\\')
+        strcat(correct_path, "\\");
+    strcat(correct_path, "*");
+
+    hFind = FindFirstFileA(correct_path, &ffd);
+    if (hFind == INVALID_HANDLE_VALUE)
+        goto first_file_failed;
+
+    do
+    {
+        if (strcmp(ffd.cFileName, ".") == 0 || strcmp(ffd.cFileName, "..") == 0)
+            continue;
+        ret = on_entry(ffd.cFileName, user);
+        if (ret != 0)
+            goto out;
+    } while (FindNextFile(hFind, &ffd) != 0);
+
+    dwError = GetLastError();
+    if (dwError != ERROR_NO_MORE_FILES)
+        ret = -1;
+
+out:
+    FindClose(hFind);
+first_file_failed:
+    free(correct_path);
+str_set_failed:
+    return ret;
+#else
+    DIR*                 dp;
+    const struct dirent* ep;
+    char*                filepath = NULL;
+    int                  ret = 0;
+
+    dp = opendir(path);
+    if (!dp)
+        goto first_file_failed;
+
+    while ((ep = readdir(dp)) != NULL)
+    {
+        unsigned char d_type;
+        if (ep->d_name[0] == '.')
+            continue;
+
+        filepath = realloc(filepath, strlen(path) + strlen(ep->d_name) + 2);
+        strcpy(filepath, path);
+        if (filepath[strlen(filepath) - 1] != '/')
+            strcat(filepath, "/");
+        strcat(filepath, ep->d_name);
+
+        d_type = ep->d_type;
+        if (d_type == DT_UNKNOWN)
+        {
+            struct stat st;
+            if (stat(filepath, &st))
+            {
+                ret = -1;
+                goto out;
+            }
+
+            if (S_ISREG(st.st_mode))
+                d_type = DT_REG;
+            else if (S_ISDIR(st.st_mode))
+                d_type = DT_DIR;
+        }
+
+        switch (d_type)
+        {
+            case DT_REG:
+                ret = on_entry(filepath, ep->d_name, user);
+                if (ret != 0)
+                    goto out;
+                break;
+
+            case DT_DIR:
+                ret = fs_list_files_recurse(filepath, on_entry, user);
+                if (ret)
+                    return ret;
+                break;
+        }
+    }
+
+out:
+    if (filepath)
+        free(filepath);
+    closedir(dp);
+first_file_failed:
+    return ret;
+#endif
+}
 
 /*! A memory buffer that grows as data is added. */
 struct mstream
@@ -429,23 +600,19 @@ mstream_write_int(struct mstream* ms, int value)
     }
 }
 
+static inline void
+mstream_str(struct mstream* ms, const char* str, int len)
+{
+    mstream_grow(ms, len);
+    memcpy((char*)ms->address + ms->write_ptr, str, len);
+    ms->write_ptr += len;
+}
+
 /*! Write a C-string to the mstream buffer */
 static inline void
 mstream_cstr(struct mstream* ms, const char* cstr)
 {
-    int len = (int)strlen(cstr);
-    mstream_grow(ms, len);
-    memcpy((char*)ms->address + ms->write_ptr, cstr, len);
-    ms->write_ptr += len;
-}
-
-/*! Write a string view to the mstream buffer */
-static inline void
-mstream_str(struct mstream* ms, struct str_view str, const char* data)
-{
-    mstream_grow(ms, str.len);
-    memcpy((char*)ms->address + ms->write_ptr, data + str.off, str.len);
-    ms->write_ptr += str.len;
+    mstream_str(ms, cstr, (int)strlen(cstr));
 }
 
 /*!
@@ -455,7 +622,6 @@ mstream_str(struct mstream* ms, struct str_view str, const char* data)
  *   %i - Write an integer (int)
  *   %d - Write an integer (int)
  *   %s - Write a c-string (const char*)
- *   %S - Write a string view (struct str_view, const char*)
  * \param[in] ms Pointer to mstream structure.
  * \param[in] fmt Format string.
  * \param[in] ... Additional parameters.
@@ -476,9 +642,9 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
                 case 'i':
                 case 'd': mstream_write_int(ms, va_arg(va, int)); continue;
                 case 'S': {
-                    struct str_view str = va_arg(va, struct str_view);
-                    const char*     data = va_arg(va, const char*);
-                    mstream_str(ms, str, data);
+                    const char* str = va_arg(va, const char*);
+                    int         len = va_arg(va, int);
+                    mstream_str(ms, str, len);
                     continue;
                 }
             }
@@ -487,30 +653,350 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
     va_end(va);
 }
 
+/* -----------------------------------------------------------------------------
+ * Container for matching source and output files
+ * -------------------------------------------------------------------------- */
+
+struct ci_file
+{
+    char* dbaname;
+    char* dbapath;
+    char* outpath;
+};
+
+struct ci_files
+{
+    int            count;
+    struct ci_file file[1];
+};
+
+static struct ci_files empty_ci_files;
+
+static char*
+cstr_dup(const char* cstr)
+{
+    char* s = malloc(strlen(cstr) + 1);
+    strcpy(s, cstr);
+    return s;
+}
+
+static int
+cstr_ends_with(const char* cstr, const char* cmp)
+{
+    int len = strlen(cstr);
+    int cmp_len = strlen(cmp);
+    if (len < cmp_len)
+        return 0;
+
+    return memcmp(cstr + len - cmp_len, cmp, (size_t)cmp_len) == 0;
+}
+
+static int
+cstr_equal_without_ext(const char* s1, const char* s2)
+{
+    for (;;)
+    {
+        if (*s1 == '.' && *s1 == '.')
+            return 1;
+        if (*s1 != *s2)
+            return 0;
+        if (!*s1 || !*s2)
+            return 1;
+        s1++, s2++;
+    }
+}
 
 static void
-write_preamble(struct mstream* ms)
+ci_files_grow(struct ci_files** files)
 {
-    mstream_cstr(ms, "#include <gmock/gmock.h>\n\n");
-    mstream_cstr(ms, "extern \"C\" {\n");
-    mstream_cstr(ms, "#include <gmock/gmock.h>\n");
-    mstream_cstr(ms, "}\n\n");
+    int new_count = (*files)->count + 1;
+    *files = realloc(
+        *files == &empty_ci_files ? NULL : *files, new_count * sizeof(**files));
+    (*files)->count = new_count;
+}
 
-    mstream_cstr(ms, "#define NAME odbcompiler_ci\n\n");
+/*! Find corresponding out file from an dba file */
+static int
+ci_files_find_out(const struct ci_files* files, const char* dbapath)
+{
+    int i;
+    for (i = 0; i != files->count; ++i)
+        if (cstr_equal_without_ext(files->file[i].outpath, dbapath))
+            return i;
 
-    mstream_cstr(ms, "using namespace testing;\n\n");
+    return files->count;
+}
 
-    mstream_cstr(ms, "struct NAME : Test\n");
-    mstream_cstr(ms, "{\n");
-    mstream_cstr(ms, "};\n\n");
+/*! Find corresponding dba file from an out file */
+static int
+ci_files_find_dba(const struct ci_files* files, const char* outpath)
+{
+    int i;
+    for (i = 0; i != files->count; ++i)
+        if (cstr_equal_without_ext(files->file[i].dbapath, outpath))
+            return i;
+
+    return files->count;
+}
+
+static void
+ci_files_add_dba(struct ci_files** files, const char* dbapath)
+{
+    char* name;
+    char* path;
+    int   i = ci_files_find_out(*files, dbapath);
+    if (i == (*files)->count)
+    {
+        ci_files_grow(files);
+        (*files)->file[i].outpath = "";
+    }
+
+    path = name = cstr_dup(dbapath);
+    name += strlen(name);
+    while (name != path)
+    {
+        if (*name == '/' || *name == '\\')
+        {
+            name++;
+            break;
+        }
+        name--;
+    }
+
+    (*files)->file[i].dbapath = path;
+    (*files)->file[i].dbaname = name;
+}
+
+static void
+ci_files_add_out(struct ci_files** files, const char* outpath)
+{
+    int i = ci_files_find_dba(*files, outpath);
+    if (i == (*files)->count)
+    {
+        ci_files_grow(files);
+        (*files)->file[i].dbaname = "";
+        (*files)->file[i].dbapath = "";
+    }
+
+    (*files)->file[i].outpath = cstr_dup(outpath);
+}
+
+static int
+collect_ci_files(const struct cfg* cfg, struct ci_files** files)
+{
+    int i;
+    for (i = 0; i != cfg->input_file_count; ++i)
+    {
+        if (cstr_ends_with(cfg->input_files[i], ".dba"))
+            ci_files_add_dba(files, cfg->input_files[i]);
+
+        if (cstr_ends_with(cfg->input_files[i], ".out"))
+            ci_files_add_out(files, cfg->input_files[i]);
+    }
+
+    for (i = 0; i != (*files)->count; ++i)
+    {
+        if (!*(*files)->file[i].outpath)
+            return print_error(
+                "Missing out file for dba file `%s`\nEach .out file needs to "
+                "have a corresponding .dba file with the same name containing "
+                "the source code of the test case. The result of this program "
+                "is compared with the contents of the .out file.\n",
+                (*files)->file[i].dbapath);
+        if (!*(*files)->file[i].dbapath)
+            return print_error(
+                "Missing dba file for out file `%s`\nEach .dba test case "
+                "needs to have a corresponding .out file with the same name "
+                "containing the expected output "
+                "f the program.\n",
+                (*files)->file[i].outpath);
+    }
+
+    return 0;
+}
+
+/* -----------------------------------------------------------------------------
+ * Code generation
+ * -------------------------------------------------------------------------- */
+
+static int
+gen_source(
+    struct mstream* ms, const struct ci_files* files, const struct cfg* cfg)
+{
+    int f;
+
+    mstream_cstr(ms, "#include <gmock/gmock.h>" NL NL);
+    mstream_cstr(ms, "#include \"odb-sdk/tests/Utf8Helper.hpp\"" NL);
+    mstream_cstr(ms, "extern \"C\" {" NL);
+    mstream_cstr(ms, "#include \"odb-sdk/process.h\"" NL);
+    mstream_cstr(ms, "#include \"odb-sdk/utf8.h\"" NL);
+    mstream_cstr(ms, "}" NL NL);
+
+    mstream_fmt(ms, "#define NAME %s" NL NL, cfg->suite_name);
+
+    mstream_cstr(ms, "using namespace testing;" NL NL);
+
+    mstream_cstr(ms, "struct NAME : Test" NL);
+    mstream_cstr(ms, "{" NL);
+    mstream_cstr(ms, "    void SetUp() override" NL);
+    mstream_cstr(ms, "    {" NL);
+    mstream_cstr(ms, "        mkdir(\"ci-tests\", 0755);" NL);
+    mstream_cstr(ms, "        out = empty_utf8();" NL);
+    mstream_cstr(ms, "        err = empty_utf8();" NL);
+    mstream_cstr(ms, "    }" NL);
+    mstream_cstr(ms, "    void TearDown() override" NL);
+    mstream_cstr(ms, "    {" NL);
+    mstream_cstr(ms, "        utf8_deinit(out);" NL);
+    mstream_cstr(ms, "        utf8_deinit(err);" NL);
+    mstream_cstr(ms, "    }" NL);
+    mstream_cstr(ms, "    struct utf8 out, err;" NL);
+    mstream_cstr(ms, "};" NL NL);
+
+    for (f = 0; f != files->count; ++f)
+    {
+        int          i;
+        int          len;
+        char*        name;
+        struct mfile mfdba, mfout;
+        if (mfile_map_read(&mfdba, files->file[f].dbapath, 0) != 0)
+            return -1;
+        if (mfile_map_read(&mfout, files->file[f].outpath, 0) != 0)
+            return -1;
+
+        /* Remove .dba extension from name */
+        len = strlen(files->file[f].dbaname);
+        name = files->file[f].dbaname;
+        while (len--)
+            if (name[len] == '.')
+            {
+                name[len] = '\0';
+                break;
+            }
+
+        /* Replace spaces etc. with underscores */
+        name = files->file[f].dbaname;
+        for (; *name; name++)
+        {
+            if (*name >= 'a' && *name <= 'z' || *name >= 'A' && *name <= 'Z'
+                || *name >= '0' && *name <= '9' || *name == '_')
+                continue;
+            *name = '_';
+        }
+
+        /* Call odb-cli to compile the program */
+        mstream_fmt(ms, "TEST_F(NAME, %s)" NL, files->file[f].dbaname);
+        mstream_cstr(ms, "{" NL);
+        /* clang-format off */
+        mstream_fmt(
+            ms,
+            "    const char* compile_argv[] = {" NL
+            "        \"./odb-cli\"," NL
+            "        \"-b\"," NL
+            "        \"--dba\"," NL
+            "        \"--output\"," NL
+            "        \"ci-tests/%s\"," NL
+            "        NULL" NL
+            "    };" NL,
+            files->file[f].dbaname);
+        mstream_cstr(ms,
+            "    ASSERT_THAT(process_run(" NL
+            "        cstr_ospathc(\"./odb-cli\")," NL
+            "        compile_argv," NL
+            "        cstr_utf8_view(" NL
+            "            \"");
+        /* clang-format on */
+        for (i = 0; i != mfdba.size; ++i)
+        {
+            char c = ((char*)mfdba.address)[i];
+            if (c == '"' || c == '\\')
+                mstream_putc(ms, '\\');
+            if (c == '\n')
+                mstream_cstr(ms, "\\n\"" NL "            \"");
+            else
+                mstream_putc(ms, c);
+        }
+        mstream_cstr(ms, "\")," NL);
+        mstream_cstr(
+            ms,
+            "        &out, &err), Eq(0)) << std::string(err.data, "
+            "err.len);" NL);
+        mstream_cstr(ms, "    ASSERT_THAT(out, Utf8Eq(\"\"));" NL);
+        /* Compiler will generate output on stderr, but it's hard to predict
+         * what it will be exactly */
+        /*mstream_cstr(ms, "    ASSERT_THAT(err, Utf8Eq(\"\"));" NL NL);*/
+
+        /* Run compiled program and assert its output */
+        /* clang-format off */
+        mstream_fmt(
+            ms,
+            "    const char* run_argv[] = {" NL
+            "        \"./ci-tests/%s\"," NL
+            "        NULL" NL
+            "    };" NL,
+            files->file[f].dbaname);
+        mstream_fmt(ms,
+            "    ASSERT_THAT(process_run(" NL
+            "        cstr_ospathc(\"./ci-tests/%s\")," NL
+            "        run_argv," NL
+            "        empty_utf8_view()," NL
+            "        &out, &err), Eq(0));" NL,
+            files->file[f].dbaname);
+        /* clang-format on */
+        mstream_fmt(
+            ms,
+            "    ASSERT_THAT(out, Utf8Eq(%S));" NL,
+            (const char*)mfout.address,
+            (int)mfout.size);
+        /* odb-sdk will print out a memory report if it was built with this
+         * enabled */
+        /*mstream_cstr(ms, "    ASSERT_THAT(err, Utf8Eq(\"\"));" NL);*/
+        mstream_cstr(ms, "}" NL NL);
+    }
+
+    return 0;
+}
+
+static int
+write_to_file(const struct mstream* ms, const char* filename)
+{
+    struct mfile mf;
+
+    /* Don't write resource if it is identical to the existing one -- causes
+     * less rebuilds */
+    if (mfile_map_read(&mf, filename, 1) == 0)
+    {
+        if (mf.size == ms->write_ptr
+            && memcmp(mf.address, ms->address, mf.size) == 0)
+            return 0;
+        mfile_unmap(&mf);
+    }
+
+    /* Write out file */
+    if (mfile_map_write(&mf, filename, ms->write_ptr) != 0)
+        return -1;
+    memcpy(mf.address, ms->address, ms->write_ptr);
+    mfile_unmap(&mf);
+
+    return 0;
 }
 
 int
 main(int argc, char** argv)
 {
+    struct cfg       cfg = {0};
+    struct ci_files* files = &empty_ci_files;
     if (!stream_is_terminal(stderr))
         disable_colors = 1;
 
-    print_error("Hello, world!\n");
-    return -1;
+    if (parse_cmdline(argc, argv, &cfg) != 0)
+        return -1;
+
+    if (collect_ci_files(&cfg, &files) != 0)
+        return -1;
+
+    struct mstream ms = mstream_init_writeable();
+    if (gen_source(&ms, files, &cfg) != 0)
+        return -1;
+
+    return write_to_file(&ms, cfg.output_file);
 }

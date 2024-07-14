@@ -2,12 +2,12 @@ if a() + b() - c() then x=1
 end
 
 function a()
-    print "a"
+    print stdout "a"
 endfunction 1
 function b()
-    print "b"
+    print stdout "b"
 endfunction 1
 function c()
-    print "c"
+    print stdout "c"
 endfunction 1
 

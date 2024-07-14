@@ -1,0 +1,4 @@
+for n = 1 to 10
+    if n > 5 then exit
+    printc stdout n
+next n

@@ -158,8 +158,9 @@ section parser:
 
   dba():
     help: Parse DBA source file(s). The first file listed will become the 'main'
-          file, i.e. where execution starts.
-    args: <file> [files...]
+          file, i.e. where execution starts. If no files are listed, then the
+          source is read from stdin.
+    args: [file...]
     func: parseDBA
     runafter: load-commands
 
