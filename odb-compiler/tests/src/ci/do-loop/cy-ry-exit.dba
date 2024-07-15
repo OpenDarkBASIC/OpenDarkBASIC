@@ -1,0 +1,5 @@
+do
+    inc n
+    if n>5 then exit
+    printc stdout n
+loop

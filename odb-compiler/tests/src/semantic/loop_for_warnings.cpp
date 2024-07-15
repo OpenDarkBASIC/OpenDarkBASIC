@@ -52,3 +52,4 @@ TEST_F(NAME, step_out_of_range_2)
               " 1 | for n=5 to 1 step 1\n"
               "   |       ^~~~~<      ^\n"));
 }
+

@@ -1,0 +1,7 @@
+outer: for x=1 to 5
+    for y=1 to 5
+        if x=3 and y=3 then continue outer
+        printc stdout x
+        print stdout y
+    next y
+next x

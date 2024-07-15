@@ -1,0 +1,7 @@
+for n = mul(1) to mul(5) step 1
+    printc stdout n
+next n
+end
+
+function mul(value as integer)
+endfunction value * 2

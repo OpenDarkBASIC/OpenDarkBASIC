@@ -1,4 +1,4 @@
 for n = 1 to 10
-    print stdout n
     if n >= 5 then continue
+    printc stdout n
 next n

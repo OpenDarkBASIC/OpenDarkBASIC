@@ -1,0 +1,10 @@
+outer: do
+    inner: do
+        inc y
+        if y>5 then exit outer
+        printc stdout y
+    loop
+    inc x
+    if x>5 then exit
+    printc x
+loop

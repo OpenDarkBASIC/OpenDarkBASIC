@@ -512,7 +512,8 @@ if (ODBCOMPILER_TESTS)
     # cases
     set (CIGEN_SUITES
         "binop-precedence"
-        "for-loops"
+        "do-loop"
+        "for-loop"
         "select-case")
     add_executable (odb-cigen
         "tests/src/ci/cigen.c")

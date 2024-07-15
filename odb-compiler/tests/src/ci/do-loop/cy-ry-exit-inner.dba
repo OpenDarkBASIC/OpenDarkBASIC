@@ -1,0 +1,10 @@
+do
+    do
+        inc y
+        if y>5 then exit
+        printc stdout y
+    loop
+    inc x
+    if x>5 then exit
+    printc x
+loop
