@@ -181,7 +181,7 @@ semantic_run_essential_checks(
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_expand_constant_declarations,
-           &semantic_type_check_and_cast,
+           &semantic_type_check,
            &semantic_resolve_cmd_overloads,
            NULL};
     static const struct semantic_check essential_check

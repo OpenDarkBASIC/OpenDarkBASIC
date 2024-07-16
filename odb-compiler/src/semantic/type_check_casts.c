@@ -6,7 +6,7 @@
 #include <assert.h>
 
 enum type
-type_check_and_cast_casts(
+type_check_casts(
     struct ast*      ast,
     ast_id           cast,
     const char*      source_filename,

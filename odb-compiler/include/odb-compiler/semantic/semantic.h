@@ -57,7 +57,7 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
  * appearing as expressions have their return values checked, though.
  */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_type_check_and_cast;
+    semantic_type_check;
 
 /*!
  * When the parser creates the command node in the AST, it sets the command ID
@@ -74,3 +74,6 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
  */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_resolve_cmd_overloads;
+
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+semantic_loop_exit;

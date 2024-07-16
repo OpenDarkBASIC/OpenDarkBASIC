@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_type_check_and_cast_binop_pow
+#define NAME odbcompiler_semantic_type_check_binop_pow
 
 using namespace testing;
 
@@ -21,7 +21,7 @@ TEST_F(NAME, exponent_cast_to_integer)
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0));
     EXPECT_THAT(log(), LogEq(""));
     ast_id cmd = ast.nodes[0].block.stmt;

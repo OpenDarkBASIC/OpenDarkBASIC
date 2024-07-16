@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_type_check_and_cast_assignment_warnings
+#define NAME odbcompiler_semantic_type_check_assignment_warnings
 
 using namespace testing;
 
@@ -24,7 +24,7 @@ TEST_F(NAME, truncated_assignment)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(
@@ -74,7 +74,7 @@ TEST_F(NAME, implicit_conversion_assignment)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(

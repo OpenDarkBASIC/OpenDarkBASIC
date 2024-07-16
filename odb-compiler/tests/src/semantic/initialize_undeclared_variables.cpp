@@ -24,7 +24,7 @@ TEST_F(NAME, integer_initialized_to_0)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -43,7 +43,7 @@ TEST_F(NAME, double_integer_initialized_to_0)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -62,7 +62,7 @@ TEST_F(NAME, word_initialized_to_0)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -81,7 +81,7 @@ TEST_F(NAME, double_initialized_to_0)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -100,7 +100,7 @@ TEST_F(NAME, float_initialized_to_0)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -119,7 +119,7 @@ TEST_F(NAME, string_initialized_to_empty)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -141,7 +141,7 @@ TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
 
@@ -164,7 +164,7 @@ TEST_F(NAME, variable_in_while_statement_is_initialized_outside_of_loop)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
 

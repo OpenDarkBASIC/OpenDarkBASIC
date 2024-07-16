@@ -466,7 +466,7 @@ fail:
 
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations,
-       &semantic_type_check_and_cast,
+       &semantic_type_check,
        NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads

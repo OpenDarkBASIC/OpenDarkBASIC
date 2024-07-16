@@ -97,7 +97,7 @@ log_error_binop(
 }
 
 enum type
-type_check_and_cast_binop_symmetric(
+type_check_binop_symmetric(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,

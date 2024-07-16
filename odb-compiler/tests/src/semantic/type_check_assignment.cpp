@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_type_check_and_cast_assignment
+#define NAME odbcompiler_semantic_type_check_assignment
 
 using namespace testing;
 
@@ -21,7 +21,7 @@ TEST_F(NAME, undeclared_variable_defaults_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -41,7 +41,7 @@ TEST_F(NAME, undeclared_float_variable_defaults_to_float)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -61,7 +61,7 @@ TEST_F(NAME, undeclared_double_variable_defaults_to_double)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -81,7 +81,7 @@ TEST_F(NAME, undeclared_double_integer_variable_defaults_to_double_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -101,7 +101,7 @@ TEST_F(NAME, undeclared_string_variable_defaults_to_string)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -121,7 +121,7 @@ TEST_F(NAME, undeclared_word_variable_defaults_to_word)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -142,7 +142,7 @@ TEST_F(NAME, variable_assigned_byte_defaults_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -164,7 +164,7 @@ TEST_F(NAME, variable_assigned_boolean_defaults_to_boolean)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass1 = ast.nodes[0].block.stmt;
@@ -189,7 +189,7 @@ TEST_F(NAME, variable_assigned_dword_defaults_to_dword)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -207,7 +207,7 @@ TEST_F(NAME, variable_assigned_double_integer_defaults_to_double_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -225,7 +225,7 @@ TEST_F(NAME, variable_assigned_float_defaults_to_float)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
@@ -246,7 +246,7 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(log(), LogEq(""));

@@ -6,7 +6,7 @@
 #include <assert.h>
 
 enum type
-type_check_and_cast_binop_pow(
+type_check_binop_pow(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,

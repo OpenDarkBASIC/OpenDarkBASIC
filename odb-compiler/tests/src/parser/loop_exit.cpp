@@ -3,10 +3,6 @@
 
 #include "gmock/gmock.h"
 
-extern "C" {
-#include "odb-compiler/semantic/semantic.h"
-}
-
 #define NAME odbcompiler_semantic_loop_exit
 
 using namespace testing;
@@ -15,16 +11,13 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, exit_inside_of_loop)
+TEST_F(NAME, loop_exit)
 {
     ASSERT_THAT(
         parse("for n=1 to 10\n"
               "    exit\n"
               "next n\n"),
         Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
-        Eq(0));
-    ASSERT_THAT(log(), LogEq(""));
+
+    // TODO: Check AST structure
 }

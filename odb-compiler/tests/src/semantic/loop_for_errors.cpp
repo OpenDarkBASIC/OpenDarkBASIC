@@ -23,7 +23,7 @@ TEST_F(NAME, unknown_direction_1)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -48,7 +48,7 @@ TEST_F(NAME, unknown_direction_2)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -73,7 +73,7 @@ TEST_F(NAME, unknown_direction_3)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -98,7 +98,7 @@ TEST_F(NAME, unknown_direction_4)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -118,7 +118,7 @@ TEST_F(NAME, unknown_direction_5)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check_and_cast, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(

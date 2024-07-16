@@ -138,21 +138,21 @@ struct ctx
 };
 
 enum type
-type_check_and_cast_binop_symmetric(
+type_check_binop_symmetric(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,
     struct db_source source);
 
 enum type
-type_check_and_cast_binop_pow(
+type_check_binop_pow(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,
     struct db_source source);
 
 enum type
-type_check_and_cast_casts(
+type_check_casts(
     struct ast*      ast,
     ast_id           cast,
     const char*      source_filename,
@@ -486,11 +486,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_MUL:
                 case BINOP_DIV:
                 case BINOP_MOD:
-                    return type_check_and_cast_binop_symmetric(
+                    return type_check_binop_symmetric(
                         ctx->ast, n, ctx->source_filename, ctx->source);
 
                 case BINOP_POW:
-                    return type_check_and_cast_binop_pow(
+                    return type_check_binop_pow(
                         ctx->ast, n, ctx->source_filename, ctx->source);
 
                 case BINOP_SHIFT_LEFT:
@@ -506,7 +506,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_GREATER_EQUAL:
                 case BINOP_EQUAL:
                 case BINOP_NOT_EQUAL:
-                    if (type_check_and_cast_binop_symmetric(
+                    if (type_check_binop_symmetric(
                             ctx->ast, n, ctx->source_filename, ctx->source)
                         == TYPE_INVALID)
                     {
@@ -711,7 +711,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             enum type type = resolve_node_type(ctx, expr, scope);
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
-            return type_check_and_cast_casts(
+            return type_check_casts(
                 ctx->ast, n, ctx->source_filename, ctx->source);
         }
     }
@@ -765,7 +765,7 @@ sanity_check(
 }
 
 static int
-type_check_and_cast(
+type_check(
     struct ast*               ast,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
@@ -804,5 +804,5 @@ type_check_and_cast(
 
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations, NULL};
-const struct semantic_check semantic_type_check_and_cast
-    = {type_check_and_cast, depends};
+const struct semantic_check semantic_type_check
+    = {type_check, depends};
