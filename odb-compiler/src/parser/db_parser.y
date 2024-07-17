@@ -386,13 +386,20 @@ loop
   | loop_for                                { $$ = $1; }
   ;
 loop_do
-  : DO block_or_seps LOOP                   { $$ = ast_loop(ctx->ast, $2, @$); }
+  : DO block_or_seps LOOP                   { $$ = ast_loop(ctx->ast, $2, empty_utf8_span(), @$); }
+  | IDENTIFIER ':' DO block_or_seps LOOP    { $$ = ast_loop(ctx->ast, $3, $1, @$); }
   ;
 loop_while
-  : WHILE expr block_or_seps ENDWHILE       { $$ = ast_loop_while(ctx->ast, $3, $2, @$); }
+  : WHILE expr block_or_seps ENDWHILE       { $$ = ast_loop_while(ctx->ast, $3, $2, empty_utf8_span(), @$); }
+  : IDENTIFIER ':' WHILE expr
+        block_or_seps
+    ENDWHILE                                { $$ = ast_loop_while(ctx->ast, $5, $4, $1, @$); }
   ;
 loop_until
-  : REPEAT block_or_seps UNTIL expr         { $$ = ast_loop_until(ctx->ast, $2, $4, @$); }
+  : REPEAT block_or_seps UNTIL expr         { $$ = ast_loop_until(ctx->ast, $2, $4, empty_utf8_span(), @$); }
+  : IDENTIFIER ':' REPEAT
+        block_or_seps
+    UNTIL expr                              { $$ = ast_loop_until(ctx->ast, $4, $6, $1, @$); }
   ;
 // NOTE: ast_loop_for() returns a block, not a statement!
 loop_for
@@ -408,7 +415,8 @@ loop_next
   | NEXT                                    { $$ = -1; }
   ;
 loop_exit
-  : EXIT                                    { $$ = ast_loop_exit(ctx->ast, @$); }
+  : EXIT                                    { $$ = ast_loop_exit(ctx->ast, empty_utf8_span(), @$); }
+  | EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->ast, $2, @$); }
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
   | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }
@@ -423,6 +431,9 @@ identifier
   | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_DOUBLE, @$); }
   | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
   | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
+  ;
+label
+  : IDENTIFIER ':'                          { $$ = ast_label(ctx->ast, $1, @$); }
   ;
 %%
 

@@ -23,6 +23,15 @@ void
 ast_delete_node(struct ast* ast, int node);
 void
 ast_delete_tree(struct ast* ast, int node);
+
+/*!
+ * @brief Removes all nodes that have been deleted with @see ast_delete_node()
+ * 
+ * Many semantic checks that modify the tree depend on the various ast_id's not
+ * changing during modification. To get around this, when
+ * @see ast_delete_node() is called, the node is marked with a special value
+ * AST_ID (@see ast_type) and must be cleaned up later with this function.
+ */
 void
 ast_gc(struct ast* ast);
 

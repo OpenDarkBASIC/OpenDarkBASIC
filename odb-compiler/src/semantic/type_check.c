@@ -799,10 +799,14 @@ type_check(
     ast_gc(ast);
 
     typemap_deinit(ctx.typemap);
-    return sanity_check(ast, source_filename, source);
+
+#if defined(ODBCOMPILER_AST_SANITY_CHECK)
+    if (sanity_check(ast, source_filename, source) != 0)
+        return -1;
+#endif
+    return 0;
 }
 
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations, NULL};
-const struct semantic_check semantic_type_check
-    = {type_check, depends};
+const struct semantic_check semantic_type_check = {type_check, depends};

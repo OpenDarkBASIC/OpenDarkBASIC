@@ -309,12 +309,19 @@ ast_cond_branch(
 }
 
 ast_id
-ast_loop(struct ast* ast, ast_id body, struct utf8_span location)
+ast_loop(
+    struct ast*      ast,
+    ast_id           body,
+    struct utf8_span name,
+    struct utf8_span implicit_name,
+    struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_LOOP, location);
     if (n < 0)
         return -1;
     ast->nodes[n].loop.body = body;
+    ast->nodes[n].loop.name = name;
+    ast->nodes[n].loop.implicit_name = implicit_name;
     return n;
 }
 
@@ -410,9 +417,23 @@ ast_loop_for(
 }
 
 ast_id
-ast_loop_exit(struct ast* ast, struct utf8_span location)
+ast_loop_exit(struct ast* ast, ast_id label, struct utf8_span location)
 {
-    return new_node(ast, AST_LOOP_EXIT, location);
+    ast_id n = new_node(ast, AST_LOOP_EXIT, location);
+    if (n < -1)
+        return -1;
+    ast->nodes[n].exit.label = label;
+    return n;
+}
+
+ast_id
+ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_LABEL, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].label.name = name;
+    return n;
 }
 
 ast_id

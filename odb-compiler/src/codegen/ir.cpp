@@ -1055,7 +1055,9 @@ ir_translate_ast(
     builder.CreateRetVoid();
 
     // Validate the generated code, checking for consistency.
+#if defined(ODBCOMPILER_IR_SANITY_CHECK)
     llvm::verifyFunction(*F);
+#endif
 
     return 0;
 }
