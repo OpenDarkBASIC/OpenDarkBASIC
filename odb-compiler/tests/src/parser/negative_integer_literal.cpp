@@ -105,6 +105,7 @@ TEST_F(NAME, double_integer_literal)
               "z = -2147483649\n"),
         Eq(0));
 
+    // clang-format off
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
     int assz
@@ -116,9 +117,9 @@ TEST_F(NAME, double_integer_literal)
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litz].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(-4294967297));
-    EXPECT_THAT(
-        ast.nodes[lity].double_integer_literal.value, Eq(-9223372036854775808));
+    EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(-9223372036854775808));
     EXPECT_THAT(ast.nodes[litz].double_integer_literal.value, Eq(-2147483649));
+    // clang-format on
 }
 
 /*

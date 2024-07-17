@@ -304,6 +304,11 @@ utf8_equal(struct utf8_view s1, struct utf8_view s2)
            && memcmp(s1.data + s1.off, s2.data + s2.off, (size_t)s1.len) == 0;
 }
 static inline int
+utf8_equal_span(const char* data, struct utf8_span s1, struct utf8_span s2)
+{
+    return utf8_equal(utf8_span_view(data, s1), utf8_span_view(data, s2));
+}
+static inline int
 utf8_equal_cstr(struct utf8_view str, const char* cstr)
 {
     return utf8_equal(str, cstr_utf8_view(cstr));

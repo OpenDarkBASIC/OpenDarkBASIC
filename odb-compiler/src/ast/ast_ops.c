@@ -77,8 +77,11 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_UNOP: SWAP(enum unop_type, unop, op) break;
         case AST_COND: break;
         case AST_COND_BRANCH: break;
-        case AST_LOOP: break;
-        case AST_LOOP_EXIT: break;
+        case AST_LOOP:
+            SWAP(struct utf8_span, loop, name)
+            SWAP(struct utf8_span, loop, implicit_name) break;
+        case AST_LOOP_EXIT: SWAP(struct utf8_span, exit, name) break;
+        case AST_LABEL: SWAP(struct utf8_span, label, name) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
         case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
@@ -225,8 +228,31 @@ ast_trees_equal(
             break;
         case AST_COND: break;
         case AST_COND_BRANCH: break;
-        case AST_LOOP: break;
-        case AST_LOOP_EXIT: break;
+        case AST_LOOP:
+            if (!utf8_equal(
+                    utf8_span_view(source.text.data, ast->nodes[n1].loop.name),
+                    utf8_span_view(source.text.data, ast->nodes[n2].loop.name)))
+                return 0;
+            if (!utf8_equal(
+                    utf8_span_view(
+                        source.text.data, ast->nodes[n1].loop.implicit_name),
+                    utf8_span_view(
+                        source.text.data, ast->nodes[n2].loop.implicit_name)))
+                return 0;
+            break;
+        case AST_LOOP_EXIT:
+            if (!utf8_equal(
+                    utf8_span_view(source.text.data, ast->nodes[n1].exit.name),
+                    utf8_span_view(source.text.data, ast->nodes[n2].exit.name)))
+                return 0;
+            break;
+        case AST_LABEL:
+            if (!utf8_equal(
+                    utf8_span_view(source.text.data, ast->nodes[n1].label.name),
+                    utf8_span_view(
+                        source.text.data, ast->nodes[n2].label.name)))
+                return 0;
+            break;
         case AST_BOOLEAN_LITERAL:
             if (ast->nodes[n1].boolean_literal.is_true
                 != ast->nodes[n2].boolean_literal.is_true)

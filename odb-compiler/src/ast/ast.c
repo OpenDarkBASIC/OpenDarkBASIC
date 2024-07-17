@@ -327,22 +327,30 @@ ast_loop(
 
 ast_id
 ast_loop_while(
-    struct ast* ast, ast_id body, ast_id expr, struct utf8_span location)
+    struct ast*      ast,
+    ast_id           body,
+    ast_id           expr,
+    struct utf8_span name,
+    struct utf8_span location)
 {
-    ast_id exit = ast_loop_exit(ast, location);
+    ast_id exit = ast_loop_exit(ast, empty_utf8_span(), location);
     ast_id exit_block = ast_block(ast, exit, location);
     ast_id cond_branch = ast_cond_branch(ast, -1, exit_block, location);
     ast_id cond = ast_cond(ast, expr, cond_branch, location);
     ast_id block = ast_block(ast, cond, location);
     ast_block_append(ast, block, body, location);
-    return ast_loop(ast, block, location);
+    return ast_loop(ast, block, name, empty_utf8_span(), location);
 }
 
 ast_id
 ast_loop_until(
-    struct ast* ast, ast_id body, ast_id expr, struct utf8_span location)
+    struct ast*      ast,
+    ast_id           body,
+    ast_id           expr,
+    struct utf8_span name,
+    struct utf8_span location)
 {
-    ast_id exit = ast_loop_exit(ast, location);
+    ast_id exit = ast_loop_exit(ast, empty_utf8_span(), location);
     ast_id exit_block = ast_block(ast, exit, location);
     ast_id cond_branch = ast_cond_branch(ast, exit_block, -1, location);
     ast_id cond = ast_cond(ast, expr, cond_branch, location);
@@ -350,7 +358,7 @@ ast_loop_until(
         ast_block_append_new(ast, body, cond, location);
     else
         body = cond;
-    return ast_loop(ast, body, location);
+    return ast_loop(ast, body, name, empty_utf8_span(), location);
 }
 
 ast_id
@@ -361,6 +369,7 @@ ast_loop_for(
     ast_id           end,
     ast_id           step,
     ast_id           next,
+    struct utf8_span name,
     struct utf8_span location,
     const char*      source_filename,
     struct db_source source)
@@ -391,38 +400,43 @@ ast_loop_for(
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[init].info.node_type == AST_ASSIGNMENT,
         log_parser_err("type: %d\n", ast->nodes[init].info.node_type));
+    ast_id loop_var = ast->nodes[init].assignment.lvalue;
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[loop_var].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[loop_var].info.node_type));
+    struct utf8_span implicit_name = ast->nodes[loop_var].identifier.name;
 
     if (step == -1)
         step = ast_integer_literal(ast, 1, location);
 
-    ast_id exit = ast_loop_exit(ast, location);
+    ast_id exit = ast_loop_exit(ast, name, location);
     ast_id exit_cond_block = ast_block(ast, exit, location);
     ast_id exit_cond_branch
         = ast_cond_branch(ast, exit_cond_block, -1, location);
-    ast_id exit_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
+    ast_id exit_var = ast_dup_lvalue(ast, loop_var);
     ast_id exit_expr
         = ast_binop(ast, BINOP_GREATER_THAN, exit_var, end, location, location);
     ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, location);
-    ast_id inc_var = ast_dup_lvalue(ast, ast->nodes[init].assignment.lvalue);
+    ast_id inc_var = ast_dup_lvalue(ast, loop_var);
     ast_id inc_stmt = ast_inc_step(ast, inc_var, step, location);
     ast_id block = ast_block(ast, exit_stmt, location);
 
     if (body > -1)
         ast_block_append(ast, block, body, location);
     ast_block_append_new(ast, block, inc_stmt, location);
-    ast_id loop_stmt = ast_loop(ast, block, location);
+    ast_id loop_stmt = ast_loop(ast, block, name, implicit_name, location);
     ast_id init_block = ast_block(ast, init, location);
     ast_block_append_new(ast, init_block, loop_stmt, location);
     return init_block;
 }
 
 ast_id
-ast_loop_exit(struct ast* ast, ast_id label, struct utf8_span location)
+ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_LOOP_EXIT, location);
     if (n < -1)
         return -1;
-    ast->nodes[n].exit.label = label;
+    ast->nodes[n].exit.name = name;
     return n;
 }
 

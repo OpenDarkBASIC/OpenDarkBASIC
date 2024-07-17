@@ -81,10 +81,39 @@ write_nodes(
             fprintf(fp, "  n%d [shape=\"diamond\", label=\"branches\"];\n", n);
             break;
         case AST_LOOP:
-            fprintf(fp, "  n%d [shape=\"diamond\", label=\"loop\"];\n", n);
+            if (nd->loop.name.len)
+                fprintf(
+                    fp,
+                    "  n%d [shape=\"diamond\", label=\"%.*s: loop "
+                    "\\\"%.*s\\\"\"];\n",
+                    n,
+                    nd->loop.name.len,
+                    source.text.data + nd->loop.name.off,
+                    nd->loop.implicit_name.len,
+                    source.text.data + nd->loop.implicit_name.off);
+            else
+                fprintf(
+                    fp,
+                    "  n%d [shape=\"diamond\", label=\"loop \\\"%.*s\\\"\"];\n",
+                    n,
+                    nd->loop.name.len,
+                    source.text.data + nd->loop.name.off);
             break;
         case AST_LOOP_EXIT:
-            fprintf(fp, "  n%d [shape=\"record\", label=\"exit loop\"];\n", n);
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", label=\"exit %.*s\"];\n",
+                n,
+                nd->exit.name.len,
+                source.text.data + nd->exit.name.off);
+            break;
+        case AST_LABEL:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", label=\"%.*s:\"];\n",
+                n,
+                nd->label.name.len,
+                source.text.data + nd->label.name.off);
             break;
         case AST_BOOLEAN_LITERAL:
             fprintf(

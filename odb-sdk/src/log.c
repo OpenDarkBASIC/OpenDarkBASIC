@@ -200,12 +200,12 @@ emphn_style(int n)
 static const char*
 quote_style(void)
 {
-    return g_log.use_color ? "`" FGB_WHITE : "";
+    return g_log.use_color ? "`" FGB_WHITE : "`";
 }
 static const char*
 end_quote_style(void)
 {
-    return g_log.use_color ? COL_RESET "'" : "";
+    return g_log.use_color ? COL_RESET "'" : "'";
 }
 static const char*
 success_style(void)

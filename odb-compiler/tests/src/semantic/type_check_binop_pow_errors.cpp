@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_type_check_binop_pow
+#define NAME odbcompiler_semantic_type_check_binop_pow_errors
 
 using namespace testing;
 

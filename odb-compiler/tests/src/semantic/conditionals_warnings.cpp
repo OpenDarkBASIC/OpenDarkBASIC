@@ -6,7 +6,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_conditionals
+#define NAME odbcompiler_semantic_conditionals_warnings
 
 using namespace testing;
 

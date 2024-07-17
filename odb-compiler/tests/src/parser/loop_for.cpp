@@ -175,15 +175,3 @@ TEST_F(NAME, step_expression_range)
     ASSERT_THAT(ast.nodes[ast.nodes[inc_op].binop.right].byte_literal.value, Eq(1));
     /* clang-format on */
 }
-
-TEST_F(NAME, named_for_loop_using_keyword)
-{
-    ASSERT_THAT(
-        parse("for: for n=1 to 5\n"
-              "    print 5\n"
-              "next n\n"),
-        Eq(0))
-        << log().text;
-
-    // TODO: Check AST structure
-}

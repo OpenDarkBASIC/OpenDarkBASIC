@@ -237,8 +237,10 @@
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_exit
+%type<string_value> loop_name
 %type<node_value> literal
 %type<node_value> identifier
+//%type<node_value> label
 
 %start program
 
@@ -319,7 +321,7 @@ expr
   | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
-  | identifier                    { $$ = $1; }
+  | identifier                              { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 arglist
@@ -327,8 +329,8 @@ arglist
   | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
   ;
 const_decl
-  : CONSTANT identifier expr      { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
-  | CONSTANT identifier '=' expr  { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
+  : CONSTANT identifier expr                { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
+  | CONSTANT identifier '=' expr            { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
@@ -386,37 +388,40 @@ loop
   | loop_for                                { $$ = $1; }
   ;
 loop_do
-  : DO block_or_seps LOOP                   { $$ = ast_loop(ctx->ast, $2, empty_utf8_span(), @$); }
-  | IDENTIFIER ':' DO block_or_seps LOOP    { $$ = ast_loop(ctx->ast, $3, $1, @$); }
+  : loop_name DO block_or_seps LOOP         { $$ = ast_loop(ctx->ast, $3, $1, empty_utf8_span(), @$); }
   ;
 loop_while
-  : WHILE expr block_or_seps ENDWHILE       { $$ = ast_loop_while(ctx->ast, $3, $2, empty_utf8_span(), @$); }
-  : IDENTIFIER ':' WHILE expr
+  : loop_name WHILE expr
         block_or_seps
-    ENDWHILE                                { $$ = ast_loop_while(ctx->ast, $5, $4, $1, @$); }
+    ENDWHILE                                { $$ = ast_loop_while(ctx->ast, $4, $3, $1, @$); }
   ;
 loop_until
-  : REPEAT block_or_seps UNTIL expr         { $$ = ast_loop_until(ctx->ast, $2, $4, empty_utf8_span(), @$); }
-  : IDENTIFIER ':' REPEAT
+  : loop_name REPEAT
         block_or_seps
-    UNTIL expr                              { $$ = ast_loop_until(ctx->ast, $4, $6, $1, @$); }
+    UNTIL expr                              { $$ = ast_loop_until(ctx->ast, $3, $5, $1, @$); }
   ;
 // NOTE: ast_loop_for() returns a block, not a statement!
 loop_for
-  : FOR assignment TO expr STEP expr
+  : loop_name FOR assignment TO expr STEP expr
         block_or_seps
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $7, $2, $4, $6, $8, @$, ctx->filename, ctx->source); }
-  | FOR assignment TO expr
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $8, $3, $5, $7, $9, $1, @$, ctx->filename, ctx->source); }
+  | loop_name FOR assignment TO expr
         block_or_seps
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $5, $2, $4, -1, $6, @$, ctx->filename, ctx->source); }
+    loop_next                               { $$ = ast_loop_for(ctx->ast, $6, $3, $5, -1, $7, $1, @$, ctx->filename, ctx->source); }
   ;
+// TODO: Change to same as assignemnt (lvalue) eventually
 loop_next
   : NEXT identifier                         { $$ = $2; }
   | NEXT                                    { $$ = -1; }
   ;
 loop_exit
-  : EXIT                                    { $$ = ast_loop_exit(ctx->ast, empty_utf8_span(), @$); }
-  | EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->ast, $2, @$); }
+  : EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->ast, $2, @$); }
+  | EXIT                                    { $$ = ast_loop_exit(ctx->ast, empty_utf8_span(), @$); }
+  ;
+loop_name
+  : IDENTIFIER ':'                          { $$ = $1; }
+  |                                         { $$ = empty_utf8_span(); }
+  ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
   | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }
@@ -432,9 +437,9 @@ identifier
   | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
   | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
   ;
-label
-  : IDENTIFIER ':'                          { $$ = ast_label(ctx->ast, $1, @$); }
-  ;
+//label
+//  : IDENTIFIER ':'                          { $$ = ast_label(ctx->ast, $1, @$); }
+//  ;
 %%
 
 #include <stdarg.h>

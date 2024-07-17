@@ -682,6 +682,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
+        case AST_LABEL: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+
         case AST_BOOLEAN_LITERAL:
             return ctx->ast->nodes[n].boolean_literal.info.type_info
                    = TYPE_BOOLEAN;

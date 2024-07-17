@@ -39,7 +39,8 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_loop)
         parse("for n=1 to 10\n"
               "    exit a\n"
               "next n\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -47,8 +48,8 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_loop)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
-            " 3 | exit a\n"
+            "test:2:10: error: Unknown loop name referenced in EXIT statement.\n"
+            " 2 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `n'?\n"
             " 1 | for n=1 to 10\n"
@@ -61,7 +62,8 @@ TEST_F(NAME, exit_nonexisting_named_loop)
         parse("name: for n=1 to 10\n"
               "    exit a\n"
               "next n\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -69,8 +71,8 @@ TEST_F(NAME, exit_nonexisting_named_loop)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
-            " 3 | exit a\n"
+            "test:2:10: error: Unknown loop name referenced in EXIT statement.\n"
+            " 2 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `name'?\n"
             " 1 | name: for n=1 to 10\n"
@@ -85,7 +87,8 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop)
               "        exit a\n"
               "    next y\n"
               "next x\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -93,7 +96,7 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
+            "test:3:14: error: Unknown loop name referenced in EXIT statement.\n"
             " 3 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `y'?\n"
@@ -109,7 +112,8 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop)
               "        exit a\n"
               "    next y\n"
               "next x\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -117,12 +121,12 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
+            "test:3:14: error: Unknown loop name referenced in EXIT statement.\n"
             " 3 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `inner'?\n"
             " 2 | inner: for y=1 to 10\n"
-            "   | ^~~<\n"));
+            "   | ^~~~<\n"));
 }
 
 TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop_outer)
@@ -133,7 +137,8 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop_outer)
               "    next y\n"
               "    exit a\n"
               "next x\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -141,8 +146,8 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop_outer)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
-            " 3 | exit a\n"
+            "test:4:10: error: Unknown loop name referenced in EXIT statement.\n"
+            " 4 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `x'?\n"
             " 1 | for x=1 to 10\n"
@@ -157,7 +162,8 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop_outer)
               "    next y\n"
               "    exit a\n"
               "next x\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
@@ -165,11 +171,10 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop_outer)
     ASSERT_THAT(
         log(),
         LogEq(
-            "test:3:1: error: Unknown loop name referenced in EXIT statement.\n"
-            " 3 | exit a\n"
+            "test:4:10: error: Unknown loop name referenced in EXIT statement.\n"
+            " 4 | exit a\n"
             "   |      ^\n"
             "   = help: Did you mean `outer'?\n"
             " 1 | outer: for x=1 to 10\n"
-            "   | ^~~<\n"));
+            "   | ^~~~<\n"));
 }
-

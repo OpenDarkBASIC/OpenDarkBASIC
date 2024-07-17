@@ -214,8 +214,8 @@ union ast_node
 
     struct exit {
         struct info info;
-        ast_id label;
-        ast_id _pad;
+        ast_id _pad1, _pad2;
+        struct utf8_span name;
     } exit;
 
     struct label {
@@ -334,7 +334,7 @@ ast_id ast_loop(struct ast* ast, ast_id body, struct utf8_span name, struct utf8
 ast_id ast_loop_while(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, struct db_source source);
-ast_id ast_loop_exit(struct ast* ast, ast_id label, struct utf8_span location);
+ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);

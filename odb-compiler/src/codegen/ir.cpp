@@ -639,6 +639,8 @@ gen_expr(
         case AST_LOOP:
         case AST_LOOP_EXIT: break;
 
+        case AST_LABEL: break;
+
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
                 llvm::Type::getInt1Ty(ir->ctx),

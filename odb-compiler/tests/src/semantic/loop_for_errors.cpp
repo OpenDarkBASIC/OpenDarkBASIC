@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_loop_for_error
+#define NAME odbcompiler_semantic_loop_for_errors
 
 using namespace testing;
 
