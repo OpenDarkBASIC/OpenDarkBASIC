@@ -227,7 +227,7 @@
 
 /* non-terminals */
 %type<node_value> program
-%type<node_value> block iblock block_or_seps
+%type<node_value> block iblock maybe_block
 %type<node_value> stmt istmt
 %type<node_value> expr
 %type<node_value> arglist
@@ -265,7 +265,7 @@ block
                                               else
                                                   $$ = ast_block(ctx->ast, $1, @$); }
   ;
-block_or_seps
+maybe_block
   : seps block seps                         { $$ = $2; }
   | seps                                    { $$ = -1; }
   ;
@@ -371,14 +371,14 @@ cond_oneline
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
   ;
 cond_begin
-  : IF expr block_or_seps cond_next         { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
+  : IF expr maybe_block cond_next           { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
                                               $$ = ast_cond(ctx->ast, $2, branch, @$); }
   ;
 cond_next
-  : ELSEIF expr block_or_seps cond_next     { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
+  : ELSEIF expr maybe_block cond_next       { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
                                               ast_id cond = ast_cond(ctx->ast, $2, branch, @$);
                                               $$ = ast_block(ctx->ast, cond, @$); }
-  | ELSE block_or_seps ENDIF                { $$ = $2; }
+  | ELSE maybe_block ENDIF                  { $$ = $2; }
   | ENDIF                                   { $$ = -1; }
   ;
 loop
@@ -388,25 +388,25 @@ loop
   | loop_for                                { $$ = $1; }
   ;
 loop_do
-  : loop_name DO block_or_seps LOOP         { $$ = ast_loop(ctx->ast, $3, $1, empty_utf8_span(), @$); }
+  : loop_name DO maybe_block LOOP           { $$ = ast_loop(ctx->ast, $3, $1, empty_utf8_span(), @$); }
   ;
 loop_while
   : loop_name WHILE expr
-        block_or_seps
+        maybe_block
     ENDWHILE                                { $$ = ast_loop_while(ctx->ast, $4, $3, $1, @$); }
   ;
 loop_until
   : loop_name REPEAT
-        block_or_seps
+        maybe_block
     UNTIL expr                              { $$ = ast_loop_until(ctx->ast, $3, $5, $1, @$); }
   ;
 // NOTE: ast_loop_for() returns a block, not a statement!
 loop_for
   : loop_name FOR assignment TO expr STEP expr
-        block_or_seps
+        maybe_block
     loop_next                               { $$ = ast_loop_for(ctx->ast, $8, $3, $5, $7, $9, $1, @$, ctx->filename, ctx->source); }
   | loop_name FOR assignment TO expr
-        block_or_seps
+        maybe_block
     loop_next                               { $$ = ast_loop_for(ctx->ast, $6, $3, $5, -1, $7, $1, @$, ctx->filename, ctx->source); }
   ;
 // TODO: Change to same as assignemnt (lvalue) eventually

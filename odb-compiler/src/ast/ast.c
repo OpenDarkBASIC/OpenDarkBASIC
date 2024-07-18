@@ -338,7 +338,8 @@ ast_loop_while(
     ast_id cond_branch = ast_cond_branch(ast, -1, exit_block, location);
     ast_id cond = ast_cond(ast, expr, cond_branch, location);
     ast_id block = ast_block(ast, cond, location);
-    ast_block_append(ast, block, body, location);
+    if (body > -1)
+        ast_block_append(ast, block, body, location);
     return ast_loop(ast, block, name, empty_utf8_span(), location);
 }
 
