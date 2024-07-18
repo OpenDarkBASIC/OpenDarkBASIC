@@ -257,7 +257,7 @@ program
 block
   : block seps stmt                         { $$ = $1; 
                                               if (ctx->ast->nodes[$3].info.node_type == AST_BLOCK)
-                                                  ast_block_append(ctx->ast, $$, $3, @$);
+                                                  ast_block_append(ctx->ast, $$, $3);
                                               else
                                                   ast_block_append_new(ctx->ast, $$, $3, @$); }
   | stmt                                    { if (ctx->ast->nodes[$1].info.node_type == AST_BLOCK)

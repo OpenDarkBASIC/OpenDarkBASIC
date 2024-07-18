@@ -183,6 +183,7 @@ semantic_run_essential_checks(
         = {&semantic_expand_constant_declarations,
            &semantic_type_check,
            &semantic_resolve_cmd_overloads,
+           &semantic_loop_exit,
            NULL};
     static const struct semantic_check essential_check
         = {dummy_check, essential_checks};

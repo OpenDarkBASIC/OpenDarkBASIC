@@ -314,7 +314,7 @@ type_annotation_to_type(enum type_annotation annotation)
 }
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
-void ast_block_append(struct ast* ast, ast_id block, ast_id append_block, struct utf8_span location);
+void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
 ast_id ast_block_append_new(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
