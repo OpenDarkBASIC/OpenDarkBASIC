@@ -15,82 +15,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, unknown_direction_1)
-{
-    ASSERT_THAT(
-        parse("for n=a to b\n"
-              "next\n"),
-        Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
-        Eq(0))
-        << log().text;
-    ASSERT_THAT(
-        log(),
-        LogEq("test:1:6: error: Unable to determine for-loop range.\n"
-              " 1 | for n=a to b\n"
-              "   |       ^~~~~<\n"
-              "   = help: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it. Try "
-              "inserting a STEP statement:\n"
-              " 1 | for n=a to b STEP 1\n"
-              "   |             ^~~~~~<\n"
-              " 1 | for n=a to b STEP -1\n"
-              "   |             ^~~~~~~<\n"));
-}
-
-TEST_F(NAME, unknown_direction_2)
-{
-    ASSERT_THAT(
-        parse("for n=a to 5\n"
-              "next\n"),
-        Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
-        Eq(0))
-        << log().text;
-    ASSERT_THAT(
-        log(),
-        LogEq("test:1:6: error: Unable to determine for-loop range.\n"
-              " 1 | for n=a to 5\n"
-              "   |       ^~~~~<\n"
-              "   = help: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it. Try "
-              "inserting a STEP statement:\n"
-              " 1 | for n=a to 5 STEP 1\n"
-              "   |             ^~~~~~<\n"
-              " 1 | for n=a to 5 STEP -1\n"
-              "   |             ^~~~~~~<\n"));
-}
-
-TEST_F(NAME, unknown_direction_3)
-{
-    ASSERT_THAT(
-        parse("for n=a to b\n"
-              "next\n"),
-        Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
-        Eq(0))
-        << log().text;
-    ASSERT_THAT(
-        log(),
-        LogEq("test:1:6: error: Unable to determine for-loop range.\n"
-              " 1 | for n=1 to b\n"
-              "   |       ^~~~~<\n"
-              "   = help: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it. Try "
-              "inserting a STEP statement:\n"
-              " 1 | for n=1 to b STEP 1\n"
-              "   |             ^~~~~~<\n"
-              " 1 | for n=1 to b STEP -1\n"
-              "   |             ^~~~~~~<\n"));
-}
-
-TEST_F(NAME, unknown_direction_4)
+TEST_F(NAME, unknown_step_1)
 {
     ASSERT_THAT(
         parse("for n=1 to b step c\n"
@@ -103,14 +28,16 @@ TEST_F(NAME, unknown_direction_4)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: error: Unable to determine for-loop range.\n"
+        LogEq("test:1:6: error: Unable to determine STEP of for-loop.\n"
               " 1 | for n=1 to b step c\n"
               "   |       ^~~~~<      ^\n"
               "   = note: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it.\n"));
+              "compile-time, because the exit condition depends on it. You can "
+              "either make the STEP value a constant, or make both the start "
+              "and end values constants.\n"));
 }
 
-TEST_F(NAME, unknown_direction_5)
+TEST_F(NAME, unknown_step_2)
 {
     ASSERT_THAT(
         parse("for n=a to 5 step c\n"
@@ -123,9 +50,11 @@ TEST_F(NAME, unknown_direction_5)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: error: Unable to determine for-loop range.\n"
+        LogEq("test:1:6: error: Unable to determine STEP of for-loop.\n"
               " 1 | for n=a to 5 step c\n"
               "   |       ^~~~~<      ^\n"
               "   = note: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it.\n"));
+              "compile-time, because the exit condition depends on it. You can "
+              "either make the STEP value a constant, or make both the start "
+              "and end values constants.\n"));
 }

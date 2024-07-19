@@ -15,7 +15,31 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, step_out_of_range_1)
+TEST_F(NAME, step_wrong_direction_1)
+{
+    ASSERT_THAT(
+        parse("for n=5 to 1\n"
+              "next\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        semantic_check_run(
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        log(),
+        LogEq("test:1:6: warning: For-loop might be infinite, because the "
+              "STEP value counts in the wrong direction.\n"
+              " 1 | for n=5 to 1\n"
+              "   |       ^~~~~<\n"
+              "   = help: If no STEP is specified, it will default to 1. You "
+              "can make a loop count backwards as follows:\n"
+              " 1 | for n=5 to 1 STEP -1\n"
+              "   |             ^~~~~~~<\n"));
+}
+
+TEST_F(NAME, step_wrong_direction_2)
 {
     ASSERT_THAT(
         parse("for n=1 to 5 step -1\n"
@@ -28,13 +52,13 @@ TEST_F(NAME, step_out_of_range_1)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:19: warning: Step value is in the wrong direction. "
-              "For-loop might be infinite.\n"
+        LogEq("test:1:6: warning: For-loop might be infinite, because the "
+              "STEP value counts in the wrong direction.\n"
               " 1 | for n=1 to 5 step -1\n"
               "   |       ^~~~~<      ^<\n"));
 }
 
-TEST_F(NAME, step_out_of_range_2)
+TEST_F(NAME, step_wrong_direction_3)
 {
     ASSERT_THAT(
         parse("for n=5 to 1 step 1\n"
@@ -47,9 +71,77 @@ TEST_F(NAME, step_out_of_range_2)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:19: warning: Step value is in the wrong direction. "
-              "For-loop might be infinite.\n"
+        LogEq("test:1:6: warning: For-loop might be infinite, because the "
+              "STEP value counts in the wrong direction.\n"
               " 1 | for n=5 to 1 step 1\n"
               "   |       ^~~~~<      ^\n"));
+}
+
+TEST_F(NAME, unknown_range_1)
+{
+    ASSERT_THAT(
+        parse("for n=a to b\n"
+              "next\n"),
+        Eq(0));
+    ASSERT_THAT(
+        semantic_check_run(
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        log(),
+        LogEq("test:1:6: warning: For-loop might be infinite\n"
+              " 1 | for n=a to b\n"
+              "   |       ^~~~~<\n"));
+}
+
+TEST_F(NAME, unknown_range_2)
+{
+    ASSERT_THAT(
+        parse("for n=a to 5\n"
+              "next\n"),
+        Eq(0));
+    ASSERT_THAT(
+        semantic_check_run(
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        log(),
+        LogEq("test:1:6: error: Unable to determine STEP of for-loop.\n"
+              " 1 | for n=a to 5\n"
+              "   |       ^~~~~<\n"
+              "   = help: The direction a for-loop counts must be known at "
+              "compile-time, because the exit condition depends on it. Try "
+              "inserting a STEP statement:\n"
+              " 1 | for n=a to 5 STEP 1\n"
+              "   |             ^~~~~~<\n"
+              " 1 | for n=a to 5 STEP -1\n"
+              "   |             ^~~~~~~<\n"));
+}
+
+TEST_F(NAME, unknown_range_3)
+{
+    ASSERT_THAT(
+        parse("for n=a to b\n"
+              "next\n"),
+        Eq(0));
+    ASSERT_THAT(
+        semantic_check_run(
+            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        log(),
+        LogEq("test:1:6: warning: For-loop might be infinite.\n"
+              " 1 | for n=1 to b\n"
+              "   |       ^~~~~<\n"
+              "   = help: The direction a for-loop counts must be known at "
+              "compile-time, because the exit condition depends on it. Try "
+              "inserting a STEP statement:\n"
+              " 1 | for n=1 to b STEP 1\n"
+              "   |             ^~~~~~<\n"
+              " 1 | for n=1 to b STEP -1\n"
+              "   |             ^~~~~~~<\n"));
 }
 
