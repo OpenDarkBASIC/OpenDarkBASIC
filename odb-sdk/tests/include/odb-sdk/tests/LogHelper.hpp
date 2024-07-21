@@ -13,7 +13,7 @@ struct LogOutput
 
 struct LogHelper
 {
-    LogHelper();
+    LogHelper(char color_mode=0);
     ~LogHelper();
 
     const LogOutput& log() const;

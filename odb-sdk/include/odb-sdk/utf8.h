@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-sdk/config.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stdint.h>
 #include <string.h>
@@ -69,6 +70,15 @@ empty_utf8_view(void)
 {
     struct utf8_view str = {"", 0, 0};
     return str;
+}
+
+static inline struct utf8_span
+utf8_span_union(struct utf8_span a, struct utf8_span b)
+{
+    ODBSDK_DEBUG_ASSERT(a.off <= b.off, (void)0);
+
+    a.len = b.off - a.off + b.len;
+    return a;
 }
 
 /* Convert between different structures ------------------------------------- */

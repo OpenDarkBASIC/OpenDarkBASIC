@@ -360,7 +360,7 @@ ast_loop_until(
 
 enum eval_sign_result
 {
-    SIGN_ERROR,
+    SIGN_UNKNOWN,
     SIGN_POSITIVE,
     SIGN_NEGATIVE,
 };
@@ -411,7 +411,7 @@ eval_constant_expr_sign(const struct ast* ast, ast_id n)
             return eval_constant_expr_sign(ast, ast->nodes[n].cast.expr);
     }
 
-    return SIGN_ERROR;
+    return SIGN_UNKNOWN;
 }
 
 static ast_id
@@ -427,21 +427,36 @@ ast_loop_exit_stmt(
 {
     enum eval_sign_result begin_sign = eval_constant_expr_sign(ast, begin);
     enum eval_sign_result end_sign = eval_constant_expr_sign(ast, end);
-    enum eval_sign_result step_sign
-        = step > -1 ? eval_constant_expr_sign(ast, step) : SIGN_ERROR;
 
-    if (begin_sign == SIGN_ERROR || end_sign == SIGN_ERROR)
+    if (step == -1 && (begin_sign == SIGN_UNKNOWN || end_sign == SIGN_UNKNOWN))
     {
-        if (step_sign == SIGN_ERROR)
-        {
-            log_flc_err(
-                source_filename,
-                source.text.data,
-                ast->nodes[step].info.location,
-                "");
-            return -1;
-        }
+        int              gutter;
+        struct utf8_span loc = utf8_span_union(
+            ast->nodes[begin].info.location, ast->nodes[end].info.location);
+        const struct log_excerpt_inst inst_step_forwards[]
+            = {{" STEP 1", "", {loc.off + loc.len, 7}, LOG_EXCERPT_INSERT, 0},
+               LOG_EXCERPT_SENTINAL};
+        const struct log_excerpt_inst inst_step_backwards[]
+            = {{" STEP -1", "", {loc.off + loc.len, 8}, LOG_EXCERPT_INSERT, 0},
+               LOG_EXCERPT_SENTINAL};
+        log_flc_warn(
+            source_filename,
+            source.text.data,
+            loc,
+            "For-loop direction may be incorrect.\n");
+        gutter = log_excerpt_1(source.text.data, loc, "");
+        log_excerpt_help(
+            gutter,
+            "If no STEP is specified, it will default to 1. You can silence "
+            "this warning by making the STEP explicit:\n");
+        log_excerpt(source.text.data, inst_step_forwards);
+        log_excerpt(source.text.data, inst_step_backwards);
     }
+
+    //if (step > -1 && )
+    //{
+    //    enum eval_sign_result step_sign = eval_constant_expr_sign(ast, step);
+    //}
 
     ast_id exit = ast_loop_exit(ast, empty_utf8_span(), location);
     ast_id exit_cond_block = ast_block(ast, exit, location);

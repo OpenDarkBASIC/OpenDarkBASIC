@@ -180,24 +180,34 @@ ODBSDK_PRINTF_FORMAT(4, 5) static inline int
 log_flc_err(const char* filename, const char* source, struct utf8_span location, const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_flc_verr(filename, source, location, fmt, ap); va_end(ap); return -1; }
 
-enum log_excerpt_inst_type
+enum log_highlight_type
 {
-    LOG_EXCERPT_HIGHLIGHT,
-    LOG_EXCERPT_INSERT,
-    LOG_EXCERPT_REMOVE,
+    LOG_HIGHLIGHT,
+    LOG_INSERT,
+    LOG_REMOVE,
 };
-struct log_excerpt_inst
+struct log_highlight
 {
-    const char*                new_text;
-    const char*                annotation;
-    struct utf8_span           loc;
-    enum log_excerpt_inst_type type;
-    char                       highlight_group;
+    /*! Only used in INSERT mode -- The text to insert at offset loc.off
+     * The length of the inserted text must equal loc.len */
+    const char*             new_text;
+    /*! Annotate the highlighted section with additional information.
+     * Can be an empty string, but should not be NULL */
+    const char*             annotation;
+    /*! If INSERT, then this is the offset in the original text where to insert
+     * new_text. Len should be the length of the inserted text.
+     * If HIGHLIGHT, then this is the location of the text to highlight. */
+    struct utf8_span        loc;
+    enum log_highlight_type type;
+    /*! Controls the color of the highlighted text. If multiple locations share
+     * the same highlight group, they will be colored the same. */
+    char                    group;
 };
-#define LOG_EXCERPT_SENTINAL {0, 0, {0, 0}, LOG_EXCERPT_HIGHLIGHT, 0}
+#define LOG_HIGHLIGHT_SENTINAL {0, 0, {0, 0}, (enum log_highlight_type)0, 0}
+#define LOG_IS_SENTINAL(hl) ((hl).new_text == NULL)
 
 ODBSDK_PUBLIC_API int
-log_excerpt(const char* source, const struct log_excerpt_inst* inst);
+log_excerpt(const char* source, const struct log_highlight* inst);
 
 static inline int
 log_excerpt_1(
@@ -205,9 +215,9 @@ log_excerpt_1(
     struct utf8_span location,
     const char* annotation)
 {
-    struct log_excerpt_inst inst[] = {
-        {"", annotation, location, LOG_EXCERPT_HIGHLIGHT, 0},
-        LOG_EXCERPT_SENTINAL
+    struct log_highlight inst[] = {
+        {"", annotation, location, LOG_HIGHLIGHT, 0},
+        LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, inst);
 }
@@ -218,10 +228,10 @@ log_excerpt_2(
     struct utf8_span loc1, struct utf8_span loc2,
     const char* annotation1, const char* annotation2)
 {
-    struct log_excerpt_inst inst[] = {
-        {"", annotation1, loc1, LOG_EXCERPT_HIGHLIGHT, 0},
-        {"", annotation2, loc2, LOG_EXCERPT_HIGHLIGHT, 1},
-        LOG_EXCERPT_SENTINAL
+    struct log_highlight inst[] = {
+        {"", annotation1, loc1, LOG_HIGHLIGHT, 0},
+        {"", annotation2, loc2, LOG_INSERT, 1},
+        LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, inst);
 }

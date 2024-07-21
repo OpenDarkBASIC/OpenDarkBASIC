@@ -29,8 +29,8 @@ TEST_F(NAME, step_wrong_direction_1)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop might be infinite, because the "
-              "STEP value counts in the wrong direction.\n"
+        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+              "the wrong direction.\n"
               " 1 | for n=5 to 1\n"
               "   |       ^~~~~<\n"
               "   = help: If no STEP is specified, it will default to 1. You "
@@ -52,8 +52,8 @@ TEST_F(NAME, step_wrong_direction_2)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop might be infinite, because the "
-              "STEP value counts in the wrong direction.\n"
+        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+              "the wrong direction.\n"
               " 1 | for n=1 to 5 step -1\n"
               "   |       ^~~~~<      ^<\n"));
 }
@@ -71,8 +71,8 @@ TEST_F(NAME, step_wrong_direction_3)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop might be infinite, because the "
-              "STEP value counts in the wrong direction.\n"
+        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+              "the wrong direction.\n"
               " 1 | for n=5 to 1 step 1\n"
               "   |       ^~~~~<      ^\n"));
 }
@@ -90,9 +90,15 @@ TEST_F(NAME, unknown_range_1)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop might be infinite\n"
+        LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
               " 1 | for n=a to b\n"
-              "   |       ^~~~~<\n"));
+              "   |       ^~~~~<\n"
+              "   = help: If no STEP is specified, it will default to 1. You "
+              "can silence this warning by making the STEP explicit:\n"
+              " 1 | for n=a to b STEP 1\n"
+              "   |             ^~~~~~<\n"
+              " 1 | for n=a to b STEP -1\n"
+              "   |             ^~~~~~~<\n"));
 }
 
 TEST_F(NAME, unknown_range_2)
@@ -108,12 +114,11 @@ TEST_F(NAME, unknown_range_2)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: error: Unable to determine STEP of for-loop.\n"
+        LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
               " 1 | for n=a to 5\n"
               "   |       ^~~~~<\n"
-              "   = help: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it. Try "
-              "inserting a STEP statement:\n"
+              "   = help: If no STEP is specified, it will default to 1. You "
+              "can silence this warning by making the STEP explicit:\n"
               " 1 | for n=a to 5 STEP 1\n"
               "   |             ^~~~~~<\n"
               " 1 | for n=a to 5 STEP -1\n"
@@ -133,15 +138,13 @@ TEST_F(NAME, unknown_range_3)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop might be infinite.\n"
+        LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
               " 1 | for n=1 to b\n"
               "   |       ^~~~~<\n"
-              "   = help: The direction a for-loop counts must be known at "
-              "compile-time, because the exit condition depends on it. Try "
-              "inserting a STEP statement:\n"
+              "   = help: If no STEP is specified, it will default to 1. You "
+              "can silence this warning by making the STEP explicit:\n"
               " 1 | for n=1 to b STEP 1\n"
               "   |             ^~~~~~<\n"
               " 1 | for n=1 to b STEP -1\n"
               "   |             ^~~~~~~<\n"));
 }
-

@@ -57,9 +57,9 @@ write_str(const char* fmt, va_list ap)
     log_output.text.resize(log_output.text.size() - 1);
 }
 
-LogHelper::LogHelper()
+LogHelper::LogHelper(char color_mode)
 {
-    struct log_interface i = {write_str, 0};
+    struct log_interface i = {write_str, color_mode};
     old_log_interface = log_configure(i);
 }
 
