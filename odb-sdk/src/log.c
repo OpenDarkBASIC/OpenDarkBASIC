@@ -493,7 +493,6 @@ log_vflc(
     vfprintf_with_color(fmt, &args);
 }
 
-/* -------------------------------------------------------------------------- */
 int
 log_excerpt(const char* source, const struct log_highlight* highlights)
 {
@@ -569,15 +568,12 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
 
     /* Main print loop */
     line = l1;
-    h = 0;
     for (c = 0; c != block.len; line++)
     {
         /* We will be looping over the same line multiple times, so must save
          * the first character and highlight */
         utf8_idx c_end;
-        int      h_end;
         utf8_idx c_start = c;
-        int      h_start = h;
 
         /* Print line of code ----------------------------------------------- */
 
@@ -585,20 +581,21 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
         log_printf("%*d | ", gutter_indent - 1, line);
 
         /* Next line may still be within a highlight. Enable style if so */
-        if (c >= highlights[h].loc.off - block.off
-            && c < highlights[h].loc.off - block.off + highlights[h].loc.len)
+        for (h = 0; h != num_highlights; h++)
         {
-            if (highlights[h].type == LOG_INSERT)
+            if (c >= highlights[h].loc.off - block.off
+                && c < highlights[h].loc.off - block.off
+                           + highlights[h].loc.len)
             {
-                log_printf(
-                    "%s%s%s",
-                    insert_style(),
-                    highlights[h].new_text,
-                    reset_style());
-                h++;
+                switch (highlights[h].type)
+                {
+                    case LOG_HIGHLIGHT:
+                        log_printf("%s", emphn_style(highlights[h].group));
+                        break;
+                    case LOG_INSERT: break;
+                    case LOG_REMOVE: break;
+                }
             }
-            else
-                log_printf("%s", emphn_style(highlights[h].group));
         }
 
         indent = 0;
@@ -608,157 +605,185 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                 continue;
 
             /* Enable style */
-            if (c == highlights[h].loc.off - block.off)
-            {
-                if (highlights[h].type == LOG_INSERT)
-                {
-                    log_printf(
-                        "%s%s%s",
-                        insert_style(),
-                        highlights[h].new_text,
-                        reset_style());
-                    h++;
-                }
-                else
-                    log_printf("%s", emphn_style(highlights[h].group));
-            }
+            for (h = 0; h != num_highlights; h++)
+                if (c == highlights[h].loc.off - block.off)
+                    switch (highlights[h].type)
+                    {
+                        case LOG_HIGHLIGHT:
+                            log_printf("%s", emphn_style(highlights[h].group));
+                            break;
+                        case LOG_INSERT:
+                            log_printf(
+                                "%s%s%s",
+                                insert_style(),
+                                highlights[h].new_text,
+                                reset_style());
+                            break;
+                        case LOG_REMOVE: break;
+                    }
+
             /* Reached end of line? */
             if (source[block.off + c] == '\n')
             {
-                if (c >= highlights[h].loc.off - block.off
-                    && c < highlights[h].loc.off - block.off
-                               + highlights[h].loc.len)
-                {
-                    log_printf("%s", reset_style());
-                }
+                for (h = 0; h != num_highlights; h++)
+                    if (c >= highlights[h].loc.off - block.off
+                        && c < highlights[h].loc.off - block.off
+                                   + highlights[h].loc.len)
+                        switch (highlights[h].type)
+                        {
+                            case LOG_HIGHLIGHT:
+                                log_printf("%s", reset_style());
+                                break;
+                            case LOG_INSERT: break;
+                            case LOG_REMOVE: break;
+                        }
+
                 c++;
                 break;
             }
+
             /* Print char */
             log_putc(source[block.off + c]);
+
             /* Finish style */
-            if (c
-                == highlights[h].loc.off - block.off + highlights[h].loc.len
-                       - 1)
-            {
-                log_printf("%s", reset_style());
-                h++;
-            }
+            for (h = 0; h != num_highlights; h++)
+                if (c
+                    == highlights[h].loc.off - block.off + highlights[h].loc.len
+                           - 1)
+                    switch (highlights[h].type)
+                    {
+                        case LOG_HIGHLIGHT:
+                            log_printf("%s", reset_style());
+                            break;
+                        case LOG_INSERT: break;
+                        case LOG_REMOVE: break;
+                    }
         }
         log_putc('\n');
         c_end = c;
-        h_end = h;
 
         /* Print highlights ------------------------------------------------- */
 
         c = c_start;
-        h = h_start;
 
         /* Gutter, but no line number because this line is for diagnostics */
         log_printf("%*s | ", gutter_indent - 1, "");
 
         /* Next line may still be within a highlight. Enable style if so */
-        if (c >= highlights[h].loc.off - block.off
-            && c < highlights[h].loc.off - block.off + highlights[h].loc.len)
-        {
-            if (highlights[h].type == LOG_INSERT)
-                log_printf("%s", insert_style());
-            else
-                log_printf("%s", emphn_style(highlights[h].group));
-        }
+        for (h = 0; h != num_highlights; h++)
+            if (c >= highlights[h].loc.off - block.off
+                && c < highlights[h].loc.off - block.off
+                           + highlights[h].loc.len)
+                switch (highlights[h].type)
+                {
+                    case LOG_HIGHLIGHT:
+                        log_printf("%s", emphn_style(highlights[h].group));
+                        break;
+                    case LOG_INSERT: log_printf("%s", insert_style()); break;
+                    case LOG_REMOVE: break;
+                }
 
-        for (indent = 0, c = c_start; c != c_end; c++)
+        indent = 0;
+        for (c = c_start; c != c_end; ++c)
         {
             if (indent++ < max_indent)
                 continue;
 
-            /* Enable/disable style */
-            if (c == highlights[h].loc.off - block.off)
-            {
-                if (highlights[h].type == LOG_INSERT)
-                {
-                    int ins, c2;
-                    log_printf("%s", insert_style());
-                    for (ins = 0; ins != highlights[h].loc.len; ins++)
-                    {
-                        if (ins == highlights[h].loc.off - block.off - c)
-                            log_putc('^');
-                        else if (
-                            ins > highlights[h].loc.off - block.off - c
-                            && ins < highlights[h].loc.off - block.off - c
-                                         + highlights[h].loc.len - 1)
-                            log_putc('~');
-                        else if (
-                            ins
-                            == highlights[h].loc.off - block.off - c
-                                   + highlights[h].loc.len - 1)
-                            log_putc('<');
-                    }
-                    log_printf("%s", reset_style());
-                    h++;
-
-                    /* Scan ahead to see if the next highlight is on this line.
-                     * If not, we exit early so we don't add additional spaces
-                     */
-                    for (c2 = c + 1; c2 != c_end; c2++)
-                        if (source[block.off + c2] == '\n')
-                            break;
-                    if (LOG_IS_SENTINAL(highlights[h])
-                        || c2 < highlights[h].loc.off - block.off)
-                    {
-                        break;
-                    }
-                }
-                else
-                    log_printf("%s", emphn_style(highlights[h].group));
-            }
             /* Reached end of line? */
             if (source[block.off + c] == '\n')
             {
-                if (c >= highlights[h].loc.off - block.off
-                    && c < highlights[h].loc.off - block.off
-                               + highlights[h].loc.len)
-                {
-                    log_printf("%s", reset_style());
-                }
+                for (h = 0; h != num_highlights; h++)
+                    if (c >= highlights[h].loc.off - block.off
+                        && c < highlights[h].loc.off - block.off
+                                   + highlights[h].loc.len)
+                        switch (highlights[h].type)
+                        {
+                            case LOG_HIGHLIGHT:
+                                log_printf("%s", reset_style());
+                                break;
+                            case LOG_INSERT: goto cant_break_while_inserting;
+                            case LOG_REMOVE: break;
+                        }
+
                 c++;
                 break;
             }
+        cant_break_while_inserting:;
+
             /* Print char */
-            if (c == highlights[h].loc.off - block.off)
-                log_putc('^');
-            else if (
-                c > highlights[h].loc.off - block.off
-                && c < highlights[h].loc.off - block.off + highlights[h].loc.len
-                           - 1)
-                log_putc('~');
-            else if (
-                c
-                == highlights[h].loc.off - block.off + highlights[h].loc.len
-                       - 1)
-                log_putc('<');
-            else
-                log_putc(' ');
-
-            if (c
-                == highlights[h].loc.off - block.off + highlights[h].loc.len
-                       - 1)
-            {
-                int c2;
-                log_printf("%s", reset_style());
-                h++;
-
-                /* Scan ahead to see if the next highlight is on this line. If
-                 * not, we exit early so we don't add additional spaces */
-                for (c2 = c + 1; c2 != c_end; c2++)
-                    if (source[block.off + c2] == '\n')
+            for (h = 0; h != num_highlights; ++h)
+                switch (highlights[h].type)
+                {
+                    case LOG_HIGHLIGHT:
+                        if (c == highlights[h].loc.off - block.off)
+                            log_printf("%s^", emphn_style(highlights[h].group));
+                        else if (
+                            c > highlights[h].loc.off - block.off
+                            && c < highlights[h].loc.off - block.off
+                                       + highlights[h].loc.len - 1)
+                            log_putc('~');
+                        else if (
+                            c
+                            == highlights[h].loc.off - block.off
+                                   + highlights[h].loc.len - 1)
+                            log_putc('<');
+                        if (c
+                            == highlights[h].loc.off - block.off
+                                   + highlights[h].loc.len - 1)
+                            log_printf("%s", reset_style());
                         break;
-                if (LOG_IS_SENTINAL(highlights[h])
-                    || c2 < highlights[h].loc.off - block.off)
+                    case LOG_INSERT: {
+                        int ins_off;
+                        if (c != highlights[h].loc.off - block.off)
+                            break;
+                        for (ins_off = 0; ins_off != highlights[h].loc.len;
+                             ++ins_off)
+                        {
+                            if (c + ins_off
+                                == highlights[h].loc.off - block.off)
+                                log_printf("%s^", insert_style());
+                            else if (
+                                c + ins_off > highlights[h].loc.off - block.off
+                                && c + ins_off
+                                       < highlights[h].loc.off - block.off
+                                             + highlights[h].loc.len - 1)
+                                log_putc('~');
+                            else if (
+                                c + ins_off
+                                == highlights[h].loc.off - block.off
+                                       + highlights[h].loc.len - 1)
+                                log_putc('<');
+                            if (c + ins_off
+                                == highlights[h].loc.off - block.off
+                                       + highlights[h].loc.len - 1)
+                                log_printf("%s", reset_style());
+                        }
+                    }
+                    break;
+                    case LOG_REMOVE: break;
+                }
+
+            /* Scan ahead to see if the next highlight is on this line.
+             * If not, we exit early so we don't add additional spaces
+             */
+            int c2;
+            for (h = 0; h != num_highlights; ++h)
+                if ((highlights[h].type == LOG_HIGHLIGHT
+                     && c < highlights[h].loc.off - block.off
+                                + highlights[h].loc.len)
+                    || (highlights[h].type == LOG_INSERT
+                        && c < highlights[h].loc.off - block.off))
                 {
                     break;
                 }
-            }
+            for (c2 = c + 1; c2 != c_end; ++c2)
+                if (source[block.off + c2] == '\n')
+                    break;
+            if (h == num_highlights || c2 < highlights[h].loc.off - block.off)
+                break;
+
+            if (c < highlights[h].loc.off - block.off)
+                log_putc(' ');
         }
         /* DON'T print newline because annotations can be on the same line */
 
@@ -829,7 +854,6 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
         }
         log_putc('\n');
         c = c_end;
-        h = h_end;
     }
 
     return gutter_indent;

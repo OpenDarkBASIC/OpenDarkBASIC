@@ -557,21 +557,21 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         struct utf8_span expr_loc = ctx->ast->nodes[expr].info.location;
                         utf8_idx expr_start = expr_loc.off;
                         utf8_idx expr_end = expr_start + expr_loc.len;
-                        struct log_excerpt_inst inst_int[] = {
-                            {" <> 0", "", {expr_end, 5}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
+                        struct log_highlight hl_int[] = {
+                            {" <> 0", "", {expr_end, 5}, LOG_INSERT, 0},
+                            LOG_HIGHLIGHT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_float[] = {
-                            {" <> 0.0f", "", {expr_end, 8}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
+                        struct log_highlight hl_float[] = {
+                            {" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, 0},
+                            LOG_HIGHLIGHT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_double[] = {
-                            {" <> 0.0", "", {expr_end, 7}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
+                        struct log_highlight hl_double[] = {
+                            {" <> 0.0", "", {expr_end, 7}, LOG_INSERT, 0},
+                            LOG_HIGHLIGHT_SENTINAL
                         };
-                        struct log_excerpt_inst inst_string[] = {
-                            {" <> \"\"", "", {expr_end, 6}, LOG_EXCERPT_INSERT, 0},
-                            LOG_EXCERPT_SENTINAL
+                        struct log_highlight hl_string[] = {
+                            {" <> \"\"", "", {expr_end, 6}, LOG_INSERT, 0},
+                            LOG_HIGHLIGHT_SENTINAL
                         };
                         /* clang-format on */
                         log_flc_warn(
@@ -604,17 +604,17 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                             case TYPE_INTEGER:
                             case TYPE_WORD:
                             case TYPE_BYTE:
-                                log_excerpt(ctx->source.text.data, inst_int);
+                                log_excerpt(ctx->source.text.data, hl_int);
                                 break;
 
                             case TYPE_FLOAT:
-                                log_excerpt(ctx->source.text.data, inst_float);
+                                log_excerpt(ctx->source.text.data, hl_float);
                                 break;
                             case TYPE_DOUBLE:
-                                log_excerpt(ctx->source.text.data, inst_double);
+                                log_excerpt(ctx->source.text.data, hl_double);
                                 break;
                             case TYPE_STRING:
-                                log_excerpt(ctx->source.text.data, inst_string);
+                                log_excerpt(ctx->source.text.data, hl_string);
                                 break;
 
                             case TYPE_ARRAY: break;

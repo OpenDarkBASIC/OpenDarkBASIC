@@ -139,12 +139,12 @@ TEST_F(NAME, unknown_range_3)
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
-              " 1 | for n=1 to b\n"
+              " 1 | for n=a to b\n"
               "   |       ^~~~~<\n"
               "   = help: If no STEP is specified, it will default to 1. You "
               "can silence this warning by making the STEP explicit:\n"
-              " 1 | for n=1 to b STEP 1\n"
+              " 1 | for n=a to b STEP 1\n"
               "   |             ^~~~~~<\n"
-              " 1 | for n=1 to b STEP -1\n"
+              " 1 | for n=a to b STEP -1\n"
               "   |             ^~~~~~~<\n"));
 }

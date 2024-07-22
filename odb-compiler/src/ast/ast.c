@@ -433,12 +433,12 @@ ast_loop_exit_stmt(
         int              gutter;
         struct utf8_span loc = utf8_span_union(
             ast->nodes[begin].info.location, ast->nodes[end].info.location);
-        const struct log_excerpt_inst inst_step_forwards[]
-            = {{" STEP 1", "", {loc.off + loc.len, 7}, LOG_EXCERPT_INSERT, 0},
-               LOG_EXCERPT_SENTINAL};
-        const struct log_excerpt_inst inst_step_backwards[]
-            = {{" STEP -1", "", {loc.off + loc.len, 8}, LOG_EXCERPT_INSERT, 0},
-               LOG_EXCERPT_SENTINAL};
+        const struct log_highlight hl_step_forwards[]
+            = {{" STEP 1", "", {loc.off + loc.len, 7}, LOG_INSERT, 0},
+               LOG_HIGHLIGHT_SENTINAL};
+        const struct log_highlight hl_step_backwards[]
+            = {{" STEP -1", "", {loc.off + loc.len, 8}, LOG_INSERT, 0},
+               LOG_HIGHLIGHT_SENTINAL};
         log_flc_warn(
             source_filename,
             source.text.data,
@@ -449,14 +449,14 @@ ast_loop_exit_stmt(
             gutter,
             "If no STEP is specified, it will default to 1. You can silence "
             "this warning by making the STEP explicit:\n");
-        log_excerpt(source.text.data, inst_step_forwards);
-        log_excerpt(source.text.data, inst_step_backwards);
+        log_excerpt(source.text.data, hl_step_forwards);
+        log_excerpt(source.text.data, hl_step_backwards);
     }
 
-    //if (step > -1 && )
+    // if (step > -1 && )
     //{
-    //    enum eval_sign_result step_sign = eval_constant_expr_sign(ast, step);
-    //}
+    //     enum eval_sign_result step_sign = eval_constant_expr_sign(ast, step);
+    // }
 
     ast_id exit = ast_loop_exit(ast, empty_utf8_span(), location);
     ast_id exit_cond_block = ast_block(ast, exit, location);

@@ -206,16 +206,16 @@ TEST_F(NAME, excerpt_3_wrap_to_next_line_overlapping_annotations)
            {"", "test3", {50, 4}, LOG_HIGHLIGHT, 0},  // str$
            {0}};
     log_excerpt(source, inst);
-    /*clang-format on */
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if a = 5 then a = 7\n"
-              "   |    ^~~~<      ^~~~~\n"
-              "   |    |          test2\n"
-              "   |    very long annotation\n"
-              " 3 | print str$(a)\n"
-              "   | ~~~~< ^~~< test3\n"));
+        LogEq(" 2 | if {emph1_style}a = 5{reset_style} then {emph1_style}a = 7{reset_style}\n"
+              "   |    {emph1_style}^~~~<{reset_style}      {emph1_style}^~~~~{reset_style}\n"
+              "   |    {emph1_style}|{reset_style}          {emph1_style}test2{reset_style}\n"
+              "   |    {emph1_style}very long annotation{reset_style}\n"
+              " 3 | {emph1_style}print{reset_style} {emph1_style}str${reset_style}(a)\n"
+              "   | {emph1_style}~~~~<{reset_style} {emph1_style}^~~<{reset_style} {emph1_style}test3{reset_style}\n"));
+    /*clang-format on */
 }
 
 TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
@@ -497,8 +497,12 @@ TEST_F(NAME, insert_and_highlight_excerpt)
     EXPECT_THAT(
         log(),
         LogEq(" 2 | if {insert_style}({reset_style}{emph1_style}a - 2{reset_style}{insert_style}) <> 0{reset_style} then a = 7\n"
-              "   |    {insert_style}^{reset_style}{emph1_style}^~~~<{reset_style}{insert_style}^~~~~<{reset_style} test2\n"
-              "   |     test1"));
+              "   |    {insert_style}^{reset_style}{emph1_style}^~~~<{reset_style}{insert_style}^~~~~<{reset_style} {emph2_style}test2{reset_style}\n"
+              "   |    {emph1_style}test1{reset_style}"));
+    /*
+        LogEq(" 2 | if (a - 2) <> 0 then a = 7\n"
+              "   |    ^^~~~<^~~~~< test2\n"
+              "   |    test1"));*/
     // clang-format on
 }
 
