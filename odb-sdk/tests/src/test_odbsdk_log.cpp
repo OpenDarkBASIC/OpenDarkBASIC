@@ -35,8 +35,8 @@ TEST_F(NAME, file_line_column)
 
     EXPECT_THAT(
         log(),
-        LogEq("{emph_style}some/file.dba:2:8:{reset_style} "
-              "{err_style}error:{reset_style} Assignment is bad for some "
+        LogEq("{emph}some/file.dba:2:8:{reset} "
+              "{err}error:{reset} Assignment is bad for some "
               "reason\n"));
 }
 
@@ -55,8 +55,8 @@ TEST_F(NAME, excerpt_1_one_sized_location)
     EXPECT_THAT(
         log(),
         LogEq(
-            " 2 | if {emph1_style}a{reset_style} = 5 then a = 7\n"
-            "   |    {emph1_style}^{reset_style} {emph1_style}test{reset_style}\n"));
+            " 2 | if {emph1}a{reset} = 5 then a = 7\n"
+            "   |    {emph1}^{reset} {emph1}test{reset}\n"));
     // clang-format on
 }
 
@@ -70,8 +70,8 @@ TEST_F(NAME, excerpt_1_annotation_at_end)
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 1 | a = b + {emph1_style}c{reset_style}\n"
-              "   |         {emph1_style}^{reset_style} {emph1_style}test{reset_style}\n"));
+        LogEq(" 1 | a = b + {emph1}c{reset}\n"
+              "   |         {emph1}^{reset} {emph1}test{reset}\n"));
     // clang-format on
 }
 
@@ -89,8 +89,8 @@ TEST_F(NAME, excerpt_1_single_line)
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {emph1_style}a = 5{reset_style} then a = 7\n"
-              "   |    {emph1_style}^~~~<{reset_style} {emph1_style}test{reset_style}\n"));
+        LogEq(" 2 | if {emph1}a = 5{reset} then a = 7\n"
+              "   |    {emph1}^~~~<{reset} {emph1}test{reset}\n"));
     // clang-format on
 }
 
@@ -108,11 +108,10 @@ TEST_F(NAME, excerpt_1_wrap_to_next_line)
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if a = 5 then {emph1_style}a = 7{reset_style}\n"
-              "   |               {emph1_style}^~~~~{reset_style}\n"
-              "   |               {emph1_style}test{reset_style}\n"
-              " 3 | {emph1_style}print{reset_style} str$(a)\n"
-              "   | {emph1_style}~~~~<{reset_style}\n"));
+        LogEq(" 2 | if a = 5 then {emph1}a = 7{reset}\n"
+              "   |               {emph1}^~~~~{reset} {emph1}test{reset}\n"
+              " 3 | {emph1}print{reset} str$(a)\n"
+              "   | {emph1}~~~~<{reset}\n"));
     // clang-format on
 }
 
@@ -130,13 +129,12 @@ TEST_F(NAME, excerpt_1_multiple_lines)
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 |    {emph1_style}obj,{reset_style}\n"
-              "   |    {emph1_style}^~~~{reset_style}\n"
-              "   |    {emph1_style}test{reset_style}\n"
-              " 3 | {emph1_style}xpos,{reset_style}\n"
-              "   | {emph1_style}~~~~~{reset_style}\n"
-              " 4 | {emph1_style}      zpos{reset_style}\n"
-              "   | {emph1_style}~~~~~~~~~<{reset_style}\n"));
+        LogEq(" 2 |    {emph1}obj,{reset}\n"
+              "   |    {emph1}^~~~{reset} {emph1}test{reset}\n"
+              " 3 | {emph1}xpos,{reset}\n"
+              "   | {emph1}~~~~~{reset}\n"
+              " 4 | {emph1}      zpos{reset}\n"
+              "   | {emph1}~~~~~~~~~<{reset}\n"));
 }
 
 TEST_F(NAME, excerpt_3_one_sized_locations_on_same_line)
@@ -148,19 +146,19 @@ TEST_F(NAME, excerpt_3_one_sized_locations_on_same_line)
           "next a\n";
 
     struct log_highlight inst[]
-        = {{"", "test1", {23, 1}, LOG_HIGHLIGHT, 0},
-           {"", "test2", {27, 1}, LOG_HIGHLIGHT, 0},
-           {"", "test3", {29, 1}, LOG_HIGHLIGHT, 0},
+        = {{"", "test1", {23, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+           {"", "test2", {27, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+           {"", "test3", {29, 1}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
            {0}};
     log_excerpt(source, inst);
 
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {emph1_style}a{reset_style} = {emph1_style}5{reset_style} {emph1_style}t{reset_style}hen a = 7\n"
-              "   |    {emph1_style}^{reset_style}   {emph1_style}^{reset_style} {emph1_style}^{reset_style} {emph1_style}test3{reset_style}\n"
-              "   |    {emph1_style}|{reset_style}   {emph1_style}test2{reset_style}\n"
-              "   |    {emph1_style}test1{reset_style}\n"));
+        LogEq(" 2 | if {emph1}a{reset} = {emph1}5{reset} {emph1}t{reset}hen a = 7\n"
+              "   |    {emph1}^{reset}   {emph1}^{reset} {emph1}^{reset} {emph1}test3{reset}\n"
+              "   |    {emph1}|{reset}   {emph1}test2{reset}\n"
+              "   |    {emph1}test1{reset}\n"));
     // clang-format on
 }
 
@@ -172,22 +170,21 @@ TEST_F(NAME, excerpt_3_wrap_to_next_line)
           "    print str$(a)\n"
           "next a\n";
 
+    // clang-format off
     struct log_highlight inst[]
-        = {{"", "test1", {23, 5}, LOG_HIGHLIGHT, 0},  // a = 5
-           {"", "test2", {34, 15}, LOG_HIGHLIGHT, 0}, // a = 7 .. print
-           {"", "test3", {50, 4}, LOG_HIGHLIGHT, 0},  // str$
+        = {{"", "test1", {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // a = 5
+           {"", "test2", {34, 15}, LOG_HIGHLIGHT, LOG_MARKERS, 0}, // a = 7 .. print
+           {"", "test3", {50, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // str$
            {0}};
     log_excerpt(source, inst);
 
-    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {emph1_style}a = 5{reset_style} then {emph1_style}a = 7{reset_style}\n"
-              "   |    {emph1_style}^~~~<{reset_style}      {emph1_style}^~~~~{reset_style}\n"
-              "   |    {emph1_style}|{reset_style}          {emph1_style}test2{reset_style}\n"
-              "   |    {emph1_style}test1{reset_style}\n"
-              " 3 | {emph1_style}print{reset_style} {emph1_style}str${reset_style}(a)\n"
-              "   | {emph1_style}~~~~<{reset_style} {emph1_style}^~~<{reset_style} {emph1_style}test3{reset_style}\n"));
+        LogEq(" 2 | if {emph1}a = 5{reset} then {emph1}a = 7{reset}\n"
+              "   |    {emph1}^~~~<{reset}      {emph1}^~~~~{reset} {emph1}test2{reset}\n"
+              "   |    {emph1}test1{reset}\n"
+              " 3 | {emph1}print{reset} {emph1}str${reset}(a)\n"
+              "   | {emph1}~~~~<{reset} {emph1}^~~<{reset} {emph1}test3{reset}\n"));
     // clang-format on
 }
 
@@ -200,21 +197,23 @@ TEST_F(NAME, excerpt_3_wrap_to_next_line_overlapping_annotations)
           "next a\n";
 
     /* clang-format off */
-    struct log_highlight inst[]
-        = {{"", "very long annotation", {23, 5}, LOG_HIGHLIGHT, 0},  // a = 1
-           {"", "test2", {34, 15}, LOG_HIGHLIGHT, 0}, // a = 7 .. print
-           {"", "test3", {50, 4}, LOG_HIGHLIGHT, 0},  // str$
-           {0}};
+    struct log_highlight inst[] = {
+        {"", "very long annotation", {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},  // a = 1
+        {"", "another long annotation", {29, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 1}, // then
+        {"", "test2", {34, 15}, LOG_HIGHLIGHT, LOG_MARKERS, 2}, // a = 7 .. print
+        {"", "test3", {50, 4}, LOG_HIGHLIGHT, LOG_MARKERS, 3},  // str$
+        LOG_HIGHLIGHT_SENTINAL
+    };
     log_excerpt(source, inst);
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {emph1_style}a = 5{reset_style} then {emph1_style}a = 7{reset_style}\n"
-              "   |    {emph1_style}^~~~<{reset_style}      {emph1_style}^~~~~{reset_style}\n"
-              "   |    {emph1_style}|{reset_style}          {emph1_style}test2{reset_style}\n"
-              "   |    {emph1_style}very long annotation{reset_style}\n"
-              " 3 | {emph1_style}print{reset_style} {emph1_style}str${reset_style}(a)\n"
-              "   | {emph1_style}~~~~<{reset_style} {emph1_style}^~~<{reset_style} {emph1_style}test3{reset_style}\n"));
+        LogEq(" 2 | if {emph1}a = 5{reset} {emph2}then{reset} {emph3}a = 7{reset}\n"
+              "   |    {emph1}^~~~<{reset} {emph2}^~~<{reset} {emph3}^~~~~{reset} {emph3}test2{reset}\n"
+              "   |    {emph1}|{reset}     {emph2}another long annotation{reset}\n"
+              "   |    {emph1}very long annotation{reset}\n"
+              " 3 | {emph3}print{reset} {emph1}str${reset}(a)\n"
+              "   | {emph3}~~~~<{reset} {emph1}^~~<{reset} {emph1}test3{reset}\n"));
     /*clang-format on */
 }
 
@@ -232,11 +231,13 @@ TEST_F(NAME, excerpt_binop_one_sized_lhs_location)
     struct utf8_span rhs = {44, 3};
     log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
+    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable and 333\n"
-              "   |            ^        ^^^ ~~< constant\n"
-              "   |            variable\n"));
+        LogEq(" 2 | variable = {emph1}v{reset}ariable {emph3}and{reset} {emph2}333{reset}\n"
+              "   |            {emph1}^{reset}        {emph3}^^^{reset} {emph2}~~<{reset} {emph2}constant{reset}\n"
+              "   |            {emph1}variable{reset}\n"));
+    // clang-format on
 }
 
 TEST_F(NAME, excerpt_binop_one_sized_op_location)
@@ -253,11 +254,13 @@ TEST_F(NAME, excerpt_binop_one_sized_op_location)
     struct utf8_span rhs = {44, 3};
     log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
+    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable and 333\n"
-              "   |            >~~~~~~~ ^   ~~< constant\n"
-              "   |            variable\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset} {emph3}a{reset}nd {emph2}333{reset}\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph3}^{reset}   {emph2}~~<{reset} {emph2}constant{reset}\n"
+              "   |            {emph1}variable{reset}\n"));
+    // clang-format on
 }
 
 TEST_F(NAME, excerpt_binop_one_sized_rhs_location)
@@ -274,11 +277,13 @@ TEST_F(NAME, excerpt_binop_one_sized_rhs_location)
     struct utf8_span rhs = {44, 1};
     log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
+    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable and 333\n"
-              "   |            >~~~~~~~ ^^^ ^ constant\n"
-              "   |            variable\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset} {emph3}and{reset} {emph2}3{reset}33\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph3}^^^{reset} {emph2}^{reset} {emph2}constant{reset}\n"
+              "   |            {emph1}variable{reset}\n"));
+    // clang-format on
 }
 
 TEST_F(NAME, excerpt_binop_single_line)
@@ -295,11 +300,13 @@ TEST_F(NAME, excerpt_binop_single_line)
     struct utf8_span rhs = {44, 3};
     log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
+    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable and 333\n"
-              "   |            >~~~~~~~ ^^^ ~~< constant\n"
-              "   |            variable\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset} {emph3}and{reset} {emph2}333{reset}\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph3}^^^{reset} {emph2}~~<{reset} {emph2}constant{reset}\n"
+              "   |            {emph1}variable{reset}\n"));
+    // clang-format on
 }
 
 TEST_F(NAME, excerpt_binop_wrap_to_next_line1)
@@ -319,10 +326,11 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line1)
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable\n"
-              "   |            >~~~~~~~ variable\n"
-              " 3 |             and 333\n"
-              "   |             ^^^ ~~< constant\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset}\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph1}variable{reset}\n"
+              " 3 |             {emph3}and{reset} {emph2}333{reset}\n"
+              "   |             {emph3}^^^{reset} {emph2}~~<{reset} "
+              "{emph2}constant{reset}\n"));
 }
 
 TEST_F(NAME, excerpt_binop_wrap_to_next_line2)
@@ -342,10 +350,11 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line2)
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable and\n"
-              "   |            >~~~~~~~ ^^^ variable\n"
-              " 3 |             333\n"
-              "   |             ~~< constant\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset} {emph3}and{reset}\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph3}^^^{reset}\n"
+              "   |            {emph1}variable{reset}\n"
+              " 3 |             {emph2}333{reset}\n"
+              "   |             {emph2}~~<{reset} {emph2}constant{reset}\n"));
 }
 
 TEST_F(NAME, excerpt_binop_wrap_to_next_line3)
@@ -364,14 +373,16 @@ TEST_F(NAME, excerpt_binop_wrap_to_next_line3)
     struct utf8_span rhs = {77, 3};
     log_excerpt_binop(source, lhs, op, rhs, "variable", "constant");
 
+    // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = variable\n"
-              "   |            >~~~~~~~ variable\n"
-              " 3 |               and\n"
-              "   |               ^^^\n"
-              " 4 |            333\n"
-              "   |            ~~< constant\n"));
+        LogEq(" 2 | variable = {emph1}variable{reset}\n"
+              "   |            {emph1}>~~~~~~~{reset} {emph1}variable{reset}\n"
+              " 3 |               {emph3}and{reset}\n"
+              "   |               {emph3}^^^{reset}\n"
+              " 4 |            {emph2}333{reset}\n"
+              "   |            {emph2}~~<{reset} {emph2}constant{reset}\n"));
+    // clang-format on
 }
 
 TEST_F(NAME, excerpt_binop_everything_wraps)
@@ -396,20 +407,22 @@ TEST_F(NAME, excerpt_binop_everything_wraps)
 
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | variable = some_func(\n"
-              "   |            >~~~~~~~~~\n"
-              " 3 |     arg1,\n"
-              "   | ~~~~~~~~~\n"
-              " 4 |     arg2)\n"
-              "   | ~~~~~~~~~ first operand\n"
-              " 5 |               and\n"
-              "   |               ^^^\n"
-              " 6 |        another_func(\n"
-              "   |        ~~~~~~~~~~~~~\n"
-              " 7 |          23,\n"
-              "   | ~~~~~~~~~~~~\n"
-              " 8 |            333)\n"
-              "   | ~~~~~~~~~~~~~~< second operand\n"));
+        LogEq(" 2 | variable = {emph1}some_func({reset}\n"
+              "   |            {emph1}>~~~~~~~~~{reset} {emph1}first "
+              "operand{reset}\n"
+              " 3 | {emph1}    arg1,{reset}\n"
+              "   | {emph1}~~~~~~~~~{reset}\n"
+              " 4 | {emph1}    arg2){reset}\n"
+              "   | {emph1}~~~~~~~~~{reset}\n"
+              " 5 |               {emph3}and{reset}\n"
+              "   |               {emph3}^^^{reset}\n"
+              " 6 |        {emph2}another_func({reset}\n"
+              "   |        {emph2}~~~~~~~~~~~~~{reset} {emph2}second "
+              "operand{reset}\n"
+              " 7 | {emph2}         23,{reset}\n"
+              "   | {emph2}~~~~~~~~~~~~{reset}\n"
+              " 8 | {emph2}           333){reset}\n"
+              "   | {emph2}~~~~~~~~~~~~~~<{reset}\n"));
 }
 
 TEST_F(NAME, insert_excerpt1)
@@ -421,16 +434,16 @@ TEST_F(NAME, insert_excerpt1)
           "next a\n";
 
     struct log_highlight inst[]
-        = {{"(", "", {23, 1}, LOG_INSERT, 0},
-           {") <> 0", "", {28, 6}, LOG_INSERT, 0},
+        = {{"(", "", {23, 1}, LOG_INSERT, LOG_MARKERS, 0},
+           {") <> 0", "", {28, 6}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
     log_excerpt(source, inst);
 
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {insert_style}({reset_style}a - 2{insert_style}) <> 0{reset_style}\n"
-              "   |    {insert_style}^{reset_style}     {insert_style}^~~~~<{reset_style}\n"));
+        LogEq(" 2 | if {insert}({reset}a - 2{insert}) <> 0{reset}\n"
+              "   |    {insert}^{reset}     {insert}^~~~~<{reset}\n"));
     // clang-format on
 }
 
@@ -443,16 +456,16 @@ TEST_F(NAME, insert_excerpt2)
           "next a\n";
 
     struct log_highlight inst[]
-        = {{"(", "", {23, 1}, LOG_INSERT, 0},
-           {") <> 0", "", {28, 6}, LOG_INSERT, 0},
+        = {{"(", "", {23, 1}, LOG_INSERT, LOG_MARKERS, 0},
+           {") <> 0", "", {28, 6}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
     log_excerpt(source, inst);
 
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {insert_style}({reset_style}a - 2{insert_style}) <> 0{reset_style} then a = 7\n"
-              "   |    {insert_style}^{reset_style}     {insert_style}^~~~~<{reset_style}\n"));
+        LogEq(" 2 | if {insert}({reset}a - 2{insert}) <> 0{reset} then a = 7\n"
+              "   |    {insert}^{reset}     {insert}^~~~~<{reset}\n"));
     // clang-format on
 }
 
@@ -465,16 +478,16 @@ TEST_F(NAME, insert_excerpt3)
           "next a\n";
 
     struct log_highlight inst[]
-        = {{"(0 + ", "", {23, 5}, LOG_INSERT, 0},
-           {") <> 0", "", {28, 6}, LOG_INSERT, 0},
+        = {{"(0 + ", "", {23, 5}, LOG_INSERT, LOG_MARKERS, 0},
+           {") <> 0", "", {28, 6}, LOG_INSERT, LOG_MARKERS, 0},
            {0}};
     log_excerpt(source, inst);
 
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {insert_style}(0 + {reset_style}a - 2{insert_style}) <> 0{reset_style} then a = 7\n"
-              "   |    {insert_style}^~~~<{reset_style}     {insert_style}^~~~~<{reset_style}\n"));
+        LogEq(" 2 | if {insert}(0 + {reset}a - 2{insert}) <> 0{reset} then a = 7\n"
+              "   |    {insert}^~~~<{reset}     {insert}^~~~~<{reset}\n"));
     // clang-format on
 }
 
@@ -487,22 +500,18 @@ TEST_F(NAME, insert_and_highlight_excerpt)
           "next a\n";
 
     struct log_highlight inst[]
-        = {{"(", "test2", {23, 1}, LOG_INSERT, 1},
-           {"", "test1", {23, 5}, LOG_HIGHLIGHT, 0},
-           {") <> 0", "test2", {28, 6}, LOG_INSERT, 1},
+        = {{"(", "", {23, 1}, LOG_INSERT, LOG_MARKERS, 1},
+           {"", "test1", {23, 5}, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+           {") <> 0", "test2", {28, 6}, LOG_INSERT, LOG_MARKERS, 1},
            {0}};
     log_excerpt(source, inst);
 
     // clang-format off
     EXPECT_THAT(
         log(),
-        LogEq(" 2 | if {insert_style}({reset_style}{emph1_style}a - 2{reset_style}{insert_style}) <> 0{reset_style} then a = 7\n"
-              "   |    {insert_style}^{reset_style}{emph1_style}^~~~<{reset_style}{insert_style}^~~~~<{reset_style} {emph2_style}test2{reset_style}\n"
-              "   |    {emph1_style}test1{reset_style}"));
-    /*
-        LogEq(" 2 | if (a - 2) <> 0 then a = 7\n"
-              "   |    ^^~~~<^~~~~< test2\n"
-              "   |    test1"));*/
+        LogEq(" 2 | if {insert}({reset}{emph1}a - 2{reset}{insert}) <> 0{reset} then a = 7\n"
+              "   |    {insert}^{reset}{emph1}^~~~<{reset}{insert}^~~~~<{reset} {emph2}test2{reset}\n"
+              "   |    {emph1}test1{reset}\n"));
     // clang-format on
 }
 
@@ -513,10 +522,10 @@ TEST_F(NAME, issue)
           "next\n";
 
     const struct log_highlight inst[]
-        = {{" STEP 1", "", {12, 7}, LOG_INSERT, 0}, {0}};
+        = {{" STEP 1", "", {12, 7}, LOG_INSERT, LOG_MARKERS, 0}, {0}};
     log_excerpt(source, inst);
     EXPECT_THAT(
         log(),
-        LogEq(" 1 | for n=a to b{insert_style} STEP 1{reset_style}\n"
-              "   |             {insert_style}^~~~~~<{reset_style}\n"));
+        LogEq(" 1 | for n=a to b{insert} STEP 1{reset}\n"
+              "   |             {insert}^~~~~~<{reset}\n"));
 }

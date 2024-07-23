@@ -558,19 +558,19 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         utf8_idx expr_start = expr_loc.off;
                         utf8_idx expr_end = expr_start + expr_loc.len;
                         struct log_highlight hl_int[] = {
-                            {" <> 0", "", {expr_end, 5}, LOG_INSERT, 0},
+                            {" <> 0", "", {expr_end, 5}, LOG_INSERT, LOG_MARKERS, 0},
                             LOG_HIGHLIGHT_SENTINAL
                         };
                         struct log_highlight hl_float[] = {
-                            {" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, 0},
+                            {" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, LOG_MARKERS, 0},
                             LOG_HIGHLIGHT_SENTINAL
                         };
                         struct log_highlight hl_double[] = {
-                            {" <> 0.0", "", {expr_end, 7}, LOG_INSERT, 0},
+                            {" <> 0.0", "", {expr_end, 7}, LOG_INSERT, LOG_MARKERS, 0},
                             LOG_HIGHLIGHT_SENTINAL
                         };
                         struct log_highlight hl_string[] = {
-                            {" <> \"\"", "", {expr_end, 6}, LOG_INSERT, 0},
+                            {" <> \"\"", "", {expr_end, 6}, LOG_INSERT, LOG_MARKERS, 0},
                             LOG_HIGHLIGHT_SENTINAL
                         };
                         /* clang-format on */

@@ -427,17 +427,20 @@ ast_loop_exit_stmt(
 {
     enum eval_sign_result begin_sign = eval_constant_expr_sign(ast, begin);
     enum eval_sign_result end_sign = eval_constant_expr_sign(ast, end);
+    enum eval_sign_result step_sign
+        = step > -1 ? eval_constant_expr_sign(ast, step) : SIGN_UNKNOWN;
 
     if (step == -1 && (begin_sign == SIGN_UNKNOWN || end_sign == SIGN_UNKNOWN))
     {
         int              gutter;
         struct utf8_span loc = utf8_span_union(
             ast->nodes[begin].info.location, ast->nodes[end].info.location);
-        const struct log_highlight hl_step_forwards[]
-            = {{" STEP 1", "", {loc.off + loc.len, 7}, LOG_INSERT, 0},
+        utf8_idx             ins = loc.off + loc.len;
+        struct log_highlight hl_step_forwards[]
+            = {{" STEP 1", "", {ins, 7}, LOG_INSERT, LOG_MARKERS, 0},
                LOG_HIGHLIGHT_SENTINAL};
-        const struct log_highlight hl_step_backwards[]
-            = {{" STEP -1", "", {loc.off + loc.len, 8}, LOG_INSERT, 0},
+        struct log_highlight hl_step_backwards[]
+            = {{" STEP -1", "", {ins, 8}, LOG_INSERT, LOG_MARKERS, 0},
                LOG_HIGHLIGHT_SENTINAL};
         log_flc_warn(
             source_filename,
@@ -453,10 +456,35 @@ ast_loop_exit_stmt(
         log_excerpt(source.text.data, hl_step_backwards);
     }
 
-    // if (step > -1 && )
-    //{
-    //     enum eval_sign_result step_sign = eval_constant_expr_sign(ast, step);
-    // }
+    if (step > -1 && step_sign == SIGN_UNKNOWN
+        && (begin_sign == SIGN_UNKNOWN || end_sign == SIGN_UNKNOWN))
+    {
+        int              gutter;
+        struct utf8_span loc1 = utf8_span_union(
+            ast->nodes[begin].info.location, ast->nodes[end].info.location);
+        struct utf8_span     loc2 = ast->nodes[step].info.location;
+        struct log_highlight hl[]
+            = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+               {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+               LOG_HIGHLIGHT_SENTINAL};
+        log_flc_err(
+            source_filename,
+            source.text.data,
+            loc1,
+            "Unable to determine direction of for-loop.\n");
+        gutter = log_excerpt(source.text.data, hl);
+        log_excerpt_note(
+            gutter,
+            "The direction a for-loop counts must be known at compile-time, "
+            "because the exit condition depends on it. You can either make the "
+            "STEP value a constant, or make both the start and end values "
+            "constants.\n");
+        return -1;
+    }
+
+    if (begin_sign != SIGN_UNKNOWN && end_sign != SIGN_UNKNOWN && step_sign != SIGN_UNKNOWN)
+    {
+    }
 
     ast_id exit = ast_loop_exit(ast, empty_utf8_span(), location);
     ast_id exit_cond_block = ast_block(ast, exit, location);

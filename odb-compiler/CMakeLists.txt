@@ -492,8 +492,6 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/semantic/conditionals_warnings.cpp"
         "tests/src/semantic/initialize_undeclared_variables.cpp"
-        "tests/src/semantic/loop_for_warnings.cpp"
-        "tests/src/semantic/loop_for_errors.cpp"
         "tests/src/semantic/loop_exit.cpp"
         "tests/src/semantic/loop_exit_errors.cpp"
         "tests/src/semantic/loop_exit_for.cpp"

@@ -140,70 +140,68 @@ static const char*
 help_style(void)
 {
     return g_log.use_color == 1   ? FG_YELLOW
-           : g_log.use_color == 2 ? "{help_style}"
+           : g_log.use_color == 2 ? "{help}"
                                   : "";
 }
 static const char*
 debug_style(void)
 {
     return g_log.use_color == 1   ? FG_YELLOW
-           : g_log.use_color == 2 ? "{debug_style}"
+           : g_log.use_color == 2 ? "{debug}"
                                   : "";
 }
 static const char*
 info_style(void)
 {
     return g_log.use_color == 1   ? FGB_WHITE
-           : g_log.use_color == 2 ? "{info_style}"
+           : g_log.use_color == 2 ? "{info}"
                                   : "";
 }
 static const char*
 note_style(void)
 {
     return g_log.use_color == 1   ? FGB_MAGENTA
-           : g_log.use_color == 2 ? "{note_style}"
+           : g_log.use_color == 2 ? "{note}"
                                   : "";
 }
 static const char*
 warn_style(void)
 {
     return g_log.use_color == 1   ? FGB_YELLOW
-           : g_log.use_color == 2 ? "{warn_style}"
+           : g_log.use_color == 2 ? "{warn}"
                                   : "";
 }
 static const char*
 err_style(void)
 {
-    return g_log.use_color == 1   ? FGB_RED
-           : g_log.use_color == 2 ? "{err_style}"
-                                  : "";
+    return g_log.use_color == 1 ? FGB_RED : g_log.use_color == 2 ? "{err}" : "";
 }
 static const char*
 emph_style(void)
 {
     return g_log.use_color == 1   ? FGB_WHITE
-           : g_log.use_color == 2 ? "{emph_style}"
+           : g_log.use_color == 2 ? "{emph}"
                                   : "";
 }
 static const char*
 emph1_style(void)
 {
     return g_log.use_color == 1   ? FGB_BLUE
-           : g_log.use_color == 2 ? "{emph1_style}"
+           : g_log.use_color == 2 ? "{emph1}"
                                   : "";
 }
 static const char*
 emph2_style(void)
 {
     return g_log.use_color == 1   ? FGB_CYAN
-           : g_log.use_color == 2 ? "{emph2_style}"
+           : g_log.use_color == 2 ? "{emph2}"
                                   : "";
 }
 static const char*
 emph3_style(void)
 {
     return g_log.use_color == 1   ? FGB_YELLOW
-           : g_log.use_color == 2 ? "{emph3_style}"
+           : g_log.use_color == 2 ? "{emph3}"
                                   : "";
 }
 static const char*
@@ -221,42 +219,42 @@ static const char*
 quote_style(void)
 {
     return g_log.use_color == 1   ? "`" FGB_WHITE
-           : g_log.use_color == 2 ? "{quote_style}"
+           : g_log.use_color == 2 ? "{quote}"
                                   : "`";
 }
 static const char*
 end_quote_style(void)
 {
     return g_log.use_color == 1   ? COL_RESET "'"
-           : g_log.use_color == 2 ? "{end_quote_style}"
+           : g_log.use_color == 2 ? "{end_quote}"
                                   : "'";
 }
 static const char*
 success_style(void)
 {
     return g_log.use_color == 1   ? FGB_GREEN
-           : g_log.use_color == 2 ? "{success_style}"
+           : g_log.use_color == 2 ? "{success}"
                                   : "";
 }
 static const char*
 insert_style(void)
 {
     return g_log.use_color == 1   ? FGB_GREEN
-           : g_log.use_color == 2 ? "{insert_style}"
+           : g_log.use_color == 2 ? "{insert}"
                                   : "";
 }
 static const char*
 remove_style(void)
 {
     return g_log.use_color == 1   ? FGB_RED
-           : g_log.use_color == 2 ? "{remove_style}"
+           : g_log.use_color == 2 ? "{remove}"
                                   : "";
 }
 static const char*
 reset_style(void)
 {
     return g_log.use_color == 1   ? COL_RESET
-           : g_log.use_color == 2 ? "{reset_style}"
+           : g_log.use_color == 2 ? "{reset}"
                                   : "";
 }
 static int
@@ -716,17 +714,20 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                 {
                     case LOG_HIGHLIGHT:
                         if (c == highlights[h].loc.off - block.off)
-                            log_printf("%s^", emphn_style(highlights[h].group));
+                            log_printf(
+                                "%s%c",
+                                emphn_style(highlights[h].group),
+                                highlights[h].marker[0]);
                         else if (
                             c > highlights[h].loc.off - block.off
                             && c < highlights[h].loc.off - block.off
                                        + highlights[h].loc.len - 1)
-                            log_putc('~');
+                            log_putc(highlights[h].marker[1]);
                         else if (
                             c
                             == highlights[h].loc.off - block.off
                                    + highlights[h].loc.len - 1)
-                            log_putc('<');
+                            log_putc(highlights[h].marker[2]);
                         if (c
                             == highlights[h].loc.off - block.off
                                    + highlights[h].loc.len - 1)
@@ -741,18 +742,21 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                         {
                             if (c + ins_off
                                 == highlights[h].loc.off - block.off)
-                                log_printf("%s^", insert_style());
+                                log_printf(
+                                    "%s%c",
+                                    insert_style(),
+                                    highlights[h].marker[0]);
                             else if (
                                 c + ins_off > highlights[h].loc.off - block.off
                                 && c + ins_off
                                        < highlights[h].loc.off - block.off
                                              + highlights[h].loc.len - 1)
-                                log_putc('~');
+                                log_putc(highlights[h].marker[1]);
                             else if (
                                 c + ins_off
                                 == highlights[h].loc.off - block.off
                                        + highlights[h].loc.len - 1)
-                                log_putc('<');
+                                log_putc(highlights[h].marker[2]);
                             if (c + ins_off
                                 == highlights[h].loc.off - block.off
                                        + highlights[h].loc.len - 1)
@@ -792,7 +796,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
         for (h = num_highlights - 1; h >= 0; h--)
         {
             int h2;
-            int num_anns;
+            int num_proceeding;
 
             if (highlights[h].loc.off - block.off < c_start
                 || highlights[h].loc.off - block.off >= c_end
@@ -804,14 +808,12 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
             /* If this is the last annotation on the line, and the highlight
              * does not span over to the next line, it can be appended to the
              * current line without adding an extra gutter */
-            num_anns = 0;
-            for (h2 = h; h2 != num_highlights; h2++)
+            num_proceeding = 0;
+            for (h2 = h + 1; h2 != num_highlights; h2++)
                 if (highlights[h2].loc.off - block.off >= c_start
-                    && highlights[h].loc.off - block.off + highlights[h].loc.len
-                           <= c_end
-                    && *highlights[h].annotation)
-                    num_anns++;
-            if (num_anns == 1)
+                    && highlights[h2].loc.off - block.off <= c_end)
+                    num_proceeding++;
+            if (num_proceeding == 0)
             {
                 log_printf(
                     " %s%s%s",
@@ -860,6 +862,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
 }
 
 /* -------------------------------------------------------------------------- */
+#if 0
 int
 log_excerpt_binop(
     const char*      source,
@@ -1061,6 +1064,7 @@ log_excerpt_binop(
 
     return gutter_indent;
 }
+#endif
 
 void
 log_excerpt_vimpl(

@@ -199,12 +199,16 @@ struct log_highlight
      * If HIGHLIGHT, then this is the location of the text to highlight. */
     struct utf8_span        loc;
     enum log_highlight_type type;
+    /*! The characters to use for underlining the highlighted text. By
+     * convention, marker[0]='^', marker[1]='~', marker[2]='<' */
+    char                    marker[3];
     /*! Controls the color of the highlighted text. If multiple locations share
      * the same highlight group, they will be colored the same. */
     char                    group;
 };
-#define LOG_HIGHLIGHT_SENTINAL {0, 0, {0, 0}, (enum log_highlight_type)0, 0}
+#define LOG_HIGHLIGHT_SENTINAL {0, 0, {0, 0}, (enum log_highlight_type)0, LOG_MARKERS, 0}
 #define LOG_IS_SENTINAL(hl) ((hl).new_text == NULL)
+#define LOG_MARKERS {'^', '~', '<'}
 
 ODBSDK_PUBLIC_API int
 log_excerpt(const char* source, const struct log_highlight* inst);
@@ -216,7 +220,7 @@ log_excerpt_1(
     const char* annotation)
 {
     struct log_highlight inst[] = {
-        {"", annotation, location, LOG_HIGHLIGHT, 0},
+        {"", annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, 0},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, inst);
@@ -228,19 +232,32 @@ log_excerpt_2(
     struct utf8_span loc1, struct utf8_span loc2,
     const char* annotation1, const char* annotation2)
 {
-    struct log_highlight inst[] = {
-        {"", annotation1, loc1, LOG_HIGHLIGHT, 0},
-        {"", annotation2, loc2, LOG_INSERT, 1},
+    struct log_highlight hl[] = {
+        {"", annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+        {"", annotation2, loc2, LOG_INSERT, LOG_MARKERS, 1},
         LOG_HIGHLIGHT_SENTINAL
     };
-    return log_excerpt(source, inst);
+    return log_excerpt(source, hl);
 }
 
-ODBSDK_PUBLIC_API int
+static inline int
 log_excerpt_binop(
     const char* source,
     struct utf8_span lhs, struct utf8_span op, struct utf8_span rhs,
-    const char* lhs_text, const char* rhs_text);
+    const char* lhs_text, const char* rhs_text)
+{
+    struct log_highlight hl[] = {
+        {"", lhs_text, lhs, LOG_HIGHLIGHT, {'>', '~', '~'}, 0},
+        {"", "", op, LOG_HIGHLIGHT,  {'^', '^', '^'}, 2},
+        {"", rhs_text, rhs, LOG_HIGHLIGHT, {'~', '~', '<'}, 1},
+        LOG_HIGHLIGHT_SENTINAL
+    };
+    if (lhs.len == 1)
+        hl[0].marker[0] = '^';
+    if (rhs.len == 1)
+        hl[2].marker[0] = '^';
+    return log_excerpt(source, hl);
+}
 
 ODBSDK_PUBLIC_API ODBSDK_PRINTF_FORMAT(3, 0) void
 log_excerpt_vimpl(int gutter_indent, const char* severity, const char* fmt, va_list ap);
