@@ -150,6 +150,53 @@ struct mfile
     int   size;
 };
 
+#if defined(WIN32)
+static void
+print_last_win32_error(void)
+{
+    LPSTR  msg;
+    size_t size = FormatMessageA(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM
+            | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        GetLastError(),
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPSTR)&msg,
+        0,
+        NULL);
+    print_error("%.*s", (int)size, msg);
+    LocalFree(msg);
+}
+static wchar_t*
+utf8_to_utf16(const char* utf8, int utf8_bytes)
+{
+    int utf16_bytes
+        = MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_bytes, NULL, 0);
+    if (utf16_bytes == 0)
+        return NULL;
+
+    wchar_t* utf16 = malloc((sizeof(wchar_t) + 1) * utf16_bytes);
+    if (utf16 == NULL)
+        return NULL;
+
+    if (MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_bytes, utf16, utf16_bytes)
+        == 0)
+    {
+        free(utf16);
+        return NULL;
+    }
+
+    utf16[utf16_bytes] = 0;
+
+    return utf16;
+}
+static void
+utf_free(void* utf)
+{
+    free(utf);
+}
+#endif
+
 /*!
  * \brief Memory-maps a file in read-only mode.
  * \param[in] mf Pointer to mfile structure. Struct can be uninitialized.
@@ -425,22 +472,23 @@ fs_list_files_recurse(
 #if defined(WIN32)
     DWORD           dwError;
     WIN32_FIND_DATA ffd;
-    char*           correct_path;
+    char*           path_search;
+    char*           filepath = NULL;
     int             path_len = strlen(path);
     int             ret = 0;
     HANDLE          hFind = INVALID_HANDLE_VALUE;
 
-    correct_path = malloc(path_len + 3);
-    if (correct_path == NULL)
+    path_search = malloc(path_len + 3);
+    if (path_search == NULL)
         goto str_set_failed;
-    strcpy(correct_path, path);
-    if (path[path_len - 1] == '/')
-        path[path_len - 1] = '\\';
-    if (path[path_len - 1] != '\\')
-        strcat(correct_path, "\\");
-    strcat(correct_path, "*");
+    strcpy(path_search, path);
+    if (path_search[path_len - 1] == '/')
+        path_search[path_len - 1] = '\\';
+    if (path_search[path_len - 1] != '\\')
+        strcat(path_search, "\\");
+    strcat(path_search, "*");
 
-    hFind = FindFirstFileA(correct_path, &ffd);
+    hFind = FindFirstFileA(path_search, &ffd);
     if (hFind == INVALID_HANDLE_VALUE)
         goto first_file_failed;
 
@@ -448,9 +496,25 @@ fs_list_files_recurse(
     {
         if (strcmp(ffd.cFileName, ".") == 0 || strcmp(ffd.cFileName, "..") == 0)
             continue;
-        ret = on_entry(ffd.cFileName, user);
-        if (ret != 0)
-            goto out;
+
+        filepath = realloc(filepath, strlen(path) + strlen(ffd.cFileName) + 2);
+        strcpy(filepath, path);
+        if (filepath[strlen(filepath) - 1] != '/' && filepath[strlen(filepath) - 1] != '\\')
+            strcat(filepath, "\\");
+        strcat(filepath, ffd.cFileName);
+
+        if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+        {
+            ret = on_entry(filepath, ffd.cFileName, user);
+            if (ret != 0)
+                goto out;
+        }
+        else if(ffd.dwFileAttributes & FILE_ATTRIBUTE_NORMAL)
+        {
+            ret = fs_list_files_recurse(filepath, on_entry, user);
+            if (ret)
+                return ret;
+        }
     } while (FindNextFile(hFind, &ffd) != 0);
 
     dwError = GetLastError();
@@ -460,7 +524,7 @@ fs_list_files_recurse(
 out:
     FindClose(hFind);
 first_file_failed:
-    free(correct_path);
+    free(path_search);
 str_set_failed:
     return ret;
 #else
@@ -824,9 +888,14 @@ gen_source(
     struct mstream* ms, const struct ci_files* files, const struct cfg* cfg)
 {
     int f;
+    
+#if defined(_WIN32)
+    mstream_cstr(ms, "#define WIN32_LEAN_AND_MEAN" NL);
+    mstream_cstr(ms, "#include <Windows.h>" NL);
+#endif
 
-    mstream_cstr(ms, "#include <gmock/gmock.h>" NL NL);
-    mstream_cstr(ms, "#include \"odb-sdk/tests/Utf8Helper.hpp\"" NL);
+    mstream_cstr(ms, "#include <gmock/gmock.h>" NL);
+    mstream_cstr(ms, "#include \"odb-sdk/tests/Utf8Helper.hpp\"" NL NL);
     mstream_cstr(ms, "extern \"C\" {" NL);
     mstream_cstr(ms, "#include \"odb-sdk/process.h\"" NL);
     mstream_cstr(ms, "#include \"odb-sdk/utf8.h\"" NL);
@@ -840,7 +909,11 @@ gen_source(
     mstream_cstr(ms, "{" NL);
     mstream_cstr(ms, "    void SetUp() override" NL);
     mstream_cstr(ms, "    {" NL);
+#if defined(_WIN32)
+    mstream_cstr(ms, "        CreateDirectoryA(\"ci-tests\", NULL);" NL);
+#else
     mstream_cstr(ms, "        mkdir(\"ci-tests\", 0755);" NL);
+#endif
     mstream_cstr(ms, "        out = empty_utf8();" NL);
     mstream_cstr(ms, "        err = empty_utf8();" NL);
     mstream_cstr(ms, "    }" NL);
@@ -890,17 +963,29 @@ gen_source(
         mstream_fmt(
             ms,
             "    const char* compile_argv[] = {" NL
+#if defined(_WIN32)
+            "        \"odb-cli.exe\"," NL
+#else
             "        \"./odb-cli\"," NL
+#endif
             "        \"-b\"," NL
             "        \"--dba\"," NL
             "        \"--output\"," NL
+#if defined(_WIN32)
+            "        \"ci-tests\\\\%s.exe\"," NL
+#else
             "        \"ci-tests/%s\"," NL
+#endif
             "        NULL" NL
             "    };" NL,
             files->file[f].dbaname);
         mstream_cstr(ms,
             "    ASSERT_THAT(process_run(" NL
+#if defined(_WIN32)
+            "        cstr_ospathc(\"odb-cli.exe\")," NL
+#else
             "        cstr_ospathc(\"./odb-cli\")," NL
+#endif
             "        compile_argv," NL
             "        cstr_utf8_view(" NL
             "            \"");
@@ -912,6 +997,8 @@ gen_source(
                 mstream_putc(ms, '\\');
             if (c == '\n')
                 mstream_cstr(ms, "\\n\"" NL "            \"");
+            else if (c == '\r')
+                continue;
             else
                 mstream_putc(ms, c);
         }
@@ -930,13 +1017,21 @@ gen_source(
         mstream_fmt(
             ms,
             "    const char* run_argv[] = {" NL
+#if defined(_WIN32)
+            "        \"ci-tests\\\\%s.exe\"," NL
+#else
             "        \"./ci-tests/%s\"," NL
+#endif
             "        NULL" NL
             "    };" NL,
             files->file[f].dbaname);
         mstream_fmt(ms,
             "    ASSERT_THAT(process_run(" NL
+#if defined(_WIN32)
+            "        cstr_ospathc(\"ci-tests\\\\%s.exe\")," NL
+#else
             "        cstr_ospathc(\"./ci-tests/%s\")," NL
+#endif
             "        run_argv," NL
             "        empty_utf8_view()," NL
             "        &out, &err), Eq(0));" NL,

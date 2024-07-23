@@ -70,8 +70,8 @@ output(const std::vector<std::string>& args)
         arch_ = TARGET_i386;
     }
 
+    log_info("[codegen] ", "Compiling {emph:%s}\n", getSourceFilename());
     std::string outputName = args[0];
-
     std::string       srcfile = getSourceFilename();
     std::string       objfile = srcfile + ".o";
     std::string       modname = srcfile.substr(0, srcfile.rfind("."));
@@ -93,7 +93,8 @@ output(const std::vector<std::string>& args)
     used_cmds_init(&used_cmds_hm);
     used_cmds_append(&used_cmds_hm, getAST());
     struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds_hm);
-
+    
+    log_info("[codegen] ", "Generating runtime\n");
     ir = ir_alloc("odbruntime");
     ir_create_runtime(
         ir,
@@ -110,9 +111,10 @@ output(const std::vector<std::string>& args)
     ir_free(ir);
 
     cmd_ids_deinit(used_cmds_list);
-
+    
+    log_info("[codegen] ", "Linking {emph:%s}\n", outputName.c_str());
     const char* objfiles[] = {objfile.c_str(), "odbruntime.o"};
-    odb_link(objfiles, 2, outputName.c_str(), arch_, platform_);
+    odb_link(objfiles, 2, outputName.c_str(), getSDKType(), arch_, platform_);
 
     return true;
 }

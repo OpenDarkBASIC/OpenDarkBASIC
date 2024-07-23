@@ -10,11 +10,44 @@
 int
 fs_get_path_to_self(struct ospath* path)
 {
-    struct utf16_view utf16;
-    utf16.data = _wpgmptr;
-    utf16.len = wcslen(utf16.data);
+    struct utf16 utf16 = empty_utf16();
+    int alloc_len = 0;
+    while (1)
+    {
+        int len;
+        alloc_len = alloc_len ? alloc_len * 2 : 128;
+        if (utf16_reserve(&utf16, alloc_len) != 0)
+            goto failed;
 
-    return utf16_to_utf8(&path->str, utf16);
+        len = GetModuleFileNameW(NULL, utf16.data, alloc_len);
+        if (len == 0)
+        {
+            log_sdk_err("Failed to GetModuleFileNameW(): {win32error}\n");
+            goto failed;
+        }
+
+        if (len == alloc_len && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+        {
+            log_sdk_err("Failed to GetModuleFileNameW(): {win32error}\n");
+            goto failed;
+        }
+
+        if (len < alloc_len)
+        {
+            utf16.len = len;
+            break;
+        }
+    }
+
+    if (utf16_to_utf8(&path->str, utf16_view(utf16)) != 0)
+        goto failed;
+
+    utf16_deinit(utf16);
+    return 0;
+
+failed:
+    utf16_deinit(utf16);
+    return -1;
 }
 
 int

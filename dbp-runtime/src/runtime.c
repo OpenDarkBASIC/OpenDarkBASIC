@@ -9,7 +9,7 @@ static HMODULE coreDLL;
 static struct GlobStruct* globPtr;
 static DWORD last_dbp_error;
 
-#define DBP_PLUGIN_LIST \
+#define DBP_PLUGIN_LIST2 \
     X(g_GFX,         "DBProSetupDebug.dll") \
     X(g_Basic2D,     "DBProBasic2DDebug.dll") \
     X(g_Text,        "DBProTextDebug.dll") \
@@ -39,6 +39,10 @@ static DWORD last_dbp_error;
     X(g_Vectors,     "DBProVectorsDebug.dll") \
     X(g_LODTerrain,  "DBProLODTerrainDebug.dll") \
     /* X(g_CSG, "DBProCSGDebug.dll")*/
+
+#define DBP_PLUGIN_LIST \
+    X(g_GFX,         "DBProSetupDebug.dll") \
+    X(g_Text,        "DBProTextDebug.dll") \
 
 static void
 log_last_error(void)
@@ -110,14 +114,14 @@ initEngine(void)
 
     void (*PassErrorHandlerPtr)(void*) = (void (*)(void*))GetProcAddress(coreDLL, "?PassErrorHandlerPtr@@YAXPAX@Z");
     PassErrorHandlerPtr((void*)&last_dbp_error);
-    )    
+
     void (*PassDLLs)(void) = (void (*)(void))GetProcAddress(coreDLL, "?PassDLLs@@YAXXZ");
     PassDLLs();
     
     DWORD (*InitDisplay)(DWORD, DWORD, DWORD, DWORD, HINSTANCE, char*) = 
         (DWORD(*)(DWORD, DWORD, DWORD, DWORD, HINSTANCE, char*))GetProcAddress(coreDLL, "?InitDisplay@@YAKKKKKPAUHINSTANCE__@@PAD@Z");
     if (InitDisplay(initialDisplayMode, initialDisplayWidth, initialDisplayHeight, initialDisplayDepth,
-                    GetModuleHandleA(NULL), "OpenDarkBASIC application") != 0)
+                    NULL, "OpenDarkBASIC application") != 0)
     {
         puts("Failed to init display.");
         return -1;
@@ -131,11 +135,16 @@ initEngine(void)
     if (ReceiveCoreDataPtr) \
         ReceiveCoreDataPtr(globPtr); \
     }
-    DBP_PLUGIN_LIST
+    //DBP_PLUGIN_LIST
 #undef X
     
     void (*ConstructDLLs)(void) = (void (*)(void))GetProcAddress(coreDLL, "?ConstructDLLs@@YAXXZ");
     ConstructDLLs();
+
+    void (*PrintStr)(char*) = (void (*)(char*))GetProcAddress(coreDLL, "?PrintS@@YAXPAD@Z");
+    void (*WaitKey)(void) = (void (*)(void))GetProcAddress(coreDLL, "?WaitForKey@@YAXXZ");
+    PrintStr("Hello World!");
+    WaitKey();
 
     return 0;
 }

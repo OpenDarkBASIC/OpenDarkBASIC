@@ -16,6 +16,7 @@ link_windows(
     const char*      objs[],
     int              count,
     const char*      output_name,
+    enum sdk_type    sdk_type,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
@@ -46,7 +47,8 @@ link_windows(
     // args.push_back("./odb-sdk/plugins/core-commands.lib");
     // args.push_back("./odb-sdk/plugins/test-plugin.lib");
     
-    //args.push_back("./lib/odb-sdk.lib");
+    if (sdk_type == SDK_ODB)
+        args.push_back("./lib/odb-sdk.lib");
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
@@ -62,6 +64,7 @@ link_linux(
     const char*      objs[],
     int              count,
     const char*      output_name,
+    enum sdk_type    sdk_type,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
@@ -116,7 +119,7 @@ odb_link(
     const char* objs[],
     int         count,
     const char* output_name,
-    /*enum odb_sdk_type sdkType,*/
+    enum sdk_type    sdk_type,
     enum target_arch     arch,
     enum target_platform platform)
 {
@@ -124,8 +127,8 @@ odb_link(
     switch (platform)
     {
         case TARGET_WINDOWS:
-            return link_windows(objs, count, output_name, arch);
-        case TARGET_LINUX: return link_linux(objs, count, output_name, arch);
+            return link_windows(objs, count, output_name, sdk_type, arch);
+        case TARGET_LINUX: return link_linux(objs, count, output_name, sdk_type, arch);
         case TARGET_MACOS: break;
     }
 

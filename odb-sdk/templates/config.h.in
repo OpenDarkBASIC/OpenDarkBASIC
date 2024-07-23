@@ -38,7 +38,7 @@
 /* Assertions --------------------------------------------------------------- */
 
 #if defined(__cplusplus)
-#   define ODBSDK_STATIC_ASSERT static_assert
+#   define ODBSDK_STATIC_ASSERT(condition) static_assert(condition)
 #else
 #   define ODBSDK_STATIC_ASSERT(condition) ${ODBSDK_STATIC_ASSERT}
 #endif

@@ -56,7 +56,7 @@ if (MSVC_STATIC_ASSERT)
 elseif (GCC_STATIC_ASSERT)
     set (ODBSDK_STATIC_ASSERT "_Static_assert(condition, \"(\" #condition \") failed\")")
 else ()
-    set (ODBSDK_STATIC_ASSERT "assert(condition)")
+    set (ODBSDK_STATIC_ASSERT "")
 endif ()
 
 configure_file ("templates/config.h.in" "include/odb-sdk/config.h")
@@ -181,6 +181,7 @@ if (ODBSDK_TESTS)
     odb_target_properties (odb-echo
         PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
+    add_dependencies (odb-tests odb-echo)
 endif ()
 
 ###############################################################################

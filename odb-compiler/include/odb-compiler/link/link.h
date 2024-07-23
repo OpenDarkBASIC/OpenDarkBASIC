@@ -2,11 +2,12 @@
 
 #include "odb-compiler/config.h"
 #include "odb-compiler/codegen/target.h"
+#include "odb-compiler/sdk/sdk_type.h"
 
 ODBCOMPILER_PUBLIC_API int
 odb_link(
     const char* objs[], int count,
     const char* output_name,
-    /*enum odb_sdk_type sdkType,*/
+    enum sdk_type sdk_type,
     enum target_arch arch,
     enum target_platform platform);

@@ -160,7 +160,7 @@ utf8_cstr(struct utf8 str)
 
 /* Modifying utf8 structure ------------------------------------------------- */
 ODBSDK_PUBLIC_API int
-utf8_resize(struct utf8* str, int len);
+utf8_reserve(struct utf8* str, int len);
 
 ODBSDK_PUBLIC_API int
 utf8_set(struct utf8* dst, struct utf8_view src);
@@ -392,6 +392,9 @@ utf16_cstr(struct utf16 str)
 {
     return utf16_view_cstr(utf16_view(str));
 }
+
+ODBSDK_PUBLIC_API int
+utf16_reserve(struct utf16* str, int len);
 
 ODBSDK_PUBLIC_API int
 utf8_to_utf16(struct utf16* out, struct utf8_view in);

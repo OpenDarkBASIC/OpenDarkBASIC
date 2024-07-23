@@ -967,7 +967,7 @@ gen_start_dbpro(
 }
 
 static llvm::Function*
-get_dlopen(struct ir_module* ir, enum target_platform platform)
+get_dlopen(struct ir_module* ir, enum target_arch arch, enum target_platform platform)
 {
     switch (platform)
     {
@@ -990,10 +990,11 @@ get_dlopen(struct ir_module* ir, enum target_platform platform)
                     {llvm::PointerType::getUnqual(ir->ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
-                "LoadLibraryA@4",
-                //"LoadLibraryA",
+                arch == TARGET_i386
+                    ? "LoadLibraryA@4"
+                    : "LoadLibraryA",
                 ir->mod);
-            // F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
+            F->setDLLStorageClass(llvm::GlobalValue::DLLImportStorageClass);
             return F;
         }
         break;
@@ -1003,7 +1004,7 @@ get_dlopen(struct ir_module* ir, enum target_platform platform)
 }
 
 static llvm::Function*
-get_dlsym(struct ir_module* ir, enum target_platform platform)
+get_dlsym(struct ir_module* ir, enum target_arch arch, enum target_platform platform)
 {
     switch (platform)
     {
@@ -1026,8 +1027,9 @@ get_dlsym(struct ir_module* ir, enum target_platform platform)
                      llvm::PointerType::getUnqual(ir->ctx)},
                     /*isVarArg=*/false),
                 llvm::Function::ExternalLinkage,
-                "GetProcAddress@8",
-                //"GetProcAddress",
+                arch == TARGET_i386
+                    ? "GetProcAddress@8"
+                    : "GetProcAddress",
                 ir->mod);
     }
 
@@ -1057,8 +1059,8 @@ ir_create_runtime(
         ir->mod);
 
     /* Import DLL/shared lib functions */
-    llvm::Function* FDLOpen = get_dlopen(ir, platform);
-    llvm::Function* FDLSym = get_dlsym(ir, platform);
+    llvm::Function* FDLOpen = get_dlopen(ir, arch, platform);
+    llvm::Function* FDLSym = get_dlsym(ir, arch, platform);
 
     llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
     llvm::IRBuilder<> b(BB);

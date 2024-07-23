@@ -13,13 +13,13 @@ utf8_deinit(struct utf8 str)
 }
 
 int
-utf8_resize(struct utf8* str, int len)
+utf8_reserve(struct utf8* str, int len)
 {
     if (str->len < len || str->data == NULL)
     {
         void* new_data = mem_realloc(str->data, len + UTF8_APPEND_PADDING);
         if (new_data == NULL)
-            return log_oom(len + UTF8_APPEND_PADDING, "utf8_resize()");
+            return log_oom(len + UTF8_APPEND_PADDING, "utf8_reserve()");
         str->data = new_data;
     }
 
@@ -29,7 +29,7 @@ utf8_resize(struct utf8* str, int len)
 int
 utf8_set(struct utf8* dst, struct utf8_view src)
 {
-    if (utf8_resize(dst, src.len) != 0)
+    if (utf8_reserve(dst, src.len) != 0)
         return -1;
 
     dst->len = src.len;
@@ -41,7 +41,7 @@ utf8_set(struct utf8* dst, struct utf8_view src)
 int
 utf8_append(struct utf8* str, struct utf8_view append)
 {
-    if (utf8_resize(str, str->len + append.len) != 0)
+    if (utf8_reserve(str, str->len + append.len) != 0)
         return -1;
 
     memcpy(str->data + str->len, append.data + append.off, (size_t)append.len);
@@ -72,6 +72,20 @@ utf8_fmt(struct utf8* str, const char* fmt, ...)
     vsprintf(str->data, fmt, ap);
     va_end(ap);
     str->len = len;
+
+    return 0;
+}
+
+int
+utf16_reserve(struct utf16* str, int len)
+{
+    if (str->len < len || str->data == NULL)
+    {
+        void* new_data = mem_realloc(str->data, (len + UTF8_APPEND_PADDING) * sizeof(uint16_t));
+        if (new_data == NULL)
+            return log_oom((len + UTF8_APPEND_PADDING) * sizeof(uint16_t), "utf8_reserve()");
+        str->data = new_data;
+    }
 
     return 0;
 }

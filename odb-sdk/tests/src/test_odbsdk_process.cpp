@@ -26,12 +26,35 @@ struct NAME : public Test
     struct utf8 out, err;
 };
 
-TEST_F(NAME, run_echo)
+TEST_F(NAME, exit_code)
 {
-    const char* argv[] = {"./odb-echo", NULL};
+#if defined(_WIN32)
+    const char* argv[] = {"odb-echo.exe", "--exit", "42", NULL};
+#else
+    const char* argv[] = {"./odb-echo", "--exit", "42", NULL};
+#endif
     ASSERT_THAT(
         process_run(
-            cstr_ospathc("./odb-echo"),
+            cstr_ospathc("odb-echo"),
+            argv,
+            empty_utf8_view(),
+            &out,
+            &err),
+        Eq(42));
+    ASSERT_THAT(out, Utf8Eq(""));
+    ASSERT_THAT(err, Utf8Eq(""));
+}
+
+TEST_F(NAME, echo_stdout)
+{
+#if defined(_WIN32)
+    const char* argv[] = {"odb-echo.exe", NULL};
+#else
+    const char* argv[] = {"./odb-echo", NULL};
+#endif
+    ASSERT_THAT(
+        process_run(
+            cstr_ospathc("odb-echo"),
             argv,
             cstr_utf8_view("This is a test"),
             &out,
@@ -39,4 +62,23 @@ TEST_F(NAME, run_echo)
         Eq(0));
     ASSERT_THAT(out, Utf8Eq("This is a test"));
     ASSERT_THAT(err, Utf8Eq(""));
+}
+
+TEST_F(NAME, echo_stderr)
+{
+#if defined(_WIN32)
+    const char* argv[] = {"odb-echo.exe", "--stderr", NULL};
+#else
+    const char* argv[] = {"./odb-echo", "--stderr", NULL};
+#endif
+    ASSERT_THAT(
+        process_run(
+            cstr_ospathc("odb-echo"),
+            argv,
+            cstr_utf8_view("This is a test"),
+            &out,
+            &err),
+        Eq(0));
+    ASSERT_THAT(out, Utf8Eq(""));
+    ASSERT_THAT(err, Utf8Eq("This is a test"));
 }
