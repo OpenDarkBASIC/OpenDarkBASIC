@@ -28,6 +28,7 @@ resolve_assignments(
             case AST_COND:
             case AST_COND_BRANCH:
             case AST_LOOP:
+            case AST_LOOP_FOR:
             case AST_LOOP_EXIT:
             case AST_LABEL:
             case AST_COMMAND:

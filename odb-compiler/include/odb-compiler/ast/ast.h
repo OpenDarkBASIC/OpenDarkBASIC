@@ -93,6 +93,7 @@ enum ast_type
     AST_COND,
     AST_COND_BRANCH,
     AST_LOOP,
+    AST_LOOP_FOR,
     AST_LOOP_EXIT,
     AST_LABEL,
     /*! Boolean literal, either "true" or "false" */
@@ -219,6 +220,7 @@ union ast_node
         ast_id init;
         ast_id end;
         ast_id step;
+        ast_id next;
     } loop_for;
 
     struct exit {
@@ -324,7 +326,7 @@ type_annotation_to_type(enum type_annotation annotation)
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
-ast_id ast_block_append_new(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
+ast_id ast_block_append_stmt(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);

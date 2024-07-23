@@ -497,6 +497,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/loop_exit_errors.cpp"
         "tests/src/semantic/loop_exit_for.cpp"
         "tests/src/semantic/loop_exit_for_errors.cpp"
+        "tests/src/semantic/loop_for.cpp"
         "tests/src/semantic/loop_for_warnings.cpp"
         "tests/src/semantic/loop_for_errors.cpp"
         "tests/src/semantic/type_check_assignment.cpp"

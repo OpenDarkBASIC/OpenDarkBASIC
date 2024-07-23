@@ -679,6 +679,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         }
         break;
 
+        case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 

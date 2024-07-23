@@ -80,6 +80,9 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_LOOP:
             SWAP(struct utf8_span, loop, name)
             SWAP(struct utf8_span, loop, implicit_name) break;
+        case AST_LOOP_FOR:
+            SWAP(ast_id, loop_for, step)
+            SWAP(ast_id, loop_for, next) break;
         case AST_LOOP_EXIT: SWAP(struct utf8_span, exit, name) break;
         case AST_LABEL: SWAP(struct utf8_span, label, name) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
@@ -238,6 +241,12 @@ ast_trees_equal(
                         source.text.data, ast->nodes[n1].loop.implicit_name),
                     utf8_span_view(
                         source.text.data, ast->nodes[n2].loop.implicit_name)))
+                return 0;
+            break;
+        case AST_LOOP_FOR:
+            if (ast->nodes[n1].loop_for.step != ast->nodes[n2].loop_for.step)
+                return 0;
+            if (ast->nodes[n1].loop_for.next != ast->nodes[n2].loop_for.next)
                 return 0;
             break;
         case AST_LOOP_EXIT:

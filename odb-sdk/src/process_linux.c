@@ -1,5 +1,6 @@
 #include "odb-sdk/log.h"
 #include "odb-sdk/process.h"
+#include "odb-sdk/utf8.h"
 #include <errno.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -90,14 +91,14 @@ process_run(
         {
             if (out)
             {
-                utf8_resize(out, out->len + 4096);
+                utf8_reserve(out, out->len + 4096);
                 outlen = read(outfd[0], out->data + out->len, 4096);
                 if (outlen > 0)
                     out->len += outlen;
             }
             if (err)
             {
-                utf8_resize(err, err->len + 4096);
+                utf8_reserve(err, err->len + 4096);
                 errlen = read(errfd[0], err->data + err->len, 4096);
                 if (errlen > 0)
                     err->len += errlen;

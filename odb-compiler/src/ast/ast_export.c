@@ -14,6 +14,12 @@ write_nodes(
     const struct cmd_list* commands)
 {
     union ast_node* nd = &ast->nodes[n];
+
+    if (nd->base.left >= 0)
+        write_nodes(ast, nd->base.left, fp, source, commands);
+    if (nd->base.right >= 0)
+        write_nodes(ast, nd->base.right, fp, source, commands);
+
     switch (nd->info.node_type)
     {
         case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
@@ -96,8 +102,11 @@ write_nodes(
                     fp,
                     "  n%d [shape=\"diamond\", label=\"loop \\\"%.*s\\\"\"];\n",
                     n,
-                    nd->loop.name.len,
-                    source.text.data + nd->loop.name.off);
+                    nd->loop.implicit_name.len,
+                    source.text.data + nd->loop.implicit_name.off);
+            break;
+        case AST_LOOP_FOR:
+            fprintf(fp, "  n%d [shape=\"diamond\", label=\"for\"];\n", n);
             break;
         case AST_LOOP_EXIT:
             fprintf(
@@ -189,11 +198,6 @@ write_nodes(
                 type_to_db_name(nd->info.type_info));
             break;
     }
-
-    if (nd->base.left >= 0)
-        write_nodes(ast, nd->base.left, fp, source, commands);
-    if (nd->base.right >= 0)
-        write_nodes(ast, nd->base.right, fp, source, commands);
 }
 
 static void

@@ -637,6 +637,7 @@ gen_expr(
         case AST_COND_BRANCH: break;
 
         case AST_LOOP:
+        case AST_LOOP_FOR:
         case AST_LOOP_EXIT: break;
 
         case AST_LABEL: break;
