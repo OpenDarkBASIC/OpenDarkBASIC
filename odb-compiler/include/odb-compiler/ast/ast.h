@@ -207,10 +207,19 @@ union ast_node
     struct loop {
         struct info info;
         ast_id body;
-        ast_id _pad;
+        ast_id loop_for;
         struct utf8_span name;
         struct utf8_span implicit_name;
     } loop;
+    /* Holds info necessary for semantic to generate error messages.
+     * Instances of this node are removed from the tree during
+     * semantic analysis. */
+    struct loop_for {
+        struct info info;
+        ast_id init;
+        ast_id end;
+        ast_id step;
+    } loop_for;
 
     struct exit {
         struct info info;

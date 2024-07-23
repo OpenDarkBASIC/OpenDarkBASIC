@@ -76,4 +76,7 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_resolve_cmd_overloads;
 
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_loop_for;
+
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_loop_exit;
