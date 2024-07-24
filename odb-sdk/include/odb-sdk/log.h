@@ -211,7 +211,7 @@ struct log_highlight
 #define LOG_MARKERS {'^', '~', '<'}
 
 ODBSDK_PUBLIC_API int
-log_excerpt(const char* source, const struct log_highlight* inst);
+log_excerpt(const char* source, const struct log_highlight* highlights);
 
 static inline int
 log_excerpt_1(

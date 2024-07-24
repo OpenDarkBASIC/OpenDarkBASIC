@@ -43,8 +43,13 @@ for,                TOK_FOR
 to,                 TOK_TO
 step,               TOK_STEP
 next,               TOK_NEXT
+continue,           TOK_CONTINUE
 exit,               TOK_EXIT
 /* Operators */
+or,                 TOK_LOR
+and,                TOK_LAND
+xor,                TOK_LXOR
+not,                TOK_LNOT
 %%
 
 //boolean,          TOK_BOOLEAN
@@ -53,29 +58,20 @@ exit,               TOK_EXIT
 //complex,          TOK_COMPLEX
 //dim,              TOK_DIM
 //default,          TOK_DEFAULT
-//do,               TOK_DO
 //double,           TOK_DOUBLE
 //dword,            TOK_DWORD
-//else,             TOK_ELSE
-//elseif,           TOK_ELSEIF
 //endcase,          TOK_ENDCASE
 //endfunction,      TOK_ENDFUNCTION
-//endif,            TOK_ENDIF
 //endselect,        TOK_ENDSELECT
 //endtype,          TOK_ENDTYPE
-//endwhile,         TOK_ENDWHILE
-//exit,             TOK_EXIT
 //exitfunction,     TOK_EXITFUNCTION
 //float,            TOK_FLOAT
-//for,              TOK_FOR
 //function,         TOK_FUNCTION
 //global,           TOK_GLOBAL
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
-//if,               TOK_IF
 //integer,          TOK_INTEGER
 //local,            TOK_LOCAL
-//loop,             TOK_LOOP
 //mat2x2,           TOK_MAT2X2
 //mat2x3,           TOK_MAT2X3
 //mat2x4,           TOK_MAT2X4
@@ -86,26 +82,16 @@ exit,               TOK_EXIT
 //mat4x3,           TOK_MAT4X3
 //mat4x4,           TOK_MAT4X4
 //mod,              TOK_MOD
-//next,             TOK_NEXT
-//not,              TOK_LNOT
-//or,               TOK_LOR
 //quat,             TOK_QUAT
-//repeat,           TOK_REPEAT
 //return,           TOK_RETURN
 //select,           TOK_SELECT
-//step,             TOK_STEP
 //string,           TOK_STRING
-//then,             TOK_THEN
-//to,               TOK_TO
 //type,             TOK_TYPE
 //undim,            TOK_UNDIM
-//until,            TOK_UNTIL
 //vec2,             TOK_VEC2
 //vec3,             TOK_VEC3
 //vec4,             TOK_VEC4
-//while,            TOK_WHILE
 //word,             TOK_WORD
-//xor,              TOK_LXOR
 
 dbtoken_kind_t
 db_keyword_lookup(const char* data, struct utf8_span ref)

@@ -625,9 +625,9 @@ gen_expr(
                     }
                     break;
 
-                case BINOP_LOGICAL_OR:
-                case BINOP_LOGICAL_AND:
-                case BINOP_LOGICAL_XOR: break;
+                case BINOP_LOGICAL_OR: return builder.CreateOr(lhs, rhs);
+                case BINOP_LOGICAL_AND: return builder.CreateAnd(lhs, rhs);
+                case BINOP_LOGICAL_XOR: return builder.CreateXor(lhs, rhs);
             }
         }
         break;
@@ -638,6 +638,7 @@ gen_expr(
 
         case AST_LOOP:
         case AST_LOOP_FOR:
+        case AST_LOOP_CONT:
         case AST_LOOP_EXIT: break;
 
         case AST_LABEL: break;
@@ -796,6 +797,13 @@ gen_expr(
     return nullptr;
 }
 
+struct loop_stack_entry
+{
+    llvm::BasicBlock* BBLoop;
+    llvm::BasicBlock* BBExit;
+    ast_id            loop;
+};
+
 int
 gen_block(
     struct ir_module*                             ir,
@@ -807,7 +815,7 @@ gen_block(
     const struct db_source                        source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    llvm::SmallVector<llvm::BasicBlock*, 8>*      loop_exit_stack,
+    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
     ODBSDK_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
@@ -915,7 +923,7 @@ gen_block(
                         source,
                         string_table,
                         cmd_func_table,
-                        loop_exit_stack,
+                        loop_stack,
                         allocamap);
                 }
                 if (builder.GetInsertBlock()->getTerminator() == nullptr)
@@ -938,7 +946,7 @@ gen_block(
                         source,
                         string_table,
                         cmd_func_table,
-                        loop_exit_stack,
+                        loop_stack,
                         allocamap);
                 }
                 if (builder.GetInsertBlock()->getTerminator() == nullptr)
@@ -963,7 +971,7 @@ gen_block(
                 llvm::Function* F = builder.GetInsertBlock()->getParent();
                 F->insert(F->end(), BBLoop);
                 builder.SetInsertPoint(BBLoop);
-                loop_exit_stack->push_back(BBExit);
+                loop_stack->push_back({BBLoop, BBExit, stmt});
                 gen_block(
                     ir,
                     builder,
@@ -974,7 +982,7 @@ gen_block(
                     source,
                     string_table,
                     cmd_func_table,
-                    loop_exit_stack,
+                    loop_stack,
                     allocamap);
                 // Codegen can change the current block. Update
                 // BBYes for the PHI.
@@ -982,13 +990,83 @@ gen_block(
 
                 F->insert(F->end(), BBExit);
                 builder.SetInsertPoint(BBExit);
-                loop_exit_stack->pop_back();
+                loop_stack->pop_back();
+            }
+            break;
+
+            case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+
+            case AST_LOOP_CONT: {
+                struct utf8_span target_name = ast->nodes[stmt].cont.name;
+                auto             it = loop_stack->rbegin();
+                if (target_name.len > 0)
+                    for (; it != loop_stack->rend(); ++it)
+                    {
+                        struct utf8_span loop_name
+                            = ast->nodes[it->loop].loop.name;
+                        struct utf8_span loop_implicit_name
+                            = ast->nodes[it->loop].loop.implicit_name;
+
+                        if (utf8_equal_span(
+                                source.text.data, target_name, loop_name)
+                            || utf8_equal_span(
+                                source.text.data,
+                                target_name,
+                                loop_implicit_name))
+                        {
+                            break;
+                        }
+                    }
+                ODBSDK_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
+
+                ast_id step_block = ast->nodes[stmt].cont.step;
+                ODBSDK_DEBUG_ASSERT(step_block > -1, (void)0);
+                ODBSDK_DEBUG_ASSERT(
+                    ast->nodes[step_block].info.node_type == AST_BLOCK,
+                    log_semantic_err("step_block: %d\n", step_block));
+                gen_block(
+                    ir,
+                    builder,
+                    ast,
+                    step_block,
+                    cmds,
+                    source_filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    loop_stack,
+                    allocamap);
+                builder.CreateBr(it->BBLoop);
             }
             break;
 
             case AST_LOOP_EXIT: {
-                llvm::BasicBlock* BBExit = loop_exit_stack->back();
-                builder.CreateBr(BBExit);
+                struct utf8_span target_name = ast->nodes[stmt].exit.name;
+                if (target_name.len == 0)
+                {
+                    llvm::BasicBlock* BBExit = loop_stack->back().BBExit;
+                    builder.CreateBr(BBExit);
+                    break;
+                }
+
+                for (auto it = loop_stack->rbegin(); it != loop_stack->rend();
+                     ++it)
+                {
+                    struct utf8_span loop_name = ast->nodes[it->loop].loop.name;
+                    struct utf8_span loop_implicit_name
+                        = ast->nodes[it->loop].loop.implicit_name;
+
+                    if (utf8_equal_span(
+                            source.text.data, target_name, loop_name)
+                        || utf8_equal_span(
+                            source.text.data, target_name, loop_implicit_name))
+                    {
+                        builder.CreateBr(it->BBExit);
+                        goto loop_exit_found;
+                    }
+                }
+                ODBSDK_DEBUG_ASSERT(0, (void)0);
+            loop_exit_found:;
             }
             break;
 
@@ -1020,7 +1098,7 @@ ir_translate_ast(
     create_global_command_function_table(
         ir, &cmd_func_table, program, source, cmds);
 
-    llvm::SmallVector<llvm::BasicBlock*, 8> loop_exit_stack;
+    llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
 
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(

@@ -371,7 +371,7 @@ ast_loop_for(
     const char*      source_filename,
     struct db_source source)
 {
-    ast_id loop, loop_for, loop_var;
+    ast_id           loop, loop_for, loop_var;
     struct utf8_span implicit_name;
 
     ODBSDK_DEBUG_ASSERT(init > -1, log_parser_err("init: %d\n", init));
@@ -384,7 +384,7 @@ ast_loop_for(
         ast->nodes[loop_var].info.node_type == AST_IDENTIFIER,
         log_parser_err("type: %d\n", ast->nodes[loop_var].info.node_type));
     implicit_name = ast->nodes[loop_var].identifier.name;
-    
+
     loop_for = new_node(ast, AST_LOOP_FOR, location);
     loop = ast_loop(ast, body, name, implicit_name, location);
     if (loop < 0 || loop_for < 0)
@@ -396,6 +396,21 @@ ast_loop_for(
     ast->nodes[loop_for].loop_for.step = step;
     ast->nodes[loop_for].loop_for.next = next;
     return loop;
+}
+
+ast_id
+ast_loop_cont(
+    struct ast*      ast,
+    struct utf8_span name,
+    ast_id           step,
+    struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_LOOP_CONT, location);
+    if (n < 0)
+        return -1;
+    ast->nodes[n].cont.name = name;
+    ast->nodes[n].cont.step = step;
+    return n;
 }
 
 ast_id

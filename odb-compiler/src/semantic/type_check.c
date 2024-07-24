@@ -158,6 +158,111 @@ type_check_casts(
     const char*      source_filename,
     struct db_source source);
 
+static int
+cast_expr_to_boolean(
+    struct ast* ast,
+    ast_id      n,
+    ast_id      parent,
+    const char* source_filename,
+    const char* source)
+{
+    if (ast->nodes[n].info.type_info == TYPE_BOOLEAN)
+        return 0;
+
+    switch (type_promote(ast->nodes[n].info.type_info, TYPE_BOOLEAN))
+    {
+        case TP_TRUENESS: {
+            int                  gutter;
+            struct utf8_span     expr_loc = ast->nodes[n].info.location;
+            utf8_idx             expr_start = expr_loc.off;
+            utf8_idx             expr_end = expr_start + expr_loc.len;
+            struct log_highlight hl_int[]
+                = {{" <> 0", "", {expr_end, 5}, LOG_INSERT, LOG_MARKERS, 0},
+                   LOG_HIGHLIGHT_SENTINAL};
+            struct log_highlight hl_float[]
+                = {{" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, LOG_MARKERS, 0},
+                   LOG_HIGHLIGHT_SENTINAL};
+            struct log_highlight hl_double[]
+                = {{" <> 0.0", "", {expr_end, 7}, LOG_INSERT, LOG_MARKERS, 0},
+                   LOG_HIGHLIGHT_SENTINAL};
+            struct log_highlight hl_string[]
+                = {{" <> \"\"", "", {expr_end, 6}, LOG_INSERT, LOG_MARKERS, 0},
+                   LOG_HIGHLIGHT_SENTINAL};
+            log_flc_warn(
+                source_filename,
+                source,
+                ast->nodes[n].info.location,
+                "Implicit evaluation of {emph1:%s} as a boolean expression.\n",
+                type_to_db_name(ast->nodes[n].info.type_info));
+            gutter = log_excerpt_1(
+                source,
+                ast->nodes[n].info.location,
+                type_to_db_name(ast->nodes[n].info.type_info));
+
+            log_excerpt_help(
+                gutter, "You can make it explicit by changing it to:\n");
+            switch (ast->nodes[n].info.type_info)
+            {
+                case TYPE_INVALID:
+                case TYPE_VOID:
+                case TYPE_BOOLEAN: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+
+                case TYPE_DOUBLE_INTEGER: /* fallthrough */
+                case TYPE_DWORD:          /* fallthrough */
+                case TYPE_INTEGER:        /* fallthrough */
+                case TYPE_WORD:           /* fallthrough */
+                case TYPE_BYTE: log_excerpt(source, hl_int); break;
+                case TYPE_FLOAT: log_excerpt(source, hl_float); break;
+                case TYPE_DOUBLE: log_excerpt(source, hl_double); break;
+                case TYPE_STRING: log_excerpt(source, hl_string); break;
+
+                case TYPE_ARRAY: break;
+
+                case TYPE_LABEL:
+                case TYPE_DABEL:
+                case TYPE_ANY:
+                case TYPE_USER_DEFINED_VAR_PTR:
+                    ODBSDK_DEBUG_ASSERT(0, (void)0);
+                    break;
+            }
+        }
+            /* fallthrough */
+        case TP_ALLOW: {
+            ast_id cast
+                = ast_cast(ast, n, TYPE_BOOLEAN, ast->nodes[n].info.location);
+            if (cast < 0)
+                return TYPE_INVALID;
+
+            /* Insert cast in between */
+            if (ast->nodes[parent].base.left == n)
+                ast->nodes[parent].base.left = cast;
+            if (ast->nodes[parent].base.right == n)
+                ast->nodes[parent].base.right = cast;
+
+            return 0;
+        }
+
+        case TP_DISALLOW:
+            log_flc_err(
+                source_filename,
+                source,
+                ast->nodes[n].info.location,
+                "Cannot evaluate {emph1:%s} as a boolean expression.\n",
+                type_to_db_name(ast->nodes[n].info.type_info));
+            log_excerpt_1(
+                source,
+                ast->nodes[n].info.location,
+                type_to_db_name(ast->nodes[n].info.type_info));
+            break;
+
+        case TP_TRUNCATE:
+        case TP_INT_TO_FLOAT:
+        case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+    }
+
+    return -1;
+}
+
 static enum type
 resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 {
@@ -517,7 +622,32 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
                 case BINOP_LOGICAL_OR:
                 case BINOP_LOGICAL_AND:
-                case BINOP_LOGICAL_XOR: break;
+                case BINOP_LOGICAL_XOR: {
+                    if (cast_expr_to_boolean(
+                            ctx->ast,
+                            lhs,
+                            n,
+                            ctx->source_filename,
+                            ctx->source.text.data)
+                        != 0)
+                    {
+                        return TYPE_INVALID;
+                    }
+                    if (cast_expr_to_boolean(
+                            ctx->ast,
+                            rhs,
+                            n,
+                            ctx->source_filename,
+                            ctx->source.text.data)
+                        != 0)
+                    {
+                        return TYPE_INVALID;
+                    }
+
+                    return ctx->ast->nodes[n].binop.info.type_info
+                           = TYPE_BOOLEAN;
+                }
+                break;
             }
         }
         break;
@@ -525,7 +655,6 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         case AST_UNOP: break;
 
         case AST_COND: {
-            int    gutter;
             ast_id expr = ctx->ast->nodes[n].cond.expr;
             ast_id cond_branch = ctx->ast->nodes[n].cond.cond_branch;
 
@@ -548,118 +677,16 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             /* The expression is always evaluated to a bool. If this is not the
              * case here, then insert a cast */
-            if (ctx->ast->nodes[expr].info.type_info != TYPE_BOOLEAN)
-                switch (type_promote(
-                    ctx->ast->nodes[expr].info.type_info, TYPE_BOOLEAN))
-                {
-                    case TP_TRUENESS: {
-                        /* clang-format off */
-                        struct utf8_span expr_loc = ctx->ast->nodes[expr].info.location;
-                        utf8_idx expr_start = expr_loc.off;
-                        utf8_idx expr_end = expr_start + expr_loc.len;
-                        struct log_highlight hl_int[] = {
-                            {" <> 0", "", {expr_end, 5}, LOG_INSERT, LOG_MARKERS, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        struct log_highlight hl_float[] = {
-                            {" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, LOG_MARKERS, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        struct log_highlight hl_double[] = {
-                            {" <> 0.0", "", {expr_end, 7}, LOG_INSERT, LOG_MARKERS, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        struct log_highlight hl_string[] = {
-                            {" <> \"\"", "", {expr_end, 6}, LOG_INSERT, LOG_MARKERS, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        /* clang-format on */
-                        log_flc_warn(
-                            ctx->source_filename,
-                            ctx->source.text.data,
-                            ctx->ast->nodes[expr].info.location,
-                            "Implicit evaluation of {emph1:%s} as a boolean "
-                            "expression.\n",
-                            type_to_db_name(
-                                ctx->ast->nodes[expr].info.type_info));
-                        gutter = log_excerpt_1(
-                            ctx->source.text.data,
-                            ctx->ast->nodes[expr].info.location,
-                            type_to_db_name(
-                                ctx->ast->nodes[expr].info.type_info));
-
-                        log_excerpt_help(
-                            gutter,
-                            "You can make it explicit by changing it to:\n");
-                        switch (ctx->ast->nodes[expr].info.type_info)
-                        {
-                            case TYPE_INVALID:
-                            case TYPE_VOID:
-                            case TYPE_BOOLEAN:
-                                ODBSDK_DEBUG_ASSERT(0, (void)0);
-                                break;
-
-                            case TYPE_DOUBLE_INTEGER:
-                            case TYPE_DWORD:
-                            case TYPE_INTEGER:
-                            case TYPE_WORD:
-                            case TYPE_BYTE:
-                                log_excerpt(ctx->source.text.data, hl_int);
-                                break;
-
-                            case TYPE_FLOAT:
-                                log_excerpt(ctx->source.text.data, hl_float);
-                                break;
-                            case TYPE_DOUBLE:
-                                log_excerpt(ctx->source.text.data, hl_double);
-                                break;
-                            case TYPE_STRING:
-                                log_excerpt(ctx->source.text.data, hl_string);
-                                break;
-
-                            case TYPE_ARRAY: break;
-
-                            case TYPE_LABEL:
-                            case TYPE_DABEL:
-                            case TYPE_ANY:
-                            case TYPE_USER_DEFINED_VAR_PTR:
-                                ODBSDK_DEBUG_ASSERT(0, (void)0);
-                                break;
-                        }
-                    }
-                        /* fallthrough */
-                    case TP_ALLOW: {
-                        ast_id cast = ast_cast(
-                            ctx->ast,
-                            expr,
-                            TYPE_BOOLEAN,
-                            ctx->ast->nodes[expr].info.location);
-                        if (cast < 0)
-                            return TYPE_INVALID;
-                        ctx->ast->nodes[n].cond.expr = cast;
-                    }
-                    break;
-
-                    case TP_DISALLOW:
-                        log_flc_err(
-                            ctx->source_filename,
-                            ctx->source.text.data,
-                            ctx->ast->nodes[expr].info.location,
-                            "Cannot evaluate {emph1:%s} as a boolean "
-                            "expression.\n",
-                            type_to_db_name(
-                                ctx->ast->nodes[expr].info.type_info));
-                        log_excerpt_1(
-                            ctx->source.text.data,
-                            ctx->ast->nodes[expr].info.location,
-                            type_to_db_name(
-                                ctx->ast->nodes[expr].info.type_info));
-                        return TYPE_INVALID;
-
-                    case TP_TRUNCATE:
-                    case TP_INT_TO_FLOAT:
-                    case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0);
-                }
+            if (cast_expr_to_boolean(
+                    ctx->ast,
+                    expr,
+                    n,
+                    ctx->source_filename,
+                    ctx->source.text.data)
+                != 0)
+            {
+                return TYPE_INVALID;
+            }
 
             ctx->ast->nodes[cond_branch].info.type_info = TYPE_VOID;
             ctx->ast->nodes[n].info.type_info = TYPE_VOID;
@@ -680,6 +707,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         break;
 
         case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case AST_LOOP_CONT:
+            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 

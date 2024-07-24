@@ -108,6 +108,14 @@ write_nodes(
         case AST_LOOP_FOR:
             fprintf(fp, "  n%d [shape=\"diamond\", label=\"for\"];\n", n);
             break;
+        case AST_LOOP_CONT:
+            fprintf(
+                fp,
+                "  n%d [shape=\"diamond\", label=\"continue %.*s\"];\n",
+                n,
+                nd->cont.name.len,
+                source.text.data + nd->cont.name.off);
+            break;
         case AST_LOOP_EXIT:
             fprintf(
                 fp,

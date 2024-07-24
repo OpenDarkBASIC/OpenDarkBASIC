@@ -34,6 +34,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_COND_BRANCH:
         case AST_LOOP:
         case AST_LOOP_FOR:
+        case AST_LOOP_CONT:
         case AST_LOOP_EXIT:
         case AST_LABEL: break;
 

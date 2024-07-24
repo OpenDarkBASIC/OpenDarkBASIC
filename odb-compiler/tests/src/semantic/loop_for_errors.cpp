@@ -58,3 +58,4 @@ TEST_F(NAME, unknown_direction_2)
               "either make the STEP value a constant, or make both the start "
               "and end values constants.\n"));
 }
+

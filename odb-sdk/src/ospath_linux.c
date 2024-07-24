@@ -102,20 +102,20 @@ cpath_basename_view(const char* path)
 void
 ospath_dirname(struct ospath* path)
 {
-    /* There will always be at least one character left */
-    if (path->str.len == 0)
-        path->str.len = 1;
-
     /* Remove trailing slashes (if not root) */
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;
     /* Remove file name */
-    while (path->str.len > 1 && path->str.data[path->str.len - 1] != '/')
+    while (path->str.len > 0 && path->str.data[path->str.len - 1] != '/')
         path->str.len--;
     /* Remove joining slash if not root directory */
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;
-    /* Set to current directory "." if not root directory */
-    if (path->str.len == 1 && path->str.data[path->str.len - 1] != '/')
+
+    /* Default to current directory */
+    if (path->str.len == 0)
+    {
+        path->str.len = 1;
         path->str.data[0] = '.';
+    }
 }

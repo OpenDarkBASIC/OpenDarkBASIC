@@ -529,3 +529,17 @@ TEST_F(NAME, issue)
         LogEq(" 1 | for n=a to b{insert} STEP 1{reset}\n"
               "   |             {insert}^~~~~~<{reset}\n"));
 }
+
+TEST_F(NAME, insert_at_end_without_newline)
+{
+    const char* source = "print a and b";
+
+    const struct log_highlight hl[]
+        = {{" <> 0", "", {13, 5}, LOG_INSERT, LOG_MARKERS, 0},
+           LOG_HIGHLIGHT_SENTINAL};
+    log_excerpt(source, hl);
+    EXPECT_THAT(
+        log(),
+        LogEq(" 1 | print a and b{insert} <> 0{reset}\n"
+              "   |              {insert}^~~~<{reset}\n"));
+}

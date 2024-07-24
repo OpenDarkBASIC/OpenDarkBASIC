@@ -145,6 +145,7 @@
 %token TO "TO"
 %token STEP "STEP"
 %token NEXT "NEXT"
+%token CONTINUE "CONTINUE"
 %token EXIT "EXIT"
 
 /* Literals */
@@ -176,6 +177,7 @@
 %token LOR "or"
 %token LAND "and"
 %token LNOT "not"
+%token LXOR "xor"
 /* Bitwise binops */
 %token BOR "bitwise or"
 %token BAND "bitwise and"
@@ -236,7 +238,7 @@
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
-%type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_exit
+%type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_cont loop_exit
 %type<string_value> loop_name
 %type<node_value> literal
 %type<node_value> identifier
@@ -278,6 +280,7 @@ stmt
 istmt
   : command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
+  | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
   ;
 expr
@@ -405,6 +408,12 @@ loop_for
 loop_next
   : NEXT identifier                         { $$ = $2; }
   | NEXT                                    { $$ = -1; }
+  ;
+loop_cont
+  : CONTINUE IDENTIFIER STEP expr           { $$ = ast_loop_cont(ctx->ast, $2, $4, @$); }
+  | CONTINUE IDENTIFIER                     { $$ = ast_loop_cont(ctx->ast, $2, -1, @$); }
+  | CONTINUE STEP expr                      { $$ = ast_loop_cont(ctx->ast, empty_utf8_span(), $3, @$); }
+  | CONTINUE                                { $$ = ast_loop_cont(ctx->ast, empty_utf8_span(), -1, @$); }
   ;
 loop_exit
   : EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->ast, $2, @$); }

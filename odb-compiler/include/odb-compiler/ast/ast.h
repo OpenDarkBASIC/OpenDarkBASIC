@@ -94,6 +94,7 @@ enum ast_type
     AST_COND_BRANCH,
     AST_LOOP,
     AST_LOOP_FOR,
+    AST_LOOP_CONT,
     AST_LOOP_EXIT,
     AST_LABEL,
     /*! Boolean literal, either "true" or "false" */
@@ -223,6 +224,13 @@ union ast_node
         ast_id next;
     } loop_for;
 
+    struct cont {
+        struct info info;
+        ast_id step;
+        ast_id _pad;
+        struct utf8_span name;
+    } cont;
+
     struct exit {
         struct info info;
         ast_id _pad1, _pad2;
@@ -345,6 +353,7 @@ ast_id ast_loop(struct ast* ast, ast_id body, struct utf8_span name, struct utf8
 ast_id ast_loop_while(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, struct db_source source);
+ast_id ast_loop_cont(struct ast* ast, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);

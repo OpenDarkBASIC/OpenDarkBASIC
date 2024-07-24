@@ -532,8 +532,8 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
     /* Find the end of the line for block */
     block = utf8_span_union(block, loc);
     block.len = loc.off - block.off + loc.len;
-    for (; source[loc.off + c]; block.len++, c++)
-        if (source[loc.off + c] == '\n')
+    for (;; block.len++, c++)
+        if (source[loc.off + c] == '\n' || source[loc.off + c] == '\0')
         {
             block.len++; /* Include the newline */
             break;
@@ -621,7 +621,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                     }
 
             /* Reached end of line? */
-            if (source[block.off + c] == '\n')
+            if (source[block.off + c] == '\n' || source[block.off + c] == '\0')
             {
                 for (h = 0; h != num_highlights; h++)
                     if (c >= highlights[h].loc.off - block.off
@@ -688,7 +688,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
                 continue;
 
             /* Reached end of line? */
-            if (source[block.off + c] == '\n')
+            if (source[block.off + c] == '\n' || source[block.off + c] == '\0')
             {
                 for (h = 0; h != num_highlights; h++)
                     if (c >= highlights[h].loc.off - block.off

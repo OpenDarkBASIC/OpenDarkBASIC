@@ -21,9 +21,11 @@ TEST_F(NAME, exit_implicitly_named_loop)
         parse("for n=1 to 10\n"
               "    exit n\n"
               "next n\n"),
-        Eq(0));
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
-        Eq(0));
+        Eq(0))
+        << log().text;
 }

@@ -193,3 +193,4 @@ TEST_F(NAME, unknown_range_3)
               "   |             ^~~~~~~<\n"));
     ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
+

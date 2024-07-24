@@ -21,7 +21,8 @@ ospath_set_utf8(struct ospath* path, struct utf8_view str)
 int
 ospath_join(struct ospath* path, struct ospathc trailing)
 {
-    struct utf8_view trailing_view = {utf8c_cstr(trailing.str), 0, trailing.len};
+    struct utf8_view trailing_view
+        = {utf8c_cstr(trailing.str), 0, trailing.len};
 
     /* Append joining slash */
     if (path->str.len && path->str.data[path->str.len - 1] != '\\')
@@ -31,10 +32,9 @@ ospath_join(struct ospath* path, struct ospathc trailing)
     }
 
     /* Append trailing path */
-    if (utf8_append(&path->str, trailing_view)
-        != 0)
+    if (utf8_append(&path->str, trailing_view) != 0)
         return -1;
-    
+
     utf8_replace_char(path->str, '/', '\\');
     remove_trailing_slashes(path);
     return 0;
@@ -140,6 +140,10 @@ ospath_dirname(struct ospath* path)
     while (path->str.len && path->str.data[path->str.len - 1] == '\\')
         path->str.len--;
 
+    /* Default to current directory */
     if (path->str.len == 0)
-        utf8_set(&path->str, cstr_utf8_view("."));
+    {
+        path->str.len = 1;
+        path->str.data[0] = '.';
+    }
 }

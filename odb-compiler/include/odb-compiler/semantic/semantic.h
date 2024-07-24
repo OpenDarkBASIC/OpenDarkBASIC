@@ -86,3 +86,5 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
 
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
+
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_name;

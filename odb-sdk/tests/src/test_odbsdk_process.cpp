@@ -35,7 +35,7 @@ TEST_F(NAME, exit_code)
 #endif
     ASSERT_THAT(
         process_run(
-            cstr_ospathc("odb-echo"),
+            cstr_ospathc(argv[0]),
             argv,
             empty_utf8_view(),
             &out,
@@ -54,7 +54,7 @@ TEST_F(NAME, echo_stdout)
 #endif
     ASSERT_THAT(
         process_run(
-            cstr_ospathc("odb-echo"),
+            cstr_ospathc(argv[0]),
             argv,
             cstr_utf8_view("This is a test"),
             &out,
@@ -73,7 +73,7 @@ TEST_F(NAME, echo_stderr)
 #endif
     ASSERT_THAT(
         process_run(
-            cstr_ospathc("odb-echo"),
+            cstr_ospathc(argv[0]),
             argv,
             cstr_utf8_view("This is a test"),
             &out,
