@@ -255,22 +255,15 @@ program
   | maybe_seps                              {}
   ;
 block
-  : block seps stmt                         { $$ = $1; 
-                                              if (ctx->ast->nodes[$3].info.node_type == AST_BLOCK)
-                                                  ast_block_append(ctx->ast, $$, $3);
-                                              else
-                                                  ast_block_append_new(ctx->ast, $$, $3, @$); }
-  | stmt                                    { if (ctx->ast->nodes[$1].info.node_type == AST_BLOCK)
-                                                  $$ = $1;
-                                              else
-                                                  $$ = ast_block(ctx->ast, $1, @$); }
+  : block seps stmt                         { $$ = $1; ast_block_append_stmt(ctx->ast, $$, $3, @$); }
+  | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 maybe_block
   : seps block seps                         { $$ = $2; }
   | seps                                    { $$ = -1; }
   ;
 iblock
-  : iblock iseps istmt                      { $$ = $1; ast_block_append_new(ctx->ast, $$, $3, @$); }
+  : iblock iseps istmt                      { $$ = $1; ast_block_append_stmt(ctx->ast, $$, $3, @$); }
   | istmt                                   { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 stmt

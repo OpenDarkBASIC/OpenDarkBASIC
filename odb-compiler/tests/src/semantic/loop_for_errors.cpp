@@ -20,12 +20,12 @@ TEST_F(NAME, unknown_direction_1)
     ASSERT_THAT(
         parse("for n=1 to b step c\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
-        Eq(0))
-        << log().text;
+        Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"
@@ -42,12 +42,12 @@ TEST_F(NAME, unknown_direction_2)
     ASSERT_THAT(
         parse("for n=a to 5 step c\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
-        Eq(0))
-        << log().text;
+        Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"

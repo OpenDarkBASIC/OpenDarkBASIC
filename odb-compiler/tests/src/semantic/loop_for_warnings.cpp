@@ -13,6 +13,16 @@ using namespace testing;
 
 struct NAME : DBParserHelper, LogHelper, Test
 {
+    enum binop_type
+    getExitOp()
+    {
+        ast_id loop_block = ast.nodes[0].block.next;
+        ast_id loop = ast.nodes[loop_block].block.stmt;
+        ast_id body = ast.nodes[loop].loop.body;
+        ast_id exit_cond = ast.nodes[body].block.stmt;
+        ast_id exit_expr = ast.nodes[exit_cond].cond.expr;
+        return ast.nodes[exit_expr].binop.op;
+    }
 };
 
 TEST_F(NAME, wrong_next_var_warning)
@@ -20,7 +30,8 @@ TEST_F(NAME, wrong_next_var_warning)
     ASSERT_THAT(
         parse("for n=1 to 5\n"
               "next a\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -35,6 +46,7 @@ TEST_F(NAME, wrong_next_var_warning)
               "   = note: Loop variable declared here:\n"
               " 1 | for n=1 to 5\n"
               "   |     ^\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
 
 TEST_F(NAME, step_wrong_direction_1)
@@ -51,7 +63,7 @@ TEST_F(NAME, step_wrong_direction_1)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+        LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
               "the wrong direction.\n"
               " 1 | for n=5 to 1\n"
               "   |       ^~~~~<\n"
@@ -59,6 +71,7 @@ TEST_F(NAME, step_wrong_direction_1)
               "can make a loop count backwards as follows:\n"
               " 1 | for n=5 to 1 STEP -1\n"
               "   |             ^~~~~~~<\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
 
 TEST_F(NAME, step_wrong_direction_2)
@@ -66,7 +79,8 @@ TEST_F(NAME, step_wrong_direction_2)
     ASSERT_THAT(
         parse("for n=1 to 5 step -1\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -74,10 +88,11 @@ TEST_F(NAME, step_wrong_direction_2)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+        LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
               "the wrong direction.\n"
               " 1 | for n=1 to 5 step -1\n"
               "   |       ^~~~~<      ^<\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_LESS_THAN));
 }
 
 TEST_F(NAME, step_wrong_direction_3)
@@ -85,7 +100,8 @@ TEST_F(NAME, step_wrong_direction_3)
     ASSERT_THAT(
         parse("for n=5 to 1 step 1\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -93,10 +109,11 @@ TEST_F(NAME, step_wrong_direction_3)
         << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:6: warning: For-loop does nothing, because it STEPs in "
+        LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
               "the wrong direction.\n"
               " 1 | for n=5 to 1 step 1\n"
               "   |       ^~~~~<      ^\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
 
 TEST_F(NAME, unknown_range_1)
@@ -104,7 +121,8 @@ TEST_F(NAME, unknown_range_1)
     ASSERT_THAT(
         parse("for n=a to b\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -121,6 +139,7 @@ TEST_F(NAME, unknown_range_1)
               "   |             ^~~~~~<\n"
               " 1 | for n=a to b STEP -1\n"
               "   |             ^~~~~~~<\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
 
 TEST_F(NAME, unknown_range_2)
@@ -128,7 +147,8 @@ TEST_F(NAME, unknown_range_2)
     ASSERT_THAT(
         parse("for n=a to 5\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -145,6 +165,7 @@ TEST_F(NAME, unknown_range_2)
               "   |             ^~~~~~<\n"
               " 1 | for n=a to 5 STEP -1\n"
               "   |             ^~~~~~~<\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
 
 TEST_F(NAME, unknown_range_3)
@@ -152,7 +173,8 @@ TEST_F(NAME, unknown_range_3)
     ASSERT_THAT(
         parse("for n=a to b\n"
               "next\n"),
-        Eq(0)) << log().text;
+        Eq(0))
+        << log().text;
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_for, &ast, plugins, &cmds, "test", src),
@@ -169,4 +191,5 @@ TEST_F(NAME, unknown_range_3)
               "   |             ^~~~~~<\n"
               " 1 | for n=a to b STEP -1\n"
               "   |             ^~~~~~~<\n"));
+    ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }

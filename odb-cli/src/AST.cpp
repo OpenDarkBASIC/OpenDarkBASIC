@@ -85,6 +85,7 @@ doParse(const std::string& filename)
     return true;
 
 parse_failed:
+    ast_export_dot(&result.ast, cstr_ospathc("ast.dot"), result.source, getCommandList());
     ast_deinit(&result.ast);
     db_parser_deinit(&result.parser);
 init_parser_failed:

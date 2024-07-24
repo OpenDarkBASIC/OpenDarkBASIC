@@ -811,5 +811,5 @@ type_check(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, NULL};
+    = {&semantic_expand_constant_declarations, &semantic_loop_for, NULL};
 const struct semantic_check semantic_type_check = {type_check, depends};

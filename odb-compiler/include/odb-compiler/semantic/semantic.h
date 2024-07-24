@@ -56,8 +56,7 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
  * commands are checked by @see semantic_resolve_cmd_overloads. Commands
  * appearing as expressions have their return values checked, though.
  */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_type_check;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_type_check;
 
 /*!
  * When the parser creates the command node in the AST, it sets the command ID
@@ -75,8 +74,15 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_resolve_cmd_overloads;
 
+/*!
+ * The parser does not create negative integer/float literals. Instead, it
+ * creates a unary negation that proceeds the positive literal.
+ *
+ * This pass simplifies all unary operators that preceed a literal.
+ */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_loop_for;
+    semantic_unary_literal;
 
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_loop_exit;
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
+
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
