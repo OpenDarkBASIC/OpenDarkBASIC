@@ -209,6 +209,9 @@ union ast_node
     struct loop {
         struct info info;
         ast_id body;
+        ast_id post_body;
+        /* Before semantic, this stores a "loop_for" node containing details of
+         * for-loop. After semantic, the node is removed and set to -1. */
         ast_id loop_for;
         struct utf8_span name;
         struct utf8_span implicit_name;

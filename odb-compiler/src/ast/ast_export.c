@@ -87,6 +87,11 @@ write_nodes(
             fprintf(fp, "  n%d [shape=\"diamond\", label=\"branches\"];\n", n);
             break;
         case AST_LOOP:
+            if (nd->loop.loop_for > -1)
+            {
+                write_nodes(ast, nd->loop.loop_for, fp, source, commands);
+                fprintf(fp, "  n%d -> n%d;\n", n, nd->loop.loop_for);
+            }
             if (nd->loop.name.len)
                 fprintf(
                     fp,

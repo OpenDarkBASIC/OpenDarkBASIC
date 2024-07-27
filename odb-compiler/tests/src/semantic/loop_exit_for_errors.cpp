@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_loop_name_for_errors
+#define NAME odbcompiler_semantic_loop_exit_for_errors
 
 using namespace testing;
 
@@ -24,7 +24,7 @@ TEST_F(NAME, exit_outside_of_loop)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -43,7 +43,7 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -66,7 +66,7 @@ TEST_F(NAME, exit_nonexisting_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -91,7 +91,7 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -116,7 +116,7 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -141,7 +141,7 @@ TEST_F(NAME, exit_nonexisting_implicitly_named_nested_loop_outer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -166,7 +166,7 @@ TEST_F(NAME, exit_nonexisting_named_nested_loop_outer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_name, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),

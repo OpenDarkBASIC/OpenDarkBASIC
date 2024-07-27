@@ -112,6 +112,7 @@ check_loop_exit(
     return 0;
 }
 
-static const struct semantic_check* depends[] = {NULL};
+static const struct semantic_check* depends[]
+    = {&semantic_expand_constant_declarations, NULL};
 
 const struct semantic_check semantic_loop_exit = {check_loop_exit, depends};

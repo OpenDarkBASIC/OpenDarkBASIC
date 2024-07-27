@@ -1,5 +1,6 @@
-#include <gmock/gmock.h>
 #include "odb-sdk/tests/Utf8Helper.hpp"
+
+#include <gmock/gmock.h>
 
 extern "C" {
 #include "odb-sdk/process.h"
@@ -35,11 +36,7 @@ TEST_F(NAME, exit_code)
 #endif
     ASSERT_THAT(
         process_run(
-            cstr_ospathc(argv[0]),
-            argv,
-            empty_utf8_view(),
-            &out,
-            &err),
+            cstr_ospathc(argv[0]), argv, empty_utf8_view(), &out, &err, 0),
         Eq(42));
     ASSERT_THAT(out, Utf8Eq(""));
     ASSERT_THAT(err, Utf8Eq(""));
@@ -58,7 +55,8 @@ TEST_F(NAME, echo_stdout)
             argv,
             cstr_utf8_view("This is a test"),
             &out,
-            &err),
+            &err,
+            0),
         Eq(0));
     ASSERT_THAT(out, Utf8Eq("This is a test"));
     ASSERT_THAT(err, Utf8Eq(""));
@@ -77,7 +75,8 @@ TEST_F(NAME, echo_stderr)
             argv,
             cstr_utf8_view("This is a test"),
             &out,
-            &err),
+            &err,
+            0),
         Eq(0));
     ASSERT_THAT(out, Utf8Eq(""));
     ASSERT_THAT(err, Utf8Eq("This is a test"));

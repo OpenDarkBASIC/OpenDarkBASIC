@@ -247,12 +247,12 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/semantic.h"
     "src/semantic/semantic.c"
     "src/semantic/expand_constant_declarations.c"
+    "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"
     "src/semantic/loop_name.c"
     "src/semantic/resolve_cmd_overloads.c"
     "src/semantic/type_check.c"
-    "src/semantic/type_check_assignment.c"
     "src/semantic/type_check_binop_symmetric.c"
     "src/semantic/type_check_binop_pow.c"
     "src/semantic/type_check_casts.c"
@@ -495,10 +495,14 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/semantic/conditionals_warnings.cpp"
         "tests/src/semantic/initialize_undeclared_variables.cpp"
-        "tests/src/semantic/loop_exit.cpp"
-        "tests/src/semantic/loop_exit_errors.cpp"
+        "tests/src/semantic/loop_cont_for.cpp"
+        "tests/src/semantic/loop_cont_for_errors.cpp"
+        "tests/src/semantic/loop_cont_do_errors.cpp"
+        "tests/src/semantic/loop_exit_do_errors.cpp"
         "tests/src/semantic/loop_exit_for.cpp"
         "tests/src/semantic/loop_exit_for_errors.cpp"
+        "tests/src/semantic/loop_exit_repeat_errors.cpp"
+        "tests/src/semantic/loop_exit_while_errors.cpp"
         "tests/src/semantic/loop_for.cpp"
         "tests/src/semantic/loop_for_warnings.cpp"
         "tests/src/semantic/loop_for_errors.cpp"
@@ -513,6 +517,8 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/type_check_binop_pow.cpp"
         "tests/src/semantic/type_check_binop_pow_warnings.cpp"
         "tests/src/semantic/type_check_binop_pow_errors.cpp"
+        "tests/src/semantic/type_check_loop_for.cpp"
+        "tests/src/semantic/type_check_loop_cont.cpp"
         "tests/src/semantic/resolve_cmd_overloads.cpp"
         "tests/src/semantic/resolve_cmd_overloads_warnings.cpp"
         "tests/src/semantic/resolve_cmd_overloads_errors.cpp")
@@ -527,8 +533,8 @@ if (ODBCOMPILER_TESTS)
     # cases
     set (CIGEN_SUITES
         "binop-precedence"
-        "do-loop"
-        "for-loop"
+        "loop-do"
+        "loop-for"
         "select-case")
     add_executable (odb-cigen
         "tests/src/ci/cigen.c")

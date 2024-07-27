@@ -697,18 +697,37 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_LOOP: {
             ast_id body = ctx->ast->nodes[n].loop.body;
+            ast_id step = ctx->ast->nodes[n].loop.post_body;
+            ODBSDK_DEBUG_ASSERT(
+                ctx->ast->nodes[n].loop.loop_for == -1,
+                log_semantic_err(
+                    "loop_for: %d\n", ctx->ast->nodes[n].loop.loop_for));
+
             if (body > -1
                 && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
             {
                 return TYPE_INVALID;
             }
+
+            if (step > -1
+                && resolve_node_type(ctx, step, scope) == TYPE_INVALID)
+            {
+                return TYPE_INVALID;
+            }
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
         }
-        break;
 
         case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
-        case AST_LOOP_CONT:
+        case AST_LOOP_CONT: {
+            ast_id step = ctx->ast->nodes[n].cont.step;
+            if (step > -1
+                && resolve_node_type(ctx, step, scope) == TYPE_INVALID)
+            {
+                return TYPE_INVALID;
+            }
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        }
+
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
@@ -840,5 +859,8 @@ type_check(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, &semantic_loop_for, NULL};
+    = {&semantic_expand_constant_declarations,
+       &semantic_loop_for,
+       &semantic_loop_cont,
+       NULL};
 const struct semantic_check semantic_type_check = {type_check, depends};

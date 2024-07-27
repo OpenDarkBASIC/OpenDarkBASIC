@@ -984,6 +984,22 @@ gen_block(
                     cmd_func_table,
                     loop_stack,
                     allocamap);
+                // For-loops keep the code for stepping separate from the rest
+                // of the body, because it can be overriden in "continue"
+                // statements
+                if (ast->nodes[stmt].loop.post_body > -1)
+                    gen_block(
+                        ir,
+                        builder,
+                        ast,
+                        ast->nodes[stmt].loop.post_body,
+                        cmds,
+                        source_filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        loop_stack,
+                        allocamap);
                 // Codegen can change the current block. Update
                 // BBYes for the PHI.
                 builder.CreateBr(BBLoop);
@@ -1019,24 +1035,30 @@ gen_block(
                     }
                 ODBSDK_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
 
-                ast_id step_block = ast->nodes[stmt].cont.step;
-                ODBSDK_DEBUG_ASSERT(step_block > -1, (void)0);
-                ODBSDK_DEBUG_ASSERT(
-                    ast->nodes[step_block].info.node_type == AST_BLOCK,
-                    log_semantic_err("step_block: %d\n", step_block));
-                gen_block(
-                    ir,
-                    builder,
-                    ast,
-                    step_block,
-                    cmds,
-                    source_filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    loop_stack,
-                    allocamap);
-                builder.CreateBr(it->BBLoop);
+                // When using "continue" within a for-loop, this block contains
+                // the code to run to step to the next iteration. It defaults
+                // to the loop's "post_body" block, but can be overridden by
+                // "continue"
+                ast_id step = ast->nodes[stmt].cont.step;
+                if (step > -1)
+                {
+                    ODBSDK_DEBUG_ASSERT(
+                        ast->nodes[step].info.node_type == AST_BLOCK,
+                        log_semantic_err("step: %d\n", step));
+                    gen_block(
+                        ir,
+                        builder,
+                        ast,
+                        step,
+                        cmds,
+                        source_filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        loop_stack,
+                        allocamap);
+                    builder.CreateBr(it->BBLoop);
+                }
             }
             break;
 

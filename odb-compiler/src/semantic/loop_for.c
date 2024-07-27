@@ -272,6 +272,9 @@ primitives_from_for_loop(
     loop_for = ast->nodes[loop].loop.loop_for;
     ODBSDK_DEBUG_ASSERT(
         loop_for > -1, log_semantic_err("loop_for: %d\n", loop_for));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[loop].loop.post_body == -1,
+        log_semantic_err("post_body: %d\n", ast->nodes[loop].loop.post_body));
 
     loop_loc = ast->nodes[loop].info.location;
     body = ast->nodes[loop].loop.body;
@@ -305,9 +308,9 @@ primitives_from_for_loop(
     ast_id new_body = ast_block(ast, exit_stmt, loop_loc);
     if (body > -1)
         ast_block_append(ast, new_body, body);
-    ast_block_append_stmt(
-        ast, new_body, inc_stmt, ast->nodes[inc_stmt].info.location);
     ast->nodes[loop].loop.body = new_body;
+    ast->nodes[loop].loop.post_body
+        = ast_block(ast, inc_stmt, ast->nodes[inc_stmt].info.location);
     ast->nodes[loop].loop.loop_for = -1;
 
     ast_id init_block = ast_find_parent(ast, loop);
@@ -359,6 +362,8 @@ translate_loop_for(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, &semantic_unary_literal, NULL};
+    = {&semantic_expand_constant_declarations,
+       &semantic_unary_literal, /* Required for deducing the step direction */
+       NULL};
 
 const struct semantic_check semantic_loop_for = {translate_loop_for, depends};

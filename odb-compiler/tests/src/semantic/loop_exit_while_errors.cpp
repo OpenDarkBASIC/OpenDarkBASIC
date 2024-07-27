@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_loop_exit
+#define NAME odbcompiler_semantic_loop_exit_while_errors
 
 using namespace testing;
 
@@ -15,16 +15,20 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, exit_inside_of_loop)
+TEST_F(NAME, exit_outside_of_while_loop)
 {
     ASSERT_THAT(
-        parse("for n=1 to 10\n"
-              "    exit\n"
-              "next n\n"),
+        parse("while n>0\n"
+              "endwhile\n"
+              "exit\n"),
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
             &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
-        Eq(0));
-    ASSERT_THAT(log(), LogEq(""));
+        Eq(-1));
+    ASSERT_THAT(
+        log(),
+        LogEq("test:3:1: error: EXIT statement must be inside a loop.\n"
+              " 3 | exit\n"
+              "   | ^~~<\n"));
 }

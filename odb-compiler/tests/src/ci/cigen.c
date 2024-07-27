@@ -1005,7 +1005,7 @@ gen_source(
         mstream_cstr(ms, "\")," NL);
         mstream_cstr(
             ms,
-            "        &out, &err), Eq(0)) << std::string(err.data, "
+            "        &out, &err, 3000), Eq(0)) << std::string(err.data, "
             "err.len);" NL);
         mstream_cstr(ms, "    ASSERT_THAT(out, Utf8Eq(\"\"));" NL);
         /* Compiler will generate output on stderr, but it's hard to predict
@@ -1034,7 +1034,7 @@ gen_source(
 #endif
             "        run_argv," NL
             "        empty_utf8_view()," NL
-            "        &out, &err), Eq(0));" NL,
+            "        &out, &err, 3000), Eq(0));" NL,
             files->file[f].dbaname);
         /* clang-format on */
         mstream_fmt(
