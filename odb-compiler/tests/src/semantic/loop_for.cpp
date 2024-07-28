@@ -5,6 +5,7 @@
 #include "gmock/gmock.h"
 
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/semantic/semantic.h"
 }

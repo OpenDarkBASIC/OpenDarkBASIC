@@ -32,10 +32,10 @@ log_exit_error(
         log_flc_err(
             source_filename,
             source.text.data,
-            ast->nodes[exit].exit.name,
+            ast->nodes[exit].loop_exit.name,
             "Unknown loop name referenced in EXIT statement.\n");
         gutter
-            = log_excerpt_1(source.text.data, ast->nodes[exit].exit.name, "");
+            = log_excerpt_1(source.text.data, ast->nodes[exit].loop_exit.name, "");
         if (name.len)
         {
             log_excerpt_help(
@@ -72,14 +72,14 @@ check_exit(
 
         if (ast->nodes[loop].info.node_type == AST_LOOP)
         {
-            if (ast->nodes[exit].exit.name.len == 0
+            if (ast->nodes[exit].loop_exit.name.len == 0
                 || utf8_equal_span(
                     source.text.data,
-                    ast->nodes[exit].exit.name,
+                    ast->nodes[exit].loop_exit.name,
                     ast->nodes[loop].loop.name)
                 || utf8_equal_span(
                     source.text.data,
-                    ast->nodes[exit].exit.name,
+                    ast->nodes[exit].loop_exit.name,
                     ast->nodes[loop].loop.implicit_name))
             {
                 return 0;

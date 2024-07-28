@@ -3,7 +3,7 @@
 
 #include "gmock/gmock.h"
 
-#define NAME odbcompiler_semantic_loop_exit
+#define NAME odbcompiler_db_parser_loop_exit
 
 using namespace testing;
 

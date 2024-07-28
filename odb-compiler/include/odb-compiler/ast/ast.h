@@ -76,7 +76,9 @@ enum ast_type
     AST_BLOCK,
     /*! Linked list of expressions, usually passed as arguments to a function or
        command */
+    AST_END,
     AST_ARGLIST,
+    AST_PARAMLIST,
     /*! #constant statements */
     AST_CONST_DECL,
     /*! Function call to a plugin. Known in DBPro as a "command" */
@@ -96,6 +98,11 @@ enum ast_type
     AST_LOOP_FOR,
     AST_LOOP_CONT,
     AST_LOOP_EXIT,
+    AST_FUNC,
+    AST_FUNC_DECL,
+    AST_FUNC_DEF,
+    AST_FUNC_CALL_UNRESOLVED,
+    AST_FUNC_CALL,
     AST_LABEL,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
@@ -140,12 +147,24 @@ union ast_node
         ast_id next;
     } block;
 
+    struct end {
+        struct info info;
+        ast_id _pad1, _pad2;
+    } end;
+
     struct arglist
     {
         struct info info;
         ast_id expr;
         ast_id next;
     } arglist;
+
+    struct paramlist
+    {
+        struct info info;
+        ast_id identifier;
+        ast_id next;
+    } paramlist;
 
     struct const_decl
     {
@@ -234,11 +253,47 @@ union ast_node
         struct utf8_span name;
     } cont;
 
-    struct exit {
+    struct loop_exit {
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
-    } exit;
+    } loop_exit;
+
+    struct func {
+        struct info info;
+        ast_id decl;
+        ast_id def;
+    } func;
+
+    struct func_decl {
+        struct info info;
+        ast_id identifier;
+        ast_id paramlist;
+    } func_decl;
+
+    struct func_def {
+        struct info info;
+        ast_id body;
+        ast_id retval;
+    } func_def;
+
+    struct func_exit {
+        struct info info;
+        ast_id retval;
+        ast_id _pad;
+    } func_exit;
+
+    struct func_call_unresolved {
+        struct info info;
+        ast_id identifier;
+        ast_id arglist;
+    } func_call_unresolved;
+
+    struct func_call {
+        struct info info;
+        ast_id func;
+        ast_id arglist;
+    } func_call;
 
     struct label {
         struct info info;
@@ -338,8 +393,11 @@ type_annotation_to_type(enum type_annotation annotation)
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
 ast_id ast_block_append_stmt(struct ast* ast, ast_id block, ast_id stmt, struct utf8_span location);
+ast_id ast_end(struct ast* ast, struct utf8_span location);
 ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
+ast_id ast_paramlist(struct ast* ast, ast_id expr, struct utf8_span location);
+ast_id ast_paramlist_append(struct ast* ast, ast_id paramlist, ast_id expr, struct utf8_span location);
 ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
 ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
 ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
@@ -358,6 +416,8 @@ ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_spa
 ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, struct db_source source);
 ast_id ast_loop_cont(struct ast* ast, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
+ast_id ast_func(struct ast* ast, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
+ast_id ast_func_call_unresolved(struct ast* ast, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);

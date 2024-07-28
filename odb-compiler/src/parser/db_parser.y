@@ -124,6 +124,7 @@
 
 /* Keywords */
 %token CONSTANT "constant"
+%token END
 %token AS "AS"
 %token INC "increment"
 %token DEC "decrement"
@@ -147,6 +148,9 @@
 %token NEXT "NEXT"
 %token CONTINUE "CONTINUE"
 %token EXIT "EXIT"
+/* Functions */
+%token FUNCTION
+%token ENDFUNCTION
 
 /* Literals */
 %token<boolean_value> BOOLEAN_LITERAL "boolean literal"
@@ -232,7 +236,7 @@
 %type<node_value> block iblock maybe_block
 %type<node_value> stmt istmt
 %type<node_value> expr
-%type<node_value> arglist
+%type<node_value> arglist paramlist
 %type<node_value> const_decl
 %type<node_value> inc dec
 %type<node_value> command_stmt command_expr
@@ -242,6 +246,7 @@
 %type<string_value> loop_name
 %type<node_value> literal
 %type<node_value> identifier
+%type<node_value> func func_call
 //%type<node_value> label
 
 %start program
@@ -274,14 +279,17 @@ stmt
   | dec                                     { $$ = $1; }
   | conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
+  | func                                    { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
-// Statements that can only appear "inline", e.g. "if x then istmt"
+// Statements that can appear "inline", e.g. "if x then istmt"
 istmt
-  : command_stmt                            { $$ = $1; }
+  : END                                     { $$ = ast_end(ctx->ast, @$); }
+  | command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
+  | func_call                               { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
@@ -317,12 +325,18 @@ expr
   | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
+  | func_call                               { $$ = $1; }
   | identifier                              { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 arglist
   : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->ast, $$, $3, @$); }
   | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
+  ;
+/* TODO: Support AS TYPE */
+paramlist
+  : paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->ast, $$, $3, @$); }
+  | identifier                              { $$ = ast_paramlist(ctx->ast, $1, @$); }
   ;
 const_decl
   : CONSTANT identifier expr                { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
@@ -422,6 +436,24 @@ loop_exit
 loop_name
   : IDENTIFIER ':'                          { $$ = $1; }
   |                                         { $$ = empty_utf8_span(); }
+  ;
+func
+  : FUNCTION identifier '(' paramlist ')'
+        maybe_block
+    ENDFUNCTION expr                        { $$ = ast_func(ctx->ast, $2, $4, $6, $8, @$); }
+  | FUNCTION identifier '(' paramlist ')'
+        maybe_block
+    ENDFUNCTION                             { $$ = ast_func(ctx->ast, $2, $4, $6, -1, @$); }
+  | FUNCTION identifier '(' ')'
+        maybe_block
+    ENDFUNCTION expr                        { $$ = ast_func(ctx->ast, $2, -1, $5, $7, @$); }
+  | FUNCTION identifier '(' ')'
+        maybe_block
+    ENDFUNCTION                             { $$ = ast_func(ctx->ast, $2, -1, $5, -1, @$); }
+  ;
+func_call
+  : identifier '(' arglist ')'              { $$ = ast_func_call_unresolved(ctx->ast, $1, $3, @$); }
+  | identifier '(' ')'                      { $$ = ast_func_call_unresolved(ctx->ast, $1, -1, @$); }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }

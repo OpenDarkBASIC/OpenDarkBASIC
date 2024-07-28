@@ -83,6 +83,13 @@ ast_block_append_stmt(
     ast->nodes[n].block.stmt = stmt;
     return n;
 }
+
+ast_id
+ast_end(struct ast* ast, struct utf8_span location)
+{
+    return new_node(ast, AST_END, location);
+}
+
 ast_id
 ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location)
 {
@@ -104,6 +111,7 @@ ast_arglist_append(
     if (n < 0)
         return -1;
 
+    ODBSDK_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ODBSDK_DEBUG_ASSERT(arglist > -1, log_parser_err("arglist: %d\n", arglist));
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[arglist].info.node_type == AST_ARGLIST,
@@ -113,6 +121,54 @@ ast_arglist_append(
         arglist = ast->nodes[arglist].arglist.next;
     ast->nodes[arglist].arglist.next = n;
     ast->nodes[n].arglist.expr = expr;
+
+    return n;
+}
+
+ast_id
+ast_paramlist(struct ast* ast, ast_id identifier, struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_PARAMLIST, location);
+    if (n < 0)
+        return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_parser_err("expr: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+
+    ast->nodes[n].paramlist.identifier = identifier;
+    return n;
+}
+
+ast_id
+ast_paramlist_append(
+    struct ast*      ast,
+    ast_id           paramlist,
+    ast_id           identifier,
+    struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_ARGLIST, location);
+    if (n < 0)
+        return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        paramlist > -1, log_parser_err("paramlist: %d\n", paramlist));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[paramlist].info.node_type == AST_PARAMLIST,
+        log_parser_err("type: %d\n", ast->nodes[paramlist].info.node_type));
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_parser_err("expr: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+
+    while (ast->nodes[paramlist].paramlist.next != -1)
+        paramlist = ast->nodes[paramlist].paramlist.next;
+    ast->nodes[paramlist].paramlist.next = n;
+    ast->nodes[n].paramlist.identifier = identifier;
 
     return n;
 }
@@ -419,7 +475,73 @@ ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location)
     ast_id n = new_node(ast, AST_LOOP_EXIT, location);
     if (n < -1)
         return -1;
-    ast->nodes[n].exit.name = name;
+    ast->nodes[n].loop_exit.name = name;
+    return n;
+}
+
+ast_id
+ast_func(
+    struct ast*      ast,
+    ast_id           identifier,
+    ast_id           paramlist,
+    ast_id           body,
+    ast_id           retval,
+    struct utf8_span location)
+{
+    ast_id func, decl, def;
+    func = new_node(ast, AST_FUNC, location);
+    decl = new_node(ast, AST_FUNC_DECL, location);
+    def = new_node(ast, AST_FUNC_DEF, location);
+    if (func < 0 || decl < 0 || def < 0)
+        return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_parser_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+    ast->nodes[decl].func_decl.identifier = identifier;
+
+    ODBSDK_DEBUG_ASSERT(
+        paramlist == -1
+            || ast->nodes[paramlist].info.node_type == AST_PARAMLIST,
+        log_parser_err("type: %d\n", ast->nodes[paramlist].info.node_type));
+    ast->nodes[decl].func_decl.paramlist = paramlist;
+
+    ODBSDK_DEBUG_ASSERT(
+        body == -1 || ast->nodes[body].info.node_type == AST_BLOCK,
+        log_parser_err("type: %d\n", ast->nodes[body].info.node_type));
+    ast->nodes[def].func_def.body = body;
+    ast->nodes[def].func_def.retval = retval;
+
+    ast->nodes[func].func.decl = decl;
+    ast->nodes[func].func.def = def;
+
+    return func;
+}
+
+ast_id
+ast_func_call_unresolved(
+    struct ast*      ast,
+    ast_id           identifier,
+    ast_id           arglist,
+    struct utf8_span location)
+{
+    ast_id n = new_node(ast, AST_FUNC_CALL_UNRESOLVED, location);
+    if (n < 0)
+        return -1;
+
+    ODBSDK_DEBUG_ASSERT(
+        identifier > -1, log_parser_err("identifier: %d\n", identifier));
+    ODBSDK_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+    ODBSDK_DEBUG_ASSERT(
+        arglist == -1 || ast->nodes[arglist].info.node_type == AST_ARGLIST,
+        log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
+
+    ast->nodes[n].func_call_unresolved.identifier = identifier;
+    ast->nodes[n].func_call_unresolved.arglist = arglist;
     return n;
 }
 

@@ -24,6 +24,7 @@ struct db_keyword
 
 %%
 as,                 TOK_AS
+end,                TOK_END
 inc,                TOK_INC
 dec,                TOK_DEC
 /* Control flow */
@@ -50,6 +51,9 @@ or,                 TOK_LOR
 and,                TOK_LAND
 xor,                TOK_LXOR
 not,                TOK_LNOT
+/* Functions */
+function,           TOK_FUNCTION
+endfunction,        TOK_ENDFUNCTION
 %%
 
 //boolean,          TOK_BOOLEAN
@@ -61,12 +65,10 @@ not,                TOK_LNOT
 //double,           TOK_DOUBLE
 //dword,            TOK_DWORD
 //endcase,          TOK_ENDCASE
-//endfunction,      TOK_ENDFUNCTION
 //endselect,        TOK_ENDSELECT
 //endtype,          TOK_ENDTYPE
 //exitfunction,     TOK_EXITFUNCTION
 //float,            TOK_FLOAT
-//function,         TOK_FUNCTION
 //global,           TOK_GLOBAL
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO

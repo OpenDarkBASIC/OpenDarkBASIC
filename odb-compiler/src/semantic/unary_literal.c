@@ -11,7 +11,9 @@ child_changed:
     {
         case AST_GC:
         case AST_BLOCK:
+        case AST_END:
         case AST_ARGLIST:
+        case AST_PARAMLIST:
         case AST_CONST_DECL:
         case AST_COMMAND:
         case AST_ASSIGNMENT:
@@ -29,6 +31,11 @@ child_changed:
         case AST_LOOP_FOR:
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT:
+        case AST_FUNC:
+        case AST_FUNC_DECL:
+        case AST_FUNC_DEF:
+        case AST_FUNC_CALL_UNRESOLVED:
+        case AST_FUNC_CALL:
         case AST_LABEL: return -1;
 
         case AST_BOOLEAN_LITERAL:

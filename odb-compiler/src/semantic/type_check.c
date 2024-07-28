@@ -287,7 +287,10 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_VOID; /* Blocks are not expressions */
         }
 
+        case AST_END: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+
         case AST_ARGLIST:
+        case AST_PARAMLIST:
         case AST_CONST_DECL: break;
 
         case AST_ASSIGNMENT: {
@@ -730,6 +733,60 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_LOOP_EXIT:
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+
+        case AST_FUNC: {
+            enum type ret_type, ident_type, func_type;
+            ast_id    decl, def, identifier, paramlist, body, ret;
+
+            decl = ctx->ast->nodes[n].func.decl;
+            def = ctx->ast->nodes[n].func.def;
+            ODBSDK_DEBUG_ASSERT(decl > -1, (void)0);
+            ODBSDK_DEBUG_ASSERT(def > -1, (void)0);
+
+            identifier = ctx->ast->nodes[decl].func_decl.identifier;
+            paramlist = ctx->ast->nodes[decl].func_decl.paramlist;
+            body = ctx->ast->nodes[def].func_def.body;
+            ret = ctx->ast->nodes[def].func_def.retval;
+            ODBSDK_DEBUG_ASSERT(identifier > -1, (void)0);
+
+            ident_type = type_annotation_to_type(
+                ctx->ast->nodes[identifier].identifier.annotation);
+            ctx->ast->nodes[identifier].info.type_info = ident_type;
+
+            if (ret > -1)
+            {
+                ret_type = resolve_node_type(ctx, ret, scope);
+                if (ret_type == TYPE_INVALID)
+                    return TYPE_INVALID;
+            }
+
+            func_type = ret > -1 ? ret_type : TYPE_VOID;
+
+            for (; paramlist > -1;
+                 paramlist = ctx->ast->nodes[paramlist].paramlist.next)
+            {
+                ast_id param = ctx->ast->nodes[paramlist].paramlist.identifier;
+                if (resolve_node_type(ctx, param, scope) == TYPE_INVALID)
+                    return TYPE_INVALID;
+            }
+
+            if (body > -1
+                && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
+            {
+                return TYPE_INVALID;
+            }
+
+            ctx->ast->nodes[decl].info.type_info = func_type;
+            ctx->ast->nodes[def].info.type_info = func_type;
+            ctx->ast->nodes[n].info.type_info = func_type;
+            return func_type;
+        }
+        break;
+        case AST_FUNC_DECL:
+        case AST_FUNC_DEF: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+
+        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_CALL: break;
 
         case AST_LABEL: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 

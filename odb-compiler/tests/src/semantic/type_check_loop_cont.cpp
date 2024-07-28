@@ -29,7 +29,6 @@ TEST_F(NAME, continue_with_step)
         Eq(0))
         << log().text;
 
-    // clang-format off
     ast_id init = 0;
     ast_id loop_block = ast.nodes[init].block.next;
     ast_id loop = ast.nodes[loop_block].block.stmt;
@@ -46,5 +45,4 @@ TEST_F(NAME, continue_with_step)
     ASSERT_THAT(ast.nodes[cont_step_expr].info.type_info, Eq(TYPE_INTEGER));
     ast_id cont_step_value = ast.nodes[cont_step_expr].cast.expr;
     ASSERT_THAT(ast.nodes[cont_step_value].byte_literal.value, Eq(2));
-    // clang-format on
 }

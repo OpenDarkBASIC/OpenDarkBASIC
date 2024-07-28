@@ -3,5 +3,5 @@ for n = mul(5) to mul(1) step -1
 next n
 end
 
-function mul(value as integer)
+function mul(value)
 endfunction value * 2

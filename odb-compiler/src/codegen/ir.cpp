@@ -383,7 +383,9 @@ gen_expr(
     {
         case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); return nullptr;
         case AST_BLOCK:
+        case AST_END:
         case AST_ARGLIST:
+        case AST_PARAMLIST:
         case AST_CONST_DECL: break;
 
         case AST_COMMAND:
@@ -640,6 +642,12 @@ gen_expr(
         case AST_LOOP_FOR:
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT: break;
+
+        case AST_FUNC:
+        case AST_FUNC_DECL:
+        case AST_FUNC_DEF: break;
+        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_CALL: break;
 
         case AST_LABEL: break;
 
@@ -1063,7 +1071,7 @@ gen_block(
             break;
 
             case AST_LOOP_EXIT: {
-                struct utf8_span target_name = ast->nodes[stmt].exit.name;
+                struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
                 if (target_name.len == 0)
                 {
                     llvm::BasicBlock* BBExit = loop_stack->back().BBExit;

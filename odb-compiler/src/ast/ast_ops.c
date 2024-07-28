@@ -65,7 +65,9 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
     {
         case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
+        case AST_END: break;
         case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
         case AST_CONST_DECL: break;
         case AST_COMMAND: SWAP(cmd_id, cmd, id) break;
         case AST_ASSIGNMENT: break;
@@ -84,7 +86,12 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
             SWAP(ast_id, loop_for, step)
             SWAP(ast_id, loop_for, next) break;
         case AST_LOOP_CONT: SWAP(struct utf8_span, cont, name) break;
-        case AST_LOOP_EXIT: SWAP(struct utf8_span, exit, name) break;
+        case AST_LOOP_EXIT: SWAP(struct utf8_span, loop_exit, name) break;
+        case AST_FUNC: break;
+        case AST_FUNC_DECL: break;
+        case AST_FUNC_DEF: break;
+        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_CALL: break;
         case AST_LABEL: SWAP(struct utf8_span, label, name) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
@@ -205,7 +212,9 @@ ast_trees_equal(
     {
         case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
+        case AST_END: break;
         case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
         case AST_CONST_DECL: break;
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
@@ -233,6 +242,8 @@ ast_trees_equal(
         case AST_COND: break;
         case AST_COND_BRANCH: break;
         case AST_LOOP:
+            if (ast->nodes[n1].loop.loop_for != ast->nodes[n2].loop.loop_for)
+                return 0;
             if (!utf8_equal(
                     utf8_span_view(source.text.data, ast->nodes[n1].loop.name),
                     utf8_span_view(source.text.data, ast->nodes[n2].loop.name)))
@@ -245,6 +256,7 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_LOOP_FOR:
+            /* init and end are handled by node.base */
             if (ast->nodes[n1].loop_for.step != ast->nodes[n2].loop_for.step)
                 return 0;
             if (ast->nodes[n1].loop_for.next != ast->nodes[n2].loop_for.next)
@@ -258,10 +270,17 @@ ast_trees_equal(
             break;
         case AST_LOOP_EXIT:
             if (!utf8_equal(
-                    utf8_span_view(source.text.data, ast->nodes[n1].exit.name),
-                    utf8_span_view(source.text.data, ast->nodes[n2].exit.name)))
+                    utf8_span_view(
+                        source.text.data, ast->nodes[n1].loop_exit.name),
+                    utf8_span_view(
+                        source.text.data, ast->nodes[n2].loop_exit.name)))
                 return 0;
             break;
+        case AST_FUNC: break;
+        case AST_FUNC_DECL: break;
+        case AST_FUNC_DEF: break;
+        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_CALL: break;
         case AST_LABEL:
             if (!utf8_equal(
                     utf8_span_view(source.text.data, ast->nodes[n1].label.name),

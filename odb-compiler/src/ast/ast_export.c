@@ -26,7 +26,13 @@ write_nodes(
         case AST_BLOCK:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"block\"];\n", n);
             break;
+        case AST_END:
+            fprintf(fp, "  n%d [shape=\"box3d\", label=\"end\"];\n", n);
+            break;
         case AST_ARGLIST:
+            fprintf(fp, "  n%d [shape=\"box3d\", label=\"arglist\"];\n", n);
+            break;
+        case AST_PARAMLIST:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"paramlist\"];\n", n);
             break;
         case AST_CONST_DECL:
@@ -126,8 +132,26 @@ write_nodes(
                 fp,
                 "  n%d [shape=\"record\", label=\"exit %.*s\"];\n",
                 n,
-                nd->exit.name.len,
-                source.text.data + nd->exit.name.off);
+                nd->loop_exit.name.len,
+                source.text.data + nd->loop_exit.name.off);
+            break;
+        case AST_FUNC:
+            fprintf(fp, "  n%d [shape=\"record\", label=\"func\"];\n", n);
+            break;
+        case AST_FUNC_DECL:
+            fprintf(fp, "  n%d [shape=\"record\", label=\"decl\"];\n", n);
+            break;
+        case AST_FUNC_DEF:
+            fprintf(fp, "  n%d [shape=\"record\", label=\"def\"];\n", n);
+            break;
+        case AST_FUNC_CALL_UNRESOLVED:
+            fprintf(
+                fp,
+                "  n%d [shape=\"record\", label=\"call (unresolved)\"];\n",
+                n);
+            break;
+        case AST_FUNC_CALL:
+            fprintf(fp, "  n%d [shape=\"record\", label=\"call\"];\n", n);
             break;
         case AST_LABEL:
             fprintf(
