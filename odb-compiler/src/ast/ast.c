@@ -373,6 +373,7 @@ ast_loop(
         return -1;
     ast->nodes[n].loop.body = body;
     ast->nodes[n].loop.name = name;
+    ast->nodes[n].loop.loop_for = -1;
     ast->nodes[n].loop.implicit_name = implicit_name;
     return n;
 }
