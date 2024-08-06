@@ -3,7 +3,7 @@
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/cmd_list.h"
 
-VEC_DECLARE_API(cmd_ids, cmd_id, 32, ODBCOMPILER_PUBLIC_API)
+VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, cmd_ids, cmd_id, 32)
 
 struct ast;
 struct used_cmds_hm;

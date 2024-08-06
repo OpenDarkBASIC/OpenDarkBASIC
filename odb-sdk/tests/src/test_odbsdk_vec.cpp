@@ -21,7 +21,7 @@ operator==(const struct obj& a, const struct obj& b)
 
 #define MIN_CAPACITY  32
 #define EXPAND_FACTOR 2
-VEC_DECLARE_API(vobj, struct obj, 16, static)
+VEC_DECLARE_API(static, vobj, struct obj, 16)
 VEC_DEFINE_API_FULL(vobj, struct obj, 16, MIN_CAPACITY, EXPAND_FACTOR)
 
 static void*
@@ -49,7 +49,7 @@ VEC_DEFINE_API(shitty_vobj, struct obj, 16)
 #else
 #   define mem_alloc   shitty_alloc
 #   define mem_realloc shitty_realloc
-VEC_DECLARE_API(shitty_vobj, struct obj, 16, static)
+VEC_DECLARE_API(static, shitty_vobj, struct obj, 16)
 VEC_DEFINE_API(shitty_vobj, struct obj, 16)
 #   undef mem_alloc
 #   undef mem_realloc
@@ -731,9 +731,7 @@ TEST_F(NAME, retain_all)
 
     EXPECT_THAT(vobj->count, Eq(8));
     EXPECT_THAT(
-        vobj_retain(
-            vobj, [](obj* o, void* user) { return 1; }, NULL),
-        Eq(0));
+        vobj_retain(vobj, [](obj* o, void* user) { return 1; }, NULL), Eq(0));
     EXPECT_THAT(vobj->count, Eq(8));
 }
 
@@ -763,9 +761,7 @@ TEST_F(NAME, retain_returning_error)
     EXPECT_THAT(vobj->count, Eq(8));
     int i = 0;
     EXPECT_THAT(
-        vobj_retain(
-            vobj, [](obj* o, void* user) { return -5; }, NULL),
-        Eq(-5));
+        vobj_retain(vobj, [](obj* o, void* user) { return -5; }, NULL), Eq(-5));
     EXPECT_THAT(vobj->count, Eq(8));
 }
 

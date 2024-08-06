@@ -31,7 +31,7 @@ struct view_scope
     int16_t          scope;
 };
 
-VEC_DECLARE_API(spanlist, struct span_scope, 32, static)
+VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct allocamap_kvs
@@ -48,7 +48,8 @@ allocamap_kvs_hash(struct view_scope key)
            + key.scope;
 }
 static int
-allocamap_kvs_alloc(struct allocamap_kvs* kvs, int32_t capacity)
+allocamap_kvs_alloc(
+    struct allocamap_kvs* kvs, struct allocamap_kvs* old_kvs, int32_t capacity)
 {
     kvs->text = NULL;
 
@@ -81,16 +82,19 @@ allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
     struct view_scope view_scope = {view, span_scope.scope};
     return view_scope;
 }
-static void
+static int
 allocamap_kvs_set_key(
     struct allocamap_kvs* kvs, int32_t slot, struct view_scope key)
 {
     ODBSDK_DEBUG_ASSERT(
         kvs->text == NULL || kvs->text == key.view.data, (void)0);
+
     kvs->text = key.view.data;
     struct utf8_span  span = utf8_view_span(kvs->text, key.view);
     struct span_scope span_scope = {span, key.scope};
     kvs->keys->data[slot] = span_scope;
+
+    return 0;
 }
 static int
 allocamap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
@@ -98,7 +102,7 @@ allocamap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
     return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
 }
 static llvm::AllocaInst**
-allocamap_kvs_get_value(struct allocamap_kvs* kvs, int32_t slot)
+allocamap_kvs_get_value(const struct allocamap_kvs* kvs, int32_t slot)
 {
     return &kvs->values[slot];
 }
@@ -110,12 +114,12 @@ allocamap_kvs_set_value(
 }
 
 HM_DECLARE_API_FULL(
+    static,
     allocamap,
     hash32,
     struct view_scope,
     llvm::AllocaInst*,
     32,
-    static,
     struct allocamap_kvs)
 HM_DEFINE_API_FULL(
     allocamap,

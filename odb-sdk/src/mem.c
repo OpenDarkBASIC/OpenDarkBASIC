@@ -27,7 +27,8 @@ struct report_kvs
 };
 
 static int
-report_kvs_alloc(struct report_kvs* kvs, int32_t capacity)
+report_kvs_alloc(
+    struct report_kvs* kvs, struct report_kvs* old_kvs, int32_t capacity)
 {
     if ((kvs->keys = mem_alloc(sizeof(uintptr_t) * capacity)) == NULL)
         return -1;
@@ -51,10 +52,11 @@ report_kvs_get_key(const struct report_kvs* kvs, int32_t slot)
 {
     return kvs->keys[slot];
 }
-static void
+static int
 report_kvs_set_key(struct report_kvs* kvs, int32_t slot, uintptr_t key)
 {
     kvs->keys[slot] = key;
+    return 0;
 }
 static int
 report_kvs_keys_equal(uintptr_t k1, uintptr_t k2)
@@ -74,12 +76,12 @@ report_kvs_set_value(
 }
 
 HM_DECLARE_API_FULL(
+    static,
     report,
     hash32,
     uintptr_t,
     struct report_info,
     32,
-    static,
     struct report_kvs)
 HM_DEFINE_API_FULL(
     report,
@@ -323,7 +325,7 @@ mem_deinit(void)
             log_hex_ascii((void*)info->location, info->size);
 #endif
     }
-    
+
     state.ignore_malloc = 1;
     report_deinit(state.report);
     state.ignore_malloc = 0;

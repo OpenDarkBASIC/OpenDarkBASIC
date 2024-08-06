@@ -21,40 +21,37 @@
 #include "odb-sdk/log.h"
 #include <stdint.h>
 
-#define RB_DECLARE_TYPE(name, T, bits)                                         \
-    struct name                                                                \
-    {                                                                          \
-        struct                                                                 \
-        {                                                                      \
-            int##bits##_t read, write, capacity;                               \
-            T             data[1];                                             \
-        }* mem;                                                                \
-    }
+#define RB_DECLARE_API(API, prefix, T, bits)                                   \
+    RB_DECLARE_API_FULL(API, prefix, T, bits, 16)
 
-#define RB_DECLARE_API(prefix, T, bits)                                        \
-    RB_DECLARE_TYPE(prefix, T, bits);                                          \
+#define RB_DECLARE_API_FULL(API, prefix, T, bits, MIN_CAPACITY)                \
+    struct prefix                                                              \
+    {                                                                          \
+        int##bits##_t read, write, capacity;                                   \
+        T             data[1];                                                 \
+    };                                                                         \
+    static struct prefix prefix##_null_rb;                                     \
                                                                                \
     /* NOTE:                                                                   \
-     * For the following 4 functions it is very important that each argument   \
+     * For the following 4 functions it is very important that each member     \
      * is only accessed once. */                                               \
-                                                                               \
-    static inline int##bits##_t prefix##_count(struct prefix rb)               \
+    static inline int##bits##_t prefix##_count(struct prefix* rb)              \
     {                                                                          \
-        return (rb.mem->write - rb.mem->read) & (rb.mem->capacity - 1);        \
+        return (rb->write - rb->read) & (rb->capacity - 1);                    \
     }                                                                          \
                                                                                \
-    static inline int##bits##_t prefix##_space(struct prefix rb)               \
+    static inline int##bits##_t prefix##_space(struct prefix* rb)              \
     {                                                                          \
-        return (rb.mem->read - rb.mem->write - 1) & (rb.mem->capacity - 1);    \
+        return (rb->read - rb->write - 1) & (rb->capacity - 1);                \
     }                                                                          \
-    static inline int prefix##_is_full(struct prefix rb)                       \
+    static inline int prefix##_is_full(struct prefix* rb)                      \
     {                                                                          \
-        return ((rb.mem->write + 1) & (rb.mem->capacity - 1)) == rb.mem->read; \
+        return ((rb->write + 1) & (rb->capacity - 1)) == rb->read;             \
     }                                                                          \
                                                                                \
-    static inline int prefix##_is_empty(struct prefix rb)                      \
+    static inline int prefix##_is_empty(struct prefix* rb)                     \
     {                                                                          \
-        return rb.mem->read == rb.mem->write;                                  \
+        return rb->read == rb->write;                                          \
     }                                                                          \
                                                                                \
     /*!                                                                        \
@@ -62,9 +59,9 @@
      * Initializes the structure to a defined state.                           \
      * @param[in] rb Pointer to a ring buffer of type RB(T,B)*                 \
      */                                                                        \
-    static inline void prefix##_init(struct prefix* rb)                        \
+    static inline void prefix##_init(struct prefix** rb)                       \
     {                                                                          \
-        rb->mem = NULL;                                                        \
+        *rb = &prefix##_null_rb;                                               \
     }                                                                          \
                                                                                \
     /*!                                                                        \
@@ -72,7 +69,11 @@
      * allocated by inserting elements.                                        \
      * @param[in] rb Pointer to a ring buffer of type RB(T,B)*                 \
      */                                                                        \
-    void prefix##_deinit(struct prefix* rb);                                   \
+    static inline void prefix##_deinit(struct prefix* rb)                      \
+    {                                                                          \
+        if (rb->capacity)                                                      \
+            mem_free(rb);                                                      \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Resizes the ring buffer to contain N number of slots.            \
@@ -82,7 +83,7 @@
      * power of 2.                                                             \
      * @return Returns 0 on success, negative on error.                        \
      */                                                                        \
-    int prefix##_resize(struct prefix* rb, int##bits##_t elems);               \
+    API int prefix##_resize(struct prefix** rb, int##bits##_t elems);          \
                                                                                \
     /*!                                                                        \
      * @brief Adds (copies) an element into the writing-end of the ring        \
@@ -96,24 +97,28 @@
      * @param[in] elem The element to copy into the ring buffer.               \
      * @return Returns 0 on success, or negative if the buffer was full.       \
      */                                                                        \
-    static inline int prefix##_put(struct prefix rb, T elem)                   \
+    static inline int prefix##_put(struct prefix* rb, T elem)                  \
     {                                                                          \
-        int##bits##_t write = rb.mem->write;                                   \
+        int##bits##_t write = rb->write;                                       \
         if (prefix##_is_full(rb))                                              \
             return -1;                                                         \
-        rb.mem->write = (write + 1) & ((int##bits##_t)rb.mem->capacity - 1);   \
-        rb.mem->data[write] = elem;                                            \
+        rb->write = (write + 1) & ((int##bits##_t)rb->capacity - 1);           \
+        rb->data[write] = elem;                                                \
         return 0;                                                              \
     }                                                                          \
-    static inline int prefix##_put_realloc(struct prefix* rb, T elem)          \
+    static inline int prefix##_put_realloc(struct prefix** rb, T elem)         \
     {                                                                          \
         int##bits##_t write;                                                   \
         if (prefix##_is_full(*rb))                                             \
-            if (prefix##_resize(rb, rb->mem->capacity * 2) != 0)               \
+            if (prefix##_resize(                                               \
+                    rb, (*rb)->capacity ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
+                != 0)                                                          \
+            {                                                                  \
                 return -1;                                                     \
-        write = rb->mem->write;                                                \
-        rb->mem->write = (write + 1) & ((int##bits##_t)rb->mem->capacity - 1); \
-        rb->mem->data[write] = elem;                                           \
+            }                                                                  \
+        write = (*rb)->write;                                                  \
+        (*rb)->write = (write + 1) & ((int##bits##_t)(*rb)->capacity - 1);     \
+        (*rb)->data[write] = elem;                                             \
         return 0;                                                              \
     }                                                                          \
                                                                                \
@@ -129,25 +134,29 @@
      * @return Returns a pointer to the uninitialized element if insertion is  \
      * successfull, or NULL if there is no space left.                         \
      */                                                                        \
-    static inline T* prefix##_emplace(struct prefix rb)                        \
+    static inline T* prefix##_emplace(struct prefix* rb)                       \
     {                                                                          \
-        int##bits##_t write = rb.mem->write;                                   \
-        T*            value = &rb.mem->data[write];                            \
+        int##bits##_t write = rb->write;                                       \
+        T*            value = &rb->data[write];                                \
         if (prefix##_is_full(rb))                                              \
             return NULL;                                                       \
-        rb.mem->write = (write + 1) & ((int##bits##_t)rb.mem->capacity - 1);   \
+        rb->write = (write + 1) & ((int##bits##_t)rb->capacity - 1);           \
         return value;                                                          \
     }                                                                          \
-    static inline T* prefix##_emplace_realloc(struct prefix* rb)               \
+    static inline T* prefix##_emplace_realloc(struct prefix** rb)              \
     {                                                                          \
         int##bits##_t write;                                                   \
         T*            value;                                                   \
         if (prefix##_is_full(*rb))                                             \
-            if (prefix##_resize(rb, rb->mem->capacity * 2) != 0)               \
+            if (prefix##_resize(                                               \
+                    rb, (*rb)->capacity ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
+                != 0)                                                          \
+            {                                                                  \
                 return NULL;                                                   \
-        write = rb->mem->write;                                                \
-        value = &rb->mem->data[write];                                         \
-        rb->mem->write = (write + 1) & ((int##bits##_t)rb->mem->capacity - 1); \
+            }                                                                  \
+        write = (*rb)->write;                                                  \
+        value = &(*rb)->data[write];                                           \
+        (*rb)->write = (write + 1) & ((int##bits##_t)(*rb)->capacity - 1);     \
         return value;                                                          \
     }                                                                          \
                                                                                \
@@ -160,78 +169,71 @@
      * resized.                                                                \
      * @param[in] rb Pointer to a ring buffer of type RB(T,B)*                 \
      */                                                                        \
-    static inline T* prefix##_take(struct prefix rb)                           \
+    static inline T* prefix##_take(struct prefix* rb)                          \
     {                                                                          \
-        int##bits##_t read = rb.mem->read;                                     \
-        T*            data = &rb.mem->data[read];                              \
-        rb.mem->read = (read + 1) & ((int##bits##_t)rb.mem->capacity - 1);     \
+        ODBSDK_DEBUG_ASSERT(                                                   \
+            !prefix##_is_empty(rb), log_sdk_err("rb is empty\n"));             \
+        int##bits##_t read = rb->read;                                         \
+        T*            data = &rb->data[read];                                  \
+        rb->read = (read + 1) & ((int##bits##_t)rb->capacity - 1);             \
         return data;                                                           \
     }                                                                          \
                                                                                \
-    static inline void prefix##_clear(struct prefix rb)                        \
+    static inline void prefix##_clear(struct prefix* rb)                       \
     {                                                                          \
-        rb.mem->read = rb.mem->write;                                          \
+        rb->read = rb->write;                                                  \
     }                                                                          \
                                                                                \
-    static inline T* prefix##_peek_read(struct prefix rb)                      \
+    static inline T* prefix##_peek_read(struct prefix* rb)                     \
     {                                                                          \
-        return &rb.mem->data[rb.mem->read];                                    \
+        return &rb->data[rb->read];                                            \
     }                                                                          \
                                                                                \
-    static inline T* prefix##_peek_write(struct prefix rb)                     \
+    static inline T* prefix##_peek_write(struct prefix* rb)                    \
     {                                                                          \
-        return &rb.mem->data                                                   \
-                    [(rb.mem->write - 1)                                       \
-                     & ((int##bits##_t)rb.mem->capacity - 1)];                 \
+        return &rb->data[(rb->write - 1) & ((int##bits##_t)rb->capacity - 1)]; \
     }                                                                          \
                                                                                \
-    static inline T* prefix##_peek(struct prefix rb, int##bits##_t idx)        \
+    static inline T* prefix##_peek(struct prefix* rb, int##bits##_t idx)       \
     {                                                                          \
-        int##bits##_t offset = (rb.mem->read + idx) & (rb.mem->capacity - 1);  \
-        return &rb.mem->data[offset];                                          \
+        int##bits##_t offset = (rb->read + idx) & (rb->capacity - 1);          \
+        return &rb->data[offset];                                              \
     }
 
 #define IS_POWER_OF_2(x) (((x) & ((x) - 1)) == 0)
 #define RB_DEFINE_API(prefix, T, bits)                                         \
-    void prefix##_deinit(struct prefix* rb)                                    \
+    int prefix##_resize(struct prefix** rb, int##bits##_t elems)               \
     {                                                                          \
-        if (rb->mem)                                                           \
-            mem_free(rb->mem);                                                 \
-    }                                                                          \
-                                                                               \
-    int prefix##_resize(struct prefix* rb, int##bits##_t elems)                \
-    {                                                                          \
-        void*    new_mem;                                                      \
-        mem_size bytes                                                         \
-            = sizeof(*rb->mem) + sizeof(rb->mem->data[0]) * (elems - 1);       \
+        struct prefix* new_rb;                                                 \
+        mem_size       bytes                                                   \
+            = offsetof(struct prefix, data) + sizeof((*rb)->data[0]) * elems;  \
                                                                                \
         ODBSDK_DEBUG_ASSERT(                                                   \
             IS_POWER_OF_2(elems), log_sdk_err("elems: %d\n", elems));          \
-        new_mem = mem_realloc(rb->mem, bytes);                                 \
-        if (new_mem == NULL)                                                   \
+        new_rb = (struct prefix*)mem_realloc(                                  \
+            (*rb)->capacity ? *rb : NULL, bytes);                              \
+        if (new_rb == NULL)                                                    \
             return log_oom(bytes, "rb_resize()");                              \
-        if (rb->mem == NULL)                                                   \
+        if ((*rb)->capacity == 0)                                              \
         {                                                                      \
-            *(void**)&rb->mem = new_mem;                                       \
-            rb->mem->read = 0;                                                 \
-            rb->mem->write = 0;                                                \
+            (*rb) = new_rb;                                                    \
+            (*rb)->read = 0;                                                   \
+            (*rb)->write = 0;                                                  \
         }                                                                      \
         else                                                                   \
-        {                                                                      \
-            *(void**)&rb->mem = new_mem;                                       \
-        }                                                                      \
+            (*rb) = new_rb;                                                    \
                                                                                \
         /* Is the data wrapped? */                                             \
-        if (rb->mem->read > rb->mem->write)                                    \
+        if ((*rb)->read > (*rb)->write)                                        \
         {                                                                      \
             memmove(                                                           \
-                rb->mem->data + rb->mem->capacity,                             \
-                rb->mem->data,                                                 \
-                rb->mem->write * sizeof(rb->mem->data[0]));                    \
-            rb->mem->write += rb->mem->capacity;                               \
+                (*rb)->data + (*rb)->capacity,                                 \
+                (*rb)->data,                                                   \
+                (*rb)->write * sizeof((*rb)->data[0]));                        \
+            (*rb)->write += (*rb)->capacity;                                   \
         }                                                                      \
                                                                                \
-        rb->mem->capacity = elems;                                             \
+        (*rb)->capacity = elems;                                               \
         return 0;                                                              \
     }
 
@@ -245,7 +247,6 @@
  *   }
  */
 #define rb_for_each(rb, elem)                                                  \
-    for (intptr_t elem##_i = (rb).mem->read;                                   \
-         elem##_i != (rb).mem->write                                           \
-         && ((elem = &(rb).mem->data[elem##_i]) || 1);                         \
-         elem##_i = (elem##_i + 1) & ((rb).mem->capacity - 1))
+    for (intptr_t elem##_i = (rb)->read;                                       \
+         elem##_i != (rb)->write && ((elem = &(rb)->data[elem##_i]) || 1);     \
+         elem##_i = (elem##_i + 1) & ((rb)->capacity - 1))

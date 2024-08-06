@@ -1,6 +1,7 @@
 #include "odb-sdk/log.h"
 #include "odb-sdk/mem.h"
 #include "odb-sdk/utf8_list.h"
+#include <stddef.h>
 #include <assert.h>
 
 /*
@@ -24,7 +25,7 @@ grow(struct utf8_list** l, utf8_idx str_len)
     {
         mem_size cap = (*l)->capacity;
         mem_size grow_size = cap ? cap : 128;
-        mem_size struct_header = sizeof(**l) - sizeof((*l)->data[0]);
+        mem_size struct_header = offsetof(struct utf8_list, data);
         void*    new_mem
             = mem_realloc(cap ? *l : NULL, cap + grow_size + struct_header);
         if (new_mem == NULL)

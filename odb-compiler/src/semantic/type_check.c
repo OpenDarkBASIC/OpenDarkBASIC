@@ -26,7 +26,7 @@ struct type_origin
     ast_id    original_declaration;
 };
 
-VEC_DECLARE_API(spanlist, struct span_scope, 32, static)
+VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct typemap_kvs
@@ -43,7 +43,8 @@ typemap_kvs_hash(struct view_scope key)
            + key.scope;
 }
 static int
-typemap_kvs_alloc(struct typemap_kvs* kvs, int32_t capacity)
+typemap_kvs_alloc(
+    struct typemap_kvs* kvs, struct typemap_kvs* old_kvs, int32_t capacity)
 {
     kvs->text = NULL;
 
@@ -74,16 +75,19 @@ typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
     struct view_scope view_scope = {view, span_scope.scope};
     return view_scope;
 }
-static void
+static int
 typemap_kvs_set_key(
     struct typemap_kvs* kvs, int32_t slot, struct view_scope key)
 {
     ODBSDK_DEBUG_ASSERT(
         kvs->text == NULL || kvs->text == key.view.data, (void)0);
+
     kvs->text = key.view.data;
     struct utf8_span  span = utf8_view_span(kvs->text, key.view);
     struct span_scope span_scope = {span, key.scope};
     kvs->keys->data[slot] = span_scope;
+
+    return 0;
 }
 static int
 typemap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
@@ -91,7 +95,7 @@ typemap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
     return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
 }
 static struct type_origin*
-typemap_kvs_get_value(struct typemap_kvs* kvs, int32_t slot)
+typemap_kvs_get_value(const struct typemap_kvs* kvs, int32_t slot)
 {
     return &kvs->values[slot];
 }
@@ -103,12 +107,12 @@ typemap_kvs_set_value(
 }
 
 HM_DECLARE_API_FULL(
+    static,
     typemap,
     hash32,
     struct view_scope,
     struct type_origin,
     32,
-    static,
     struct typemap_kvs)
 HM_DEFINE_API_FULL(
     typemap,

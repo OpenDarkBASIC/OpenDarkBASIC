@@ -6,7 +6,7 @@
 #include "odb-sdk/vec.h"
 #include <assert.h>
 
-VEC_DECLARE_API(candidates, cmd_id, 8, ODBCOMPILER_PRIVATE_API)
+VEC_DECLARE_API(static, candidates, cmd_id, 8)
 VEC_DEFINE_API(candidates, cmd_id, 8)
 
 struct ctx
@@ -465,9 +465,7 @@ fail:
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations,
-       &semantic_type_check,
-       NULL};
+    = {&semantic_expand_constant_declarations, &semantic_type_check, NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads
     = {resolve_cmd_overloads, depends};

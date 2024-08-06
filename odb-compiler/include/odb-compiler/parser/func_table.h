@@ -19,10 +19,10 @@ struct func_table_kvs
 };
 
 HM_DECLARE_API_FULL(
+    ODBCOMPILER_PUBLIC_API,
     func_table,
     hash32,
     struct utf8_view,
     struct func_table_entry,
     32,
-    ODBCOMPILER_PUBLIC_API,
     struct func_table_kvs)

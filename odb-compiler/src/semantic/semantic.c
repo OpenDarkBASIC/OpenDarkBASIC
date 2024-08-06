@@ -14,7 +14,7 @@ ptr_kvs_hash(const struct semantic_check* key)
     return hash32_aligned_ptr((uintptr_t)key);
 }
 static int
-ptr_kvs_alloc(struct ptr_kvs* kvs, int16_t capacity)
+ptr_kvs_alloc(struct ptr_kvs* kvs, struct ptr_kvs* old_kvs, int16_t capacity)
 {
     kvs->keys = mem_alloc(sizeof(*kvs->keys) * capacity);
     return kvs->keys == NULL ? -1 : 0;
@@ -29,11 +29,12 @@ ptr_kvs_get_key(const struct ptr_kvs* kvs, int16_t slot)
 {
     return kvs->keys[slot];
 }
-static void
+static int
 ptr_kvs_set_key(
     struct ptr_kvs* kvs, int16_t slot, const struct semantic_check* key)
 {
     kvs->keys[slot] = key;
+    return 0;
 }
 static int
 ptr_kvs_keys_equal(
@@ -42,7 +43,7 @@ ptr_kvs_keys_equal(
     return k1 == k2;
 }
 static void*
-ptr_kvs_get_value(struct ptr_kvs* kvs, int16_t slot)
+ptr_kvs_get_value(const struct ptr_kvs* kvs, int16_t slot)
 {
     return (void*)1; // So insert_new() returns success
 }
@@ -52,12 +53,12 @@ ptr_kvs_set_value(struct ptr_kvs* kvs, int16_t slot, void* value)
 }
 
 HM_DECLARE_API_FULL(
+    static,
     ptr_set,
     hash32,
     const struct semantic_check*,
     void*,
     16,
-    static,
     struct ptr_kvs)
 HM_DEFINE_API_FULL(
     ptr_set,

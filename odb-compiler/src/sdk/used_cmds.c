@@ -5,7 +5,7 @@
 #include "odb-sdk/utf8.h"
 #include "odb-sdk/vec.h"
 
-VEC_DECLARE_API(spanlist, struct utf8_span, 32, static)
+VEC_DECLARE_API(static, spanlist, struct utf8_span, 32)
 VEC_DEFINE_API(spanlist, struct utf8_span, 32)
 VEC_DEFINE_API(cmd_ids, cmd_id, 32)
 
@@ -20,7 +20,7 @@ kvs_hash(cmd_id key)
     return key;
 }
 static int
-kvs_alloc(struct kvs* kvs, int32_t capacity)
+kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
 {
     cmd_ids_init(&kvs->keys);
     return cmd_ids_resize(&kvs->keys, capacity);
@@ -35,10 +35,11 @@ kvs_get_key(const struct kvs* kvs, int32_t slot)
 {
     return kvs->keys->data[slot];
 }
-static void
+static int
 kvs_set_key(struct kvs* kvs, int32_t slot, cmd_id key)
 {
     kvs->keys->data[slot] = key;
+    return 0;
 }
 static int
 kvs_keys_equal(cmd_id k1, cmd_id k2)
@@ -55,7 +56,7 @@ kvs_set_value(struct kvs* kvs, int32_t slot, char* value)
 {
 }
 
-HM_DECLARE_API_FULL(used_cmds_hm, hash32, cmd_id, char, 32, static, struct kvs)
+HM_DECLARE_API_FULL(static, used_cmds_hm, hash32, cmd_id, char, 32, struct kvs)
 HM_DEFINE_API_FULL(
     used_cmds_hm,
     hash32,

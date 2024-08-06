@@ -17,7 +17,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#define VEC_DECLARE_API(prefix, T, bits, API)                                  \
+#define VEC_DECLARE_API(API, prefix, T, bits)                                  \
     struct prefix                                                              \
     {                                                                          \
         int##bits##_t count, capacity;                                         \
@@ -258,13 +258,13 @@
 #define VEC_DEFINE_API_FULL(prefix, T, bits, MIN_CAPACITY, EXPAND_FACTOR)      \
     static int prefix##_realloc(struct prefix** v, int##bits##_t elems)        \
     {                                                                          \
-        mem_size header = sizeof(**v) - sizeof((*v)->data[0]);                 \
-        mem_size data = sizeof((*v)->data[0]) * elems;                         \
-        void*    new_mem                                                       \
-            = mem_realloc(((*v)->capacity ? *v : NULL), header + data);        \
+        mem_size       header = offsetof(struct prefix, data);                 \
+        mem_size       data = sizeof((*v)->data[0]) * elems;                   \
+        struct prefix* new_mem = (struct prefix*)mem_realloc(                  \
+            ((*v)->capacity ? *v : NULL), header + data);                      \
         if (new_mem == NULL)                                                   \
             return log_oom(header + data, "vec_realloc()");                    \
-        *(void**)v = new_mem;                                                  \
+        *v = new_mem;                                                          \
         return 0;                                                              \
     }                                                                          \
                                                                                \
@@ -289,10 +289,13 @@
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            mem_size header = sizeof(**v) - sizeof((*v)->data[0]);             \
-            mem_size data = sizeof((*v)->data[0]) * (*v)->count;               \
-            void*    new_mem = mem_realloc(*v, header + data);                 \
-            *(void**)v = new_mem;                                              \
+            mem_size       header = sizeof(**v) - sizeof((*v)->data[0]);       \
+            mem_size       data = sizeof((*v)->data[0]) * (*v)->count;         \
+            struct prefix* new_v                                               \
+                = (struct prefix*)mem_realloc(*v, header + data);              \
+            /* Doesn't matter if this fails -- vector will remain in tact */   \
+            if (new_v != NULL)                                                 \
+                *v = new_v;                                                    \
             (*v)->capacity = (*v)->count;                                      \
         }                                                                      \
     }                                                                          \

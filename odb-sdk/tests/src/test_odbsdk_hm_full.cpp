@@ -44,7 +44,10 @@ test_hash(const char* key)
     return hash32_jenkins_oaat(key, 4);
 }
 static int
-test_storage_alloc(struct used_cmds_hm_keys* kvs, int16_t capacity)
+test_storage_alloc(
+    struct used_cmds_hm_keys* kvs,
+    struct used_cmds_hm_keys* old_kvs,
+    int16_t                   capacity)
 {
     kvs->keys = (char*)mem_alloc(sizeof(char) * capacity * 16);
     kvs->values = (float*)mem_alloc(sizeof(*kvs->values) * capacity);
@@ -61,10 +64,11 @@ test_get_key(const struct used_cmds_hm_keys* kvs, int16_t slot)
 {
     return &kvs->keys[slot * 16];
 }
-static void
+static int
 test_set_key(struct used_cmds_hm_keys* kvs, int16_t slot, const char* key)
 {
     memcpy(&kvs->keys[slot * 16], key, 16);
+    return 0;
 }
 static int
 test_keys_equal(const char* k1, const char* k2)
@@ -82,9 +86,8 @@ test_set_value(struct used_cmds_hm_keys* kvs, int16_t slot, const float* value)
     kvs->values[slot] = *value;
 }
 
-#define NO_API
 HM_DECLARE_API_FULL(
-    hm_test, hash32, const char*, float, 16, NO_API, struct used_cmds_hm_keys)
+    static, hm_test, hash32, const char*, float, 16, struct used_cmds_hm_keys)
 HM_DEFINE_API_FULL(
     hm_test,
     hash32,

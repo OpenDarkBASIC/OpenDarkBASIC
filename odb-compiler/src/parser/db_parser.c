@@ -20,7 +20,7 @@ struct token
     DBSTYPE        pushed_value;
 };
 
-RB_DECLARE_API(token_queue, struct token, 8)
+RB_DECLARE_API(static, token_queue, struct token, 8)
 RB_DEFINE_API(token_queue, struct token, 8)
 
 int
@@ -50,7 +50,7 @@ db_parser_deinit(struct db_parser* parser)
 
 static struct token*
 get_next_assembled_token(
-    struct token_queue*    tokens,
+    struct token_queue**   tokens,
     struct utf8*           cmd_buf,
     const struct cmd_list* commands,
     const char*            source_text,
@@ -185,7 +185,7 @@ get_next_assembled_token(
 
 static struct token*
 get_next_token_ignoring_comments(
-    struct token_queue*    tokens,
+    struct token_queue**   tokens,
     struct utf8*           cmd_buf,
     const struct cmd_list* commands,
     const char*            filename,
@@ -228,12 +228,12 @@ db_parse(
     struct db_source       source,
     const struct cmd_list* commands)
 {
-    struct token_queue tokens;
-    YY_BUFFER_STATE    buffer_state;
-    int                parse_result = -1;
-    struct utf8_span   scanner_location = empty_utf8_span();
-    struct utf8        cmd_buf = empty_utf8();
-    struct parse_param parse_param = {filename, source, ast};
+    struct token_queue* tokens;
+    YY_BUFFER_STATE     buffer_state;
+    int                 parse_result = -1;
+    struct utf8_span    scanner_location = empty_utf8_span();
+    struct utf8         cmd_buf = empty_utf8();
+    struct parse_param  parse_param = {filename, source, ast};
 
     buffer_state = db_scan_buffer(
         source.text.data, source.text.len + 2, parser->scanner);
@@ -279,7 +279,7 @@ db_parse(
 
 parse_failed:
     dbset_extra(NULL, parser->scanner);
-    token_queue_deinit(&tokens);
+    token_queue_deinit(tokens);
 init_token_queue_failed:
     db_delete_buffer(buffer_state, parser->scanner);
 init_buffer_failed:

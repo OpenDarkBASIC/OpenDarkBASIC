@@ -16,7 +16,7 @@ static const uintptr_t KEY2 = 2222;
 static const uintptr_t KEY3 = 3333;
 static const uintptr_t KEY4 = 4444;
 
-HM_DECLARE_API(hm, uintptr_t, float, 32, static)
+HM_DECLARE_API(static, hm, uintptr_t, float, 32)
 HM_DEFINE_API(hm, uintptr_t, float, 32);
 
 struct NAME : Test

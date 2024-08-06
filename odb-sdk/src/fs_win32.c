@@ -15,7 +15,7 @@ fs_get_path_to_self(struct ospath* path)
     while (1)
     {
         int len;
-        alloc_len = alloc_len ? alloc_len * 2 : 128;
+        alloc_len = alloc_len ? alloc_len * 2 : MAX_PATH;
         if (utf16_reserve(&utf16, alloc_len) != 0)
             goto failed;
 

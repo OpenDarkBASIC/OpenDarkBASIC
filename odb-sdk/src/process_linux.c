@@ -165,10 +165,11 @@ process_run(
         }
 
         exited_pid = wait(&wstatus);
-        if (exited_pid == worker_pid)
+        if (exited_pid == worker_pid && timeout_ms > 0)
             kill(timeout_pid, SIGKILL);
-        else
+        if (exited_pid == timeout_pid)
             kill(worker_pid, SIGKILL);
+
         wait(NULL);
         if (WIFEXITED(wstatus))
             _exit(WEXITSTATUS(wstatus));
