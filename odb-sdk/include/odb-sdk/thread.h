@@ -15,7 +15,7 @@ ODBSDK_PUBLIC_API int
 thread_start(struct thread* t, void* (*func)(void*), void* args);
 
 ODBSDK_PUBLIC_API int
-thread_join(struct thread t, int timeout_ms);
+thread_join(struct thread t, void** ret);
 
 ODBSDK_PUBLIC_API void
 thread_kill(struct thread t);

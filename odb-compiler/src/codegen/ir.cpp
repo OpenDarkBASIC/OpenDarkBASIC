@@ -234,7 +234,7 @@ get_command_function_signature(
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
-    const struct param_types_list* odb_param_types
+    const struct cmd_param_types_list* odb_param_types
         = cmds->param_types->data[cmd_id];
     llvm::SmallVector<llvm::Type*, 8> llvm_param_types;
     const struct cmd_param*           odb_param;

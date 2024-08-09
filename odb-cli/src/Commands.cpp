@@ -171,7 +171,7 @@ dumpCommandNames(const std::vector<std::string>& args)
         printf("%s ", type_to_db_name(ret_type));
         printf("%s", utf8_list_cstr(commands.db_cmd_names, i));
         printf("%s", ret_type == TYPE_VOID ? " " : "(");
-        const struct param_types_list* param_types
+        const struct cmd_param_types_list* param_types
             = commands.param_types->data[i];
         struct utf8_list*       param_names = commands.db_param_names->data[i];
         const struct cmd_param* param;

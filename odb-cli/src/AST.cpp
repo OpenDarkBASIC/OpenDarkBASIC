@@ -1,6 +1,5 @@
 #include "odb-cli/AST.hpp"
 #include "odb-cli/Commands.hpp"
-#include "odb-sdk/utf8.h"
 
 extern "C" {
 #include "odb-compiler/ast/ast.h"
@@ -9,6 +8,8 @@ extern "C" {
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-sdk/log.h"
+#include "odb-sdk/thread.h"
+#include "odb-sdk/utf8.h"
 }
 
 struct result
@@ -38,28 +39,34 @@ deinitAST(void)
 }
 
 static bool
-doParse(const std::string& filename)
+prepareSourceFiles(const std::vector<std::string>& args)
 {
-    auto& result = results.emplace_back();
-
-    if (filename.size())
+    if (args.size() == 0)
     {
+        auto& result = results.emplace_back();
+        result.source_filename = "<stdin>";
+        if (db_source_open_stream(&result.source, stdin) != 0)
+            return false;
+    }
+
+    for (const auto& filename : args)
+    {
+        auto& result = results.emplace_back();
         result.source_filename = filename;
-        log_parser_info(
-            "Parsing file {quote:%s}\n", result.source_filename.c_str());
         if (db_source_open_file(
                 &result.source, cstr_ospathc(result.source_filename.c_str()))
             != 0)
-            goto open_source_failed;
-    }
-    else
-    {
-        result.source_filename = "<stdin>";
-        log_parser_info("Parsing source from stdin\n");
-        if (db_source_open_stream(&result.source, stdin) != 0)
-            goto open_source_failed;
+        {
+            return false;
+        }
     }
 
+    return true;
+}
+
+static bool
+doParse(const std::string& filename)
+{
     if (db_parser_init(&result.parser) != 0)
         goto init_parser_failed;
 
@@ -85,7 +92,8 @@ doParse(const std::string& filename)
     return true;
 
 parse_failed:
-    ast_export_dot(&result.ast, cstr_ospathc("ast.dot"), result.source, getCommandList());
+    ast_export_dot(
+        &result.ast, cstr_ospathc("ast.dot"), result.source, getCommandList());
     ast_deinit(&result.ast);
     db_parser_deinit(&result.parser);
 init_parser_failed:
@@ -99,16 +107,49 @@ open_source_failed:
 bool
 parseDBA(const std::vector<std::string>& args)
 {
-    struct db_parser parser;
-    if (args.size() == 0)
-        if (doParse("") == false)
-            return false;
+    const int req_workers = 32;
+    const int num_sources = args.size() ? args.size() : 1; // stdin
 
-    for (const auto& arg : args)
-        if (doParse(arg) == false)
-            return false;
+    if (prepareSourceFiles(args) == false)
+        return false;
+
+    struct worker
+    {
+        std::vector<int> source_ids;
+        struct thread    thread;
+    };
+
+    std::vector<worker> workers(
+        results.size() < req_workers ? results.size() : req_workers);
+    for (size_t i = 0; i != results.size(); ++i)
+    {
+        struct worker& worker = workers[i % workers.size()];
+        worker.source_ids.push_back(i);
+    }
+
+    int worker_id;
+    for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
+    {
+        struct worker& worker = workers[worker_id];
+        if (thread_start(worker.thread, parse_worker, &worker) != 0)
+            goto parse_thread_failed;
+    }
+    for (--worker_id; worker_id >= 0; --worker_id)
+    {
+        struct worker& worker = workers[worker_id];
+        if (thread_join(worker.thread, &ret) != 0 || ret != NULL)
+            goto parse_thread_failed;
+    }
 
     return true;
+
+parse_thread_failed:
+    for (; worker_id >= 0; --worker_id)
+    {
+        struct worker& worker = workers[worker_id];
+        thread_join(worker.thread, NULL);
+    }
+    return false;
 }
 
 // ----------------------------------------------------------------------------

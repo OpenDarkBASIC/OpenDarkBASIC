@@ -28,20 +28,20 @@ struct cmd_param
 ODBSDK_STATIC_ASSERT(sizeof(plugin_id) == 2);
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, plugin_ids, plugin_id, 16)
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, return_types_list, enum type, 32)
-VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, param_types_list, struct cmd_param, 32)
-VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, param_types_lists, struct param_types_list*, 32)
+VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, cmd_param_types_list, struct cmd_param, 8)
+VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, cmd_param_types_lists, struct cmd_param_types_list*, 32)
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, db_param_names, struct utf8_list*, 32)
 /* clang-format on */
 
 struct cmd_list
 {
-    struct utf8_list*         db_cmd_names;
-    struct utf8_list*         c_symbols;
-    struct plugin_ids*        plugin_ids;
-    struct return_types_list* return_types;
-    struct param_types_lists* param_types;
-    struct db_param_names*    db_param_names;
-    char                      longest_command;
+    struct utf8_list*             db_cmd_names;
+    struct utf8_list*             c_symbols;
+    struct plugin_ids*            plugin_ids;
+    struct return_types_list*     return_types;
+    struct cmd_param_types_lists* param_types;
+    struct db_param_names*        db_param_names;
+    char                          longest_command;
 };
 
 ODBCOMPILER_PUBLIC_API void

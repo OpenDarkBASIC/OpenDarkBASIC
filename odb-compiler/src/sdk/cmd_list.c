@@ -4,8 +4,8 @@
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
 VEC_DEFINE_API(return_types_list, enum type, 32)
-VEC_DEFINE_API(param_types_list, struct cmd_param, 32)
-VEC_DEFINE_API(param_types_lists, struct param_types_list*, 32)
+VEC_DEFINE_API(cmd_param_types_list, struct cmd_param, 8)
+VEC_DEFINE_API(cmd_param_types_lists, struct cmd_param_types_list*, 32)
 VEC_DEFINE_API(db_param_names, struct utf8_list*, 32)
 
 void
@@ -15,7 +15,7 @@ cmd_list_init(struct cmd_list* cmds)
     utf8_list_init(&cmds->c_symbols);
     plugin_ids_init(&cmds->plugin_ids);
     return_types_list_init(&cmds->return_types);
-    param_types_lists_init(&cmds->param_types);
+    cmd_param_types_lists_init(&cmds->param_types);
     db_param_names_init(&cmds->db_param_names);
     cmds->longest_command = 0;
 }
@@ -23,16 +23,16 @@ cmd_list_init(struct cmd_list* cmds)
 void
 cmd_list_deinit(struct cmd_list* cmds)
 {
-    struct utf8_list**        db_param_names;
-    struct param_types_list** param_types;
+    struct utf8_list**            db_param_names;
+    struct cmd_param_types_list** param_types;
 
     vec_for_each(cmds->db_param_names, db_param_names)
         utf8_list_deinit(*db_param_names);
     db_param_names_deinit(cmds->db_param_names);
 
     vec_for_each(cmds->param_types, param_types)
-        param_types_list_deinit(*param_types);
-    param_types_lists_deinit(cmds->param_types);
+        cmd_param_types_list_deinit(*param_types);
+    cmd_param_types_lists_deinit(cmds->param_types);
 
     return_types_list_deinit(cmds->return_types);
     plugin_ids_deinit(cmds->plugin_ids);
@@ -49,8 +49,8 @@ cmd_list_insert(
     struct utf8_view db_cmd_name,
     struct utf8_view c_symbol)
 {
-    struct param_types_list** param_types;
-    struct utf8_list**        db_param_names;
+    struct cmd_param_types_list** param_types;
+    struct utf8_list**            db_param_names;
 
     /* NOTE: DBPro supports command overloading, so there will be duplicates.
      * The check for whether an overload is ambiguous occurs later when the
@@ -77,10 +77,11 @@ cmd_list_insert(
         goto plugin_insert_failed;
     if (return_types_list_insert(&cmds->return_types, insert, return_type) < 0)
         goto return_type_failed;
-    param_types = param_types_lists_insert_emplace(&cmds->param_types, insert);
+    param_types
+        = cmd_param_types_lists_insert_emplace(&cmds->param_types, insert);
     if (param_types == NULL)
         goto param_types_failed;
-    param_types_list_init(param_types);
+    cmd_param_types_list_init(param_types);
     db_param_names
         = db_param_names_insert_emplace(&cmds->db_param_names, insert);
     if (db_param_names == NULL)
@@ -93,7 +94,7 @@ cmd_list_insert(
     return insert;
 
 param_names_failed:
-    param_types_lists_erase(cmds->param_types, insert);
+    cmd_param_types_lists_erase(cmds->param_types, insert);
 param_types_failed:
     return_types_list_erase(cmds->return_types, insert);
 return_type_failed:
@@ -131,8 +132,8 @@ cmd_list_erase(struct cmd_list* cmds, cmd_id cmd_id)
 
     utf8_list_deinit(cmds->db_param_names->data[cmd_id]);
     db_param_names_erase(cmds->db_param_names, cmd_id);
-    param_types_list_deinit(cmds->param_types->data[cmd_id]);
-    param_types_lists_erase(cmds->param_types, cmd_id);
+    cmd_param_types_list_deinit(cmds->param_types->data[cmd_id]);
+    cmd_param_types_lists_erase(cmds->param_types, cmd_id);
     return_types_list_erase(cmds->return_types, cmd_id);
     plugin_ids_erase(cmds->plugin_ids, cmd_id);
     utf8_list_erase(cmds->c_symbols, cmd_id);
@@ -159,10 +160,10 @@ cmd_add_param(
     enum cmd_param_direction direction,
     struct utf8_view         db_param_name)
 {
-    struct param_types_list** params = &cmds->param_types->data[cmd_id];
-    struct utf8_list**        param_names = &cmds->db_param_names->data[cmd_id];
+    struct cmd_param_types_list** params = &cmds->param_types->data[cmd_id];
+    struct utf8_list** param_names = &cmds->db_param_names->data[cmd_id];
 
-    struct cmd_param* param = param_types_list_emplace(params);
+    struct cmd_param* param = cmd_param_types_list_emplace(params);
     if (param == NULL)
         return -1;
     param->type = type;
@@ -170,7 +171,7 @@ cmd_add_param(
 
     if (utf8_list_add(param_names, db_param_name) != 0)
     {
-        param_types_list_pop(*params);
+        cmd_param_types_list_pop(*params);
         return -1;
     }
 

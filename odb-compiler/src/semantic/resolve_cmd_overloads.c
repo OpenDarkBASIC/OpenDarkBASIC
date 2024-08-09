@@ -23,7 +23,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
     int                            i;
     ast_id                         arglist;
     struct ctx*                    ctx = user;
-    const struct param_types_list* params
+    const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
     /* param count mismatch */
@@ -59,7 +59,7 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
     int                            i;
     ast_id                         arglist;
     struct ctx*                    ctx = user;
-    const struct param_types_list* params
+    const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
@@ -89,7 +89,7 @@ eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
     int                            i;
     ast_id                         arglist;
     struct ctx*                    ctx = user;
-    const struct param_types_list* params
+    const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
@@ -145,7 +145,7 @@ report_no_commands_found(
         enum type                      ret_type = cmds->return_types->data[cmd];
         plugin_id                      plugin_id = cmds->plugin_ids->data[cmd];
         const struct plugin_info*      plugin = &plugins->data[plugin_id];
-        const struct param_types_list* param_types
+        const struct cmd_param_types_list* param_types
             = cmds->param_types->data[cmd];
         struct utf8_list* param_names = cmds->db_param_names->data[cmd];
         log_raw(
@@ -202,7 +202,7 @@ report_ambiguous_overloads(
     {
         int              i;
         struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *pcmd);
-        const struct param_types_list* param_types
+        const struct cmd_param_types_list* param_types
             = cmds->param_types->data[*pcmd];
         struct utf8_list* param_names = cmds->db_param_names->data[*pcmd];
         enum type         ret_type = cmds->return_types->data[*pcmd];
@@ -243,7 +243,7 @@ log_cmd_signature(
 {
     int              i;
     struct utf8_view name = utf8_list_view(cmds->db_cmd_names, cmd_id);
-    const struct param_types_list* param_types
+    const struct cmd_param_types_list* param_types
         = cmds->param_types->data[cmd_id];
     struct utf8_list*         param_names = cmds->db_param_names->data[cmd_id];
     enum type                 ret_type = cmds->return_types->data[cmd_id];
@@ -281,7 +281,7 @@ typecheck_warnings(
     int                            i;
     cmd_id                         cmd_id = ast->nodes[cmd_node].cmd.id;
     ast_id                         arglist = ast->nodes[cmd_node].cmd.arglist;
-    const struct param_types_list* params = cmds->param_types->data[cmd_id];
+    const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
     ODBSDK_DEBUG_ASSERT(
         ast->nodes[cmd_node].info.node_type == AST_COMMAND,

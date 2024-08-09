@@ -1,5 +1,8 @@
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/parser/func_table.h"
 #include "odb-sdk/mem.h"
+
+VEC_DEFINE_API(func_param_types_list, enum type, 8)
 
 struct func_table_kvs_key_data
 {
@@ -116,3 +119,58 @@ HM_DEFINE_API_FULL(
     kvs_set_value,
     128,
     70)
+
+int
+func_table_add_declarations_from_ast(
+    struct func_table*     table,
+    const struct ast*      ast,
+    const struct db_source source)
+{
+    ast_id n;
+    for (n = 0; n != ast->node_count; ++n)
+    {
+        if (ast->nodes[n].info.node_type != AST_FUNC)
+            continue;
+
+        ast_id           decl = ast->nodes[n].func.decl;
+        ast_id           ident = ast->nodes[decl].func_decl.identifier;
+        struct utf8_span span = ast->nodes[ident].identifier.name;
+        struct utf8_view func_name = utf8_span_view(source.text.data, span);
+
+        struct func_table_entry* entry;
+        switch (func_table_emplace_or_get(&table, func_name, &entry))
+        {
+            case HM_OOM: return -1;
+
+            case HM_EXISTS: {
+                return -1;
+            }
+
+            case HM_NEW: {
+                ast_id paramlist;
+
+                func_param_types_list_init(&entry->param_types);
+                for (paramlist = ast->nodes[decl].func_decl.paramlist;
+                     paramlist > -1;
+                     paramlist = ast->nodes[paramlist].paramlist.next)
+                {
+                    ast_id param_ident
+                        = ast->nodes[paramlist].paramlist.identifier;
+                    enum type param_type
+                        = ast->nodes[param_ident].info.type_info;
+                    if (func_param_types_list_push(
+                            &entry->param_types, param_type)
+                        != 0)
+                    {
+                        return -1;
+                    }
+                }
+
+                entry->return_type = ast->nodes[n].info.type_info;
+            }
+            break;
+        }
+    }
+
+    return 0;
+}
