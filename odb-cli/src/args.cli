@@ -1,0 +1,32 @@
+section: global {
+    en_US = "Initial setup and version information.";
+
+    option: version {
+        en_US = "Prints version information.";
+        func = print_version;
+    }
+
+    option: commit-hash {
+        en_US = "Prints the git commit hash.";
+        func = print_commit_hash;
+    }
+
+    option: help {
+        en_US = "Print this help text, or print help about a specific section,"
+                " or print everything by specifying \"all\"";
+        short = 'h';
+        args = [all|section];
+        func = print_help;
+    }
+}
+
+section: warnings {
+    help = "Configure compiler warnings.";
+
+    option: warning {
+        en_US = "Enable/disable a specific warning.";
+        short = 'W';
+        args = <warning>;
+        func = configure_warning;
+    }
+}

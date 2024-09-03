@@ -14,7 +14,6 @@ odb_target_properties (odb-resgen
     PROPERTIES
         MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
         RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
-target_link_libraries (odb-resgen PRIVATE odb-sdk)
 
 install (
     TARGETS odb-resgen
