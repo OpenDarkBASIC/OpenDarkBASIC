@@ -12,16 +12,133 @@ extern "C" {
 #include "odb-sdk/utf8.h"
 }
 
-struct result
+struct translation_unit
 {
     std::string      source_filename;
     struct db_source source;
-    struct db_parser parser;
     struct ast       ast;
 };
 
-static std::vector<result> results;
+struct worker
+{
+    struct thread                  thread;
+    std::vector<translation_unit>* tus;
+    int                            id;
+};
 
+static std::vector<translation_unit> translation_units;
+
+/* NOTE: These functions do not modify the size of the vector -- this is
+ * intentional */
+static void
+close_source_files(std::vector<translation_unit>* tus)
+{
+    for (auto& tu : *tus)
+        db_source_close(&tu.source);
+}
+static bool
+open_source_files(
+    std::vector<translation_unit>* tus, const std::vector<std::string>& args)
+{
+    /* If there are no source files, we default to reading stdin */
+    if (args.size() == 0)
+    {
+        auto& tu = (*tus)[0];
+        tu.source_filename = "<stdin>";
+        if (db_source_open_stream(&tu.source, stdin) != 0)
+            return false;
+        return true;
+    }
+
+    size_t i;
+    for (i = 0; i != args.size(); ++i)
+    {
+        auto& tu = (*tus)[i];
+        tu.source_filename = args[i];
+        if (db_source_open_file(
+                &tu.source, cstr_ospathc(tu.source_filename.c_str()))
+            != 0)
+        {
+            goto open_source_failed;
+        }
+    }
+
+    return true;
+
+open_source_failed:
+    for (; i >= 0; --i)
+    {
+        auto& tu = (*tus)[i];
+        db_source_close(&tu.source);
+    }
+    return false;
+}
+
+static void*
+parse_worker(void* arg)
+{
+    struct db_parser                      parser;
+    struct worker*                        worker = (struct worker*)arg;
+    struct std::vector<translation_unit>& tus = *worker->tus;
+
+    if (db_parser_init(&parser) != 0)
+        goto init_parser_failed;
+
+    for (size_t i = 0; i != worker->tus->size(); ++i)
+    {
+        if (i % worker->tus->size() != worker->id)
+            continue;
+
+        log_parser_info(
+            "Parsing source file: {emph:%s}\n", tus[i].source_filename.c_str());
+        if (db_parse(
+                &parser,
+                &tus[i].ast,
+                tus[i].source_filename.c_str(),
+                tus[i].source,
+                getCommandList())
+            != 0)
+        {
+            goto parse_failed;
+        }
+    }
+
+    db_parser_deinit(&parser);
+    return NULL;
+
+parse_failed:
+    db_parser_deinit(&parser);
+init_parser_failed:
+    return (void*)1;
+}
+
+static void*
+semantic_worker(void* arg)
+{
+    struct worker*                        worker = (struct worker*)arg;
+    struct std::vector<translation_unit>& tus = *worker->tus;
+
+    for (size_t i = 0; i != worker->tus->size(); ++i)
+    {
+        if (i % worker->tus->size() != worker->id)
+            continue;
+
+        if (semantic_run_essential_checks(
+                &tus[i].ast,
+                getPluginList(),
+                getCommandList(),
+                tus[i].source_filename.c_str(),
+                tus[i].source)
+            != 0)
+        {
+            return (void*)1;
+        }
+    }
+
+    return NULL;
+}
+
+// Public ---------------------------------------------------------------------
 int
 initAST(void)
 {
@@ -30,125 +147,92 @@ initAST(void)
 void
 deinitAST(void)
 {
-    for (auto& result : results)
-    {
-        ast_deinit(&result.ast);
-        db_parser_deinit(&result.parser);
-        db_source_close(&result.source);
-    }
+    for (auto& tu : translation_units)
+        ast_deinit(&tu.ast);
+
+    close_source_files(&translation_units);
+    translation_units.clear();
 }
 
-static bool
-prepareSourceFiles(const std::vector<std::string>& args)
-{
-    if (args.size() == 0)
-    {
-        auto& result = results.emplace_back();
-        result.source_filename = "<stdin>";
-        if (db_source_open_stream(&result.source, stdin) != 0)
-            return false;
-    }
-
-    for (const auto& filename : args)
-    {
-        auto& result = results.emplace_back();
-        result.source_filename = filename;
-        if (db_source_open_file(
-                &result.source, cstr_ospathc(result.source_filename.c_str()))
-            != 0)
-        {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static bool
-doParse(const std::string& filename)
-{
-    if (db_parser_init(&result.parser) != 0)
-        goto init_parser_failed;
-
-    if (db_parse(
-            &result.parser,
-            &result.ast,
-            result.source_filename.c_str(),
-            result.source,
-            getCommandList())
-        != 0)
-        goto parse_failed;
-
-    log_semantic_info("Running semantic checks\n");
-    if (semantic_run_essential_checks(
-            getAST(),
-            getPluginList(),
-            getCommandList(),
-            getSourceFilename(),
-            getSource())
-        != 0)
-        goto parse_failed;
-
-    return true;
-
-parse_failed:
-    ast_export_dot(
-        &result.ast, cstr_ospathc("ast.dot"), result.source, getCommandList());
-    ast_deinit(&result.ast);
-    db_parser_deinit(&result.parser);
-init_parser_failed:
-    db_source_close(&result.source);
-open_source_failed:
-    results.pop_back();
-    return false;
-}
-
-// ----------------------------------------------------------------------------
 bool
 parseDBA(const std::vector<std::string>& args)
 {
-    const int req_workers = 32;
-    const int num_sources = args.size() ? args.size() : 1; // stdin
+    const int           max_workers = 32;
+    std::vector<worker> workers;
+    int                 worker_id;
 
-    if (prepareSourceFiles(args) == false)
-        return false;
+    /* Prepare array of translation units -- 0 args means we read the source
+     * from stdin, so it still requires 1 TU */
+    translation_units.resize(args.size() ? args.size() : 1);
 
-    struct worker
+    if (open_source_files(&translation_units, args) == false)
+        goto open_sources_failed;
+
+    workers.resize(
+        translation_units.size() < max_workers ? translation_units.size()
+                                               : max_workers);
+    for (int i = 0; i != (int)workers.size(); ++i)
     {
-        std::vector<int> source_ids;
-        struct thread    thread;
-    };
-
-    std::vector<worker> workers(
-        results.size() < req_workers ? results.size() : req_workers);
-    for (size_t i = 0; i != results.size(); ++i)
-    {
-        struct worker& worker = workers[i % workers.size()];
-        worker.source_ids.push_back(i);
+        struct worker& worker = workers[i];
+        worker.id = i;
+        worker.tus = &translation_units;
     }
 
-    int worker_id;
+    /* Parse all TU source files into ASTs */
     for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
     {
         struct worker& worker = workers[worker_id];
-        if (thread_start(worker.thread, parse_worker, &worker) != 0)
-            goto parse_thread_failed;
+        if (thread_start(&worker.thread, parse_worker, &worker) != 0)
+            goto start_parse_thread_failed;
     }
     for (--worker_id; worker_id >= 0; --worker_id)
     {
+        void*          ret;
         struct worker& worker = workers[worker_id];
         if (thread_join(worker.thread, &ret) != 0 || ret != NULL)
-            goto parse_thread_failed;
+            goto join_parse_thread_failed;
+    }
+
+    /* The reason for joining/splitting here is because we need to build a
+     * symbol table from all of the ASTs before it's possible to run semantic
+     * checks. The symbol table is populated in each parser worker thread */
+
+    /* Run semantic checks on ASTs */
+    for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
+    {
+        struct worker& worker = workers[worker_id];
+        if (thread_start(&worker.thread, semantic_worker, &worker) != 0)
+            goto start_semantic_thread_failed;
+    }
+    for (--worker_id; worker_id >= 0; --worker_id)
+    {
+        void*          ret;
+        struct worker& worker = workers[worker_id];
+        if (thread_join(worker.thread, &ret) != 0 || ret != NULL)
+            goto join_semantic_thread_failed;
     }
 
     return true;
 
-parse_thread_failed:
+join_semantic_thread_failed:
+    --worker_id;
+start_semantic_thread_failed:
     for (; worker_id >= 0; --worker_id)
     {
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread, NULL);
     }
+    return false;
+
+join_parse_thread_failed:
+    --worker_id;
+start_parse_thread_failed:
+    for (; worker_id >= 0; --worker_id)
+    {
+        struct worker& worker = workers[worker_id];
+        thread_join(worker.thread, NULL);
+    }
+open_sources_failed:
     return false;
 }
 
@@ -176,7 +260,7 @@ dumpASTDOT(const std::vector<std::string>& args)
             "Dumping AST to Graphviz DOT format: {quote:%s}\n",
             args[0].c_str());
 
-        for (const auto& result : results)
+        for (const auto& result : translation_units)
             ast_export_dot(
                 &result.ast,
                 cstr_ospathc(args[0].c_str()),
@@ -186,7 +270,7 @@ dumpASTDOT(const std::vector<std::string>& args)
     else
     {
         log_parser_info("Dumping AST to Graphviz DOT format\n");
-        for (const auto& result : results)
+        for (const auto& result : translation_units)
             ast_export_dot_fp(
                 &result.ast, stdout, result.source, getCommandList());
     }
@@ -234,15 +318,15 @@ dumpASTJSON(const std::vector<std::string>& args)
 struct ast*
 getAST()
 {
-    return &results[0].ast;
+    return &translation_units[0].ast;
 }
 const char*
 getSourceFilename()
 {
-    return results[0].source_filename.c_str();
+    return translation_units[0].source_filename.c_str();
 }
 struct db_source
 getSource()
 {
-    return results[0].source;
+    return translation_units[0].source;
 }
