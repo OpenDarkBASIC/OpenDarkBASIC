@@ -64,7 +64,7 @@ print_error(const char* fmt, ...)
 struct cfg
 {
     const char* suite_name;
-    const char* output_file;
+    const char* output_fname;
     char**      input_files;
     int         input_file_count;
 };
@@ -106,14 +106,14 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
                 return print_error(
                     "Missing output file name. Use -o <output.cpp>\n");
 
-            cfg->output_file = argv[++i];
+            cfg->output_fname = argv[++i];
         }
     }
 
     if (cfg->suite_name == NULL)
         return print_error("No suite name was specified. Use --suite <name>\n");
 
-    if (cfg->output_file == NULL)
+    if (cfg->output_fname == NULL)
         return print_error(
             "No output file name was specified. Use -o <output.cpp>\n");
 
@@ -1094,5 +1094,5 @@ main(int argc, char** argv)
     if (gen_source(&ms, files, &cfg) != 0)
         return -1;
 
-    return write_to_file(&ms, cfg.output_file);
+    return write_to_file(&ms, cfg.output_fname);
 }

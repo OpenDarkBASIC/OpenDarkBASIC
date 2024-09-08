@@ -1,32 +1,179 @@
-section: global {
-    en_US = "Initial setup and version information.";
-
+section: info {
+    en_US: "Build information."
+    
     option: version {
-        en_US = "Prints version information.";
-        func = print_version;
+        en_US: "Prints version information."
+        short: 'v'
+        func: print_version
     }
 
     option: commit-hash {
-        en_US = "Prints the git commit hash.";
-        func = print_commit_hash;
+        en_US: "Prints the git commit hash."
+        func: print_commit_hash
     }
-
+    
     option: help {
-        en_US = "Print this help text, or print help about a specific section,"
-                " or print everything by specifying \"all\"";
-        short = 'h';
-        args = [all|section];
-        func = print_help;
+        en_US: "Print this help text, or print help about a specific section,"
+                " or print everything by specifying \"all\""
+        short: 'h'
+        args: [all|name]
+        func: print_help
     }
 }
 
 section: warnings {
-    help = "Configure compiler warnings.";
+    en_US: "Configure compiler warnings."
 
     option: warning {
-        en_US = "Enable/disable a specific warning.";
-        short = 'W';
-        args = <warning>;
-        func = configure_warning;
+        en_US: "Enable/disable a specific warning."
+        short: 'W'
+        args: <warning>
+        func: configure_warning
+    }
+}
+
+section: sdk {
+    en_US: "Configure the SDK, plugins and commands."
+
+    option: sdk-root {
+        en_US: "Tells the compiler where to look for plugins, help files, and "
+               "other necessary information. In the case of DBPro this should "
+               "be a path to the DBPro installation directory, e.g. "
+               "\"C:\\Program Files\\Dark Basic Professional Online\". In the "
+               "case of ODB this should be a path to the \"odb-sdk\" "
+               "directory. This is the default setting."
+        args: <path>
+        func: set_sdk_root
+    }
+
+    option: sdk-type {
+        en_US: "Specify if the SDK is the original DBPro SDK, or if it is the "
+               "ODB reimplementation. --sdk-root will autodetect the type so "
+               "this is usually not necessary. If specified, it will override "
+               "the autodetected value."
+        args: <odb|dbpro>
+        func: set_sdk_type
+    }
+
+    option: plugins {
+        en_US: "Add additional directories to scan for thirdparty plugins. "
+               "Note that ODB and DBPro plugins are not compatible with each "
+               "other."
+        args: <path|file> [path|file...]
+        func: set_sdk_plugins
+    }
+
+    task: setup-sdk {
+        func: setup_sdk
+    }
+
+    option: print-sdk {
+        en_US: "Print the SDK root, type and plugin paths."
+        func: print_sdk
+        runafter: setup-sdk
+    }
+
+    task: load-commands {
+        func: load_commands
+        runafter: setup-sdk
+    }
+
+    option: dump-commands {
+        en_US: "Write out all command names in alphabetical order."
+        args: [file]
+        func: dump_commands
+        runafter: load-commands
+    }
+}
+
+section: parser {
+    en_US: ".dba and .dbpro file related options."
+
+    option: input {
+        en_US: "Auto-detects the input type. Can be a list of .dba files "
+               "or a .dbpro project file."
+        short: 'i'
+        args: <file> [files...]
+        func: set_input
+    }
+    
+    option: dba {
+        en_US: "Parse DBA source file(s). The first file listed will "
+               "become the \"main\" file, i.e. where execution starts. "
+               "If no files are listed, then the source is read from "
+               "stdin."
+        args: [file...]
+        func: set_dba
+    }
+
+    option: dbpro {
+        en_US: "Load a DBPro project file (.dbpro) and parse all DBA "
+               "files listen within."
+        args: <file>
+        func: set_dbpro
+    }
+
+    task: parse-input {
+        func: parse_input
+        runafter: load-commands, input, dba, dbpro
+    }
+    
+    option: ast1 {
+        en_US: "Dump the parser's AST to Graphviz DOT format. If no file is "
+               "specified, the output is written to stdout."
+        args: [file]
+        func: dump_ast1
+        runafter: parse-input
+    }
+    
+    task: semantic-checks {
+        func: do_semantic_checks
+        runafter: parse-input
+    }
+
+    option: ast2 {
+        en_US: "Dump the AST after semantic checks have run to Graphviz DOT "
+               "format. If no file is specified, the output is written to "
+               "stdout."
+        args: [file]
+        func: dump_ast2
+        runafter: semantic-checks
+    }
+}
+
+section: codegen {
+    en_US: "Optimizations, target arch and platform settings."
+
+    option: arch {
+        en_US: "Specify the target architecture. Defaults to \"x86_64\" for "
+               "the ODB SDK, or \"i386\" for the DBPro SDK."
+        args: <i386|x86_64|aarch64|wasm>
+        func: set_target_arch
+    }
+
+    option: platform {
+        en_US: "Specify the target platform. Defaults to the host platform "
+               "for the ODB SDK, or \"windows\" for the DBPro SDK."
+        args: <windows|linux>
+        func: set_target_platform
+    }
+
+    task: generate-ir {
+        func: generate_ir
+        runafter: semantic-checks, platform, arch
+    }
+
+    option: ir {
+        en_US: "Generate LLVM IR and write to output."
+        args: [file]
+        func: dump_ir
+        runafter: generate-ir
+    }
+
+    option: output {
+        en_US: "Compile to executable code."
+        args: [file]
+        func: generate_output
+        runafter: generate-ir
     }
 }

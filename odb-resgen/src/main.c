@@ -732,7 +732,7 @@ enum target
 
 struct cfg
 {
-    const char* output_file;
+    const char* output_fname;
     char**      input_files;
     int         input_files_count;
     enum target target;
@@ -766,7 +766,7 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
             if (i + 1 >= argc)
                 return print_error("Missing argument to option -o\n");
 
-            cfg->output_file = argv[++i];
+            cfg->output_fname = argv[++i];
         }
         else if (strcmp(argv[i], "-t") == 0)
         {
@@ -792,7 +792,7 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
     if (cfg->input_files == NULL || cfg->input_files_count == 0)
         return print_error("No input files specified. Use -i <files...>\n");
 
-    if (cfg->output_file == NULL)
+    if (cfg->output_fname == NULL)
         return print_error("No output file specified. Use -o <output>\n");
 
     return 0;
@@ -808,7 +808,7 @@ struct parser
     const char* data;
     int         tail;
     int         head;
-    int         len;
+    int         end;
     union
     {
         struct str_view str;
@@ -823,7 +823,7 @@ parser_init(struct parser* p, struct mfile* mf, const char* filename)
     p->data = (char*)mf->address;
     p->head = 0;
     p->tail = 0;
-    p->len = mf->size;
+    p->end = mf->size;
 }
 
 static int
@@ -866,12 +866,12 @@ enum token
 scan_next_token(struct parser* p)
 {
     p->tail = p->head;
-    while (p->head != p->len)
+    while (p->head != p->end)
     {
         /* Skip comments */
         if (p->data[p->head] == '/' && p->data[p->head + 1] == '*')
         {
-            for (p->head += 2; p->head != p->len; p->head++)
+            for (p->head += 2; p->head != p->end; p->head++)
                 if (p->data[p->head] == '*' && p->data[p->head + 1] == '/')
                 {
                     p->head += 2;
@@ -882,7 +882,7 @@ scan_next_token(struct parser* p)
         }
         if (p->data[p->head] == '/' && p->data[p->head + 1] == '/')
         {
-            for (p->head += 2; p->head != p->len; p->head++)
+            for (p->head += 2; p->head != p->end; p->head++)
                 if (p->data[p->head] == '\n')
                 {
                     p->head++;
@@ -896,10 +896,10 @@ scan_next_token(struct parser* p)
             && (p->head == 0 || p->data[p->head - 1] != '\\'))
         {
             p->value.str.off = ++p->head;
-            for (; p->head != p->len; ++p->head)
+            for (; p->head != p->end; ++p->head)
                 if (p->data[p->head] == '"' && p->data[p->head - 1] != '\\')
                     break;
-            if (p->head == p->len)
+            if (p->head == p->end)
                 return print_loc_error(p, "Missing closing quote on string\n");
             p->value.str.len = p->head++ - p->value.str.off;
             return TOK_STRING;
@@ -916,7 +916,7 @@ scan_next_token(struct parser* p)
             == 0)
         {
             p->head += sizeof("ODB_COMMAND") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->data[p->head]))
                 p->head++;
             return TOK_ODB_COMMAND;
         }
@@ -925,7 +925,7 @@ scan_next_token(struct parser* p)
             == 0)
         {
             p->head += sizeof("ODB_OVERLOAD") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->data[p->head]))
                 p->head++;
             return TOK_ODB_OVERLOAD;
         }
@@ -949,7 +949,7 @@ scan_next_token(struct parser* p)
             == 0)
         {
             p->head += sizeof("PARAMETER") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
+            while (p->head != p->end && isdigit(p->data[p->head]))
                 p->head++;
             return TOK_COMMAND_PARAM;
         }
@@ -976,7 +976,7 @@ scan_next_token(struct parser* p)
         if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
         {
             p->value.str.off = p->head++;
-            while (p->head != p->len
+            while (p->head != p->end
                    && (isalnum(p->data[p->head]) || p->data[p->head] == '_'))
             {
                 p->head++;
@@ -1568,7 +1568,7 @@ main(int argc, char** argv)
         case TARGET_ELF: gen_elf_resource(&ms, &root); break;
     }
 
-    if (write_resource(&ms, cfg.output_file) != 0)
+    if (write_resource(&ms, cfg.output_fname) != 0)
         return -1;
 
     return 0;

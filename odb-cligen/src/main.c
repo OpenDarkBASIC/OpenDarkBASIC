@@ -1,7 +1,6 @@
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
-#define NL "\r\n"
 #else
 #define _GNU_SOURCE
 #include <errno.h>
@@ -9,7 +8,6 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#define NL "\n"
 #endif
 
 #include <ctype.h>
@@ -27,6 +25,13 @@ struct str_view
 {
     int off, len;
 };
+
+static struct str_view
+empty_str_view(void)
+{
+    struct str_view str = {0, 0};
+    return str;
+}
 
 static int disable_colors = 0;
 
@@ -96,7 +101,6 @@ print_flc(
     va_end(ap);
 }
 
-/* ------------------------------------------------------------------------- */
 static void
 print_excerpt(const char* filename, const char* source, struct str_view loc)
 {
@@ -353,7 +357,11 @@ mfile_map_read(struct mfile* mf, const char* file_path, int silence_open_error)
         FILE_ATTRIBUTE_NORMAL, /* Default attributes */
         NULL);                 /* No attribute template */
     if (hFile == INVALID_HANDLE_VALUE)
+    {
+        if (!silence_open_error)
+            print_last_win32_error();
         goto open_failed;
+    }
 
     /* Determine file size in bytes */
     if (!GetFileSizeEx(hFile, &liFileSize))
@@ -369,7 +377,10 @@ mfile_map_read(struct mfile* mf, const char* file_path, int silence_open_error)
         0,     /* High/Low size of mapping. Zero means entire file */
         NULL); /* Don't name the mapping */
     if (mapping == NULL)
+    {
+        print_last_win32_error();
         goto create_file_mapping_failed;
+    }
 
     mf->address = MapViewOfFile(
         mapping,       /* File mapping handle */
@@ -378,7 +389,10 @@ mfile_map_read(struct mfile* mf, const char* file_path, int silence_open_error)
         0,  /* High/Low offset of where the mapping should begin in the file */
         0); /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
+    {
+        print_last_win32_error();
         goto map_view_failed;
+    }
 
     /* The file mapping isn't required anymore */
     CloseHandle(mapping);
@@ -494,7 +508,10 @@ mfile_map_write(struct mfile* mf, const char* file_path, int size)
         size,  /* High/Low size of mapping */
         NULL); /* Don't name the mapping */
     if (mapping == NULL)
+    {
+        print_last_win32_error();
         goto create_file_mapping_failed;
+    }
 
     mf->address = MapViewOfFile(
         mapping,                        /* File mapping handle */
@@ -503,7 +520,10 @@ mfile_map_write(struct mfile* mf, const char* file_path, int size)
         0,  /* High/Low offset of where the mapping should begin in the file */
         0); /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
+    {
+        print_last_win32_error();
         goto map_view_failed;
+    }
 
     /* The file mapping isn't required anymore */
     CloseHandle(mapping);
@@ -573,6 +593,58 @@ open_failed:
 #endif
 }
 
+static int
+mfile_map_mem(struct mfile* mf, int size)
+{
+#if defined(WIN32)
+    HANDLE mapping = CreateFileMapping(
+        INVALID_HANDLE_VALUE, /* File handle */
+        NULL,                 /* Default security attributes */
+        PAGE_READWRITE,       /* Read + Write access */
+        0,
+        size,  /* High/Low size of mapping. Zero means entire file */
+        NULL); /* Don't name the mapping */
+    if (mapping == NULL)
+    {
+        print_error(
+            "Failed to create file mapping of size %d: {win32error}\n", size);
+        goto create_file_mapping_failed;
+    }
+
+    mf->address = MapViewOfFile(
+        mapping,        /* File mapping handle */
+        FILE_MAP_WRITE, /* Read + Write */
+        0,
+        0, /* High/Low offset of where the mapping should begin in the file */
+        size); /* Length of mapping. Zero means entire file */
+    if (mf->address == NULL)
+    {
+        print_error(
+            "Failed to map memory of size {emph:%d}: {win32error}\n", size);
+        goto map_view_failed;
+    }
+
+    CloseHandle(mapping);
+    mf->size = size;
+
+    return 0;
+
+map_view_failed:
+    CloseHandle(mapping);
+create_file_mapping_failed:
+    return -1;
+#else
+    mf->address = mmap(
+        NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (mf->address == MAP_FAILED)
+        return print_error(
+            "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
+
+    mf->size = size;
+    return 0;
+#endif
+}
+
 /*!
  * \brief Unmaps a previously memory-mapped file.
  * \param mf Pointer to mfile structure.
@@ -585,6 +657,44 @@ mfile_unmap(struct mfile* mf)
 #else
     munmap(mf->address, (size_t)mf->size);
 #endif
+}
+
+static int
+mfile_map_stdin(struct mfile* mf)
+{
+    char         b;
+    int          len;
+    struct mfile new_mf;
+    mf->size = 0;
+
+    len = 0;
+    while ((b = getc(stdin)) != EOF)
+    {
+        if (len >= mf->size)
+        {
+            if (mfile_map_mem(&new_mf, mf->size ? mf->size * 2 : 1024 * 1024)
+                != 0)
+            {
+                return -1;
+            }
+            memcpy(new_mf.address, mf->address, mf->size);
+            if (mf->size)
+                mfile_unmap(mf);
+            *mf = new_mf;
+        }
+        ((char*)mf->address)[len++] = b;
+    }
+
+    if (len == 0)
+        return print_error("Input is empty\n");
+
+    if (mfile_map_mem(&new_mf, len) != 0)
+        return -1;
+    memcpy(mf->address, new_mf.address, len);
+    mfile_unmap(mf);
+    *mf = new_mf;
+
+    return 0;
 }
 
 /*! A memory buffer that grows as data is added. */
@@ -725,8 +835,8 @@ mstream_fmt(struct mstream* ms, const char* fmt, ...)
 
 struct cfg
 {
-    const char* output_file;
-    const char* input_file;
+    const char* input_fname;
+    const char* output_fname;
 };
 
 static int
@@ -735,27 +845,29 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
     int i;
     for (i = 1; i < argc; ++i)
     {
-        if (strcmp(argv[i], "-i") == 0)
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+        {
+            fprintf(
+                stderr,
+                "Usage: %s -i <specification filename> -o <output filename>\n",
+                argv[0]);
+            return 1;
+        }
+        else if (strcmp(argv[i], "-i") == 0)
         {
             if (i + 1 >= argc)
-                return print_error("Missing argument to option -i\n");
+                return print_error("Missing input filename to option -i\n");
 
-            cfg->input_file = argv[++i];
+            cfg->input_fname = argv[++i];
         }
         else if (strcmp(argv[i], "-o") == 0)
         {
             if (i + 1 >= argc)
-                return print_error("Missing argument to option -o\n");
+                return print_error("Missing output filename to option -o\n");
 
-            cfg->output_file = argv[++i];
+            cfg->output_fname = argv[++i];
         }
     }
-
-    if (cfg->input_file == NULL)
-        return print_error("No input file specified. Use -i <file>\n");
-
-    if (cfg->output_file == NULL)
-        return print_error("No output file specified. Use -o <output>\n");
 
     return 0;
 }
@@ -764,18 +876,48 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
  * Parser
  * ------------------------------------------------------------------------- */
 
+enum token
+{
+    TOK_ERROR = -1,
+    TOK_END = 0,
+    TOK_COLON = ':',
+    TOK_LBRACE = '{',
+    TOK_RBRACE = '}',
+    TOK_LT = '<',
+    TOK_GT = '>',
+    TOK_LBRACKET = '[',
+    TOK_RBRACKET = ']',
+    TOK_COMMA = ',',
+    TOK_OR = '|',
+    TOK_SECTION = 256,
+    TOK_OPTION,
+    TOK_TASK,
+    TOK_HELP,
+    TOK_SHORT,
+    TOK_ARGS,
+    TOK_FUNC,
+    TOK_RUNAFTER,
+    TOK_ELLIPSIS,
+    TOK_IDENTIFIER,
+    TOK_STRING,
+    TOK_CHAR,
+};
+
 struct parser
 {
-    const char* filename;
-    const char* data;
-    int         tail;
-    int         head;
-    int         len;
     union
     {
         struct str_view str;
         int             integer;
+        char            chr;
     } value;
+    const char* filename;
+    const char* data;
+    int         tail;
+    int         head;
+    int         end;
+    enum token  token;
+    unsigned    is_peek : 1;
 };
 
 static void
@@ -785,7 +927,9 @@ parser_init(struct parser* p, struct mfile* mf, const char* filename)
     p->data = (char*)mf->address;
     p->head = 0;
     p->tail = 0;
-    p->len = mf->size;
+    p->end = mf->size;
+    p->token = TOK_ERROR;
+    p->is_peek = 0;
 }
 
 static int
@@ -803,37 +947,19 @@ print_loc_error(struct parser* p, const char* fmt, ...)
 }
 
 enum token
+peek_next(struct parser* p)
 {
-    TOK_ERROR = -1,
-    TOK_END = 0,
-    TOK_LPAREN = '(',
-    TOK_RPAREN = ')',
-    TOK_COMMA = ',',
-    TOK_ASTERISK = '*',
-    TOK_ODB_COMMAND = 256,
-    TOK_ODB_OVERLOAD,
-    TOK_COMMAND_NAME,
-    TOK_COMMAND_BRIEF,
-    TOK_COMMAND_DESCRIPTION,
-    TOK_COMMAND_PARAM,
-    TOK_COMMAND_RETURNS,
-    TOK_COMMAND_EXAMPLE,
-    TOK_COMMAND_SEE_ALSO,
-    TOK_ELLIPSIS,
-    TOK_IDENTIFIER,
-    TOK_STRING,
-};
+    if (p->is_peek)
+        return p->token;
+    p->is_peek = 1;
 
-enum token
-scan_next_token(struct parser* p)
-{
     p->tail = p->head;
-    while (p->head != p->len)
+    while (p->head != p->end)
     {
         /* Skip comments */
         if (p->data[p->head] == '/' && p->data[p->head + 1] == '*')
         {
-            for (p->head += 2; p->head != p->len; p->head++)
+            for (p->head += 2; p->head != p->end; p->head++)
                 if (p->data[p->head] == '*' && p->data[p->head + 1] == '/')
                 {
                     p->head += 2;
@@ -844,7 +970,7 @@ scan_next_token(struct parser* p)
         }
         if (p->data[p->head] == '/' && p->data[p->head + 1] == '/')
         {
-            for (p->head += 2; p->head != p->len; p->head++)
+            for (p->head += 2; p->head != p->end; p->head++)
                 if (p->data[p->head] == '\n')
                 {
                     p->head++;
@@ -853,621 +979,383 @@ scan_next_token(struct parser* p)
             p->tail = p->head;
             continue;
         }
-        /* String literals. Regex: ".*?" (spans over newlines)*/
-        if (p->data[p->head] == '"'
-            && (p->head == 0 || p->data[p->head - 1] != '\\'))
+#define SCAN_HELP_STRING(string, tok_name)                                     \
+    if (memcmp(p->data + p->head, string, sizeof(string) - 1) == 0)            \
+    {                                                                          \
+        p->head += sizeof(string) - 1;                                         \
+        while (p->head != p->end && isdigit(p->data[p->head]))                 \
+            p->head++;                                                         \
+        p->value.str.len = p->head - p->value.str.off;                         \
+        return p->token = tok_name;                                            \
+    }
+        SCAN_HELP_STRING("en_US", TOK_HELP)
+#undef SCAN_HELP_STRING
+#define SCAN_STRING(string, tok_name)                                          \
+    if (memcmp(p->data + p->head, string, sizeof(string) - 1) == 0)            \
+    {                                                                          \
+        p->head += sizeof(string) - 1;                                         \
+        while (p->head != p->end && isdigit(p->data[p->head]))                 \
+            p->head++;                                                         \
+        return p->token = tok_name;                                            \
+    }
+        SCAN_STRING("section", TOK_SECTION)
+        SCAN_STRING("option", TOK_OPTION)
+        SCAN_STRING("task", TOK_TASK)
+        SCAN_STRING("short", TOK_SHORT)
+        SCAN_STRING("args", TOK_ARGS)
+        SCAN_STRING("func", TOK_FUNC)
+        SCAN_STRING("runafter", TOK_RUNAFTER)
+        SCAN_STRING("...", TOK_ELLIPSIS)
+#undef SCAN_STRING
+#define SCAN_CHAR(char)                                                        \
+    if (p->data[p->head] == char)                                              \
+        return p->token = p->data[p->head++];
+        SCAN_CHAR(':')
+        SCAN_CHAR('{')
+        SCAN_CHAR('}')
+        SCAN_CHAR('<')
+        SCAN_CHAR('>')
+        SCAN_CHAR('[')
+        SCAN_CHAR(']')
+        SCAN_CHAR(',')
+        SCAN_CHAR('|')
+#undef SCAN_CHAR
+        /* String literal ".*?" (spans over newlines)*/
+        if (p->data[p->head] == '"')
         {
             p->value.str.off = ++p->head;
-            for (; p->head != p->len; ++p->head)
+            for (; p->head != p->end; ++p->head)
                 if (p->data[p->head] == '"' && p->data[p->head - 1] != '\\')
                     break;
-            if (p->head == p->len)
-                return print_loc_error(p, "Missing closing quote on string\n");
+            if (p->head == p->end)
+                return p->token = print_loc_error(
+                           p, "Missing closing quote on string\n");
             p->value.str.len = p->head++ - p->value.str.off;
-            return TOK_STRING;
+            return p->token = TOK_STRING;
         }
-        if (p->data[p->head] == '(')
-            return p->data[p->head++];
-        if (p->data[p->head] == ')')
-            return p->data[p->head++];
-        if (p->data[p->head] == ',')
-            return p->data[p->head++];
-        if (p->data[p->head] == '*')
-            return p->data[p->head++];
-        if (memcmp(p->data + p->head, "ODB_COMMAND", sizeof("ODB_COMMAND") - 1)
-            == 0)
+        /* Character literal '.' */
+        if (p->data[p->head] == '\'')
         {
-            p->head += sizeof("ODB_COMMAND") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
-                p->head++;
-            return TOK_ODB_COMMAND;
+            ++p->head;
+            if (p->head == p->end || p->data[p->head] == '\'')
+                return p->token = print_loc_error(
+                           p, "Missing character in character literal\n");
+            p->value.chr = p->data[p->head];
+            ++p->head;
+            if (p->head == p->end || p->data[p->head] != '\'')
+                return p->token = print_loc_error(
+                           p, "Missing closing quote on character literal\n");
+            ++p->head;
+            return p->token = TOK_CHAR;
         }
-        if (memcmp(
-                p->data + p->head, "ODB_OVERLOAD", sizeof("ODB_OVERLOAD") - 1)
-            == 0)
-        {
-            p->head += sizeof("ODB_OVERLOAD") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
-                p->head++;
-            return TOK_ODB_OVERLOAD;
-        }
-        if (memcmp(p->data + p->head, "NAME", sizeof("NAME") - 1) == 0)
-        {
-            p->head += sizeof("NAME") - 1;
-            return TOK_COMMAND_NAME;
-        }
-        if (memcmp(p->data + p->head, "BRIEF", sizeof("BRIEF") - 1) == 0)
-        {
-            p->head += sizeof("BRIEF") - 1;
-            return TOK_COMMAND_BRIEF;
-        }
-        if (memcmp(p->data + p->head, "DESCRIPTION", sizeof("DESCRIPTION") - 1)
-            == 0)
-        {
-            p->head += sizeof("DESCRIPTION") - 1;
-            return TOK_COMMAND_DESCRIPTION;
-        }
-        if (memcmp(p->data + p->head, "PARAMETER", sizeof("PARAMETER") - 1)
-            == 0)
-        {
-            p->head += sizeof("PARAMETER") - 1;
-            while (p->head != p->len && isdigit(p->data[p->head]))
-                p->head++;
-            return TOK_COMMAND_PARAM;
-        }
-        if (memcmp(p->data + p->head, "RETURNS", sizeof("RETURNS") - 1) == 0)
-        {
-            p->head += sizeof("RETURNS") - 1;
-            return TOK_COMMAND_RETURNS;
-        }
-        if (memcmp(p->data + p->head, "EXAMPLE", sizeof("EXAMPLE") - 1) == 0)
-        {
-            p->head += sizeof("EXAMPLE") - 1;
-            return TOK_COMMAND_EXAMPLE;
-        }
-        if (memcmp(p->data + p->head, "SEE_ALSO", sizeof("SEE_ALSO") - 1) == 0)
-        {
-            p->head += sizeof("SEE_ALSO") - 1;
-            return TOK_COMMAND_SEE_ALSO;
-        }
-        if (memcmp(p->data + p->head, "...", 3) == 0)
-        {
-            p->head += 3;
-            return TOK_ELLIPSIS;
-        }
-        if (isalpha(p->data[p->head]) || p->data[p->head] == '_')
+        /* Identifier [a-zA-Z_-][a-zA-Z0-9_-]* */
+        if (isalpha(p->data[p->head]) || p->data[p->head] == '_'
+            || p->data[p->head] == '-')
         {
             p->value.str.off = p->head++;
-            while (p->head != p->len
-                   && (isalnum(p->data[p->head]) || p->data[p->head] == '_'))
+            while (p->head != p->end
+                   && (isalnum(p->data[p->head]) || p->data[p->head] == '_'
+                       || p->data[p->head] == '-'))
             {
                 p->head++;
             }
             p->value.str.len = p->head - p->value.str.off;
-            return TOK_IDENTIFIER;
+            return p->token = TOK_IDENTIFIER;
         }
 
         p->tail = ++p->head;
     }
 
-    return TOK_END;
+    return p->token = TOK_END;
 }
 
-enum param_type
+static enum token
+consume(struct parser* p)
 {
-    PARAM_NONE = 0,
+    p->is_peek = 0;
+    return p->token;
+}
 
-    PARAM_VOID = '0',
-    PARAM_LONG = 'R',    /* 8 bytes -- signed int */
-    PARAM_DWORD = 'D',   /* 4 bytes -- unsigned int */
-    PARAM_INTEGER = 'L', /* 4 bytes -- signed int */
-    PARAM_WORD = 'W',    /* 2 bytes -- unsigned int */
-    PARAM_BYTE = 'Y',    /* 1 byte -- unsigned int */
-    PARAM_BOOLEAN = 'B', /* 1 byte -- boolean */
-    PARAM_FLOAT = 'F',   /* 4 bytes -- float */
-    PARAM_DOUBLE = 'O',  /* 8 bytes -- double */
-    PARAM_STRING = 'S',  /* 4 bytes -- char* (passed as DWORD on 32-bit) */
-    PARAM_ARRAY = 'H',   /* 4 bytes -- Pass array address directly */
-    PARAM_LABEL = 'P',   /* 4 bytes -- ? */
-    PARAM_DABEL = 'Q',   /* 4 bytes -- ? */
-    PARAM_ANY = 'X',     /* 4 bytes -- (think reinterpret_cast) */
-    PARAM_USER_DEFINED_VAR_PTR = 'E', /* 4 bytes */
+static enum token
+scan_next(struct parser* p)
+{
+    peek_next(p);
+    return consume(p);
+}
+
+struct strlist
+{
+    struct strlist* next;
+    struct str_view string;
 };
 
-struct param
+struct help_lang
 {
-    struct param* next;
-
-    enum param_type type;
-
-    unsigned is_ptr : 1;
-    unsigned is_const : 1;
-    unsigned is_signed : 1;
-    unsigned is_unsigned : 1;
-    unsigned is_char : 1;
-    unsigned is_struct : 1;
+    struct help_lang* next;
+    struct strlist*   strings;
+    struct str_view   lang;
 };
 
-/* Description can span multiple lines, split into string fragments */
-struct param_doc_desc
+struct section
 {
-    struct param_doc_desc* next;
-    struct str_view        text;
-};
-
-struct param_doc
-{
-    struct param_doc* next;
-
-    struct str_view        name;
-    struct param_doc_desc* desc;
-};
-
-struct cmd
-{
-    struct cmd*       next;
-    struct param*     params;
-    struct param_doc* param_docs;
-
-    const char* source;
-
-    struct str_view name;
-    struct str_view symbol;
-    struct param    ret;
-
-    unsigned is_overload : 1;
+    struct section*   next;
+    struct str_view   name;
+    struct help_lang* help;
 };
 
 struct root
 {
-    struct cmd* commands;
+    struct section* sections;
 };
 
-static struct cmd*
-new_command(struct root* root)
+static struct section*
+new_section(struct str_view name)
 {
-    struct cmd** cmd = &root->commands;
-    while (*cmd)
-        cmd = &(*cmd)->next;
-
-    *cmd = calloc(1, sizeof **cmd);
-    return *cmd;
+    struct section* s = malloc(sizeof *s);
+    s->next = NULL;
+    s->name = name;
+    return s;
 }
-
-static struct param*
-new_param(struct cmd* command)
+static int
+parse_option(struct parser* p, struct section* section)
 {
-    struct param** param = &command->params;
-    while (*param)
-        param = &(*param)->next;
-
-    *param = calloc(1, sizeof **param);
-    return *param;
-}
-
-static struct param_doc*
-new_param_doc(struct cmd* cmd)
-{
-    struct param_doc** doc = &cmd->param_docs;
-    while (*doc)
-        doc = &(*doc)->next;
-
-    *doc = calloc(1, sizeof **doc);
-    return *doc;
-}
-
-static struct param_doc_desc*
-new_param_doc_desc(struct param_doc* doc)
-{
-    struct param_doc_desc** desc = &doc->desc;
-    while (*desc)
-        desc = &(*desc)->next;
-
-    *desc = calloc(1, sizeof **desc);
-    return *desc;
-}
-
-static enum token
-parse_parameter(struct parser* p, struct cmd* command, char is_ret)
-{
-    enum token    tok;
-    struct param* param = NULL;
-
     while (1)
     {
-        switch ((tok = scan_next_token(p)))
+        switch (peek_next(p))
         {
-            case TOK_ERROR:
-            case TOK_END:
-            default: return tok;
+            case TOK_ERROR: return -1;
+            case TOK_END: return 0;
 
-            /* Do any post processing on the parameter and then return */
-            case ',':
-            case ')':
-                if (param)
-                {
-                    /* If a pointer was detected, change the type to an array,
-                     * unless it was also a "char". Then it is a string */
-                    if (param->is_ptr)
-                    {
-                        if (param->is_char)
-                            param->type = PARAM_STRING;
-                        else
-                            param->type = PARAM_ARRAY;
-                    }
-                }
-                return tok;
-
-            /* Alloc if not yet done */
-            case '*':
-            case TOK_ELLIPSIS:
-            case TOK_IDENTIFIER:
-                if (param == NULL)
-                    param = is_ret ? &command->ret : new_param(command);
-                break;
-        }
-
-        switch (tok)
-        {
-            case '*': param->is_ptr = 1; break;
-            case TOK_ELLIPSIS: param->type = PARAM_USER_DEFINED_VAR_PTR; break;
-            case TOK_IDENTIFIER:
-                /* C qualifiers */
-                if (memcmp(p->data + p->value.str.off, "const", 5) == 0)
-                    param->is_const = 1;
-                else if (memcmp(p->data + p->value.str.off, "signed", 6) == 0)
-                    param->is_signed = 1;
-                else if (memcmp(p->data + p->value.str.off, "unsigned", 8) == 0)
-                    param->is_unsigned = 1;
-                else if (memcmp(p->data + p->value.str.off, "struct", 6) == 0)
-                    param->is_struct = 1;
-                /* C types */
-                else if (memcmp(p->data + p->value.str.off, "void", 4) == 0)
-                    param->type = PARAM_VOID;
-                else if (memcmp(p->data + p->value.str.off, "float", 5) == 0)
-                    param->type = PARAM_FLOAT;
-                else if (memcmp(p->data + p->value.str.off, "double", 6) == 0)
-                    param->type = PARAM_DOUBLE;
-                else if (memcmp(p->data + p->value.str.off, "int64_t", 7) == 0)
-                    param->type = PARAM_LONG;
-                else if (memcmp(p->data + p->value.str.off, "uint64_t", 8) == 0)
-                    param->type = PARAM_LONG;
-                else if (memcmp(p->data + p->value.str.off, "int", 3) == 0)
-                    param->type
-                        = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
-                else if (memcmp(p->data + p->value.str.off, "int32_t", 7) == 0)
-                    param->type
-                        = param->is_unsigned ? PARAM_DWORD : PARAM_INTEGER;
-                else if (memcmp(p->data + p->value.str.off, "uint32_t", 8) == 0)
-                    param->type = PARAM_DWORD;
-                else if (memcmp(p->data + p->value.str.off, "int16_t", 7) == 0)
-                    param->type = PARAM_WORD;
-                else if (memcmp(p->data + p->value.str.off, "uint16_t", 8) == 0)
-                    param->type = PARAM_WORD;
-                else if (memcmp(p->data + p->value.str.off, "char", 4) == 0)
-                {
-                    param->type = PARAM_BYTE;
-                    param->is_char = 1;
-                }
-                else if (memcmp(p->data + p->value.str.off, "uint8_t", 7) == 0)
-                    param->type = PARAM_BYTE;
-                else if (memcmp(p->data + p->value.str.off, "int8_t", 6) == 0)
-                    param->type = PARAM_BYTE;
-                else if (memcmp(p->data + p->value.str.off, "bool", 4) == 0)
-                    param->type = PARAM_BOOLEAN;
-                else if (memcmp(p->data + p->value.str.off, "_Bool", 5) == 0)
-                    param->type = PARAM_BOOLEAN;
-                else
-                {
-                    if (param->type == PARAM_NONE)
-                        return print_loc_error(
-                            p,
-                            "Unknown type '%.*s' encountered: Don't know how "
-                            "to map to DB type. This is an issue with "
-                            "odb-resgen. Please report a bug!\n",
-                            p->value.str.len,
-                            p->data + p->value.str.off);
-                }
-                break;
-
-            default: break;
-        }
-    }
-}
-
-static enum token
-parse_c_parameters(struct parser* p, struct cmd* command)
-{
-    enum token tok;
-    while (1)
-    {
-        switch ((tok = parse_parameter(p, command, 0)))
-        {
-            case ',': break;
-            default: return tok;
-        }
-    }
-}
-
-static enum token
-parse_doc_parameters(struct parser* p, struct cmd* cmd)
-{
-    enum token tok;
-    while (1)
-    {
-        switch ((tok = scan_next_token(p)))
-        {
-            case ',': break;
-            default: return tok;
-
-            case TOK_COMMAND_BRIEF:
-            case TOK_COMMAND_DESCRIPTION:
-            case TOK_COMMAND_RETURNS:
-            case TOK_COMMAND_EXAMPLE:
-            case TOK_COMMAND_SEE_ALSO:
-                if (scan_next_token(p) != '(')
-                    return print_loc_error(
-                        p, "Expected argument to BRIEF() macro\n");
-                while (1)
-                {
-                    switch ((tok = scan_next_token(p)))
-                    {
-                        case ',':
-                        case TOK_STRING: continue;
-                        case ')': break;
-
-                        default: return tok;
-                    }
-                    break;
-                }
-                break;
-
-            case TOK_COMMAND_PARAM: {
-                struct param_doc* doc;
-
-                if (scan_next_token(p) != '(')
-                    return print_loc_error(
-                        p, "Expected argument to PARAMETER() macro\n");
-                if (scan_next_token(p) != TOK_STRING)
-                    return print_loc_error(
-                        p,
-                        "Expected parameter name as argument to PARAMETER() "
-                        "macro\n");
-
-                doc = new_param_doc(cmd);
-                doc->name = p->value.str;
-
-                if (scan_next_token(p) != ',')
-                    return print_loc_error(
-                        p,
-                        "Expected a string containing a description of this "
-                        "parameter\n");
-
-                while ((tok = scan_next_token(p)) == TOK_STRING)
-                {
-                    struct param_doc_desc* desc = new_param_doc_desc(doc);
-                    desc->text = p->value.str;
-                }
-
-                if (tok != ')')
-                    return print_loc_error(p, "Missing closing ')'\n");
+            case TOK_HELP: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'help'\n");
+                while (peek_next(p) == TOK_STRING)
+                    consume(p);
                 break;
             }
+
+            case TOK_SHORT: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'short'\n");
+                if (scan_next(p) != TOK_CHAR)
+                    return print_loc_error(
+                        p, "Expected character after 'short'\n");
+                break;
+            }
+
+            case TOK_ARGS: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'args'\n");
+                while (peek_next(p) == '[' || peek_next(p) == ']'
+                       || peek_next(p) == '<' || peek_next(p) == '>'
+                       || peek_next(p) == '|' || peek_next(p) == TOK_IDENTIFIER
+                       || peek_next(p) == TOK_ELLIPSIS)
+                    consume(p);
+                break;
+            }
+
+            case TOK_FUNC: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'func'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'func'\n");
+                break;
+            }
+
+            case TOK_RUNAFTER: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(
+                        p, "Expected ':' after 'runafter'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'runafter'\n");
+                while (peek_next(p) == ',')
+                {
+                    consume(p);
+                    if (scan_next(p) != TOK_IDENTIFIER)
+                        return print_loc_error(
+                            p, "Expected identifier after ','\n");
+                }
+                break;
+            }
+
+            case '}': return 0;
+
+            default:
+                return print_loc_error(p, "Unexpected token in option block\n");
         }
     }
 }
 
-static enum token
-parse_command(struct parser* p, struct cmd* command, char is_overload)
+static int
+parse_task(struct parser* p, struct section* section)
 {
-    command->source = p->data;
-
-    if (scan_next_token(p) != '(')
-        return print_loc_error(p, "Expected argument list\n");
-
-    /* C function return value */
-    switch (parse_parameter(p, command, 1))
+    while (1)
     {
-        case ',': break;
-        case ')':
-            return print_loc_error(
-                p,
-                "Expected C function name as second argument, but "
-                "ODB_COMMAND() macro was only given 1 argument\n");
-        default:
-            return print_loc_error(
-                p,
-                "Expected function return type as first argument to "
-                "ODB_COMMAND()\n");
+        switch (peek_next(p))
+        {
+            case TOK_ERROR: return -1;
+            case TOK_END: return 0;
+
+            case TOK_FUNC: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'func'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'func'\n");
+                break;
+            }
+
+            case TOK_RUNAFTER: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(
+                        p, "Expected ':' after 'runafter'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'runafter'\n");
+                while (peek_next(p) == ',')
+                {
+                    consume(p);
+                    if (scan_next(p) != TOK_IDENTIFIER)
+                        return print_loc_error(
+                            p, "Expected identifier after ','\n");
+                }
+                break;
+            }
+
+            case '}': return 0;
+
+            default:
+                return print_loc_error(p, "Unexpected token in task block\n");
+        }
     }
-
-    if (scan_next_token(p) != TOK_IDENTIFIER)
-        return print_loc_error(
-            p,
-            "Expected function name as second argument to ODB_COMMAND() "
-            "macro\n");
-    command->symbol = p->value.str;
-
-    /* Parse parameter types of C function */
-    if (parse_c_parameters(p, command) != TOK_COMMAND_NAME)
-        return print_loc_error(
-            p,
-            "Expected NAME(\"<command name>\") as next argument to "
-            "ODB_COMMAND()\n");
-
-    /* Parse command name */
-    if (scan_next_token(p) != '(')
-        return print_loc_error(p, "Expected argument to NAME() macro\n");
-
-    if (scan_next_token(p) != TOK_STRING)
-        return print_loc_error(
-            p,
-            "Expected command name string as argument to "
-            "NAME() macro\n");
-    command->name = p->value.str;
-
-    if (scan_next_token(p) != ')')
-        return print_loc_error(p, "Missing closing ')'\n");
-
-    if (is_overload)
-    {
-        if (scan_next_token(p) != ')')
-            return print_loc_error(
-                p,
-                "Too many arguments passed to ODB_OVERLOAD. Note that "
-                "ODB_OVERLOAD "
-                "does not accept any of the documentation arguments that "
-                "ODB_COMMAND accepts. The documentation of overloaded "
-                "functions is "
-                "shared between all overloads.\n");
-
-        command->is_overload = 1;
-        return ')';
-    }
-    return parse_doc_parameters(p, command);
 }
 
-static struct cmd*
-find_command_by_name(
-    const struct parser* p, const struct root* root, struct str_view name)
+static int
+parse_section(struct parser* p, struct section* section)
 {
-    struct cmd* cmd;
-    for (cmd = root->commands; cmd; cmd = cmd->next)
-        if (name.len == cmd->name.len
-            && memcmp(p->data + name.off, p->data + cmd->name.off, name.len)
-                   == 0)
-            return cmd;
-    return NULL;
+    while (1)
+    {
+        switch (peek_next(p))
+        {
+            case TOK_ERROR: return -1;
+            case TOK_END: return 0;
+
+            case TOK_OPTION: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'option'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'option'\n");
+                if (scan_next(p) != '{')
+                    return print_loc_error(
+                        p, "Expected opening '{' for option block\n");
+                if (parse_option(p, section) != 0)
+                    return -1;
+                if (scan_next(p) != '}')
+                    return print_loc_error(
+                        p, "Missing closing '}' for previous option block\n");
+                break;
+            }
+
+            case TOK_TASK: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'task'\n");
+                if (scan_next(p) != TOK_IDENTIFIER)
+                    return print_loc_error(
+                        p, "Expected identifier after 'task'\n");
+                if (scan_next(p) != '{')
+                    return print_loc_error(
+                        p, "Expected opening '{' for option block\n");
+                if (parse_task(p, section) != 0)
+                    return -1;
+                if (scan_next(p) != '}')
+                    return print_loc_error(
+                        p, "Missing closing '}' for previous option block\n");
+                break;
+            }
+
+            case TOK_HELP: {
+                consume(p);
+                if (scan_next(p) != ':')
+                    return print_loc_error(p, "Expected ':' after 'help'\n");
+                while (peek_next(p) == TOK_STRING)
+                    consume(p);
+                break;
+            }
+
+            case '}': return 0;
+
+            default:
+                return print_loc_error(
+                    p, "Unexpected token in section block\n");
+        }
+    }
 }
 
 static int
 parse(struct parser* p, struct root* root, const struct cfg* cfg)
 {
-    enum token tok;
     while (1)
     {
-        switch ((tok = scan_next_token(p)))
+        switch (scan_next(p))
         {
             case TOK_ERROR: return -1;
             case TOK_END: return 0;
 
-            case TOK_ODB_COMMAND:
-                if (parse_command(p, new_command(root), 0) != ')')
-                    return print_loc_error(
-                        p, "Unexpected token encountered.\n");
-                break;
-
-            case TOK_ODB_OVERLOAD: {
-                struct cmd*       base;
-                struct cmd*       ol;
-                struct param*     ol_param;
-                struct param_doc* base_doc;
-
-                ol = new_command(root);
-                if (parse_command(p, ol, 1) != ')')
-                    return print_loc_error(
-                        p, "Unexpected token encountered.\n");
-
-                base = find_command_by_name(p, root, ol->name);
-                if (base == NULL)
-                    return print_loc_error(
-                        p,
-                        "Command overload not found for \"%.*s\"\n",
-                        ol->name.len,
-                        p->data + ol->name.off);
-
-                /* Copy parameter names from base command, since they are shared
-                 */
-                base_doc = base->param_docs;
-                ol_param = ol->params;
-                while (ol_param && base_doc)
+            case TOK_SECTION: {
+                struct section* section;
+                if (scan_next(p) == ':')
                 {
-                    struct param_doc* ol_doc = new_param_doc(ol);
-                    ol_doc->name = base_doc->name;
-
-                    ol_param = ol_param->next;
-                    base_doc = base_doc->next;
+                    if (scan_next(p) != TOK_IDENTIFIER)
+                        return print_loc_error(
+                            p, "Expected section name after ':'\n");
+                    section = new_section(p->value.str);
                 }
-            }
-            break;
+                else
+                    section = new_section(empty_str_view());
 
-            default: break;
+                if (scan_next(p) != '{')
+                    return print_loc_error(
+                        p, "Expected opening '{' for section block\n");
+                if (parse_section(p, section) != 0)
+                    return -1;
+                if (scan_next(p) != '}')
+                    return print_loc_error(
+                        p, "Missing closing '}' for previous section block\n");
+                break;
+            }
+
+            default: return print_loc_error(p, "Unexpected token\n");
         }
     }
 }
 
 static void
-gen_command_string(struct mstream* ms, const struct cmd* cmd)
+gen_table(struct mstream* ms, const struct root* root)
 {
-    struct param*     param;
-    struct param_doc* param_doc;
-    mstream_fmt(ms, "%S", cmd->name, cmd->source);
-    mstream_putc(ms, '%');
-    mstream_putc(ms, cmd->ret.type);
+#if defined(_WIN32)
+#define NL "\r\n"
+#else
+#define NL "\n"
+#endif
 
-    mstream_putc(ms, '(');
-    param = cmd->params;
-    while (param)
-    {
-        mstream_putc(ms, param->type);
-        param = param->next;
-    }
-    mstream_putc(ms, ')');
-
-    mstream_putc(ms, '%');
-    mstream_fmt(ms, "%S", cmd->symbol, cmd->source);
-    mstream_putc(ms, '%');
-
-    param = cmd->params;
-    param_doc = cmd->param_docs;
-    while (param && param_doc)
-    {
-        if (param != cmd->params)
-            mstream_cstr(ms, ", ");
-
-        mstream_fmt(ms, "%S", param_doc->name, cmd->source);
-        param = param->next;
-        param_doc = param_doc->next;
-    }
-}
-
-static void
-gen_winres_resource(struct mstream* ms, const struct root* root)
-{
-    int               stringID = 1;
-    const struct cmd* cmd = root->commands;
-
-    mstream_cstr(ms, "STRINGTABLE\n");
-    mstream_cstr(ms, "BEGIN\n");
-
-    while (cmd)
-    {
-        mstream_fmt(ms, "    %d", stringID++);
-        mstream_cstr(ms, " \"");
-        gen_command_string(ms, cmd);
-        mstream_cstr(ms, "\"\n");
-        cmd = cmd->next;
-    }
-
-    mstream_cstr(ms, "END\n");
-}
-
-static void
-gen_elf_resource(struct mstream* ms, const struct root* root)
-{
-    const struct cmd* cmd = root->commands;
-    while (cmd)
-    {
-        if (cmd != root->commands)
-            mstream_putc(ms, '\n');
-
-        gen_command_string(ms, cmd);
-        cmd = cmd->next;
-    }
+    mstream_fmt(ms, "static const int commands[] = {" NL);
+    mstream_fmt(ms, "};" NL);
 }
 
 static int
-write_resource(const struct mstream* ms, const char* filename)
+write_if_different(const struct mstream* ms, const char* filename)
 {
     struct mfile mf;
 
@@ -1493,7 +1381,7 @@ write_resource(const struct mstream* ms, const char* filename)
 int
 main(int argc, char** argv)
 {
-    struct mfile mf;
+    struct mfile   mf;
     struct mstream ms;
     struct parser  parser;
     struct cfg     cfg = {0};
@@ -1505,18 +1393,28 @@ main(int argc, char** argv)
     if (parse_cmdline(argc, argv, &cfg) != 0)
         return -1;
 
+    if (cfg.input_fname == NULL)
+    {
+        if (mfile_map_stdin(&mf) != 0)
+            return -1;
+    }
+    else
+    {
+        if (mfile_map_read(&mf, cfg.input_fname, 0) != 0)
+            return -1;
+    }
 
-    if (mfile_map_read(&mf, cfg.input_file, 0) != 0)
-        return -1;
-
-    parser_init(&parser, &mf, cfg.input_file);
+    parser_init(&parser, &mf, cfg.input_fname);
     if (parse(&parser, &root, &cfg) != 0)
         return -1;
 
-    /*
     ms = mstream_init_writeable();
-    if (write_resource(&ms, cfg.output_file) != 0)
-        return -1;*/
+    gen_table(&ms, &root);
+
+    if (cfg.output_fname == NULL)
+        fwrite(ms.address, ms.write_ptr, 1, stdout);
+    else if (write_if_different(&ms, cfg.output_fname) != 0)
+        return -1;
 
     return 0;
 }
