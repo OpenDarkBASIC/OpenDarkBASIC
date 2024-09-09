@@ -33,6 +33,22 @@ empty_str_view(void)
     return str;
 }
 
+static int
+str_equal(struct str_view s1, struct str_view s2, const char* data)
+{
+    if (s1.len != s2.len)
+        return 0;
+    return memcmp(data + s1.off, data + s2.off, s1.len) == 0;
+}
+
+static int
+cstr_equal(const char* s1, struct str_view s2, const char* data)
+{
+    if ((int)strlen(s1) != s2.len)
+        return 0;
+    return memcmp(s1, data + s2.off, s2.len) == 0;
+}
+
 static int disable_colors = 0;
 
 static const char*
@@ -982,9 +998,8 @@ peek_next(struct parser* p)
 #define SCAN_HELP_STRING(string, tok_name)                                     \
     if (memcmp(p->data + p->head, string, sizeof(string) - 1) == 0)            \
     {                                                                          \
+        p->value.str.off = p->head;                                            \
         p->head += sizeof(string) - 1;                                         \
-        while (p->head != p->end && isdigit(p->data[p->head]))                 \
-            p->head++;                                                         \
         p->value.str.len = p->head - p->value.str.off;                         \
         return p->token = tok_name;                                            \
     }
@@ -994,8 +1009,6 @@ peek_next(struct parser* p)
     if (memcmp(p->data + p->head, string, sizeof(string) - 1) == 0)            \
     {                                                                          \
         p->head += sizeof(string) - 1;                                         \
-        while (p->head != p->end && isdigit(p->data[p->head]))                 \
-            p->head++;                                                         \
         return p->token = tok_name;                                            \
     }
         SCAN_STRING("section", TOK_SECTION)
@@ -1083,6 +1096,19 @@ scan_next(struct parser* p)
     return consume(p);
 }
 
+struct ll
+{
+    struct ll* next;
+};
+
+static void
+ll_append(struct ll** head, struct ll* node)
+{
+    while (*head)
+        head = &(*head)->next;
+    *head = node;
+}
+
 struct strlist
 {
     struct strlist* next;
@@ -1096,11 +1122,31 @@ struct help_lang
     struct str_view   lang;
 };
 
+struct option
+{
+    struct option*    next;
+    struct help_lang* help;
+    struct str_view   name;
+    struct str_view   func;
+    char              short_name;
+};
+
+struct task
+{
+    struct task*    next;
+    struct strlist* runafter;
+    struct str_view name;
+    struct str_view func;
+};
+
 struct section
 {
     struct section*   next;
-    struct str_view   name;
+    struct option*    options;
+    struct task*      tasks;
     struct help_lang* help;
+    struct strlist*   runafter;
+    struct str_view   name;
 };
 
 struct root
@@ -1108,16 +1154,54 @@ struct root
     struct section* sections;
 };
 
+static struct help_lang*
+new_help_lang(struct str_view lang)
+{
+    struct help_lang* hl = malloc(sizeof *hl);
+    hl->next = NULL;
+    hl->strings = NULL;
+    hl->lang = lang;
+    return hl;
+}
+
+static struct option*
+new_option(struct str_view name)
+{
+    struct option* o = malloc(sizeof *o);
+    o->next = NULL;
+    o->help = NULL;
+    o->name = name;
+    o->func = empty_str_view();
+    o->short_name = '\0';
+    return o;
+}
+
+static struct task*
+new_task(struct str_view name)
+{
+    struct task* t = malloc(sizeof *t);
+    t->next = NULL;
+    t->runafter = NULL;
+    t->name = name;
+    t->func = empty_str_view();
+    return t;
+}
+
 static struct section*
 new_section(struct str_view name)
 {
     struct section* s = malloc(sizeof *s);
     s->next = NULL;
+    s->options = NULL;
+    s->tasks = NULL;
+    s->help = NULL;
+    s->runafter = NULL;
     s->name = name;
     return s;
 }
+
 static int
-parse_option(struct parser* p, struct section* section)
+parse_option(struct parser* p, struct option* option)
 {
     while (1)
     {
@@ -1127,21 +1211,47 @@ parse_option(struct parser* p, struct section* section)
             case TOK_END: return 0;
 
             case TOK_HELP: {
+                struct help_lang* help_lang = option->help;
+                for (; help_lang; help_lang = help_lang->next)
+                    if (str_equal(help_lang->lang, p->value.str, p->data))
+                        return print_loc_error(
+                            p, "Duplicate 'help' entry for language\n");
+                help_lang = new_help_lang(p->value.str);
+                help_lang->next = option->help;
+                option->help = help_lang;
                 consume(p);
+
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'help'\n");
+                    return print_loc_error(
+                        p, "Expected ':' after 'language'\n");
+                if (peek_next(p) != TOK_STRING)
+                    return print_loc_error(
+                        p, "Expected help string after 'language'\n");
                 while (peek_next(p) == TOK_STRING)
+                {
+                    struct strlist* strlist = malloc(sizeof *strlist);
+                    strlist->next = NULL;
+                    strlist->string = p->value.str;
+                    ll_append(
+                        (struct ll**)&help_lang->strings, (struct ll*)strlist);
                     consume(p);
+                }
                 break;
             }
 
             case TOK_SHORT: {
+                if (option->short_name)
+                    return print_loc_error(
+                        p, "Duplicate 'short' in option block\n");
+
                 consume(p);
                 if (scan_next(p) != ':')
                     return print_loc_error(p, "Expected ':' after 'short'\n");
                 if (scan_next(p) != TOK_CHAR)
                     return print_loc_error(
                         p, "Expected character after 'short'\n");
+                option->short_name = p->value.chr;
+
                 break;
             }
 
@@ -1158,12 +1268,18 @@ parse_option(struct parser* p, struct section* section)
             }
 
             case TOK_FUNC: {
+                if (option->func.len)
+                    return print_loc_error(
+                        p, "Duplicate 'func' in option block\n");
+
                 consume(p);
                 if (scan_next(p) != ':')
                     return print_loc_error(p, "Expected ':' after 'func'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
                     return print_loc_error(
                         p, "Expected identifier after 'func'\n");
+                option->func = p->value.str;
+
                 break;
             }
 
@@ -1194,7 +1310,7 @@ parse_option(struct parser* p, struct section* section)
 }
 
 static int
-parse_task(struct parser* p, struct section* section)
+parse_task(struct parser* p, struct task* task)
 {
     while (1)
     {
@@ -1204,12 +1320,17 @@ parse_task(struct parser* p, struct section* section)
             case TOK_END: return 0;
 
             case TOK_FUNC: {
+                if (task->func.len)
+                    return print_loc_error(
+                        p, "Duplicate 'func' in task block\n");
+
                 consume(p);
                 if (scan_next(p) != ':')
                     return print_loc_error(p, "Expected ':' after 'func'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
                     return print_loc_error(
                         p, "Expected identifier after 'func'\n");
+
                 break;
             }
 
@@ -1250,47 +1371,81 @@ parse_section(struct parser* p, struct section* section)
             case TOK_END: return 0;
 
             case TOK_OPTION: {
+                struct option* option;
+
                 consume(p);
                 if (scan_next(p) != ':')
                     return print_loc_error(p, "Expected ':' after 'option'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
                     return print_loc_error(
-                        p, "Expected identifier after 'option'\n");
+                        p, "Expected option name after 'option'\n");
+
+                option = new_option(p->value.str);
                 if (scan_next(p) != '{')
                     return print_loc_error(
                         p, "Expected opening '{' for option block\n");
-                if (parse_option(p, section) != 0)
+                if (parse_option(p, option) != 0)
                     return -1;
                 if (scan_next(p) != '}')
                     return print_loc_error(
                         p, "Missing closing '}' for previous option block\n");
+
+                option->next = section->options;
+                section->options = option;
                 break;
             }
 
             case TOK_TASK: {
+                struct task* task;
+
                 consume(p);
                 if (scan_next(p) != ':')
                     return print_loc_error(p, "Expected ':' after 'task'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
                     return print_loc_error(
                         p, "Expected identifier after 'task'\n");
+
+                task = new_task(p->value.str);
                 if (scan_next(p) != '{')
                     return print_loc_error(
                         p, "Expected opening '{' for option block\n");
-                if (parse_task(p, section) != 0)
+                if (parse_task(p, task) != 0)
                     return -1;
                 if (scan_next(p) != '}')
                     return print_loc_error(
                         p, "Missing closing '}' for previous option block\n");
+
+                task->next = section->tasks;
+                section->tasks = task;
                 break;
             }
 
             case TOK_HELP: {
+                struct help_lang* help_lang = section->help;
+                for (; help_lang; help_lang = help_lang->next)
+                    if (str_equal(help_lang->lang, p->value.str, p->data))
+                        return print_loc_error(
+                            p, "Duplicate 'help' entry for language\n");
+                help_lang = new_help_lang(p->value.str);
+                help_lang->next = section->help;
+                section->help = help_lang;
                 consume(p);
+
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'help'\n");
+                    return print_loc_error(
+                        p, "Expected ':' after 'language'\n");
+                if (peek_next(p) != TOK_STRING)
+                    return print_loc_error(
+                        p, "Expected help string after 'language'\n");
                 while (peek_next(p) == TOK_STRING)
+                {
+                    struct strlist* strlist = malloc(sizeof *strlist);
+                    strlist->next = NULL;
+                    strlist->string = p->value.str;
+                    ll_append(
+                        (struct ll**)&help_lang->strings, (struct ll*)strlist);
                     consume(p);
+                }
                 break;
             }
 
@@ -1333,6 +1488,9 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
                 if (scan_next(p) != '}')
                     return print_loc_error(
                         p, "Missing closing '}' for previous section block\n");
+
+                section->next = root->sections;
+                root->sections = section;
                 break;
             }
 
@@ -1342,15 +1500,36 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
 }
 
 static void
-gen_table(struct mstream* ms, const struct root* root)
+gen_table(struct mstream* ms, const struct root* root, const char* data)
 {
 #if defined(_WIN32)
 #define NL "\r\n"
 #else
 #define NL "\n"
 #endif
+    struct section* section;
 
     mstream_fmt(ms, "static const int commands[] = {" NL);
+    for (section = root->sections; section; section = section->next)
+    {
+        struct option* option;
+        for (option = section->options; option; option = option->next)
+        {
+            struct help_lang* help_lang = option->help;
+            for (; help_lang; help_lang = help_lang->next)
+            {
+                struct strlist* strs;
+                if (!cstr_equal("en_US", help_lang->lang, data))
+                    continue;
+
+                mstream_cstr(ms, "    .en_US = \"");
+                strs = help_lang->strings;
+                for (; strs; strs = strs->next)
+                    mstream_str(ms, strs->string, data);
+                mstream_cstr(ms, "\"," NL);
+            }
+        }
+    }
     mstream_fmt(ms, "};" NL);
 }
 
@@ -1409,7 +1588,7 @@ main(int argc, char** argv)
         return -1;
 
     ms = mstream_init_writeable();
-    gen_table(&ms, &root);
+    gen_table(&ms, &root, mf.address);
 
     if (cfg.output_fname == NULL)
         fwrite(ms.address, ms.write_ptr, 1, stdout);
