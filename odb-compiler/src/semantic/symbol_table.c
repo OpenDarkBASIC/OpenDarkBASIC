@@ -1,10 +1,10 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/parser/func_table.h"
+#include "odb-compiler/semantic/symbol_table.h"
 #include "odb-sdk/mem.h"
 
 VEC_DEFINE_API(func_param_types_list, enum type, 8)
 
-struct func_table_kvs_key_data
+struct symbol_table_kvs_key_data
 {
     utf8_idx count, capacity;
     char     data[1];
@@ -18,12 +18,12 @@ kvs_hash(struct utf8_view key)
 
 static int
 kvs_alloc(
-    struct func_table_kvs* kvs,
-    struct func_table_kvs* old_kvs,
-    int32_t                capacity)
+    struct symbol_table_kvs* kvs,
+    struct symbol_table_kvs* old_kvs,
+    int32_t                  capacity)
 {
     static const int avg_func_name_len = 32;
-    int header_size = offsetof(struct func_table_kvs_key_data, data);
+    int header_size = offsetof(struct symbol_table_kvs_key_data, data);
     int data_size = sizeof(char) * avg_func_name_len * capacity;
     kvs->key_data = old_kvs->key_data ? old_kvs->key_data
                                       : mem_alloc(header_size + data_size);
@@ -54,7 +54,7 @@ alloc_data_failed:
 }
 
 static void
-kvs_free(struct func_table_kvs* kvs)
+kvs_free(struct symbol_table_kvs* kvs)
 {
     if (kvs->key_data != NULL)
         mem_free(kvs->key_data);
@@ -63,17 +63,17 @@ kvs_free(struct func_table_kvs* kvs)
 }
 
 static struct utf8_view
-kvs_get_key(const struct func_table_kvs* kvs, utf8_idx idx)
+kvs_get_key(const struct symbol_table_kvs* kvs, utf8_idx idx)
 {
     return utf8_span_view(kvs->key_data->data, kvs->key_spans[idx]);
 }
 
 static int
-kvs_set_key(struct func_table_kvs* kvs, utf8_idx idx, struct utf8_view key)
+kvs_set_key(struct symbol_table_kvs* kvs, utf8_idx idx, struct utf8_view key)
 {
     while (kvs->key_data->count + key.len > kvs->key_data->capacity)
     {
-        int   header_size = offsetof(struct func_table_kvs_key_data, data);
+        int   header_size = offsetof(struct symbol_table_kvs_key_data, data);
         int   data_size = sizeof(char) * kvs->key_data->capacity * 2;
         void* new_mem = mem_realloc(kvs->key_data, header_size + data_size);
         if (new_mem == NULL)
@@ -90,24 +90,26 @@ kvs_keys_equal(struct utf8_view a, struct utf8_view b)
     return a.off == b.off && a.len == b.len;
 }
 
-static struct func_table_entry*
-kvs_get_value(const struct func_table_kvs* kvs, utf8_idx idx)
+static struct symbol_table_entry*
+kvs_get_value(const struct symbol_table_kvs* kvs, utf8_idx idx)
 {
     return &kvs->values[idx];
 }
 
 static void
 kvs_set_value(
-    struct func_table_kvs* kvs, utf8_idx idx, struct func_table_entry* value)
+    struct symbol_table_kvs*   kvs,
+    utf8_idx                   idx,
+    struct symbol_table_entry* value)
 {
     kvs->values[idx] = *value;
 }
 
 HM_DEFINE_API_FULL(
-    func_table,
+    symbol_table,
     hash32,
     struct utf8_view,
-    struct func_table_entry,
+    struct symbol_table_entry,
     32,
     kvs_hash,
     kvs_alloc,
@@ -121,8 +123,8 @@ HM_DEFINE_API_FULL(
     70)
 
 int
-func_table_add_declarations_from_ast(
-    struct func_table*     table,
+symbol_table_add_declarations_from_ast(
+    struct symbol_table*   table,
     const struct ast*      ast,
     const struct db_source source)
 {
@@ -137,8 +139,8 @@ func_table_add_declarations_from_ast(
         struct utf8_span span = ast->nodes[ident].identifier.name;
         struct utf8_view func_name = utf8_span_view(source.text.data, span);
 
-        struct func_table_entry* entry;
-        switch (func_table_emplace_or_get(&table, func_name, &entry))
+        struct symbol_table_entry* entry;
+        switch (symbol_table_emplace_or_get(&table, func_name, &entry))
         {
             case HM_OOM: return -1;
 

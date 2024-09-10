@@ -35,6 +35,7 @@ VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, db_param_names, struct utf8_list*, 32)
 
 struct cmd_list
 {
+    /* All vectors have the same size -- index aligns with command ID */
     struct utf8_list*             db_cmd_names;
     struct utf8_list*             c_symbols;
     struct plugin_ids*            plugin_ids;

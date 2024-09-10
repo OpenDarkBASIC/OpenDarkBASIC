@@ -17,6 +17,13 @@
 #include <stddef.h>
 #include <string.h>
 
+#define VEC_INIT_STACK(v, elems)                                               \
+    char vec_stack_##__LINE__                                                  \
+        [sizeof(*(v)) + sizeof((v)->data[0]) * ((elems) - 1)];                 \
+    (v) = (void*)&vec_stack_##__LINE__[0];                                     \
+    (v)->capacity = (elems);                                                   \
+    (v)->count = 0;
+
 #define VEC_DECLARE_API(API, prefix, T, bits)                                  \
     struct prefix                                                              \
     {                                                                          \
