@@ -32,6 +32,6 @@ HM_DECLARE_API_FULL(
 
 ODBCOMPILER_PUBLIC_API int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table*   table,
+    struct symbol_table**  table,
     const struct ast*      ast,
     const struct db_source source);

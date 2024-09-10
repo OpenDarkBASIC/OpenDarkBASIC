@@ -7,6 +7,7 @@ extern "C" {
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-compiler/semantic/symbol_table.h"
 #include "odb-sdk/log.h"
 #include "odb-sdk/thread.h"
 #include "odb-sdk/utf8.h"
@@ -21,7 +22,9 @@ struct translation_unit
 
 struct worker
 {
-    struct thread                  thread;
+    struct thread*                 thread;
+    struct mutex*                  mutex;
+    struct symbol_table**          symbol_table;
     std::vector<translation_unit>* tus;
     int                            id;
 };
@@ -101,6 +104,11 @@ parse_worker(void* arg)
         {
             goto parse_failed;
         }
+
+        mutex_lock(worker->mutex);
+        symbol_table_add_declarations_from_ast(
+            worker->symbol_table, &tus[i].ast, tus[i].source);
+        mutex_unlock(worker->mutex);
     }
 
     db_parser_deinit(&parser);
@@ -157,9 +165,16 @@ deinitAST(void)
 bool
 parseDBA(const std::vector<std::string>& args)
 {
-    const int           max_workers = 32;
-    std::vector<worker> workers;
-    int                 worker_id;
+    const int            max_workers = 32;
+    std::vector<worker>  workers;
+    int                  worker_id;
+    struct mutex*        mutex;
+    struct symbol_table* symbol_table;
+
+    symbol_table_init(&symbol_table);
+    mutex = mutex_create();
+    if (mutex == NULL)
+        goto create_mutex_failed;
 
     /* Prepare array of translation units -- 0 args means we read the source
      * from stdin, so it still requires 1 TU */
@@ -176,20 +191,22 @@ parseDBA(const std::vector<std::string>& args)
         struct worker& worker = workers[i];
         worker.id = i;
         worker.tus = &translation_units;
+        worker.mutex = mutex;
+        worker.symbol_table = &symbol_table;
     }
 
     /* Parse all TU source files into ASTs */
     for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
     {
         struct worker& worker = workers[worker_id];
-        if (thread_start(&worker.thread, parse_worker, &worker) != 0)
+        worker.thread = thread_start(parse_worker, &worker);
+        if (worker.thread == NULL)
             goto start_parse_thread_failed;
     }
     for (--worker_id; worker_id >= 0; --worker_id)
     {
-        void*          ret;
         struct worker& worker = workers[worker_id];
-        if (thread_join(worker.thread, &ret) != 0 || ret != NULL)
+        if (thread_join(worker.thread) != NULL)
             goto join_parse_thread_failed;
     }
 
@@ -201,16 +218,20 @@ parseDBA(const std::vector<std::string>& args)
     for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
     {
         struct worker& worker = workers[worker_id];
-        if (thread_start(&worker.thread, semantic_worker, &worker) != 0)
+        worker.thread = thread_start(semantic_worker, &worker);
+        if (worker.thread != 0)
             goto start_semantic_thread_failed;
     }
     for (--worker_id; worker_id >= 0; --worker_id)
     {
         void*          ret;
         struct worker& worker = workers[worker_id];
-        if (thread_join(worker.thread, &ret) != 0 || ret != NULL)
+        if (thread_join(worker.thread) != NULL)
             goto join_semantic_thread_failed;
     }
+
+    mutex_destroy(mutex);
+    symbol_table_deinit(symbol_table);
 
     return true;
 
@@ -220,8 +241,10 @@ start_semantic_thread_failed:
     for (; worker_id >= 0; --worker_id)
     {
         struct worker& worker = workers[worker_id];
-        thread_join(worker.thread, NULL);
+        thread_join(worker.thread);
     }
+    mutex_destroy(mutex);
+    symbol_table_deinit(symbol_table);
     return false;
 
 join_parse_thread_failed:
@@ -230,9 +253,12 @@ start_parse_thread_failed:
     for (; worker_id >= 0; --worker_id)
     {
         struct worker& worker = workers[worker_id];
-        thread_join(worker.thread, NULL);
+        thread_join(worker.thread);
     }
 open_sources_failed:
+    mutex_destroy(mutex);
+    symbol_table_deinit(symbol_table);
+create_mutex_failed:
     return false;
 }
 

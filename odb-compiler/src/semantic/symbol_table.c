@@ -124,7 +124,7 @@ HM_DEFINE_API_FULL(
 
 int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table*   table,
+    struct symbol_table**  table,
     const struct ast*      ast,
     const struct db_source source)
 {
@@ -140,7 +140,7 @@ symbol_table_add_declarations_from_ast(
         struct utf8_view func_name = utf8_span_view(source.text.data, span);
 
         struct symbol_table_entry* entry;
-        switch (symbol_table_emplace_or_get(&table, func_name, &entry))
+        switch (symbol_table_emplace_or_get(table, func_name, &entry))
         {
             case HM_OOM: return -1;
 
