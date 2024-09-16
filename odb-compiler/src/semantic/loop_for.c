@@ -117,7 +117,7 @@ create_exit_stmt(
     const char*      source_filename,
     struct db_source source)
 {
-    union expr_value begin_val, end_val, step_val;
+    union expr_value begin_val, end_val, step_val = {0};
     enum expr_type   begin_type = eval_constant_expr(ast, begin, &begin_val);
     enum expr_type   end_type = eval_constant_expr(ast, end, &end_val);
     enum expr_type   step_type = step > -1
@@ -247,7 +247,7 @@ handle_next_stmt(
     const char*      source_filename,
     struct db_source source)
 {
-    ODBSDK_DEBUG_ASSERT(next > -1, log_err("ast", "next: %d\n", next));
+    ODBUTIL_DEBUG_ASSERT(next > -1, log_err("ast", "next: %d\n", next));
     if (!ast_trees_equal(source, ast, loop_var, next))
     {
         int gutter;
@@ -277,9 +277,9 @@ primitives_from_for_loop(
     struct utf8_span loop_loc;
 
     loop_for = ast->nodes[loop].loop.loop_for;
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         loop_for > -1, log_semantic_err("loop_for: %d\n", loop_for));
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[loop].loop.post_body == -1,
         log_semantic_err("post_body: %d\n", ast->nodes[loop].loop.post_body));
 
@@ -289,10 +289,10 @@ primitives_from_for_loop(
     end = ast->nodes[loop_for].loop_for.end;
     step = ast->nodes[loop_for].loop_for.step;
     next = ast->nodes[loop_for].loop_for.next;
-    ODBSDK_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
-    ODBSDK_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
+    ODBUTIL_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
+    ODBUTIL_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
 
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[init].info.node_type == AST_ASSIGNMENT,
         log_semantic_err("type: %d\n", ast->nodes[init].info.node_type));
     loop_var = ast->nodes[init].assignment.lvalue;
@@ -321,9 +321,9 @@ primitives_from_for_loop(
     ast->nodes[loop].loop.loop_for = -1;
 
     ast_id init_block = ast_find_parent(ast, loop);
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         init_block > -1, log_semantic_err("init_block: %d\n", init_block));
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[init_block].info.node_type == AST_BLOCK,
         log_semantic_err(
             "init_block: %d\n", ast->nodes[init_block].info.node_type));

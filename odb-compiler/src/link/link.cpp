@@ -1,7 +1,8 @@
 extern "C" {
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/link/link.h"
-#include "odb-sdk/fs.h"
+#include "odb-util/fs.h"
+#include "odb-util/log.h"
 }
 
 #include "lld/Common/Driver.h"
@@ -16,14 +17,13 @@ link_windows(
     const char*      objs[],
     int              count,
     const char*      output_name,
-    enum sdk_type    sdk_type,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
 
     args.push_back("lld-link");
     args.push_back("-nodefaultlib");
-    args.push_back("-entry:mainCRTStartup");
+    args.push_back("-entry:main");
     args.push_back("-subsystem:console");
 
     switch (arch)
@@ -37,21 +37,22 @@ link_windows(
     args.push_back(outNameArg.c_str());
     
     // Win32 API
-    args.push_back("kernel32.lib");
+    //args.push_back("Kernel32.lib");
 
     // C runtime -- All 3 are needed
-    args.push_back("libucrt.lib");      // /MT of "Universal C-Runtime"
-    args.push_back("libvcruntime.lib"); // /MT of vcruntime
-    args.push_back("libcmt.lib");       // /MT of CRT initialization and termination
-
-    // args.push_back("./odb-sdk/plugins/core-commands.lib");
-    // args.push_back("./odb-sdk/plugins/test-plugin.lib");
-    
-    if (sdk_type == SDK_ODB)
-        args.push_back("./lib/odb-sdk.lib");
+    //args.push_back("libucrt.lib");      // /MT of "Universal C-Runtime"
+    //args.push_back("libvcruntime.lib"); // /MT of vcruntime
+    //args.push_back("libcmt.lib");       // /MT of CRT initialization and termination
 
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
+
+    log_dbg("[link] ", "%s\n", [&args] {
+        std::string s;
+        for (const auto& arg : args)
+            s += std::string(" ") + arg;
+        return s;
+    }().c_str());
 
     if (lld::coff::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;
@@ -64,7 +65,6 @@ link_linux(
     const char*      objs[],
     int              count,
     const char*      output_name,
-    enum sdk_type    sdk_type,
     enum target_arch arch)
 {
     llvm::SmallVector<const char*> args;
@@ -72,7 +72,7 @@ link_linux(
     args.push_back("ld.lld");
     args.push_back("--nostdlib");
     args.push_back("--entry=_start");
-    args.push_back("--rpath=./lib:./odb-sdk/plugins");
+    args.push_back("--rpath=./lib:./odb-util/plugins");
 
     switch (arch)
     {
@@ -95,11 +95,11 @@ link_linux(
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 
-    // args.push_back("./odb-sdk/plugins/core-commands.so");
-    // args.push_back("./odb-sdk/plugins/test-plugin.so");
+    // args.push_back("./odb-util/plugins/core-commands.so");
+    // args.push_back("./odb-util/plugins/test-plugin.so");
 
     args.push_back("-L./lib");
-    args.push_back("-lodb-sdk");
+    args.push_back("-lodb-util");
 
     if (fs_file_exists(cstr_ospathc("/usr/lib64/crt1.o")))
         args.push_back("/usr/lib64/crt1.o");
@@ -116,10 +116,9 @@ link_linux(
 
 int
 odb_link(
-    const char* objs[],
-    int         count,
-    const char* output_name,
-    enum sdk_type    sdk_type,
+    const char*          objs[],
+    int                  count,
+    const char*          output_name,
     enum target_arch     arch,
     enum target_platform platform)
 {
@@ -127,8 +126,8 @@ odb_link(
     switch (platform)
     {
         case TARGET_WINDOWS:
-            return link_windows(objs, count, output_name, sdk_type, arch);
-        case TARGET_LINUX: return link_linux(objs, count, output_name, sdk_type, arch);
+            return link_windows(objs, count, output_name, arch);
+        case TARGET_LINUX: return link_linux(objs, count, output_name, arch);
         case TARGET_MACOS: break;
     }
 

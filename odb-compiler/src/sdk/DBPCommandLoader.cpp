@@ -1,9 +1,9 @@
 #include "odb-compiler/commands/DBPCommandLoader.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/parsers/db/KeywordToken.hpp"
-#include "odb-sdk/FileSystem.hpp"
-#include "odb-sdk/Log.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/FileSystem.hpp"
+#include "odb-util/Log.hpp"
+#include "odb-util/Str.hpp"
 #include <algorithm>
 #include <odb-compiler/parsers/PluginInfo.hpp>
 #include <set>

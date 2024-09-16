@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/symbol_table.h"
-#include "odb-sdk/mem.h"
+#include "odb-util/mem.h"
 
 VEC_DEFINE_API(func_param_types_list, enum type, 8)
 
@@ -86,7 +86,7 @@ kvs_set_key(struct symbol_table_kvs* kvs, utf8_idx idx, struct utf8_view key)
 static int
 kvs_keys_equal(struct utf8_view a, struct utf8_view b)
 {
-    ODBSDK_DEBUG_ASSERT(a.data == b.data, (void)0);
+    ODBUTIL_DEBUG_ASSERT(a.data == b.data, (void)0);
     return a.off == b.off && a.len == b.len;
 }
 

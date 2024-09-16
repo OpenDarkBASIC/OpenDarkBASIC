@@ -2,7 +2,7 @@
 
 extern "C" {
 #include "odb-compiler/build_info.h"
-#include "odb-sdk/log.h"
+#include "odb-util/log.h"
 }
 
 // ----------------------------------------------------------------------------

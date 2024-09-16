@@ -3,7 +3,7 @@
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Statement.hpp"
 #include "odb-compiler/ast/Type.hpp"
-#include "odb-sdk/MaybeNull.hpp"
+#include "odb-util/MaybeNull.hpp"
 
 namespace odb::ast {
 

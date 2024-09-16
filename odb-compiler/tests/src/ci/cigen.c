@@ -895,10 +895,10 @@ gen_source(
 #endif
 
     mstream_cstr(ms, "#include <gmock/gmock.h>" NL);
-    mstream_cstr(ms, "#include \"odb-sdk/tests/Utf8Helper.hpp\"" NL NL);
+    mstream_cstr(ms, "#include \"odb-util/tests/Utf8Helper.hpp\"" NL NL);
     mstream_cstr(ms, "extern \"C\" {" NL);
-    mstream_cstr(ms, "#include \"odb-sdk/process.h\"" NL);
-    mstream_cstr(ms, "#include \"odb-sdk/utf8.h\"" NL);
+    mstream_cstr(ms, "#include \"odb-util/process.h\"" NL);
+    mstream_cstr(ms, "#include \"odb-util/utf8.h\"" NL);
     mstream_cstr(ms, "}" NL NL);
 
     mstream_fmt(ms, "#define NAME %s" NL NL, cfg->suite_name);
@@ -986,6 +986,7 @@ gen_source(
 #else
             "        cstr_ospathc(\"./odb-cli\")," NL
 #endif
+            "        empty_ospathc()," NL
             "        compile_argv," NL
             "        cstr_utf8_view(" NL
             "            \"");
@@ -1032,6 +1033,7 @@ gen_source(
 #else
             "        cstr_ospathc(\"./ci-tests/%s\")," NL
 #endif
+            "        empty_ospathc()," NL
             "        run_argv," NL
             "        empty_utf8_view()," NL
             "        &out, &err, 3000), Eq(0));" NL,
@@ -1042,7 +1044,7 @@ gen_source(
             "    ASSERT_THAT(out, Utf8Eq(%S));" NL,
             (const char*)mfout.address,
             (int)mfout.size);
-        /* odb-sdk will print out a memory report if it was built with this
+        /* odb-util will print out a memory report if it was built with this
          * enabled */
         /*mstream_cstr(ms, "    ASSERT_THAT(err, Utf8Eq(\"\"));" NL);*/
         mstream_cstr(ms, "}" NL NL);

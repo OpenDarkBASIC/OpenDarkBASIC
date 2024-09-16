@@ -8,10 +8,12 @@ extern "C" {
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/link/link.h"
 #include "odb-compiler/sdk/used_cmds.h"
-#include "odb-sdk/log.h"
+#include "odb-util/fs.h"
+#include "odb-util/log.h"
+#include "odb-util/process.h"
 }
 
-static bool             outputIsExecutable_ = true;
+static std::string      outputExe_;
 static bool             dumpIR_ = false;
 static enum target_arch arch_ = TARGET_x86_64;
 #if defined(ODBSDK_PLATFORM_LINUX)
@@ -61,6 +63,19 @@ dumpIR(const std::vector<std::string>& args)
 }
 
 // ----------------------------------------------------------------------------
+static int
+set_path_to_arch_platform_dir(struct ospath* path)
+{
+    fs_get_path_to_self(path);
+    ospath_dirname(path);
+    ospath_dirname(path);
+    ospath_dirname(path);
+    ospath_dirname(path);
+    ospath_join_cstr(path, target_arch_to_name(getTargetArch()));
+    ospath_join_cstr(path, target_platform_to_name(getTargetPlatform()));
+    return 0;
+}
+
 bool
 output(const std::vector<std::string>& args)
 {
@@ -70,53 +85,183 @@ output(const std::vector<std::string>& args)
         arch_ = TARGET_i386;
     }
 
-    log_info("[codegen] ", "Compiling {emph:%s}\n", getSourceFilename());
-    std::string outputName = args[0];
-    std::string       srcfile = getSourceFilename();
-    std::string       objfile = srcfile + ".o";
-    std::string       modname = srcfile.substr(0, srcfile.rfind("."));
-    struct ir_module* ir = ir_alloc(modname.c_str());
+    log_info("[codegen] ", "Compiling {emph:%s}\n", getSourceFilepath());
+    outputExe_ = args[0];
+
+    /* Path to the compiler's architecture/platform directory, e.g. i386/windows/ */
+    struct ospath apdir = empty_ospath();
+    set_path_to_arch_platform_dir(&apdir);
+    log_dbg("[codegen] ", "apdir: {quote:%s}\n", ospath_cstr(apdir));
+
+    /* Location for intermediate files such as object files */
+    struct ospath tmpdir = empty_ospath();
+    ospath_set_cstr(&tmpdir, outputExe_.c_str());
+    ospath_dirname(&tmpdir);
+    ospath_join_cstr(&tmpdir, "_odbtmp");
+    // TODO
+    //if (fs_dir_exists(ospathc(tmpdir)))
+    //    fs_remove_directory(ospathc(tmpdir));
+    fs_make_dir(ospathc(tmpdir));
+    log_dbg("[codegen] ", "tmpdir: {quote:%s}\n", ospath_cstr(tmpdir));
+
+    /* Directory where the compiled executable is written to */
+    struct ospath outdir = empty_ospath();
+    ospath_set_cstr(&outdir, outputExe_.c_str());
+    ospath_dirname(&outdir);
+    log_dbg("[codegen] ", "outdir: {quote:%s}\n", ospath_cstr(outdir));
+
+    /* Create a list of commands that were actually used, which get loaded by
+     * the harness */
+    struct used_cmds_hm* used_cmds_hm;
+    used_cmds_init(&used_cmds_hm);
+    used_cmds_append(&used_cmds_hm, getAST());
+    struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds_hm);
+
+    /* Harness needs to know the module name of the main DBA */
+    struct ospath maindbaname = empty_ospath();
+    ospath_set_cstr(&maindbaname, getSourceFilepath());
+    ospath_filename(&maindbaname);
+    ospath_remove_ext(&maindbaname);
+    log_dbg("[codegen] ", "maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
+    
+    log_info("[codegen] ", "Generating harness\n");
+    struct ospath harnessobj = empty_ospath();
+    ospath_set(&harnessobj, ospathc(tmpdir));
+    ospath_join_cstr(&harnessobj, "odbharness.o");
+    struct ir_module* ir = ir_alloc("odbharness");
+    ir_create_harness(
+        ir,
+        getPluginList(),
+        getCommandList(),
+        used_cmds_list,
+        ospath_cstr(maindbaname),
+        getSDKType(),
+        arch_,
+        platform_);
+    ir_compile(ir, ospath_cstr(harnessobj), arch_, platform_);
+    if (dumpIR_)
+        ir_dump(ir);
+    ir_free(ir);
+
+    cmd_ids_deinit(used_cmds_list);
+
+    struct ospath objfilepath = empty_ospath();
+    struct ospathc srcfilename = cstr_ospathc(getSourceFilepath());
+    ospathc_filename(&srcfilename);
+    ospath_set(&objfilepath, ospathc(tmpdir));
+    ospath_join(&objfilepath, srcfilename);
+    utf8_append_cstr(&objfilepath.str, ".o");
+    ir = ir_alloc(ospath_cstr(maindbaname));
     ir_translate_ast(
         ir,
         getAST(),
         getSDKType(),
         getCommandList(),
-        getSourceFilename(),
+        getSourceFilepath(),
         getSource());
     ir_optimize(ir);
+    ir_compile(ir, ospath_cstr(objfilepath), arch_, platform_);
     if (dumpIR_)
         ir_dump(ir);
-    ir_compile(ir, objfile.c_str(), arch_, platform_);
     ir_free(ir);
 
-    struct used_cmds_hm* used_cmds_hm;
-    used_cmds_init(&used_cmds_hm);
-    used_cmds_append(&used_cmds_hm, getAST());
-    struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds_hm);
-    
-    log_info("[codegen] ", "Generating runtime\n");
-    ir = ir_alloc("odbruntime");
-    ir_create_runtime(
-        ir,
-        getPluginList(),
-        getCommandList(),
-        used_cmds_list,
-        modname.c_str(),
-        getSDKType(),
-        arch_,
-        platform_);
-    if (dumpIR_)
-        ir_dump(ir);
-    ir_compile(ir, "odbruntime.o", arch_, platform_);
-    ir_free(ir);
+    struct ospath odbrt = empty_ospath();
+    if (getSDKType() == SDK_ODB)
+    {
+        ospath_set(&odbrt, ospathc(apdir));
+        switch (platform_)
+        {
+            case TARGET_WINDOWS: ospath_join_cstr(&odbrt, "odb-sdk/runtime/odb-runtime.lib"); break;
+            case TARGET_LINUX: ospath_join_cstr(&odbrt, "odb-sdk/runtime/odb-runtime.so"); break;
+            case TARGET_MACOS: ospath_join_cstr(&odbrt, "odb-sdk/runtime/odb-runtime.dylib"); break;
+        }
+    }
 
-    cmd_ids_deinit(used_cmds_list);
+    struct ospath kernel32 = empty_ospath();
+    if (platform_ == TARGET_WINDOWS)
+    {
+        ospath_set(&kernel32, ospathc(apdir));
+        ospath_join_cstr(&kernel32, "lib/kernel32.lib");
+    }
     
-    log_info("[codegen] ", "Linking {emph:%s}\n", outputName.c_str());
-    const char* objfiles[] = {objfile.c_str(), "odbruntime.o"};
-    odb_link(objfiles, 2, outputName.c_str(), getSDKType(), arch_, platform_);
+    log_info("[link] ", "Linking {emph:%s}\n", outputExe_.c_str());
+    const char* objfiles[] = {ospath_cstr(objfilepath),ospath_cstr(harnessobj), ospath_cstr(odbrt), ospath_cstr(kernel32)};
+    odb_link(objfiles, 4, outputExe_.c_str(), arch_, platform_);
+
+    ospath_dirname(&odbrt);
+    switch (platform_)
+    {
+        case TARGET_WINDOWS:
+            ospath_join_cstr(&odbrt, "odb-runtime.dll");
+            ospath_join_cstr(&outdir, "odb-runtime.dll");
+            break;
+        case TARGET_LINUX:
+            ospath_join_cstr(&odbrt, "odb-runtime.so");
+            ospath_join_cstr(&outdir, "odb-runtime.so");
+            break;
+        case TARGET_MACOS:
+            ospath_join_cstr(&odbrt, "odb-runtime.dylib");
+            ospath_join_cstr(&outdir, "odb-runtime.dylib");
+            break;
+    }
+    fs_copy_file_if_different(ospathc(odbrt), ospathc(outdir));
+    ospath_dirname(&outdir);
+    
+    ospath_set(&odbrt, ospathc(apdir));
+    switch (platform_)
+    {
+        case TARGET_WINDOWS:
+            ospath_join_cstr(&odbrt, "bin/odb-util.dll");
+            ospath_join_cstr(&outdir, "odb-util.dll");
+            break;
+        case TARGET_LINUX:
+            ospath_join_cstr(&odbrt, "bin/odb-util.so");
+            ospath_join_cstr(&outdir, "odb-util.so");
+            break;
+        case TARGET_MACOS:
+            ospath_join_cstr(&odbrt, "bin/odb-util.dylib");
+            ospath_join_cstr(&outdir, "odb-util.dylib");
+            break;
+    }
+    fs_copy_file_if_different(ospathc(odbrt), ospathc(outdir));
+    ospath_dirname(&outdir);
+    
+    // TODO
+    //fs_remove_directory(ospathc(tmpdir));
+
+    ospath_deinit(kernel32);
+    ospath_deinit(odbrt);
+    ospath_deinit(objfilepath);
+    ospath_deinit(harnessobj);
+    ospath_deinit(maindbaname);
+    ospath_deinit(outdir);
+    ospath_deinit(tmpdir);
+    ospath_deinit(apdir);
 
     return true;
+}
+
+// ----------------------------------------------------------------------------
+bool exec_output(const std::vector<std::string>& args)
+{
+    const char* argv[] = {outputExe_.c_str(), NULL};
+    struct ospath working_dir = empty_ospath();
+    struct utf8 out = empty_utf8();
+    ospath_set_cstr(&working_dir, outputExe_.c_str());
+    ospath_dirname(&working_dir);
+    log_info("[exec] ", "Executing file {quote:%s}\n", outputExe_.c_str());
+    int result = process_run(
+        cstr_ospathc(outputExe_.c_str()),
+        ospathc(working_dir),
+        argv,
+        empty_utf8_view(), &out, NULL, 0);
+    if (out.data[out.len-1] != '\n')
+        utf8_append_cstr(&out, "\n");
+    log_raw("%s", utf8_cstr(out));
+    log_info("[exec] ", "Process exited with %d\n", result);
+    ospath_deinit(working_dir);
+    utf8_deinit(out);
+    return result == 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -132,124 +277,3 @@ getTargetPlatform(void)
 {
     return platform_;
 }
-
-/*
-bool output(const std::vector<std::string>& args)
-{
-std::string outputName = args[0];
-bool outputToStdout = outputName == "-";
-
-auto* cmdIndex = getCommandIndex();
-auto* ast = getAST();
-
-// Set default target triple if they are not specified by the user.
-if (!targetTripleArch_)
-{
-    if (getSDKType() == odb::SDKType::DarkBASIC)
-    {
-        targetTripleArch_ = odb::codegen::TargetTriple::Arch::i386;
-    }
-    else
-    {
-        targetTripleArch_ = odb::codegen::TargetTriple::Arch::x86_64;
-    }
-}
-if (!targetTriplePlatform_)
-{
-    if (getSDKType() == odb::SDKType::DarkBASIC)
-    {
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
-    }
-    else
-    {
-#if defined(ODBCOMPILER_PLATFORM_LINUX)
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Linux;
-#elif defined(ODBCOMPILER_PLATFORM_MACOS)
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::macOS;
-#elif defined(ODBCOMPILER_PLATFORM_WIN32)
-        targetTriplePlatform_ = odb::codegen::TargetTriple::Platform::Windows;
-#else
-#error "Unknown host platform. Add a new default target platform for the current
-host." #endif
-    }
-}
-
-odb::codegen::TargetTriple targetTriple{*targetTripleArch_,
-*targetTriplePlatform_};
-
-// Run AST post-processing (such as type checking, label resolution, etc).
-odb::astpost::ProcessGroup post;
-post.addProcess(std::make_unique<odb::astpost::ResolveAndCheckTypes>(*cmdIndex));
-post.addProcess(std::make_unique<odb::astpost::ResolveLabels>());
-if (!post.execute(ast))
-{
-    return false;
-}
-
-// Ensure that the executable extension is .exe if Windows is the target
-platform. if (outputIsExecutable_ && targetTriplePlatform_ ==
-odb::codegen::TargetTriple::Platform::Windows)
-{
-    if (outputName.size() < 5 || outputName.substr(outputName.size() - 4, 4) !=
-".exe")
-    {
-        outputName += ".exe";
-    }
-}
-
-// Generate code.
-std::unique_ptr<std::ofstream> outputFile;
-if (!outputToStdout)
-{
-    outputFile = std::make_unique<std::ofstream>(outputName, std::ios::binary);
-    if (!outputFile->is_open())
-    {
-        odb::Log::codegen(odb::Log::ERROR, "Failed to open file `%s`\n",
-outputName.c_str()); return false;
-    }
-
-    odb::Log::codegen(odb::Log::INFO, "Creating output file: `%s`\n",
-outputName.c_str());
-}
-std::ostream& outputStream = outputToStdout ? std::cout : *outputFile;
-if (!odb::codegen::generateCode(getSDKType(), outputType_, targetTriple,
-outputStream, "input.dba", ast, *cmdIndex))
-{
-    return false;
-}
-
-// If we're generating an executable, invoke the linker.
-if (outputIsExecutable_)
-{
-    assert(outputType_ == odb::codegen::OutputType::ObjectFile);
-
-    // Select a linker. By default, we choose the locally embedded LLD linker.
-    std::filesystem::path linker =
-odb::FileSystem::getPathToSelf().parent_path() / "lld/bin"; switch
-(targetTriple.platform) { case odb::codegen::TargetTriple::Platform::Windows:
-        linker /= "lld-link";
-        break;
-    case odb::codegen::TargetTriple::Platform::macOS:
-        linker /= "ld64.lld";
-        break;
-    case odb::codegen::TargetTriple::Platform::Linux:
-        linker /= "ld.lld";
-        break;
-    }
-
-    // Above, we generated an object file and wrote it to `outputName`, even
-though it is not an executable
-    // yet. Here, we invoke the linker, which takes the above object file
-(written to `outputName`), links it, and
-    // overwrites the object file with the actual executable.
-    if (!odb::codegen::linkExecutable(getSDKType(), getSDKRootDir(), linker,
-targetTriple, {outputName}, outputName))
-    {
-        odb::Log::codegen(odb::Log::ERROR, "Failed to link executable.");
-        return false;
-    }
-}
-
-return true;
-}
-*/

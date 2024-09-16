@@ -3,10 +3,10 @@
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/parser/db_scanner.lex.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-sdk/config.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/rb.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/config.h"
+#include "odb-util/log.h"
+#include "odb-util/rb.h"
+#include "odb-util/utf8.h"
 #include <assert.h>
 
 #if defined(ODBCOMPILER_VERBOSE_BISON)
@@ -64,7 +64,7 @@ get_next_assembled_token(
     {
         token = token_queue_emplace(*tokens);
         /* Impossible to run out of memory here */
-        ODBSDK_DEBUG_ASSERT(
+        ODBUTIL_DEBUG_ASSERT(
             token != NULL,
             log_parser_err("token->pushed_char: %d\n", token->pushed_char));
         token->pushed_char

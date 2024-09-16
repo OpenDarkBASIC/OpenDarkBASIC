@@ -1,9 +1,9 @@
 #include "odb-compiler/sdk/plugin_list.h"
-#include "odb-sdk/fs.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/ospath.h"
-#include "odb-sdk/ospath_list.h"
-#include "odb-sdk/utf8_list.h"
+#include "odb-util/fs.h"
+#include "odb-util/log.h"
+#include "odb-util/ospath.h"
+#include "odb-util/ospath_list.h"
+#include "odb-util/utf8_list.h"
 
 VEC_DEFINE_API(plugin_list, struct plugin_info, 16)
 
@@ -54,7 +54,7 @@ on_plugin_entry(const char* cname, void* user)
 
             if (utf8_set(&plugin->name, ospathc_view(name)) != 0)
                 return -1;
-            utf8_remove_extension(&plugin->name);
+            utf8_remove_ext(&plugin->name);
             break;
         }
 

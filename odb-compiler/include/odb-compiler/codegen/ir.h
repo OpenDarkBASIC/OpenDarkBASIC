@@ -26,7 +26,7 @@ ir_translate_ast(
     struct db_source       source);
 
 ODBCOMPILER_PUBLIC_API int
-ir_create_runtime(
+ir_create_harness(
     struct ir_module*         ir,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,

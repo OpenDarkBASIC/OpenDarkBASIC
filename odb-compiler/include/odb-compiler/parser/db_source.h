@@ -1,8 +1,8 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-sdk/ospath.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/ospath.h"
+#include "odb-util/utf8.h"
 
 /*!
  * @brief Represents The contents of a source file.

@@ -1,7 +1,7 @@
 %{
 #include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_parser.y.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/utf8.h"
 
 #define YY_USER_ACTION                      \
     yylloc->off += yylloc->len;             \

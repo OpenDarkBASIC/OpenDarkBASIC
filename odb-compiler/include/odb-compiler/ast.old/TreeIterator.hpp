@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/ast/Node.hpp"
-#include "odb-sdk/IteratorRange.hpp"
+#include "odb-util/IteratorRange.hpp"
 
 #include <iterator>
 #include <stack>

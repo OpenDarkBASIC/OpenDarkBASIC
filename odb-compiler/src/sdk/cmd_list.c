@@ -1,6 +1,6 @@
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-sdk/utf8.h"
-#include "odb-sdk/utf8_list.h"
+#include "odb-util/utf8.h"
+#include "odb-util/utf8_list.h"
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
 VEC_DEFINE_API(return_types_list, enum type, 32)

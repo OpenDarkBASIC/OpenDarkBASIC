@@ -1,8 +1,8 @@
 #pragma once
 
 #include "odb-compiler/config.hpp"
-#include "odb-sdk/Log.hpp"
-#include "odb-sdk/RefCounted.hpp"
+#include "odb-util/Log.hpp"
+#include "odb-util/RefCounted.hpp"
 #include <istream>
 #include <vector>
 #include <memory>

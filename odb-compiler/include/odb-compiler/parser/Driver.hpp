@@ -2,7 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/parsers/db/Scanner.hpp"
-#include "odb-sdk/Reference.hpp"
+#include "odb-util/Reference.hpp"
 #include <string>
 #include <vector>
 

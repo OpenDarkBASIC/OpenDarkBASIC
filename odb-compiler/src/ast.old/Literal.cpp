@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/Literal.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/Str.hpp"
 
 // These macros get pasted into the body of toString() of each type
 #define DoubleInteger_STR "DoubleInteger: " + std::to_string(value_)

@@ -7,12 +7,11 @@
 #include "odb-cli/Codegen.hpp"
 #include "odb-cli/Log.hpp"
 #include "odb-cli/SDK.hpp"
-//#include "odb-cli/Warnings.hpp"
 #include <cstdarg>
 
 extern "C" {
-#include "odb-sdk/cli_colors.h"
-#include "odb-sdk/log.h"
+#include "odb-util/cli_colors.h"
+#include "odb-util/log.h"
 }
 
 #define ADG_FPRINTF(fp, fmt, ...) \
@@ -109,7 +108,7 @@ section sdk:
           value.
     args: <odb|dbpro>
     func: setSDKType
-    runafter: sdk-root
+    runafter: sdk-root, arch, platform
 
   plugins():
     help: Add additional directories to scan for thirdparty plugins. Note that
@@ -221,6 +220,12 @@ section codegen:
     func: output
     runafter: parser
     requires: dba
+
+  exec(e):
+    help: Execute the compiled executable if compilation is successful.
+    func: exec_output
+    runafter: output
+    requires: output
 %}
 
 %source-postamble {

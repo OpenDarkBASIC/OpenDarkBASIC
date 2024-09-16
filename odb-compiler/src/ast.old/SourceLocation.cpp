@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/Str.hpp"
 #include <fstream>
 #include <vector>
 #include <sstream>

@@ -1,7 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/hash.h"
-#include "odb-sdk/hm.h"
+#include "odb-util/hash.h"
+#include "odb-util/hm.h"
 #include <assert.h>
 
 struct ptr_kvs
@@ -143,7 +143,7 @@ semantic_check_run(
     struct db_source             source)
 {
     struct ptr_set* check_visited;
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->node_count > 0,
         log_semantic_err("node count: %d\n", ast->node_count));
 

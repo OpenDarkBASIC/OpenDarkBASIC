@@ -3,10 +3,10 @@ extern "C" {
 #include "odb-compiler/codegen/ir.h"
 #include "odb-compiler/parser/db_parser.y.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-sdk/hash.h"
-#include "odb-sdk/hm.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/mem.h"
+#include "odb-util/hash.h"
+#include "odb-util/hm.h"
+#include "odb-util/log.h"
+#include "odb-util/mem.h"
 }
 
 #include "./ir_internal.hpp"
@@ -76,7 +76,7 @@ allocamap_kvs_free(struct allocamap_kvs* kvs)
 static struct view_scope
 allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(kvs->text != NULL, (void)0);
     struct span_scope span_scope = kvs->keys->data[slot];
     struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
@@ -86,7 +86,7 @@ static int
 allocamap_kvs_set_key(
     struct allocamap_kvs* kvs, int32_t slot, struct view_scope key)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         kvs->text == NULL || kvs->text == key.view.data, (void)0);
 
     kvs->text = key.view.data;
@@ -228,9 +228,9 @@ get_command_function_signature(
     ast_id                 cmd,
     const struct cmd_list* cmds)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[cmd].info.node_type == AST_COMMAND,
-        log_sdk_err("type: %d\n", ast->nodes[cmd].info.node_type));
+        log_codegen_err("type: %d\n", ast->nodes[cmd].info.node_type));
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
@@ -290,7 +290,7 @@ create_global_command_function_table(
     return 0;
 }
 
-ODBSDK_PRINTF_FORMAT(4, 5)
+ODBUTIL_PRINTF_FORMAT(4, 5)
 static void
 log_semantic_err(
     const char*      filename,
@@ -385,7 +385,7 @@ gen_expr(
 {
     switch (ast->nodes[expr].info.node_type)
     {
-        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); return nullptr;
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return nullptr;
         case AST_BLOCK:
         case AST_END:
         case AST_ARGLIST:
@@ -415,7 +415,7 @@ gen_expr(
             /* The AST should be constructed in a way where we do not have to
              * create a default value for variables that have not yet been
              * declared */
-            ODBSDK_DEBUG_ASSERT(A != NULL, (void)0);
+            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
 
             return builder.CreateLoad(
                 (*A)->getAllocatedType(),
@@ -477,7 +477,7 @@ gen_expr(
                 case TYPE_DABEL:
                 case TYPE_ANY:
                 case TYPE_USER_DEFINED_VAR_PTR:
-                    ODBSDK_DEBUG_ASSERT(false, (void)0);
+                    ODBUTIL_DEBUG_ASSERT(false, (void)0);
                     return nullptr;
 
                 case TYPE_BOOLEAN:
@@ -830,15 +830,15 @@ gen_block(
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
-    ODBSDK_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[block].info.node_type == AST_BLOCK,
         log_codegen_err("type: %d\n", ast->nodes[block].info.node_type));
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
-        ODBSDK_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
+        ODBUTIL_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
         switch (ast->nodes[stmt].info.node_type)
         {
             case AST_COMMAND: {
@@ -871,7 +871,7 @@ gen_block(
                     cmd_func_table,
                     allocamap);
 
-                ODBSDK_DEBUG_ASSERT(
+                ODBUTIL_DEBUG_ASSERT(
                     ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER,
                     log_codegen_err(
                         "type: %d\n", ast->nodes[lhs_node].info.node_type));
@@ -883,7 +883,7 @@ gen_block(
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                 {
                     case HM_OOM: return -1;
-                    case HM_EXISTS: ODBSDK_DEBUG_ASSERT(*A, (void)0); break;
+                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*A, (void)0); break;
                     case HM_NEW:
                         *A = builder.CreateAlloca(
                             type_to_llvm(type, &ir->ctx),
@@ -1022,7 +1022,7 @@ gen_block(
             }
             break;
 
-            case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+            case AST_LOOP_FOR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
             case AST_LOOP_CONT: {
                 struct utf8_span target_name = ast->nodes[stmt].cont.name;
@@ -1045,7 +1045,7 @@ gen_block(
                             break;
                         }
                     }
-                ODBSDK_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
+                ODBUTIL_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
 
                 // When using "continue" within a for-loop, this block contains
                 // the code to run to step to the next iteration. It defaults
@@ -1054,7 +1054,7 @@ gen_block(
                 ast_id step = ast->nodes[stmt].cont.step;
                 if (step > -1)
                 {
-                    ODBSDK_DEBUG_ASSERT(
+                    ODBUTIL_DEBUG_ASSERT(
                         ast->nodes[step].info.node_type == AST_BLOCK,
                         log_semantic_err("step: %d\n", step));
                     gen_block(
@@ -1099,7 +1099,7 @@ gen_block(
                         goto loop_exit_found;
                     }
                 }
-                ODBSDK_DEBUG_ASSERT(0, (void)0);
+                ODBUTIL_DEBUG_ASSERT(0, (void)0);
             loop_exit_found:;
             }
             break;

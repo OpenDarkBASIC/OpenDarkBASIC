@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "odb-sdk/Reference.hpp"
+#include "odb-util/Reference.hpp"
 
 namespace odb {
 class PluginInfo : public RefCounted {

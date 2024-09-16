@@ -38,7 +38,7 @@
     #include "odb-compiler/parsers/db/Scanner.hpp"
     #include "odb-compiler/parsers/db/Driver.hpp"
     #include "odb-compiler/commands/Command.hpp"
-    #include "odb-sdk/Str.hpp"
+    #include "odb-util/Str.hpp"
     #include <cstdarg>
 
     #define driver (static_cast<odb::db::Driver*>(dbget_extra(scanner)))

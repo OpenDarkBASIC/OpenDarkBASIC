@@ -28,7 +28,7 @@
 #include "odb-compiler/ast/Variable.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-util/Log.hpp"
 
 #include <iostream>
 #include <unordered_map>

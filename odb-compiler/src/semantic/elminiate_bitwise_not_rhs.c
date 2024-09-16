@@ -4,7 +4,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/UnaryOp.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-util/Log.hpp"
 
 #define NO_SIDE_EFFECTS  \
     X(ArrayRef)          \

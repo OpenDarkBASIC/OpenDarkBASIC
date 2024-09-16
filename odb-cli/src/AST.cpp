@@ -8,9 +8,9 @@ extern "C" {
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/thread.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/log.h"
+#include "odb-util/thread.h"
+#include "odb-util/utf8.h"
 }
 
 struct translation_unit
@@ -69,7 +69,7 @@ open_source_files(
     return true;
 
 open_source_failed:
-    for (; i >= 0; --i)
+    while (i-- > 0)
     {
         auto& tu = (*tus)[i];
         db_source_close(&tu.source);
@@ -126,7 +126,7 @@ semantic_worker(void* arg)
     struct worker*                        worker = (struct worker*)arg;
     struct std::vector<translation_unit>& tus = *worker->tus;
 
-    for (size_t i = 0; i != worker->tus->size(); ++i)
+    for (size_t i = 0; i != tus.size(); ++i)
     {
         if (i % worker->tus->size() != worker->id)
             continue;
@@ -219,7 +219,7 @@ parseDBA(const std::vector<std::string>& args)
     {
         struct worker& worker = workers[worker_id];
         worker.thread = thread_start(semantic_worker, &worker);
-        if (worker.thread != 0)
+        if (worker.thread == NULL)
             goto start_semantic_thread_failed;
     }
     for (--worker_id; worker_id >= 0; --worker_id)
@@ -238,7 +238,7 @@ parseDBA(const std::vector<std::string>& args)
 join_semantic_thread_failed:
     --worker_id;
 start_semantic_thread_failed:
-    for (; worker_id >= 0; --worker_id)
+    while (worker_id-- > 0)
     {
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
@@ -250,7 +250,7 @@ start_semantic_thread_failed:
 join_parse_thread_failed:
     --worker_id;
 start_parse_thread_failed:
-    for (; worker_id >= 0; --worker_id)
+    while (worker_id-- > 0)
     {
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
@@ -347,7 +347,7 @@ getAST()
     return &translation_units[0].ast;
 }
 const char*
-getSourceFilename()
+getSourceFilepath()
 {
     return translation_units[0].source_filename.c_str();
 }

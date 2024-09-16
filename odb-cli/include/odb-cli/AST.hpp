@@ -16,7 +16,7 @@ bool dumpASTDOT(const std::vector<std::string>& args);
 bool dumpASTJSON(const std::vector<std::string>& args);
 
 struct ast* getAST();
-const char* getSourceFilename();
+const char* getSourceFilepath();
 struct db_source getSource();
 
 ActionHandler parseDBPro(const std::vector<std::string>& args);

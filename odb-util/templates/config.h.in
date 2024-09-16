@@ -1,0 +1,77 @@
+#pragma once
+
+/* Options ------------------------------------------------------------------ */
+
+#define ODBUTIL_${ODBUTIL_LIB_TYPE}
+#define ODBUTIL_PLATFORM_${ODBUTIL_PLATFORM}
+
+#cmakedefine ODBUTIL_DEBUG_ASSERT
+#cmakedefine ODBUTIL_BTREE_64BIT_KEYS
+#cmakedefine ODBUTIL_BTREE_64BIT_CAPACITY
+#cmakedefine ODBUTIL_HM_STATS
+#cmakedefine ODBUTIL_MEM_BACKTRACE
+#cmakedefine ODBUTIL_MEM_DEBUGGING
+#cmakedefine ODBUTIL_MEM_HEX_DUMP
+#cmakedefine ODBUTIL_TESTS
+
+#define ODBUTIL_SIZEOF_VOID_P          ${CMAKE_SIZEOF_VOID_P}
+#define ODBUTIL_BTREE_EXPAND_FACTOR    ${ODBUTIL_BTREE_EXPAND_FACTOR}
+#define ODBUTIL_BTREE_MIN_CAPACITY     ${ODBUTIL_BTREE_MIN_CAPACITY}
+#define ODBUTIL_MEM_BACKTRACE_SIZE     ${ODBUTIL_MEM_BACKTRACE_SIZE}
+#define ODBUTIL_MEM_HEX_DUMP_SIZE      ${ODBUTIL_MEM_HEX_DUMP_SIZE}
+#define ODBUTIL_THREADLOCAL            ${ODBUTIL_THREADLOCAL}
+
+/* Symbol visibility -------------------------------------------------------- */
+
+#if defined(ODBUTIL_SHARED)
+#   if defined(ODBUTIL_BUILDING)
+#       define ODBUTIL_PUBLIC_API ${ODB_API_EXPORT}
+#   else
+#       define ODBUTIL_PUBLIC_API ${ODB_API_IMPORT}
+#   endif
+#   define ODBUTIL_PRIVATE_API ${ODB_API_LOCAL}
+#else
+#   define ODBUTIL_PUBLIC_API
+#   define ODBUTIL_PRIVATE_API
+#endif
+
+/* Assertions --------------------------------------------------------------- */
+
+#if defined(__cplusplus)
+#   define ODBUTIL_STATIC_ASSERT(condition) static_assert(condition)
+#else
+#   define ODBUTIL_STATIC_ASSERT(condition) ${ODBUTIL_STATIC_ASSERT}
+#endif
+
+#if defined(ODBUTIL_DEBUG_ASSERT)
+#   undef ODBUTIL_DEBUG_ASSERT
+#   define ODBUTIL_DEBUG_ASSERT(condition, error) do {     \
+        if (!(condition)) { error; assert(condition); }   \
+    } while(0)
+#else
+#   define ODBUTIL_DEBUG_ASSERT(condition, error)
+#endif
+
+/* Version string ----------------------------------------------------------- */
+
+#define ODBUTIL_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
+#define ODBUTIL_VERSION_MINOR ${PROJECT_VERSION_MINOR}
+#define ODBUTIL_VERSION_PATCH ${PROJECT_VERSION_PATCH}
+#define ODBUTIL_VERSION \
+    ((ODBUTIL_VERSION_MAJOR << 16) | (ODBUTIL_VERSION_MINOR << 8) | ODBUTIL_VERSION_PATCH)
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#define ODBUTIL_VERSION_STR \
+    STRINGIFY(ODBUTIL_VERSION_MAJOR) "." STRINGIFY(ODBUTIL_VERSION_MINOR) "." STRINGIFY(ODBUTIL_VERSION_PATCH)
+#undef STRINGIFY
+#undef STRINGIFY_
+
+/* printf formatting -------------------------------------------------------- */
+
+#if defined(__GNUC__) || defined(__clang__)
+#   define ODBUTIL_PRINTF_FORMAT(string_index, first_to_check) \
+        __attribute__((format(printf, string_index, first_to_check)))
+#else
+#   define ODBUTIL_PRINTF_FORMAT(fmt, params)
+#endif
+

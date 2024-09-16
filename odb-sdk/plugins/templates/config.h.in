@@ -1,0 +1,40 @@
+#pragma once
+
+#define ODBPLUGIN_VERSION_MAJOR ${PROJECT_VERSION_MAJOR}
+#define ODBPLUGIN_VERSION_MINOR ${PROJECT_VERSION_MINOR}
+#define ODBPLUGIN_VERSION_PATCH ${PROJECT_VERSION_PATCH}
+#define ODBPLUGIN_VERSION \
+    ((ODBPLUGIN_VERSION_MAJOR << 16) | (ODBPLUGIN_VERSION_MINOR << 8) | ODBPLUGIN_VERSION_PATCH)
+#define STRINGIFY_(x) #x
+#define STRINGIFY(x) STRINGIFY_(x)
+#define ODBPLUGIN_VERSION_STR \
+    STRINGIFY(ODBPLUGIN_VERSION_MAJOR) "." STRINGIFY(ODBPLUGIN_VERSION_MINOR) "." STRINGIFY(ODBPLUGIN_VERSION_PATCH)
+#undef STRINGIFY_    
+#undef STRINGIFY
+
+#define ODBPLUGIN_API ${ODB_API_EXPORT}
+
+#if defined(__cplusplus)
+#   define ODBPLUGIN_EXTERN_C extern "C"
+#else
+#   define ODBPLUGIN_EXTERN_C
+#endif
+
+#define ODB_COMMAND0(ret_type, symbol, NAME, BRIEF, DESCRIPTION, RETURNS, EXAMPLE, SEE_ALSO) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(void)
+#define ODB_COMMAND1(ret_type, symbol, arg1, NAME, BRIEF, DESCRIPTION, PARAM1, RETURNS, EXAMPLE, SEE_ALSO) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1)
+#define ODB_COMMAND2(ret_type, symbol, arg1, arg2, NAME, BRIEF, DESCRIPTION, PARAM1, PARAM2, RETURNS, EXAMPLE, SEE_ALSO) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2)
+#define ODB_COMMAND3(ret_type, symbol, arg1, arg2, arg3, NAME, BRIEF, DESCRIPTION, PARAM1, PARAM2, PARAM3, RETURNS, EXAMPLE, SEE_ALSO) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
+
+#define ODB_OVERLOAD0(ret_type, symbol, NAME) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(void)
+#define ODB_OVERLOAD1(ret_type, symbol, arg1, NAME) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1)
+#define ODB_OVERLOAD2(ret_type, symbol, arg1, arg2) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2)
+#define ODB_OVERLOAD3(ret_type, symbol, arg1, arg2, arg3) \
+    ODBPLUGIN_EXTERN_C ODBPLUGIN_API ret_type symbol(arg1, arg2, arg3)
+

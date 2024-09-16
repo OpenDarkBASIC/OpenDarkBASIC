@@ -1,6 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
-#include "odb-sdk/tests/LogHelper.hpp"
-#include "odb-sdk/tests/Utf8Helper.hpp"
+#include "odb-util/tests/LogHelper.hpp"
+#include "odb-util/tests/Utf8Helper.hpp"
 
 #include <gmock/gmock.h>
 extern "C" {

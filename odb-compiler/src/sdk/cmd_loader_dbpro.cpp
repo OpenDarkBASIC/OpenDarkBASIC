@@ -2,7 +2,7 @@ extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/type.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/utf8.h"
 }
 
 #include "LIEF/PE.hpp"

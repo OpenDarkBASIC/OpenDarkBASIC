@@ -1,5 +1,5 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
-#include "odb-sdk/tests/LogHelper.hpp"
+#include "odb-util/tests/LogHelper.hpp"
 
 #include "gmock/gmock.h"
 

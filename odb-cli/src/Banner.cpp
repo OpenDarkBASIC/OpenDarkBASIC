@@ -2,8 +2,8 @@
 
 extern "C" {
 #include "odb-compiler/build_info.h"
-#include "odb-sdk/cli_colors.h"
-#include "odb-sdk/log.h"
+#include "odb-util/cli_colors.h"
+#include "odb-util/log.h"
 }
 
 #define PYRAMID_LEFT   FG_YELLOW

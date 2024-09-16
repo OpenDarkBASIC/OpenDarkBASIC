@@ -1,8 +1,8 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_source.h"
-#include "odb-sdk/config.h"
-#include "odb-sdk/log.h"
+#include "odb-util/config.h"
+#include "odb-util/log.h"
 #include <assert.h>
 
 void
@@ -47,7 +47,7 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
 void
 ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type,
         log_parser_err(
             "n1: %d, n2: %d\n",
@@ -63,7 +63,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 
     switch (ast->nodes[n1].info.node_type)
     {
-        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
         case AST_END: break;
         case AST_ARGLIST: break;
@@ -112,8 +112,8 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 int
 ast_dup_lvalue(struct ast* ast, int lvalue)
 {
-    ODBSDK_DEBUG_ASSERT(lvalue > -1, log_parser_err("lvalue: %d\n", lvalue));
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(lvalue > -1, log_parser_err("lvalue: %d\n", lvalue));
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
         log_parser_err("type: %d\n", ast->nodes[lvalue].info.node_type));
 
@@ -136,7 +136,7 @@ ast_find_parent(const struct ast* ast, int node)
 void
 ast_delete_node(struct ast* ast, int node)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, node) == -1,
         log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
     ast->nodes[node].info.node_type = AST_GC;
@@ -158,7 +158,7 @@ delete_tree_recurse(struct ast* ast, int node)
 void
 ast_delete_tree(struct ast* ast, int node)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, node) == -1,
         log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
     delete_tree_recurse(ast, node);
@@ -210,7 +210,7 @@ ast_trees_equal(
 
     switch (ast->nodes[n1].info.node_type)
     {
-        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0);
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;
         case AST_END: break;
         case AST_ARGLIST: break;

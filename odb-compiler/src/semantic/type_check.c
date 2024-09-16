@@ -2,12 +2,12 @@
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/config.h"
-#include "odb-sdk/hash.h"
-#include "odb-sdk/hm.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/utf8.h"
-#include "odb-sdk/vec.h"
+#include "odb-util/config.h"
+#include "odb-util/hash.h"
+#include "odb-util/hm.h"
+#include "odb-util/log.h"
+#include "odb-util/utf8.h"
+#include "odb-util/vec.h"
 #include <assert.h>
 
 struct span_scope
@@ -69,7 +69,7 @@ typemap_kvs_free(struct typemap_kvs* kvs)
 static struct view_scope
 typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
 {
-    ODBSDK_DEBUG_ASSERT(kvs->text != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(kvs->text != NULL, (void)0);
     struct span_scope span_scope = kvs->keys->data[slot];
     struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
@@ -79,7 +79,7 @@ static int
 typemap_kvs_set_key(
     struct typemap_kvs* kvs, int32_t slot, struct view_scope key)
 {
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         kvs->text == NULL || kvs->text == key.view.data, (void)0);
 
     kvs->text = key.view.data;
@@ -209,7 +209,7 @@ cast_expr_to_boolean(
             {
                 case TYPE_INVALID:
                 case TYPE_VOID:
-                case TYPE_BOOLEAN: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+                case TYPE_BOOLEAN: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
                 case TYPE_DOUBLE_INTEGER: /* fallthrough */
                 case TYPE_DWORD:          /* fallthrough */
@@ -226,7 +226,7 @@ cast_expr_to_boolean(
                 case TYPE_DABEL:
                 case TYPE_ANY:
                 case TYPE_USER_DEFINED_VAR_PTR:
-                    ODBSDK_DEBUG_ASSERT(0, (void)0);
+                    ODBUTIL_DEBUG_ASSERT(0, (void)0);
                     break;
             }
         }
@@ -261,7 +261,7 @@ cast_expr_to_boolean(
 
         case TP_TRUNCATE:
         case TP_INT_TO_FLOAT:
-        case TP_BOOL_PROMOTION: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case TP_BOOL_PROMOTION: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
     }
 
     return -1;
@@ -270,12 +270,12 @@ cast_expr_to_boolean(
 static enum type
 resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 {
-    ODBSDK_DEBUG_ASSERT(n > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(n > -1, (void)0);
 
     /* Nodes that don't return a value should be marked as TYPE_VOID */
     switch (ctx->ast->nodes[n].info.node_type)
     {
-        case AST_GC: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_BLOCK: {
             ast_id block;
             for (block = n; block > -1;
@@ -338,7 +338,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 {
                     int    gutter;
                     ast_id orig_node = lhs_type->original_declaration;
-                    ODBSDK_DEBUG_ASSERT(
+                    ODBUTIL_DEBUG_ASSERT(
                         ctx->ast->nodes[orig_node].info.node_type
                             == AST_IDENTIFIER,
                         log_semantic_err(
@@ -550,7 +550,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         case TYPE_DABEL:
                         case TYPE_ANY:
                         case TYPE_USER_DEFINED_VAR_PTR:
-                            ODBSDK_DEBUG_ASSERT(0, (void)0);
+                            ODBUTIL_DEBUG_ASSERT(0, (void)0);
                             break;
                     }
 
@@ -665,7 +665,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             ast_id expr = ctx->ast->nodes[n].cond.expr;
             ast_id cond_branch = ctx->ast->nodes[n].cond.cond_branch;
 
-            ODBSDK_DEBUG_ASSERT(
+            ODBUTIL_DEBUG_ASSERT(
                 ctx->ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
                 log_semantic_err(
                     "type: %d\n", ctx->ast->nodes[cond_branch].info.node_type));
@@ -700,12 +700,12 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_VOID;
         }
         break;
-        case AST_COND_BRANCH: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_LOOP: {
             ast_id body = ctx->ast->nodes[n].loop.body;
             ast_id step = ctx->ast->nodes[n].loop.post_body;
-            ODBSDK_DEBUG_ASSERT(
+            ODBUTIL_DEBUG_ASSERT(
                 ctx->ast->nodes[n].loop.loop_for == -1,
                 log_semantic_err(
                     "loop_for: %d\n", ctx->ast->nodes[n].loop.loop_for));
@@ -724,7 +724,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
         }
 
-        case AST_LOOP_FOR: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case AST_LOOP_FOR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_LOOP_CONT: {
             ast_id step = ctx->ast->nodes[n].cont.step;
             if (step > -1
@@ -744,14 +744,14 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             decl = ctx->ast->nodes[n].func.decl;
             def = ctx->ast->nodes[n].func.def;
-            ODBSDK_DEBUG_ASSERT(decl > -1, (void)0);
-            ODBSDK_DEBUG_ASSERT(def > -1, (void)0);
+            ODBUTIL_DEBUG_ASSERT(decl > -1, (void)0);
+            ODBUTIL_DEBUG_ASSERT(def > -1, (void)0);
 
             identifier = ctx->ast->nodes[decl].func_decl.identifier;
             paramlist = ctx->ast->nodes[decl].func_decl.paramlist;
             body = ctx->ast->nodes[def].func_def.body;
             ret = ctx->ast->nodes[def].func_def.retval;
-            ODBSDK_DEBUG_ASSERT(identifier > -1, (void)0);
+            ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
 
             ident_type = type_annotation_to_type(
                 ctx->ast->nodes[identifier].identifier.annotation);
@@ -787,7 +787,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         }
         break;
         case AST_FUNC_DECL:
-        case AST_FUNC_DEF: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+        case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_FUNC_CALL_UNRESOLVED: break;
         case AST_FUNC_CALL: break;
@@ -896,7 +896,7 @@ type_check(
      * variables, because they will be processed in the same order the data
      * flows.
      */
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[0].info.node_type == AST_BLOCK,
         log_semantic_err("type: %d\n", ast->nodes[0].info.node_type));
     if (resolve_node_type(&ctx, 0, 0) == TYPE_INVALID)

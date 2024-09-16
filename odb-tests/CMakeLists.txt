@@ -2,7 +2,7 @@ project (odb-tests
     LANGUAGES CXX)
 
 add_executable (odb-tests
-    "src/env_odbsdk_init.cpp"
+    "src/env_odbutil_init.cpp"
     "src/main.cpp")
 target_link_libraries (odb-tests
     PRIVATE
@@ -10,6 +10,9 @@ target_link_libraries (odb-tests
 target_compile_options (odb-tests
     PRIVATE
         $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
+target_compile_definitions (odb-tests
+    PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>)
 include (ODBTargetProperties)
 odb_target_properties (odb-tests
     PROPERTIES

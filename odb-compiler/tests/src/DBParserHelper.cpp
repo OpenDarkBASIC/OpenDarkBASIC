@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/utf8.h"
 }
 
 DBParserHelper::DBParserHelper()

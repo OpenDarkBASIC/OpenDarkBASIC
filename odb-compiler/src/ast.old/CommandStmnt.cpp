@@ -5,7 +5,7 @@
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/Str.hpp"
 
 namespace odb::ast {
 

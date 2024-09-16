@@ -2,9 +2,9 @@
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/parsers/PluginInfo.hpp"
-#include "odb-sdk/FileSystem.hpp"
-#include "odb-sdk/Log.hpp"
-#include "odb-sdk/Reference.hpp"
+#include "odb-util/FileSystem.hpp"
+#include "odb-util/Log.hpp"
+#include "odb-util/Reference.hpp"
 #include <filesystem>
 #include <unordered_set>
 

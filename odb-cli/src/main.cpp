@@ -4,7 +4,7 @@
 #include "odb-cli/SDK.hpp"
 
 extern "C" {
-#include "odb-sdk/init.h"
+#include "odb-util/init.h"
 }
 
 // ----------------------------------------------------------------------------
@@ -13,7 +13,7 @@ main(int argc, char** argv)
 {
     bool success = false;
 
-    if (odbsdk_init() != 0)
+    if (odbutil_init() != 0)
         goto odbsdk_init_failed;
 
     initSDK();
@@ -26,7 +26,7 @@ main(int argc, char** argv)
     deinitCommands();
     deinitSDK();
 
-    odbsdk_deinit();
+    odbutil_deinit();
 
 odbsdk_init_failed:
     return success ? 0 : -1;

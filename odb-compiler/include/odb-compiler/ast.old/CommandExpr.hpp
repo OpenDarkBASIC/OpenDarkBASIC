@@ -2,7 +2,7 @@
 
 #include "odb-compiler/config.hpp"
 #include "odb-compiler/ast/Expression.hpp"
-#include "odb-sdk/MaybeNull.hpp"
+#include "odb-util/MaybeNull.hpp"
 #include <string>
 
 namespace odb::cmd {

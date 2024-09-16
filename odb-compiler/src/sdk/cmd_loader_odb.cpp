@@ -1,7 +1,7 @@
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
-#include "odb-sdk/log.h"
+#include "odb-util/log.h"
 }
 
 #include "LIEF/Abstract/Binary.hpp"

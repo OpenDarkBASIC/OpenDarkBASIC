@@ -1,7 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-sdk/ospath.h"
+#include "odb-util/ospath.h"
 
 struct ast;
 struct db_source;

@@ -1,7 +1,7 @@
 #include "odb-compiler/commands/CommandIndex.hpp"
 #include "odb-compiler/parsers/PluginInfo.hpp"
-#include "odb-sdk/Log.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/Log.hpp"
+#include "odb-util/Str.hpp"
 
 #include <algorithm>
 #include <cstdio>

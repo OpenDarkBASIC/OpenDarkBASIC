@@ -10,7 +10,7 @@
 #include "odb-compiler/ast/UDTField.hpp"
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-util/Log.hpp"
 
 namespace odb::astpost {
 

@@ -6,7 +6,7 @@
 #include "odb-compiler/ast/Subroutine.hpp"
 #include "odb-compiler/ast/TreeIterator.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-util/Log.hpp"
 
 #include <unordered_map>
 

@@ -1,8 +1,8 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/log.h"
+#include "odb-util/utf8.h"
 
 static int
 log_exit_error(
@@ -56,8 +56,8 @@ check_exit(
     const char*      source_filename,
     struct db_source source)
 {
-    ODBSDK_DEBUG_ASSERT(exit > -1, (void)0);
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[exit].info.node_type == AST_LOOP_EXIT,
         log_semantic_err("type: %d\n", ast->nodes[exit].info.node_type));
 

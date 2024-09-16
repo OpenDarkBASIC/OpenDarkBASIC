@@ -2,8 +2,8 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/vec.h"
+#include "odb-util/log.h"
+#include "odb-util/vec.h"
 #include <assert.h>
 
 VEC_DECLARE_API(static, candidates, cmd_id, 8)
@@ -283,14 +283,14 @@ typecheck_warnings(
     ast_id                         arglist = ast->nodes[cmd_node].cmd.arglist;
     const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[cmd_node].info.node_type == AST_COMMAND,
         log_semantic_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
 
     for (i = 0; i != params->count;
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
-        ODBSDK_DEBUG_ASSERT(
+        ODBUTIL_DEBUG_ASSERT(
             ast->nodes[arglist].info.node_type == AST_ARGLIST,
             log_semantic_err("type: %d\n", ast->nodes[arglist].info.node_type));
         int       gutter;
@@ -300,7 +300,7 @@ typecheck_warnings(
 
         switch (type_promote(arg_type, param_type))
         {
-            case TP_DISALLOW: ODBSDK_DEBUG_ASSERT(0, (void)0); break;
+            case TP_DISALLOW: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
             case TP_ALLOW: break;
 
             case TP_TRUNCATE:

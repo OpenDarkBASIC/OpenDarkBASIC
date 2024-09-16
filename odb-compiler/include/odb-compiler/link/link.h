@@ -8,6 +8,5 @@ ODBCOMPILER_PUBLIC_API int
 odb_link(
     const char* objs[], int count,
     const char* output_name,
-    enum sdk_type sdk_type,
     enum target_arch arch,
     enum target_platform platform);

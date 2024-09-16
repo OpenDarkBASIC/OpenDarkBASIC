@@ -1,6 +1,6 @@
 #include "odb-compiler/parser/db_source.h"
-#include "odb-sdk/mfile.h"
-#include "odb-sdk/mstream.h"
+#include "odb-util/mfile.h"
+#include "odb-util/mstream.h"
 #include <stdio.h>
 
 int

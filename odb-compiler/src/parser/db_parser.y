@@ -7,7 +7,7 @@
     #define YYSTYPE DBSTYPE
     #define YYLTYPE DBLTYPE
 
-    #include "odb-sdk/utf8.h"  /* %union contains struct utf8_span */
+    #include "odb-util/utf8.h"  /* %union contains struct utf8_span */
     #include "odb-compiler/sdk/cmd_list.h"  /* %union contains cmd_id */
     #include "odb-compiler/ast/ast.h"  /* %union contains ast_id */
     #include "odb-compiler/parser/db_source.h"

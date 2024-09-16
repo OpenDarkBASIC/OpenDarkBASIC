@@ -28,14 +28,10 @@ option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
 option (ODBCOMPILER_TESTS "Build unit tests" ON)
 
-test_visibility_macros (
-    ODBCOMPILER_API_EXPORT
-    ODBCOMPILER_API_IMPORT
-    ODBCOMPILER_API_LOCAL)
-
 check_include_file ("unistd.h" HAVE_UNISTD_H)
 
-string (TOUPPER ${CMAKE_SYSTEM_NAME} ODBCOMPILER_PLATFORM)
+# For platform variable we use the parent scope ODB_PLATFORM, but it is lower case
+string (TOUPPER ${ODB_PLATFORM} ODBCOMPILER_PLATFORM)
 
 configure_file ("templates/config.h.in" "include/odb-compiler/config.h")
 
@@ -227,8 +223,8 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/codegen/ir_internal.hpp"
     "src/codegen/ir.cpp"
     "src/codegen/ir_compile.cpp"
+    "src/codegen/ir_harness.cpp"
     "src/codegen/ir_optimize.cpp"
-    "src/codegen/ir_runtime.cpp"
     #"src/codegen/internal/CodeGenerator.cpp"
     #"src/codegen/internal/ODBEngineInterface.cpp"
     #"src/codegen/internal/DBPEngineInterface.cpp"
@@ -244,7 +240,8 @@ target_include_directories (odb-compiler
     #    $<BUILD_INTERFACE:$<$<AND:$<PLATFORM_ID:Windows>,$<NOT:$<BOOL:${HAVE_UNISTD_H}>>>:${PROJECT_SOURCE_DIR}/include/win32_unistd>>)
 target_compile_definitions (odb-compiler
     PRIVATE
-        ODBCOMPILER_BUILDING)
+        ODBCOMPILER_BUILDING
+        $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>)
 target_compile_options (odb-compiler
     PRIVATE
         $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
@@ -255,7 +252,7 @@ target_compile_options (odb-compiler
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
 target_link_libraries (odb-compiler
     PUBLIC
-        odb-sdk)
+        odb-util)
 include (ODBTargetProperties)
 odb_target_properties (odb-compiler
     PROPERTIES
@@ -311,6 +308,36 @@ target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 #set_property (TARGET reproc++ PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 #target_link_libraries (odb-compiler PRIVATE reproc++)
+
+# On Windows, we have to link the generated executables to kernel32.lib
+if (WIN32)
+    if (NOT WINDOWS_KIT_DIR)
+        get_filename_component (WINDOWS_KITS_DIR "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Microsoft SDKs\\Windows\\v10.0;InstallationFolder]" ABSOLUTE CACHE)
+        if ("${WINDOWS_KITS_DIR}" STREQUAL "/registry")
+            message (FATAL_ERROR "Unable to find installed Windows SDK")
+        endif()
+
+        file (GLOB WINDOWS_KITS_VERSIONS RELATIVE "${WINDOWS_KITS_DIR}/Lib" "${WINDOWS_KITS_DIR}/Lib/*")
+        list (FILTER WINDOWS_KITS_VERSIONS INCLUDE REGEX "10\\.0\\.")
+        list (SORT WINDOWS_KITS_VERSIONS COMPARE NATURAL ORDER DESCENDING)
+        list (POP_FRONT WINDOWS_KITS_VERSIONS WINDOWS_KIT_VERSION)
+        set (WINDOWS_KIT_DIR "${WINDOWS_KITS_DIR}/Lib/${WINDOWS_KIT_VERSION}" CACHE STRING "Path to the Windows Kit")
+    endif ()
+    
+    if (ODB_ARCH MATCHES "i386")
+        set (ARCH "x86")
+    elseif (ODB_ARCH MATCHES "x86_64")
+        set (ARCH "x64")
+    else ()
+        message (FATAL_ERROR "Failed to map ODB_ARCH to a Windows architecture")
+    endif ()
+
+    add_custom_command (TARGET odb-compiler POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ODB_BUILD_PREFIX}/i386/windows/lib/"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${ODB_BUILD_PREFIX}/x86_64/windows/lib/"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${WINDOWS_KIT_DIR}/um/x86/kernel32.Lib" "${ODB_BUILD_PREFIX}/i386/windows/lib/kernel32.lib"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${WINDOWS_KIT_DIR}/um/x64/kernel32.Lib" "${ODB_BUILD_PREFIX}/x86_64/windows/lib/kernel32.lib")
+endif()
 
 ###############################################################################
 # LLVM and LLD

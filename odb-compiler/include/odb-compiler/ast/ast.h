@@ -4,7 +4,7 @@
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/utf8.h"
 
 /*!
  * @brief All of the DarkBASIC operators that can exist

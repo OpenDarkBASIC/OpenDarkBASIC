@@ -5,7 +5,7 @@
 static int
 get_loop_var(const struct ast* ast, ast_id loop)
 {
-    ODBSDK_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
     ast_id post = ast->nodes[loop].loop.post_body;
     ast_id step_stmt = ast->nodes[post].block.stmt;
     return ast->nodes[step_stmt].assignment.lvalue;
@@ -26,7 +26,7 @@ create_step_block(struct ast* ast, ast_id loop, ast_id cont)
     }
     else
     {
-        ODBSDK_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
+        ODBUTIL_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
         ast->nodes[cont].cont.step = ast->nodes[loop].loop.post_body;
     }
 }
@@ -83,8 +83,8 @@ check_cont(
     const char*      source_filename,
     struct db_source source)
 {
-    ODBSDK_DEBUG_ASSERT(cont > -1, (void)0);
-    ODBSDK_DEBUG_ASSERT(
+    ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
         ast->nodes[cont].info.node_type == AST_LOOP_CONT,
         log_semantic_err("type: %d\n", ast->nodes[cont].info.node_type));
 

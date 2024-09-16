@@ -1,9 +1,9 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/sdk/used_cmds.h"
-#include "odb-sdk/hash.h"
-#include "odb-sdk/hm.h"
-#include "odb-sdk/utf8.h"
-#include "odb-sdk/vec.h"
+#include "odb-util/hash.h"
+#include "odb-util/hm.h"
+#include "odb-util/utf8.h"
+#include "odb-util/vec.h"
 
 VEC_DECLARE_API(static, spanlist, struct utf8_span, 32)
 VEC_DEFINE_API(spanlist, struct utf8_span, 32)

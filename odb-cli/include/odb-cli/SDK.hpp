@@ -5,7 +5,7 @@
 
 extern "C" {
 #include "odb-compiler/sdk/sdk_type.h"
-#include "odb-sdk/ospath.h"
+#include "odb-util/ospath.h"
 }
 
 void initSDK(void);

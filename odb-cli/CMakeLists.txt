@@ -35,8 +35,11 @@ target_include_directories (odb-cli
         $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>)
 target_link_libraries (odb-cli
     PRIVATE
-        odb-sdk
+        odb-util
         odb-compiler)
+target_compile_definitions (odb-cli
+    PRIVATE 
+        $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>)
 include (ODBTargetProperties)
 odb_target_properties (odb-cli
     PROPERTIES

@@ -3,7 +3,7 @@
 #include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-sdk/hm.h"
+#include "odb-util/hm.h"
 
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, func_param_types_list, enum type, 8)
 

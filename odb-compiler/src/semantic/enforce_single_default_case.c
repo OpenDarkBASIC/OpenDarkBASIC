@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/SelectCase.hpp"
 #include "odb-compiler/ast/SourceLocation.hpp"
 #include "odb-compiler/astpost/EnforceSingleDefaultCase.hpp"
-#include "odb-sdk/Log.hpp"
+#include "odb-util/Log.hpp"
 
 namespace odb::astpost {
 

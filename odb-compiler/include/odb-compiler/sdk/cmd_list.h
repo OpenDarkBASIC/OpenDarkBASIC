@@ -3,8 +3,8 @@
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/type.h"
-#include "odb-sdk/utf8_list.h"
-#include "odb-sdk/vec.h"
+#include "odb-util/utf8_list.h"
+#include "odb-util/vec.h"
 
 struct plugin_list;
 typedef int32_t cmd_id;
@@ -25,7 +25,7 @@ struct cmd_param
 };
 
 /* clang-format off */
-ODBSDK_STATIC_ASSERT(sizeof(plugin_id) == 2);
+ODBUTIL_STATIC_ASSERT(sizeof(plugin_id) == 2);
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, plugin_ids, plugin_id, 16)
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, return_types_list, enum type, 32)
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, cmd_param_types_list, struct cmd_param, 8)

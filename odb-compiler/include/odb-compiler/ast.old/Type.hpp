@@ -7,7 +7,7 @@
 #include "odb-compiler/ast/Annotation.hpp"
 #include "odb-compiler/commands/Command.hpp"
 #include "odb-compiler/config.hpp"
-#include "odb-sdk/Reference.hpp"
+#include "odb-util/Reference.hpp"
 
 /*!
  * @brief All of the DarkBASIC primitive types that can exist and what types

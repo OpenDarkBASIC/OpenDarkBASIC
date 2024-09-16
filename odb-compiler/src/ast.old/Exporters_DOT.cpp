@@ -36,7 +36,7 @@
 #include "odb-compiler/ast/VarRef.hpp"
 #include "odb-compiler/ast/Visitor.hpp"
 #include "odb-compiler/commands/Command.hpp"
-#include "odb-sdk/Str.hpp"
+#include "odb-util/Str.hpp"
 #include <unordered_map>
 
 namespace odb::ast {

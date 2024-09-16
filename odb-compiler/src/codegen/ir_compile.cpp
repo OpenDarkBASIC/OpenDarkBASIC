@@ -11,6 +11,7 @@
 
 extern "C" {
 #include "odb-compiler/codegen/ir.h"
+#include "odb-util/log.h"
 }
 
 int
@@ -35,8 +36,7 @@ ir_compile(
     llvm::InitializeAllAsmPrinters();
 
     std::string Error;
-    auto        TargetTriple = llvm::sys::getDefaultTargetTriple();
-    TargetTriple = target_triples[platform][arch];
+    auto TargetTriple = target_triples[platform][arch];
     auto Target = llvm::TargetRegistry::lookupTarget(TargetTriple, Error);
 
     // Print an error and exit if we couldn't find the requested target.
@@ -54,6 +54,8 @@ ir_compile(
     auto                TargetMachine = Target->createTargetMachine(
         TargetTriple, CPU, Features, opt, llvm::Reloc::Static);
 
+    log_dbg("[codegen] ", "triple: %s, CPU: %s, features: %s\n", target_triples[platform][arch], CPU, Features);
+
     ir->mod.setDataLayout(TargetMachine->createDataLayout());
     ir->mod.setTargetTriple(TargetTriple);
 
@@ -61,7 +63,7 @@ ir_compile(
     llvm::raw_fd_ostream dest(filepath, EC, llvm::sys::fs::OF_None);
     if (EC)
     {
-        llvm::errs() << "Could not open file: " << EC.message();
+        llvm::errs() << "Could not open file: " << EC.message() << "\n";
         return -1;
     }
 
@@ -69,7 +71,7 @@ ir_compile(
     auto                      FileType = llvm::CodeGenFileType::ObjectFile;
     if (TargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType))
     {
-        llvm::errs() << "TargetMachine can't emit a file of this type";
+        llvm::errs() << "TargetMachine can't emit a file of this type\n";
         return -1;
     }
 

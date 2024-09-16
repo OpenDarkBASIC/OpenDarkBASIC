@@ -1,9 +1,9 @@
 #include "odb-compiler/sdk/cmd_cache.h"
-#include "odb-sdk/fs.h"
-#include "odb-sdk/log.h"
-#include "odb-sdk/mfile.h"
-#include "odb-sdk/mstream.h"
-#include "odb-sdk/utf8.h"
+#include "odb-util/fs.h"
+#include "odb-util/log.h"
+#include "odb-util/mfile.h"
+#include "odb-util/mstream.h"
+#include "odb-util/utf8.h"
 
 #define VERSION 0
 
@@ -69,7 +69,7 @@ cmd_cache_load(
 
         uint64_t       cached_stamp = mstream_read_lu64(&ms);
         struct ospathc cached_path = mstream_read_ospath(&ms);
-        uint64_t       stamp = fs_mtime_ms(cached_path);
+        uint64_t       stamp = fs_mtime_ms(cached_path, 1);
 
         /* Map to invalid plugin by default. Don't forget this, resize() does
          * NOT initialize values in the vector! */
@@ -112,7 +112,7 @@ cmd_cache_load(
             continue;
         }
 
-        ODBSDK_DEBUG_ASSERT(
+        ODBUTIL_DEBUG_ASSERT(
             cached_plugin_id >= 0
                 && cached_plugin_id < cached_plugin_map->count,
             log_cmd_err("plugin_id: %d\n", cached_plugin_id));
@@ -199,7 +199,7 @@ cmd_cache_save(
     {
         /* Timestamps of plugins, so next time we know if the plugin has to be
          * parsed again or not */
-        uint64_t stamp = fs_mtime_ms(ospathc(plugin->filepath));
+        uint64_t stamp = fs_mtime_ms(ospathc(plugin->filepath), 1);
 
         mstream_write_lu64(&ms, stamp);
         mstream_write_ospath(&ms, plugin->filepath);
