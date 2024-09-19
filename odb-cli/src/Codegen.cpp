@@ -22,6 +22,7 @@ static enum target_platform platform_ = TARGET_LINUX;
 #else
 static enum target_platform platform_ = TARGET_WINDOWS;
 #endif
+static bool optimize_ = false;
 
 // ----------------------------------------------------------------------------
 bool
@@ -161,7 +162,8 @@ output(const std::vector<std::string>& args)
         getCommandList(),
         getSourceFilepath(),
         getSource());
-    ir_optimize(ir);
+    if (optimize_)
+        ir_optimize(ir);
     ir_compile(ir, ospath_cstr(objfilepath), arch_, platform_);
     if (dumpIR_)
         ir_dump(ir);
@@ -348,6 +350,13 @@ start_process_failed:
     ospath_deinit(working_dir);
 set_working_dir_failed:
     return false;
+}
+
+// ----------------------------------------------------------------------------
+bool set_optimization_level(const std::vector<std::string>& args)
+{
+    optimize_ = true;
+    return true;
 }
 
 // ----------------------------------------------------------------------------

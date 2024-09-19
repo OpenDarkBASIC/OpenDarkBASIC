@@ -10,38 +10,44 @@
 #include "llvm/Transforms/Utils/Mem2Reg.h"
 
 int
-ir_optimize(struct ir_module* mod)
+ir_optimize(struct ir_module* ir)
 {
-    auto FPM = std::make_unique<llvm::FunctionPassManager>();
-    auto LAM = std::make_unique<llvm::LoopAnalysisManager>();
-    auto FAM = std::make_unique<llvm::FunctionAnalysisManager>();
-    auto CGAM = std::make_unique<llvm::CGSCCAnalysisManager>();
-    auto MAM = std::make_unique<llvm::ModuleAnalysisManager>();
-    auto PIC = std::make_unique<llvm::PassInstrumentationCallbacks>();
-    auto SI = std::make_unique<llvm::StandardInstrumentations>(
-        mod->ctx, /*DebugLogging*/ true);
+    // Create the analysis managers.
+    // These must be declared in this order so that they are destroyed in the
+    // correct order due to inter-analysis-manager references.
+    llvm::LoopAnalysisManager LAM;
+    llvm::FunctionPassManager FPM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::CGSCCAnalysisManager CGAM;
+    llvm::ModuleAnalysisManager MAM;
+    llvm::ModulePassManager MPM;
 
-    SI->registerCallbacks(*PIC, MAM.get());
+    llvm::PassInstrumentationCallbacks PIC;
+    llvm::StandardInstrumentations SI(ir->ctx, /*DebugLogging*/ true);
+    SI.registerCallbacks(PIC, &MAM);
 
     // Add transform passes.
     // Promote allocas to registers.
-    FPM->addPass(llvm::PromotePass());
+    FPM.addPass(llvm::PromotePass());
     // Do simple "peephole" optimizations and bit-twiddling optzns.
-    FPM->addPass(llvm::InstCombinePass());
+    FPM.addPass(llvm::InstCombinePass());
     // Reassociate expressions.
-    FPM->addPass(llvm::ReassociatePass());
+    FPM.addPass(llvm::ReassociatePass());
     // Eliminate Common SubExpressions.
-    FPM->addPass(llvm::GVNPass());
+    FPM.addPass(llvm::GVNPass());
     // Simplify the control flow graph (deleting unreachable blocks, etc).
-    FPM->addPass(llvm::SimplifyCFGPass());
+    FPM.addPass(llvm::SimplifyCFGPass());
 
-    // Register analysis passes used in these transform passes.
+    // Register all the basic analyses with the managers.
     llvm::PassBuilder PB;
-    PB.registerModuleAnalyses(*MAM);
-    PB.registerFunctionAnalyses(*FAM);
-    PB.crossRegisterProxies(*LAM, *FAM, *CGAM, *MAM);
+    PB.registerModuleAnalyses(MAM);
+    PB.registerCGSCCAnalyses(CGAM);
+    PB.registerFunctionAnalyses(FAM);
+    PB.registerLoopAnalyses(LAM);
+    PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
 
-    FPM->run(*F, *FAM);
+    MPM.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(FPM)));
+    MPM.run(ir->mod, MAM);
 
     return 0;
 }

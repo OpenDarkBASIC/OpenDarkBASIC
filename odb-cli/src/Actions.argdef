@@ -190,7 +190,7 @@ section parser:
 
 ###############################################################################
 section codegen:
-  info: Optimization, target arch and platform settings, and output type settings
+  info: Target arch and platform settings, and output type settings
 
   arch():
     help: Specify the output architecture if the output type is an executable
@@ -218,7 +218,7 @@ section codegen:
           stdout.
     args: <file>
     func: output
-    runafter: parser
+    runafter: parser, optimization
     requires: dba
 
   exec(e):
@@ -226,6 +226,14 @@ section codegen:
     func: exec_output
     runafter: output
     requires: output
+
+###############################################################################
+section optimization:
+  info: Optimization settings
+
+  optimize(O):
+    help: Set optimization level
+    func: set_optimization_level
 %}
 
 %source-postamble {

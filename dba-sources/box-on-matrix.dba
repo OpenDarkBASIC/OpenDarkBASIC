@@ -14,6 +14,7 @@ y# = 0.0
 z# = 50.0
 a# = 0.0
 speed# = 0.0
+ground# = 0.0
 
 do
    if leftkey() then dec a#, 2
@@ -23,10 +24,19 @@ do
    else
       speed# = curvevalue(0, speed#, 5)
    endif
+   if spacekey() and g# = 0.0 then g# = 0.3
 
    x# = newxvalue(x#, a#, speed#)
    z# = newzvalue(z#, a#, speed#)
-   y# = get ground height(1, x#, z#) + 0.5
+
+   y# = y# + g#
+   ground# = get ground height(1, x#, z#) + 0.5
+   if y# < ground#
+      y# = ground#
+      g# = 0.0
+   else
+      dec g#, 0.02
+   endif
 
    position object 1, x#, y#, z#
    yrotate object 1, a#

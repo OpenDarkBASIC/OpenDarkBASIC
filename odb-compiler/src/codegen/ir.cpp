@@ -486,7 +486,8 @@ gen_expr(
                 FLOAT
             } type_family
                 = INT;
-            switch (result_type)
+            ODBUTIL_DEBUG_ASSERT(lhs_type == rhs_type, log_codegen_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
+            switch (lhs_type)
             {
                 case TYPE_INVALID:
                 case TYPE_VOID:
