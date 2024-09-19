@@ -256,10 +256,11 @@ target_link_libraries (odb-compiler
 include (ODBTargetProperties)
 odb_target_properties (odb-compiler
     PROPERTIES
+        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
+        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC}
         ARCHIVE_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
         LIBRARY_OUTPUT_DIRECTORY ${ODB_BUILD_LIBDIR}
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR}
-        POSITION_INDEPENDENT_CODE ${ODBCOMPILER_PIC})
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
 
 ###############################################################################
 # Dependencies.
@@ -292,6 +293,9 @@ target_compile_options (LIB_LIEF
         $<$<CXX_COMPILER_ID:GNU>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
         $<$<CXX_COMPILER_ID:Clang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>
         $<$<CXX_COMPILER_ID:AppleClang>:$<$<COMPILE_LANGUAGE:CXX>:-Wno-overloaded-virtual -Wno-unused-parameter -Wno-redundant-move>>)
+odb_target_properties (LIB_LIEF
+    PROPERTIES
+        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
 target_link_libraries (odb-compiler PRIVATE LIB_LIEF)
 
 # reproc
@@ -463,51 +467,51 @@ if (ODBCOMPILER_TESTS)
         "tests/include/odb-compiler/tests/DBParserHelper.hpp"
         "tests/src/DBParserHelper.cpp"
 
-        "tests/src/util/cmd_list.cpp"
+        "tests/src/util/test_odbcompiler_cmd_list.cpp"
 
-        "tests/src/parser/boolean_literal.cpp"
-        "tests/src/parser/integer_literal.cpp"
-        "tests/src/parser/conditionals.cpp"
-        "tests/src/parser/conditionals_errors.cpp"
-        "tests/src/parser/command.cpp"
-        "tests/src/parser/command_matcher.cpp"
-        "tests/src/parser/func.cpp"
-        "tests/src/parser/loop_for.cpp"
-        "tests/src/parser/loop_for_errors.cpp"
-        "tests/src/parser/remarks.cpp"
-        "tests/src/parser/remarks_errors.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_conditionals.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_func_annotation.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_loop_for_errors.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_remarks.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_remarks_errors.cpp"
 
-        "tests/src/semantic/conditionals_warnings.cpp"
-        "tests/src/semantic/initialize_undeclared_variables.cpp"
-        "tests/src/semantic/loop_cont_for.cpp"
-        "tests/src/semantic/loop_cont_for_errors.cpp"
-        "tests/src/semantic/loop_cont_do_errors.cpp"
-        "tests/src/semantic/loop_exit_do_errors.cpp"
-        "tests/src/semantic/loop_exit_for.cpp"
-        "tests/src/semantic/loop_exit_for_errors.cpp"
-        "tests/src/semantic/loop_exit_repeat_errors.cpp"
-        "tests/src/semantic/loop_exit_while_errors.cpp"
-        "tests/src/semantic/loop_for.cpp"
-        "tests/src/semantic/loop_for_warnings.cpp"
-        "tests/src/semantic/loop_for_errors.cpp"
-        "tests/src/semantic/loop_name_errors.cpp"
-        "tests/src/semantic/negative_integer_literal.cpp"
-        "tests/src/semantic/type_check_assignment.cpp"
-        "tests/src/semantic/type_check_assignment_warnings.cpp"
-        "tests/src/semantic/type_check_assignment_errors.cpp"
-        "tests/src/semantic/type_check_binop_boolean.cpp"
-        "tests/src/semantic/type_check_binop_boolean_warnings.cpp"
-        "tests/src/semantic/type_check_binop_boolean_errors.cpp"
-        "tests/src/semantic/type_check_binop_pow.cpp"
-        "tests/src/semantic/type_check_binop_pow_warnings.cpp"
-        "tests/src/semantic/type_check_binop_pow_errors.cpp"
-        "tests/src/semantic/type_check_func.cpp"
-        "tests/src/semantic/type_check_func_warnings.cpp"
-        "tests/src/semantic/type_check_loop_for.cpp"
-        "tests/src/semantic/type_check_loop_cont.cpp"
-        "tests/src/semantic/resolve_cmd_overloads.cpp"
-        "tests/src/semantic/resolve_cmd_overloads_warnings.cpp"
-        "tests/src/semantic/resolve_cmd_overloads_errors.cpp")
+        "tests/src/semantic/test_odbcompiler_semantic_conditionals_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_initialize_undeclared_variables.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_cont_do_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_do_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_for.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_for_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_repeat_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_while_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_for.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_for_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_for_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_name_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_negative_integer_literal.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_func.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_func_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_for.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_cont.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

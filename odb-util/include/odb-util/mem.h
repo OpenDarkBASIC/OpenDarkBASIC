@@ -15,6 +15,8 @@ typedef int32_t mem_idx;
 #   define mem_realloc   realloc
 #   define mem_track_allocation(p)
 #   define mem_track_deallocation(p)
+#   define mem_acquire(p)
+#   define mem_release(p)
 #else
 
 /*!
@@ -23,7 +25,7 @@ typedef int32_t mem_idx;
  * In release mode this does nothing. In debug mode it will initialize
  * memory reports and backtraces, if enabled.
  */
-int
+ODBUTIL_PUBLIC_API int
 mem_init(void);
 
 /*!
@@ -33,7 +35,7 @@ mem_init(void);
  * report and print backtraces, if enabled.
  * @return Returns the number of memory leaks.
  */
-mem_size
+ODBUTIL_PUBLIC_API mem_size
 mem_deinit(void);
 
 /*!
@@ -62,6 +64,12 @@ mem_track_allocation(void* p);
 
 ODBUTIL_PUBLIC_API void
 mem_track_deallocation(void* p);
+
+ODBUTIL_PUBLIC_API void
+mem_acquire(void* p, mem_size size);
+
+ODBUTIL_PUBLIC_API mem_size
+mem_release(void* p);
 
 #endif
 

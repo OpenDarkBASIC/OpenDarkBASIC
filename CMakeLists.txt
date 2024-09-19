@@ -10,12 +10,6 @@ if (NOT DEFINED CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif ()
 
-project ("OpenDarkBASIC"
-    LANGUAGES C
-    VERSION ${ODB_VERSION})
-
-list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
-
 # Global options that affect subprojects
 set (ODB_VERSION "0.0.1" CACHE STRING "OpenDarkBASIC version")
 option (ODB_UTIL "Build utility library. This is required by all other subprojects" ON)
@@ -23,8 +17,15 @@ option (ODB_UTIL_i386 "Build utility library 32-bit as well." ON)
 option (ODB_COMPILER "Build the compiler library" ON)
 option (ODB_CLI "Build the commandline interface program for the compiler" ON)
 option (ODB_SDK "Build the OpenDarkBASIC SDK" ON)
+option (DBP_SDK "Build the DarkBASIC Pro bindings. This is necessary to compile DBP executables, but the DBPro game engine still has to be supplied externally." ON)
 option (ODB_EDITOR "Build the code editor" OFF)
 option (ODB_TESTS "Enable/disable unit tests in all subprojects" ON)
+
+project ("OpenDarkBASIC"
+    LANGUAGES C
+    VERSION ${ODB_VERSION})
+
+list (APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/modules")
 
 include (TestVisibilityMacros)
 test_visibility_macros (
@@ -78,6 +79,7 @@ set (ODB_BUILD_PREFIX "${PROJECT_BINARY_DIR}/bin" CACHE STRING "Where to output 
 set (ODB_BUILD_BINDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/bin")
 set (ODB_BUILD_LIBDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/lib")
 set (ODB_BUILD_SDKDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/odb-sdk")
+set (DBP_BUILD_SDKDIR "${ODB_BUILD_PREFIX}/${ODB_ARCH}/${ODB_PLATFORM}/dbp-sdk")
 
 set (ODB_INSTALL_BINDIR "${ODB_ARCH}/${ODB_PLATFORM}/bin")
 set (ODB_INSTALL_LIBDIR "${ODB_ARCH}/${ODB_PLATFORM}/lib")
@@ -91,6 +93,10 @@ if (ODB_TESTS)
         URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz
         URL_HASH SHA256=8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7)
     FetchContent_MakeAvailable (googletest)
+    include (ODBTargetProperties)
+    odb_target_properties (gmock
+        PROPERTIES
+            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>)
     add_subdirectory ("odb-tests")
 endif ()
 
@@ -100,14 +106,13 @@ if (ODB_UTIL)
     if (ODB_UTIL_i386 AND ODB_ARCH MATCHES "x86_64")
         if (NOT EXISTS "${PROJECT_BINARY_DIR}/build_odb-util-i386")
             execute_process (COMMAND ${CMAKE_COMMAND}
-                -A win32 -B "${PROJECT_BINARY_DIR}/build_odb-util-i386" -S ${PROJECT_SOURCE_DIR}
-                -DODB_TESTS=OFF -DODB_COMPILER=OFF -DODB_CLI=0FF -DODB_EDITOR=OFF -DODB_BUILD_PREFIX=${ODB_BUILD_PREFIX})
+                -A win32 -B "${PROJECT_BINARY_DIR}/build_odb-util-i386" -S "${PROJECT_SOURCE_DIR}"
+                -DODB_TESTS=OFF -DODB_COMPILER=OFF -DODB_CLI=OFF -DODB_EDITOR=OFF -DDBP_SDK=OFF
+                -DODB_UTIL=ON -DODB_SDK=ON
+                -DODB_BUILD_PREFIX=${ODB_BUILD_PREFIX})
         endif ()
         add_custom_target (odb-util-i386 ALL
-            COMMAND ${CMAKE_COMMAND}
-                -A win32 -B ${PROJECT_BINARY_DIR}/build_odb-util-i386 -S ${PROJECT_SOURCE_DIR}
-                -DODB_TESTS=OFF -DODB_COMPILER=OFF -DODB_CLI=0FF -DODB_EDITOR=OFF -DODB_BUILD_PREFIX=${ODB_BUILD_PREFIX}
-            COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR}/build_odb-util-i386)
+            COMMAND ${CMAKE_COMMAND} --build "${PROJECT_BINARY_DIR}/build_odb-util-i386")
         add_dependencies (odb-util odb-util-i386)
     endif ()
 
@@ -128,5 +133,24 @@ if (ODB_UTIL)
 
     if (ODB_EDITOR)
         add_subdirectory ("odb-editor")
+    endif ()
+endif ()
+
+if (DBP_SDK)
+    if (ODB_ARCH MATCHES "x86_64")
+        if (NOT EXISTS "${PROJECT_BINARY_DIR}/build_dbp-sdk-i386")
+            execute_process (COMMAND ${CMAKE_COMMAND}
+                -A win32 -B "${PROJECT_BINARY_DIR}/build_dbp-sdk-i386" -S "${PROJECT_SOURCE_DIR}"
+                -DODB_TESTS=OFF -DODB_COMPILER=OFF -DODB_CLI=OFF -DODB_EDITOR=OFF -DODB_UTIL=ON -DODB_SDK=ON
+                -DDBP_SDK=ON
+                -DODB_BUILD_PREFIX=${ODB_BUILD_PREFIX})
+        endif ()
+        add_custom_target (dbp-sdk-i386 ALL
+            COMMAND ${CMAKE_COMMAND} --build "${PROJECT_BINARY_DIR}/build_dbp-sdk-i386")
+        if (TARGET odb-cli)
+            add_dependencies (odb-cli dbp-sdk-i386)
+        endif ()
+    else ()
+        add_subdirectory ("dbp-sdk")
     endif ()
 endif ()

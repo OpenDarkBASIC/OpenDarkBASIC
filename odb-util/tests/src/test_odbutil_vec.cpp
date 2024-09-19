@@ -42,7 +42,7 @@ shitty_realloc(void*, size_t)
 #   undef mem_realloc
 #   define mem_alloc   shitty_alloc
 #   define mem_realloc shitty_realloc
-VEC_DECLARE_API(shitty_vobj, struct obj, 16, static)
+VEC_DECLARE_API(static, shitty_vobj, struct obj, 16)
 VEC_DEFINE_API(shitty_vobj, struct obj, 16)
 #   pragma pop_macro("mem_alloc")
 #   pragma pop_macro("mem_realloc")

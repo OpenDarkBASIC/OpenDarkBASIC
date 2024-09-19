@@ -61,7 +61,7 @@ call_dlsym(
     X(Transforms, "DBProTransformsDebug")                                      \
     X(Sprites, "DBProSpritesDebug")                                            \
     X(Image, "DBProImageDebug")                                                \
-    X(Input, "DBProInputDebug")                                                \
+    /*X(Input, "DBProInputDebug")*/                                            \
     X(System, "DBProSystemDebug")                                              \
     X(Sound, "DBProSoundDebug")                                                \
     X(Music, "DBProMusicDebug")                                                \
@@ -124,7 +124,7 @@ static char OFFICIAL_PLUGIN_Multiplayer_deps[] = {-1};
 static char OFFICIAL_PLUGIN_Camera3D_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, -1};
 static char OFFICIAL_PLUGIN_Light3D_deps[] = {OFFICIAL_PLUGIN_GFX, -1};
 static char OFFICIAL_PLUGIN_Matrix3D_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, -1};
-static char OFFICIAL_PLUGIN_Basic3D_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, OFFICIAL_PLUGIN_Vectors -1};
+static char OFFICIAL_PLUGIN_Basic3D_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, OFFICIAL_PLUGIN_Vectors, -1};
 static char OFFICIAL_PLUGIN_World3D_deps[] = {OFFICIAL_PLUGIN_GFX, OFFICIAL_PLUGIN_Image, OFFICIAL_PLUGIN_Camera3D, OFFICIAL_PLUGIN_Basic3D, -1};
 static char OFFICIAL_PLUGIN_Q2BSP_deps[] = {-1};
 static char OFFICIAL_PLUGIN_OwnBSP_deps[] = {-1};
@@ -226,10 +226,24 @@ core_found:;
                 cstr_utf8_view("DBProSetupDebug")))
         {
             (*plugin_is_used)[plugin_id] = true;
-            goto setup_found;
+            goto text_found;
         }
     return log_codegen_err(
         "{quote:DBProSetupDebug.dll} was not found (required by "
+        "{quote:DBProCore.dll})\n");
+text_found:;
+
+    /* DBProText is a dependency of Core (apparently) */
+    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+        if (utf8_equal(
+                utf8_view(plugins->data[plugin_id].name),
+                cstr_utf8_view("DBProTextDebug")))
+        {
+            (*plugin_is_used)[plugin_id] = true;
+            goto setup_found;
+        }
+    return log_codegen_err(
+        "{quote:DBProTextDebug.dll} was not found (required by "
         "{quote:DBProCore.dll})\n");
 setup_found:;
 

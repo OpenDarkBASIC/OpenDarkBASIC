@@ -13,7 +13,7 @@ struct log_interface
     char use_color;
 };
 
-void
+int
 log_init(void);
 
 ODBUTIL_PUBLIC_API struct log_interface
@@ -274,8 +274,5 @@ log_excerpt_help(int gutter_indent, const char* fmt, ...)
 static inline int
 log_oom(size_t bytes, const char* func_name)
 { log_util_err("Failed to allocate %lu bytes in %s\n", bytes, func_name); return -1; }
-
-ODBUTIL_PUBLIC_API void
-log_hex_ascii(const void* data, int len);
 
 /* clang-format on */

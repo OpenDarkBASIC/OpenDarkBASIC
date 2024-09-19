@@ -275,8 +275,6 @@ iblock
   ;
 stmt
   : const_decl                              { $$ = $1; }
-  | inc                                     { $$ = $1; }
-  | dec                                     { $$ = $1; }
   | conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
@@ -287,6 +285,8 @@ istmt
   : END                                     { $$ = ast_end(ctx->ast, @$); }
   | command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
+  | inc                                     { $$ = $1; }
+  | dec                                     { $$ = $1; }
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
   | func_call                               { $$ = $1; }

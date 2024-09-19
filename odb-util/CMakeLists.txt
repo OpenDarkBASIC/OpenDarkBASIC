@@ -89,6 +89,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "src/init.c"
     "src/log.c"
     "src/mstream.c"
+    "src/process_common.c"
     "src/rb.c"
     "src/utf8.c"
     "src/utf8_list.c"
@@ -176,6 +177,7 @@ if (ODBUTIL_TESTS)
         "tests/src/echo.c")
     odb_target_properties (odb-echo
         PROPERTIES
+            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
             RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
     add_dependencies (odb-tests odb-echo)
 endif ()

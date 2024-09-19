@@ -11,6 +11,7 @@ extern "C" {
 #include "odb-util/log.h"
 #include "odb-util/thread.h"
 #include "odb-util/utf8.h"
+#include "odb-util/mem.h"
 }
 
 struct translation_unit
@@ -84,6 +85,9 @@ parse_worker(void* arg)
     struct worker*                        worker = (struct worker*)arg;
     struct std::vector<translation_unit>& tus = *worker->tus;
 
+    if (mem_init() != 0)
+        goto init_mem_failed;
+
     if (db_parser_init(&parser) != 0)
         goto init_parser_failed;
 
@@ -112,11 +116,14 @@ parse_worker(void* arg)
     }
 
     db_parser_deinit(&parser);
+    mem_deinit();
     return NULL;
 
 parse_failed:
     db_parser_deinit(&parser);
 init_parser_failed:
+    mem_deinit();
+init_mem_failed:
     return (void*)1;
 }
 
@@ -125,6 +132,9 @@ semantic_worker(void* arg)
 {
     struct worker*                        worker = (struct worker*)arg;
     struct std::vector<translation_unit>& tus = *worker->tus;
+
+    if (mem_init() != 0)
+        goto init_mem_failed;
 
     for (size_t i = 0; i != tus.size(); ++i)
     {
@@ -139,11 +149,17 @@ semantic_worker(void* arg)
                 tus[i].source)
             != 0)
         {
-            return (void*)1;
+            goto check_failed;
         }
     }
 
+    mem_deinit();
     return NULL;
+
+check_failed:
+    mem_deinit();
+init_mem_failed:
+    return (void*)1;
 }
 
 // Public ---------------------------------------------------------------------

@@ -33,60 +33,71 @@ argv_to_cstr(const char* const argv[])
     return cstr;
 }
 
-int
-process_run(
-    struct ospathc    filepath,
-    struct ospathc    working_dir,
-    const char* const argv[],
-    struct utf8_view  in,
-    struct utf8*      out,
-    struct utf8*      err,
-    int               timeout_ms)
+struct process
 {
-    #define READ 0
-    #define WRITE 1
-    HANDLE hIn[2];
-    HANDLE hOut[2];
-    HANDLE hErr[2];
+    HANDLE hProcess;
+    HANDLE hThread;
+    HANDLE hIn;
+    HANDLE hOut;
+    HANDLE hErr;
+};
+
+struct process*
+process_start(
+    struct ospathc filepath,
+    struct ospathc working_dir,
+    const char* const argv[],
+    uint8_t flags)
+{
+    SECURITY_ATTRIBUTES sa;
+    HANDLE hInRead;
+    HANDLE hOutWrite;
+    HANDLE hErrWrite;
     char* cmdline;
-    DWORD exitcode;
-    DWORD outlen = 0;
-    DWORD errlen = 0;
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+
+    struct process* process = mem_alloc(sizeof *process);
+    if (process == NULL)
+        goto alloc_process_failed;
+    process->hIn = NULL;
+    process->hOut = NULL;
+    process->hErr = NULL;
 
     /* So child process can inherit pipe handles */
-    SECURITY_ATTRIBUTES sa;
-    sa.nLength = sizeof(SECURITY_ATTRIBUTES);
+    ZeroMemory(&sa, sizeof(sa));
+    sa.nLength = sizeof(sa);
     sa.bInheritHandle = TRUE;
     sa.lpSecurityDescriptor = NULL;
 
-    if (in.len && !CreatePipe(&hIn[READ], &hIn[WRITE], &sa, 0))
+    if ((flags & PROCESS_STDIN) && !CreatePipe(&hInRead, &process->hIn, &sa, 0))
     {
         log_util_err("Failed to create stdin pipe: {win32error}\n");
         goto in_pipe_failed;
     }
-    if (in.len && !SetHandleInformation(hIn[WRITE], HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDIN) && !SetHandleInformation(process->hIn, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stdin handle info: {win32error}\n");
         goto in_pipe_handle_failed;
     }
 
-    if (out && !CreatePipe(&hOut[READ], &hOut[WRITE], &sa, 0))
+    if ((flags & PROCESS_STDOUT) && !CreatePipe(&process->hOut, &hOutWrite, &sa, 0))
     {
         log_util_err("Failed to create stdout pipe: {win32error}\n");
         goto out_pipe_failed;
     }
-    if (out && !SetHandleInformation(hOut[READ], HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDOUT) && !SetHandleInformation(process->hOut, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stdout handle info: {win32error}\n");
         goto out_pipe_handle_failed;
     }
 
-    if (err && !CreatePipe(&hErr[READ], &hErr[WRITE], &sa, 0))
+    if ((flags & PROCESS_STDERR) && !CreatePipe(&process->hErr, &hErrWrite, &sa, 0))
     {
         log_util_err("Failed to create stderr pipe: {win32error}\n");
         goto err_pipe_failed;
     }
-    if (err && !SetHandleInformation(hErr[READ], HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDERR) && !SetHandleInformation(process->hErr, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stderr handle info: {win32error}\n");
         goto err_pipe_handle_failed;
@@ -96,20 +107,17 @@ process_run(
     if (cmdline == NULL)
         goto cmdline_failed;
 
-    STARTUPINFO si;
     ZeroMemory(&si, sizeof(si));
-    si.cb = sizeof(STARTUPINFO);
+    si.cb = sizeof(si);
     si.dwFlags = STARTF_USESTDHANDLES;
-    if (in.len)
-        si.hStdInput = hIn[READ];
-    if (out)
-        si.hStdOutput = hOut[WRITE];
-    if (err)
-        si.hStdError = hErr[WRITE];
+    if ((flags & PROCESS_STDIN))
+        si.hStdInput = hInRead;
+    if ((flags & PROCESS_STDOUT))
+        si.hStdOutput = hOutWrite;
+    if ((flags & PROCESS_STDERR))
+        si.hStdError = hErrWrite;
 
-    PROCESS_INFORMATION pi;
     ZeroMemory(&pi, sizeof(pi));
-
     int ret = CreateProcess(
         argv[0],
         cmdline,
@@ -126,81 +134,159 @@ process_run(
         log_util_err("Failed to create process {quote:%s}: {win32error}\n", cmdline);
         goto create_process_failed;
     }
+    process->hProcess = pi.hProcess;
+    process->hThread = pi.hThread;
 
     mem_free(cmdline);
-
-    if (in.len)
-    {
-        DWORD dwWritten;
-        CloseHandle(hIn[READ]);
-        WriteFile(hIn[WRITE], in.data + in.off, in.len, &dwWritten, NULL);
-        CloseHandle(hIn[WRITE]);
-    }
-    if (out)
-        CloseHandle(hOut[WRITE]);
-    if (err)
-        CloseHandle(hErr[WRITE]);
-
-    do
-    {
-        if (out)
-        {
-            utf8_reserve(out, out->len + 4096);
-            if (ReadFile(hOut[READ], out->data + out->len, 4096, &outlen, NULL) && outlen > 0)
-                out->len += outlen;
-        }
-        if (err)
-        {
-            utf8_reserve(err, err->len + 4096);
-            if (ReadFile(hErr[READ], err->data + err->len, 4096, &errlen, NULL) && errlen > 0)
-                err->len += errlen;
-        }
-    } while (outlen > 0 || errlen > 0);
-
-    if (out)
-        CloseHandle(hOut[READ]);
-    if (err)
-        CloseHandle(hErr[READ]);
-
-    if (WaitForSingleObject(pi.hProcess, timeout_ms > 0 ? timeout_ms : INFINITE) != WAIT_OBJECT_0)
-    {
-        TerminateProcess(pi.hProcess, -1);
-        log_util_err("Process did not exit after %dms, called TerminateProcess()\n", timeout_ms);
-    }
-    CloseHandle(pi.hThread);
-
-    if (!GetExitCodeProcess(pi.hProcess, &exitcode))
-    {
-        CloseHandle(pi.hProcess);
-        return log_util_err("Failed to get exit code from process: {win32error}\n");
     
-    }
-    CloseHandle(pi.hProcess);
-    return exitcode;
+    if ((flags & PROCESS_STDIN))
+        CloseHandle(hInRead);
+    if ((flags & PROCESS_STDOUT))
+        CloseHandle(hOutWrite);
+    if ((flags & PROCESS_STDERR))
+        CloseHandle(hErrWrite);
+
+    return process;
 
 create_process_failed:
     mem_free(cmdline);
 cmdline_failed:
 err_pipe_handle_failed:
-    if (err)
+    if ((flags & PROCESS_STDERR))
     {
-        CloseHandle(hErr[READ]);
-        CloseHandle(hErr[WRITE]);
+        CloseHandle(process->hErr);
+        CloseHandle(hErrWrite);
     }
 err_pipe_failed:
 out_pipe_handle_failed:
-    if (out)
+    if ((flags & PROCESS_STDOUT))
     {
-        CloseHandle(hOut[READ]);
-        CloseHandle(hOut[WRITE]);
+        CloseHandle(process->hOut);
+        CloseHandle(hOutWrite);
     }
 out_pipe_failed:
 in_pipe_handle_failed:
-    if (in.len)
+    if ((flags & PROCESS_STDIN))
     {
-        CloseHandle(hIn[READ]);
-        CloseHandle(hIn[WRITE]);
+        CloseHandle(hInRead);
+        CloseHandle(process->hIn);
     }
 in_pipe_failed:
-    return -1;
+    mem_free(process);
+alloc_process_failed:
+    return NULL;
+}
+
+int
+process_write_stdin(
+    struct process* process,
+    struct utf8_view str)
+{
+    DWORD dwWritten;
+    if (WriteFile(process->hIn, str.data + str.off, str.len, &dwWritten, NULL) == FALSE)
+    {
+        log_util_err("Failed to write to process stdin: {win32error}\n");
+        return -1;
+    }
+    return dwWritten;
+}
+
+int
+process_read_stdout(
+    struct process* process,
+    char* byte)
+{
+    DWORD dwBytesRead;
+    if (ReadFile(process->hOut, byte, 1, &dwBytesRead, NULL) == FALSE)
+    {
+        if (GetLastError() == ERROR_BROKEN_PIPE)
+            return 0;  /* EOF */
+        log_util_err("Failed to read from process stdout: {win32error}\n");
+        return -1;
+    }
+    return dwBytesRead;
+}
+
+int
+process_read_stderr(
+    struct process* process,
+    char* byte)
+{
+    DWORD dwBytesRead;
+    if (ReadFile(process->hErr, byte, 1, &dwBytesRead, NULL) == FALSE)
+    {
+        if (GetLastError() == ERROR_BROKEN_PIPE)
+            return 0;  /* EOF */
+        log_util_err("Failed to read from process stderr: {win32error}\n");
+        return -1;
+    }
+    return dwBytesRead;
+}
+
+void
+process_close_stdin(
+    struct process* process)
+{
+    CloseHandle(process->hIn);
+    process->hIn = NULL;
+}
+
+int
+process_terminate(
+    struct process* process,
+    int timeout_ms)
+{
+    TerminateProcess(process->hProcess, -1);
+    process_wait(process, 0);
+    return process_join(process);
+}
+
+void
+process_kill(
+    struct process* process)
+{
+    TerminateProcess(process->hProcess, -1);
+    process_wait(process, 0);
+    process_join(process);
+}
+
+int
+process_wait(
+    struct process* process,
+    int timeout_ms)
+{
+    if (process->hIn)
+        CloseHandle(process->hIn);
+
+    if (WaitForSingleObject(process->hProcess, timeout_ms > 0 ? timeout_ms : INFINITE) != WAIT_OBJECT_0)
+    {
+        log_util_err("Process did not exit after %dms\n", timeout_ms);
+        return -1;
+    }
+
+    return 0;
+}
+
+int
+process_join(
+    struct process* process)
+{
+    DWORD dwExitCode;
+    if (!GetExitCodeProcess(process->hProcess, &dwExitCode))
+    {
+        log_util_err("Failed to get exit code from process: {win32error}\n");
+        dwExitCode = -1;
+    }
+
+    if (process->hOut)
+        CloseHandle(process->hOut);
+    if (process->hErr)
+        CloseHandle(process->hErr);
+
+    CloseHandle(process->hThread);
+    CloseHandle(process->hProcess);
+
+    mem_free(process);
+
+    return dwExitCode;
 }

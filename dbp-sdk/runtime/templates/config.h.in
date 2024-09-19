@@ -1,0 +1,1 @@
+#define DBPRUNTIME_API ${ODB_API_EXPORT}

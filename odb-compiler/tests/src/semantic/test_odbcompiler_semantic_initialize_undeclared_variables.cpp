@@ -52,7 +52,7 @@ TEST_F(NAME, double_integer_initialized_to_0)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+    EXPECT_THAT(ast.nodes[init].double_integer_literal.value, Eq(0));
 }
 
 TEST_F(NAME, word_initialized_to_0)
@@ -71,7 +71,7 @@ TEST_F(NAME, word_initialized_to_0)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_WORD_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+    EXPECT_THAT(ast.nodes[init].word_literal.value, Eq(0));
 }
 
 TEST_F(NAME, double_initialized_to_0)
@@ -90,7 +90,7 @@ TEST_F(NAME, double_initialized_to_0)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_DOUBLE_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+    EXPECT_THAT(ast.nodes[init].double_literal.value, Eq(0.0));
 }
 
 TEST_F(NAME, float_initialized_to_0)
@@ -109,7 +109,7 @@ TEST_F(NAME, float_initialized_to_0)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_FLOAT_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+    EXPECT_THAT(ast.nodes[init].float_literal.value, Eq(0));
 }
 
 TEST_F(NAME, string_initialized_to_empty)
@@ -128,7 +128,7 @@ TEST_F(NAME, string_initialized_to_empty)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_STRING_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(0));
+    EXPECT_THAT(ast.nodes[init].string_literal.str, Utf8SpanEq(0, 0));
 }
 
 TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)

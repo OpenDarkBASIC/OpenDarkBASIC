@@ -240,11 +240,23 @@ get_command_function_signature(
     const struct cmd_param*           odb_param;
     vec_for_each(odb_param_types, odb_param)
     {
-        llvm_param_types.push_back(type_to_llvm(odb_param->type, &ir->ctx));
+        if (odb_param->type == TYPE_FLOAT)
+            llvm_param_types.push_back(llvm::Type::getInt32Ty(ir->ctx));
+        else
+        {
+            llvm::Type* Ty = type_to_llvm(odb_param->type, &ir->ctx);
+            llvm_param_types.push_back(Ty);
+        }
     }
 
     /* Convert return type from command list as well, and create LLVM FT */
     enum type odb_return_type = cmds->return_types->data[cmd_id];
+    if (odb_return_type == TYPE_FLOAT)
+        return llvm::FunctionType::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            llvm_param_types,
+            /* isVarArg */ false);
+
     return llvm::FunctionType::get(
         type_to_llvm(odb_return_type, &ir->ctx),
         llvm_param_types,
@@ -332,7 +344,6 @@ gen_cmd_call(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
 {
-
     // Function table for commands should be generated at this
     // point. Look up the command's symbol in the command list and
     // get the associated llvm::Function
@@ -342,32 +353,40 @@ gen_cmd_call(
     llvm::GlobalVariable* cmd_func_ptr
         = cmd_func_table->find(cmd_sym_ref)->getValue();
 
-    // Match up each function argument with its corresponding
-    // parameter.
-    // Command overload resolution is done in a previous step, so
+    // Match up each function argument with its corresponding parameter.
+    // Command overload resolution is done during semantic analysis, so
     // it's OK to assume that both lists have the same length and matching
     // types.
     llvm::SmallVector<llvm::Value*, 8> param_values;
     for (ast_id arg = ast->nodes[cmd].cmd.arglist; arg > -1;
          arg = ast->nodes[arg].arglist.next)
     {
-        param_values.push_back(gen_expr(
+        ast_id ast_expr = ast->nodes[arg].arglist.expr;
+        llvm::Value* llvm_expr = gen_expr(
             ir,
             builder,
             ast,
-            ast->nodes[arg].arglist.expr,
+            ast_expr,
             cmds,
             source_filename,
             source,
             string_table,
             cmd_func_table,
-            allocamap));
+            allocamap);
+        if (ast->nodes[ast_expr].info.type_info == TYPE_FLOAT)
+            llvm_expr = builder.CreateBitCast(llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
+        param_values.push_back(llvm_expr);
     }
 
     llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
     llvm::Value*        cmd_func_addr = builder.CreateLoad(
         llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
-    return builder.CreateCall(FT, cmd_func_addr, param_values);
+    llvm::Value* retval = builder.CreateCall(FT, cmd_func_addr, param_values);
+
+    if (ast->nodes[cmd].info.type_info == TYPE_FLOAT)
+        retval = builder.CreateBitCast(retval, llvm::Type::getFloatTy(ir->ctx));
+
+    return retval;
 }
 
 static llvm::Value*
@@ -1121,6 +1140,7 @@ ir_translate_ast(
     struct ir_module*      ir,
     struct ast*            program,
     enum sdk_type          sdkType,
+    enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,
     struct db_source       source)
@@ -1173,6 +1193,21 @@ ir_translate_ast(
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
     llvm::verifyFunction(*F);
 #endif
+
+    if (platform == TARGET_WINDOWS)
+    {
+        llvm::Constant* S = llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            0,
+            /* isSigned */ true);
+        new llvm::GlobalVariable(
+            ir->mod,
+            S->getType(),
+            /*isConstant*/ false,
+            llvm::GlobalValue::CommonLinkage,
+            S,
+            llvm::Twine("_fltused"));
+    }
 
     return 0;
 }

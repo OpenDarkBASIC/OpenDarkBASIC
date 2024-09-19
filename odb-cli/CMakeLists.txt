@@ -44,6 +44,7 @@ include (ODBTargetProperties)
 odb_target_properties (odb-cli
     PROPERTIES
 		VS_DEBUGGER_WORKING_DIRECTORY ${ODB_BUILD_BINDIR}
+        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
         RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR}
         INSTALL_RPATH ${ODB_INSTALL_LIBDIR})
 

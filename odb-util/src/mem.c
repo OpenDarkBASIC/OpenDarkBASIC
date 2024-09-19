@@ -1,7 +1,7 @@
 #include "odb-util/backtrace.h"
+#include "odb-util/cli_colors.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
-#include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include <assert.h>
 #include <inttypes.h>
@@ -105,20 +105,16 @@ struct state
     struct report* report;
     mem_size       allocations;
     mem_size       deallocations;
-    mem_size       bytes_in_use;
-    mem_size       bytes_in_use_peak;
     unsigned       ignore_malloc : 1;
 };
 
-static struct state state;
+ODBUTIL_THREADLOCAL static struct state state;
 
 int
 mem_init(void)
 {
     state.allocations = 0;
     state.deallocations = 0;
-    state.bytes_in_use = 0;
-    state.bytes_in_use_peak = 0;
 
     report_init(&state.report);
 
@@ -138,7 +134,7 @@ print_backtrace(void)
 
     if (!(bt = backtrace_get(&bt_size)))
     {
-        log_util_warn("Failed to generate backtrace\n");
+        fprintf(stderr, "Failed to generate backtrace\n");
         return;
     }
 
@@ -146,7 +142,7 @@ print_backtrace(void)
     {
         if (strstr(bt[i], "invoke_main"))
             break;
-        log_util_warn("  %s\n", bt[i]);
+        fprintf(stderr, "  %s\n", bt[i]);
     }
     backtrace_free(bt);
 }
@@ -163,7 +159,7 @@ track_allocation(uintptr_t addr, mem_size size)
 
     if (size == 0)
     {
-        log_util_warn("malloc(0)\n");
+        fprintf(stderr, "malloc(0)\n");
 #if defined(ODBUTIL_MEM_BACKTRACE)
         print_backtrace();
 #endif
@@ -172,17 +168,13 @@ track_allocation(uintptr_t addr, mem_size size)
     if (state.ignore_malloc)
         return;
 
-    state.bytes_in_use += size;
-    if (state.bytes_in_use_peak < state.bytes_in_use)
-        state.bytes_in_use_peak = state.bytes_in_use;
-
     /* insert info into hashmap */
     state.ignore_malloc = 1;
     info = report_emplace_new(&state.report, addr);
     state.ignore_malloc = 0;
     if (info == NULL)
     {
-        log_util_err(
+        fprintf(stderr, 
             "Double allocation! This is usually caused by calling "
             "mem_track_allocation() on the same address twice.\n");
         print_backtrace();
@@ -197,7 +189,7 @@ track_allocation(uintptr_t addr, mem_size size)
 #if defined(ODBUTIL_MEM_BACKTRACE)
     state.ignore_malloc = 1;
     if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
-        log_util_warn("Failed to generate backtrace\n");
+        fprintf(stderr, "Failed to generate backtrace\n");
     state.ignore_malloc = 0;
 #endif
 }
@@ -210,7 +202,7 @@ track_deallocation(uintptr_t addr, const char* free_type)
 
     if (addr == 0)
     {
-        log_util_warn("free(NULL)\n");
+        fprintf(stderr, "free(NULL)\n");
 #if defined(ODBUTIL_MEM_BACKTRACE)
         print_backtrace();
 #endif
@@ -223,21 +215,86 @@ track_deallocation(uintptr_t addr, const char* free_type)
     info = report_erase(state.report, addr);
     if (info)
     {
-        state.bytes_in_use -= info->size;
 #if defined(ODBUTIL_MEM_BACKTRACE)
         if (info->backtrace)
             backtrace_free(info->backtrace);
         else
-            log_util_warn("Allocation didn't have a backtrace (it was NULL)\n");
+            fprintf(stderr, "Allocation didn't have a backtrace (it was NULL)\n");
 #endif
     }
     else
     {
-        log_util_warn("%s'ing something that was never allocated\n", free_type);
+        fprintf(stderr, "%s'ing something that was never allocated\n", free_type);
 #if defined(ODBUTIL_MEM_BACKTRACE)
         print_backtrace();
 #endif
     }
+}
+
+static void
+acquire(uintptr_t addr, mem_size size)
+{
+    struct report_info* info;
+
+    if (addr == 0)
+        return;
+
+    ++state.allocations;
+
+    /* insert info into hashmap */
+    state.ignore_malloc = 1;
+    info = report_emplace_new(&state.report, addr);
+    state.ignore_malloc = 0;
+    if (info == NULL)
+    {
+        fprintf(stderr, 
+            "Double allocation! This is usually caused by calling "
+            "mem_acquire() on the same address twice.\n");
+        print_backtrace();
+        return;
+    }
+
+    /* record the location and size of the allocation */
+    info->location = addr;
+    info->size = size;
+
+    /* Create backtrace to this allocation */
+#if defined(ODBUTIL_MEM_BACKTRACE)
+    state.ignore_malloc = 1;
+    if (!(info->backtrace = backtrace_get(&info->backtrace_size)))
+        fprintf(stderr, "Failed to generate backtrace\n");
+    state.ignore_malloc = 0;
+#endif
+}
+
+static mem_size
+release(uintptr_t addr)
+{
+    struct report_info* info;
+
+    if (addr == 0)
+        return 0;
+
+    state.deallocations++;
+
+    /* find matching allocation and remove from hashmap */
+    info = report_erase(state.report, addr);
+    if (info)
+    {
+#if defined(ODBUTIL_MEM_BACKTRACE)
+        if (info->backtrace)
+            backtrace_free(info->backtrace);
+        else
+            fprintf(stderr, "Allocation didn't have a backtrace (it was NULL)\n");
+#endif
+        return info->size;
+    }
+
+    fprintf(stderr, "releasing something that was never allocated\n");
+#if defined(ODBUTIL_MEM_BACKTRACE)
+    print_backtrace();
+#endif
+    return 0;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -247,7 +304,7 @@ mem_alloc(mem_size size)
     void* p = malloc(size);
     if (p == NULL)
     {
-        log_util_err("malloc() failed (out of memory)\n");
+        fprintf(stderr, "malloc() failed (out of memory)\n");
 #if defined(ODBUTIL_MEM_BACKTRACE)
         print_backtrace(); /* probably won't work but may as well*/
 #endif
@@ -267,7 +324,7 @@ mem_realloc(void* p, mem_size new_size)
 
     if (p == NULL)
     {
-        log_util_err("realloc() failed (out of memory)\n");
+        fprintf(stderr, "realloc() failed (out of memory)\n");
 #if defined(ODBUTIL_MEM_BACKTRACE)
         print_backtrace(); /* probably won't work but may as well*/
 #endif
@@ -290,6 +347,44 @@ mem_free(void* p)
 }
 
 /* ------------------------------------------------------------------------- */
+static void
+log_hex_ascii(const void* data, int len)
+{
+    int i;
+
+    for (i = 0; i != 16; ++i)
+        fprintf(stderr, "%c  ", "0123456789ABCDEF"[i]);
+    putc(' ', stderr);
+    for (i = 0; i != 16; ++i)
+        putc("0123456789ABCDEF"[i], stderr);
+    putc('\n', stderr);
+
+    for (i = 0; i < len;)
+    {
+        int     j;
+        uint8_t c = ((const uint8_t*)data)[i];
+        for (j = 0; j != 16; ++j)
+        {
+            if (i + j < len)
+                fprintf(stderr, "%02x ", c);
+            else
+                fprintf(stderr, "   ");
+        }
+
+        fprintf(stderr, " ");
+        for (j = 0; j != 16 && i + j != len; ++j)
+        {
+            if (c >= 32 && c < 127) /* printable ascii */
+                putc(c, stderr);
+            else
+                putc('.', stderr);
+        }
+
+        fprintf(stderr, "\n");
+        i += 16;
+    }
+}
+
 mem_size
 mem_deinit(void)
 {
@@ -300,7 +395,7 @@ mem_deinit(void)
     struct report_info* info;
     hm_for_each(state.report, addr, info)
     {
-        log_util_err(
+        fprintf(stderr, 
             "un-freed memory at 0x%" PRIx64 ", size 0x%" PRIx32 "\n",
             info->location,
             info->size);
@@ -308,12 +403,12 @@ mem_deinit(void)
 #if defined(ODBUTIL_MEM_BACKTRACE)
         {
             int i;
-            log_util_note("Backtrace:\n");
+            fprintf(stderr, "Backtrace:\n");
             for (i = BACKTRACE_OMIT_COUNT; i < info->backtrace_size; ++i)
             {
                 if (strstr(info->backtrace[i], "invoke_main"))
                     break;
-                log_raw("  %s\n", info->backtrace[i]);
+                fprintf(stderr, "  %s\n", info->backtrace[i]);
             }
         }
         backtrace_free(
@@ -331,18 +426,17 @@ mem_deinit(void)
     state.ignore_malloc = 0;
 
     /* overall report */
-    log_util_note("Memory report:\n");
     leaks
         = (state.allocations > state.deallocations
                ? state.allocations - state.deallocations
                : state.deallocations - state.allocations);
-    log_raw("  allocations   : %" PRIu32 "\n", state.allocations);
-    log_raw("  deallocations : %" PRIu32 "\n", state.deallocations);
     if (leaks)
-        log_raw("  {e:memory leaks  : %" PRIu64 "}\n", leaks);
-    else
-        log_raw("  {s:memory leaks  : %" PRIu64 "}\n", leaks);
-    log_raw("  peak memory   : %" PRIu32 " bytes\n", state.bytes_in_use_peak);
+    {
+        fprintf(stderr, "Memory report:\n");
+        fprintf(stderr, "  allocations   : %" PRIu32 "\n", state.allocations);
+        fprintf(stderr, "  deallocations : %" PRIu32 "\n", state.deallocations);
+        fprintf(stderr, FGB_RED "  memory leaks  : %" PRIu64 COL_RESET "\n", leaks);
+    }
 
     return (mem_size)leaks;
 }
@@ -357,4 +451,16 @@ void
 mem_track_deallocation(void* p)
 {
     track_deallocation((uintptr_t)p, "track_deallocation()");
+}
+
+void
+mem_acquire(void* p, mem_size size)
+{
+    acquire((uintptr_t)p, size);
+}
+
+mem_size
+mem_release(void* p)
+{
+    return release((uintptr_t)p);
 }

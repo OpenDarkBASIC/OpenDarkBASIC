@@ -40,6 +40,7 @@ macro (odb_add_plugin PLUGIN)
     include (ODBTargetProperties)
     odb_target_properties (${PLUGIN}
         PROPERTIES
+            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
             ARCHIVE_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
             LIBRARY_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins"
             RUNTIME_OUTPUT_DIRECTORY "${ODB_BUILD_SDKDIR}/plugins")

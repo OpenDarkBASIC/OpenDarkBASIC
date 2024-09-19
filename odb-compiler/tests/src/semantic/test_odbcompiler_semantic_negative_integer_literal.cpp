@@ -135,8 +135,8 @@ TEST_F(NAME, dword_literal_is_converted_to_double_integer)
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].info.location, Utf8SpanEq(4, 11));
     EXPECT_THAT(ast.nodes[lity].info.location, Utf8SpanEq(20, 11));
-    EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(-2147483648));
-    EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(-4294967295));
+    EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(-(int64_t)2147483648));
+    EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(-(int64_t)4294967295));
 }
 
 TEST_F(NAME, double_integer_literal)
@@ -168,7 +168,7 @@ TEST_F(NAME, double_integer_literal)
     EXPECT_THAT(ast.nodes[litz].info.location, Utf8SpanEq(45, 11));
     EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(-4294967296));
     EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(-9223372036854775807));
-    EXPECT_THAT(ast.nodes[litz].double_integer_literal.value, Eq(-2147483649));
+    EXPECT_THAT(ast.nodes[litz].double_integer_literal.value, Eq(-(int64_t)2147483649));
     // clang-format on
 }
 
