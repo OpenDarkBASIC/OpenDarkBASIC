@@ -2,22 +2,27 @@ project ("odb-resgen"
     LANGUAGES C
     VERSION 0.0.1)
 
-add_executable (odb-resgen
-    "src/main.c")
-target_compile_options(odb-resgen
-    PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
-        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
-include (ODBTargetProperties)
-odb_target_properties (odb-resgen
-    PROPERTIES
-        MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
+if (NOT CMAKE_CROSSCOMPILING)
+    add_executable (odb-resgen
+        "src/main.c")
+    target_compile_options(odb-resgen
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+            $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
+            $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
+    include (ODBTargetProperties)
+    odb_target_properties (odb-resgen
+        PROPERTIES
+            MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
+            RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_HOST_BINDIR})
 
-install (
-    TARGETS odb-resgen
-    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
+    install (
+        TARGETS odb-resgen
+        RUNTIME DESTINATION ${ODB_INSTALL_HOST_BINDIR})
+else ()
+    add_executable (odb-resgen IMPORTED)
+    set_target_properties (odb-resgen PROPERTIES IMPORTED_LOCATION "${ODB_BUILD_PREFIX}/${ODB_INSTALL_HOST_BINDIR}/odb-resgen")
+endif ()
 
 macro (odb_resgen_target name)
     set (odb_resgen_target_PARAM_OPTIONS)

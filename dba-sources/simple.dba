@@ -1,4 +1,3 @@
-
 for a=1 to 255 step 5
    print a
    sleep 100

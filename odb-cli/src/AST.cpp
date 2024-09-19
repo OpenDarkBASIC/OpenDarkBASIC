@@ -108,10 +108,14 @@ parse_worker(void* arg)
         {
             goto parse_failed;
         }
+        mem_release(tus[i].ast.nodes);
 
         mutex_lock(worker->mutex);
+        if (*worker->symbol_table != &symbol_table_null_hm)
+            mem_acquire(*worker->symbol_table, 0);
         symbol_table_add_declarations_from_ast(
             worker->symbol_table, &tus[i].ast, tus[i].source);
+        mem_release(*worker->symbol_table);
         mutex_unlock(worker->mutex);
     }
 
@@ -138,19 +142,21 @@ semantic_worker(void* arg)
 
     for (size_t i = 0; i != tus.size(); ++i)
     {
+        int result;
         if (i % worker->tus->size() != worker->id)
             continue;
 
-        if (semantic_run_essential_checks(
+        mem_acquire(tus[i].ast.nodes, 0);
+        result = semantic_run_essential_checks(
                 &tus[i].ast,
                 getPluginList(),
                 getCommandList(),
                 tus[i].source_filename.c_str(),
-                tus[i].source)
-            != 0)
-        {
+                tus[i].source);
+        mem_release(tus[i].ast.nodes);
+
+        if (result != 0)
             goto check_failed;
-        }
     }
 
     mem_deinit();
@@ -195,6 +201,8 @@ parseDBA(const std::vector<std::string>& args)
     /* Prepare array of translation units -- 0 args means we read the source
      * from stdin, so it still requires 1 TU */
     translation_units.resize(args.size() ? args.size() : 1);
+    for (auto& tu : translation_units)
+        ast_init(&tu.ast);
 
     if (open_source_files(&translation_units, args) == false)
         goto open_sources_failed;
@@ -229,6 +237,8 @@ parseDBA(const std::vector<std::string>& args)
     /* The reason for joining/splitting here is because we need to build a
      * symbol table from all of the ASTs before it's possible to run semantic
      * checks. The symbol table is populated in each parser worker thread */
+    if (symbol_table != &symbol_table_null_hm)
+        mem_acquire(symbol_table, 0);
 
     /* Run semantic checks on ASTs */
     for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
@@ -240,7 +250,6 @@ parseDBA(const std::vector<std::string>& args)
     }
     for (--worker_id; worker_id >= 0; --worker_id)
     {
-        void*          ret;
         struct worker& worker = workers[worker_id];
         if (thread_join(worker.thread) != NULL)
             goto join_semantic_thread_failed;
@@ -248,6 +257,9 @@ parseDBA(const std::vector<std::string>& args)
 
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
+    
+    for (auto& tu : translation_units)
+        mem_acquire(tu.ast.nodes, tu.ast.node_capacity * sizeof(union ast_node));
 
     return true;
 
@@ -259,6 +271,9 @@ start_semantic_thread_failed:
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
     }
+    for (auto& tu : translation_units)
+        db_source_close(&tu.source);
+    translation_units.clear();
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
     return false;
@@ -271,7 +286,10 @@ start_parse_thread_failed:
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
     }
+    for (auto& tu : translation_units)
+        db_source_close(&tu.source);
 open_sources_failed:
+    translation_units.clear();
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
 create_mutex_failed:

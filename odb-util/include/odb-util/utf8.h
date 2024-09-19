@@ -75,9 +75,14 @@ empty_utf8_view(void)
 static inline struct utf8_span
 utf8_span_union(struct utf8_span a, struct utf8_span b)
 {
-    ODBUTIL_DEBUG_ASSERT(a.off <= b.off, (void)0);
-    a.len = b.off - a.off + b.len;
-    return a;
+    if (a.off <= b.off) 
+    {
+        a.len = b.off - a.off + b.len;
+        return a;
+    }
+
+    b.len = a.off - b.off + a.len;
+    return b;
 }
 
 /* Convert between different structures ------------------------------------- */

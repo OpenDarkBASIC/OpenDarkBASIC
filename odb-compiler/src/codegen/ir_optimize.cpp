@@ -41,7 +41,7 @@ ir_optimize(struct ir_module* mod)
     PB.registerFunctionAnalyses(*FAM);
     PB.crossRegisterProxies(*LAM, *FAM, *CGAM, *MAM);
 
-    // FPM->run(*F, *FAM);
+    FPM->run(*F, *FAM);
 
     return 0;
 }

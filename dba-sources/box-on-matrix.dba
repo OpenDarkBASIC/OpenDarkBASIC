@@ -1,0 +1,39 @@
+sync on
+sync rate 60
+backdrop on
+
+make object cube 1, 1
+color object 1, rgb(255, 128, 0)
+
+make matrix 1, 100, 100, 30, 30
+randomize matrix 1, 5
+update matrix 1
+
+x# = 50.0
+y# = 0.0
+z# = 50.0
+a# = 0.0
+speed# = 0.0
+
+do
+   if leftkey() then dec a#, 2
+   if rightkey() then inc a#, 2
+   if upkey()
+      speed# = curvevalue(0.2, speed#, 5)
+   else
+      speed# = curvevalue(0, speed#, 5)
+   endif
+
+   x# = newxvalue(x#, a#, speed#)
+   z# = newzvalue(z#, a#, speed#)
+   y# = get ground height(1, x#, z#) + 0.5
+
+   position object 1, x#, y#, z#
+   yrotate object 1, a#
+
+   set camera to follow x#, y#, z#, a#, 5, 2, 5, 0
+
+   if escapekey() then exit
+   sync
+loop
+

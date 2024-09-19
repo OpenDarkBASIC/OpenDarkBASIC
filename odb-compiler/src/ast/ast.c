@@ -12,16 +12,15 @@ new_node(struct ast* ast, enum ast_type type, struct utf8_span location)
 {
     if (ast->node_count == ast->node_capacity)
     {
-        size_t new_size = ast->node_capacity
-                              ? sizeof(union ast_node) * ast->node_capacity * 2
-                              : sizeof(union ast_node) * 128;
+        ast_id new_capacity = ast->node_capacity ? ast->node_capacity * 2 : 128;
+        mem_size new_size = sizeof(union ast_node) * new_capacity;
 
         union ast_node* new_nodes = mem_realloc(ast->nodes, new_size);
         if (new_nodes == NULL)
             return log_oom(new_size, "new_node()");
 
         ast->nodes = new_nodes;
-        ast->node_capacity *= 2;
+        ast->node_capacity = new_capacity;
     }
 
     ast_id n = ast->node_count++;
