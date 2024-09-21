@@ -48,8 +48,6 @@ process_run(
     struct thread* terr;
     struct read_thread_ctx out_ctx, err_ctx;
 
-    mem_init();
-
     struct process* p = process_start(
         filepath,
         working_dir,

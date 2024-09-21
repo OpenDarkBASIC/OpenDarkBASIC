@@ -20,11 +20,12 @@ cmd_cache_load(
     plugin_id          cached_plugin_count;
     cmd_id             cached_cmd;
     cmd_id             cached_cmd_count;
-    struct plugin_ids* cached_plugin_map;
     struct mfile       mf;
     struct mstream     ms;
+    struct plugin_ids* cached_plugin_map;
     struct utf8        fname = empty_utf8();
     struct ospath      path = empty_ospath();
+
     plugin_ids_init(&cached_plugin_map);
 
     if (fs_get_appdata_dir(&path) != 0)
@@ -101,7 +102,7 @@ cmd_cache_load(
         enum type        return_type = mstream_read_u8(&ms);
         int              param_count = mstream_read_u8(&ms);
 
-        if (cached_plugin_id < 0 || cached_plugin_id >= cached_plugin_map->count
+        if (cached_plugin_id < 0 || cached_plugin_id >= plugin_ids_count(cached_plugin_map)
             || cached_plugin_map->data[cached_plugin_id] == -1)
         {
             for (i = 0; i != param_count; ++i)
@@ -114,7 +115,7 @@ cmd_cache_load(
 
         ODBUTIL_DEBUG_ASSERT(
             cached_plugin_id >= 0
-                && cached_plugin_id < cached_plugin_map->count,
+                && cached_plugin_id < plugin_ids_count(cached_plugin_map),
             log_cmd_err("plugin_id: %d\n", cached_plugin_id));
         cmd = cmd_list_add(
             cmds,
@@ -194,7 +195,7 @@ cmd_cache_save(
     mstream_write_u8(&ms, VERSION);
 
     /* List of plugins */
-    mstream_write_li16(&ms, plugins->count);
+    mstream_write_li16(&ms, plugin_list_count(plugins));
     vec_for_each(plugins, plugin)
     {
         /* Timestamps of plugins, so next time we know if the plugin has to be
@@ -214,8 +215,8 @@ cmd_cache_save(
         mstream_write_utf8(&ms, utf8_list_view(cmds->c_symbols, cmd));
         mstream_write_li16(&ms, cmds->plugin_ids->data[cmd]);
         mstream_write_u8(&ms, cmds->return_types->data[cmd]);
-        mstream_write_u8(&ms, cmds->param_types->data[cmd]->count);
-        for (i = 0; i != cmds->param_types->data[cmd]->count; i++)
+        mstream_write_u8(&ms, cmd_param_types_list_count(cmds->param_types->data[cmd]));
+        for (i = 0; i != cmd_param_types_list_count(cmds->param_types->data[cmd]); i++)
         {
             const struct cmd_param* param_type
                 = &cmds->param_types->data[cmd]->data[i];

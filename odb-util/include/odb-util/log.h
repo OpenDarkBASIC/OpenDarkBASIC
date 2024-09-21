@@ -132,6 +132,13 @@ ODBUTIL_PRINTF_FORMAT(1, 2) static inline void
 log_parser_info(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_parser_vinfo(fmt, ap); va_end(ap); }
 
+ODBUTIL_PRINTF_FORMAT(1, 0) static inline void
+log_parser_vwarn(const char* fmt, va_list ap)
+{ log_vwarn("[parser] ", fmt, ap); }
+ODBUTIL_PRINTF_FORMAT(1, 2) static inline void
+log_parser_warn(const char* fmt, ...)
+{ va_list ap; va_start(ap, fmt); log_parser_vwarn(fmt, ap); va_end(ap); }
+
 ODBUTIL_PRINTF_FORMAT(1, 0) static inline int
 log_parser_verr(const char* fmt, va_list ap)
 { return log_verr("[parser] ", fmt, ap); }
@@ -147,6 +154,13 @@ ODBUTIL_PRINTF_FORMAT(1, 2) static inline void
 log_semantic_info(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_semantic_vinfo(fmt, ap); va_end(ap); }
 
+ODBUTIL_PRINTF_FORMAT(1, 0) static inline void
+log_semantic_vwarn(const char* fmt, va_list ap)
+{ log_vwarn("[semantic] ", fmt, ap); }
+ODBUTIL_PRINTF_FORMAT(1, 2) static inline void
+log_semantic_warn(const char* fmt, ...)
+{ va_list ap; va_start(ap, fmt); log_semantic_vwarn(fmt, ap); va_end(ap); }
+
 ODBUTIL_PRINTF_FORMAT(1, 0) static inline int
 log_semantic_verr(const char* fmt, va_list ap)
 { return log_verr("[semantic] ", fmt, ap); }
@@ -155,6 +169,13 @@ log_semantic_err(const char* fmt, ...)
 { va_list ap; va_start(ap, fmt); log_semantic_verr(fmt, ap); va_end(ap); return -1; }
 
 /* Codegen logging functions ----------------------------------------------- */
+ODBUTIL_PRINTF_FORMAT(1, 0) static inline void
+log_codegen_vwarn(const char* fmt, va_list ap)
+{ log_vwarn("[codegen] ", fmt, ap); }
+ODBUTIL_PRINTF_FORMAT(1, 2) static inline void
+log_codegen_warn(const char* fmt, ...)
+{ va_list ap; va_start(ap, fmt); log_codegen_vwarn(fmt, ap); va_end(ap); }
+
 ODBUTIL_PRINTF_FORMAT(1, 0) static inline int
 log_codegen_verr(const char* fmt, va_list ap)
 { return log_verr("[codegen] ", fmt, ap); }

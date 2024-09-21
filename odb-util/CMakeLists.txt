@@ -77,6 +77,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "include/odb-util/mfile.h"
     "include/odb-util/mstream.h"
     "include/odb-util/ospath.h"
+    "include/odb-util/ospath_list.h"
     "include/odb-util/process.h"
     "include/odb-util/rb.h"
     "include/odb-util/thread.h"

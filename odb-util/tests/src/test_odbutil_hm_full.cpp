@@ -117,8 +117,6 @@ struct NAME : Test
     virtual void
     TearDown()
     {
-        ASSERT_THAT(hm_test_null_hm.count, Eq(0));
-        ASSERT_THAT(hm_test_null_hm.capacity, Eq(0));
         hm_test_deinit(hm);
     }
 
@@ -127,11 +125,9 @@ struct NAME : Test
 
 TEST_F(NAME, null_hm_is_set)
 {
-    EXPECT_THAT(hm, Eq(&hm_test_null_hm));
-    EXPECT_THAT(hm->count, Eq(0));
-    EXPECT_THAT(hm->capacity, Eq(0));
-    EXPECT_THAT(hm->kvs.keys, IsNull());
-    EXPECT_THAT(hm->kvs.values, IsNull());
+    EXPECT_THAT(hm, IsNull());
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
+    EXPECT_THAT(hm_test_capacity(hm), Eq(0));
 }
 
 TEST_F(NAME, deinit_null_hm_works)
@@ -141,25 +137,25 @@ TEST_F(NAME, deinit_null_hm_works)
 
 TEST_F(NAME, insert_increases_slots_used)
 {
-    EXPECT_THAT(hm->count, Eq(0));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
-    EXPECT_THAT(hm->count, Eq(1));
-    EXPECT_THAT(hm->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
+    EXPECT_THAT(hm_test_capacity(hm), Eq(MIN_CAPACITY));
 }
 
 TEST_F(NAME, erase_decreases_slots_used)
 {
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
-    EXPECT_THAT(hm->count, Eq(0));
-    EXPECT_THAT(hm->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
+    EXPECT_THAT(hm_test_capacity(hm), Eq(MIN_CAPACITY));
 }
 
 TEST_F(NAME, insert_same_key_twice_only_works_once)
 {
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 7.6f), Eq(-1));
-    EXPECT_THAT(hm->count, Eq(1));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
 }
 
 TEST_F(NAME, insert_or_get_returns_inserted_value)
@@ -172,7 +168,7 @@ TEST_F(NAME, insert_or_get_returns_inserted_value)
     EXPECT_THAT(hm_test_emplace_or_get(&hm, KEY1, &p), HM_EXISTS);
     EXPECT_THAT(f, Eq(0.0f));
     EXPECT_THAT(p, Pointee(5.6f));
-    EXPECT_THAT(hm->count, Eq(1));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
 }
 
 TEST_F(NAME, erasing_same_key_twice_only_works_once)
@@ -180,17 +176,17 @@ TEST_F(NAME, erasing_same_key_twice_only_works_once)
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
     EXPECT_THAT(hm_test_erase(hm, KEY1), IsNull());
-    EXPECT_THAT(hm->count, Eq(0));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
 }
 
 TEST_F(NAME, hash_collision_insert_ab_erase_ba)
 {
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
-    EXPECT_THAT(hm->count, Eq(2));
+    EXPECT_THAT(hm_test_count(hm), Eq(2));
     EXPECT_THAT(hm_test_erase(hm, KEY2), Pointee(3.4f));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
-    EXPECT_THAT(hm->count, Eq(0));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
 }
 
 TEST_F(NAME, hash_collision_insert_ab_erase_ab)
@@ -198,10 +194,10 @@ TEST_F(NAME, hash_collision_insert_ab_erase_ab)
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
-    EXPECT_THAT(hm->count, Eq(2));
+    EXPECT_THAT(hm_test_count(hm), Eq(2));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
     EXPECT_THAT(hm_test_erase(hm, KEY2), Pointee(3.4f));
-    EXPECT_THAT(hm->count, Eq(0));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
 }
 
 TEST_F(NAME, hash_collision_insert_ab_find_ab)
@@ -238,15 +234,15 @@ TEST_F(NAME, hash_collision_insert_at_tombstone)
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
-    EXPECT_THAT(hm->count, Eq(2));
+    EXPECT_THAT(hm_test_count(hm), Eq(2));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f)); // creates tombstone
-    EXPECT_THAT(hm->count, Eq(1));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
     EXPECT_THAT(
         hm_test_insert_new(&hm, KEY1, 5.6f),
         Eq(0)); // should insert at tombstone location
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f));
     EXPECT_THAT(hm_test_erase(hm, KEY2), Pointee(3.4f));
-    EXPECT_THAT(hm->count, Eq(0));
+    EXPECT_THAT(hm_test_count(hm), Eq(0));
 }
 
 TEST_F(NAME, hash_collision_insert_at_tombstone_with_existing_key)
@@ -254,11 +250,11 @@ TEST_F(NAME, hash_collision_insert_at_tombstone_with_existing_key)
     hash_mode = SHITTY;
     EXPECT_THAT(hm_test_insert_new(&hm, KEY1, 5.6f), Eq(0));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 3.4f), Eq(0));
-    EXPECT_THAT(hm->count, Eq(2));
+    EXPECT_THAT(hm_test_count(hm), Eq(2));
     EXPECT_THAT(hm_test_erase(hm, KEY1), Pointee(5.6f)); // creates tombstone
-    EXPECT_THAT(hm->count, Eq(1));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
     EXPECT_THAT(hm_test_insert_new(&hm, KEY2, 5.6f), Eq(-1));
-    EXPECT_THAT(hm->count, Eq(1));
+    EXPECT_THAT(hm_test_count(hm), Eq(1));
 }
 
 TEST_F(NAME, remove_probing_sequence_scenario_1)
@@ -389,7 +385,7 @@ TEST_F(NAME, foreach)
         expected_values[*value] += 1;
     }
 
-    EXPECT_THAT(hm->count, Eq(14));
+    EXPECT_THAT(hm_test_count(hm), Eq(14));
     EXPECT_THAT(expected_values.size(), Eq(14));
     for (const auto& [k, v] : expected_values)
         EXPECT_THAT(v, Eq(1)) << k;

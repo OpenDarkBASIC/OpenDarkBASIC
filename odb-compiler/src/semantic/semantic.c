@@ -143,9 +143,11 @@ semantic_check_run(
     struct db_source             source)
 {
     struct ptr_set* check_visited;
-    ODBUTIL_DEBUG_ASSERT(
-        ast->node_count > 0,
-        log_semantic_err("node count: %d\n", ast->node_count));
+    if (ast->node_count == 0)
+    {
+        log_semantic_warn("AST is empty for source file {quote:%s}\n", source_filename);
+        return 0;
+    }
 
     ptr_set_init(&check_visited);
 

@@ -9,6 +9,8 @@ make matrix 1, 100, 100, 30, 30
 randomize matrix 1, 5
 update matrix 1
 
+print stdout "lol"
+
 x# = 50.0
 y# = 0.0
 z# = 50.0

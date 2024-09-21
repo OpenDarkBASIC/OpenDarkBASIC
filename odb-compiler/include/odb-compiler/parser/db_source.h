@@ -53,18 +53,6 @@ ODBCOMPILER_PUBLIC_API int
 db_source_open_string(struct db_source* s, struct utf8_view str);
 
 /*!
- * @brief Use this to parse a stream, such as stdin.
- * @note This function won't return until it encounters an EOF. The entire
- * contents of the input stream are read and copied into a buffer for parsing.
- * @param[out] s Pointer to a db_source structure to fill in. Should be
- * uninitialized, as this will overwrite any previous state.
- * @param[in] fd The stream to read for parsing.
- * @return Returns 0 on success, negative on error.
- */
-ODBCOMPILER_PUBLIC_API int
-db_source_open_stream(struct db_source* s, FILE* fd);
-
-/*!
  * @brief Use this if you are managing the lifetime of the string to parse. This
  * will simply point the db_source struct to the input string. There is no need
  * to free the db_source structure.
@@ -84,4 +72,3 @@ db_source_ref_string(struct db_source* s, struct utf8* str);
  */
 ODBCOMPILER_PUBLIC_API void
 db_source_close(struct db_source* s);
-

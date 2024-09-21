@@ -90,4 +90,8 @@ cmd_list_load_from_plugins(
 ODBCOMPILER_PUBLIC_API cmd_id
 cmd_list_find(const struct cmd_list* cmds, struct utf8_view name);
 
-#define cmd_list_count(cmds) ((cmds)->db_cmd_names->count)
+static inline cmd_id
+cmd_list_count(const struct cmd_list* cmds)
+{
+    return utf8_list_count((cmds)->db_cmd_names);
+}

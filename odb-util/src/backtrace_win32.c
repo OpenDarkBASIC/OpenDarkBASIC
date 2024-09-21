@@ -14,6 +14,7 @@ backtrace_init(void)
 {
     /*if (SymInitialize(hProcess, NULL, TRUE) != TRUE)
         return -1;*/
+    hProcess = GetCurrentProcess();
     SymInitialize(hProcess, NULL, TRUE);
     return 0;
 }

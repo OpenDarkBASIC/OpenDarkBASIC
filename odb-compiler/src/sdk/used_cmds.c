@@ -99,9 +99,15 @@ used_cmds_append(struct used_cmds_hm** used, const struct ast* ast)
 struct cmd_ids*
 used_cmds_finalize(struct used_cmds_hm* hm)
 {
-    int32_t         front = 0;
-    int32_t         back = hm->capacity - 1;
-    struct cmd_ids* cmds = hm->kvs.keys ? hm->kvs.keys : &cmd_ids_null_vec;
+    struct cmd_ids* cmds;
+    int32_t         front, back;
+
+    if (hm == NULL)
+        return NULL;
+
+    front = 0;
+    back = hm->capacity - 1;
+    cmds = hm->kvs.keys;
 
     /* Move around values to fill gaps, so it can be used as a vector */
     while (1)
@@ -123,7 +129,7 @@ used_cmds_finalize(struct used_cmds_hm* hm)
     }
     cmds->count = hm->count;
 
-    hm->kvs.keys = &cmd_ids_null_vec;
+    hm->kvs.keys = NULL;
     used_cmds_hm_deinit(hm);
 
     return cmds;

@@ -5,7 +5,7 @@
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/sdk_type.h"
 
-struct plugin_info;
+struct plugin_ids;
 struct plugin_list;
 
 int

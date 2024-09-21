@@ -85,7 +85,7 @@ cmd_list_load_from_plugins(
 
     plugin_ids_init(&cached_plugins);
 
-    log_cmd_progress(0, plugins->count, "Loading command cache");
+    log_cmd_progress(0, plugin_list_count(plugins), "Loading command cache");
     if (cmd_cache_load(&cached_plugins, plugins, cmds, sdk_type, arch, platform)
         != 0)
     {
@@ -109,7 +109,7 @@ cmd_list_load_from_plugins(
 
         log_cmd_progress(
             plugin_id,
-            plugins->count,
+            plugin_list_count(plugins),
             "Parsing plugin %s\n",
             utf8_cstr(plugin->name));
 

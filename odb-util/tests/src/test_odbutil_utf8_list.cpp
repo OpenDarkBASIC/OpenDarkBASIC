@@ -16,7 +16,7 @@ public:
     void
     SetUp() override
     {
-        utf8_list_init(&l);
+        l = NULL;
     }
 
     void

@@ -15,12 +15,10 @@ struct utf8_list
     char data[1];
 };
 
-static struct utf8_list utf8_null_list;
-
 static inline void
 utf8_list_init(struct utf8_list** l)
 {
-    *l = &utf8_null_list;
+    *l = NULL;
 }
 
 ODBUTIL_PUBLIC_API void
@@ -61,6 +59,12 @@ utf8_list_data(struct utf8_list* l, utf8_idx i)
     return l->data + utf8_list_span(l, i).off;
 }
 
+static inline utf8_idx
+utf8_list_count(const struct utf8_list* l)
+{
+    return l ? l->count : 0;
+}
+
 /*!
  * @brief Finds the first position in which a string could be inserted without
  * changing the ordering.
@@ -80,23 +84,12 @@ utf8_list_data(struct utf8_list* l, utf8_idx i)
 ODBUTIL_PUBLIC_API utf8_idx
 utf8_lower_bound(const struct utf8_list* l, struct utf8_view str);
 
-/*!
- * @brief Finds the last position in which a string could be inserted without
- * changing the ordering.
- * @note The list must be sorted.
- * @note Algorithm taken from GNU GCC stdlibc++'s lower_bound function,
- * line 2169 in stl_algo.h
- * https://gcc.gnu.org/onlinedocs/libstdc++/libstdc++-html-USERS-4.3/a02014.html
- */
-ODBUTIL_PUBLIC_API utf8_idx
-utf8_upper_bound_ref(const struct utf8_list* l, struct utf8_view str);
-
 #define utf8_for_each(l, var)                                                  \
     for (utf8_idx var##_i = 0;                                                 \
-         var##_i != (l)->count && ((var = utf8_list_view((l), var##_i)), 1);   \
+         (l) && var##_i != (l)->count && ((var = utf8_list_view((l), var##_i)), 1);   \
          ++var##_i)
 
 #define utf8_for_each_cstr(l, var)                                             \
     for (utf8_idx var##_i = 0;                                                 \
-         var##_i != (l)->count && ((var = utf8_list_cstr((l), var##_i)), 1);   \
+         (l) && var##_i != (l)->count && ((var = utf8_list_cstr((l), var##_i)), 1);   \
          ++var##_i)

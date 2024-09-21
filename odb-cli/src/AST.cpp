@@ -37,6 +37,13 @@ static std::vector<translation_unit> translation_units;
 static void
 close_source_files(std::vector<translation_unit>* tus)
 {
+    if (tus->size() == 1 && tus->at(0).source_filename == "stdin")
+    {
+        struct utf8 str = {tus->at(0).source.text.data, 0};
+        utf8_deinit(str);
+        return;
+    }
+
     for (auto& tu : *tus)
         db_source_close(&tu.source);
 }
@@ -47,11 +54,31 @@ open_source_files(
     /* If there are no source files, we default to reading stdin */
     if (args.size() == 0)
     {
+        char buf[1024];
+        int len;
+        struct utf8 contents = empty_utf8();
         auto& tu = (*tus)[0];
-        tu.source_filename = "<stdin>";
-        if (db_source_open_stream(&tu.source, stdin) != 0)
-            return false;
+        tu.source_filename = "stdin";
+        
+        while ((len = fread(buf, 1, 1024, stdin)) > 0)
+        {
+            struct utf8_view view = {buf, 0, len};
+            if (utf8_append(&contents, view) != 0)
+                goto read_failed;
+        }
+        if (!feof(stdin))
+        {
+            log_parser_err("Failed to read from stdin: {emph:%s}\n", strerror(errno));
+            goto read_failed;
+        }
+        if (db_source_ref_string(&tu.source, &contents) != 0)
+            goto read_failed;
+
         return true;
+
+    read_failed:
+        utf8_deinit(contents);
+        return false;
     }
 
     size_t i;
@@ -93,29 +120,39 @@ parse_worker(void* arg)
 
     for (size_t i = 0; i != worker->tus->size(); ++i)
     {
+        int parse_result;
         if (i % worker->tus->size() != worker->id)
             continue;
 
         log_parser_info(
             "Parsing source file: {emph:%s}\n", tus[i].source_filename.c_str());
-        if (db_parse(
+        parse_result = db_parse(
                 &parser,
                 &tus[i].ast,
                 tus[i].source_filename.c_str(),
                 tus[i].source,
-                getCommandList())
-            != 0)
-        {
-            goto parse_failed;
-        }
+                getCommandList());
         mem_release(tus[i].ast.nodes);
+        if (parse_result != 0)
+            goto parse_failed;
 
         mutex_lock(worker->mutex);
-        if (*worker->symbol_table != &symbol_table_null_hm)
+        if (*worker->symbol_table != NULL)
+        {
             mem_acquire(*worker->symbol_table, 0);
+            mem_acquire((*worker->symbol_table)->kvs.key_data, 0);
+            mem_acquire((*worker->symbol_table)->kvs.key_spans, 0);
+            mem_acquire((*worker->symbol_table)->kvs.values, 0);
+        }
         symbol_table_add_declarations_from_ast(
             worker->symbol_table, &tus[i].ast, tus[i].source);
-        mem_release(*worker->symbol_table);
+        if (*worker->symbol_table != NULL)
+        {
+            mem_release(*worker->symbol_table);
+            mem_release((*worker->symbol_table)->kvs.key_data);
+            mem_release((*worker->symbol_table)->kvs.key_spans);
+            mem_release((*worker->symbol_table)->kvs.values);
+        }
         mutex_unlock(worker->mutex);
     }
 
@@ -237,8 +274,13 @@ parseDBA(const std::vector<std::string>& args)
     /* The reason for joining/splitting here is because we need to build a
      * symbol table from all of the ASTs before it's possible to run semantic
      * checks. The symbol table is populated in each parser worker thread */
-    if (symbol_table != &symbol_table_null_hm)
+    if (symbol_table != NULL)
+    {
         mem_acquire(symbol_table, 0);
+        mem_acquire(symbol_table->kvs.key_data, 0);
+        mem_acquire(symbol_table->kvs.key_spans, 0);
+        mem_acquire(symbol_table->kvs.values, 0);
+    }
 
     /* Run semantic checks on ASTs */
     for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
@@ -271,8 +313,7 @@ start_semantic_thread_failed:
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
     }
-    for (auto& tu : translation_units)
-        db_source_close(&tu.source);
+    close_source_files(&translation_units);
     translation_units.clear();
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
@@ -286,8 +327,7 @@ start_parse_thread_failed:
         struct worker& worker = workers[worker_id];
         thread_join(worker.thread);
     }
-    for (auto& tu : translation_units)
-        db_source_close(&tu.source);
+    close_source_files(&translation_units);
 open_sources_failed:
     translation_units.clear();
     mutex_destroy(mutex);

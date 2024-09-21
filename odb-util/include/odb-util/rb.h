@@ -30,27 +30,29 @@
         int##bits##_t read, write, capacity;                                   \
         T             data[1];                                                 \
     };                                                                         \
-    static struct prefix prefix##_null_rb;                                     \
                                                                                \
     /* NOTE:                                                                   \
      * For the following 4 functions it is very important that each member     \
      * is only accessed once. */                                               \
     static inline int##bits##_t prefix##_count(struct prefix* rb)              \
     {                                                                          \
-        return (rb->write - rb->read) & (rb->capacity - 1);                    \
+        return rb ? (rb->write - rb->read) & (rb->capacity - 1) : 0;           \
     }                                                                          \
                                                                                \
     static inline int##bits##_t prefix##_space(struct prefix* rb)              \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         return (rb->read - rb->write - 1) & (rb->capacity - 1);                \
     }                                                                          \
     static inline int prefix##_is_full(struct prefix* rb)                      \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         return ((rb->write + 1) & (rb->capacity - 1)) == rb->read;             \
     }                                                                          \
                                                                                \
     static inline int prefix##_is_empty(struct prefix* rb)                     \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         return rb->read == rb->write;                                          \
     }                                                                          \
                                                                                \
@@ -61,7 +63,7 @@
      */                                                                        \
     static inline void prefix##_init(struct prefix** rb)                       \
     {                                                                          \
-        *rb = &prefix##_null_rb;                                               \
+        *rb = NULL;                                                            \
     }                                                                          \
                                                                                \
     /*!                                                                        \
@@ -69,11 +71,7 @@
      * allocated by inserting elements.                                        \
      * @param[in] rb Pointer to a ring buffer of type RB(T,B)*                 \
      */                                                                        \
-    static inline void prefix##_deinit(struct prefix* rb)                      \
-    {                                                                          \
-        if (rb->capacity)                                                      \
-            mem_free(rb);                                                      \
-    }                                                                          \
+    API void prefix##_deinit(struct prefix* rb);                               \
                                                                                \
     /*!                                                                        \
      * @brief Resizes the ring buffer to contain N number of slots.            \
@@ -99,6 +97,7 @@
      */                                                                        \
     static inline int prefix##_put(struct prefix* rb, T elem)                  \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         int##bits##_t write = rb->write;                                       \
         if (prefix##_is_full(rb))                                              \
             return -1;                                                         \
@@ -109,9 +108,9 @@
     static inline int prefix##_put_realloc(struct prefix** rb, T elem)         \
     {                                                                          \
         int##bits##_t write;                                                   \
-        if (prefix##_is_full(*rb))                                             \
+        if (*rb == NULL || prefix##_is_full(*rb))                              \
             if (prefix##_resize(                                               \
-                    rb, (*rb)->capacity ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
+                    rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)              \
                 != 0)                                                          \
             {                                                                  \
                 return -1;                                                     \
@@ -147,9 +146,9 @@
     {                                                                          \
         int##bits##_t write;                                                   \
         T*            value;                                                   \
-        if (prefix##_is_full(*rb))                                             \
+        if (*rb == NULL || prefix##_is_full(*rb))                              \
             if (prefix##_resize(                                               \
-                    rb, (*rb)->capacity ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
+                    rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)              \
                 != 0)                                                          \
             {                                                                  \
                 return NULL;                                                   \
@@ -171,8 +170,8 @@
      */                                                                        \
     static inline T* prefix##_take(struct prefix* rb)                          \
     {                                                                          \
-        ODBUTIL_DEBUG_ASSERT(                                                   \
-            !prefix##_is_empty(rb), log_util_err("rb is empty\n"));             \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            !prefix##_is_empty(rb), log_util_err("rb is empty\n"));            \
         int##bits##_t read = rb->read;                                         \
         T*            data = &rb->data[read];                                  \
         rb->read = (read + 1) & ((int##bits##_t)rb->capacity - 1);             \
@@ -181,40 +180,48 @@
                                                                                \
     static inline void prefix##_clear(struct prefix* rb)                       \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         rb->read = rb->write;                                                  \
     }                                                                          \
                                                                                \
     static inline T* prefix##_peek_read(struct prefix* rb)                     \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         return &rb->data[rb->read];                                            \
     }                                                                          \
                                                                                \
     static inline T* prefix##_peek_write(struct prefix* rb)                    \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         return &rb->data[(rb->write - 1) & ((int##bits##_t)rb->capacity - 1)]; \
     }                                                                          \
                                                                                \
     static inline T* prefix##_peek(struct prefix* rb, int##bits##_t idx)       \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(rb, (void)0);                                     \
         int##bits##_t offset = (rb->read + idx) & (rb->capacity - 1);          \
         return &rb->data[offset];                                              \
     }
 
 #define IS_POWER_OF_2(x) (((x) & ((x) - 1)) == 0)
 #define RB_DEFINE_API(prefix, T, bits)                                         \
+    void prefix##_deinit(struct prefix* rb)                                    \
+    {                                                                          \
+        if (rb)                                                                \
+            mem_free(rb);                                                      \
+    }                                                                          \
     int prefix##_resize(struct prefix** rb, int##bits##_t elems)               \
     {                                                                          \
         struct prefix* new_rb;                                                 \
-        mem_size       bytes                                                   \
-            = offsetof(struct prefix, data) + sizeof((*rb)->data[0]) * elems;  \
+        mem_size       header = offsetof(struct prefix, data);                 \
+        mem_size       data = sizeof((*rb)->data[0]) * elems;                  \
                                                                                \
-        ODBUTIL_DEBUG_ASSERT(                                                   \
-            IS_POWER_OF_2(elems), log_util_err("elems: %d\n", elems));          \
-        new_rb = (struct prefix*)mem_realloc(                                  \
-            (*rb)->capacity ? *rb : NULL, bytes);                              \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            IS_POWER_OF_2(elems), log_util_err("elems: %d\n", elems));         \
+        new_rb = (struct prefix*)mem_realloc(*rb, header + data);              \
         if (new_rb == NULL)                                                    \
-            return log_oom(bytes, "rb_resize()");                              \
-        if ((*rb)->capacity == 0)                                              \
+            return log_oom(header + data, "rb_resize()");                      \
+        if (*rb == NULL)                                                       \
         {                                                                      \
             (*rb) = new_rb;                                                    \
             (*rb)->read = 0;                                                   \

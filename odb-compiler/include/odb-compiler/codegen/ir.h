@@ -19,7 +19,7 @@ ir_free(struct ir_module* ir);
 ODBCOMPILER_PUBLIC_API int
 ir_translate_ast(
     struct ir_module*      ir,
-    struct ast*            program,
+    const struct ast*      program,
     enum sdk_type          sdkType,
     enum target_platform   platform,
     const struct cmd_list* cmds,

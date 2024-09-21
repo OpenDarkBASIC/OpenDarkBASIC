@@ -17,19 +17,19 @@
 static int
 grow(struct utf8_list** l, utf8_idx str_len)
 {
-    utf8_idx old_table_size = sizeof(struct utf8_span) * (*l)->count;
-    utf8_idx new_table_size = sizeof(struct utf8_span) * ((*l)->count + 1);
+    utf8_idx count = *l ? (*l)->count : 0;
+    utf8_idx old_table_size = sizeof(struct utf8_span) * count;
+    utf8_idx new_table_size = sizeof(struct utf8_span) * (count + 1);
 
-    while (new_table_size + (*l)->str_used + str_len + UTF8_APPEND_PADDING
-           > (*l)->capacity)
+    while ((*l ? (*l)->capacity : 0) <
+        new_table_size + (*l ? (*l)->str_used : 0) + str_len + UTF8_APPEND_PADDING)
     {
-        mem_size cap = (*l)->capacity;
+        mem_size cap = *l ? (*l)->capacity : 0;
         mem_size grow_size = cap ? cap : 128;
         mem_size struct_header = offsetof(struct utf8_list, data);
-        void*    new_mem
-            = mem_realloc(cap ? *l : NULL, cap + grow_size + struct_header);
+        void*    new_mem  = mem_realloc(*l, cap + grow_size + struct_header);
         if (new_mem == NULL)
-            return log_oom((*l)->capacity + grow_size, "utf8_list_grow()");
+            return log_oom(cap + grow_size + struct_header, "utf8_list_grow()");
         *l = new_mem;
         if (cap == 0)
         {
@@ -51,7 +51,7 @@ grow(struct utf8_list** l, utf8_idx str_len)
 void
 utf8_list_deinit(struct utf8_list* l)
 {
-    if (l->capacity)
+    if (l)
         mem_free(l);
 }
 
@@ -165,7 +165,7 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str)
     utf8_idx half, middle, found, len;
 
     found = 0;
-    len = l->count;
+    len = l ? l->count : 0;
 
     while (len)
     {
@@ -191,7 +191,7 @@ utf8_upper_bound(const struct utf8_list* l, struct utf8_view str)
     utf8_idx half, middle, found, len;
 
     found = 0;
-    len = l->count;
+    len = l ? l->count : 0;
 
     while (len)
     {

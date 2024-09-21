@@ -9,13 +9,15 @@ extern "C" {
 #include "odb-util/ospath_list.h"
 }
 
-static struct ospath      sdk_root_dir = empty_ospath();
-static struct ospath_list plugin_dirs = ospath_list();
-static enum sdk_type      sdk_type = SDK_ODB;
+static struct ospath       sdk_root_dir;
+static enum sdk_type       sdk_type;
+static struct ospath_list* plugin_dirs;
 
 void
 initSDK(void)
 {
+    sdk_type = SDK_ODB;
+    sdk_root_dir = empty_ospath();
     ospath_list_init(&plugin_dirs);
 }
 
@@ -114,10 +116,10 @@ setupSDK(const std::vector<std::string>& args)
                 log_err("[sdk] ",
                     "There is no default path configured for the DarkBASIC Pro "
                     "SDK "
-                    "root directory. Please specify it with {emph:--sdkroot} "
+                    "root directory. Please specify it with {emph:--sdk-root} "
                     "or "
                     "set "
-                    "the SDK type to {quote:odb} with {emph:--sdktype}\n");
+                    "the SDK type to {quote:odb} with {emph:--sdk-type odb}\n");
                 return false;
             }
         }
@@ -156,9 +158,7 @@ getSDKRootDir()
 }
 
 // ----------------------------------------------------------------------------
-/*
-const std::vector<std::filesystem::path>& getAdditionalPluginDirs()
+struct ospath_list* getSDKPluginDirs()
 {
-    return pluginDirs_;
+    return plugin_dirs;
 }
-*/

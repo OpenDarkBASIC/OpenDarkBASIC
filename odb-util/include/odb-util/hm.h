@@ -5,6 +5,7 @@
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include <assert.h>
+#include <stddef.h>
 
 #define HM_SLOT_UNUSED 0 /* SLOT_UNUSED must be 0 for memset() to work */
 #define HM_SLOT_RIP    1
@@ -35,7 +36,6 @@ enum hm_status
         int##bits##_t count, capacity;                                         \
         H             hashes[1];                                               \
     };                                                                         \
-    static struct prefix prefix##_null_hm;                                     \
                                                                                \
     /*!                                                                        \
      * @brief This must be called before operating on any hashmap. Initializes \
@@ -44,7 +44,7 @@ enum hm_status
      */                                                                        \
     static void prefix##_init(struct prefix** hm)                              \
     {                                                                          \
-        (*hm) = &prefix##_null_hm;                                             \
+        *hm = NULL;                                                            \
     }                                                                          \
                                                                                \
     /*!                                                                        \
@@ -55,12 +55,11 @@ enum hm_status
     API void prefix##_deinit(struct prefix* hm);                               \
                                                                                \
     /*!                                                                        \
-     * @brief Allocates space for a new                                        \
+     * @brief Allocates space for a new key.                                   \
      */                                                                        \
     API V*             prefix##_emplace_new(struct prefix** hm, K key);        \
     API enum hm_status prefix##_emplace_or_get(                                \
         struct prefix** hm, K key, V** value);                                 \
-    API int prefix##_insert(struct prefix** hm, K key, V value);               \
                                                                                \
     API V* prefix##_erase(struct prefix* hm, K key);                           \
     API V* prefix##_find(struct prefix* hm, K key);                            \
@@ -84,6 +83,14 @@ enum hm_status
             case HM_NEW: *ins_value = value; break;                            \
         }                                                                      \
         return 0;                                                              \
+    }                                                                          \
+    static inline int prefix##_count(const struct prefix* hm)                  \
+    {                                                                          \
+        return hm ? hm->count : 0;                                             \
+    }                                                                          \
+    static inline int prefix##_capacity(const struct prefix* hm)               \
+    {                                                                          \
+        return hm ? hm->capacity : 0;                                          \
     }
 
 #define HM_DEFINE_API(prefix, K, V, bits)                                      \
@@ -177,7 +184,7 @@ enum hm_status
                                                                                \
     void prefix##_deinit(struct prefix* hm)                                    \
     {                                                                          \
-        if (hm->capacity)                                                      \
+        if (hm != NULL)                                                        \
         {                                                                      \
             storage_free_func(&hm->kvs);                                       \
             mem_free(hm);                                                      \
@@ -191,13 +198,13 @@ enum hm_status
     static int##bits##_t prefix##_find_slot(                                   \
         const struct prefix* hm, K key, H h)                                   \
     {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            hm && hm->capacity > 0, log_util_err("capacity: %d\n", hm->capacity));   \
+        ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));               \
+                                                                               \
         int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
         int##bits##_t i = 0;                                                   \
         int##bits##_t last_rip = -1;                                           \
-                                                                               \
-        ODBUTIL_DEBUG_ASSERT(                                                   \
-            hm->capacity > 0, log_util_err("capacity: %d\n", hm->capacity));    \
-        ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));                 \
                                                                                \
         slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
         while (hm->hashes[slot] != HM_SLOT_UNUSED)                             \
@@ -231,28 +238,28 @@ enum hm_status
     static int prefix##_grow(struct prefix** hm)                               \
     {                                                                          \
         int##bits##_t i;                                                       \
-        int##bits##_t new_capacity                                             \
-            = (*hm)->capacity ? (*hm)->capacity * 2 : MIN_CAPACITY;            \
+        int##bits##_t old_cap = *hm ? (*hm)->capacity : 0;                     \
+        int##bits##_t new_cap = old_cap ? old_cap * 2 : MIN_CAPACITY;          \
         /* Must be power of 2 */                                               \
-        ODBUTIL_DEBUG_ASSERT(                                                   \
-            (new_capacity & (new_capacity - 1)) == 0,                          \
-            log_util_err("new_capacity: %d\n", new_capacity));                  \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            (new_cap & (new_cap - 1)) == 0,                                    \
+            log_util_err("new_cap: %d\n", new_cap));                           \
                                                                                \
-        mem_size bytes                                                         \
-            = sizeof(**hm) + sizeof((*hm)->hashes[0]) * (new_capacity - 1);    \
-        struct prefix* new_hm = (struct prefix*)mem_alloc(bytes);              \
+        mem_size       header = offsetof(struct prefix, hashes);               \
+        mem_size       data = sizeof((*hm)->hashes[0]) * new_cap;              \
+        struct prefix* new_hm = (struct prefix*)mem_alloc(header + data);      \
         if (new_hm == NULL)                                                    \
             goto alloc_hm_failed;                                              \
-        if (storage_alloc_func(&new_hm->kvs, &(*hm)->kvs, new_capacity) != 0)  \
+        if (storage_alloc_func(&new_hm->kvs, &(*hm)->kvs, new_cap) != 0)       \
             goto alloc_storage_failed;                                         \
                                                                                \
         /* NOTE: Relies on HM_SLOT_UNUSED being 0 */                           \
-        memset(new_hm->hashes, 0, sizeof(H) * new_capacity);                   \
+        memset(new_hm->hashes, 0, sizeof(H) * new_cap);                        \
         new_hm->count = 0;                                                     \
-        new_hm->capacity = new_capacity;                                       \
+        new_hm->capacity = new_cap;                                            \
                                                                                \
         /* This should never fail so we don't error check */                   \
-        for (i = 0; i != (*hm)->capacity; ++i)                                 \
+        for (i = 0; i != old_cap; ++i)                                         \
         {                                                                      \
             int##bits##_t slot;                                                \
             H             h;                                                   \
@@ -267,7 +274,7 @@ enum hm_status
                 h = 2;                                                         \
             slot                                                               \
                 = prefix##_find_slot(new_hm, get_key_func(&(*hm)->kvs, i), h); \
-            ODBUTIL_DEBUG_ASSERT(slot >= 0, log_util_err("slot: %d\n", slot));   \
+            ODBUTIL_DEBUG_ASSERT(slot >= 0, log_util_err("slot: %d\n", slot)); \
             new_hm->hashes[slot] = h;                                          \
             if (set_key_func(&new_hm->kvs, slot, get_key_func(&(*hm)->kvs, i)) \
                 != 0)                                                          \
@@ -288,7 +295,7 @@ enum hm_status
     alloc_storage_failed:                                                      \
         mem_free(new_hm);                                                      \
     alloc_hm_failed:                                                           \
-        return log_oom(bytes, "hm_grow()");                                    \
+        return log_oom(header + data, "hm_grow()");                            \
     }                                                                          \
     V* prefix##_emplace_new(struct prefix** hm, K key)                         \
     {                                                                          \
@@ -297,7 +304,7 @@ enum hm_status
                                                                                \
         /* NOTE: Rehashing may change table count, make sure to calculate hash \
          * after this */                                                       \
-        if ((*hm)->count * 100 >= REHASH_AT_PERCENT * (*hm)->capacity)         \
+        if (!*hm || (*hm)->count * 100 >= REHASH_AT_PERCENT * (*hm)->capacity) \
             if (prefix##_grow(hm) != 0)                                        \
                 return NULL;                                                   \
                                                                                \
@@ -325,7 +332,7 @@ enum hm_status
                                                                                \
         /* NOTE: Rehashing may change table count, make sure to calculate hash \
          * after this */                                                       \
-        if ((*hm)->capacity * 100 >= REHASH_AT_PERCENT * (*hm)->count)         \
+        if (!*hm || (*hm)->capacity * 100 >= REHASH_AT_PERCENT * (*hm)->count) \
             if (prefix##_grow(hm) != 0)                                        \
                 return HM_OOM;                                                 \
                                                                                \
@@ -351,7 +358,7 @@ enum hm_status
     }                                                                          \
     V* prefix##_find(struct prefix* hm, K key)                                 \
     {                                                                          \
-        if (hm->capacity == 0)                                                 \
+        if (hm == NULL)                                                        \
             return NULL;                                                       \
                                                                                \
         /* We use two reserved values for hashes. The hash function could      \
@@ -397,15 +404,15 @@ hm_next_valid_slot(const hash32* hashes, intptr_t slot, intptr_t capacity)
 
 #define hm_for_each(hm, key, value)                                            \
     for (intptr_t key##_i                                                      \
-         = hm_next_valid_slot((hm)->hashes, -1, (hm)->capacity);               \
-         key##_i != (hm)->capacity && ((key = (hm)->kvs.keys[key##_i]) || 1)   \
+         = hm_next_valid_slot((hm)->hashes, -1, (hm) ? (hm)->capacity : 0);    \
+         (hm) && key##_i != (hm)->capacity && ((key = (hm)->kvs.keys[key##_i]) || 1) \
          && ((value = &(hm)->kvs.values[key##_i]) || 1);                       \
          key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))
 
 #define hm_for_each_full(hm, key, value, get_key_func, get_value_func)         \
     for (intptr_t key##_i                                                      \
-         = hm_next_valid_slot((hm)->hashes, -1, (hm)->capacity);               \
-         key##_i != (hm)->capacity                                             \
+         = hm_next_valid_slot((hm)->hashes, -1, (hm) ? (hm)->capacity : 0);    \
+         (hm) && key##_i != (hm)->capacity                                     \
          && ((key = get_key_func(&(hm)->kvs, key##_i)) || 1)                   \
          && ((value = get_value_func(&(hm)->kvs, key##_i)) || 1);              \
          key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))

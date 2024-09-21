@@ -6,5 +6,5 @@ outer: do
     loop
     inc x
     if x>5 then exit
-    printc x
+    printc stdout x
 loop

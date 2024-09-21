@@ -37,7 +37,6 @@ struct NAME : public Test
     TearDown() override
     {
         rbobj_deinit(rbobj);
-        ASSERT_THAT(rbobj_null_rb.capacity, Eq(0));
     }
 
     struct rbobj* rbobj;

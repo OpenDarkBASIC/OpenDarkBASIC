@@ -63,26 +63,17 @@ public:
     void
     SetUp() override
     {
-        vobj_init(&vobj);
+        vobj = NULL;
     }
 
     void
     TearDown() override
     {
-        ASSERT_THAT(vobj_null_vec.count, Eq(0));
-        ASSERT_THAT(vobj_null_vec.capacity, Eq(0));
         vobj_deinit(vobj);
     }
 
     struct vobj* vobj;
 };
-
-TEST_F(NAME, null_vec_is_set)
-{
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
-    EXPECT_THAT(vobj->count, Eq(0));
-    EXPECT_THAT(vobj->capacity, Eq(0));
-}
 
 TEST_F(NAME, deinit_null_vector_works)
 {
@@ -93,12 +84,12 @@ TEST_F(NAME, reserve_new_vector_sets_capacity)
 {
     EXPECT_THAT(vobj_reserve(&vobj, 16), Eq(0));
     ASSERT_THAT(vobj, NotNull());
-    EXPECT_THAT(vobj->capacity, Eq(16));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(16));
 }
 TEST_F(NAME, reserve_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(shitty_vobj_reserve((shitty_vobj**)&vobj, 16), Eq(-1));
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, resizing_larger_than_capacity_reallocates_and_updates_size)
@@ -106,13 +97,13 @@ TEST_F(NAME, resizing_larger_than_capacity_reallocates_and_updates_size)
     obj* old_ptr = vobj_emplace(&vobj);
     *old_ptr = obj{42, 42, 42, 42};
     ASSERT_THAT(vobj_resize(&vobj, MIN_CAPACITY * 32), Eq(0));
-    obj* new_ptr = &vobj->data[0];
+    obj* new_ptr = vec_get(vobj, 0);
     EXPECT_THAT(
         old_ptr, Ne(new_ptr)); // XXX: realloc() is not guaranteed to return a
                                // new address. This test will fail sometimes.
     EXPECT_THAT(new_ptr, Pointee(obj{42, 42, 42, 42}));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * 32));
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY * 32));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * 32));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY * 32));
 }
 
 TEST_F(NAME, resizing_smaller_than_capacity_reallocates_and_updates_size)
@@ -121,83 +112,83 @@ TEST_F(NAME, resizing_smaller_than_capacity_reallocates_and_updates_size)
     emplaced = vobj_emplace(&vobj);
     vobj_resize(&vobj, 64);
 
-    EXPECT_THAT(vobj->capacity, Eq(64u));
-    EXPECT_THAT(vobj->count, Eq(64u));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(64u));
+    EXPECT_THAT(vobj_count(vobj), Eq(64u));
 
     vobj_resize(&vobj, 8);
 
-    EXPECT_THAT(vobj->capacity, Eq(8u));
-    EXPECT_THAT(vobj->count, Eq(8u));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(8u));
+    EXPECT_THAT(vobj_count(vobj), Eq(8u));
 }
 TEST_F(NAME, resize_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(shitty_vobj_resize((shitty_vobj**)&vobj, 32), Eq(-1));
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, push_increments_counter)
 {
     ASSERT_THAT(vobj_push(&vobj, obj{5, 5, 5, 5}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(1));
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
 }
 TEST_F(NAME, emplace_increments_counter)
 {
     ASSERT_THAT(vobj_emplace(&vobj), NotNull());
-    EXPECT_THAT(vobj->count, Eq(1));
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
 }
 TEST_F(NAME, insert_increments_counter)
 {
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{5, 5, 5, 5}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(1));
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
 }
 TEST_F(NAME, insert_emplace_increments_counter)
 {
     ASSERT_THAT(vobj_insert_emplace(&vobj, 0), NotNull());
-    EXPECT_THAT(vobj->count, Eq(1));
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
 }
 
 TEST_F(NAME, push_sets_capacity)
 {
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{5, 5, 5, 5}), Eq(0));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, emplace_sets_capacity)
 {
     ASSERT_THAT(vobj_emplace(&vobj), NotNull());
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, insert_sets_capacity)
 {
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{5, 5, 5, 5}), Eq(0));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, insert_emplace_sets_capacity)
 {
     ASSERT_THAT(vobj_insert_emplace(&vobj, 0), NotNull());
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 
 TEST_F(NAME, push_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(
         shitty_vobj_push((shitty_vobj**)&vobj, obj{5, 5, 5, 5}), Eq(-1));
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 TEST_F(NAME, emplace_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(shitty_vobj_emplace((shitty_vobj**)&vobj), IsNull());
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 TEST_F(NAME, insert_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(
         shitty_vobj_insert((shitty_vobj**)&vobj, 0, obj{5, 5, 5, 5}), Eq(-1));
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 TEST_F(NAME, insert_emplace_returns_error_if_realloc_fails)
 {
     EXPECT_THAT(shitty_vobj_insert_emplace((shitty_vobj**)&vobj, 0), IsNull());
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, push_few_values_works)
@@ -205,40 +196,40 @@ TEST_F(NAME, push_few_values_works)
     EXPECT_THAT(vobj_push(&vobj, obj{5, 5, 5, 5}), Eq(0));
     EXPECT_THAT(vobj_push(&vobj, obj{7, 7, 7, 7}), Eq(0));
     EXPECT_THAT(vobj_push(&vobj, obj{3, 3, 3, 3}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(3));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{5, 5, 5, 5}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{7, 7, 7, 7}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{3, 3, 3, 3}));
+    EXPECT_THAT(vobj_count(vobj), Eq(3));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{5, 5, 5, 5}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{7, 7, 7, 7}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{3, 3, 3, 3}));
 }
 TEST_F(NAME, emplace_few_values_works)
 {
     *vobj_emplace(&vobj) = obj{5, 5, 5, 5};
     *vobj_emplace(&vobj) = obj{7, 7, 7, 7};
     *vobj_emplace(&vobj) = obj{3, 3, 3, 3};
-    EXPECT_THAT(vobj->count, Eq(3));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{5, 5, 5, 5}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{7, 7, 7, 7}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{3, 3, 3, 3}));
+    EXPECT_THAT(vobj_count(vobj), Eq(3));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{5, 5, 5, 5}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{7, 7, 7, 7}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{3, 3, 3, 3}));
 }
 TEST_F(NAME, insert_few_values_works)
 {
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{5, 5, 5, 5}), Eq(0));
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{7, 7, 7, 7}), Eq(0));
     ASSERT_THAT(vobj_insert(&vobj, 0, obj{3, 3, 3, 3}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(3));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{3, 3, 3, 3}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{7, 7, 7, 7}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{5, 5, 5, 5}));
+    EXPECT_THAT(vobj_count(vobj), Eq(3));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{3, 3, 3, 3}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{7, 7, 7, 7}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{5, 5, 5, 5}));
 }
 TEST_F(NAME, insert_emplace_few_values_works)
 {
     *vobj_insert_emplace(&vobj, 0) = obj{5, 5, 5, 5};
     *vobj_insert_emplace(&vobj, 0) = obj{7, 7, 7, 7};
     *vobj_insert_emplace(&vobj, 0) = obj{3, 3, 3, 3};
-    EXPECT_THAT(vobj->count, Eq(3));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{3, 3, 3, 3}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{7, 7, 7, 7}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{5, 5, 5, 5}));
+    EXPECT_THAT(vobj_count(vobj), Eq(3));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{3, 3, 3, 3}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{7, 7, 7, 7}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{5, 5, 5, 5}));
 }
 
 TEST_F(NAME, push_with_expand_sets_count_and_capacity_correctly)
@@ -246,48 +237,48 @@ TEST_F(NAME, push_with_expand_sets_count_and_capacity_correctly)
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_push(&vobj, obj{i, i, i, i}), Eq(0));
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     ASSERT_THAT(vobj_push(&vobj, obj{42, 42, 42, 42}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY + 1));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * EXPAND_FACTOR));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY + 1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * EXPAND_FACTOR));
 }
 TEST_F(NAME, emplace_with_expand_sets_count_and_capacity_correctly)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_emplace(&vobj), NotNull());
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     ASSERT_THAT(vobj_emplace(&vobj), NotNull());
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY + 1));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * EXPAND_FACTOR));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY + 1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * EXPAND_FACTOR));
 }
 TEST_F(NAME, insert_with_expand_sets_count_and_capacity_correctly)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_insert(&vobj, 0, obj{i, i, i, i}), Eq(0));
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     ASSERT_THAT(vobj_insert(&vobj, 3, obj{42, 42, 42, 42}), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY + 1));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * EXPAND_FACTOR));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY + 1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * EXPAND_FACTOR));
 }
 TEST_F(NAME, insert_emplace_with_expand_sets_count_and_capacity_correctly)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_insert_emplace(&vobj, 0), NotNull());
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     ASSERT_THAT(vobj_insert_emplace(&vobj, 3), NotNull());
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY + 1));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * EXPAND_FACTOR));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY + 1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * EXPAND_FACTOR));
 }
 
 TEST_F(NAME, push_with_expand_has_correct_values)
@@ -297,8 +288,8 @@ TEST_F(NAME, push_with_expand_has_correct_values)
     ASSERT_THAT(vobj_push(&vobj, obj{42, 42, 42, 42}), Eq(0));
 
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
-        EXPECT_THAT(&vobj->data[i], Pointee(obj{i, i, i, i}));
-    EXPECT_THAT(&vobj->data[MIN_CAPACITY], Pointee(obj{42, 42, 42, 42}));
+        EXPECT_THAT(vec_get(vobj, i), Pointee(obj{i, i, i, i}));
+    EXPECT_THAT(vec_get(vobj, MIN_CAPACITY), Pointee(obj{42, 42, 42, 42}));
 }
 TEST_F(NAME, emplace_with_expand_has_correct_values)
 {
@@ -307,8 +298,8 @@ TEST_F(NAME, emplace_with_expand_has_correct_values)
     *vobj_emplace(&vobj) = obj{42, 42, 42, 42};
 
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
-        EXPECT_THAT(&vobj->data[i], Pointee(obj{i, i, i, i}));
-    EXPECT_THAT(&vobj->data[MIN_CAPACITY], Pointee(obj{42, 42, 42, 42}));
+        EXPECT_THAT(vec_get(vobj, i), Pointee(obj{i, i, i, i}));
+    EXPECT_THAT(vec_get(vobj, MIN_CAPACITY), Pointee(obj{42, 42, 42, 42}));
 }
 TEST_F(NAME, insert_with_expand_has_correct_values)
 {
@@ -318,16 +309,16 @@ TEST_F(NAME, insert_with_expand_has_correct_values)
 
     for (uint64_t i = 0; i != 3; ++i)
         EXPECT_THAT(
-            &vobj->data[i],
+            vec_get(vobj, i),
             Pointee(
                 obj{MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{42, 42, 42, 42}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{42, 42, 42, 42}));
     for (uint64_t i = 4; i != MIN_CAPACITY + 1; ++i)
         EXPECT_THAT(
-            &vobj->data[i],
+            vec_get(vobj, i),
             Pointee(
                 obj{MIN_CAPACITY - i,
                     MIN_CAPACITY - i,
@@ -342,16 +333,16 @@ TEST_F(NAME, insert_emplace_with_expand_has_correct_values)
 
     for (uint64_t i = 0; i != 3; ++i)
         EXPECT_THAT(
-            &vobj->data[i],
+            vec_get(vobj, i),
             Pointee(
                 obj{MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1,
                     MIN_CAPACITY - i - 1}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{42, 42, 42, 42}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{42, 42, 42, 42}));
     for (uint64_t i = 4; i != MIN_CAPACITY + 1; ++i)
         EXPECT_THAT(
-            &vobj->data[i],
+            vec_get(vobj, i),
             Pointee(
                 obj{MIN_CAPACITY - i,
                     MIN_CAPACITY - i,
@@ -364,51 +355,51 @@ TEST_F(NAME, push_expand_with_failed_realloc_returns_error)
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_push(&vobj, obj{i, i, i, i}), Eq(0));
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     EXPECT_THAT(
         shitty_vobj_push((shitty_vobj**)&vobj, obj{42, 42, 42, 42}), Eq(-1));
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, emplace_expand_with_failed_realloc_returns_error)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_emplace(&vobj), NotNull());
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     EXPECT_THAT(shitty_vobj_emplace((shitty_vobj**)&vobj), IsNull());
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, insert_expand_with_failed_realloc_returns_error)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_insert(&vobj, 0, obj{i, i, i, i}), Eq(0));
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     EXPECT_THAT(
         shitty_vobj_insert((shitty_vobj**)&vobj, 3, obj{42, 42, 42, 42}),
         Eq(-1));
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 TEST_F(NAME, insert_emplace_expand_with_failed_realloc_returns_error)
 {
     for (uint64_t i = 0; i != MIN_CAPACITY; ++i)
         ASSERT_THAT(vobj_insert_emplace(&vobj, 0), NotNull());
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 
     EXPECT_THAT(shitty_vobj_insert_emplace((shitty_vobj**)&vobj, 3), IsNull());
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY));
 }
 
 TEST_F(NAME, inserting_preserves_existing_elements)
@@ -420,42 +411,42 @@ TEST_F(NAME, inserting_preserves_existing_elements)
     vobj_push(&vobj, obj{65, 65, 65, 65});
 
     vobj_insert(&vobj, 2, obj{68, 68, 68, 68}); // middle insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{65, 65, 65, 65}));
 
     vobj_insert(&vobj, 0, obj{16, 16, 16, 16}); // beginning insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
 
     vobj_insert(&vobj, 7, obj{82, 82, 82, 82}); // end insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
-    EXPECT_THAT(&vobj->data[7], Pointee(obj{82, 82, 82, 82}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 7), Pointee(obj{82, 82, 82, 82}));
 
     vobj_insert(&vobj, 7, obj{37, 37, 37, 37}); // end insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
-    EXPECT_THAT(&vobj->data[7], Pointee(obj{37, 37, 37, 37}));
-    EXPECT_THAT(&vobj->data[8], Pointee(obj{82, 82, 82, 82}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 7), Pointee(obj{37, 37, 37, 37}));
+    EXPECT_THAT(vec_get(vobj, 8), Pointee(obj{82, 82, 82, 82}));
 }
 
 TEST_F(NAME, insert_emplacing_preserves_existing_elements)
@@ -467,42 +458,42 @@ TEST_F(NAME, insert_emplacing_preserves_existing_elements)
     vobj_push(&vobj, obj{65, 65, 65, 65});
 
     *vobj_insert_emplace(&vobj, 2) = obj{68, 68, 68, 68}; // middle insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{65, 65, 65, 65}));
 
     *vobj_insert_emplace(&vobj, 0) = obj{16, 16, 16, 16}; // beginning insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
 
     *vobj_insert_emplace(&vobj, 7) = obj{82, 82, 82, 82}; // end insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
-    EXPECT_THAT(&vobj->data[7], Pointee(obj{82, 82, 82, 82}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 7), Pointee(obj{82, 82, 82, 82}));
 
     *vobj_insert_emplace(&vobj, 7) = obj{37, 37, 37, 37}; // end insertion
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{16, 16, 16, 16}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{68, 68, 68, 68}));
-    EXPECT_THAT(&vobj->data[4], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[5], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[6], Pointee(obj{65, 65, 65, 65}));
-    EXPECT_THAT(&vobj->data[7], Pointee(obj{37, 37, 37, 37}));
-    EXPECT_THAT(&vobj->data[8], Pointee(obj{82, 82, 82, 82}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{16, 16, 16, 16}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{68, 68, 68, 68}));
+    EXPECT_THAT(vec_get(vobj, 4), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 5), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 6), Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 7), Pointee(obj{37, 37, 37, 37}));
+    EXPECT_THAT(vec_get(vobj, 8), Pointee(obj{82, 82, 82, 82}));
 }
 
 TEST_F(NAME, clear_null_vector_works)
@@ -515,11 +506,11 @@ TEST_F(NAME, clear_keeps_buffer_and_resets_count)
     for (uint64_t i = 0; i != MIN_CAPACITY * 2; ++i)
         ASSERT_THAT(vobj_push(&vobj, obj{i, i, i, i}), Eq(0));
 
-    EXPECT_THAT(vobj->count, Eq(MIN_CAPACITY * 2));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * 2));
+    EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY * 2));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * 2));
     vobj_clear(vobj);
-    EXPECT_THAT(vobj->count, Eq(0u));
-    EXPECT_THAT(vobj->capacity, Eq(MIN_CAPACITY * 2));
+    EXPECT_THAT(vobj_count(vobj), Eq(0u));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(MIN_CAPACITY * 2));
 }
 
 TEST_F(NAME, compact_null_vector_works)
@@ -531,9 +522,9 @@ TEST_F(NAME, compact_sets_capacity)
 {
     vobj_push(&vobj, obj{9, 9, 9, 9});
     vobj_compact(&vobj);
-    ASSERT_THAT(vobj, Ne(&vobj_null_vec));
-    EXPECT_THAT(vobj->count, Eq(1));
-    EXPECT_THAT(vobj->capacity, Eq(1));
+    ASSERT_THAT(vobj, NotNull());
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(1));
 }
 
 TEST_F(NAME, compact_removes_excess_space)
@@ -544,9 +535,9 @@ TEST_F(NAME, compact_removes_excess_space)
     vobj_pop(vobj);
     vobj_pop(vobj);
     vobj_compact(&vobj);
-    ASSERT_THAT(vobj, Ne(&vobj_null_vec));
-    EXPECT_THAT(vobj->count, Eq(1));
-    EXPECT_THAT(vobj->capacity, Eq(1));
+    ASSERT_THAT(vobj, NotNull());
+    EXPECT_THAT(vobj_count(vobj), Eq(1));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(1));
 }
 
 TEST_F(NAME, clear_and_compact_deletes_buffer)
@@ -554,7 +545,7 @@ TEST_F(NAME, clear_and_compact_deletes_buffer)
     vobj_push(&vobj, obj{9, 9, 9, 9});
     vobj_clear(vobj);
     vobj_compact(&vobj);
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, clear_compact_null_vector_works)
@@ -566,7 +557,7 @@ TEST_F(NAME, clear_compact_deletes_buffer)
 {
     vobj_push(&vobj, obj{9, 9, 9, 9});
     vobj_clear_compact(&vobj);
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, pop_returns_pushed_values)
@@ -582,8 +573,8 @@ TEST_F(NAME, pop_returns_pushed_values)
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{2, 2, 2, 2}));
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{3, 3, 3, 3}));
 
-    ASSERT_THAT(vobj, Ne(&vobj_null_vec));
-    EXPECT_THAT(vobj->count, Eq(0u));
+    ASSERT_THAT(vobj, NotNull());
+    EXPECT_THAT(vobj_count(vobj), Eq(0u));
 }
 
 TEST_F(NAME, pop_returns_emplaced_values)
@@ -592,7 +583,7 @@ TEST_F(NAME, pop_returns_emplaced_values)
     *vobj_emplace(&vobj) = obj{24, 24, 24, 24};
     *vobj_emplace(&vobj) = obj{73, 73, 73, 73};
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(vobj->count, Eq(2));
+    EXPECT_THAT(vobj_count(vobj), Eq(2));
     *vobj_emplace(&vobj) = obj{28, 28, 28, 28};
     *vobj_emplace(&vobj) = obj{72, 72, 72, 72};
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{72, 72, 72, 72}));
@@ -600,8 +591,8 @@ TEST_F(NAME, pop_returns_emplaced_values)
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{24, 24, 24, 24}));
     EXPECT_THAT(vobj_pop(vobj), Pointee(obj{53, 53, 53, 53}));
 
-    EXPECT_THAT(vobj->count, Eq(0u));
-    EXPECT_THAT(vobj, Ne(&vobj_null_vec));
+    EXPECT_THAT(vobj_count(vobj), Eq(0u));
+    EXPECT_THAT(vobj, NotNull());
 }
 
 TEST_F(NAME, popping_preserves_existing_elements)
@@ -613,10 +604,10 @@ TEST_F(NAME, popping_preserves_existing_elements)
     vobj_push(&vobj, obj{24, 24, 24, 24});
 
     vobj_pop(vobj);
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{53, 53, 53, 53}));
 }
 
 TEST_F(NAME, get_last_element)
@@ -645,10 +636,10 @@ TEST_F(NAME, get_element_random_access)
     vobj_push(&vobj, obj{24, 24, 24, 24});
     vobj_push(&vobj, obj{73, 73, 73, 73});
     vobj_push(&vobj, obj{43, 43, 43, 43});
-    EXPECT_THAT((&vobj->data[1]), Pointee(obj{24, 24, 24, 24}));
-    EXPECT_THAT((&vobj->data[3]), Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT((&vobj->data[2]), Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT((&vobj->data[0]), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT((vec_get(vobj, 1)), Pointee(obj{24, 24, 24, 24}));
+    EXPECT_THAT((vec_get(vobj, 3)), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT((vec_get(vobj, 2)), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT((vec_get(vobj, 0)), Pointee(obj{53, 53, 53, 53}));
 }
 
 TEST_F(NAME, rget_element_random_access)
@@ -672,15 +663,15 @@ TEST_F(NAME, erasing_by_index_preserves_existing_elements)
     vobj_push(&vobj, obj{65, 65, 65, 65});
 
     vobj_erase(vobj, 1);
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{73, 73, 73, 73}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{73, 73, 73, 73}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{65, 65, 65, 65}));
 
     vobj_erase(vobj, 1);
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{53, 53, 53, 53}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{43, 43, 43, 43}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{65, 65, 65, 65}));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{53, 53, 53, 53}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{43, 43, 43, 43}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{65, 65, 65, 65}));
 }
 
 TEST_F(NAME, for_each_zero_elements)
@@ -729,10 +720,10 @@ TEST_F(NAME, retain_all)
     for (uint64_t i = 0; i != 8; ++i)
         vobj_push(&vobj, obj{i, i, i, i});
 
-    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
     EXPECT_THAT(
         vobj_retain(vobj, [](obj* o, void* user) { return 1; }, NULL), Eq(0));
-    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
 }
 
 TEST_F(NAME, retain_half)
@@ -740,17 +731,17 @@ TEST_F(NAME, retain_half)
     for (uint64_t i = 0; i != 8; ++i)
         vobj_push(&vobj, obj{i, i, i, i});
 
-    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
     int i = 0;
     EXPECT_THAT(
         vobj_retain(
             vobj, [](obj* o, void* user) { return (*(int*)user)++ % 2; }, &i),
         Eq(0));
-    EXPECT_THAT(vobj->count, Eq(4));
-    EXPECT_THAT(&vobj->data[0], Pointee(obj{1, 1, 1, 1}));
-    EXPECT_THAT(&vobj->data[1], Pointee(obj{3, 3, 3, 3}));
-    EXPECT_THAT(&vobj->data[2], Pointee(obj{5, 5, 5, 5}));
-    EXPECT_THAT(&vobj->data[3], Pointee(obj{7, 7, 7, 7}));
+    EXPECT_THAT(vobj_count(vobj), Eq(4));
+    EXPECT_THAT(vec_get(vobj, 0), Pointee(obj{1, 1, 1, 1}));
+    EXPECT_THAT(vec_get(vobj, 1), Pointee(obj{3, 3, 3, 3}));
+    EXPECT_THAT(vec_get(vobj, 2), Pointee(obj{5, 5, 5, 5}));
+    EXPECT_THAT(vec_get(vobj, 3), Pointee(obj{7, 7, 7, 7}));
 }
 
 TEST_F(NAME, retain_returning_error)
@@ -758,11 +749,11 @@ TEST_F(NAME, retain_returning_error)
     for (uint64_t i = 0; i != 8; ++i)
         vobj_push(&vobj, obj{i, i, i, i});
 
-    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
     int i = 0;
     EXPECT_THAT(
         vobj_retain(vobj, [](obj* o, void* user) { return -5; }, NULL), Eq(-5));
-    EXPECT_THAT(vobj->count, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
 }
 
 TEST_F(NAME, insert_up_to_realloc_doesnt_cause_invalid_memmove)
@@ -776,16 +767,16 @@ TEST_F(NAME, insert_up_to_realloc_doesnt_cause_invalid_memmove)
 TEST_F(NAME, resize_from_0_to_0)
 {
     vobj_resize(&vobj, 0);
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }
 
 TEST_F(NAME, resize_from_8_to_0)
 {
     vobj_resize(&vobj, 8);
-    EXPECT_THAT(vobj->count, Eq(8));
-    EXPECT_THAT(vobj->capacity, Eq(8));
+    EXPECT_THAT(vobj_count(vobj), Eq(8));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(8));
     EXPECT_THAT(vobj->data, NotNull());
 
     vobj_resize(&vobj, 0);
-    EXPECT_THAT(vobj, Eq(&vobj_null_vec));
+    EXPECT_THAT(vobj, IsNull());
 }

@@ -235,6 +235,12 @@ db_parse(
     struct utf8         cmd_buf = empty_utf8();
     struct parse_param  parse_param = {filename, source, ast};
 
+    if (source.text.len == 0)
+    {
+        log_parser_warn("Source is empty: {quote:%s}\n", filename);
+        return 0;
+    }
+
     buffer_state = db_scan_buffer(
         source.text.data, source.text.len + 2, parser->scanner);
     if (buffer_state == NULL)

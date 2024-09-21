@@ -45,4 +45,4 @@ plugin_list_populate(
     enum sdk_type             sdk_type,
     enum target_platform      target_platform,
     struct ospathc            sdk_root,
-    const struct ospath_list* extra_plugins);
+    struct ospath_list*       extra_plugins);

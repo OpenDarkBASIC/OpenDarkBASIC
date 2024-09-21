@@ -1,0 +1,10 @@
+STRINGTABLE 
+BEGIN
+    1 "PRINT STDOUT%S%print_stdout_str%String"
+    2 "PRINT STDOUT%D%print_stdout_dword%Dword"
+    3 "PRINT STDOUT%F%print_stdout_float%Float"
+    
+    4 "PRINTC STDOUT%S%printc_stdout_str%String"
+    5 "PRINTC STDOUT%D%printc_stdout_dword%Dword"
+    6 "PRINTC STDOUT%F%printc_stdout_float%Float"
+END

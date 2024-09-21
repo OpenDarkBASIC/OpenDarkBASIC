@@ -27,7 +27,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
         = ctx->cmds->param_types->data[*cmd_id];
 
     /* param count mismatch */
-    if (params->count != ctx->argcount)
+    if (cmd_param_types_list_count(params) != ctx->argcount)
         return 0;
 
     for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
@@ -155,7 +155,7 @@ report_no_commands_found(
             cmd_name.len,
             cmd_name.data + cmd_name.off,
             ret_type == TYPE_VOID ? " " : "(");
-        for (i = 0; i != param_names->count; ++i)
+        for (i = 0; i != utf8_list_count(param_names); ++i)
         {
             if (i)
                 log_raw(", ");
@@ -215,7 +215,7 @@ report_ambiguous_overloads(
             name.len,
             name.data + name.off,
             ret_type == TYPE_VOID ? " " : "(");
-        for (i = 0; i != param_names->count; ++i)
+        for (i = 0; i != utf8_list_count(param_names); ++i)
         {
             if (i)
                 log_raw(", ");
@@ -256,7 +256,7 @@ log_cmd_signature(
         name.len,
         name.data + name.off,
         ret_type == TYPE_VOID ? " " : "(");
-    for (i = 0; i != param_names->count; ++i)
+    for (i = 0; i != utf8_list_count(param_names); ++i)
     {
         if (i)
             log_raw(", ");
@@ -287,7 +287,7 @@ typecheck_warnings(
         ast->nodes[cmd_node].info.node_type == AST_COMMAND,
         log_semantic_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
 
-    for (i = 0; i != params->count;
+    for (i = 0; i != cmd_param_types_list_count(params);
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
         ODBUTIL_DEBUG_ASSERT(
@@ -362,14 +362,13 @@ resolve_cmd_overloads(
     const char*               source_filename,
     struct db_source          source)
 {
-    struct utf8_view   cmd_name;
-    struct candidates* candidates;
-    struct candidates* prev_candidates;
     ast_id             n;
     ast_id             arglist;
     cmd_id             cmd;
-
-    struct ctx ctx = {ast, cmds, 0, -1};
+    struct utf8_view   cmd_name;
+    struct candidates* candidates;
+    struct candidates* prev_candidates;
+    struct ctx         ctx = {ast, cmds, 0, -1};
 
     candidates_init(&candidates);
     candidates_init(&prev_candidates);
@@ -404,33 +403,33 @@ resolve_cmd_overloads(
         ctx.arglist = ast->nodes[n].cmd.arglist;
         candidates_retain(
             candidates, eliminate_obviously_wrong_overloads, &ctx);
-        if (candidates->count > 1)
+        if (candidates_count(candidates) > 1)
             candidates_retain(candidates, eliminate_problematic_casts, &ctx);
 
         /* Have to be as strict as possible. This might eliminate all commands,
          * in which case we want to report an ambiguous overload error using the
          * candidates list as it is now. Therefore, make a copy */
-        if (candidates_resize(&prev_candidates, candidates->count) < 0)
+        if (candidates_resize(&prev_candidates, candidates_count(candidates)) < 0)
             goto fail;
         memcpy(
             prev_candidates->data,
             candidates->data,
-            sizeof(*candidates->data) * candidates->count);
+            sizeof(*candidates->data) * candidates_count(candidates));
 
-        if (candidates->count > 1)
+        if (candidates_count(candidates) > 1)
             candidates_retain(
                 candidates, eliminate_all_but_exact_matches, &ctx);
 
         /* Success: Update command ID in AST and perform any necessary type
          * conversions */
-        if (candidates->count == 1)
+        if (candidates_count(candidates) == 1)
         {
             ast->nodes[n].cmd.id = *vec_first(candidates);
             typecheck_warnings(ast, n, plugins, cmds, source_filename, source);
             continue;
         }
 
-        if (prev_candidates->count == 0)
+        if (candidates_count(candidates) == 0)
             report_no_commands_found(
                 ast,
                 ast->nodes[n].cmd.arglist,

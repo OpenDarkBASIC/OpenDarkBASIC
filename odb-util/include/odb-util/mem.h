@@ -15,7 +15,7 @@ typedef int32_t mem_idx;
 #   define mem_realloc   realloc
 #   define mem_track_allocation(p)
 #   define mem_track_deallocation(p)
-#   define mem_acquire(p)
+#   define mem_acquire(p, s)
 #   define mem_release(p)
 #else
 

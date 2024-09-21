@@ -47,7 +47,6 @@ typemap_kvs_alloc(
     struct typemap_kvs* kvs, struct typemap_kvs* old_kvs, int32_t capacity)
 {
     kvs->text = NULL;
-
     spanlist_init(&kvs->keys);
     if (spanlist_resize(&kvs->keys, capacity) != 0)
         return -1;

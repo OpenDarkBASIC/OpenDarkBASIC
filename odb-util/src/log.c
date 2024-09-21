@@ -15,6 +15,7 @@ static void
 default_write_func(const char* fmt, va_list ap)
 {
     vfprintf(stderr, fmt, ap);
+    fflush(stderr);
 }
 ODBUTIL_PRINTF_FORMAT(1, 2)
 static void

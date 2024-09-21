@@ -52,7 +52,6 @@ allocamap_kvs_alloc(
     struct allocamap_kvs* kvs, struct allocamap_kvs* old_kvs, int32_t capacity)
 {
     kvs->text = NULL;
-
     spanlist_init(&kvs->keys);
     if (spanlist_resize(&kvs->keys, capacity) != 0)
         return -1;
@@ -226,6 +225,7 @@ get_command_function_signature(
     struct ir_module*      ir,
     const struct ast*      ast,
     ast_id                 cmd,
+    enum sdk_type          sdk_type,
     const struct cmd_list* cmds)
 {
     ODBUTIL_DEBUG_ASSERT(
@@ -240,7 +240,7 @@ get_command_function_signature(
     const struct cmd_param*           odb_param;
     vec_for_each(odb_param_types, odb_param)
     {
-        if (odb_param->type == TYPE_FLOAT)
+        if (sdk_type == SDK_DBPRO && odb_param->type == TYPE_FLOAT)
             llvm_param_types.push_back(llvm::Type::getInt32Ty(ir->ctx));
         else
         {
@@ -251,11 +251,12 @@ get_command_function_signature(
 
     /* Convert return type from command list as well, and create LLVM FT */
     enum type odb_return_type = cmds->return_types->data[cmd_id];
-    if (odb_return_type == TYPE_FLOAT)
-        return llvm::FunctionType::get(
-            llvm::Type::getInt32Ty(ir->ctx),
-            llvm_param_types,
-            /* isVarArg */ false);
+    if (sdk_type == SDK_DBPRO)
+        if (odb_return_type == TYPE_FLOAT)
+            return llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(ir->ctx),
+                llvm_param_types,
+                /* isVarArg */ false);
 
     return llvm::FunctionType::get(
         type_to_llvm(odb_return_type, &ir->ctx),
@@ -324,6 +325,7 @@ gen_expr(
     llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        expr,
+    enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
     struct db_source                              source,
@@ -337,6 +339,7 @@ gen_cmd_call(
     llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        cmd,
+    enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
     struct db_source                              source,
@@ -367,24 +370,27 @@ gen_cmd_call(
             builder,
             ast,
             ast_expr,
+            sdk_type,
             cmds,
             source_filename,
             source,
             string_table,
             cmd_func_table,
             allocamap);
-        if (ast->nodes[ast_expr].info.type_info == TYPE_FLOAT)
-            llvm_expr = builder.CreateBitCast(llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
+        if (sdk_type == SDK_DBPRO)
+            if (ast->nodes[ast_expr].info.type_info == TYPE_FLOAT)
+                llvm_expr = builder.CreateBitCast(llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
         param_values.push_back(llvm_expr);
     }
 
-    llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, cmds);
+    llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, sdk_type, cmds);
     llvm::Value*        cmd_func_addr = builder.CreateLoad(
         llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
     llvm::Value* retval = builder.CreateCall(FT, cmd_func_addr, param_values);
-
-    if (ast->nodes[cmd].info.type_info == TYPE_FLOAT)
-        retval = builder.CreateBitCast(retval, llvm::Type::getFloatTy(ir->ctx));
+    
+    if (sdk_type == SDK_DBPRO)
+        if (ast->nodes[cmd].info.type_info == TYPE_FLOAT)
+            retval = builder.CreateBitCast(retval, llvm::Type::getFloatTy(ir->ctx));
 
     return retval;
 }
@@ -395,6 +401,7 @@ gen_expr(
     llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        expr,
+    enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
     struct db_source                              source,
@@ -417,6 +424,7 @@ gen_expr(
                 builder,
                 ast,
                 expr,
+                sdk_type,
                 cmds,
                 source_filename,
                 source,
@@ -453,6 +461,7 @@ gen_expr(
                 builder,
                 ast,
                 lhs_node,
+                sdk_type,
                 cmds,
                 source_filename,
                 source,
@@ -464,6 +473,7 @@ gen_expr(
                 builder,
                 ast,
                 rhs_node,
+                sdk_type,
                 cmds,
                 source_filename,
                 source,
@@ -731,6 +741,7 @@ gen_expr(
                 builder,
                 ast,
                 ast->nodes[expr].cast.expr,
+                sdk_type,
                 cmds,
                 source_filename,
                 source,
@@ -842,6 +853,7 @@ gen_block(
     llvm::IRBuilder<>&                            builder,
     const struct ast*                             ast,
     ast_id                                        block,
+    enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
     const struct db_source                        source,
@@ -867,6 +879,7 @@ gen_block(
                     builder,
                     ast,
                     stmt,
+                    sdk_type,
                     cmds,
                     source_filename,
                     source,
@@ -884,6 +897,7 @@ gen_block(
                     builder,
                     ast,
                     rhs_node,
+                    sdk_type,
                     cmds,
                     source_filename,
                     source,
@@ -926,6 +940,7 @@ gen_block(
                     builder,
                     ast,
                     expr_node,
+                    sdk_type,
                     cmds,
                     source_filename,
                     source,
@@ -950,6 +965,7 @@ gen_block(
                         builder,
                         ast,
                         yes_node,
+                        sdk_type,
                         cmds,
                         source_filename,
                         source,
@@ -973,6 +989,7 @@ gen_block(
                         builder,
                         ast,
                         no_node,
+                        sdk_type,
                         cmds,
                         source_filename,
                         source,
@@ -1009,6 +1026,7 @@ gen_block(
                     builder,
                     ast,
                     ast->nodes[stmt].loop.body,
+                    sdk_type,
                     cmds,
                     source_filename,
                     source,
@@ -1025,6 +1043,7 @@ gen_block(
                         builder,
                         ast,
                         ast->nodes[stmt].loop.post_body,
+                        sdk_type,
                         cmds,
                         source_filename,
                         source,
@@ -1082,6 +1101,7 @@ gen_block(
                         builder,
                         ast,
                         step,
+                        sdk_type,
                         cmds,
                         source_filename,
                         source,
@@ -1139,8 +1159,8 @@ gen_block(
 int
 ir_translate_ast(
     struct ir_module*      ir,
-    struct ast*            program,
-    enum sdk_type          sdkType,
+    const struct ast*      program,
+    enum sdk_type          sdk_type,
     enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,
@@ -1173,18 +1193,22 @@ ir_translate_ast(
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
-    gen_block(
-        ir,
-        builder,
-        program,
-        0,
-        cmds,
-        source_filename,
-        source,
-        &string_table,
-        &cmd_func_table,
-        &loop_exit_stack,
-        &allocamap);
+    if (program->node_count == 0)
+        log_codegen_warn("AST is empty for source file {quote:%s}\n", source_filename);
+    else
+        gen_block(
+            ir,
+            builder,
+            program,
+            0,
+            sdk_type,
+            cmds,
+            source_filename,
+            source,
+            &string_table,
+            &cmd_func_table,
+            &loop_exit_stack,
+            &allocamap);
     allocamap_deinit(allocamap);
 
     // Finish off block

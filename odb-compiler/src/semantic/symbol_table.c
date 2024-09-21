@@ -13,6 +13,7 @@ struct symbol_table_kvs_key_data
 static hash32
 kvs_hash(struct utf8_view key)
 {
+    // TODO: Could just use the offset/length here?
     return hash32_jenkins_oaat(key.data + key.off, key.len);
 }
 
@@ -25,8 +26,9 @@ kvs_alloc(
     static const int avg_func_name_len = 32;
     int header_size = offsetof(struct symbol_table_kvs_key_data, data);
     int data_size = sizeof(char) * avg_func_name_len * capacity;
-    kvs->key_data = old_kvs->key_data ? old_kvs->key_data
-                                      : mem_alloc(header_size + data_size);
+    kvs->key_data = old_kvs
+        ? old_kvs->key_data
+        : mem_alloc(header_size + data_size);
     if (kvs->key_data == NULL)
         goto alloc_data_failed;
     kvs->key_data->count = 0;
@@ -40,14 +42,15 @@ kvs_alloc(
     if (kvs->values == NULL)
         goto alloc_values_failed;
 
-    old_kvs->key_data = NULL; /* Take ownership of old string data */
+    if (old_kvs != NULL)
+        old_kvs->key_data = NULL; /* Take ownership of old string data */
 
     return 0;
 
 alloc_values_failed:
     mem_free(kvs->key_spans);
 alloc_spans_failed:
-    if (old_kvs->key_data == NULL)
+    if (old_kvs == NULL)
         mem_free(kvs->key_data);
 alloc_data_failed:
     return -1;

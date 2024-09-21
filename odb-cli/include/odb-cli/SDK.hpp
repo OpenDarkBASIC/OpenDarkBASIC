@@ -19,3 +19,4 @@ bool setupSDK(const std::vector<std::string>& args);
 
 enum sdk_type getSDKType();
 struct ospathc getSDKRootDir();
+struct ospath_list* getSDKPluginDirs();

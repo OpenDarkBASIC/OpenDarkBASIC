@@ -30,21 +30,23 @@
         int##bits##_t count, capacity;                                         \
         T             data[1];                                                 \
     };                                                                         \
-    static struct prefix prefix##_null_vec;                                    \
                                                                                \
     /*!                                                                        \
      * @brief This must be called before operating on any vector. Initializes  \
      * the structure to a defined state.                                       \
      * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
      */                                                                        \
-    static inline void prefix##_init(struct prefix** v);                       \
+    static inline void prefix##_init(struct prefix** v)                        \
+    {                                                                          \
+        *v = NULL;                                                             \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Destroys an existing vector object and frees all memory          \
      * allocated by inserted elements.                                         \
      * @param[in] v Vector of type VEC(T,B)                                    \
      */                                                                        \
-    static inline void prefix##_deinit(struct prefix* v);                      \
+    API void prefix##_deinit(struct prefix* v);                                \
                                                                                \
     /*!                                                                        \
      * @brief Allocates memory to fit exactly "num" amount of elements.        \
@@ -66,7 +68,7 @@
      * @param[in] num Number of elements to reserve memory for.                \
      * @return Returns 0 on success, negative on error.                        \
      */                                                                        \
-    static inline int prefix##_resize(struct prefix** v, int##bits##_t count); \
+    API int prefix##_resize(struct prefix** v, int##bits##_t count);           \
                                                                                \
     /*!                                                                        \
      * @brief Resets the vector's size to 0.                                   \
@@ -75,7 +77,11 @@
      * see vec_clear_compact().                                                \
      * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
      */                                                                        \
-    static inline void prefix##_clear(struct prefix* v);                       \
+    static inline void prefix##_clear(struct prefix* v)                        \
+    {                                                                          \
+        if(v)                                                                  \
+            v->count = 0;                                                      \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Frees any excess memory. The memory buffer is resized to fit the \
@@ -89,20 +95,11 @@
      * the vector's count to 0 and frees all underlying memory.                \
      * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
      */                                                                        \
-    static inline void prefix##_clear_compact(struct prefix** v);              \
-                                                                               \
-    /*!                                                                        \
-     * @brief Inserts (copies) a new element into the end of the vector.       \
-     * @note This can cause a re-allocation of the underlying memory. This     \
-     * implementation expands the allocated memory by a factor of 2 every time \
-     * the capacity is reached to cut down on the frequency of re-allocations. \
-     * @note If you do not wish to copy data into the vector, but merely make  \
-     * space, see vec_push_emplace().                                          \
-     * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
-     * @param[in] elem The element to copy into the vector.                    \
-     * @return Returns 0 on success, negative on error.                        \
-     */                                                                        \
-    static inline int prefix##_push(struct prefix** v, T elem);                \
+    static inline void prefix##_clear_compact(struct prefix** v)               \
+    {                                                                          \
+        prefix##_clear(*v);                                                    \
+        prefix##_compact(v);                                                   \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Allocates space for a new element at the end of the vector, but  \
@@ -121,22 +118,24 @@
     API T* prefix##_emplace(struct prefix** v);                                \
                                                                                \
     /*!                                                                        \
-     * @brief Inserts (copies) a new element into the vector at the specified  \
-     * index.                                                                  \
+     * @brief Inserts (copies) a new element into the end of the vector.       \
      * @note This can cause a re-allocation of the underlying memory. This     \
      * implementation expands the allocated memory by a factor of 2 every time \
      * the capacity is reached to cut down on the frequency of re-allocations. \
      * @note If you do not wish to copy data into the vector, but merely make  \
-     * space, @see vec_insert_emplace().                                       \
+     * space, see vec_push_emplace().                                          \
      * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
-     * @param[in] i The index the new element should be inserted into.         \
-     * Existing elements are shifted aside to make space. Should be between 0  \
-     * to vec_count().                                                         \
      * @param[in] elem The element to copy into the vector.                    \
      * @return Returns 0 on success, negative on error.                        \
      */                                                                        \
-    static inline int prefix##_insert(                                         \
-        struct prefix** v, int##bits##_t i, T elem);                           \
+    static inline int prefix##_push(struct prefix** v, T elem)                 \
+    {                                                                          \
+        T* ins = prefix##_emplace(v);                                          \
+        if (ins == NULL)                                                       \
+            return -1;                                                         \
+        *ins = elem;                                                           \
+        return 0;                                                              \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Allocates space for a new element at the specified index in the  \
@@ -157,6 +156,31 @@
     API T* prefix##_insert_emplace(struct prefix** v, int##bits##_t i);        \
                                                                                \
     /*!                                                                        \
+     * @brief Inserts (copies) a new element into the vector at the specified  \
+     * index.                                                                  \
+     * @note This can cause a re-allocation of the underlying memory. This     \
+     * implementation expands the allocated memory by a factor of 2 every time \
+     * the capacity is reached to cut down on the frequency of re-allocations. \
+     * @note If you do not wish to copy data into the vector, but merely make  \
+     * space, @see vec_insert_emplace().                                       \
+     * @param[in] v Pointer to a vector of type VEC(T,B)*                      \
+     * @param[in] i The index the new element should be inserted into.         \
+     * Existing elements are shifted aside to make space. Should be between 0  \
+     * to vec_count().                                                         \
+     * @param[in] elem The element to copy into the vector.                    \
+     * @return Returns 0 on success, negative on error.                        \
+     */                                                                        \
+    static inline int prefix##_insert(                                         \
+        struct prefix** v, int##bits##_t i, T elem)                            \
+    {                                                                          \
+        T* ins = prefix##_insert_emplace(v, i);                                \
+        if (ins == NULL)                                                       \
+            return -1;                                                         \
+        *ins = elem;                                                           \
+        return 0;                                                              \
+    }                                                                          \
+                                                                               \
+    /*!                                                                        \
      * @brief Removes an element from the end of the vector.                   \
      * @warning The vector must have at least 1 element. If you cannot         \
      * guarantee this, check @see vec_count() first.                           \
@@ -168,7 +192,10 @@
      * @return A pointer to the popped element. See warning and use with       \
      * caution. Vector must not be empty.                                      \
      */                                                                        \
-    static inline T* prefix##_pop(struct prefix* v);                           \
+    static inline T* prefix##_pop(struct prefix* v)                            \
+    {                                                                          \
+        return &v->data[--(v->count)];                                         \
+    }                                                                          \
                                                                                \
     /*!                                                                        \
      * @brief Erases an element at the specified index from the vector.        \
@@ -196,67 +223,16 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int (*on_element)(T * elem, void* user),                               \
+        int (*on_element)(T* elem, void* user),                                \
         void* user);                                                           \
                                                                                \
-    static inline void prefix##_init(struct prefix** v)                        \
+    static inline int##bits##_t prefix##_count(const struct prefix* v)         \
     {                                                                          \
-        *v = &prefix##_null_vec;                                               \
+        return v ? v->count : 0;                                               \
     }                                                                          \
-                                                                               \
-    static inline void prefix##_deinit(struct prefix* v)                       \
+    static inline int##bits##_t prefix##_capacity(const struct prefix* v)      \
     {                                                                          \
-        if (v->capacity)                                                       \
-            mem_free(v);                                                       \
-    }                                                                          \
-                                                                               \
-    static inline int prefix##_resize(struct prefix** v, int##bits##_t elems)  \
-    {                                                                          \
-        if (elems == 0)                                                        \
-        {                                                                      \
-            if ((*v)->capacity)                                                \
-                mem_free(*v);                                                  \
-            *v = &prefix##_null_vec;                                           \
-            return 0;                                                          \
-        }                                                                      \
-        else if (prefix##_reserve(v, elems) == 0)                              \
-        {                                                                      \
-            (*v)->count = elems;                                               \
-            return 0;                                                          \
-        }                                                                      \
-        return -1;                                                             \
-    }                                                                          \
-                                                                               \
-    static inline void prefix##_clear(struct prefix* v)                        \
-    {                                                                          \
-        v->count = 0;                                                          \
-    }                                                                          \
-    static inline void prefix##_clear_compact(struct prefix** v)               \
-    {                                                                          \
-        if ((*v)->capacity)                                                    \
-            mem_free(*v);                                                      \
-        *v = &prefix##_null_vec;                                               \
-    }                                                                          \
-    static inline int prefix##_push(struct prefix** v, T elem)                 \
-    {                                                                          \
-        T* ins = prefix##_emplace(v);                                          \
-        if (ins == NULL)                                                       \
-            return -1;                                                         \
-        *ins = elem;                                                           \
-        return 0;                                                              \
-    }                                                                          \
-    static inline int prefix##_insert(                                         \
-        struct prefix** v, int##bits##_t i, T elem)                            \
-    {                                                                          \
-        T* ins = prefix##_insert_emplace(v, i);                                \
-        if (ins == NULL)                                                       \
-            return -1;                                                         \
-        *ins = elem;                                                           \
-        return 0;                                                              \
-    }                                                                          \
-    static inline T* prefix##_pop(struct prefix* v)                            \
-    {                                                                          \
-        return &v->data[--(v->count)];                                         \
+        return v ? v->capacity : 0;                                            \
     }
 
 #define VEC_DEFINE_API(prefix, T, bits)                                        \
@@ -268,35 +244,55 @@
         mem_size       header = offsetof(struct prefix, data);                 \
         mem_size       data = sizeof((*v)->data[0]) * elems;                   \
         struct prefix* new_mem = (struct prefix*)mem_realloc(                  \
-            ((*v)->capacity ? *v : NULL), header + data);                      \
+            *v, header + data);                                                \
         if (new_mem == NULL)                                                   \
             return log_oom(header + data, "vec_realloc()");                    \
         *v = new_mem;                                                          \
         return 0;                                                              \
     }                                                                          \
-                                                                               \
+    void prefix##_deinit(struct prefix* v)                                     \
+    {                                                                          \
+        if (v)                                                                 \
+            mem_free(v);                                                       \
+    }                                                                          \
     int prefix##_reserve(struct prefix** v, int##bits##_t elems)               \
     {                                                                          \
-        ODBUTIL_DEBUG_ASSERT(elems > 0, log_util_err("elems: %d\n", elems));     \
+        ODBUTIL_DEBUG_ASSERT((elems) > 0, log_util_err("elems: %d\n", elems)); \
         if (prefix##_realloc(v, elems) != 0)                                   \
             return -1;                                                         \
         (*v)->count = 0;                                                       \
         (*v)->capacity = elems;                                                \
         return 0;                                                              \
     }                                                                          \
+    int prefix##_resize(struct prefix** v, int##bits##_t count)                \
+    {                                                                          \
+        if (count == 0)                                                        \
+        {                                                                      \
+            if (*v)                                                            \
+                mem_free(*v);                                                  \
+            *v = NULL;                                                         \
+            return 0;                                                          \
+        }                                                                      \
+        else if (prefix##_reserve((v), count) == 0)                            \
+        {                                                                      \
+            (*v)->count = count;                                               \
+            return 0;                                                          \
+        }                                                                      \
+        return -1;                                                             \
+    }                                                                          \
     void prefix##_compact(struct prefix** v)                                   \
     {                                                                          \
-        if ((*v)->capacity == 0)                                               \
+        if (*v == NULL)                                                        \
             return;                                                            \
                                                                                \
         if ((*v)->count == 0)                                                  \
         {                                                                      \
-            mem_free((*v));                                                    \
-            *v = &prefix##_null_vec;                                           \
+            mem_free(*(v));                                                    \
+            *(v) = NULL;                                                       \
         }                                                                      \
         else                                                                   \
         {                                                                      \
-            mem_size       header = sizeof(**v) - sizeof((*v)->data[0]);       \
+            mem_size       header = sizeof(**(v)) - sizeof((*v)->data[0]);     \
             mem_size       data = sizeof((*v)->data[0]) * (*v)->count;         \
             struct prefix* new_v                                               \
                 = (struct prefix*)mem_realloc(*v, header + data);              \
@@ -308,24 +304,25 @@
     }                                                                          \
     T* prefix##_emplace(struct prefix** v)                                     \
     {                                                                          \
-        if ((*v)->count == (*v)->capacity)                                     \
+        if (*v == NULL || (*v)->count == (*v)->capacity)                       \
         {                                                                      \
-            mem_size cap = (*v)->capacity;                                     \
-            mem_size new_cap = cap ? cap * EXPAND_FACTOR : MIN_CAPACITY;       \
+            mem_size old_cap = *v ? (*v)->capacity : 0;                        \
+            mem_size new_cap =                                                 \
+                old_cap ? old_cap * EXPAND_FACTOR : MIN_CAPACITY;              \
             if (prefix##_realloc(v, new_cap) != 0)                             \
                 return NULL;                                                   \
-            if (cap == 0)                                                      \
+            if (old_cap == 0)                                                  \
                 (*v)->count = 0;                                               \
             (*v)->capacity = new_cap;                                          \
         }                                                                      \
                                                                                \
-        return &(*v)->data[((*v)->count)++];                                   \
+        return &(*v)->data[(*v)->count++];                                     \
     }                                                                          \
     T* prefix##_insert_emplace(struct prefix** v, int##bits##_t i)             \
     {                                                                          \
-        ODBUTIL_DEBUG_ASSERT(                                                   \
-            i >= 0 && i <= (*v)->count,                                        \
-            log_util_err("i: %d, count: %d\n", i, (*v)->count));                \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            i >= 0 && i <= (*v ? (*v)->count : 0),                             \
+            log_util_err("i: %d, count: %d\n", i, (*v)->count));               \
                                                                                \
         if (prefix##_emplace(v) == NULL)                                       \
             return NULL;                                                       \
@@ -334,7 +331,7 @@
             (*v)->data + i + 1,                                                \
             (*v)->data + i,                                                    \
             ((*v)->count - i - 1) * sizeof((*v)->data[0]));                    \
-        return &(*v)->data[i];                                                 \
+        return &(*(v))->data[i];                                               \
     }                                                                          \
     void prefix##_erase(struct prefix* v, int##bits##_t i)                     \
     {                                                                          \
@@ -344,7 +341,6 @@
             v->data + i + 1,                                                   \
             (v->count - i) * sizeof(v->data[0]));                              \
     }                                                                          \
-                                                                               \
     int prefix##_retain(                                                       \
         struct prefix* v, int (*on_element)(T * elem, void* user), void* user) \
     {                                                                          \
@@ -386,7 +382,19 @@
 #define vec_last(v) (&(v)->data[(v)->count - 1])
 
 /*!
- * @brief Returns the nth last element of the vector, starting at 0.
+ * @brief Returns the nth element of the vector, starting at 0.
+ * @warning The returned pointer could be invalidated if any other vector
+ * related function is called, as the underlying memory of the vector could be
+ * re-allocated. Use the pointer immediately after calling this function.
+ * @param[in] v Pointer to a vector of type VEC(T,B)*.
+ * @param[in] i Index, ranging from 0 to vec_count()-1
+ * @return A pointer to the element. See warning and use with caution.
+ * Vector must not be empty.
+ */
+#define vec_get(v, i) (&(v)->data[(i)])
+
+/*!
+ * @brief Returns the nth last element of the vector, starting at count - 1.
  * @warning The returned pointer could be invalidated if any other vector
  * related function is called, as the underlying memory of the vector could be
  * re-allocated. Use the pointer immediately after calling this function.
@@ -407,7 +415,7 @@
  *   }
  */
 #define vec_for_each(v, var)                                                   \
-    for (var = &(v)->data[0]; var != &(v)->data[(v)->count]; var++)
+    for (var = (v) ? &(v)->data[0] : NULL; (v) && var != &(v)->data[(v)->count]; var++)
 
 #define vec_enumerate(v, i, var)                                               \
-    for (i = 0; i != (v)->count && ((var = &(v)->data[i]), 1); ++i)
+    for (i = 0; (v) && i != (v)->count && ((var = &(v)->data[i]), 1); ++i)

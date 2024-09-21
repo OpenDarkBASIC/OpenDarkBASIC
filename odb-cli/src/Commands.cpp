@@ -11,21 +11,18 @@ extern "C" {
 
 static plugin_list* plugins;
 static cmd_list     commands;
-static ospath_list  extra_plugins;
 
 void
 initCommands(void)
 {
     plugin_list_init(&plugins);
     cmd_list_init(&commands);
-    ospath_list_init(&extra_plugins);
 }
 void
 deinitCommands(void)
 {
     struct plugin_info* plugin;
 
-    ospath_list_deinit(extra_plugins);
     cmd_list_deinit(&commands);
     vec_for_each(plugins, plugin)
     {
@@ -44,7 +41,7 @@ loadCommands(const std::vector<std::string>& args)
             getSDKType(),
             getTargetPlatform(),
             getSDKRootDir(),
-            &extra_plugins)
+            getSDKPluginDirs())
         != 0)
         return false;
 

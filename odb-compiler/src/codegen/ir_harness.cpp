@@ -193,7 +193,7 @@ handle_plugin_dependencies_dbpro(
     std::vector<bool>* plugin_is_used, const struct plugin_list* plugins)
 {
     std::vector<char> official_to_plugin_id(OFFICIAL_PLUGIN_COUNT, -1);
-    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+    for (plugin_id plugin_id = 0; plugin_id != plugin_list_count(plugins); ++plugin_id)
     {
 #define X(plugin_name, plugin_str)                                             \
     if (utf8_equal(                                                            \
@@ -208,7 +208,7 @@ handle_plugin_dependencies_dbpro(
     }
 
     /* DBProCore is always enabled */
-    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+    for (plugin_id plugin_id = 0; plugin_id != plugin_list_count(plugins); ++plugin_id)
         if (utf8_equal(
                 utf8_view(plugins->data[plugin_id].name),
                 cstr_utf8_view("DBProCore")))
@@ -220,7 +220,7 @@ handle_plugin_dependencies_dbpro(
 core_found:;
 
     /* DBProSetup is a dependency of Core */
-    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+    for (plugin_id plugin_id = 0; plugin_id != plugin_list_count(plugins); ++plugin_id)
         if (utf8_equal(
                 utf8_view(plugins->data[plugin_id].name),
                 cstr_utf8_view("DBProSetupDebug")))
@@ -234,7 +234,7 @@ core_found:;
 text_found:;
 
     /* DBProText is a dependency of Core (apparently) */
-    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+    for (plugin_id plugin_id = 0; plugin_id != plugin_list_count(plugins); ++plugin_id)
         if (utf8_equal(
                 utf8_view(plugins->data[plugin_id].name),
                 cstr_utf8_view("DBProTextDebug")))
@@ -276,13 +276,13 @@ gen_cmd_loader(
     llvm::IRBuilder<> b(BB);
 
     /* Create a map of actually used plugin IDs */
-    std::vector<bool> plugin_is_used(plugins->count);
+    std::vector<bool> plugin_is_used(plugin_list_count(plugins));
     const cmd_id*     pcmd;
     vec_for_each(used_cmds, pcmd)
     {
         plugin_id plugin_id = cmds->plugin_ids->data[*pcmd];
         ODBUTIL_DEBUG_ASSERT(
-            plugin_id < plugins->count,
+            plugin_id < plugin_list_count(plugins),
             log_codegen_err("plugin_id: %d\n", plugin_id));
         plugin_is_used[plugin_id] = true;
     }
@@ -292,7 +292,7 @@ gen_cmd_loader(
         handle_plugin_dependencies_dbpro(&plugin_is_used, plugins);
 
     /* dlopen() all plugins and dlsym() all used command symbols */
-    for (plugin_id plugin_id = 0; plugin_id != plugins->count; ++plugin_id)
+    for (plugin_id plugin_id = 0; plugin_id != plugin_list_count(plugins); ++plugin_id)
     {
         if (!plugin_is_used[plugin_id])
             continue;

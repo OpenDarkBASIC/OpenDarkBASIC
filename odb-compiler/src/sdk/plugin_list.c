@@ -67,11 +67,12 @@ plugin_list_populate(
     enum sdk_type             sdk_type,
     enum target_platform      target_platform,
     struct ospathc            sdk_root,
-    const struct ospath_list* extra_plugins)
+    struct ospath_list*       extra_plugins)
 {
     const char*                subdir;
     const char**               psubdir;
-    const char**               plugin_subdirs = NULL;
+    const char**               plugin_subdirs;
+    struct ospathc             pathc;
     struct ospath              path = empty_ospath();
     struct on_plugin_entry_ctx ctx = {plugins, empty_ospathc(), NULL};
 
@@ -108,16 +109,12 @@ plugin_list_populate(
             goto fail;
     }
 
-    ospath_for_each_cstr(extra_plugins, subdir)
+    ospath_for_each(extra_plugins, pathc)
     {
-        if (ospath_set(&path, sdk_root) != 0
-            || ospath_join_cstr(&path, subdir) != 0)
-        {
-            goto fail;
-        }
+        log_dbg("[sdk] ", "Extra plugin: %s\n", ospathc_cstr(pathc));
 
-        ctx.dir = ospathc(path);
-        if (fs_list(ospathc(path), on_plugin_entry, &ctx) < 0)
+        ctx.dir = pathc;
+        if (fs_list(pathc, on_plugin_entry, &ctx) < 0)
             goto fail;
     }
 
