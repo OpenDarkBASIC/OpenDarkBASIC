@@ -1,49 +1,75 @@
+ink rgb(0,255,0),0
+box 1,1,50,50
+get image 1,0,0,101,101
+
 sync on
 sync rate 60
 backdrop on
+color backdrop rgb(100, 230, 255)
+fog on
+fog color rgb(100, 230, 255)
+fog distance 50
 
 make object cube 1, 1
 color object 1, rgb(255, 128, 0)
 
-make matrix 1, 100, 100, 30, 30
-randomize matrix 1, 5
+make matrix 1, 100, 100, 20, 20
+prepare matrix texture 1, 1, 1, 1
+position matrix 1, -50, 0, -50
+randomize matrix 1, 4
 update matrix 1
-
-print stdout "lol"
-
-x# = 50.0
-y# = 0.0
-z# = 50.0
-a# = 0.0
-speed# = 0.0
-ground# = 0.0
 
 do
    if leftkey() then dec a#, 2
    if rightkey() then inc a#, 2
-   if upkey()
-      speed# = curvevalue(0.2, speed#, 5)
-   else
-      speed# = curvevalue(0, speed#, 5)
-   endif
-   if spacekey() and g# = 0.0 then g# = 0.3
+   if upkey() then speed# = curvevalue(0.2, speed#, 5)
+   if downkey() then speed# = curvevalue(-0.1, speed#, 5)
+   if controlkey() then speed# = 2
+   if spacekey() and g# = -10 then g# = 0.3
 
+   speed# = curvevalue(0, speed#, 20)
    x# = newxvalue(x#, a#, speed#)
    z# = newzvalue(z#, a#, speed#)
 
    y# = y# + g#
-   ground# = get ground height(1, x#, z#) + 0.5
+   ground# = get ground height(1, x#+50, z#+50) + 0.5
    if y# < ground#
       y# = ground#
-      g# = 0.0
+      g# = -10
    else
       dec g#, 0.02
+   endif
+
+   if x# > 2.5
+      shift matrix left 1
+      update matrix 1
+      dec x#, 5
+      position camera camera position x() - 5, camera position y(), camera position z()
+   endif
+   if x# < -2.5
+      shift matrix right 1
+      update matrix 1
+      inc x#, 5
+      position camera camera position x() + 5, camera position y(), camera position z()
+   endif
+   if z# > 2.5
+      shift matrix down 1
+      update matrix 1
+      dec z#, 5
+      position camera camera position x(), camera position y(), camera position z() - 5
+   endif
+   if z# < -2.5
+      shift matrix up 1
+      update matrix 1
+      inc z#, 5
+      position camera camera position x(), camera position y(), camera position z() + 5
    endif
 
    position object 1, x#, y#, z#
    yrotate object 1, a#
 
-   set camera to follow x#, y#, z#, a#, 5, 2, 5, 0
+   set camera to follow x#, y#, z#, a#, 5, 3, 5, 0
+   xrotate camera 20
 
    if escapekey() then exit
    sync

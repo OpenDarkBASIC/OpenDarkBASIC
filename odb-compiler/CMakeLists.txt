@@ -525,7 +525,8 @@ if (ODBCOMPILER_TESTS)
         "binop-precedence"
         "loop-do"
         "loop-for"
-        "select-case")
+        "select-case"
+        "variable-types")
     add_executable (odb-cigen
         "tests/src/ci/cigen.c")
     set (CIGEN_OUTPUTS)
@@ -535,7 +536,7 @@ if (ODBCOMPILER_TESTS)
         file (GLOB_RECURSE CI_RESULTS "${PROJECT_SOURCE_DIR}/tests/src/ci/${SUITE}/*.out")
         file (GLOB_RECURSE CI_ODB_RESULTS "${PROJECT_SOURCE_DIR}/tests/src/ci/${SUITE}/*.odbout")
         set (CIGEN_INPUTS ${CI_DBA_SOURCES} ${CI_RESULTS} ${CI_ODB_RESULTS})
-        set (CIGEN_OUTPUT "${PROJECT_BINARY_DIR}/tests/src/ci/${SUITE_NAME}.cpp")
+        set (CIGEN_OUTPUT "${PROJECT_BINARY_DIR}/tests/src/ci/test_odbcompiler_ci_${SUITE_NAME}.cpp")
         add_custom_command (
             OUTPUT ${CIGEN_OUTPUT}
             COMMAND ${CMAKE_COMMAND} -E make_directory "${PROJECT_BINARY_DIR}/tests/src/ci"

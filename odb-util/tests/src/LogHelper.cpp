@@ -21,6 +21,7 @@ LogEqMatcher::MatchAndExplain(
     int         pos = diffPos(logOutput.text, expected);
     std::string highlighted = logOutput.text;
     highlighted.insert(pos, FGB_RED);
+    highlighted.append(COL_RESET);
     std::replace(highlighted.begin(), highlighted.end(), ' ', '.');
     *listener << "Log:\n" << highlighted;
     return logOutput.text == expected;

@@ -307,7 +307,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
              * inherited from the type of the assignment, if that variable has
              * not yet been declared. If it has been declared, then we need to
              * insert a cast to the variable's type instead of transferring the
-             * RHS type */
+             * RHS type.
+             * 
+             * If the variable additionally has a type annotation, then the
+             * annotated type determines the variable's type instead of the RHS.
+             */
             if (ctx->ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
                 struct type_origin* lhs_type;
@@ -321,13 +325,34 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     case HM_OOM: return TYPE_INVALID;
                     case HM_EXISTS: break;
                     case HM_NEW:
-                        /* If the RHS is a smaller type, e.g. BYTE or WORD,
-                         * prefer to set the identifier's type to INTEGER */
                         lhs_type->original_declaration = lhs;
-                        lhs_type->type
-                            = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
-                                  ? TYPE_INTEGER
-                                  : rhs_type;
+                        /* If the variable has a type annotation, it has precedence */
+                        switch (ctx->ast->nodes[lhs].identifier.annotation)
+                        {
+                            case TA_NONE:
+                                /* If the RHS is a smaller type, e.g. BYTE or WORD,
+                                 * prefer to set the identifier's type to INTEGER */
+                                lhs_type->type
+                                    = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
+                                          ? TYPE_INTEGER
+                                          : rhs_type;
+                                break;
+                            case TA_INT64:
+                                lhs_type->type = TYPE_DOUBLE_INTEGER;
+                                break;
+                            case TA_INT16:
+                                lhs_type->type = TYPE_WORD;
+                                break;
+                            case TA_DOUBLE:
+                                lhs_type->type = TYPE_DOUBLE;
+                                break;
+                            case TA_FLOAT:
+                                lhs_type->type = TYPE_FLOAT;
+                                break;
+                            case TA_STRING:
+                                lhs_type->type = TYPE_STRING;
+                                break;
+                        }
                 }
                 ctx->ast->nodes[lhs].info.type_info = lhs_type->type;
 

@@ -50,3 +50,22 @@ TEST_F(NAME, integer_accepts_float_with_warning)
             "   = note: Calling command: PRINT INTEGER AS INTEGER  [test]\n"));
 }
 
+TEST_F(NAME, dword_accepts_integer_with_warning)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_DWORD});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
+    ASSERT_THAT(parse("print n"), Eq(0));
+    EXPECT_THAT(
+        semantic_check_run(
+            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+        Eq(0));
+    EXPECT_THAT(
+        log(),
+        LogEq(
+            "test:1:7: warning: Argument 1 is truncated in conversion "
+            "from INTEGER to DWORD in command call.\n"
+            " 1 | print n\n"
+            "   |       ^ INTEGER\n"
+            "   = note: Calling command: PRINT DWORD AS INTEGER  [test]\n"));
+}
