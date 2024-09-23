@@ -30,6 +30,7 @@ ODB_COMMAND1(
     SEE_ALSO("PRINT", "PRINTC", "STR$"))
 {
     puts(str);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */
@@ -38,6 +39,7 @@ ODB_OVERLOAD1(
     NAME("PRINT STDOUT"))
 {
     printf("%" PRIi64 "\n", value);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */
@@ -46,6 +48,7 @@ ODB_OVERLOAD1(
     NAME("PRINT STDOUT"))
 {
     printf("%f\n", value);
+    fflush(stdout);
 }
 
 ODB_COMMAND1(
@@ -75,6 +78,7 @@ ODB_COMMAND1(
     SEE_ALSO("PRINT", "PRINTC", "STR$"))
 {
     printf("%s", str);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */
@@ -83,6 +87,7 @@ ODB_OVERLOAD1(
     NAME("PRINTC STDOUT"))
 {
     printf("%" PRIi64, value);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */
@@ -91,6 +96,7 @@ ODB_OVERLOAD1(
     NAME("PRINTC STDOUT"))
 {
     printf("%f", value);
+    fflush(stdout);
 }
 
 ODB_COMMAND1(
@@ -128,6 +134,7 @@ ODB_OVERLOAD1(
     NAME("PRINT"))
 {
     printf("%" PRIi64 "\n", value);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */
@@ -136,4 +143,5 @@ ODB_OVERLOAD1(
     NAME("PRINT"))
 {
     printf("%f\n", value);
+    fflush(stdout);
 }

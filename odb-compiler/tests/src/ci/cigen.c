@@ -760,7 +760,7 @@ cstr_equal_without_ext(const char* s1, const char* s2)
 {
     for (;;)
     {
-        if (*s1 == '.' && *s1 == '.')
+        if (*s1 == '.' && *s2 == '.')
             return 1;
         if (*s1 != *s2)
             return 0;
@@ -887,7 +887,7 @@ static int
 gen_source(
     struct mstream* ms, const struct ci_files* files, const struct cfg* cfg)
 {
-    int f;
+    int f, i;
     
 #if defined(_WIN32)
     mstream_cstr(ms, "#define WIN32_LEAN_AND_MEAN" NL);
@@ -969,6 +969,8 @@ gen_source(
             "        \"./odb-cli\"," NL
 #endif
             "        \"-b\"," NL
+            "        \"--arch\"," NL
+            "        \"i386\"," NL
             "        \"--dba\"," NL
             "        \"--output\"," NL
 #if defined(_WIN32)
@@ -1039,13 +1041,19 @@ gen_source(
             "        &out, &err, 3000), Eq(0));" NL,
             files->file[f].dbaname);
         /* clang-format on */
-        mstream_fmt(
-            ms,
-            "    ASSERT_THAT(out, Utf8Eq(%S));" NL,
-            (const char*)mfout.address,
-            (int)mfout.size);
+        mstream_fmt(ms, "    ASSERT_THAT(out, Utf8Eq(");
+        for (i = 0; i != (int)mfout.size; ++i)
+        {
+            const char* str = mfout.address;
+#if defined(_WIN32)
+            if (i < (int)mfout.size - 1 && str[i] == '\\' && str[i+1] == 'n')
+                mstream_cstr(ms, "\\r");
+#endif
+            mstream_putc(ms, str[i]);
+        }
+        mstream_fmt(ms, "));" NL);
         /* odb-util will print out a memory report if it was built with this
-         * enabled */
+         * enabled, so don't assert stderr for now */
         /*mstream_cstr(ms, "    ASSERT_THAT(err, Utf8Eq(\"\"));" NL);*/
         mstream_cstr(ms, "}" NL NL);
     }

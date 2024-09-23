@@ -21,6 +21,7 @@ ir_translate_ast(
     struct ir_module*      ir,
     const struct ast*      program,
     enum sdk_type          sdkType,
+    enum target_arch       arch,
     enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,

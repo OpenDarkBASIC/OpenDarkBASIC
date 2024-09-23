@@ -158,6 +158,7 @@ output(const std::vector<std::string>& args)
         ir,
         getAST(),
         getSDKType(),
+        getTargetArch(),
         getTargetPlatform(),
         getCommandList(),
         getSourceFilepath(),

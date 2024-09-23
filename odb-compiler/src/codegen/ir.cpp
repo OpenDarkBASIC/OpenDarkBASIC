@@ -1161,6 +1161,7 @@ ir_translate_ast(
     struct ir_module*      ir,
     const struct ast*      program,
     enum sdk_type          sdk_type,
+    enum target_arch       arch,
     enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,
@@ -1219,7 +1220,7 @@ ir_translate_ast(
     llvm::verifyFunction(*F);
 #endif
 
-    if (platform == TARGET_WINDOWS)
+    if (platform == TARGET_WINDOWS && arch == TARGET_i386)
     {
         llvm::Constant* S = llvm::ConstantInt::get(
             llvm::Type::getInt32Ty(ir->ctx),
@@ -1232,6 +1233,20 @@ ir_translate_ast(
             llvm::GlobalValue::CommonLinkage,
             S,
             llvm::Twine("_fltused"));
+    }
+    if (platform == TARGET_WINDOWS && arch == TARGET_x86_64)
+    {
+        llvm::Constant* S = llvm::ConstantInt::get(
+            llvm::Type::getInt32Ty(ir->ctx),
+            0,
+            /* isSigned */ true);
+        new llvm::GlobalVariable(
+            ir->mod,
+            S->getType(),
+            /*isConstant*/ false,
+            llvm::GlobalValue::CommonLinkage,
+            S,
+            llvm::Twine("__chkstk"));
     }
 
     return 0;
