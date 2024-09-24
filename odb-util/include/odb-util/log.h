@@ -13,8 +13,10 @@ struct log_interface
     char use_color;
 };
 
-int
+ODBUTIL_PRIVATE_API int
 log_init(void);
+ODBUTIL_PRIVATE_API void
+log_deinit(void);
 
 ODBUTIL_PUBLIC_API struct log_interface
 log_configure(struct log_interface iface);

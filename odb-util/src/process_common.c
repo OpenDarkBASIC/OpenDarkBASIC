@@ -1,17 +1,19 @@
+#include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/process.h"
 #include "odb-util/thread.h"
-#include "odb-util/mem.h"
 
 struct read_thread_ctx
 {
     struct process* process;
-    struct utf8* buf;
+    struct utf8*    buf;
     int (*read)(struct process*, char*);
 };
 
-static void* read_thread(void* param)
+static void*
+read_thread(void* param)
 {
-    char byte;
+    char                    byte;
     struct read_thread_ctx* ctx = param;
 
     mem_init();
@@ -27,7 +29,7 @@ static void* read_thread(void* param)
         }
         ctx->buf->data[ctx->buf->len++] = byte;
     }
-    
+
     mem_release(ctx->buf->data);
     mem_deinit();
     return (void*)0;
@@ -43,18 +45,17 @@ process_run(
     struct utf8*      err,
     int               timeout_ms)
 {
-    int exit_code, out_result, err_result;
-    struct thread* tout;
-    struct thread* terr;
+    int                    exit_code, out_result, err_result;
     struct read_thread_ctx out_ctx, err_ctx;
+    struct thread*         tout = NULL;
+    struct thread*         terr = NULL;
 
     struct process* p = process_start(
         filepath,
         working_dir,
         argv,
-        (in.len ? PROCESS_STDIN : 0) |
-        (out ? PROCESS_STDOUT : 0) |
-        (err ? PROCESS_STDERR : 0));
+        (in.len ? PROCESS_STDIN : 0) | (out ? PROCESS_STDOUT : 0)
+            | (err ? PROCESS_STDERR : 0));
     if (p == NULL)
         return -1;
 
@@ -82,34 +83,37 @@ process_run(
         terr = thread_start(read_thread, &err_ctx);
     }
 
-    if (process_wait(p, timeout_ms) == 0)
+    if (process_wait(p, timeout_ms) != 0)
     {
-        out_result = out ? (int)(intptr_t)thread_join(tout) : 0;
-        err_result = err ? (int)(intptr_t)thread_join(terr) : 0;
-        exit_code = process_join(p);
+        if (timeout_ms)
+            log_warn(
+                "",
+                "Process did not exit after %dms, calling terminate()\n",
+                timeout_ms);
+        else
+            log_warn("", "Process did not exit cleanly, calling terminate()\n");
 
-        if (out)
-            mem_acquire(out->data, out->len);
-        if (err)
-            mem_acquire(err->data, err->len);
-        
-        if (out_result == 0 && err_result == 0)
-            return exit_code;
-
-        return -1;
+        process_terminate(p);
+        if (process_wait(p, 500) != 0)
+        {
+            log_warn(
+                "", "Process did not terminate after 500ms, calling kill()\n");
+            process_kill(p);
+            process_wait(p, 0);
+        }
     }
 
-    process_kill(p);
+    out_result = tout ? (int)(intptr_t)thread_join(tout) : 0;
+    err_result = terr ? (int)(intptr_t)thread_join(terr) : 0;
+    exit_code = process_join(p);
+
     if (out)
-    {
-        thread_join(tout);
         mem_acquire(out->data, out->len);
-    }
     if (err)
-    {
-        thread_join(terr);
         mem_acquire(err->data, err->len);
-    }
+
+    if (out_result == 0 && err_result == 0)
+        return exit_code;
 
     return -1;
 }

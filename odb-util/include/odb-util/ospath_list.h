@@ -37,15 +37,14 @@ static inline struct ospathc
 ospath_list_get(struct ospath_list* l, utf8_idx idx)
 {
     struct utf8_span span = utf8_list_span((const struct utf8_list*)l, idx);
-    struct ospathc path = { l->strlist.data + span.off, span.len };
+    struct ospathc   path = {{l->strlist.data + span.off}, span.len};
     l->strlist.data[span.off + span.len] = '\0';
     return path;
 }
 
-#define ospath_for_each(l, var)                                                  \
-    for (utf8_idx var##_i = 0;                                                   \
-         (l) && var##_i != (l)->strlist.count && ((var = ospath_list_get((l), var##_i)), 1);   \
+#define ospath_for_each(l, var)                                                \
+    for (utf8_idx var##_i = 0; (l) && var##_i != (l)->strlist.count            \
+                               && ((var = ospath_list_get((l), var##_i)), 1);  \
          ++var##_i)
 
-#define ospath_for_each_cstr(l, var) \
-    utf8_for_each_cstr(&(l)->strlist, var)
+#define ospath_for_each_cstr(l, var) utf8_for_each_cstr(&(l)->strlist, var)

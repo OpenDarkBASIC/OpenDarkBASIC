@@ -8,6 +8,15 @@ remove_trailing_slashes(struct ospath* path)
     while (path->str.len > 1 && path->str.data[path->str.len - 1] == '/')
         path->str.len--;
 }
+static void
+remove_trailing_slashes_c(struct ospathc* path)
+{
+    while (path->len && path->str.data[path->len - 1] == '/'
+           && path->str.data[path->len - 1] == '\\')
+    {
+        path->len--;
+    }
+}
 
 int
 ospath_set_utf8(struct ospath* path, struct utf8_view str)
@@ -42,63 +51,6 @@ ospath_join(struct ospath* path, struct ospathc trailing)
     return 0;
 }
 
-#if 0
-struct str_view
-path_basename_view(const struct ospath* path)
-{
-    struct str_view view = str_view(path->str);
-    int             orig_len = view.len;
-
-    /* Remove trailing slashes (if not root) */
-    while (view.len && view.data[view.len - 1] == '/')
-        view.len--;
-    /* Remove file name */
-    while (view.len && view.data[view.len - 1] != '/')
-        view.len--;
-    /* Special case on linux -- root directory */
-    if (view.len == 1 && view.data[view.len - 1] != '/')
-        view.len--;
-
-    view.data += view.len;
-    view.len = orig_len - view.len;
-
-    return view;
-}
-
-struct str_view
-cpath_basename_view(const char* path)
-{
-    struct str_view view = cstr_view(path);
-    int             orig_len = view.len;
-
-    /* Remove trailing slashes */
-    while (
-        view.len
-        && (view.data[view.len - 1] == '\\' || view.data[view.len - 1] == '/'))
-        view.len--;
-    /* Remove file name */
-    while (
-        view.len
-        && (view.data[view.len - 1] != '\\' && view.data[view.len - 1] != '/'))
-        view.len--;
-
-    view.data += view.len;
-    view.len = orig_len - view.len;
-
-    /* Remove trailing slashes (if not root) */
-    while (
-        view.len > 1
-        && (view.data[view.len - 1] == '\\' || view.data[view.len - 1] == '/'))
-        view.len--;
-    /* Special case on linux -- root directory */
-    if (view.len == 1
-        && (view.data[view.len - 1] != '\\' && view.data[view.len - 1] != '/'))
-        view.len--;
-
-    return view;
-}
-#endif
-
 void
 ospath_dirname(struct ospath* path)
 {
@@ -118,4 +70,36 @@ ospath_dirname(struct ospath* path)
         path->str.len = 1;
         path->str.data[0] = '.';
     }
+}
+
+void
+ospath_filename(struct ospath* path)
+{
+    int orig_len = path->str.len;
+    /* Find first occurrence of path separator starting from the right */
+    remove_trailing_slashes(path);
+    while (path->str.len && path->str.data[path->str.len - 1] != '/')
+        path->str.len--;
+
+    memmove(
+        path->str.data,
+        path->str.data + path->str.len,
+        orig_len - path->str.len);
+    path->str.len = orig_len - path->str.len;
+}
+
+void
+ospathc_filename(struct ospathc* path)
+{
+    int orig_len = path->len;
+    /* Find first occurrence of path separator starting from the right */
+    remove_trailing_slashes_c(path);
+    while (path->len && path->str.data[path->len - 1] != '/'
+           && path->str.data[path->len - 1] != '\\')
+    {
+        path->len--;
+    }
+
+    path->str.data += path->len;
+    path->len = orig_len - path->len;
 }

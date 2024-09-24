@@ -34,7 +34,7 @@ TEST_F(NAME, wrong_next_var_warning)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -58,7 +58,7 @@ TEST_F(NAME, step_wrong_direction_1)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -83,7 +83,7 @@ TEST_F(NAME, step_wrong_direction_2)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -104,7 +104,7 @@ TEST_F(NAME, step_wrong_direction_3)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -125,7 +125,7 @@ TEST_F(NAME, unknown_range_1)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -151,7 +151,7 @@ TEST_F(NAME, unknown_range_2)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -177,7 +177,7 @@ TEST_F(NAME, unknown_range_3)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -193,4 +193,3 @@ TEST_F(NAME, unknown_range_3)
               "   |             ^~~~~~~<\n"));
     ASSERT_THAT(getExitOp(), Eq(BINOP_GREATER_THAN));
 }
-

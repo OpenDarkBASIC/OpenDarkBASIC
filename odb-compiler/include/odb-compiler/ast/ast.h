@@ -101,7 +101,7 @@ enum ast_type
     AST_FUNC,
     AST_FUNC_DECL,
     AST_FUNC_DEF,
-    AST_FUNC_CALL_UNRESOLVED,
+    AST_FUNC_OR_CONTAINER_REF,
     AST_FUNC_CALL,
     AST_LABEL,
     /*! Boolean literal, either "true" or "false" */
@@ -283,15 +283,15 @@ union ast_node
         ast_id _pad;
     } func_exit;
 
-    struct func_call_unresolved {
+    struct func_or_container_ref {
         struct info info;
         ast_id identifier;
         ast_id arglist;
-    } func_call_unresolved;
+    } func_or_container_ref;
 
     struct func_call {
         struct info info;
-        ast_id func;
+        ast_id identifier;
         ast_id arglist;
     } func_call;
 
@@ -417,7 +417,7 @@ ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_i
 ast_id ast_loop_cont(struct ast* ast, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_func(struct ast* ast, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
-ast_id ast_func_call_unresolved(struct ast* ast, ast_id identifier, ast_id arglist, struct utf8_span location);
+ast_id ast_func_or_container_ref(struct ast* ast, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);

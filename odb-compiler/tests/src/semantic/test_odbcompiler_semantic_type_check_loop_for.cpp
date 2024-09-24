@@ -24,7 +24,7 @@ TEST_F(NAME, implicit_step_1)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
 

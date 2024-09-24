@@ -16,8 +16,8 @@ fs_get_path_to_self(struct ospath* path);
 ODBUTIL_PUBLIC_API int
 fs_list(
     struct ospathc path,
-    int            (*on_entry)(const char* name, void* user),
-    void*          user);
+    int (*on_entry)(const char* name, void* user),
+    void* user);
 
 ODBUTIL_PUBLIC_API int
 fs_file_exists(struct ospathc path);
@@ -38,7 +38,10 @@ ODBUTIL_PUBLIC_API int
 fs_make_path(struct ospath path);
 
 ODBUTIL_PUBLIC_API int
-fs_copy_file_if_different(struct ospathc src, struct ospathc dst);
+fs_copy_file(struct ospathc src, struct ospathc dst);
+
+ODBUTIL_PUBLIC_API int
+fs_copy_file_if_newer(struct ospathc src, struct ospathc dst);
 
 ODBUTIL_PUBLIC_API int
 fs_remove_file(struct ospathc path);
@@ -47,4 +50,4 @@ ODBUTIL_PUBLIC_API int
 fs_get_appdata_dir(struct ospath* path);
 
 ODBUTIL_PUBLIC_API uint64_t
-fs_mtime_ms(struct ospathc path, int log_error);
+fs_mtime_ms(struct ospathc path);

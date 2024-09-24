@@ -75,7 +75,7 @@ empty_utf8_view(void)
 static inline struct utf8_span
 utf8_span_union(struct utf8_span a, struct utf8_span b)
 {
-    if (a.off <= b.off) 
+    if (a.off <= b.off)
     {
         a.len = b.off - a.off + b.len;
         return a;

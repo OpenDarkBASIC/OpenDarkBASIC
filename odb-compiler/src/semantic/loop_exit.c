@@ -34,8 +34,8 @@ log_exit_error(
             source.text.data,
             ast->nodes[exit].loop_exit.name,
             "Unknown loop name referenced in EXIT statement.\n");
-        gutter
-            = log_excerpt_1(source.text.data, ast->nodes[exit].loop_exit.name, "");
+        gutter = log_excerpt_1(
+            source.text.data, ast->nodes[exit].loop_exit.name, "");
         if (name.len)
         {
             log_excerpt_help(
@@ -93,11 +93,12 @@ check_exit(
 
 static int
 check_loop_exit(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)

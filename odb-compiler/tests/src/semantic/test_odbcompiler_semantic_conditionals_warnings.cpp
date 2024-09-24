@@ -20,7 +20,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -40,7 +40,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -60,7 +60,7 @@ TEST_F(NAME, implicit_evaluation_of_float_literal)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -80,7 +80,7 @@ TEST_F(NAME, implicit_evaluation_of_float_expression)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -100,7 +100,7 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -120,7 +120,7 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -140,7 +140,7 @@ TEST_F(NAME, implicit_evaluation_of_string_literal)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -160,7 +160,7 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -183,7 +183,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal_multiline)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(

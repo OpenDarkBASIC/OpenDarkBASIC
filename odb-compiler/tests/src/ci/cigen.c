@@ -466,7 +466,7 @@ mfile_unmap(struct mfile* mf)
 static int
 fs_list_files_recurse(
     const char* path,
-    int   (*on_entry)(const char* filepath, const char* filename, void* user),
+    int (*on_entry)(const char* filepath, const char* filename, void* user),
     void* user)
 {
 #if defined(WIN32)
@@ -499,7 +499,8 @@ fs_list_files_recurse(
 
         filepath = realloc(filepath, strlen(path) + strlen(ffd.cFileName) + 2);
         strcpy(filepath, path);
-        if (filepath[strlen(filepath) - 1] != '/' && filepath[strlen(filepath) - 1] != '\\')
+        if (filepath[strlen(filepath) - 1] != '/'
+            && filepath[strlen(filepath) - 1] != '\\')
             strcat(filepath, "\\");
         strcat(filepath, ffd.cFileName);
 
@@ -509,7 +510,7 @@ fs_list_files_recurse(
             if (ret != 0)
                 goto out;
         }
-        else if(ffd.dwFileAttributes & FILE_ATTRIBUTE_NORMAL)
+        else if (ffd.dwFileAttributes & FILE_ATTRIBUTE_NORMAL)
         {
             ret = fs_list_files_recurse(filepath, on_entry, user);
             if (ret)
@@ -888,7 +889,7 @@ gen_source(
     struct mstream* ms, const struct ci_files* files, const struct cfg* cfg)
 {
     int f, i;
-    
+
 #if defined(_WIN32)
     mstream_cstr(ms, "#define WIN32_LEAN_AND_MEAN" NL);
     mstream_cstr(ms, "#include <Windows.h>" NL);
@@ -897,6 +898,7 @@ gen_source(
     mstream_cstr(ms, "#include <gmock/gmock.h>" NL);
     mstream_cstr(ms, "#include \"odb-util/tests/Utf8Helper.hpp\"" NL NL);
     mstream_cstr(ms, "extern \"C\" {" NL);
+    mstream_cstr(ms, "#include \"odb-util/fs.h\"" NL);
     mstream_cstr(ms, "#include \"odb-util/process.h\"" NL);
     mstream_cstr(ms, "#include \"odb-util/utf8.h\"" NL);
     mstream_cstr(ms, "}" NL NL);
@@ -909,20 +911,29 @@ gen_source(
     mstream_cstr(ms, "{" NL);
     mstream_cstr(ms, "    void SetUp() override" NL);
     mstream_cstr(ms, "    {" NL);
-#if defined(_WIN32)
-    mstream_cstr(ms, "        CreateDirectoryA(\"ci-tests\", NULL);" NL);
-#else
-    mstream_cstr(ms, "        mkdir(\"ci-tests\", 0755);" NL);
-#endif
     mstream_cstr(ms, "        out = empty_utf8();" NL);
     mstream_cstr(ms, "        err = empty_utf8();" NL);
+    mstream_cstr(ms, "        odb_cli = empty_ospath();" NL);
+    mstream_cstr(ms, "        odb_cli_path = empty_ospath();" NL);
+    mstream_cstr(ms, "        fs_get_path_to_self(&odb_cli_path);" NL);
+    mstream_cstr(ms, "        ospath_dirname(&odb_cli_path);" NL);
+    mstream_cstr(ms, "        ospath_set(&odb_cli, ospathc(odb_cli_path));" NL);
+#if defined(_WIN32)
+    mstream_cstr(ms, "        ospath_join_cstr(&odb_cli, \"odb-cli.exe\");" NL);
+#else
+    mstream_cstr(ms, "        ospath_join_cstr(&odb_cli, \"odb-cli\");" NL);
+#endif
     mstream_cstr(ms, "    }" NL);
     mstream_cstr(ms, "    void TearDown() override" NL);
     mstream_cstr(ms, "    {" NL);
+    mstream_cstr(ms, "        ospath_deinit(odb_cli_path);" NL);
+    mstream_cstr(ms, "        ospath_deinit(odb_cli);" NL);
     mstream_cstr(ms, "        utf8_deinit(out);" NL);
     mstream_cstr(ms, "        utf8_deinit(err);" NL);
     mstream_cstr(ms, "    }" NL);
     mstream_cstr(ms, "    struct utf8 out, err;" NL);
+    mstream_cstr(ms, "    struct ospath odb_cli;" NL);
+    mstream_cstr(ms, "    struct ospath odb_cli_path;" NL);
     mstream_cstr(ms, "};" NL NL);
 
     for (f = 0; f != files->count; ++f)
@@ -969,26 +980,22 @@ gen_source(
             "        \"./odb-cli\"," NL
 #endif
             "        \"-b\"," NL
-            "        \"--arch\"," NL
-            "        \"i386\"," NL
             "        \"--dba\"," NL
             "        \"--output\"," NL
 #if defined(_WIN32)
-            "        \"ci-tests\\\\%s.exe\"," NL
+            "        \"..\\\\..\\\\..\\\\ci-tests\\\\%s\\\\%s.exe\"," NL
 #else
-            "        \"ci-tests/%s\"," NL
+            "        \"../../../ci-tests/%s/%s/%s\"," NL
 #endif
             "        NULL" NL
             "    };" NL,
+            cfg->suite_name,
+            files->file[f].dbaname,
             files->file[f].dbaname);
         mstream_cstr(ms,
             "    ASSERT_THAT(process_run(" NL
-#if defined(_WIN32)
-            "        cstr_ospathc(\"odb-cli.exe\")," NL
-#else
-            "        cstr_ospathc(\"./odb-cli\")," NL
-#endif
-            "        empty_ospathc()," NL
+            "        ospathc(odb_cli)," NL
+            "        ospathc(odb_cli_path)," NL
             "        compile_argv," NL
             "        cstr_utf8_view(" NL
             "            \"");
@@ -1021,9 +1028,9 @@ gen_source(
             ms,
             "    const char* run_argv[] = {" NL
 #if defined(_WIN32)
-            "        \"ci-tests\\\\%s.exe\"," NL
+            "        \"%s.exe\"," NL
 #else
-            "        \"./ci-tests/%s\"," NL
+            "        \"./%s\"," NL
 #endif
             "        NULL" NL
             "    };" NL,
@@ -1031,14 +1038,22 @@ gen_source(
         mstream_fmt(ms,
             "    ASSERT_THAT(process_run(" NL
 #if defined(_WIN32)
-            "        cstr_ospathc(\"ci-tests\\\\%s.exe\")," NL
+            "        cstr_ospathc(\"..\\\\..\\\\..\\\\ci-tests\\\\%s\\\\%s\\\\%s.exe\")," NL
 #else
-            "        cstr_ospathc(\"./ci-tests/%s\")," NL
+            "        cstr_ospathc(\"../../../ci-tests/%s/%s/%s\")," NL
 #endif
-            "        empty_ospathc()," NL
+#if defined(_WIN32)
+            "        cstr_ospathc(\"..\\\\..\\\\..\\\\ci-tests\\\\%s\\\\%s\")," NL
+#else
+            "        cstr_ospathc(\"../../../ci-tests/%s/%s\")," NL
+#endif
             "        run_argv," NL
             "        empty_utf8_view()," NL
-            "        &out, &err, 3000), Eq(0));" NL,
+            "        &out, &err, 1000), Eq(0));" NL,
+            cfg->suite_name,
+            files->file[f].dbaname,
+            files->file[f].dbaname,
+            cfg->suite_name,
             files->file[f].dbaname);
         /* clang-format on */
         mstream_fmt(ms, "    ASSERT_THAT(out, Utf8Eq(");
@@ -1046,7 +1061,7 @@ gen_source(
         {
             const char* str = mfout.address;
 #if defined(_WIN32)
-            if (i < (int)mfout.size - 1 && str[i] == '\\' && str[i+1] == 'n')
+            if (i < (int)mfout.size - 1 && str[i] == '\\' && str[i + 1] == 'n')
                 mstream_cstr(ms, "\\r");
 #endif
             mstream_putc(ms, str[i]);

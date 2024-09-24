@@ -90,7 +90,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
-        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
         case AST_LABEL: SWAP(struct utf8_span, label, name) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
@@ -279,7 +279,7 @@ ast_trees_equal(
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
-        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
         case AST_LABEL:
             if (!utf8_equal(

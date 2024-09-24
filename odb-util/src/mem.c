@@ -64,7 +64,7 @@ report_kvs_keys_equal(uintptr_t k1, uintptr_t k2)
     return k1 == k2;
 }
 static struct report_info*
-report_kvs_get_value(struct report_kvs* kvs, int32_t slot)
+report_kvs_get_value(const struct report_kvs* kvs, int32_t slot)
 {
     return &kvs->values[slot];
 }
@@ -108,7 +108,7 @@ struct state
     unsigned       ignore_malloc : 1;
 };
 
-ODBUTIL_THREADLOCAL static struct state state;
+static ODBUTIL_THREADLOCAL struct state state;
 
 int
 mem_init(void)

@@ -24,7 +24,7 @@ TEST_F(NAME, exit_outside_of_repeat_loop)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_exit, &ast, plugins, &cmds,symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),

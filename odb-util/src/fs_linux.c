@@ -1,6 +1,7 @@
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
+#include "odb-util/mfile.h"
 #include "odb-util/utf8.h"
 #include <assert.h>
 #include <dirent.h>
@@ -53,8 +54,8 @@ fs_get_path_to_self(struct ospath* path)
 int
 fs_list(
     struct ospathc path,
-    int            (*on_entry)(const char* name, void* user),
-    void*          user)
+    int (*on_entry)(const char* name, void* user),
+    void* user)
 {
     DIR*           dp;
     struct dirent* ep;
@@ -143,6 +144,45 @@ try_again:
     }
 
     return 0;
+}
+
+int
+fs_copy_file(struct ospathc src, struct ospathc dst)
+{
+    struct mfile src_mf, dst_mf;
+    if (mfile_map_read(&src_mf, src, 1) != 0)
+        goto map_src_failed;
+
+    if (mfile_map_overwrite(&dst_mf, src_mf.size, dst) != 0)
+        goto map_dst_failed;
+
+    memcpy(dst_mf.address, src_mf.address, src_mf.size);
+
+    mfile_unmap(&dst_mf);
+    mfile_unmap(&src_mf);
+
+    return 0;
+
+map_dst_failed:
+    mfile_unmap(&src_mf);
+map_src_failed:
+    return -1;
+}
+
+int
+fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
+{
+    uint64_t dst_mtime = fs_mtime_ms(dst);
+    if (dst_mtime > 0)
+    {
+        uint64_t src_mtime = fs_mtime_ms(src);
+        if (src_mtime == 0)
+            return -1;
+        if (src_mtime <= dst_mtime)
+            return 0;
+    }
+
+    return fs_copy_file(src, dst);
 }
 
 int

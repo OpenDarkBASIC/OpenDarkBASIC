@@ -111,7 +111,8 @@ ast_arglist_append(
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
-    ODBUTIL_DEBUG_ASSERT(arglist > -1, log_parser_err("arglist: %d\n", arglist));
+    ODBUTIL_DEBUG_ASSERT(
+        arglist > -1, log_parser_err("arglist: %d\n", arglist));
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[arglist].info.node_type == AST_ARGLIST,
         log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
@@ -521,13 +522,13 @@ ast_func(
 }
 
 ast_id
-ast_func_call_unresolved(
+ast_func_or_container_ref(
     struct ast*      ast,
     ast_id           identifier,
     ast_id           arglist,
     struct utf8_span location)
 {
-    ast_id n = new_node(ast, AST_FUNC_CALL_UNRESOLVED, location);
+    ast_id n = new_node(ast, AST_FUNC_OR_CONTAINER_REF, location);
     if (n < 0)
         return -1;
 
@@ -540,8 +541,8 @@ ast_func_call_unresolved(
         arglist == -1 || ast->nodes[arglist].info.node_type == AST_ARGLIST,
         log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
 
-    ast->nodes[n].func_call_unresolved.identifier = identifier;
-    ast->nodes[n].func_call_unresolved.arglist = arglist;
+    ast->nodes[n].func_or_container_ref.identifier = identifier;
+    ast->nodes[n].func_or_container_ref.arglist = arglist;
     return n;
 }
 

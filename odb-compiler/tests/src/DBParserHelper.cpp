@@ -7,6 +7,7 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/utf8.h"
 }
 
@@ -14,6 +15,7 @@ DBParserHelper::DBParserHelper()
 {
     plugin_list_init(&plugins);
     cmd_list_init(&cmds);
+    symbol_table_init(&symbols);
     db_parser_init(&p);
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
@@ -49,6 +51,7 @@ DBParserHelper::~DBParserHelper()
     db_parser_deinit(&p);
     if (src.text.data)
         db_source_close(&src);
+    symbol_table_deinit(symbols);
     cmd_list_deinit(&cmds);
     plugin_list_deinit(plugins);
 }

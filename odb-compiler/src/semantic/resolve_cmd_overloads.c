@@ -20,9 +20,9 @@ struct ctx
 static int
 eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 {
-    int                            i;
-    ast_id                         arglist;
-    struct ctx*                    ctx = user;
+    int                                i;
+    ast_id                             arglist;
+    struct ctx*                        ctx = user;
     const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
@@ -56,9 +56,9 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
 static int
 eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 {
-    int                            i;
-    ast_id                         arglist;
-    struct ctx*                    ctx = user;
+    int                                i;
+    ast_id                             arglist;
+    struct ctx*                        ctx = user;
     const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
@@ -86,9 +86,9 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
 static int
 eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
 {
-    int                            i;
-    ast_id                         arglist;
-    struct ctx*                    ctx = user;
+    int                                i;
+    ast_id                             arglist;
+    struct ctx*                        ctx = user;
     const struct cmd_param_types_list* params
         = ctx->cmds->param_types->data[*cmd_id];
 
@@ -141,10 +141,10 @@ report_no_commands_found(
            && utf8_equal(cmd_name, utf8_list_view(cmds->db_cmd_names, cmd));
          ++cmd)
     {
-        int                            i;
-        enum type                      ret_type = cmds->return_types->data[cmd];
-        plugin_id                      plugin_id = cmds->plugin_ids->data[cmd];
-        const struct plugin_info*      plugin = &plugins->data[plugin_id];
+        int                       i;
+        enum type                 ret_type = cmds->return_types->data[cmd];
+        plugin_id                 plugin_id = cmds->plugin_ids->data[cmd];
+        const struct plugin_info* plugin = &plugins->data[plugin_id];
         const struct cmd_param_types_list* param_types
             = cmds->param_types->data[cmd];
         struct utf8_list* param_names = cmds->db_param_names->data[cmd];
@@ -278,9 +278,9 @@ typecheck_warnings(
     const char*               source_filename,
     struct db_source          source)
 {
-    int                            i;
-    cmd_id                         cmd_id = ast->nodes[cmd_node].cmd.id;
-    ast_id                         arglist = ast->nodes[cmd_node].cmd.arglist;
+    int    i;
+    cmd_id cmd_id = ast->nodes[cmd_node].cmd.id;
+    ast_id arglist = ast->nodes[cmd_node].cmd.arglist;
     const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
     ODBUTIL_DEBUG_ASSERT(
@@ -356,11 +356,12 @@ typecheck_warnings(
 
 static int
 resolve_cmd_overloads(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     ast_id             n;
     ast_id             arglist;
@@ -409,7 +410,8 @@ resolve_cmd_overloads(
         /* Have to be as strict as possible. This might eliminate all commands,
          * in which case we want to report an ambiguous overload error using the
          * candidates list as it is now. Therefore, make a copy */
-        if (candidates_resize(&prev_candidates, candidates_count(candidates)) < 0)
+        if (candidates_resize(&prev_candidates, candidates_count(candidates))
+            < 0)
             goto fail;
         memcpy(
             prev_candidates->data,

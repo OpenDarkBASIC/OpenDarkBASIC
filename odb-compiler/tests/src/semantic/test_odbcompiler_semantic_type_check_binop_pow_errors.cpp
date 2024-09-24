@@ -21,7 +21,7 @@ TEST_F(NAME, exponent_invalid_type)
     ASSERT_THAT(parse("print 2.0 ^ \"oops\""), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     EXPECT_THAT(
         log(),

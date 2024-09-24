@@ -34,7 +34,7 @@ child_changed:
         case AST_FUNC:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
-        case AST_FUNC_CALL_UNRESOLVED:
+        case AST_FUNC_OR_CONTAINER_REF:
         case AST_FUNC_CALL:
         case AST_LABEL: return -1;
 
@@ -198,11 +198,12 @@ child_changed:
 
 static int
 unary_literal(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)

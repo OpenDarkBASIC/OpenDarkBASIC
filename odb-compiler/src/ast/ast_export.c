@@ -144,7 +144,7 @@ write_nodes(
         case AST_FUNC_DEF:
             fprintf(fp, "  n%d [shape=\"record\", label=\"def\"];\n", n);
             break;
-        case AST_FUNC_CALL_UNRESOLVED:
+        case AST_FUNC_OR_CONTAINER_REF:
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", label=\"call (unresolved)\"];\n",

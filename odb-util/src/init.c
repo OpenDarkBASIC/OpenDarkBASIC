@@ -3,14 +3,10 @@
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 
-#include <crtdbg.h>
-
 /* ------------------------------------------------------------------------- */
 int
 odbutil_init(void)
 {
-    _CrtSetDbgFlag(_CRTDBG_CHECK_ALWAYS_DF);
-
     if (backtrace_init() != 0)
         goto backtrace_init_failed;
     if (mem_init() != 0)

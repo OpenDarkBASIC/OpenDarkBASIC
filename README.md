@@ -55,7 +55,7 @@ Other interesting CMake options:
 | ODBCOMPILER_VERBOSE_FLEX             | OFF     | Output every token to stderr                                                |
 | ODBCOMPILER_TESTS                    | ON      | Build unit tests                                                            |
 | ODBCOMPILER_LLVM_ENABLE_SHARED_LIBS  | OFF     | Link with a shared library build of LLVM                                    |
-| ODBSDK_LIB_TYPE                      | SHARED  | Build the SDK library either as SHARED or STATIC
+| ODBUTIL_LIB_TYPE                     | SHARED  | Build the SDK library either as SHARED or STATIC
 
 #### LLVM
 

@@ -79,7 +79,7 @@
      */                                                                        \
     static inline void prefix##_clear(struct prefix* v)                        \
     {                                                                          \
-        if(v)                                                                  \
+        if (v)                                                                 \
             v->count = 0;                                                      \
     }                                                                          \
                                                                                \
@@ -223,7 +223,7 @@
      */                                                                        \
     API int prefix##_retain(                                                   \
         struct prefix* v,                                                      \
-        int (*on_element)(T* elem, void* user),                                \
+        int (*on_element)(T * elem, void* user),                               \
         void* user);                                                           \
                                                                                \
     static inline int##bits##_t prefix##_count(const struct prefix* v)         \
@@ -243,8 +243,8 @@
     {                                                                          \
         mem_size       header = offsetof(struct prefix, data);                 \
         mem_size       data = sizeof((*v)->data[0]) * elems;                   \
-        struct prefix* new_mem = (struct prefix*)mem_realloc(                  \
-            *v, header + data);                                                \
+        struct prefix* new_mem                                                 \
+            = (struct prefix*)mem_realloc(*v, header + data);                  \
         if (new_mem == NULL)                                                   \
             return log_oom(header + data, "vec_realloc()");                    \
         *v = new_mem;                                                          \
@@ -307,8 +307,8 @@
         if (*v == NULL || (*v)->count == (*v)->capacity)                       \
         {                                                                      \
             mem_size old_cap = *v ? (*v)->capacity : 0;                        \
-            mem_size new_cap =                                                 \
-                old_cap ? old_cap * EXPAND_FACTOR : MIN_CAPACITY;              \
+            mem_size new_cap                                                   \
+                = old_cap ? old_cap * EXPAND_FACTOR : MIN_CAPACITY;            \
             if (prefix##_realloc(v, new_cap) != 0)                             \
                 return NULL;                                                   \
             if (old_cap == 0)                                                  \
@@ -415,7 +415,9 @@
  *   }
  */
 #define vec_for_each(v, var)                                                   \
-    for (var = (v) ? &(v)->data[0] : NULL; (v) && var != &(v)->data[(v)->count]; var++)
+    for (var = (v) ? &(v)->data[0] : NULL;                                     \
+         (v) && var != &(v)->data[(v)->count];                                 \
+         var++)
 
 #define vec_enumerate(v, i, var)                                               \
     for (i = 0; (v) && i != (v)->count && ((var = &(v)->data[i]), 1); ++i)

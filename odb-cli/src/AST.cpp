@@ -188,6 +188,7 @@ semantic_worker(void* arg)
                 &tus[i].ast,
                 getPluginList(),
                 getCommandList(),
+                *worker->symbol_table,
                 tus[i].source_filename.c_str(),
                 tus[i].source);
         mem_release(tus[i].ast.nodes);

@@ -41,6 +41,8 @@ if (GENERATOR_PLATFORM MATCHES "win32" OR VS_PLATFORM_NAME MATCHES "win32")
     set (ODB_ARCH "i386")
 elseif (GENERATOR_PLATFORM MATCHES "x64" OR VS_PLATFORM_NAME MATCHES "x64")
     set (ODB_ARCH "x86_64")
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64")
+    set (ODB_ARCH "x86_64")
 else ()
     message (FATAL_ERROR "Couldn't determine target architecture.\nCMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}\nCMAKE_GENERATOR_PLATFORM: ${CMAKE_GENERATOR_PLATFORM}\nCMAKE_SYSTEM_PROCESSOR: ${CMAKE_SYSTEM_PROCESSOR}")
 endif ()
@@ -107,7 +109,7 @@ endif ()
 if (ODB_UTIL)
     add_subdirectory ("odb-util")
     # Also compile a 32-bit version of the utility library
-    if (ODB_UTIL_i386 AND ODB_ARCH MATCHES "x86_64")
+    if (ODB_UTIL_i386 AND ODB_ARCH MATCHES "x86_64" AND ODB_PLATFORM MATCHES "windows")
         if (NOT EXISTS "${PROJECT_BINARY_DIR}/build_odb-util-i386")
             execute_process (COMMAND ${CMAKE_COMMAND}
                 -A win32 -B "${PROJECT_BINARY_DIR}/build_odb-util-i386" -S "${PROJECT_SOURCE_DIR}"
@@ -140,7 +142,7 @@ if (ODB_UTIL)
     endif ()
 endif ()
 
-if (DBP_SDK)
+if (DBP_SDK AND ODB_PLATFORM MATCHES "windows")
     if (ODB_ARCH MATCHES "x86_64")
         if (NOT EXISTS "${PROJECT_BINARY_DIR}/build_dbp-sdk-i386")
             execute_process (COMMAND ${CMAKE_COMMAND}

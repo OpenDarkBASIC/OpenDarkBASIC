@@ -246,7 +246,7 @@
 %type<string_value> loop_name
 %type<node_value> literal
 %type<node_value> identifier
-%type<node_value> func func_call
+%type<node_value> func func_or_container_ref
 //%type<node_value> label
 
 %start program
@@ -289,7 +289,7 @@ istmt
   | dec                                     { $$ = $1; }
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
-  | func_call                               { $$ = $1; }
+  | func_or_container_ref                   { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
@@ -325,7 +325,7 @@ expr
   | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
   | command_expr                            { $$ = $1; }
-  | func_call                               { $$ = $1; }
+  | func_or_container_ref                   { $$ = $1; }
   | identifier                              { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
@@ -451,9 +451,9 @@ func
         maybe_block
     ENDFUNCTION                             { $$ = ast_func(ctx->ast, $2, -1, $5, -1, @$); }
   ;
-func_call
-  : identifier '(' arglist ')'              { $$ = ast_func_call_unresolved(ctx->ast, $1, $3, @$); }
-  | identifier '(' ')'                      { $$ = ast_func_call_unresolved(ctx->ast, $1, -1, @$); }
+func_or_container_ref
+  : identifier '(' arglist ')'              { $$ = ast_func_or_container_ref(ctx->ast, $1, $3, @$); }
+  | identifier '(' ')'                      { $$ = ast_func_or_container_ref(ctx->ast, $1, -1, @$); }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }

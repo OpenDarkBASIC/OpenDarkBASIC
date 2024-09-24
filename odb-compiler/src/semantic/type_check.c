@@ -308,7 +308,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
              * not yet been declared. If it has been declared, then we need to
              * insert a cast to the variable's type instead of transferring the
              * RHS type.
-             * 
+             *
              * If the variable additionally has a type annotation, then the
              * annotated type determines the variable's type instead of the RHS.
              */
@@ -326,32 +326,27 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     case HM_EXISTS: break;
                     case HM_NEW:
                         lhs_type->original_declaration = lhs;
-                        /* If the variable has a type annotation, it has precedence */
+                        /* If the variable has a type annotation, it has
+                         * precedence */
                         switch (ctx->ast->nodes[lhs].identifier.annotation)
                         {
                             case TA_NONE:
-                                /* If the RHS is a smaller type, e.g. BYTE or WORD,
-                                 * prefer to set the identifier's type to INTEGER */
+                                /* If the RHS is a smaller type, e.g. BYTE or
+                                 * WORD, prefer to set the identifier's type to
+                                 * INTEGER */
                                 lhs_type->type
-                                    = type_promote(rhs_type, TYPE_INTEGER) == TP_ALLOW
+                                    = type_promote(rhs_type, TYPE_INTEGER)
+                                              == TP_ALLOW
                                           ? TYPE_INTEGER
                                           : rhs_type;
                                 break;
                             case TA_INT64:
                                 lhs_type->type = TYPE_DOUBLE_INTEGER;
                                 break;
-                            case TA_INT16:
-                                lhs_type->type = TYPE_WORD;
-                                break;
-                            case TA_DOUBLE:
-                                lhs_type->type = TYPE_DOUBLE;
-                                break;
-                            case TA_FLOAT:
-                                lhs_type->type = TYPE_FLOAT;
-                                break;
-                            case TA_STRING:
-                                lhs_type->type = TYPE_STRING;
-                                break;
+                            case TA_INT16: lhs_type->type = TYPE_WORD; break;
+                            case TA_DOUBLE: lhs_type->type = TYPE_DOUBLE; break;
+                            case TA_FLOAT: lhs_type->type = TYPE_FLOAT; break;
+                            case TA_STRING: lhs_type->type = TYPE_STRING; break;
                         }
                 }
                 ctx->ast->nodes[lhs].info.type_info = lhs_type->type;
@@ -810,10 +805,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return func_type;
         }
         break;
+        /* Are handled by AST_FUNC */
         case AST_FUNC_DECL:
         case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
 
         case AST_LABEL: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
@@ -902,11 +898,12 @@ sanity_check(
 
 static int
 type_check(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     struct ctx ctx = {ast, 0, cmds, source_filename, source, NULL};
     typemap_init(&ctx.typemap);

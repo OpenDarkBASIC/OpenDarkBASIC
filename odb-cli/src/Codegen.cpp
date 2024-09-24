@@ -17,7 +17,7 @@ extern "C" {
 static std::string      outputExe_;
 static bool             dumpIR_ = false;
 static enum target_arch arch_ = TARGET_x86_64;
-#if defined(ODBSDK_PLATFORM_LINUX)
+#if defined(ODBUTIL_PLATFORM_LINUX)
 static enum target_platform platform_ = TARGET_LINUX;
 #else
 static enum target_platform platform_ = TARGET_WINDOWS;
@@ -90,7 +90,8 @@ output(const std::vector<std::string>& args)
     log_info("[codegen] ", "Compiling {emph:%s}\n", getSourceFilepath());
     outputExe_ = args[0];
 
-    /* Path to the compiler's architecture/platform directory, e.g. i386/windows/ */
+    /* Path to the compiler's architecture/platform directory, e.g.
+     * i386/windows/ */
     struct ospath apdir = empty_ospath();
     set_path_to_arch_platform_dir(&apdir);
     log_dbg("[codegen] ", "apdir: {quote:%s}\n", ospath_cstr(apdir));
@@ -101,7 +102,7 @@ output(const std::vector<std::string>& args)
     ospath_dirname(&tmpdir);
     ospath_join_cstr(&tmpdir, "_odbtmp");
     // TODO
-    //if (fs_dir_exists(ospathc(tmpdir)))
+    // if (fs_dir_exists(ospathc(tmpdir)))
     //    fs_remove_directory(ospathc(tmpdir));
     fs_make_dir(ospathc(tmpdir));
     log_dbg("[codegen] ", "tmpdir: {quote:%s}\n", ospath_cstr(tmpdir));
@@ -111,6 +112,11 @@ output(const std::vector<std::string>& args)
     ospath_set_cstr(&outdir, outputExe_.c_str());
     ospath_dirname(&outdir);
     log_dbg("[codegen] ", "outdir: {quote:%s}\n", ospath_cstr(outdir));
+
+    /* Create paths if they don't exist */
+    if (fs_make_path(outdir) != 0)
+    { /* TODO */
+    }
 
     /* Create a list of commands that were actually used, which get loaded by
      * the harness */
@@ -124,8 +130,9 @@ output(const std::vector<std::string>& args)
     ospath_set_cstr(&maindbaname, getSourceFilepath());
     ospath_filename(&maindbaname);
     ospath_remove_ext(&maindbaname);
-    log_dbg("[codegen] ", "maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
-    
+    log_dbg(
+        "[codegen] ", "maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
+
     log_info("[codegen] ", "Generating harness\n");
     struct ospath harnessobj = empty_ospath();
     ospath_set(&harnessobj, ospathc(tmpdir));
@@ -147,7 +154,7 @@ output(const std::vector<std::string>& args)
 
     cmd_ids_deinit(used_cmds_list);
 
-    struct ospath objfilepath = empty_ospath();
+    struct ospath  objfilepath = empty_ospath();
     struct ospathc srcfilename = cstr_ospathc(getSourceFilepath());
     ospathc_filename(&srcfilename);
     ospath_set(&objfilepath, ospathc(tmpdir));
@@ -177,9 +184,17 @@ output(const std::vector<std::string>& args)
             ospath_set(&rtlib, ospathc(apdir));
             switch (platform_)
             {
-                case TARGET_WINDOWS: ospath_join_cstr(&rtlib, "odb-sdk/runtime/odb-runtime.lib"); break;
-                case TARGET_LINUX: ospath_join_cstr(&rtlib, "odb-sdk/runtime/odb-runtime.so"); break;
-                case TARGET_MACOS: ospath_join_cstr(&rtlib, "odb-sdk/runtime/odb-runtime.dylib"); break;
+                case TARGET_WINDOWS:
+                    ospath_join_cstr(&rtlib, "odb-sdk/runtime/odb-runtime.lib");
+                    break;
+                case TARGET_LINUX:
+                    ospath_join_cstr(
+                        &rtlib, "odb-sdk/runtime/libodb-runtime.so");
+                    break;
+                case TARGET_MACOS:
+                    ospath_join_cstr(
+                        &rtlib, "odb-sdk/runtime/libodb-runtime.dylib");
+                    break;
             }
             break;
 
@@ -187,9 +202,17 @@ output(const std::vector<std::string>& args)
             ospath_set(&rtlib, ospathc(apdir));
             switch (platform_)
             {
-                case TARGET_WINDOWS: ospath_join_cstr(&rtlib, "dbp-sdk/runtime/dbp-runtime.lib"); break;
-                case TARGET_LINUX: ospath_join_cstr(&rtlib, "dbp-sdk/runtime/dbp-runtime.so"); break;
-                case TARGET_MACOS: ospath_join_cstr(&rtlib, "dbp-sdk/runtime/dbp-runtime.dylib"); break;
+                case TARGET_WINDOWS:
+                    ospath_join_cstr(&rtlib, "dbp-sdk/runtime/dbp-runtime.lib");
+                    break;
+                case TARGET_LINUX:
+                    ospath_join_cstr(
+                        &rtlib, "dbp-sdk/runtime/libdbp-runtime.so");
+                    break;
+                case TARGET_MACOS:
+                    ospath_join_cstr(
+                        &rtlib, "dbp-sdk/runtime/libdbp-runtime.dylib");
+                    break;
             }
             break;
     }
@@ -200,15 +223,20 @@ output(const std::vector<std::string>& args)
         ospath_set(&kernel32, ospathc(apdir));
         ospath_join_cstr(&kernel32, "lib/kernel32.lib");
     }
-    
+
     log_info("[link] ", "Linking {emph:%s}\n", outputExe_.c_str());
     const char* objfiles[] = {
-        ospath_cstr(kernel32),
         ospath_cstr(objfilepath),
         ospath_cstr(harnessobj),
-        ospath_cstr(rtlib)
+        ospath_cstr(rtlib),
+        ospath_cstr(kernel32),
     };
-    odb_link(objfiles, 4, outputExe_.c_str(), arch_, platform_);
+    odb_link(
+        objfiles,
+        platform_ == TARGET_WINDOWS ? 4 : 3,
+        outputExe_.c_str(),
+        arch_,
+        platform_);
 
     switch (getSDKType())
     {
@@ -221,17 +249,17 @@ output(const std::vector<std::string>& args)
                     ospath_join_cstr(&outdir, "odb-runtime.dll");
                     break;
                 case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "odb-runtime.so");
-                    ospath_join_cstr(&outdir, "odb-runtime.so");
+                    ospath_join_cstr(&rtlib, "libodb-runtime.so");
+                    ospath_join_cstr(&outdir, "libodb-runtime.so");
                     break;
                 case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "odb-runtime.dylib");
-                    ospath_join_cstr(&outdir, "odb-runtime.dylib");
+                    ospath_join_cstr(&rtlib, "libodb-runtime.dylib");
+                    ospath_join_cstr(&outdir, "libodb-runtime.dylib");
                     break;
             }
-            fs_copy_file_if_different(ospathc(rtlib), ospathc(outdir));
+            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
             ospath_dirname(&outdir);
-    
+
             ospath_set(&rtlib, ospathc(apdir));
             switch (platform_)
             {
@@ -240,15 +268,15 @@ output(const std::vector<std::string>& args)
                     ospath_join_cstr(&outdir, "odb-util.dll");
                     break;
                 case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "bin/odb-util.so");
-                    ospath_join_cstr(&outdir, "odb-util.so");
+                    ospath_join_cstr(&rtlib, "lib/libodb-util.so");
+                    ospath_join_cstr(&outdir, "libodb-util.so");
                     break;
                 case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "bin/odb-util.dylib");
-                    ospath_join_cstr(&outdir, "odb-util.dylib");
+                    ospath_join_cstr(&rtlib, "lib/libodb-util.dylib");
+                    ospath_join_cstr(&outdir, "libodb-util.dylib");
                     break;
             }
-            fs_copy_file_if_different(ospathc(rtlib), ospathc(outdir));
+            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
             ospath_dirname(&outdir);
             break;
 
@@ -261,20 +289,20 @@ output(const std::vector<std::string>& args)
                     ospath_join_cstr(&outdir, "dbp-runtime.dll");
                     break;
                 case TARGET_LINUX:
-                    ospath_join_cstr(&rtlib, "dbp-runtime.so");
-                    ospath_join_cstr(&outdir, "dbp-runtime.so");
+                    ospath_join_cstr(&rtlib, "libdbp-runtime.so");
+                    ospath_join_cstr(&outdir, "libdbp-runtime.so");
                     break;
                 case TARGET_MACOS:
-                    ospath_join_cstr(&rtlib, "dbp-runtime.dylib");
-                    ospath_join_cstr(&outdir, "dbp-runtime.dylib");
+                    ospath_join_cstr(&rtlib, "libdbp-runtime.dylib");
+                    ospath_join_cstr(&outdir, "libdbp-runtime.dylib");
                     break;
             }
-            fs_copy_file_if_different(ospathc(rtlib), ospathc(outdir));
+            fs_copy_file_if_newer(ospathc(rtlib), ospathc(outdir));
             ospath_dirname(&outdir);
     }
-    
+
     // TODO
-    //fs_remove_directory(ospathc(tmpdir));
+    // fs_remove_directory(ospathc(tmpdir));
 
     ospath_deinit(kernel32);
     ospath_deinit(rtlib);
@@ -294,9 +322,10 @@ struct read_process_ctx
     struct process* process;
     int (*read)(struct process*, char*);
 };
-static void* read_process_until_done(void* param)
+static void*
+read_process_until_done(void* param)
 {
-    char byte, did_write = 0;
+    char                     byte, did_write = 0;
     struct read_process_ctx* ctx = (struct read_process_ctx*)param;
     while (ctx->read(ctx->process, &byte) == 1)
     {
@@ -307,23 +336,26 @@ static void* read_process_until_done(void* param)
         log_raw("\n");
     return NULL;
 }
-bool exec_output(const std::vector<std::string>& args)
+bool
+exec_output(const std::vector<std::string>& args)
 {
-    int result;
+    int             exit_code;
     struct process* process;
-    struct ospath working_dir = empty_ospath();
-    const char* argv[] = {outputExe_.c_str(), NULL};
+    struct thread*  thread;
+    struct ospath   working_dir = empty_ospath();
+    const char*     argv[] = {outputExe_.c_str(), NULL};
 
     if (ospath_set_cstr(&working_dir, outputExe_.c_str()) != 0)
         goto set_working_dir_failed;
     ospath_dirname(&working_dir);
 
-    log_info("[exec] ", "Executing file {quote:%s}\n", outputExe_.c_str());
+    log_info("[exec] ", "Executing {quote:%s}\n", outputExe_.c_str());
     process = process_start(
         cstr_ospathc(outputExe_.c_str()),
         ospathc(working_dir),
         argv,
         PROCESS_STDOUT | PROCESS_STDERR);
+
     if (process == NULL)
         goto start_process_failed;
 
@@ -336,25 +368,49 @@ bool exec_output(const std::vector<std::string>& args)
             process,
             process_read_stderr,
         };
-        struct thread* thread = thread_start(read_process_until_done, &read_stderr_ctx);
+        thread = thread_start(read_process_until_done, &read_stderr_ctx);
+        if (thread == NULL)
+            log_warn(
+                "[exec] ",
+                "Failed to start stderr read thread -- There will be no stderr "
+                "output\n");
         read_process_until_done(&read_stdout_ctx);
-        thread_join(thread);
     }
 
-    result = process_join(process);
-    log_info("[exec] ", "Process exited with %d\n", result);
+    if (process_wait(process, 0) != 0)
+    {
+        log_warn(
+            "[exec] ", "Process did not exit cleanly, calling terminate()\n");
+        process_terminate(process);
+        if (process_wait(process, 500) != 0)
+        {
+            log_warn(
+                "[exec] ",
+                "Process did not terminate after 500ms, calling kill()\n");
+            process_kill(process);
+            process_wait(process, 0);
+        }
+    }
 
-    ospath_deinit(working_dir);
-    return result == 0;
+    if (thread)
+        thread_join(thread);
+
+    exit_code = process_join(process);
+    if (exit_code == 0)
+        log_info("[exec] ", "Process exited with %d\n", exit_code);
+    else
+        log_err("[exec] ", "Process exited with %d\n", exit_code);
+    return exit_code == 0;
 
 start_process_failed:
-    ospath_deinit(working_dir);
 set_working_dir_failed:
+    ospath_deinit(working_dir);
     return false;
 }
 
 // ----------------------------------------------------------------------------
-bool set_optimization_level(const std::vector<std::string>& args)
+bool
+set_optimization_level(const std::vector<std::string>& args)
 {
     optimize_ = true;
     return true;

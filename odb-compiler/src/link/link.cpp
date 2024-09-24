@@ -72,7 +72,7 @@ link_linux(
     args.push_back("ld.lld");
     args.push_back("--nostdlib");
     args.push_back("--entry=_start");
-    args.push_back("--rpath=./lib:./odb-util/plugins");
+    args.push_back("--rpath=.:./odb-sdk/plugins");
 
     switch (arch)
     {
@@ -95,18 +95,19 @@ link_linux(
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 
-    // args.push_back("./odb-util/plugins/core-commands.so");
-    // args.push_back("./odb-util/plugins/test-plugin.so");
-
-    args.push_back("-L./lib");
-    args.push_back("-lodb-util");
-
     if (fs_file_exists(cstr_ospathc("/usr/lib64/crt1.o")))
         args.push_back("/usr/lib64/crt1.o");
     if (fs_file_exists(cstr_ospathc("/usr/lib/x86_64-linux-gnu/crt1.o")))
         args.push_back("/usr/lib/x86_64-linux-gnu/crt1.o");
     args.push_back("-lc");
     args.push_back("-lm");
+    
+    log_dbg("[link] ", "%s\n", [&args] {
+        std::string s;
+        for (const auto& arg : args)
+            s += std::string(" ") + arg;
+        return s;
+    }().c_str());
 
     if (lld::elf::link(args, llvm::outs(), llvm::errs(), false, false))
         return 0;

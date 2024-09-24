@@ -25,7 +25,7 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds,symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(log(), LogEq(""));

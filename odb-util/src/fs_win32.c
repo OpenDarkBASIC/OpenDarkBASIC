@@ -3,15 +3,15 @@
 #include "odb-util/utf8.h"
 
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
 #include <KnownFolders.h>
 #include <ShlObj.h>
+#include <Windows.h>
 
 int
 fs_get_path_to_self(struct ospath* path)
 {
     struct utf16 utf16 = empty_utf16();
-    int alloc_len = 0;
+    int          alloc_len = 0;
     while (1)
     {
         int len;
@@ -51,13 +51,16 @@ failed:
 }
 
 int
-fs_list(struct ospathc path, int (*on_entry)(const char* name, void* user), void* user)
+fs_list(
+    struct ospathc path,
+    int (*on_entry)(const char* name, void* user),
+    void* user)
 {
-    DWORD dwError;
+    DWORD           dwError;
     WIN32_FIND_DATA ffd;
-    int ret = 0;
-    HANDLE hFind = INVALID_HANDLE_VALUE;
-    struct ospath correct_path = empty_ospath();
+    int             ret = 0;
+    HANDLE          hFind = INVALID_HANDLE_VALUE;
+    struct ospath   correct_path = empty_ospath();
 
     if (ospath_set(&correct_path, path) != 0)
         goto str_set_failed;
@@ -73,16 +76,20 @@ fs_list(struct ospathc path, int (*on_entry)(const char* name, void* user), void
         if (strcmp(ffd.cFileName, ".") == 0 || strcmp(ffd.cFileName, "..") == 0)
             continue;
         ret = on_entry(ffd.cFileName, user);
-        if (ret != 0) goto out;
+        if (ret != 0)
+            goto out;
     } while (FindNextFile(hFind, &ffd) != 0);
 
     dwError = GetLastError();
     if (dwError != ERROR_NO_MORE_FILES)
         ret = -1;
 
-    out               : FindClose(hFind);
-    first_file_failed : ospath_deinit(correct_path);
-    str_set_failed    : return ret;
+out:
+    FindClose(hFind);
+first_file_failed:
+    ospath_deinit(correct_path);
+str_set_failed:
+    return ret;
 }
 
 int
@@ -150,21 +157,12 @@ try_again:
 }
 
 int
-fs_copy_file_if_different(struct ospathc src, struct ospathc dst)
+fs_copy_file(struct ospathc src, struct ospathc dst)
 {
-    uint64_t dst_mtime = fs_mtime_ms(dst, 0);
-    if (dst_mtime > 0)
-    {
-        uint64_t src_mtime = fs_mtime_ms(src, 1);
-        if (src_mtime == 0)
-            return -1;
-        if (src_mtime <= dst_mtime)
-            return 0;
-    }
-
     if (CopyFileA(ospathc_cstr(src), ospathc_cstr(dst), 0) == 0)
     {
-        log_util_err("Failed to copy file {quote:%s} -> {quote:%s}: {win32error}\n",
+        log_util_err(
+            "Failed to copy file {quote:%s} -> {quote:%s}: {win32error}\n",
             ospathc_cstr(src),
             ospathc_cstr(dst));
         return -1;
@@ -174,11 +172,29 @@ fs_copy_file_if_different(struct ospathc src, struct ospathc dst)
 }
 
 int
+fs_copy_file_if_newer(struct ospathc src, struct ospathc dst)
+{
+    uint64_t dst_mtime = fs_mtime_ms(dst);
+    if (dst_mtime > 0)
+    {
+        uint64_t src_mtime = fs_mtime_ms(src);
+        if (src_mtime == 0)
+            return -1;
+        if (src_mtime <= dst_mtime)
+            return 0;
+    }
+
+    return fs_copy_file(src, dst);
+}
+
+int
 fs_remove_file(struct ospathc path)
 {
     if (DeleteFileA(ospathc_cstr(path)) == 0)
     {
-        log_util_err("Failed to remove file {quote:%s}: {win32error}\n", ospathc_cstr(path));
+        log_util_err(
+            "Failed to remove file {quote:%s}: {win32error}\n",
+            ospathc_cstr(path));
         return -1;
     }
 
@@ -188,9 +204,10 @@ fs_remove_file(struct ospathc path)
 int
 fs_get_appdata_dir(struct ospath* path)
 {
-    int result;
-    PWSTR u16path = NULL;
-    HRESULT hr = SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &u16path);
+    int     result;
+    PWSTR   u16path = NULL;
+    HRESULT hr
+        = SHGetKnownFolderPath(&FOLDERID_LocalAppData, 0, NULL, &u16path);
     if (FAILED(hr))
         goto get_folder_failed;
 
@@ -200,42 +217,50 @@ fs_get_appdata_dir(struct ospath* path)
     CoTaskMemFree(u16path);
     return 0;
 
-utf_conversion_failed: CoTaskMemFree(u16path);
-get_folder_failed: return -1;
+utf_conversion_failed:
+    CoTaskMemFree(u16path);
+get_folder_failed:
+    return -1;
 }
 
 uint64_t
-fs_mtime_ms(struct ospathc path, int log_error)
+fs_mtime_ms(struct ospathc path)
 {
-    FILETIME mtime;
+    FILETIME      mtime;
     LARGE_INTEGER ns100;
-    HANDLE hFile = CreateFile(
+    HANDLE        hFile = CreateFile(
         ospathc_cstr(path),
-        0, 0, NULL,
+        0,
+        0,
+        NULL,
         OPEN_EXISTING,
         FILE_ATTRIBUTE_NORMAL,
         NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
         if (log_error)
-            log_util_err("Failed to open file {quote:%s}: {win32error}\n",
+            log_util_err(
+                "Failed to open file {quote:%s}: {win32error}\n",
                 ospathc_cstr(path));
         goto open_file_failed;
     }
 
     if (GetFileTime(hFile, NULL, NULL, &mtime) == 0)
     {
-        log_util_err("Failed to open file {quote:%s}: {win32error}\n",
+        log_util_err(
+            "Failed to open file {quote:%s}: {win32error}\n",
             ospathc_cstr(path));
         goto stat_file_failed;
     }
-    
+
     CloseHandle(hFile);
 
     ns100.LowPart = mtime.dwLowDateTime;
     ns100.HighPart = mtime.dwHighDateTime;
     return ns100.QuadPart / 10 / 1000;
 
-stat_file_failed: CloseHandle(hFile);
-open_file_failed: return 0;
+stat_file_failed:
+    CloseHandle(hFile);
+open_file_failed:
+    return 0;
 }

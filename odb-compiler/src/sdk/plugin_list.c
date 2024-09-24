@@ -63,13 +63,12 @@ on_plugin_entry(const char* cname, void* user)
 
 int
 plugin_list_populate(
-    struct plugin_list**      plugins,
-    enum sdk_type             sdk_type,
-    enum target_platform      target_platform,
-    struct ospathc            sdk_root,
-    struct ospath_list*       extra_plugins)
+    struct plugin_list** plugins,
+    enum sdk_type        sdk_type,
+    enum target_platform target_platform,
+    struct ospathc       sdk_root,
+    struct ospath_list*  extra_plugins)
 {
-    const char*                subdir;
     const char**               psubdir;
     const char**               plugin_subdirs;
     struct ospathc             pathc;

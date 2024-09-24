@@ -1,6 +1,6 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
-#include "odb-util/tests/Utf8Helper.hpp"
 #include "odb-util/tests/LogHelper.hpp"
+#include "odb-util/tests/Utf8Helper.hpp"
 
 #include "gmock/gmock.h"
 
@@ -22,7 +22,13 @@ TEST_F(NAME, negative_zero_is_just_zero)
     ASSERT_THAT(parse("x = -0\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -41,7 +47,13 @@ TEST_F(NAME, negative_byte_literal_is_converted_to_integer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -66,7 +78,13 @@ TEST_F(NAME, word_literal_is_converted_to_integer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -92,7 +110,13 @@ TEST_F(NAME, integer_literal)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -123,7 +147,13 @@ TEST_F(NAME, dword_literal_is_converted_to_double_integer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -135,8 +165,10 @@ TEST_F(NAME, dword_literal_is_converted_to_double_integer)
     EXPECT_THAT(ast.nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast.nodes[litx].info.location, Utf8SpanEq(4, 11));
     EXPECT_THAT(ast.nodes[lity].info.location, Utf8SpanEq(20, 11));
-    EXPECT_THAT(ast.nodes[litx].double_integer_literal.value, Eq(-(int64_t)2147483648));
-    EXPECT_THAT(ast.nodes[lity].double_integer_literal.value, Eq(-(int64_t)4294967295));
+    EXPECT_THAT(
+        ast.nodes[litx].double_integer_literal.value, Eq(-(int64_t)2147483648));
+    EXPECT_THAT(
+        ast.nodes[lity].double_integer_literal.value, Eq(-(int64_t)4294967295));
 }
 
 TEST_F(NAME, double_integer_literal)
@@ -149,7 +181,13 @@ TEST_F(NAME, double_integer_literal)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_unary_literal, &ast, plugins, &cmds, "test", src),
+            &semantic_unary_literal,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 

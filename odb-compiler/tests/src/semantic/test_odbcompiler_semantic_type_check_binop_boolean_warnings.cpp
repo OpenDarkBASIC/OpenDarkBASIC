@@ -21,7 +21,7 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
     ASSERT_THAT(parse("print a and b\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -60,7 +60,7 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
     ASSERT_THAT(parse("print a# and b#\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -99,7 +99,7 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
     ASSERT_THAT(parse("print a! and b!\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -138,7 +138,7 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
     ASSERT_THAT(parse("print a or b\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -177,7 +177,7 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
     ASSERT_THAT(parse("print a# or b#\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -216,7 +216,7 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
     ASSERT_THAT(parse("print a! or b!\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -255,7 +255,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
     ASSERT_THAT(parse("print a xor b\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -294,7 +294,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
     ASSERT_THAT(parse("print a# xor b#\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(
@@ -333,7 +333,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
     ASSERT_THAT(parse("print a! xor b!\n"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(

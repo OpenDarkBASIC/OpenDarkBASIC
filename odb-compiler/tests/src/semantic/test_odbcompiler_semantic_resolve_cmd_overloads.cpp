@@ -23,7 +23,13 @@ TEST_F(NAME, prefer_exact_overload)
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -42,7 +48,13 @@ TEST_F(NAME, prefer_closer_matching_overload)
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -62,7 +74,13 @@ TEST_F(NAME, command_expr_passed_as_argument)
     ASSERT_THAT(parse("print get float#()"), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 
@@ -81,7 +99,13 @@ TEST_F(NAME, bool_is_promoted_to_integer_overload)
     ASSERT_THAT(parse("print true\n"), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(0))
         << log().text;
 

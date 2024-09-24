@@ -84,6 +84,7 @@ run_dependencies(
     struct ast*                   ast,
     const struct plugin_list*     plugins,
     const struct cmd_list*        cmds,
+    const struct symbol_table*    symbols,
     const char*                   source_filename,
     struct db_source              source);
 
@@ -94,6 +95,7 @@ run_check(
     struct ast*                  ast,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
+    const struct symbol_table*   symbols,
     const char*                  source_filename,
     struct db_source             source)
 {
@@ -103,13 +105,15 @@ run_check(
             ast,
             plugins,
             cmds,
+            symbols,
             source_filename,
             source)
         < 0)
         return -1;
 
     if (ptr_set_emplace_new(visited, check))
-        if (check->execute(ast, plugins, cmds, source_filename, source) < 0)
+        if (check->execute(ast, plugins, cmds, symbols, source_filename, source)
+            < 0)
             return -1;
 
     return 0;
@@ -121,13 +125,21 @@ run_dependencies(
     struct ast*                   ast,
     const struct plugin_list*     plugins,
     const struct cmd_list*        cmds,
+    const struct symbol_table*    symbols,
     const char*                   source_filename,
     struct db_source              source)
 {
     const struct semantic_check** check;
     for (check = dependencies; *check != NULL; ++check)
         if (run_check(
-                *check, visited, ast, plugins, cmds, source_filename, source)
+                *check,
+                visited,
+                ast,
+                plugins,
+                cmds,
+                symbols,
+                source_filename,
+                source)
             != 0)
             return -1;
     return 0;
@@ -139,20 +151,29 @@ semantic_check_run(
     struct ast*                  ast,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
+    const struct symbol_table*   symbols,
     const char*                  source_filename,
     struct db_source             source)
 {
     struct ptr_set* check_visited;
     if (ast->node_count == 0)
     {
-        log_semantic_warn("AST is empty for source file {quote:%s}\n", source_filename);
+        log_semantic_warn(
+            "AST is empty for source file {quote:%s}\n", source_filename);
         return 0;
     }
 
     ptr_set_init(&check_visited);
 
     if (run_check(
-            check, &check_visited, ast, plugins, cmds, source_filename, source)
+            check,
+            &check_visited,
+            ast,
+            plugins,
+            cmds,
+            symbols,
+            source_filename,
+            source)
         < 0)
     {
         ptr_set_deinit(check_visited);
@@ -165,22 +186,24 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     return 0;
 }
 
 int
 semantic_run_essential_checks(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_expand_constant_declarations,
@@ -194,5 +217,5 @@ semantic_run_essential_checks(
         = {dummy_check, essential_checks};
 
     return semantic_check_run(
-        &essential_check, ast, plugins, cmds, source_filename, source);
+        &essential_check, ast, plugins, cmds, symbols, source_filename, source);
 }

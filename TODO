@@ -9,5 +9,26 @@ endif
 
 --------------------------------------------
 
-print "bla";  <-- no newline
+arrays, maps, and sets
 
+dim a(20, 20) as integer
+undim arr
+
+map m() as string, as integer
+insert m, "bla", 42 : rem inserts if not exists
+update m, "bla", 42 : rem inserts if exists
+m("bla") = 42       : rem always inserts
+value = find(m, "bla")
+if find(m, "bla", value) then print value
+erase m, "bla"
+if erase(m, "bla", value) then print value
+
+m("bla") = value
+print m("bla")
+
+set s() as string
+insert s, "bla"
+erase s, "bla"
+if insert(s, "bla") then print "new value"
+if erase(s, "bla") then print "value erased"
+if s("bla") then print "bla exists"

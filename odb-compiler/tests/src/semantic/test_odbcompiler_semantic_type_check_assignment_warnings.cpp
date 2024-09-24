@@ -24,7 +24,7 @@ TEST_F(NAME, truncated)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(
@@ -74,7 +74,7 @@ TEST_F(NAME, implicit_conversion)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(
@@ -117,12 +117,11 @@ TEST_F(NAME, implicit_conversion)
 
 TEST_F(NAME, integer_to_float_conversion)
 {
-    const char* source
-        = "a# = 0\n";
+    const char* source = "a# = 0\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     EXPECT_THAT(

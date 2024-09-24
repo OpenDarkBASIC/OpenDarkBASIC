@@ -47,7 +47,7 @@ kvs_keys_equal(cmd_id k1, cmd_id k2)
     return k1 == k2;
 }
 static char*
-kvs_get_value(struct kvs* kvs, int32_t slot)
+kvs_get_value(const struct kvs* kvs, int32_t slot)
 {
     return (void*)1;
 }

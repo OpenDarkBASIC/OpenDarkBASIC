@@ -6,10 +6,10 @@ extern "C" {
 
 using namespace testing;
 
-class InitODBSDKEnvironment : public testing::Environment
+class InitODBUtilEnvironment : public testing::Environment
 {
 public:
-    virtual ~InitODBSDKEnvironment() {}
+    virtual ~InitODBUtilEnvironment() {}
 
     virtual void SetUp()
     {
@@ -24,4 +24,4 @@ public:
 };
 
 const testing::Environment* const initODBUtilEnvironment =
-        testing::AddGlobalTestEnvironment(new InitODBSDKEnvironment);
+        testing::AddGlobalTestEnvironment(new InitODBUtilEnvironment);

@@ -41,7 +41,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_FUNC:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
-        case AST_FUNC_CALL_UNRESOLVED:
+        case AST_FUNC_OR_CONTAINER_REF:
         case AST_FUNC_CALL:
         case AST_LABEL: break;
 
@@ -343,11 +343,12 @@ primitives_from_for_loop(
 
 static int
 translate_loop_for(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source)
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)

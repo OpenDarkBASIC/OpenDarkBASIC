@@ -29,7 +29,7 @@ TEST_F(NAME, transform_implicit_step_1)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
@@ -74,7 +74,7 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
@@ -116,7 +116,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
@@ -156,7 +156,7 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
@@ -196,7 +196,7 @@ TEST_F(NAME, step_expression_range)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));

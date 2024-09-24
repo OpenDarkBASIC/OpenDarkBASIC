@@ -109,8 +109,7 @@
     {                                                                          \
         int##bits##_t write;                                                   \
         if (*rb == NULL || prefix##_is_full(*rb))                              \
-            if (prefix##_resize(                                               \
-                    rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)              \
+            if (prefix##_resize(rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
                 != 0)                                                          \
             {                                                                  \
                 return -1;                                                     \
@@ -147,8 +146,7 @@
         int##bits##_t write;                                                   \
         T*            value;                                                   \
         if (*rb == NULL || prefix##_is_full(*rb))                              \
-            if (prefix##_resize(                                               \
-                    rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)              \
+            if (prefix##_resize(rb, *rb ? (*rb)->capacity * 2 : MIN_CAPACITY)  \
                 != 0)                                                          \
             {                                                                  \
                 return NULL;                                                   \

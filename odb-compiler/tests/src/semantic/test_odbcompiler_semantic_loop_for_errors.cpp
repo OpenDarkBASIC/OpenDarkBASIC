@@ -24,7 +24,7 @@ TEST_F(NAME, unknown_direction_1)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -46,7 +46,7 @@ TEST_F(NAME, unknown_direction_2)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -58,4 +58,3 @@ TEST_F(NAME, unknown_direction_2)
               "either make the STEP value a constant, or make both the start "
               "and end values constants.\n"));
 }
-

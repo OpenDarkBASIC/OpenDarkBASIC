@@ -6,13 +6,15 @@
 struct ast;
 struct cmd_list;
 struct plugin_list;
+struct symbol_table;
 
 typedef int (*semantic_check_func)(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source);
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source);
 
 struct semantic_check
 {
@@ -26,16 +28,18 @@ semantic_check_run(
     struct ast*                  ast,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
+    const struct symbol_table*   symbols,
     const char*                  source_filename,
     struct db_source             source);
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
-    struct ast*               ast,
-    const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    const char*               source_filename,
-    struct db_source          source);
+    struct ast*                ast,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    struct db_source           source);
 
 /*!
  * The DBPro #constant declaration functions essentially exactly like a C

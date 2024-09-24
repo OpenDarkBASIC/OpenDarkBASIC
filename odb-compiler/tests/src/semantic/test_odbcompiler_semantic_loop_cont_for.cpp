@@ -42,7 +42,7 @@ TEST_F(NAME, continue_no_name)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
 
@@ -66,7 +66,7 @@ TEST_F(NAME, continue_implicitly_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
 
@@ -90,7 +90,7 @@ TEST_F(NAME, continue_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(0))
         << log().text;
 

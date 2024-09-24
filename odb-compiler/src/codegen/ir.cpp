@@ -680,7 +680,7 @@ gen_expr(
         case AST_FUNC:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF: break;
-        case AST_FUNC_CALL_UNRESOLVED: break;
+        case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
 
         case AST_LABEL: break;

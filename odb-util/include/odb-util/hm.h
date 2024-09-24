@@ -62,7 +62,7 @@ enum hm_status
         struct prefix** hm, K key, V** value);                                 \
                                                                                \
     API V* prefix##_erase(struct prefix* hm, K key);                           \
-    API V* prefix##_find(struct prefix* hm, K key);                            \
+    API V* prefix##_find(const struct prefix* hm, K key);                      \
                                                                                \
     static inline int prefix##_insert_new(struct prefix** hm, K key, V value)  \
     {                                                                          \
@@ -199,7 +199,8 @@ enum hm_status
         const struct prefix* hm, K key, H h)                                   \
     {                                                                          \
         ODBUTIL_DEBUG_ASSERT(                                                  \
-            hm && hm->capacity > 0, log_util_err("capacity: %d\n", hm->capacity));   \
+            hm && hm->capacity > 0,                                            \
+            log_util_err("capacity: %d\n", hm->capacity));                     \
         ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));               \
                                                                                \
         int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
@@ -356,7 +357,7 @@ enum hm_status
         *value = get_value_func(&(*hm)->kvs, slot);                            \
         return HM_NEW;                                                         \
     }                                                                          \
-    V* prefix##_find(struct prefix* hm, K key)                                 \
+    V* prefix##_find(const struct prefix* hm, K key)                           \
     {                                                                          \
         if (hm == NULL)                                                        \
             return NULL;                                                       \
@@ -405,7 +406,8 @@ hm_next_valid_slot(const hash32* hashes, intptr_t slot, intptr_t capacity)
 #define hm_for_each(hm, key, value)                                            \
     for (intptr_t key##_i                                                      \
          = hm_next_valid_slot((hm)->hashes, -1, (hm) ? (hm)->capacity : 0);    \
-         (hm) && key##_i != (hm)->capacity && ((key = (hm)->kvs.keys[key##_i]) || 1) \
+         (hm) && key##_i != (hm)->capacity                                     \
+         && ((key = (hm)->kvs.keys[key##_i]) || 1)                             \
          && ((value = &(hm)->kvs.values[key##_i]) || 1);                       \
          key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))
 

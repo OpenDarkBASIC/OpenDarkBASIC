@@ -14,47 +14,31 @@ enum process_flags
 
 ODBUTIL_PUBLIC_API struct process*
 process_start(
-    struct ospathc filepath,
-    struct ospathc working_dir,
+    struct ospathc    filepath,
+    struct ospathc    working_dir,
     const char* const argv[],
-    uint8_t flags);
+    uint8_t           flags);
 
 ODBUTIL_PUBLIC_API int
-process_write_stdin(
-    struct process* process,
-    struct utf8_view str);
+process_write_stdin(struct process* process, struct utf8_view str);
 
 ODBUTIL_PUBLIC_API int
-process_read_stdout(
-    struct process* process,
-    char* byte);
+process_read_stdout(struct process* process, char* byte);
 
 ODBUTIL_PUBLIC_API int
-process_read_stderr(
-    struct process* process,
-    char* byte);
+process_read_stderr(struct process* process, char* byte);
 
 ODBUTIL_PUBLIC_API void
-process_close_stdin(
-    struct process* process);
-
-ODBUTIL_PUBLIC_API int
-process_terminate(
-    struct process* process,
-    int timeout_ms);
+process_terminate(struct process* process);
 
 ODBUTIL_PUBLIC_API void
-process_kill(
-    struct process* process);
+process_kill(struct process* process);
 
 ODBUTIL_PUBLIC_API int
-process_wait(
-    struct process* process,
-    int tiemout_ms);
+process_wait(struct process* process, int tiemout_ms);
 
 ODBUTIL_PUBLIC_API int
-process_join(
-    struct process* process);
+process_join(struct process* process);
 
 ODBUTIL_PUBLIC_API int
 process_run(

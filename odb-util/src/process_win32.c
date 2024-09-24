@@ -1,6 +1,6 @@
-#include "odb-util/process.h"
-#include "odb-util/mem.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
+#include "odb-util/process.h"
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
@@ -9,7 +9,7 @@ static char*
 argv_to_cstr(const char* const argv[])
 {
     char* cstr;
-    int i;
+    int   i;
 
     int len = 0;
     for (i = 0; argv[i] != NULL; ++i)
@@ -44,17 +44,17 @@ struct process
 
 struct process*
 process_start(
-    struct ospathc filepath,
-    struct ospathc working_dir,
+    struct ospathc    filepath,
+    struct ospathc    working_dir,
     const char* const argv[],
-    uint8_t flags)
+    uint8_t           flags)
 {
     SECURITY_ATTRIBUTES sa;
-    HANDLE hInRead;
-    HANDLE hOutWrite;
-    HANDLE hErrWrite;
-    char* cmdline;
-    STARTUPINFO si;
+    HANDLE              hInRead;
+    HANDLE              hOutWrite;
+    HANDLE              hErrWrite;
+    char*               cmdline;
+    STARTUPINFO         si;
     PROCESS_INFORMATION pi;
 
     struct process* process = mem_alloc(sizeof *process);
@@ -75,29 +75,34 @@ process_start(
         log_util_err("Failed to create stdin pipe: {win32error}\n");
         goto in_pipe_failed;
     }
-    if ((flags & PROCESS_STDIN) && !SetHandleInformation(process->hIn, HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDIN)
+        && !SetHandleInformation(process->hIn, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stdin handle info: {win32error}\n");
         goto in_pipe_handle_failed;
     }
 
-    if ((flags & PROCESS_STDOUT) && !CreatePipe(&process->hOut, &hOutWrite, &sa, 0))
+    if ((flags & PROCESS_STDOUT)
+        && !CreatePipe(&process->hOut, &hOutWrite, &sa, 0))
     {
         log_util_err("Failed to create stdout pipe: {win32error}\n");
         goto out_pipe_failed;
     }
-    if ((flags & PROCESS_STDOUT) && !SetHandleInformation(process->hOut, HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDOUT)
+        && !SetHandleInformation(process->hOut, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stdout handle info: {win32error}\n");
         goto out_pipe_handle_failed;
     }
 
-    if ((flags & PROCESS_STDERR) && !CreatePipe(&process->hErr, &hErrWrite, &sa, 0))
+    if ((flags & PROCESS_STDERR)
+        && !CreatePipe(&process->hErr, &hErrWrite, &sa, 0))
     {
         log_util_err("Failed to create stderr pipe: {win32error}\n");
         goto err_pipe_failed;
     }
-    if ((flags & PROCESS_STDERR) && !SetHandleInformation(process->hErr, HANDLE_FLAG_INHERIT, 0))
+    if ((flags & PROCESS_STDERR)
+        && !SetHandleInformation(process->hErr, HANDLE_FLAG_INHERIT, 0))
     {
         log_util_err("Failed to set stderr handle info: {win32error}\n");
         goto err_pipe_handle_failed;
@@ -121,24 +126,25 @@ process_start(
     int ret = CreateProcess(
         argv[0],
         cmdline,
-        NULL,  /* process security */
-        NULL,  /* primary thread security */
-        TRUE,  /* Inherit handles */
+        NULL, /* process security */
+        NULL, /* primary thread security */
+        TRUE, /* Inherit handles */
         NORMAL_PRIORITY_CLASS | CREATE_NEW_PROCESS_GROUP,
-        NULL,  /* Use parents environment */
+        NULL, /* Use parents environment */
         working_dir.len > 0 ? ospathc_cstr(working_dir) : NULL,
         &si,
         &pi);
     if (!ret)
     {
-        log_util_err("Failed to create process {quote:%s}: {win32error}\n", cmdline);
+        log_util_err(
+            "Failed to create process {quote:%s}: {win32error}\n", cmdline);
         goto create_process_failed;
     }
     process->hProcess = pi.hProcess;
     process->hThread = pi.hThread;
 
     mem_free(cmdline);
-    
+
     if ((flags & PROCESS_STDIN))
         CloseHandle(hInRead);
     if ((flags & PROCESS_STDOUT))
@@ -178,12 +184,11 @@ alloc_process_failed:
 }
 
 int
-process_write_stdin(
-    struct process* process,
-    struct utf8_view str)
+process_write_stdin(struct process* process, struct utf8_view str)
 {
     DWORD dwWritten;
-    if (WriteFile(process->hIn, str.data + str.off, str.len, &dwWritten, NULL) == FALSE)
+    if (WriteFile(process->hIn, str.data + str.off, str.len, &dwWritten, NULL)
+        == FALSE)
     {
         log_util_err("Failed to write to process stdin: {win32error}\n");
         return -1;
@@ -192,73 +197,55 @@ process_write_stdin(
 }
 
 int
-process_read_stdout(
-    struct process* process,
-    char* byte)
+process_read_stdout(struct process* process, char* byte)
 {
     DWORD dwBytesRead;
     if (ReadFile(process->hOut, byte, 1, &dwBytesRead, NULL) == FALSE)
     {
         if (GetLastError() == ERROR_BROKEN_PIPE)
-            return 0;  /* EOF */
-        log_util_err("Failed to read from process stdout: {win32error}\n");
-        return -1;
+            return 0; /* EOF */
+        return log_util_err(
+            "Failed to read from process stdout: {win32error}\n");
     }
     return dwBytesRead;
 }
 
 int
-process_read_stderr(
-    struct process* process,
-    char* byte)
+process_read_stderr(struct process* process, char* byte)
 {
     DWORD dwBytesRead;
     if (ReadFile(process->hErr, byte, 1, &dwBytesRead, NULL) == FALSE)
     {
         if (GetLastError() == ERROR_BROKEN_PIPE)
-            return 0;  /* EOF */
-        log_util_err("Failed to read from process stderr: {win32error}\n");
-        return -1;
+            return 0; /* EOF */
+        return log_util_err(
+            "Failed to read from process stderr: {win32error}\n");
     }
     return dwBytesRead;
 }
 
 void
-process_close_stdin(
-    struct process* process)
-{
-    CloseHandle(process->hIn);
-    process->hIn = NULL;
-}
-
-int
-process_terminate(
-    struct process* process,
-    int timeout_ms)
+process_terminate(struct process* process)
 {
     TerminateProcess(process->hProcess, -1);
-    process_wait(process, 0);
-    return process_join(process);
 }
 
 void
-process_kill(
-    struct process* process)
+process_kill(struct process* process)
 {
     TerminateProcess(process->hProcess, -1);
-    process_wait(process, 0);
-    process_join(process);
 }
 
 int
-process_wait(
-    struct process* process,
-    int timeout_ms)
+process_wait(struct process* process, int timeout_ms)
 {
     if (process->hIn)
         CloseHandle(process->hIn);
+    process->hIn = NULL;
 
-    if (WaitForSingleObject(process->hProcess, timeout_ms > 0 ? timeout_ms : INFINITE) != WAIT_OBJECT_0)
+    if (WaitForSingleObject(
+            process->hProcess, timeout_ms > 0 ? timeout_ms : INFINITE)
+        != WAIT_OBJECT_0)
     {
         log_util_err("Process did not exit after %dms\n", timeout_ms);
         return -1;
@@ -268,8 +255,7 @@ process_wait(
 }
 
 int
-process_join(
-    struct process* process)
+process_join(struct process* process)
 {
     DWORD dwExitCode;
     if (!GetExitCodeProcess(process->hProcess, &dwExitCode))

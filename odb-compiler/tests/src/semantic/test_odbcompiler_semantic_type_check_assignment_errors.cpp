@@ -23,7 +23,7 @@ TEST_F(NAME, invalid_assignment)
     ASSERT_THAT(parse(source), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, "test", src),
+            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     EXPECT_THAT(
         log(),

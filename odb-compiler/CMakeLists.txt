@@ -197,6 +197,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/semantic.h"
     "include/odb-compiler/semantic/symbol_table.h"
     "src/semantic/expand_constant_declarations.c"
+    "src/semantic/func_call_resolve.c"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"

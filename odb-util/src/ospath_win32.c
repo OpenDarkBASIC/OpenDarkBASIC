@@ -46,32 +46,6 @@ ospath_join(struct ospath* path, struct ospathc trailing)
     return 0;
 }
 
-/*
-void path_set_take(struct path* path, struct path* other)
-{
-    path_deinit(path);
-    path->str = str_take(&other->str);
-    str_replace_char(&path->str, '/', '\\');
-    while (path->str.len && path->str.data[path->str.len - 1] == '\\')
-        path->str.len--;
-}*/
-
-/*
-int
-path_join(struct path* path, struct str_view trailing)
-{
-    if (path->str.len && path->str.data[path->str.len - 1] != '/'
-            && path->str.data[path->str.len - 1] != '\\')
-        if (cstr_append(&path->str, "\\") != 0)
-            return -1;
-    if (str_append(&path->str, trailing) != 0)
-        return -1;
-    str_replace_char(&path->str, '/', '\\');
-    while (path->str.len && path->str.data[path->str.len - 1] == '\\')
-        path->str.len--;
-    return 0;
-}*/
-
 void
 ospath_dirname(struct ospath* path)
 {
@@ -104,7 +78,10 @@ ospath_filename(struct ospath* path)
     while (path->str.len && path->str.data[path->str.len - 1] != '\\')
         path->str.len--;
 
-    memmove(path->str.data, path->str.data + path->str.len, orig_len - path->str.len);
+    memmove(
+        path->str.data,
+        path->str.data + path->str.len,
+        orig_len - path->str.len);
     path->str.len = orig_len - path->str.len;
 }
 

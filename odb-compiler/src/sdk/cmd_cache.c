@@ -70,7 +70,7 @@ cmd_cache_load(
 
         uint64_t       cached_stamp = mstream_read_lu64(&ms);
         struct ospathc cached_path = mstream_read_ospath(&ms);
-        uint64_t       stamp = fs_mtime_ms(cached_path, 1);
+        uint64_t       stamp = fs_mtime_ms(cached_path);
 
         /* Map to invalid plugin by default. Don't forget this, resize() does
          * NOT initialize values in the vector! */
@@ -102,7 +102,8 @@ cmd_cache_load(
         enum type        return_type = mstream_read_u8(&ms);
         int              param_count = mstream_read_u8(&ms);
 
-        if (cached_plugin_id < 0 || cached_plugin_id >= plugin_ids_count(cached_plugin_map)
+        if (cached_plugin_id < 0
+            || cached_plugin_id >= plugin_ids_count(cached_plugin_map)
             || cached_plugin_map->data[cached_plugin_id] == -1)
         {
             for (i = 0; i != param_count; ++i)
@@ -200,7 +201,7 @@ cmd_cache_save(
     {
         /* Timestamps of plugins, so next time we know if the plugin has to be
          * parsed again or not */
-        uint64_t stamp = fs_mtime_ms(ospathc(plugin->filepath), 1);
+        uint64_t stamp = fs_mtime_ms(ospathc(plugin->filepath));
 
         mstream_write_lu64(&ms, stamp);
         mstream_write_ospath(&ms, plugin->filepath);
@@ -215,8 +216,11 @@ cmd_cache_save(
         mstream_write_utf8(&ms, utf8_list_view(cmds->c_symbols, cmd));
         mstream_write_li16(&ms, cmds->plugin_ids->data[cmd]);
         mstream_write_u8(&ms, cmds->return_types->data[cmd]);
-        mstream_write_u8(&ms, cmd_param_types_list_count(cmds->param_types->data[cmd]));
-        for (i = 0; i != cmd_param_types_list_count(cmds->param_types->data[cmd]); i++)
+        mstream_write_u8(
+            &ms, cmd_param_types_list_count(cmds->param_types->data[cmd]));
+        for (i = 0;
+             i != cmd_param_types_list_count(cmds->param_types->data[cmd]);
+             i++)
         {
             const struct cmd_param* param_type
                 = &cmds->param_types->data[cmd]->data[i];

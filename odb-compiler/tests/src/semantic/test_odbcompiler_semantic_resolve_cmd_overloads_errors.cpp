@@ -23,7 +23,13 @@ TEST_F(NAME, ambiguous_overloads)
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
     EXPECT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
         Eq(-1));
     EXPECT_THAT(
         log(),
@@ -45,8 +51,15 @@ TEST_F(NAME, dont_highlight_brackets_in_expr)
     ASSERT_THAT(parse("print(\"test\")"), Eq(0)) << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_resolve_cmd_overloads, &ast, plugins, &cmds, "test", src),
-        Eq(-1)) << log().text;
+            &semantic_resolve_cmd_overloads,
+            &ast,
+            plugins,
+            &cmds,
+            symbols,
+            "test",
+            src),
+        Eq(-1))
+        << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: error: Parameter mismatch: No version of this command "
@@ -56,4 +69,3 @@ TEST_F(NAME, dont_highlight_brackets_in_expr)
               "   = note: Available candidates:\n"
               "   |   PRINT INTEGER AS INTEGER  [test]\n"));
 }
-

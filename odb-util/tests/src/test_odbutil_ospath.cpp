@@ -23,38 +23,6 @@ struct NAME : public Test
     struct ospath path;
 };
 
-/*
-class OsPathCEqMatcher : public testing::MatcherInterface<struct ospathc>
-{
-public:
-    explicit StrViewEqMatcher(const std::string& expected)
-        : expected(expected)
-    {}
-
-    bool MatchAndExplain(const struct str_view actual, testing::MatchResultListener* listener) const override
-    {
-        *listener << "\"" << std::string_view(actual.data, actual.len) << "\"";
-        return cstr_equal(actual, expected.c_str());
-    }
-    void DescribeTo(std::ostream* os) const override
-    {
-        *os << "Equals \"" << expected << "\"";
-    }
-    void DescribeNegationTo(std::ostream* os) const override
-    {
-        *os << "Does not equal \"" << expected << "\"";
-    }
-
-private:
-    const std::string expected;
-};
-
-inline testing::Matcher<struct str_view> StrViewEq(const std::string& expected)
-{
-    return MakeMatcher(new StrViewEqMatcher(expected));
-}
-*/
-
 TEST_F(NAME, set_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
@@ -130,6 +98,26 @@ TEST_F(NAME, join_2)
 TEST_F(NAME, dirname_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
+    ospath_dirname(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("."));
+}
+
+TEST_F(NAME, dirname_on_root)
+{
+#ifdef _WIN32
+    ospath_set(&path, cstr_ospathc("/"));
+    ospath_dirname(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq(""));  /* Paths starting with "\" are invalid on windows */
+#else
+    ospath_set(&path, cstr_ospathc("\\"));
+    ospath_dirname(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("/"));
+#endif
+}
+
+TEST_F(NAME, dirname_on_current_dir)
+{
+    ospath_set(&path, cstr_ospathc("."));
     ospath_dirname(&path);
     EXPECT_THAT(ospath_cstr(path), StrEq("."));
 }
@@ -213,200 +201,102 @@ TEST_F(NAME, dirname_on_path_4)
     EXPECT_THAT(ospath_cstr(path), StrEq("."));
 }
 
-TEST_F(NAME, dirname_on_path_5)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("/"));
-    ospath_dirname(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("."));
-#else
-    ospath_set(&path, cstr_ospathc("\\"));
-    ospath_dirname(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("/"));
-#endif
-}
-
-#if 0
-TEST_F(NAME, path_basename_empty)
+TEST_F(NAME, filename_empty)
 {
     ospath_set(&path, cstr_ospathc(""));
-    path_basename(&path);
+    ospath_filename(&path);
     EXPECT_THAT(ospath_cstr(path), StrEq(""));
 }
 
-TEST_F(NAME, path_basename_file_1)
-{
-    ospath_set(&path, cstr_ospathc("file.dat.xz"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
-}
-
-TEST_F(NAME, path_basename_on_file_2)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("/file.dat.xz"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq(""));  /* Paths starting with "\" are invalid on windows */
-#else
-    ospath_set(&path, cstr_ospathc("\\file.dat.xz"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
-#endif
-}
-
-TEST_F(NAME, path_basename_on_file_3)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("some/unix/file.dat.xz"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
-#else
-    ospath_set(&path, cstr_ospathc("some\\windows\\file.dat.xz"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
-#endif
-}
-
-TEST_F(NAME, path_basename_on_path_1)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("some/unix/path"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("path"));
-#else
-    ospath_set(&path, cstr_ospathc("some\\windows\\path"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("path"));
-#endif
-}
-
-TEST_F(NAME, path_basename_on_path_2)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("some/unix/path/"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("path"));
-#else
-    ospath_set(&path, cstr_ospathc("some\\windows\\path\\"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("path"));
-#endif
-}
-
-TEST_F(NAME, path_basename_on_path_3)
-{
-#ifdef _WIN32
-    ospath_set(&path, cstr_ospathc("/some/unix/path"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq(""));  /* paths starting with "\" are invalid on windows */
-#else
-    ospath_set(&path, cstr_ospathc("\\some\\windows\\path"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("path"));
-#endif
-}
-
-TEST_F(NAME, path_basename_on_path_4)
-{
-    ospath_set(&path, cstr_ospathc("dir"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("dir"));
-}
-
-TEST_F(NAME, path_basename_on_path_5)
+TEST_F(NAME, filename_on_root)
 {
 #ifdef _WIN32
     ospath_set(&path, cstr_ospathc("/"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq(""));  /* paths starting with "\" are invalid on windows */
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq(""));
 #else
     ospath_set(&path, cstr_ospathc("\\"));
-    path_basename(&path);
-    EXPECT_THAT(ospath_cstr(path), StrEq("/"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq(""));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_empty)
+TEST_F(NAME, filename_1)
 {
-    struct str_view path = cpath_basename_view("");
-    EXPECT_THAT(path, StrViewEq(""));
+    ospath_set(&path, cstr_ospathc("file.dat.xz"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
 }
 
-TEST_F(NAME, cpath_basename_file_1)
-{
-    struct str_view path = cpath_basename_view("file.dat.xz");
-    EXPECT_THAT(path, StrViewEq("file.dat.xz"));
-}
-
-TEST_F(NAME, cpath_basename_on_file_2)
+TEST_F(NAME, filename_2)
 {
 #ifdef _WIN32
-    struct str_view path = cpath_basename_view("/file.dat.xz");
-    EXPECT_THAT(path, StrViewEq(""));  /* Paths starting with "\" are invalid on windows */
+    ospath_set(&path, cstr_ospathc("/file.dat.xz"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq(""));
 #else
-    struct str_view path = cpath_basename_view("\\file.dat.xz");
-    EXPECT_THAT(path, StrViewEq("file.dat.xz"));
+    ospath_set(&path, cstr_ospathc("\\file.dat.xz"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_on_file_3)
+TEST_F(NAME, filename_3)
 {
 #ifdef _WIN32
-    struct str_view path = cpath_basename_view("some/unix/file.dat.xz");
-    EXPECT_THAT(path, StrViewEq("file.dat.xz"));
+    ospath_set(&path, cstr_ospathc("some/unix/file.dat.xz"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("filename.dat.xz"));
 #else
-    struct str_view path = cpath_basename_view("some\\windows\\file.dat.xz");
-    EXPECT_THAT(path, StrViewEq("file.dat.xz"));
+    ospath_set(&path, cstr_ospathc("some\\windows\\file.dat.xz"));
+    ospath_filename(&path);
+    EXPECT_THAT(ospath_cstr(path), StrEq("file.dat.xz"));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_on_path_1)
+TEST_F(NAME, c_filename_on_root)
 {
 #ifdef _WIN32
-    struct str_view path = cpath_basename_view("some/unix/path");
-    EXPECT_THAT(path, StrViewEq("path"));
+    struct ospathc cpath = cstr_ospathc("/");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq(""));
 #else
-    struct str_view path = cpath_basename_view("some\\windows\\path");
-    EXPECT_THAT(path, StrViewEq("path"));
+    struct ospathc cpath = cstr_ospathc("\\");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq(""));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_on_path_2)
+TEST_F(NAME, c_filename_1)
+{
+    struct ospathc cpath = cstr_ospathc("file.dat.xz");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq("file.dat.xz"));
+}
+
+TEST_F(NAME, c_filename_2)
 {
 #ifdef _WIN32
-    struct str_view path = cpath_basename_view("some/unix/path/");
-    EXPECT_THAT(path, StrViewEq("path"));
+    struct ospathc cpath = cstr_ospathc("/file.dat.xz");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq(""));
 #else
-    struct str_view path = cpath_basename_view("some\\windows\\path\\");
-    EXPECT_THAT(path, StrViewEq("path"));
+    struct ospathc cpath = cstr_ospathc("\\file.dat.xz");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq("file.dat.xz"));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_on_path_3)
+TEST_F(NAME, c_filename_3)
 {
 #ifdef _WIN32
-    struct str_view path = cpath_basename_view("/some/unix/path");
-    EXPECT_THAT(path, StrViewEq(""));  /* paths starting with "\" are invalid on windows */
+    struct ospathc cpath = cstr_ospathc("some/unix/file.dat.xz");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospath_cstr(path), StrEq("filename.dat.xz"));
 #else
-    struct str_view path = cpath_basename_view("\\some\\windows\\path");
-    EXPECT_THAT(path, StrViewEq("path"));
+    struct ospathc cpath = cstr_ospathc("some\\windows\\file.dat.xz");
+    ospathc_filename(&cpath);
+    EXPECT_THAT(ospathc_cstr(cpath), StrEq("file.dat.xz"));
 #endif
 }
 
-TEST_F(NAME, cpath_basename_on_path_4)
-{
-    struct str_view path = cpath_basename_view("dir");
-    EXPECT_THAT(path, StrViewEq("dir"));
-}
-
-TEST_F(NAME, cpath_basename_on_path_5)
-{
-#ifdef _WIN32
-    struct str_view path = cpath_basename_view("\\");
-    EXPECT_THAT(path, StrViewEq(""));  /* paths starting with "\" are invalid on windows */
-#else
-    struct str_view path = cpath_basename_view("/");
-    EXPECT_THAT(path, StrViewEq("/"));
-#endif
-}
-#endif

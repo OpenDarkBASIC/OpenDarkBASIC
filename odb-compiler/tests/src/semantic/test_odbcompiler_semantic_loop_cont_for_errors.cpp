@@ -24,7 +24,7 @@ TEST_F(NAME, exit_outside_of_loop)
         Eq(0));
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -43,7 +43,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -66,7 +66,7 @@ TEST_F(NAME, continue_nonexisting_named_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -91,7 +91,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -116,7 +116,7 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -141,7 +141,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop_outer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -166,7 +166,7 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop_outer)
         << log().text;
     ASSERT_THAT(
         semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, "test", src),
+            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
         Eq(-1));
     ASSERT_THAT(
         log(),
@@ -178,4 +178,3 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop_outer)
               " 1 | outer: for x=1 to 10\n"
               "   | ^~~~<\n"));
 }
-
