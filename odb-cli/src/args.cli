@@ -115,7 +115,7 @@ section: parser {
 
     task: parse-input {
         func: parse_input
-        runafter: load-commands, input, dba, dbpro
+        runafter: { load-commands, input, dba, dbpro }
     }
     
     option: ast1 {
@@ -160,7 +160,7 @@ section: codegen {
 
     task: generate-ir {
         func: generate_ir
-        runafter: semantic-checks, platform, arch
+        runafter: { semantic-checks, platform, arch }
     }
 
     option: ir {
