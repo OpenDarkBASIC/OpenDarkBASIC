@@ -913,6 +913,7 @@ enum token
     TOK_ARGS,
     TOK_FUNC,
     TOK_RUNAFTER,
+    TOK_REQUIRES,
     TOK_ELLIPSIS,
     TOK_IDENTIFIER,
     TOK_STRING,
@@ -1018,6 +1019,7 @@ peek_next(struct parser* p)
         SCAN_STRING("args", TOK_ARGS)
         SCAN_STRING("func", TOK_FUNC)
         SCAN_STRING("runafter", TOK_RUNAFTER)
+        SCAN_STRING("requires", TOK_REQUIRES)
         SCAN_STRING("...", TOK_ELLIPSIS)
 #undef SCAN_STRING
 #define SCAN_CHAR(char)                                                        \
@@ -1109,6 +1111,13 @@ ll_append(struct ll** head, struct ll* node)
     *head = node;
 }
 
+static void
+ll_prepend(struct ll** head, struct ll* node)
+{
+    node->next = *head;
+    *head = node;
+}
+
 struct strlist
 {
     struct strlist* next;
@@ -1126,9 +1135,12 @@ struct option
 {
     struct option*    next;
     struct help_lang* help;
-    struct str_view   name;
-    struct str_view   func;
-    char              short_name;
+    struct strlist*   runafter;
+    struct strlist*
+        requires;
+    struct str_view name;
+    struct str_view func;
+    char            short_name;
 };
 
 struct task
@@ -1170,6 +1182,10 @@ new_option(struct str_view name)
     struct option* o = malloc(sizeof *o);
     o->next = NULL;
     o->help = NULL;
+    o->runafter = NULL;
+    o->
+        requires
+    = NULL;
     o->name = name;
     o->func = empty_str_view();
     o->short_name = '\0';
@@ -1198,6 +1214,73 @@ new_section(struct str_view name)
     s->runafter = NULL;
     s->name = name;
     return s;
+}
+
+static void
+strlist_add(struct strlist** head, struct str_view string)
+{
+    struct strlist* sl = malloc(sizeof *sl);
+    sl->string = string;
+    ll_prepend((struct ll**)head, (struct ll*)sl);
+}
+
+static int
+parse_runafter(struct parser* p, struct strlist** runafter)
+{
+    if (peek_next(p) == '{')
+    {
+        consume(p);
+        if (scan_next(p) != TOK_IDENTIFIER)
+            return print_loc_error(p, "Expected identifier after 'runafter'\n");
+        while (peek_next(p) == ',')
+        {
+            consume(p);
+            if (scan_next(p) != TOK_IDENTIFIER)
+                return print_loc_error(p, "Expected identifier after ','\n");
+            strlist_add(runafter, p->value.str);
+        }
+        if (scan_next(p) != '}')
+            return print_loc_error(
+                p, "Missing closing '}' for 'runafter' block\n");
+
+        return 0;
+    }
+
+    if (scan_next(p) != TOK_IDENTIFIER)
+        return print_loc_error(p, "Expected identifier after 'runafter'\n");
+    strlist_add(runafter, p->value.str);
+
+    return 0;
+}
+
+static int
+parse_requires(struct parser* p, struct strlist** requires)
+{
+    if (peek_next(p) == '{')
+    {
+        consume(p);
+        if (scan_next(p) != TOK_IDENTIFIER)
+            return print_loc_error(p, "Expected identifier after 'requires'\n");
+        while (peek_next(p) == ',' || peek_next(p) == '|')
+        {
+            consume(p);
+            if (scan_next(p) != TOK_IDENTIFIER)
+                return print_loc_error(
+                    p, "Expected identifier after ',' or '|'\n");
+            strlist_add(requires, p->value.str);
+        }
+        if (scan_next(p) != '}')
+            return print_loc_error(
+                p, "Missing closing '}' for 'requires' block\n");
+
+        return 0;
+    }
+
+    if (scan_next(p) != TOK_IDENTIFIER)
+        return print_loc_error(p, "Expected identifier after 'requires'\n");
+    strlist_add(requires, p->value.str);
+
+    return 0;
 }
 
 static int
@@ -1288,16 +1371,18 @@ parse_option(struct parser* p, struct option* option)
                 if (scan_next(p) != ':')
                     return print_loc_error(
                         p, "Expected ':' after 'runafter'\n");
-                if (scan_next(p) != TOK_IDENTIFIER)
+                if (parse_runafter(p, &option->runafter) != 0)
+                    return -1;
+                break;
+            }
+
+            case TOK_REQUIRES: {
+                consume(p);
+                if (scan_next(p) != ':')
                     return print_loc_error(
-                        p, "Expected identifier after 'runafter'\n");
-                while (peek_next(p) == ',')
-                {
-                    consume(p);
-                    if (scan_next(p) != TOK_IDENTIFIER)
-                        return print_loc_error(
-                            p, "Expected identifier after ','\n");
-                }
+                        p, "Expected ':' after 'requires'\n");
+                if (parse_requires(p, &option->requires) != 0)
+                    return -1;
                 break;
             }
 
@@ -1339,16 +1424,8 @@ parse_task(struct parser* p, struct task* task)
                 if (scan_next(p) != ':')
                     return print_loc_error(
                         p, "Expected ':' after 'runafter'\n");
-                if (scan_next(p) != TOK_IDENTIFIER)
-                    return print_loc_error(
-                        p, "Expected identifier after 'runafter'\n");
-                while (peek_next(p) == ',')
-                {
-                    consume(p);
-                    if (scan_next(p) != TOK_IDENTIFIER)
-                        return print_loc_error(
-                            p, "Expected identifier after ','\n");
-                }
+                if (parse_runafter(p, &task->runafter) != 0)
+                    return -1;
                 break;
             }
 
@@ -1498,6 +1575,17 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
         }
     }
 }
+
+/* ----------------------------------------------------------------------------
+ * Dependency solver
+ * ------------------------------------------------------------------------- */
+
+struct table_entry
+{
+    struct str_view long_opt;
+    struct str_view short_opt;
+    int             priority;
+};
 
 static void
 gen_table(struct mstream* ms, const struct root* root, const char* data)

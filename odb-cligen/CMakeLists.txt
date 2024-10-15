@@ -13,11 +13,11 @@ include (ODBTargetProperties)
 odb_target_properties (odb-cligen
     PROPERTIES
         MSVC_RUNTIME_LIBRARY MultiThreaded$<$<CONFIG:Debug>:Debug>
-        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_BINDIR})
+        RUNTIME_OUTPUT_DIRECTORY ${ODB_BUILD_HOST_BINDIR})
 
 install (
     TARGETS odb-cligen
-    RUNTIME DESTINATION ${ODB_INSTALL_BINDIR})
+    RUNTIME DESTINATION ${ODB_INSTALL_HOST_BINDIR})
 
 macro (odb_cligen_target name)
     set (odb_cligen_target_PARAM_OPTIONS)
