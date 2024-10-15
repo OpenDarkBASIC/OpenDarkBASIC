@@ -421,6 +421,9 @@ ast_node_type(const struct ast* ast, ast_id n)
 static inline enum type
 ast_type_info(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.type_info; }
+static inline struct utf8_span
+ast_loc(const struct ast* ast, ast_id n)
+    { return ast->nodes[n].info.location; }
 
 ast_id ast_dup_node(struct ast** astp, ast_id n);
 

@@ -504,6 +504,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_boolean_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_mul.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_binop_pow_errors.cpp"

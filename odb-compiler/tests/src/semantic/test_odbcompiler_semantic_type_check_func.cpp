@@ -20,11 +20,10 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, unused_template_function_is_not_instantiated)
 {
-    ASSERT_THAT(
-        parse("FUNCTION test(a)\n"
-              "ENDFUNCTION\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "FUNCTION test(a)\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -46,11 +45,10 @@ TEST_F(NAME, unused_template_function_is_not_instantiated)
 
 TEST_F(NAME, function_with_no_args_is_typechecked)
 {
-    ASSERT_THAT(
-        parse("FUNCTION test()\n"
-              "ENDFUNCTION\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "FUNCTION test()\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -72,12 +70,11 @@ TEST_F(NAME, function_with_no_args_is_typechecked)
 
 TEST_F(NAME, function_with_no_args_called)
 {
-    ASSERT_THAT(
-        parse("test()\n"
-              "FUNCTION test()\n"
-              "ENDFUNCTION\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "test()\n"
+          "FUNCTION test()\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -103,12 +100,11 @@ TEST_F(NAME, function_with_no_args_called)
 TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT sum(2, 3)\n"
-              "FUNCTION sum(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT sum(2, 3)\n"
+          "FUNCTION sum(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -151,12 +147,11 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
 
 TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
 {
-    ASSERT_THAT(
-        parse("result AS INTEGER = sum(2, 3)\n"
-              "FUNCTION sum(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "result AS INTEGER = sum(2, 3)\n"
+          "FUNCTION sum(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -173,13 +168,12 @@ TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
 TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT sum(2, 3)\n"
-              "PRINT sum(2.2f, 3.3f)\n"
-              "FUNCTION sum(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT sum(2, 3)\n"
+          "PRINT sum(2.2f, 3.3f)\n"
+          "FUNCTION sum(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -196,8 +190,8 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ast_id call1 = ast->nodes[block1].block.stmt;
     ast_id call2 = ast->nodes[block2].block.stmt;
     ast_id func_template = ast->nodes[block3].block.stmt;
-    ast_id byte_func = ast->nodes[block4].block.stmt;
-    ast_id float_func = ast->nodes[block5].block.stmt;
+    ast_id byte_func = ast->nodes[block5].block.stmt;
+    ast_id float_func = ast->nodes[block4].block.stmt;
 
     // Byte function ---------------------------------------------------------
     ast_id decl = ast->nodes[byte_func].func.decl;
@@ -253,18 +247,19 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
 TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT sum(2, 3)\n"
-              "PRINT sum(2, 3)\n"
-              "FUNCTION sum(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT sum(2, 3)\n"
+          "PRINT sum(4, 5)\n"
+          "FUNCTION sum(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    ASSERT_THAT(ast_count(ast), Eq(42));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -273,27 +268,28 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
     ast_id block5 = ast->nodes[block4].block.next;
     ASSERT_THAT(block5, Eq(-1));
 
-    ast_id call1 = ast->nodes[block1].block.stmt;
-    ast_id call2 = ast->nodes[block2].block.stmt;
-    ast_id func_template = ast->nodes[block3].block.stmt;
+    ast_id cmd1 = ast->nodes[block1].block.stmt;
+    ast_id cmd2 = ast->nodes[block2].block.stmt;
     ast_id func = ast->nodes[block4].block.stmt;
+    ast_id arglist1 = ast->nodes[cmd1].cmd.arglist;
+    ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
+    ast_id call1 = ast->nodes[arglist1].arglist.expr;
+    ast_id call2 = ast->nodes[arglist2].arglist.expr;
     ASSERT_THAT(ast_node_type(ast, call1), Eq(AST_FUNC_CALL));
     ASSERT_THAT(ast_node_type(ast, call2), Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast_node_type(ast, func_template), Eq(AST_FUNC_TEMPLATE));
     ASSERT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
 }
 
 TEST_F(NAME, func_returns_result_of_another_func)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT muladd(2, 3, 4)\n"
-              "FUNCTION muladd(a, b, c)\n"
-              "ENDFUNCTION sum(a * b, c)\n"
-              "FUNCTION sum(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT muladd(2, 3, 4)\n"
+          "FUNCTION muladd(a, b, c)\n"
+          "ENDFUNCTION sum(a * b, c)\n"
+          "FUNCTION sum(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -306,14 +302,13 @@ TEST_F(NAME, func_returns_result_of_another_func)
 TEST_F(NAME, func_result_as_arg_to_call)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT mul(add(2, 3), 4)\n"
-              "FUNCTION mul(a, b)\n"
-              "ENDFUNCTION a * b\n"
-              "FUNCTION add(a, b)\n"
-              "ENDFUNCTION a + b\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT mul(add(2, 3), 4)\n"
+          "FUNCTION mul(a, b)\n"
+          "ENDFUNCTION a * b\n"
+          "FUNCTION add(a, b)\n"
+          "ENDFUNCTION a + b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -326,13 +321,12 @@ TEST_F(NAME, func_result_as_arg_to_call)
 TEST_F(NAME, recursion_1)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT fib(5)\n"
-             "FUNCTION fib(n)\n"
-              "  IF n < 2 THEN EXITFUNCTION n\n"
-              "ENDFUNCTION fib(n-1) + fib(n-2)\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT fib(5)\n"
+          "FUNCTION fib(n)\n"
+          "  IF n < 2 THEN EXITFUNCTION n\n"
+          "ENDFUNCTION fib(n-1) + fib(n-2)\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -345,13 +339,12 @@ TEST_F(NAME, recursion_1)
 TEST_F(NAME, recursion_2)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT fib2(5)\n"
-              "FUNCTION fib2(n)\n"
-              "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
-              "ENDFUNCTION n\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT fib2(5)\n"
+          "FUNCTION fib2(n)\n"
+          "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
+          "ENDFUNCTION n\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -364,16 +357,15 @@ TEST_F(NAME, recursion_2)
 TEST_F(NAME, nested_recursion_1)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        parse("PRINT fib(5)\n"
-              "FUNCTION fib(n)\n"
-              "  IF n < 2 THEN EXITFUNCTION n\n"
-              "ENDFUNCTION fib2(n-1) + fib2(n-2)\n"
-              "FUNCTION fib2(n)\n"
-              "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
-              "ENDFUNCTION n\n"),
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT fib(5)\n"
+          "FUNCTION fib(n)\n"
+          "  IF n < 2 THEN EXITFUNCTION n\n"
+          "ENDFUNCTION fib2(n-1) + fib2(n-2)\n"
+          "FUNCTION fib2(n)\n"
+          "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
+          "ENDFUNCTION n\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -386,18 +378,15 @@ TEST_F(NAME, nested_recursion_1)
 TEST_F(NAME, nested_recursion_2)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
-    ASSERT_THAT(
-        /* clang-format off */
-        parse("PRINT fib(5)\n"
-              "FUNCTION fib(n)\n"
-              "  IF n < 2 THEN EXITFUNCTION n\n"
-              "ENDFUNCTION fib2(fib(n-1)-1) + fib(fib2(n-2)-2)\n"
-              "FUNCTION fib2(n)\n"
-              "  IF n >= 2 THEN EXITFUNCTION fib(fib2(n-1)-1) + fib2(fib(n-2)-2)\n"
-              "ENDFUNCTION n\n"),
-        /* clang-format on */
-        Eq(0))
-        << log().text;
+    const char* source
+        = "PRINT fib(5)\n"
+          "FUNCTION fib(n)\n"
+          "  IF n < 2 THEN EXITFUNCTION n\n"
+          "ENDFUNCTION fib2(fib(n-1)-1) + fib(fib2(n-2)-2)\n"
+          "FUNCTION fib2(n)\n"
+          "  IF n >= 2 THEN EXITFUNCTION fib(fib2(n-1)-1) + fib2(fib(n-2)-2)\n"
+          "ENDFUNCTION n\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
@@ -406,3 +395,16 @@ TEST_F(NAME, nested_recursion_2)
 
     // TODO: Check
 }
+
+//TEST_F(NAME, infinite_recursion)
+//{
+//    const char* source
+//        = "foo()\n"
+//          "FUNCTION foo()\n"
+//          "ENDFUNCTION foo()\n";
+//    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+//    ASSERT_THAT(
+//        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+//        << log().text;
+//    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+//}

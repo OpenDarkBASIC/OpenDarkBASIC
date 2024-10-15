@@ -114,7 +114,6 @@ run_check(
 
     if (ptr_set_emplace_new(visited, check) != NULL)
     {
-        log_dbg("[semantic] ", "Running check %s\n", check->name);
         if (check->execute(
                 ctx->tus,
                 ctx->tu_count,

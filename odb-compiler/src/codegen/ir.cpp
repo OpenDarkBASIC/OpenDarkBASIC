@@ -23,12 +23,12 @@ extern "C" {
 struct span_scope
 {
     struct utf8_span span;
-    int16_t          scope;
+    int32_t          scope;
 };
 struct view_scope
 {
     struct utf8_view view;
-    int16_t          scope;
+    int32_t          scope;
 };
 
 struct loop_stack_entry
@@ -532,7 +532,8 @@ gen_expr(
         case AST_IDENTIFIER: {
             struct utf8_view name
                 = utf8_span_view(source, ast->nodes[expr].identifier.name);
-            struct view_scope  name_scope = {name, 0};
+            struct view_scope name_scope
+                = {name, ast->nodes[expr].info.scope_id};
             llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
             /* The AST should be constructed in a way where we do not have to
              * create a default value for variables that have not yet been
@@ -1080,7 +1081,8 @@ gen_block(
                 enum type        type = ast_type_info(ast, lhs_node);
                 struct utf8_view name = utf8_span_view(
                     source, ast->nodes[lhs_node].identifier.name);
-                struct view_scope  name_scope = {name, 0};
+                struct view_scope name_scope
+                    = {name, ast->nodes[lhs_node].info.scope_id};
                 llvm::AllocaInst** A;
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                 {
@@ -1381,7 +1383,8 @@ gen_block(
                     enum type        param_type = ast_type_info(ast, ast_param);
                     struct utf8_view name = utf8_span_view(
                         source, ast->nodes[ast_param].identifier.name);
-                    struct view_scope  name_scope = {name, 0};
+                    struct view_scope name_scope
+                        = {name, ast->nodes[ast_param].info.scope_id};
                     llvm::AllocaInst** A;
                     switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                     {

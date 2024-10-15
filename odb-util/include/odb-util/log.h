@@ -6,11 +6,20 @@
 
 typedef void (*log_write_func)(const char* fmt, va_list ap);
 
+enum log_level
+{
+    LOG_DEBUG,
+    LOG_INFO,
+    LOG_NOTE,
+    LOG_WARN,
+    LOG_ERR,
+};
+
 struct log_interface
 {
     ODBUTIL_PRINTF_FORMAT(1, 0)
     void (*write)(const char* fmt, va_list ap);
-    char use_color;
+    unsigned       use_color : 2;
 };
 
 ODBUTIL_PRIVATE_API int
