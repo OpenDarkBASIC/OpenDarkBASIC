@@ -477,9 +477,9 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 }
                                 log_excerpt_help(
                                     gutter,
-                                    "%sexplicitly declare the type of the "
+                                    "%sxplicitly declare the type of the "
                                     "variable:\n",
-                                    ann[0] != TA_NONE ? "Or " : "");
+                                    ann[0] != TA_NONE ? "Or e" : "E");
                                 log_excerpt(ctx->source_text, hl_as_type);
                             }
                             else
@@ -1073,8 +1073,9 @@ type_check(
     typemap_deinit(ctx.typemap);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    if (sanity_check(ast, filename, source) != 0)
-        return -1;
+    if (return_code == 0)
+        if (sanity_check(ast, filename, source) != 0)
+            return -1;
 #endif
 
     return return_code;

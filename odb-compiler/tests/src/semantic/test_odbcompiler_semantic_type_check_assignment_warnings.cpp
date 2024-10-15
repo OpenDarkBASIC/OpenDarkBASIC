@@ -18,20 +18,20 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, truncated)
 {
     const char* source
-        = "a# = 5.5\n"
-          "b = 2\n"
+        = "a# = 5.5f\n"
+          "b AS INTEGER\n"
           "b = a#\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Value is truncated when converting from "
-              "DOUBLE to INTEGER in assignment.\n"
+              "FLOAT to INTEGER in assignment.\n"
               " 3 | b = a#\n"
-              "   | ^ ^ ^< DOUBLE\n"
+              "   | ^ ^ ~< FLOAT\n"
               "   | INTEGER\n"
               "   = note: b was previously declared as INTEGER at test:2:1:\n"
-              " 2 | b = 2\n"
+              " 2 | b AS INTEGER\n"
               "   | ^ INTEGER\n"));
     ast_id ass1 = ast.nodes[0].block.stmt;
     ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -64,20 +64,20 @@ TEST_F(NAME, truncated)
 TEST_F(NAME, implicit_conversion)
 {
     const char* source
-        = "a = true\n"
-          "b = 2\n"
-          "b = a\n";
+        = "a? = true\n"
+          "b AS INTEGER\n"
+          "b = a?\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Implicit conversion from BOOLEAN to INTEGER "
               "in assignment.\n"
-              " 3 | b = a\n"
-              "   | ^ ^ ^ BOOLEAN\n"
+              " 3 | b = a?\n"
+              "   | ^ ^ ~< BOOLEAN\n"
               "   | INTEGER\n"
               "   = note: b was previously declared as INTEGER at test:2:1:\n"
-              " 2 | b = 2\n"
+              " 2 | b AS INTEGER\n"
               "   | ^ INTEGER\n"));
     ast_id ass1 = ast.nodes[0].block.stmt;
     ast_id ass2 = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -109,18 +109,20 @@ TEST_F(NAME, implicit_conversion)
 
 TEST_F(NAME, integer_to_float_conversion)
 {
-    const char* source = "a# = 0\n";
+    const char* source
+        = "a# AS FLOAT\n"
+          "a# = 0\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:6: warning: Implicit conversion from BYTE to FLOAT "
+        LogEq("test:2:6: warning: Implicit conversion from BYTE to FLOAT "
               "in assignment.\n"
-              " 1 | a# = 0\n"
+              " 2 | a# = 0\n"
               "   | >~ ^ ^ BYTE\n"
               "   | FLOAT\n"
               "   = note: a# was previously declared as FLOAT at test:1:1:\n"
-              " 1 | a# = 0\n"
+              " 1 | a# AS FLOAT\n"
               "   | ^< FLOAT\n"));
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;

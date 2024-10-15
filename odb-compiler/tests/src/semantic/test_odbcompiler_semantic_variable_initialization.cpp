@@ -404,7 +404,7 @@ TEST_F(NAME, unannotated_string_initializes_to_empty)
 
 TEST_F(NAME, unannotated_integer_assigned_integer)
 {
-    const char* source = "a AS INTEGER = 42";
+    const char* source = "a AS INTEGER = 65536";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast.node_count, Eq(4));
@@ -417,7 +417,7 @@ TEST_F(NAME, unannotated_integer_assigned_integer)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(42));
+    EXPECT_THAT(ast.nodes[init].integer_literal.value, Eq(65536));
 }
 
 TEST_F(NAME, unannotated_bool_assigned_true)
@@ -440,7 +440,7 @@ TEST_F(NAME, unannotated_bool_assigned_true)
 
 TEST_F(NAME, unannotated_word_assigned_word)
 {
-    const char* source = "a AS WORD = 42";
+    const char* source = "a AS WORD = 256";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast.node_count, Eq(4));
@@ -453,12 +453,12 @@ TEST_F(NAME, unannotated_word_assigned_word)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_WORD_LITERAL));
-    EXPECT_THAT(ast.nodes[init].word_literal.value, Eq(42));
+    EXPECT_THAT(ast.nodes[init].word_literal.value, Eq(256));
 }
 
 TEST_F(NAME, unannotated_double_integer_assigned_double_integer)
 {
-    const char* source = "a AS DOUBLE INTEGER = 42";
+    const char* source = "a AS DOUBLE INTEGER = 4294967296";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast.node_count, Eq(4));
@@ -471,7 +471,7 @@ TEST_F(NAME, unannotated_double_integer_assigned_double_integer)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(ast.nodes[init].double_integer_literal.value, Eq(42));
+    EXPECT_THAT(ast.nodes[init].double_integer_literal.value, Eq(4294967296));
 }
 
 TEST_F(NAME, unannotated_float_assigned_float)
@@ -525,7 +525,7 @@ TEST_F(NAME, unannotated_string_assigned_string)
     EXPECT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     EXPECT_THAT(ast.nodes[var].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast.nodes[init].info.node_type, Eq(AST_STRING_LITERAL));
-    EXPECT_THAT(ast.nodes[init].string_literal.str, Utf8SpanEq(16, 5));
+    EXPECT_THAT(ast.nodes[init].string_literal.str, Utf8SpanEq(15, 5));
 }
 
 TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)

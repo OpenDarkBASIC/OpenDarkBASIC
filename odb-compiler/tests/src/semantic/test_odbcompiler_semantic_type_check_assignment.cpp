@@ -44,10 +44,10 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
               " 1 | a = false\n"
               "   | ^ ^ ~~~~< BOOLEAN\n"
               "   | INTEGER\n"
-              "   = help: Annotate the variable with the BOOLEAN annotation:\n"
+              "   = help: Annotate the variable:\n"
               " 1 | a? = false\n"
               "   |  ^\n"
-              "   = help: Or declare the type of the variable AS BOOLEAN:\n"
+              "   = help: Or explicitly declare the type of the variable:\n"
               " 1 | a AS BOOLEAN = false\n"
               "   |  ^~~~~~~~~~<\n"));
 
@@ -67,15 +67,15 @@ TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Implicit conversion from BOOLEAN to INTEGER "
+        LogEq("test:1:5: warning: Implicit conversion from BOOLEAN to INTEGER "
               "in variable initialization.\n"
               " 1 | a = true\n"
-              "   | > ^ ~~~< BOOLEAN\n"
+              "   | ^ ^ ~~~< BOOLEAN\n"
               "   | INTEGER\n"
-              "   = help: Annotate the variable with the BOOLEAN annotation:\n"
+              "   = help: Annotate the variable:\n"
               " 1 | a? = true\n"
               "   |  ^\n"
-              "   = help: Or declare the type of the variable AS BOOLEAN:\n"
+              "   = help: Or explicitly declare the type of the variable:\n"
               " 1 | a AS BOOLEAN = true\n"
               "   |  ^~~~~~~~~~<\n"));
     ast_id ass = ast.nodes[0].block.stmt;
@@ -94,12 +94,12 @@ TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Implicit conversion from DWORD to INTEGER in "
+        LogEq("test:1:5: warning: Implicit conversion from DWORD to INTEGER in "
               "variable initialization.\n"
               " 1 | a = 4294967295\n"
-              "   | > ^ ~~~~~~~~~< DWORD\n"
+              "   | ^ ^ ~~~~~~~~~< DWORD\n"
               "   | INTEGER\n"
-              "   = help: Declare the type of the variable AS DWORD:\n"
+              "   = help: Explicitly declare the type of the variable:\n"
               " 1 | a AS DWORD = 4294967295\n"
               "   |  ^~~~~~~~<\n"));
     ast_id ass = ast.nodes[0].block.stmt;
@@ -118,16 +118,16 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Value is truncated in conversion from DOUBLE "
+        LogEq("test:1:5: warning: Value is truncated in conversion from DOUBLE "
               "INTEGER to INTEGER in variable initialization.\n"
               " 1 | a = 99999999999999\n"
-              "   | > ^ ~~~~~~~~~~~~~< DOUBLE INTEGER\n"
+              "   | ^ ^ ~~~~~~~~~~~~~< DOUBLE INTEGER\n"
               "   | INTEGER\n"
               "   = help: Annotate the variable with the DOUBLE INTEGER "
               "annotation:\n"
               " 1 | a& = true\n"
               "   |  ^\n"
-              "   = help: Or declare the type of the variable AS DOUBLE "
+              "   = help: Or explicitly declare the type of the variable AS DOUBLE "
               "INTEGER:\n"
               " 1 | a AS DOUBLE INTEGER = 99999999999999\n"
               "   |  ^~~~~~~~~~~~~~~~~<\n"));
@@ -147,15 +147,15 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Implicit conversion from FLOAT to INTEGER "
+        LogEq("test:1:5: warning: Implicit conversion from FLOAT to INTEGER "
               "in variable initialization.\n"
               " 1 | a = 5.5f\n"
-              "   | > ^ ~~~< FLOAT\n"
+              "   | ^ ^ ~~~< FLOAT\n"
               "   | INTEGER\n"
               "   = help: Annotate the variable with the FLOAT annotation:\n"
               " 1 | a# = 5.5f\n"
               "   |  ^\n"
-              "   = help: Or declare the type of the variable AS FLOAT:\n"
+              "   = help: Or explicitly declare the type of the variable AS FLOAT:\n"
               " 1 | a AS FLOAT = 5.5f\n"
               "   |  ^~~~~~~~<\n"));
     ast_id ass = ast.nodes[0].block.stmt;
@@ -174,10 +174,10 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Implicit conversion from DOUBLE to INTEGER "
+        LogEq("test:1:5: warning: Implicit conversion from DOUBLE to INTEGER "
               "in variable initialization.\n"
               " 1 | a = 5.5\n"
-              "   | > ^ ~~< DOUBLE\n"
+              "   | ^ ^ ~~< DOUBLE\n"
               "   | INTEGER\n"
               "   = help: Annotate the variable with the DOUBLE annotation:\n"
               " 1 | a! = 5.5\n"
