@@ -94,6 +94,7 @@ enum ast_type
     AST_FUNC,
     AST_FUNC_DECL,
     AST_FUNC_DEF,
+    AST_FUNC_EXIT,
     AST_FUNC_OR_CONTAINER_REF,
     AST_FUNC_CALL,
     /*! Boolean literal, either "true" or "false" */
@@ -150,6 +151,7 @@ union ast_node
         struct info info;
         ast_id expr;
         ast_id next;
+        struct utf8_span combined_location;
     } arglist;
 
     struct 
@@ -157,6 +159,7 @@ union ast_node
         struct info info;
         ast_id identifier;
         ast_id next;
+        struct utf8_span combined_location;
     } paramlist;
 
     struct 
@@ -412,6 +415,7 @@ ast_id ast_loop_for(struct ast** astp, ast_id body, ast_id init, ast_id end, ast
 ast_id ast_loop_cont(struct ast** astp, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast** astp, struct utf8_span name, struct utf8_span location);
 ast_id ast_func(struct ast** astp, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
+ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
 ast_id ast_func_or_container_ref(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);

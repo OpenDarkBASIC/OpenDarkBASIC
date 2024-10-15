@@ -24,7 +24,7 @@ enum hash_mode
     COLLIDE_WITH_SHITTY_HASH_SECOND_PROBE
 } hash_mode;
 
-struct used_cmds_hm_keys
+struct hm_test_kvs
 {
     char*  keys;
     float* values;
@@ -45,27 +45,31 @@ test_hash(const char* key)
 }
 static int
 test_storage_alloc(
-    struct used_cmds_hm_keys* kvs,
-    struct used_cmds_hm_keys* old_kvs,
-    int16_t                   capacity)
+    struct hm_test_kvs* kvs, struct hm_test_kvs* old_kvs, int16_t capacity)
 {
     kvs->keys = (char*)mem_alloc(sizeof(char) * capacity * 16);
     kvs->values = (float*)mem_alloc(sizeof(*kvs->values) * capacity);
     return 0;
 }
 static void
-test_storage_free(struct used_cmds_hm_keys* kvs)
+test_storage_free_old(struct hm_test_kvs* kvs)
 {
     mem_free(kvs->values);
     mem_free(kvs->keys);
 }
-static char*
-test_get_key(const struct used_cmds_hm_keys* kvs, int16_t slot)
+static void
+test_storage_free(struct hm_test_kvs* kvs)
+{
+    mem_free(kvs->values);
+    mem_free(kvs->keys);
+}
+static const char*
+test_get_key(const struct hm_test_kvs* kvs, int16_t slot)
 {
     return &kvs->keys[slot * 16];
 }
 static int
-test_set_key(struct used_cmds_hm_keys* kvs, int16_t slot, const char* key)
+test_set_key(struct hm_test_kvs* kvs, int16_t slot, const char* key)
 {
     memcpy(&kvs->keys[slot * 16], key, 16);
     return 0;
@@ -76,18 +80,18 @@ test_keys_equal(const char* k1, const char* k2)
     return memcmp(k1, k2, 16) == 0;
 }
 static float*
-test_get_value(const struct used_cmds_hm_keys* kvs, int16_t slot)
+test_get_value(const struct hm_test_kvs* kvs, int16_t slot)
 {
     return &kvs->values[slot];
 }
 static void
-test_set_value(struct used_cmds_hm_keys* kvs, int16_t slot, const float* value)
+test_set_value(struct hm_test_kvs* kvs, int16_t slot, float* value)
 {
     kvs->values[slot] = *value;
 }
 
 HM_DECLARE_API_FULL(
-    static, hm_test, hash32, const char*, float, 16, struct used_cmds_hm_keys)
+    static, hm_test, hash32, const char*, float, 16, struct hm_test_kvs)
 HM_DEFINE_API_FULL(
     hm_test,
     hash32,
@@ -96,6 +100,7 @@ HM_DEFINE_API_FULL(
     16,
     test_hash,
     test_storage_alloc,
+    test_storage_free_old,
     test_storage_free,
     test_get_key,
     test_set_key,

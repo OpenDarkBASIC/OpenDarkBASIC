@@ -74,6 +74,12 @@ allocamap_kvs_alloc(
     return 0;
 }
 static void
+allocamap_kvs_free_old(struct allocamap_kvs* kvs)
+{
+    mem_free(kvs->values);
+    spanlist_deinit(kvs->keys);
+}
+static void
 allocamap_kvs_free(struct allocamap_kvs* kvs)
 {
     mem_free(kvs->values);
@@ -135,6 +141,7 @@ HM_DEFINE_API_FULL(
     32,
     allocamap_kvs_hash,
     allocamap_kvs_alloc,
+    allocamap_kvs_free_old,
     allocamap_kvs_free,
     allocamap_kvs_get_key,
     allocamap_kvs_set_key,
@@ -203,8 +210,7 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_I32: return llvm::Type::getInt32Ty(*ctx);
 
         case TYPE_U16: return llvm::Type::getInt16Ty(*ctx);
-
-        case TYPE_U8:
+        case TYPE_U8: return llvm::Type::getInt8Ty(*ctx);
         case TYPE_BOOL: return llvm::Type::getInt1Ty(*ctx);
 
         case TYPE_F32: return llvm::Type::getFloatTy(*ctx);
@@ -394,6 +400,7 @@ gen_expr(
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
+    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap);
 
 int
@@ -425,6 +432,7 @@ gen_cmd_call(
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
+    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
     // Function table for commands should be generated at this
@@ -457,6 +465,7 @@ gen_cmd_call(
             string_table,
             cmd_func_table,
             db_func_table,
+            loop_stack,
             allocamap);
         if (sdk_type == SDK_DBPRO)
             if (ast->nodes[ast_expr].info.type_info == TYPE_F32)
@@ -492,6 +501,7 @@ gen_expr(
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
+    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
     switch (ast->nodes[expr].info.node_type)
@@ -515,6 +525,7 @@ gen_expr(
                 string_table,
                 cmd_func_table,
                 db_func_table,
+                loop_stack,
                 allocamap);
 
         case AST_ASSIGNMENT: break;
@@ -553,6 +564,7 @@ gen_expr(
                 string_table,
                 cmd_func_table,
                 db_func_table,
+                loop_stack,
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
@@ -566,6 +578,7 @@ gen_expr(
                 string_table,
                 cmd_func_table,
                 db_func_table,
+                loop_stack,
                 allocamap);
 
             /* Handle string operations seperately from arithmetic, since there
@@ -783,6 +796,7 @@ gen_expr(
                     string_table,
                     cmd_func_table,
                     db_func_table,
+                    loop_stack,
                     allocamap);
                 llvm_args.push_back(llvm_arg);
             }
@@ -807,6 +821,7 @@ gen_expr(
         case AST_FUNC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC_EXIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_OR_CONTAINER_REF:
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return NULL;
@@ -874,6 +889,7 @@ gen_expr(
                 string_table,
                 cmd_func_table,
                 db_func_table,
+                loop_stack,
                 allocamap);
 
             switch (to)
@@ -1034,6 +1050,7 @@ gen_block(
                     string_table,
                     cmd_func_table,
                     db_func_table,
+                    loop_stack,
                     allocamap);
                 break;
             }
@@ -1053,6 +1070,7 @@ gen_block(
                     string_table,
                     cmd_func_table,
                     db_func_table,
+                    loop_stack,
                     allocamap);
 
                 ODBUTIL_DEBUG_ASSERT(
@@ -1116,6 +1134,7 @@ gen_block(
                     string_table,
                     cmd_func_table,
                     db_func_table,
+                    loop_stack,
                     allocamap);
                 llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node));
@@ -1325,18 +1344,6 @@ gen_block(
                 ast_id ast_identifier
                     = ast->nodes[ast_decl].func_decl.identifier;
 
-                llvm::SmallVector<llvm::Type*, 8> param_types;
-                for (ast_id ast_paramlist
-                     = ast->nodes[ast_decl].func_decl.paramlist;
-                     ast_paramlist > -1;
-                     ast_paramlist = ast->nodes[ast_paramlist].arglist.next)
-                {
-                    ast_id ast_param = ast->nodes[ast_paramlist].arglist.expr;
-                    enum type param_type = ast->nodes[ast_param].info.type_info;
-                    llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
-                    param_types.push_back(Ty);
-                }
-
                 struct utf8_span identifier_span
                     = ast->nodes[ast_identifier].identifier.name;
                 llvm::StringRef identifier_name(
@@ -1353,6 +1360,36 @@ gen_block(
                 llvm::BasicBlock* BB = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("entry"), F);
                 llvm::IRBuilder<> func_builder(BB);
+
+                int param_idx = 0;
+                for (ast_id ast_paramlist
+                     = ast->nodes[ast_decl].func_decl.paramlist;
+                     ast_paramlist > -1;
+                     ast_paramlist = ast->nodes[ast_paramlist].arglist.next,
+                     ++param_idx)
+                {
+                    ast_id ast_param = ast->nodes[ast_paramlist].arglist.expr;
+                    enum type param_type = ast->nodes[ast_param].info.type_info;
+                    struct utf8_view name = utf8_span_view(
+                        source, ast->nodes[ast_param].identifier.name);
+                    struct view_scope  name_scope = {name, 0};
+                    llvm::AllocaInst** A;
+                    switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+                    {
+                        case HM_OOM: return -1;
+                        case HM_EXISTS:
+                            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+                            return -1;
+                        case HM_NEW:
+                            *A = func_builder.CreateAlloca(
+                                type_to_llvm(param_type, &ir->ctx),
+                                NULL,
+                                llvm::StringRef(
+                                    name.data + name.off, name.len));
+                            func_builder.CreateStore(F->getArg(param_idx), *A);
+                            break;
+                    }
+                }
 
                 if (ast_body > -1)
                     gen_block(
@@ -1383,6 +1420,7 @@ gen_block(
                         string_table,
                         cmd_func_table,
                         db_func_table,
+                        loop_stack,
                         allocamap));
                 else
                     func_builder.CreateRetVoid();
@@ -1393,7 +1431,31 @@ gen_block(
             }
             case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC_EXIT: {
+                ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
 
+                if (ast_ret > -1)
+                {
+                    builder.CreateRet(gen_expr(
+                        ir,
+                        builder,
+                        ast,
+                        ast_ret,
+                        sdk_type,
+                        cmds,
+                        filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        db_func_table,
+                        loop_stack,
+                        allocamap));
+                }
+                else
+                    builder.CreateRetVoid();
+
+                break;
+            }
             case AST_FUNC_OR_CONTAINER_REF:
                 ODBUTIL_DEBUG_ASSERT(
                     0,

@@ -33,15 +33,6 @@ DBParserHelper::~DBParserHelper()
 {
     if (ast)
     {
-#if defined(ODBCOMPILER_DOT_EXPORT)
-        const testing::TestInfo* info
-            = testing::UnitTest::GetInstance()->current_test_info();
-        std::string filename = std::string("ast/") + info->test_suite_name()
-                               + "__" + info->name() + ".dot";
-        std::filesystem::create_directory("ast");
-        ast_export_dot(
-            ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
-#endif
     }
 
     mutex_destroy(ast_mutex);
@@ -65,11 +56,22 @@ DBParserHelper::~DBParserHelper()
 int
 DBParserHelper::parse(const char* code)
 {
+    int result;
     if (src.text.data)
         db_source_close(&src);
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
         return -1;
-    return db_parse(&p, &ast, "test", src, &cmds);
+
+    result = db_parse(&p, &ast, "test", src, &cmds);
+#if defined(ODBCOMPILER_DOT_EXPORT)
+    const testing::TestInfo* info
+        = testing::UnitTest::GetInstance()->current_test_info();
+    std::string filename = std::string("ast/") + info->test_suite_name() + "__"
+                           + info->name() + "1.dot";
+    std::filesystem::create_directory("ast");
+    ast_export_dot(ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
+#endif
+    return result;
 }
 
 int
@@ -91,6 +93,14 @@ DBParserHelper::semantic(const struct semantic_check* check)
         &cmds,
         symbols);
     utf8_deinit(filename);
+#if defined(ODBCOMPILER_DOT_EXPORT)
+    const testing::TestInfo* info
+        = testing::UnitTest::GetInstance()->current_test_info();
+    std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
+                          + info->name() + "2.dot";
+    std::filesystem::create_directory("ast");
+    ast_export_dot(ast, cstr_ospathc(astfile.c_str()), src.text.data, &cmds);
+#endif
     return result;
 }
 

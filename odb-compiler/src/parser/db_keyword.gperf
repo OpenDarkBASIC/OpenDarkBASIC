@@ -64,6 +64,7 @@ xor,                TOK_LXOR
 not,                TOK_LNOT
 /* Functions */
 function,           TOK_FUNCTION
+exitfunction,       TOK_EXITFUNCTION
 endfunction,        TOK_ENDFUNCTION
 %%
 
@@ -74,7 +75,6 @@ endfunction,        TOK_ENDFUNCTION
 //endcase,          TOK_ENDCASE
 //endselect,        TOK_ENDSELECT
 //endtype,          TOK_ENDTYPE
-//exitfunction,     TOK_EXITFUNCTION
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
 //mat2x2,           TOK_MAT2X2

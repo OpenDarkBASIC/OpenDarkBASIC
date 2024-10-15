@@ -148,6 +148,7 @@ ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location)
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ast->nodes[n].arglist.expr = expr;
+    ast->nodes[n].arglist.combined_location = location;
 
     return n;
 }
@@ -156,8 +157,9 @@ ast_id
 ast_arglist_append(
     struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_ARGLIST, location);
-    struct ast* ast = *astp;
+    struct utf8_span combined_location;
+    ast_id           n = new_node(astp, AST_ARGLIST, location);
+    struct ast*      ast = *astp;
     if (n < 0)
         return -1;
 
@@ -168,11 +170,18 @@ ast_arglist_append(
         ast->nodes[arglist].info.node_type == AST_ARGLIST,
         log_parser_err("type: %d\n", ast->nodes[arglist].info.node_type));
 
+    combined_location
+        = utf8_span_union(ast->nodes[arglist].info.location, location);
     while (ast->nodes[arglist].arglist.next != -1)
+    {
+        ast->nodes[arglist].arglist.combined_location = combined_location;
         arglist = ast->nodes[arglist].arglist.next;
+    }
 
+    ast->nodes[arglist].arglist.combined_location = combined_location;
     ast->nodes[arglist].arglist.next = n;
     ast->nodes[n].arglist.expr = expr;
+    ast->nodes[n].arglist.combined_location = combined_location;
 
     return n;
 }
@@ -192,6 +201,8 @@ ast_paramlist(struct ast** astp, ast_id identifier, struct utf8_span location)
         log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
 
     ast->nodes[n].paramlist.identifier = identifier;
+    ast->nodes[n].paramlist.combined_location = location;
+
     return n;
 }
 
@@ -202,8 +213,9 @@ ast_paramlist_append(
     ast_id           identifier,
     struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_PARAMLIST, location);
-    struct ast* ast = *astp;
+    struct utf8_span combined_location;
+    ast_id           n = new_node(astp, AST_PARAMLIST, location);
+    struct ast*      ast = *astp;
     if (n < 0)
         return -1;
 
@@ -219,11 +231,18 @@ ast_paramlist_append(
         ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
         log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
 
+    combined_location
+        = utf8_span_union(ast->nodes[paramlist].info.location, location);
     while (ast->nodes[paramlist].paramlist.next != -1)
+    {
+        ast->nodes[paramlist].paramlist.combined_location = combined_location;
         paramlist = ast->nodes[paramlist].paramlist.next;
+    }
 
+    ast->nodes[paramlist].paramlist.combined_location = combined_location;
     ast->nodes[paramlist].paramlist.next = n;
     ast->nodes[n].paramlist.identifier = identifier;
+    ast->nodes[n].paramlist.combined_location = combined_location;
 
     return n;
 }
@@ -609,6 +628,13 @@ ast_func(
         log_parser_err("type: %d\n", ast->nodes[paramlist].info.node_type));
     ast->nodes[decl].func_decl.paramlist = paramlist;
 
+    ast->nodes[decl].func_decl.info.location
+        = paramlist > -1
+              ? utf8_span_union(
+                    ast->nodes[identifier].info.location,
+                    ast->nodes[paramlist].paramlist.combined_location)
+              : ast->nodes[identifier].info.location;
+
     ODBUTIL_DEBUG_ASSERT(
         body == -1 || ast->nodes[body].info.node_type == AST_BLOCK,
         log_parser_err("type: %d\n", ast->nodes[body].info.node_type));
@@ -622,6 +648,19 @@ ast_func(
         ast->nodes[func].info.node_type = AST_FUNC_TEMPLATE;
 
     return func;
+}
+
+ast_id
+ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_FUNC_EXIT, location);
+    struct ast* ast = *astp;
+    if (n < -1)
+        return -1;
+
+    ast->nodes[n].func_exit.retval = retval;
+
+    return n;
 }
 
 ast_id

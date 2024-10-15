@@ -36,7 +36,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, continue_no_name)
 {
     ASSERT_THAT(
-        parse("for n=1 to 10\n"
+    parse("for n=1 to 10\n"
               "    continue\n"
               "next n\n"),
         Eq(0))

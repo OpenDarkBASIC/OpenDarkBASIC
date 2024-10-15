@@ -152,6 +152,7 @@
 %token EXIT "EXIT"
 /* Functions */
 %token FUNCTION
+%token EXITFUNCTION
 %token ENDFUNCTION
 
 /* Literals */
@@ -251,7 +252,7 @@
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
 %type<node_value> identifier var_decl var_init_decl
-%type<node_value> func func_or_container_ref
+%type<node_value> func func_exit func_or_container_ref
 
 %start program
 
@@ -293,6 +294,7 @@ istmt
   | dec                                     { $$ = $1; }
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
+  | func_exit                               { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
   ;
 expr
@@ -471,6 +473,9 @@ func
     ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @$);
                                               (*ctx->astp)->nodes[$3].identifier.scope = $1;
                                               (*ctx->astp)->nodes[$3].identifier.explicit_type = $7; }
+  ;
+func_exit
+  : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
   ;
 func_or_container_ref
   : identifier '(' maybe_arglist ')'        { $$ = ast_func_or_container_ref(ctx->astp, $1, $3, @$); }

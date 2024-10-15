@@ -108,7 +108,14 @@ write_nodes(
 
     switch (nd->info.node_type)
     {
-        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_GC:
+            fprintf(
+                fp,
+                "  n%d [color=\"red\", fontcolor=\"red\", "
+                "shape=\"tripleoctagon\", label=\"GARBAGE!\"];\n",
+                n);
+            // ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            break;
         case AST_BLOCK:
             fprintf(
                 fp,
@@ -322,25 +329,40 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"func\"];\n",
+                "label=<func <font color=\"%s\">AS %s</font>>];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                style->type.fontcolor,
+                type_to_db_name(nd->info.type_info));
             break;
         case AST_FUNC_DECL:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"decl\"];\n",
+                "label=<decl <font color=\"%s\">AS %s</font>>];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                style->type.fontcolor,
+                type_to_db_name(nd->info.type_info));
             break;
         case AST_FUNC_DEF:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"def\"];\n",
+                "label=<def <font color=\"%s\">AS %s</font>>];\n",
+                n,
+                style->keyword.color,
+                style->keyword.fontcolor,
+                style->type.fontcolor,
+                type_to_db_name(nd->info.type_info));
+            break;
+        case AST_FUNC_EXIT:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
+                "label=\"exitfunction\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor);
@@ -483,11 +505,11 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"cast<%s>\"];\n",
+                "label=\"AS %s\"];\n",
                 n,
-                style->keyword.color,
-                style->keyword.fontcolor,
-                style->keyword.shape,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
                 type_to_db_name(nd->info.type_info));
             break;
         case AST_SCOPE:
@@ -535,7 +557,7 @@ ast_export_dot(
 {
     FILE* fp = fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
-       return -1;
+        return -1;
     ast_export_dot_fp(ast, fp, source, commands);
     fclose(fp);
 

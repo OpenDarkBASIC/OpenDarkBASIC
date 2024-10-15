@@ -24,8 +24,8 @@ ir_compile(
     /* clang-format off */
     static const char* target_triples[3][3] = {
         {"i386-pc-windows-msvc", "x86_64-pc-windows-msvc", ""},
+        {"i386-",                "x86_64-", ""},
         {"i386-linux-gnu",       "x86_64-linux-gnu", ""},
-        {"i386-",                "x86_64-", ""}
     };
     /* clang-format on */
 

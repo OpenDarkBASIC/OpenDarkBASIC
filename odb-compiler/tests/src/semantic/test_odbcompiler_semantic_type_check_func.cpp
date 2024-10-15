@@ -18,7 +18,33 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, unused_function_is_not_instantiated)
+TEST_F(NAME, unused_template_function_is_not_instantiated)
+{
+    ASSERT_THAT(
+        parse("FUNCTION test(a)\n"
+              "ENDFUNCTION\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    ASSERT_THAT(ast->count, Eq(7));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ast_id ret = ast->nodes[def].func_def.retval;
+    ASSERT_THAT(ret, Eq(-1));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_INVALID));
+}
+
+TEST_F(NAME, function_with_no_args_is_typechecked)
 {
     ASSERT_THAT(
         parse("FUNCTION test()\n"
@@ -36,13 +62,15 @@ TEST_F(NAME, unused_function_is_not_instantiated)
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
     ast_id ret = ast->nodes[def].func_def.retval;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
     ASSERT_THAT(ret, Eq(-1));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_INVALID));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_INVALID));
-    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_VOID));
 }
 
-TEST_F(NAME, instantiate_empty_function)
+TEST_F(NAME, function_with_no_args_called)
 {
     ASSERT_THAT(
         parse("test()\n"
@@ -64,13 +92,15 @@ TEST_F(NAME, instantiate_empty_function)
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
     ast_id ret = ast->nodes[def].func_def.retval;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
     ASSERT_THAT(ret, Eq(-1));
     ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_VOID));
     ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_VOID));
     ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_VOID));
 }
 
-TEST_F(NAME, sum_with_byte_arguments)
+TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
     ASSERT_THAT(
@@ -85,21 +115,62 @@ TEST_F(NAME, sum_with_byte_arguments)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(8));
+    ASSERT_THAT(ast->count, Eq(33));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
+    ast_id block3 = ast->nodes[block2].block.next;
+
     ast_id call = ast->nodes[block1].block.stmt;
-    ast_id func = ast->nodes[block2].block.stmt;
+    ast_id func_template = ast->nodes[block2].block.stmt;
+    ast_id func = ast->nodes[block3].block.stmt;
+
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
-    ast_id ret = ast->nodes[def].func_def.retval;
-    ASSERT_THAT(ret, Eq(-1));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_U8));
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
     ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_U8));
+
+    ast_id paramlist1 = ast->nodes[decl].func_decl.paramlist;
+    ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
+    ast_id paramlist3 = ast->nodes[paramlist2].paramlist.next;
+    ast_id param1 = ast->nodes[paramlist1].paramlist.identifier;
+    ast_id param2 = ast->nodes[paramlist2].paramlist.identifier;
+    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(paramlist3, Eq(-1));
+
+    ast_id body = ast->nodes[def].func_def.body;
+    ASSERT_THAT(body, Eq(-1));
+
+    ast_id ret = ast->nodes[def].func_def.retval;
+    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_U8));
 }
 
-TEST_F(NAME, sum_with_byte_and_float_arguments)
+TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
+{
+    ASSERT_THAT(
+        parse("result AS INTEGER = sum(2, 3)\n"
+              "FUNCTION sum(a, b)\n"
+              "ENDFUNCTION a + b\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    ASSERT_THAT(ast->count, Eq(34));
+    ast_id ass = ast->nodes[ast->root].block.stmt;
+    ast_id cast = ast->nodes[ass].assignment.expr;
+    ASSERT_THAT(ast->nodes[cast].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
+}
+
+TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
     ASSERT_THAT(
@@ -115,22 +186,223 @@ TEST_F(NAME, sum_with_byte_and_float_arguments)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    //ASSERT_THAT(ast->count, Eq(8));
+    ASSERT_THAT(ast->count, Eq(54));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
     ast_id block4 = ast->nodes[block3].block.next;
     ast_id block5 = ast->nodes[block4].block.next;
-    ast_id cmd1 = ast->nodes[block1].block.stmt;
-    ast_id cmd2 = ast->nodes[block2].block.stmt;
-    ast_id func_template = ast->nodes[block3].block.stmt;
-    ast_id func1 = ast->nodes[block4].block.stmt;
-    ast_id func2 = ast->nodes[block5].block.stmt;
 
-    ast_id arglist1 = ast->nodes[cmd1].cmd.arglist;
-    ast_id call1 = ast->nodes[arglist1].arglist.expr;
-    ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
-    ast_id call2 = ast->nodes[arglist2].arglist.expr;
-    EXPECT_THAT(ast->nodes[call1].info.node_type, Eq(AST_FUNC_CALL));
-    EXPECT_THAT(ast->nodes[call2].info.node_type, Eq(AST_FUNC_CALL));
+    ast_id call1 = ast->nodes[block1].block.stmt;
+    ast_id call2 = ast->nodes[block2].block.stmt;
+    ast_id func_template = ast->nodes[block3].block.stmt;
+    ast_id byte_func = ast->nodes[block4].block.stmt;
+    ast_id float_func = ast->nodes[block5].block.stmt;
+
+    // Byte function ---------------------------------------------------------
+    ast_id decl = ast->nodes[byte_func].func.decl;
+    ast_id def = ast->nodes[byte_func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[byte_func].info.node_type, Eq(AST_FUNC));
+    ASSERT_THAT(ast->nodes[byte_func].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_U8));
+
+    ast_id paramlist1 = ast->nodes[decl].func_decl.paramlist;
+    ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
+    ast_id paramlist3 = ast->nodes[paramlist2].paramlist.next;
+    ast_id param1 = ast->nodes[paramlist1].paramlist.identifier;
+    ast_id param2 = ast->nodes[paramlist2].paramlist.identifier;
+    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(paramlist3, Eq(-1));
+
+    ast_id body = ast->nodes[def].func_def.body;
+    ASSERT_THAT(body, Eq(-1));
+
+    ast_id ret = ast->nodes[def].func_def.retval;
+    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_U8));
+    
+    // Float function --------------------------------------------------------
+    decl = ast->nodes[float_func].func.decl;
+    def = ast->nodes[float_func].func.def;
+    ident = ast->nodes[float_func].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[float_func].info.node_type, Eq(AST_FUNC));
+    ASSERT_THAT(ast->nodes[float_func].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_F32));
+
+    paramlist1 = ast->nodes[decl].func_decl.paramlist;
+    paramlist2 = ast->nodes[paramlist1].paramlist.next;
+    paramlist3 = ast->nodes[paramlist2].paramlist.next;
+    param1 = ast->nodes[paramlist1].paramlist.identifier;
+    param2 = ast->nodes[paramlist2].paramlist.identifier;
+    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(paramlist3, Eq(-1));
+
+    body = ast->nodes[def].func_def.body;
+    ASSERT_THAT(body, Eq(-1));
+
+    ret = ast->nodes[def].func_def.retval;
+    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_F32));
+}
+
+TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT sum(2, 3)\n"
+              "PRINT sum(2, 3)\n"
+              "FUNCTION sum(a, b)\n"
+              "ENDFUNCTION a + b\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+    
+    ast_id block1 = ast->root;
+    ast_id block2 = ast->nodes[block1].block.next;
+    ast_id block3 = ast->nodes[block2].block.next;
+    ast_id block4 = ast->nodes[block3].block.next;
+    ast_id block5 = ast->nodes[block4].block.next;
+    ASSERT_THAT(block5, Eq(-1));
+
+    ast_id call1 = ast->nodes[block1].block.stmt;
+    ast_id call2 = ast->nodes[block2].block.stmt;
+    ast_id func_template = ast->nodes[block3].block.stmt;
+    ast_id func = ast->nodes[block4].block.stmt;
+    ASSERT_THAT(ast->nodes[call1].info.node_type, Eq(AST_FUNC_CALL));
+    ASSERT_THAT(ast->nodes[call2].info.node_type, Eq(AST_FUNC_CALL));
+    ASSERT_THAT(ast->nodes[func_template].info.node_type, Eq(AST_FUNC_TEMPLATE));
+    ASSERT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
+}
+
+TEST_F(NAME, func_returns_result_of_another_func)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT muladd(2, 3, 4)\n"
+              "FUNCTION muladd(a, b, c)\n"
+              "ENDFUNCTION sum(a * b, c)\n"
+              "FUNCTION sum(a, b)\n"
+              "ENDFUNCTION a + b\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, func_result_as_arg_to_call)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT mul(add(2, 3), 4)\n"
+              "FUNCTION mul(a, b)\n"
+              "ENDFUNCTION a * b\n"
+              "FUNCTION add(a, b)\n"
+              "ENDFUNCTION a + b\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, recursion_1)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT fib(5)\n"
+              "FUNCTION fib(n)\n"
+              "  IF n < 2 THEN EXITFUNCTION n\n"
+              "ENDFUNCTION fib(n-1) + fib(n-2)\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, recursion_2)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT fib2(5)\n"
+              "FUNCTION fib2(n)\n"
+              "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
+              "ENDFUNCTION n\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, nested_recursion_1)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        parse("PRINT fib(5)\n"
+              "FUNCTION fib(n)\n"
+              "  IF n < 2 THEN EXITFUNCTION n\n"
+              "ENDFUNCTION fib2(n-1) + fib2(n-2)\n"
+              "FUNCTION fib2(n)\n"
+              "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
+              "ENDFUNCTION n\n"),
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, nested_recursion_2)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    ASSERT_THAT(
+        /* clang-format off */
+        parse("PRINT fib(5)\n"
+              "FUNCTION fib(n)\n"
+              "  IF n < 2 THEN EXITFUNCTION n\n"
+              "ENDFUNCTION fib2(fib(n-1)-1) + fib(fib2(n-2)-2)\n"
+              "FUNCTION fib2(n)\n"
+              "  IF n >= 2 THEN EXITFUNCTION fib(fib2(n-1)-1) + fib2(fib(n-2)-2)\n"
+              "ENDFUNCTION n\n"),
+        /* clang-format on */
+        Eq(0))
+        << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
 }

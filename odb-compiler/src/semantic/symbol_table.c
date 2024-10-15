@@ -12,7 +12,7 @@ struct kvs_key_data
     char     data[1];
 };
 
-struct kvs
+struct hm_kvs
 {
     struct utf8_span*          key_spans;
     struct kvs_key_data*       key_data;
@@ -27,7 +27,7 @@ kvs_hash(struct utf8_view key)
 }
 
 static int
-kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
+kvs_alloc(struct hm_kvs* kvs, struct hm_kvs* old_kvs, int32_t capacity)
 {
     static const int avg_func_name_len = 32;
     int              header_size = offsetof(struct kvs_key_data, data);
@@ -36,7 +36,8 @@ kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
         = old_kvs ? old_kvs->key_data : mem_alloc(header_size + data_size);
     if (kvs->key_data == NULL)
         goto alloc_data_failed;
-    kvs->key_data->count = 0;
+    if (old_kvs == NULL)
+        kvs->key_data->count = 0;
     kvs->key_data->capacity = capacity;
 
     kvs->key_spans = mem_alloc(sizeof(*kvs->key_spans) * capacity);
@@ -46,9 +47,6 @@ kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
     kvs->values = mem_alloc(sizeof(*kvs->values) * capacity);
     if (kvs->values == NULL)
         goto alloc_values_failed;
-
-    if (old_kvs != NULL)
-        old_kvs->key_data = NULL; /* Take ownership of old string data */
 
     return 0;
 
@@ -62,7 +60,15 @@ alloc_data_failed:
 }
 
 static void
-kvs_free(struct kvs* kvs)
+kvs_free_old(struct hm_kvs* kvs)
+{
+    /* kvs->key_data ownership moved to the new kvs */
+    mem_free(kvs->key_spans);
+    mem_free(kvs->values);
+}
+
+static void
+kvs_free(struct hm_kvs* kvs)
 {
     mem_free(kvs->key_data);
     mem_free(kvs->key_spans);
@@ -70,13 +76,13 @@ kvs_free(struct kvs* kvs)
 }
 
 static struct utf8_view
-kvs_get_key(const struct kvs* kvs, utf8_idx idx)
+kvs_get_key(const struct hm_kvs* kvs, utf8_idx idx)
 {
     return utf8_span_view(kvs->key_data->data, kvs->key_spans[idx]);
 }
 
 static int
-kvs_set_key(struct kvs* kvs, utf8_idx idx, struct utf8_view key)
+kvs_set_key(struct hm_kvs* kvs, utf8_idx idx, struct utf8_view key)
 {
     while (kvs->key_data->count + key.len > kvs->key_data->capacity)
     {
@@ -107,13 +113,14 @@ kvs_keys_equal(struct utf8_view a, struct utf8_view b)
 }
 
 static struct symbol_table_entry*
-kvs_get_value(const struct kvs* kvs, utf8_idx idx)
+kvs_get_value(const struct hm_kvs* kvs, utf8_idx idx)
 {
     return &kvs->values[idx];
 }
 
 static void
-kvs_set_value(struct kvs* kvs, utf8_idx idx, struct symbol_table_entry* value)
+kvs_set_value(
+    struct hm_kvs* kvs, utf8_idx idx, struct symbol_table_entry* value)
 {
     kvs->values[idx] = *value;
 }
@@ -125,7 +132,7 @@ HM_DECLARE_API_FULL(
     struct utf8_view,
     struct symbol_table_entry,
     32,
-    struct kvs)
+    struct hm_kvs)
 HM_DEFINE_API_FULL(
     hm,
     hash32,
@@ -134,6 +141,7 @@ HM_DEFINE_API_FULL(
     32,
     kvs_hash,
     kvs_alloc,
+    kvs_free_old,
     kvs_free,
     kvs_get_key,
     kvs_set_key,
@@ -195,7 +203,7 @@ symbol_table_add_declarations_from_ast(
     return 0;
 }
 
-const struct symbol_table_entry*
+struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key)
 {
     return hm_find(&table->hm, key);

@@ -5,6 +5,7 @@ extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_parser.h"
+#include "odb-compiler/semantic/post.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/log.h"
@@ -515,6 +516,8 @@ run_semantic_checks(const std::vector<std::string>& args)
         goto semantic_failed;
 
     mutex_destroy(mutex);
+
+    post_delete_func_templates(ctx.tus->data, tus_count(ctx.tus));
 
     return true;
 

@@ -15,7 +15,7 @@ using namespace testing;
 struct NAME : DBParserHelper, LogHelper, Test
 {
     int
-    parse(const char* source)
+    parse(const char* source) override
     {
         int result = DBParserHelper::parse(source);
         if (result == 0)
@@ -30,7 +30,6 @@ struct NAME : DBParserHelper, LogHelper, Test
 
             /* These nodes always exist */
             EXPECT_THAT(ast->nodes[ast->root].info.node_type, Eq(AST_BLOCK));
-            EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
             EXPECT_THAT(ast->nodes[def].info.node_type, Eq(AST_FUNC_DEF));
             EXPECT_THAT(ast->nodes[decl].info.node_type, Eq(AST_FUNC_DECL));
         }
@@ -54,6 +53,7 @@ TEST_F(NAME, empty_body_no_params_no_return)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(ast->count, Eq(5));
 
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(paramlist, Eq(-1));
     EXPECT_THAT(body, Eq(-1));
@@ -68,6 +68,7 @@ TEST_F(NAME, empty_body_no_params_returning_integer)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(ast->count, Eq(6));
 
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(paramlist, Eq(-1));
     EXPECT_THAT(body, Eq(-1));
@@ -85,6 +86,7 @@ TEST_F(NAME, empty_body_one_param_no_return)
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(pl2, Eq(-1));
@@ -107,6 +109,7 @@ TEST_F(NAME, empty_body_three_params_no_return)
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
     ast_id param3 = ast->nodes[pl3].paramlist.identifier;
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(16, 1));
@@ -119,21 +122,23 @@ TEST_F(NAME, empty_body_three_params_no_return)
 TEST_F(NAME, function_with_multiple_statements)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
-    const  char* source
+    const char* source
         = "FUNCTION foo(a, b)\n"
           "    PRINT a\n"
           "    PRINT b\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(ast->count, Eq(20));
-    
+
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
-    EXPECT_THAT(ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_INVALID));
+    EXPECT_THAT(
+        ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_INVALID));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(16, 1));
     EXPECT_THAT(ast->nodes[param1].identifier.explicit_type, Eq(TYPE_INVALID));
@@ -179,6 +184,7 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
+    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_F32));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));

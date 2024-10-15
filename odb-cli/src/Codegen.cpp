@@ -120,10 +120,10 @@ output(const std::vector<std::string>& args)
 
     /* Create a list of commands that were actually used, which get loaded by
      * the harness */
-    struct used_cmds_hm* used_cmds_hm;
-    used_cmds_init(&used_cmds_hm);
-    used_cmds_append(&used_cmds_hm, getAST());
-    struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds_hm);
+    struct used_cmds* used_cmds;
+    used_cmds_init(&used_cmds);
+    used_cmds_append(&used_cmds, getAST());
+    struct cmd_ids* used_cmds_list = used_cmds_finalize(used_cmds);
 
     /* Harness needs to know the module name of the main DBA */
     struct ospath maindbaname = empty_ospath();
@@ -170,10 +170,10 @@ output(const std::vector<std::string>& args)
         getCommandList(),
         getSourceFilepath(),
         getSource());
-    if (dumpIR_)
-        ir_dump(ir);
     if (optimize_)
         ir_optimize(ir);
+    if (dumpIR_)
+        ir_dump(ir);
     ir_compile(ir, ospath_cstr(objfilepath), arch_, platform_);
     ir_free(ir);
 

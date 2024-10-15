@@ -1,8 +1,8 @@
-#include "odb-compiler/config.h"
 #include "./type_check.h"
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/config.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
@@ -77,6 +77,12 @@ typemap_kvs_alloc(
     return 0;
 }
 static void
+typemap_kvs_free_old(struct typemap_kvs* kvs)
+{
+    mem_free(kvs->values);
+    spanlist_deinit(kvs->keys);
+}
+static void
 typemap_kvs_free(struct typemap_kvs* kvs)
 {
     mem_free(kvs->values);
@@ -117,7 +123,7 @@ typemap_kvs_get_value(const struct typemap_kvs* kvs, int32_t slot)
 }
 static void
 typemap_kvs_set_value(
-    struct typemap_kvs* kvs, int32_t slot, const struct type_origin* value)
+    struct typemap_kvs* kvs, int32_t slot, struct type_origin* value)
 {
     kvs->values[slot] = *value;
 }
@@ -138,6 +144,7 @@ HM_DEFINE_API_FULL(
     32,
     typemap_kvs_hash,
     typemap_kvs_alloc,
+    typemap_kvs_free_old,
     typemap_kvs_free,
     typemap_kvs_get_key,
     typemap_kvs_set_key,
@@ -151,7 +158,7 @@ static void
 typemap_clear_all_with_scope(struct typemap* hm, int16_t scope)
 {
     int slot;
-    for (slot = 0; slot != hm->capacity; ++slot)
+    for (slot = 0; slot != typemap_capacity(hm); ++slot)
     {
         if (hm->hashes[slot] == HM_SLOT_UNUSED
             || hm->hashes[slot] == HM_SLOT_RIP)
@@ -178,6 +185,21 @@ struct ctx
     struct typemap*            typemap;
     const int                  tu_id;
 };
+
+static struct ctx
+create_context_for_tu(const struct ctx* ctx, int tu_id)
+{
+    struct ctx new_ctx
+        = {ctx->tus,
+           ctx->tu_mutexes,
+           ctx->filenames,
+           ctx->sources,
+           ctx->cmds,
+           ctx->symbols,
+           ctx->typemap,
+           tu_id};
+    return new_ctx;
+}
 
 static int
 cast_expr_to_boolean(
@@ -288,77 +310,108 @@ cast_expr_to_boolean(
 }
 
 static ast_id
-instantiate_func(struct ctx* ctx, ast_id func_template, ast_id arglist)
+instantiate_func(
+    /* TU in which the templated function exists */
+    struct ctx* func_ctx,
+    ast_id      func_template,
+    /* TU in which the call is being made (contains the arglist) */
+    struct ctx* call_ctx,
+    ast_id      call)
 {
-    ast_id       func, decl, template_block, paramlist;
-    struct ast** astp = &ctx->tus[ctx->tu_id];
+    ast_id func, template_block, decl, arglist, paramlist, pl_entry, arg_entry;
+    struct ast** func_astp = &func_ctx->tus[func_ctx->tu_id];
+    struct ast** call_astp = &call_ctx->tus[call_ctx->tu_id];
 
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[func_template].info.node_type == AST_FUNC_TEMPLATE,
+        (*func_astp)->nodes[func_template].info.node_type == AST_FUNC_TEMPLATE,
         log_semantic_err(
-            "type: %d\n", (*astp)->nodes[func_template].info.node_type));
+            "type: %d\n", (*func_astp)->nodes[func_template].info.node_type));
 
-    template_block = ast_find_parent(*astp, func_template);
+    template_block = ast_find_parent(*func_astp, func_template);
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[template_block].info.node_type == AST_BLOCK,
+        (*func_astp)->nodes[template_block].info.node_type == AST_BLOCK,
         log_semantic_err(
-            "type: %d\n", (*astp)->nodes[template_block].info.node_type));
-    ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[template_block].block.next == -1,
-        log_semantic_err(
-            "next: %d\n", (*astp)->nodes[template_block].block.next));
+            "type: %d\n", (*func_astp)->nodes[template_block].info.node_type));
 
-    func = ast_dup_subtree(astp, func_template);
+    func = ast_dup_subtree(func_astp, func_template);
     if (func < 0)
-        return -1;
+        return TYPE_INVALID;
 
     /* Insert new function into AST after the template */
     if (ast_block_append_stmt(
-            astp, template_block, func, (*astp)->nodes[func].info.location)
+            func_astp,
+            template_block,
+            func,
+            (*func_astp)->nodes[func].info.location)
         < 0)
     {
-        return -1;
+        return TYPE_INVALID;
     }
 
     /* The arguments passed to the function determine the parameter types. We
      * copy them over here. Some function templates are "partial" templates,
      * i.e. one parameter carries type information but another does not. In
      * these cases we must insert casts to the correct type. */
-    decl = (*astp)->nodes[func].func.decl;
-    for (paramlist = (*astp)->nodes[decl].func_decl.paramlist;
-         paramlist > -1 && arglist > -1;
-         paramlist = (*astp)->nodes[paramlist].paramlist.next,
-        arglist = (*astp)->nodes[arglist].arglist.next)
+    decl = (*func_astp)->nodes[func].func.decl;
+    ODBUTIL_DEBUG_ASSERT(
+        (*call_astp)->nodes[call].info.node_type == AST_FUNC_CALL,
+        log_semantic_err(
+            "type: %d\n", (*call_astp)->nodes[call].info.node_type));
+    arglist = (*call_astp)->nodes[call].func_call.arglist;
+    paramlist = (*func_astp)->nodes[decl].func_decl.paramlist;
+    for (pl_entry = paramlist, arg_entry = arglist;
+         pl_entry > -1 && arg_entry > -1;
+         pl_entry = (*func_astp)->nodes[pl_entry].paramlist.next,
+        arg_entry = (*func_astp)->nodes[arg_entry].arglist.next)
     {
-        ast_id    param = (*astp)->nodes[paramlist].paramlist.identifier;
-        ast_id    arg = (*astp)->nodes[arglist].arglist.expr;
-        enum type param_type = (*astp)->nodes[param].info.type_info;
-        enum type arg_type = (*astp)->nodes[arg].info.type_info;
+        ast_id    param = (*func_astp)->nodes[pl_entry].paramlist.identifier;
+        ast_id    arg = (*call_astp)->nodes[arg_entry].arglist.expr;
+        enum type param_type = (*func_astp)->nodes[param].info.type_info;
+        enum type arg_type = (*call_astp)->nodes[arg].info.type_info;
 
-        if ((*astp)->nodes[param].identifier.explicit_type == TYPE_INVALID)
-            (*astp)->nodes[param].identifier.explicit_type = arg_type;
+        if ((*func_astp)->nodes[param].identifier.explicit_type == TYPE_INVALID)
+        {
+            /* This parameter has not been declared with an explicit type,
+             * therefore it takes the type of the argument being passed in */
+            (*func_astp)->nodes[param].identifier.explicit_type = arg_type;
+        }
         else if (param_type != arg_type)
         {
+            /* The parameter has been declared with an explicit type, and the
+             * argument being passed in has a different type. Need to insert a
+             * cast */
+            /* TODO: Verify the cast is valid */
             ast_id cast = ast_cast(
-                astp, arg, param_type, (*astp)->nodes[arg].info.location);
+                call_astp,
+                arg,
+                param_type,
+                (*call_astp)->nodes[arg].info.location);
             if (cast < -1)
                 return -1;
-            (*astp)->nodes[arglist].arglist.expr = cast;
+            (*call_astp)->nodes[arg_entry].arglist.expr = cast;
         }
     }
-    if (paramlist > -1 || arglist > -1)
+    if (arg_entry > -1 || pl_entry > -1)
     {
+        int         gutter;
+        const char* filename = utf8_cstr(call_ctx->filenames[call_ctx->tu_id]);
+        const char* source = call_ctx->sources[call_ctx->tu_id].text.data;
         log_flc_err(
-            utf8_cstr(ctx->filenames[ctx->tu_id]),
-            ctx->sources[ctx->tu_id].text.data,
-            (*astp)->nodes[func].info.location,
-            "Function instantiation failed: Argument count mismatch.\n");
+            filename,
+            source,
+            (*call_astp)->nodes[call].info.location,
+            arg_entry > -1 ? "Too many arguments to function call.\n"
+                           : "Too few arguments to function call.\n");
+        gutter = log_excerpt_1(
+            source, (*call_astp)->nodes[call].info.location, "");
+        log_excerpt_note(gutter, "Function has the following signature:\n");
+        log_excerpt_1(source, (*func_astp)->nodes[decl].info.location, "");
         return -1;
     }
 
     /* Since the function parameter types are all known now, this is no longer a
      * function template */
-    (*astp)->nodes[func].info.node_type = AST_FUNC;
+    (*func_astp)->nodes[func].info.node_type = AST_FUNC;
 
     return func;
 }
@@ -371,6 +424,10 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
     const char*  source = ctx->sources[ctx->tu_id].text.data;
     ODBUTIL_DEBUG_ASSERT(n > -1, (void)0);
 
+    /* Ensure we aren't resolving nodes more than once */
+    if ((*astp)->nodes[n].info.type_info != TYPE_INVALID)
+        return (*astp)->nodes[n].info.type_info;
+
     /* Nodes that don't return a value should be marked as TYPE_VOID */
     switch ((*astp)->nodes[n].info.node_type)
     {
@@ -381,7 +438,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                  block = (*astp)->nodes[block].block.next)
             {
                 ast_id    stmt = (*astp)->nodes[block].block.stmt;
-                enum type type = resolve_node_type(ctx, stmt, 0);
+                enum type type = resolve_node_type(ctx, stmt, scope);
                 if (type == TYPE_INVALID)
                     return TYPE_INVALID;
 
@@ -408,7 +465,12 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_VOID; /* Argument lists are not expressions */
         }
 
-        case AST_PARAMLIST: goto not_yet_implemented;
+        case AST_PARAMLIST:
+            ODBUTIL_DEBUG_ASSERT(
+                0,
+                log_semantic_err(
+                    "Parameter lists are handled directly in AST_FUNC\n"));
+            return TYPE_INVALID;
 
         case AST_ASSIGNMENT: {
             ast_id    lhs = (*astp)->nodes[n].assignment.lvalue;
@@ -652,7 +714,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             {
                 case HM_NEW: {
                     struct utf8_span loc;
-                    ast_id           init_expr;
+                    ast_id           init_lit;
 
                     type_origin->original_declaration = n;
 
@@ -672,32 +734,31 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     switch (type_origin->type)
                     {
                         case TYPE_BOOL:
-                            init_expr = ast_boolean_literal(astp, 0, loc);
+                            init_lit = ast_boolean_literal(astp, 0, loc);
                             break;
                         case TYPE_I64:
-                            init_expr
-                                = ast_double_integer_literal(astp, 0, loc);
+                            init_lit = ast_double_integer_literal(astp, 0, loc);
                             break;
                         case TYPE_U32:
-                            init_expr = ast_dword_literal(astp, 0, loc);
+                            init_lit = ast_dword_literal(astp, 0, loc);
                             break;
                         case TYPE_I32:
-                            init_expr = ast_integer_literal(astp, 0, loc);
+                            init_lit = ast_integer_literal(astp, 0, loc);
                             break;
                         case TYPE_U16:
-                            init_expr = ast_word_literal(astp, 0, loc);
+                            init_lit = ast_word_literal(astp, 0, loc);
                             break;
                         case TYPE_U8:
-                            init_expr = ast_byte_literal(astp, 0, loc);
+                            init_lit = ast_byte_literal(astp, 0, loc);
                             break;
                         case TYPE_F32:
-                            init_expr = ast_float_literal(astp, 0, loc);
+                            init_lit = ast_float_literal(astp, 0, loc);
                             break;
                         case TYPE_F64:
-                            init_expr = ast_double_literal(astp, 0, loc);
+                            init_lit = ast_double_literal(astp, 0, loc);
                             break;
                         case TYPE_STRING:
-                            init_expr = ast_string_literal(
+                            init_lit = ast_string_literal(
                                 astp, empty_utf8_span(), loc);
                             break;
 
@@ -736,6 +797,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                      *      print a
                      */
 
+                    /* TODO: Global variables are not yet supported */
+
                     /* Currently, if the identifier's explicit_type property is
                      * set, only then can it be an lvalue. This is enforced by
                      * the parser. In all other cases it is an rvalue. */
@@ -744,7 +807,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     {
                         /* Case 1: Declaration */
                         ast_id init_ass
-                            = ast_assign(astp, n, init_expr, loc, loc);
+                            = ast_assign(astp, n, init_lit, loc, loc);
 
                         ast_id parent = ast_find_parent(*astp, n);
                         if ((*astp)->nodes[parent].base.left == n)
@@ -752,7 +815,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         if ((*astp)->nodes[parent].base.right == n)
                             (*astp)->nodes[parent].base.right = init_ass;
 
-                        (*astp)->nodes[init_expr].info.type_info
+                        (*astp)->nodes[init_lit].info.type_info
                             = type_origin->type;
                         (*astp)->nodes[init_ass].info.type_info = TYPE_VOID;
 
@@ -764,11 +827,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
                         ast_id init_var = ast_dup_lvalue(astp, n);
                         ast_id init_ass
-                            = ast_assign(astp, init_var, init_expr, loc, loc);
+                            = ast_assign(astp, init_var, init_lit, loc, loc);
                         ast_id init_block = ast_block(astp, init_ass, loc);
 
                         /* Fill in type info */
-                        (*astp)->nodes[init_expr].info.type_info
+                        (*astp)->nodes[init_lit].info.type_info
                             = type_origin->type;
                         (*astp)->nodes[init_var].info.type_info
                             = type_origin->type;
@@ -788,8 +851,9 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 }
 
                 case HM_EXISTS: break;
-                case HM_OOM: goto not_yet_implemented;
+                case HM_OOM: return TYPE_INVALID;
             }
+
             return (*astp)->nodes[n].identifier.info.type_info
                    = type_origin->type;
         }
@@ -937,7 +1001,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_FUNC: {
             enum type ret_type;
-            ast_id    decl, def, paramlist, body, ret;
+            ast_id    decl, def, paramlist, body, ret, identifier;
 
             /* Function opens a new scope */
             scope++;
@@ -950,21 +1014,40 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             body = (*astp)->nodes[def].func_def.body;
             ret = (*astp)->nodes[def].func_def.retval;
 
-            /* TODO: Type check function's annotation
-            identifier = (*astp)->nodes[decl].func_decl.identifier;
-            ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
-            ident_type = annotation_to_type(
-                (*astp)->nodes[identifier].identifier.annotation);
-            (*astp)->nodes[identifier].info.type_info = ident_type;
-            */
-
             for (paramlist = (*astp)->nodes[decl].func_decl.paramlist;
                  paramlist > -1;
                  paramlist = (*astp)->nodes[paramlist].paramlist.next)
             {
+                struct type_origin* type_origin;
                 ast_id param = (*astp)->nodes[paramlist].paramlist.identifier;
-                if (resolve_node_type(ctx, param, scope) == TYPE_INVALID)
-                    return TYPE_INVALID;
+                struct utf8_view name = utf8_span_view(
+                    source, (*astp)->nodes[param].identifier.name);
+                struct view_scope view_scope = {name, scope};
+
+                ODBUTIL_DEBUG_ASSERT(
+                    (*astp)->nodes[param].identifier.explicit_type
+                        != TYPE_INVALID,
+                    log_semantic_err(
+                        "AST_FUNC nodes MUST have all of their parameters "
+                        "declared with explicit types, otherwise it is is a "
+                        "AST_FUNC_TEMPLATE, not a AST_FUNC.\n"));
+                (*astp)->nodes[param].info.type_info
+                    = (*astp)->nodes[param].identifier.explicit_type;
+
+                switch (typemap_emplace_or_get(
+                    &ctx->typemap, view_scope, &type_origin))
+                {
+                    case HM_NEW:
+                        type_origin->original_declaration = param;
+                        type_origin->type
+                            = (*astp)->nodes[param].info.type_info;
+                        break;
+
+                    case HM_EXISTS:
+                        ODBUTIL_DEBUG_ASSERT(0, (void)0);
+                        /* fallthrough */
+                    case HM_OOM: return TYPE_INVALID;
+                }
 
                 (*astp)->nodes[paramlist].info.type_info = TYPE_VOID;
             }
@@ -983,6 +1066,17 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     return TYPE_INVALID;
             }
 
+            /* TODO: Type check function's annotation
+            ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+            ident_type = annotation_to_type(
+                (*astp)->nodes[identifier].identifier.annotation);
+            (*astp)->nodes[identifier].info.type_info = ident_type;
+            */
+
+            /* TODO: Type check identifier's return type with explicit_type */
+
+            identifier = (*astp)->nodes[decl].func_decl.identifier;
+            (*astp)->nodes[identifier].info.type_info = ret_type;
             (*astp)->nodes[decl].info.type_info = ret_type;
             (*astp)->nodes[def].info.type_info = ret_type;
             (*astp)->nodes[n].info.type_info = ret_type;
@@ -998,13 +1092,24 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return TYPE_INVALID;
 
+        case AST_FUNC_EXIT: {
+            ast_id ret = (*astp)->nodes[n].func_exit.retval;
+            if (ret > -1 && resolve_node_type(ctx, ret, scope) == TYPE_INVALID)
+                return TYPE_INVALID;
+
+            return (*astp)->nodes[n].info.type_info = TYPE_VOID;
+        }
+
         case AST_FUNC_OR_CONTAINER_REF: {
-            /* Check if a definition of this symbol exists globally */
-            ast_id identifier
-                = (*astp)->nodes[n].func_or_container_ref.identifier;
+            enum type ret_type;
+            ast_id    identifier, arglist;
+
+            /* Look up the identifier in the symbol table to figure out if it
+             * exists and whether it is a function or a container */
+            identifier = (*astp)->nodes[n].func_or_container_ref.identifier;
             struct utf8_view key = utf8_span_view(
                 source, (*astp)->nodes[identifier].identifier.name);
-            const struct symbol_table_entry* entry
+            struct symbol_table_entry* entry
                 = symbol_table_find(ctx->symbols, key);
             if (entry == NULL)
             {
@@ -1017,8 +1122,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 return TYPE_INVALID;
             }
 
-            /* Determine types of arguments */
-            ast_id arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
+            /* At this point we know it is a function call */
+            (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
+
+            /* Resolve types of each argument to the function call */
+            arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
             for (; arglist > -1; arglist = (*astp)->nodes[arglist].arglist.next)
             {
                 ast_id arg = (*astp)->nodes[arglist].arglist.expr;
@@ -1028,44 +1136,63 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 (*astp)->nodes[arglist].info.type_info = TYPE_VOID;
             }
 
-            enum type ret_type;
             if (entry->tu_id == ctx->tu_id)
-            {
-                /* The function definition exists in our own AST. Therefore, can
-                 * recurse here */
-                ast_id func = instantiate_func(
-                    ctx,
-                    entry->ast_node,
-                    (*astp)->nodes[n].func_or_container_ref.arglist);
-                if (func < 0)
-                    return TYPE_INVALID;
+            { /* The function definition exists in our own AST. */
+                if ((*astp)->nodes[entry->ast_node].info.node_type
+                    == AST_FUNC_TEMPLATE)
+                {
+                    ast_id func
+                        = instantiate_func(ctx, entry->ast_node, ctx, n);
+                    if (func < 0)
+                        return TYPE_INVALID;
+                    entry->ast_node = func;
+                }
 
-                ret_type = resolve_node_type(ctx, func, 0);
+                /* Can now get the return type by type checking the function
+                 * definition */
+                ret_type = resolve_node_type(ctx, entry->ast_node, scope);
                 if (ret_type == TYPE_INVALID)
                     return TYPE_INVALID;
             }
             else
-            {
-                struct ctx    their_ctx = *ctx;
+            { /* The function definition exists in another AST. Since semantic
+               * checks are run in parallel, the ASTs are protected by a mutex
+               */
                 struct mutex* their_mutex = ctx->tu_mutexes[entry->tu_id];
                 struct mutex* our_mutex = ctx->tu_mutexes[ctx->tu_id];
+                struct ctx their_ctx = create_context_for_tu(ctx, entry->tu_id);
 
-                /* The function definition exists in another AST. Since semantic
-                 * checks are run in parallel, the ASTs are protected by a mutex
-                 */
                 mutex_unlock(our_mutex);
                 mutex_lock(their_mutex);
 
+                if ((*astp)->nodes[entry->ast_node].info.node_type
+                    == AST_FUNC_TEMPLATE)
+                {
+                    ast_id func = instantiate_func(
+                        &their_ctx,
+                        entry->ast_node,
+                        ctx,
+                        (*astp)->nodes[n].func_or_container_ref.arglist);
+                    if (func < 0)
+                    {
+                        mutex_unlock(their_mutex);
+                        mutex_lock(our_mutex);
+                        return TYPE_INVALID;
+                    }
+                }
+
+                /* Can now get the return type by type checking the function
+                 * definition */
+                // XXX: How do we get the scope of another AST?
                 ret_type = resolve_node_type(&their_ctx, entry->ast_node, 0);
-
-                mutex_unlock(their_mutex);
-                mutex_lock(our_mutex);
-
                 if (ret_type == TYPE_INVALID)
+                {
+                    mutex_unlock(their_mutex);
+                    mutex_lock(our_mutex);
                     return TYPE_INVALID;
+                }
             }
 
-            (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
             (*astp)->nodes[identifier].info.type_info = ret_type;
             return (*astp)->nodes[n].info.type_info = ret_type;
         }
@@ -1123,6 +1250,7 @@ not_yet_implemented:
     return TYPE_INVALID;
 }
 
+#if defined(ODBCOMPILER_AST_SANITY_CHECK)
 static int
 sanity_check(struct ast* ast, const char* filename, const char* source)
 {
@@ -1133,6 +1261,19 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
     {
         if (ast->nodes[n].info.type_info == TYPE_INVALID)
         {
+            ast_id parent;
+
+            /* Function templates are a special case and are allowed to remain
+             * in the tree. The reason is because semantic analysis runs in
+             * multiple threads, so we have to wait for all checks to complete
+             * before we can be sure that the templates are no longer required.
+             */
+            for (parent = n; parent > -1; parent = ast_find_parent(ast, parent))
+                if (ast->nodes[parent].info.node_type == AST_FUNC_TEMPLATE)
+                    break;
+            if (parent > -1)
+                continue;
+
             log_flc_err(
                 filename,
                 source,
@@ -1143,6 +1284,7 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
             gutter = log_excerpt_1(source, ast->nodes[n].info.location, "");
             error = -1;
         }
+
         if (ast->nodes[n].info.node_type == AST_GC)
         {
             log_semantic_err("AST_GC nodes still exist in tree.\n");
@@ -1158,6 +1300,7 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
 
     return error;
 }
+#endif
 
 static int
 type_check(

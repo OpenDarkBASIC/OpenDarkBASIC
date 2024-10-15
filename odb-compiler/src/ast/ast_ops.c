@@ -84,6 +84,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
+        case AST_FUNC_EXIT: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
@@ -182,9 +183,9 @@ delete_tree_recurse(struct ast* ast, ast_id n)
     ast_id left = ast->nodes[n].base.left;
     ast_id right = ast->nodes[n].base.right;
     if (left > -1)
-        ast_delete_tree(ast, left);
+        delete_tree_recurse(ast, left);
     if (right > -1)
-        ast_delete_tree(ast, right);
+        delete_tree_recurse(ast, right);
 
     ast->nodes[n].info.node_type = AST_GC;
 }
@@ -201,17 +202,17 @@ ast_delete_tree(struct ast* ast, ast_id n)
 void
 ast_gc(struct ast* ast)
 {
-    ast_id n, n2;
-    for (n = 0; n != ast->count; ++n)
+    ast_id n, p;
+    for (n = 0; n < ast->count; ++n)
         if (ast->nodes[n].info.node_type == AST_GC)
         {
             ast_id last = --ast->count;
-            for (n2 = 0; n2 != ast->count; ++n2)
+            for (p = 0; p != ast->count; ++p)
             {
-                if (ast->nodes[n2].base.left == last)
-                    ast->nodes[n2].base.left = n;
-                if (ast->nodes[n2].base.right == last)
-                    ast->nodes[n2].base.right = n;
+                if (ast->nodes[p].base.left == last)
+                    ast->nodes[p].base.left = n;
+                if (ast->nodes[p].base.right == last)
+                    ast->nodes[p].base.right = n;
             }
             ast->nodes[n] = ast->nodes[last];
         }
@@ -310,6 +311,7 @@ ast_trees_equal(
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
+        case AST_FUNC_EXIT: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
         case AST_BOOLEAN_LITERAL:

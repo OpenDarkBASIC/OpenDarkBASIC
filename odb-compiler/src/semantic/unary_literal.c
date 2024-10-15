@@ -34,6 +34,7 @@ child_changed:
         case AST_FUNC:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
+        case AST_FUNC_EXIT:
         case AST_FUNC_OR_CONTAINER_REF:
         case AST_FUNC_CALL: return -1;
 

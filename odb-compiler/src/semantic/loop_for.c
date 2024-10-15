@@ -42,6 +42,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
+        case AST_FUNC_EXIT: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
 

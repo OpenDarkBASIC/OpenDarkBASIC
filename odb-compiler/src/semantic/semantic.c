@@ -4,7 +4,7 @@
 #include "odb-util/hm.h"
 #include <assert.h>
 
-struct ptr_kvs
+struct ptr_set_kvs
 {
     const struct semantic_check** keys;
 };
@@ -14,24 +14,30 @@ ptr_kvs_hash(const struct semantic_check* key)
     return hash32_aligned_ptr((uintptr_t)key);
 }
 static int
-ptr_kvs_alloc(struct ptr_kvs* kvs, struct ptr_kvs* old_kvs, int16_t capacity)
+ptr_kvs_alloc(
+    struct ptr_set_kvs* kvs, struct ptr_set_kvs* old_kvs, int16_t capacity)
 {
     kvs->keys = mem_alloc(sizeof(*kvs->keys) * capacity);
     return kvs->keys == NULL ? -1 : 0;
 }
 static void
-ptr_kvs_free(struct ptr_kvs* kvs)
+ptr_kvs_free_old(struct ptr_set_kvs* kvs)
+{
+    mem_free(kvs->keys);
+}
+static void
+ptr_kvs_free(struct ptr_set_kvs* kvs)
 {
     mem_free(kvs->keys);
 }
 static const struct semantic_check*
-ptr_kvs_get_key(const struct ptr_kvs* kvs, int16_t slot)
+ptr_kvs_get_key(const struct ptr_set_kvs* kvs, int16_t slot)
 {
     return kvs->keys[slot];
 }
 static int
 ptr_kvs_set_key(
-    struct ptr_kvs* kvs, int16_t slot, const struct semantic_check* key)
+    struct ptr_set_kvs* kvs, int16_t slot, const struct semantic_check* key)
 {
     kvs->keys[slot] = key;
     return 0;
@@ -42,13 +48,13 @@ ptr_kvs_keys_equal(
 {
     return k1 == k2;
 }
-static void*
-ptr_kvs_get_value(const struct ptr_kvs* kvs, int16_t slot)
+static void**
+ptr_kvs_get_value(const struct ptr_set_kvs* kvs, int16_t slot)
 {
-    return (void*)1; // So insert_new() returns success
+    return (void**)1; // So insert_new() returns success
 }
 static void
-ptr_kvs_set_value(struct ptr_kvs* kvs, int16_t slot, void* value)
+ptr_kvs_set_value(struct ptr_set_kvs* kvs, int16_t slot, void** value)
 {
 }
 
@@ -59,7 +65,7 @@ HM_DECLARE_API_FULL(
     const struct semantic_check*,
     void*,
     16,
-    struct ptr_kvs)
+    struct ptr_set_kvs)
 HM_DEFINE_API_FULL(
     ptr_set,
     hash32,
@@ -68,6 +74,7 @@ HM_DEFINE_API_FULL(
     16,
     ptr_kvs_hash,
     ptr_kvs_alloc,
+    ptr_kvs_free_old,
     ptr_kvs_free,
     ptr_kvs_get_key,
     ptr_kvs_set_key,

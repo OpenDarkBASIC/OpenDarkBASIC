@@ -65,6 +65,7 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_FUNC: print_node("FUNC", depth); break;
         case AST_FUNC_DECL: print_node("FUNC_DECL", depth); break;
         case AST_FUNC_DEF: print_node("FUNC_DEF", depth); break;
+        case AST_FUNC_EXIT: print_node("FUNC_EXIT", depth); break;
         case AST_FUNC_OR_CONTAINER_REF: print_node("FUNC_OR_CONTAINER_REF", depth); break;
         case AST_FUNC_CALL: print_node("FUNC_CALL", depth); break;
         case AST_BOOLEAN_LITERAL: print_node("BOOLEAN_LITERAL", depth); break;

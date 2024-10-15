@@ -123,6 +123,10 @@ enum hm_status
         mem_free(kvs->values);                                                 \
         mem_free(kvs->keys);                                                   \
     }                                                                          \
+    static void prefix##_kvs_free_old(struct prefix##_kvs* kvs)                \
+    {                                                                          \
+        prefix##_kvs_free(kvs);                                                \
+    }                                                                          \
     static K prefix##_kvs_get_key(                                             \
         const struct prefix##_kvs* kvs, int##bits##_t slot)                    \
     {                                                                          \
@@ -156,6 +160,7 @@ enum hm_status
         bits,                                                                  \
         hash_func,                                                             \
         prefix##_kvs_alloc,                                                    \
+        prefix##_kvs_free_old,                                                 \
         prefix##_kvs_free,                                                     \
         prefix##_kvs_get_key,                                                  \
         prefix##_kvs_set_key,                                                  \
@@ -173,6 +178,7 @@ enum hm_status
     bits,                                                                      \
     hash_func,                                                                 \
     storage_alloc_func,                                                        \
+    storage_free_old_func,                                                     \
     storage_free_func,                                                         \
     get_key_func,                                                              \
     set_key_func,                                                              \
@@ -189,53 +195,37 @@ enum hm_status
             storage_free_func(&hm->kvs);                                       \
             mem_free(hm);                                                      \
         }                                                                      \
+                                                                               \
+        /* These don't do anything, except act as a poor-man's type-check for  \
+         * the various key-value storage functions. */                         \
+        hash32 (*hash)(K) = hash_func;                                         \
+        int (*storage_alloc)(                                                  \
+            struct prefix##_kvs*, struct prefix##_kvs*, int##bits##_t)         \
+            = storage_alloc_func;                                              \
+        void (*storage_free_old)(struct prefix##_kvs*)                         \
+            = storage_free_old_func;                                           \
+        void (*storage_free)(struct prefix##_kvs*) = storage_free_func;        \
+        K(*get_key)                                                            \
+        (const struct prefix##_kvs*, int##bits##_t) = get_key_func;            \
+        int (*set_key)(struct prefix##_kvs*, int##bits##_t, K) = set_key_func; \
+        int (*keys_equal)(K, K) = keys_equal_func;                             \
+        V* (*get_value)(const struct prefix##_kvs*, int##bits##_t)             \
+            = get_value_func;                                                  \
+        void (*set_value)(struct prefix##_kvs*, int##bits##_t, V*)             \
+            = set_value_func;                                                  \
+        (void)hash;                                                            \
+        (void)storage_alloc;                                                   \
+        (void)storage_free_old;                                                \
+        (void)storage_free;                                                    \
+        (void)get_key;                                                         \
+        (void)set_key;                                                         \
+        (void)keys_equal;                                                      \
+        (void)get_value;                                                       \
+        (void)set_value;                                                       \
     }                                                                          \
                                                                                \
-    /*!                                                                        \
-     * @return If key exists: -(1 + slot)                                      \
-     *         If key does not exist: slot                                     \
-     */                                                                        \
     static int##bits##_t prefix##_find_slot(                                   \
-        const struct prefix* hm, K key, H h)                                   \
-    {                                                                          \
-        ODBUTIL_DEBUG_ASSERT(                                                  \
-            hm && hm->capacity > 0,                                            \
-            log_util_err("capacity: %d\n", hm->capacity));                     \
-        ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));               \
-                                                                               \
-        int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
-        int##bits##_t i = 0;                                                   \
-        int##bits##_t last_rip = -1;                                           \
-                                                                               \
-        slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
-        while (hm->hashes[slot] != HM_SLOT_UNUSED)                             \
-        {                                                                      \
-            /* If the same hash already exists in this slot, and this isn't    \
-             * the result of a hash collision (which we can verify by          \
-             * comparing the original keys), then we can conclude this key was \
-             * already inserted */                                             \
-            if (hm->hashes[slot] == h)                                         \
-                if (keys_equal_func(get_key_func(&hm->kvs, slot), key))        \
-                    return -(1 + slot);                                        \
-            /* Keep track of visited tombstones, as it's possible to insert    \
-             * into them */                                                    \
-            if (hm->hashes[slot] == HM_SLOT_RIP)                               \
-                last_rip = slot;                                               \
-            /* Quadratic probing following p(K,i)=(i^2+i)/2. If the hash table \
-             * size is a power of two, this will visit every slot. */          \
-            i++;                                                               \
-            slot = (int##bits##_t)((slot + i) & (hm->capacity - 1));           \
-        }                                                                      \
-                                                                               \
-        /* Prefer inserting into a tombstone. Note that there is no way to     \
-         * exit early when probing for insert positions, because it's not      \
-         * possible to know if the key exists or not without completing the    \
-         * entire probing sequence. */                                         \
-        if (last_rip != -1)                                                    \
-            slot = last_rip;                                                   \
-                                                                               \
-        return slot;                                                           \
-    }                                                                          \
+        const struct prefix* hm, K key, H h);                                  \
     static int prefix##_grow(struct prefix** hm)                               \
     {                                                                          \
         int##bits##_t i;                                                       \
@@ -288,7 +278,11 @@ enum hm_status
         }                                                                      \
                                                                                \
         /* Free old hashmap */                                                 \
-        prefix##_deinit(*hm);                                                  \
+        if (*hm != NULL)                                                       \
+        {                                                                      \
+            storage_free_old_func(&(*hm)->kvs);                                \
+            mem_free(*hm);                                                     \
+        }                                                                      \
         *hm = new_hm;                                                          \
                                                                                \
         return 0;                                                              \
@@ -297,6 +291,51 @@ enum hm_status
         mem_free(new_hm);                                                      \
     alloc_hm_failed:                                                           \
         return log_oom(header + data, "hm_grow()");                            \
+    }                                                                          \
+    /*!                                                                        \
+     * @return If key exists: -(1 + slot)                                      \
+     *         If key does not exist: slot                                     \
+     */                                                                        \
+    static int##bits##_t prefix##_find_slot(                                   \
+        const struct prefix* hm, K key, H h)                                   \
+    {                                                                          \
+        ODBUTIL_DEBUG_ASSERT(                                                  \
+            hm && hm->capacity > 0,                                            \
+            log_util_err("capacity: %d\n", hm->capacity));                     \
+        ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));               \
+                                                                               \
+        int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
+        int##bits##_t i = 0;                                                   \
+        int##bits##_t last_rip = -1;                                           \
+                                                                               \
+        slot = (int##bits##_t)(h & (H)(hm->capacity - 1));                     \
+        while (hm->hashes[slot] != HM_SLOT_UNUSED)                             \
+        {                                                                      \
+            /* If the same hash already exists in this slot, and this isn't    \
+             * the result of a hash collision (which we can verify by          \
+             * comparing the original keys), then we can conclude this key was \
+             * already inserted */                                             \
+            if (hm->hashes[slot] == h)                                         \
+                if (keys_equal_func(get_key_func(&hm->kvs, slot), key))        \
+                    return -(1 + slot);                                        \
+            /* Keep track of visited tombstones, as it's possible to insert    \
+             * into them */                                                    \
+            if (hm->hashes[slot] == HM_SLOT_RIP)                               \
+                last_rip = slot;                                               \
+            /* Quadratic probing following p(K,i)=(i^2+i)/2. If the hash table \
+             * size is a power of two, this will visit every slot. */          \
+            i++;                                                               \
+            slot = (int##bits##_t)((slot + i) & (hm->capacity - 1));           \
+        }                                                                      \
+                                                                               \
+        /* Prefer inserting into a tombstone. Note that there is no way to     \
+         * exit early when probing for insert positions, because it's not      \
+         * possible to know if the key exists or not without completing the    \
+         * entire probing sequence. */                                         \
+        if (last_rip != -1)                                                    \
+            slot = last_rip;                                                   \
+                                                                               \
+        return slot;                                                           \
     }                                                                          \
     V* prefix##_emplace_new(struct prefix** hm, K key)                         \
     {                                                                          \
@@ -333,7 +372,7 @@ enum hm_status
                                                                                \
         /* NOTE: Rehashing may change table count, make sure to calculate hash \
          * after this */                                                       \
-        if (!*hm || (*hm)->capacity * 100 >= REHASH_AT_PERCENT * (*hm)->count) \
+        if (!*hm || (*hm)->count * 100 >= REHASH_AT_PERCENT * (*hm)->capacity) \
             if (prefix##_grow(hm) != 0)                                        \
                 return HM_OOM;                                                 \
                                                                                \

@@ -9,7 +9,7 @@ VEC_DECLARE_API(static, spanlist, struct utf8_span, 32)
 VEC_DEFINE_API(spanlist, struct utf8_span, 32)
 VEC_DEFINE_API(cmd_ids, cmd_id, 32)
 
-struct kvs
+struct used_cmds_hm_kvs
 {
     struct cmd_ids* keys;
 };
@@ -20,23 +20,31 @@ kvs_hash(cmd_id key)
     return key;
 }
 static int
-kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
+kvs_alloc(
+    struct used_cmds_hm_kvs* kvs,
+    struct used_cmds_hm_kvs* old_kvs,
+    int32_t                  capacity)
 {
     cmd_ids_init(&kvs->keys);
     return cmd_ids_resize(&kvs->keys, capacity);
 }
 static void
-kvs_free(struct kvs* kvs)
+kvs_free_old(struct used_cmds_hm_kvs* kvs)
+{
+    cmd_ids_deinit(kvs->keys);
+}
+static void
+kvs_free(struct used_cmds_hm_kvs* kvs)
 {
     cmd_ids_deinit(kvs->keys);
 }
 cmd_id
-kvs_get_key(const struct kvs* kvs, int32_t slot)
+kvs_get_key(const struct used_cmds_hm_kvs* kvs, int32_t slot)
 {
     return kvs->keys->data[slot];
 }
 static int
-kvs_set_key(struct kvs* kvs, int32_t slot, cmd_id key)
+kvs_set_key(struct used_cmds_hm_kvs* kvs, int32_t slot, cmd_id key)
 {
     kvs->keys->data[slot] = key;
     return 0;
@@ -47,16 +55,17 @@ kvs_keys_equal(cmd_id k1, cmd_id k2)
     return k1 == k2;
 }
 static char*
-kvs_get_value(const struct kvs* kvs, int32_t slot)
+kvs_get_value(const struct used_cmds_hm_kvs* kvs, int32_t slot)
 {
     return (void*)1;
 }
 static void
-kvs_set_value(struct kvs* kvs, int32_t slot, char* value)
+kvs_set_value(struct used_cmds_hm_kvs* kvs, int32_t slot, char* value)
 {
 }
 
-HM_DECLARE_API_FULL(static, used_cmds_hm, hash32, cmd_id, char, 32, struct kvs)
+HM_DECLARE_API_FULL(
+    static, used_cmds_hm, hash32, cmd_id, char, 32, struct used_cmds_hm_kvs)
 HM_DEFINE_API_FULL(
     used_cmds_hm,
     hash32,
@@ -65,6 +74,7 @@ HM_DEFINE_API_FULL(
     32,
     kvs_hash,
     kvs_alloc,
+    kvs_free_old,
     kvs_free,
     kvs_get_key,
     kvs_set_key,
@@ -74,20 +84,26 @@ HM_DEFINE_API_FULL(
     128,
     70)
 
-void
-used_cmds_init(struct used_cmds_hm** hm)
+struct used_cmds
 {
-    used_cmds_hm_init(hm);
+    struct used_cmds_hm hm;
+};
+
+void
+used_cmds_init(struct used_cmds** hm)
+{
+    used_cmds_hm_init((struct used_cmds_hm**)hm);
 }
 
 int
-used_cmds_append(struct used_cmds_hm** used, const struct ast* ast)
+used_cmds_append(struct used_cmds** used_cmds, const struct ast* ast)
 {
     ast_id n;
     char*  c;
     for (n = 0; n != ast->count; n++)
         if (ast->nodes[n].info.node_type == AST_COMMAND)
-            if (used_cmds_hm_emplace_or_get(used, ast->nodes[n].cmd.id, &c)
+            if (used_cmds_hm_emplace_or_get(
+                    (struct used_cmds_hm**)used_cmds, ast->nodes[n].cmd.id, &c)
                 == HM_OOM)
             {
                 return -1;
@@ -97,10 +113,11 @@ used_cmds_append(struct used_cmds_hm** used, const struct ast* ast)
 }
 
 struct cmd_ids*
-used_cmds_finalize(struct used_cmds_hm* hm)
+used_cmds_finalize(struct used_cmds* used_cmds)
 {
-    struct cmd_ids* cmds;
-    int32_t         front, back;
+    struct cmd_ids*      cmds;
+    struct used_cmds_hm* hm = &used_cmds->hm;
+    int32_t              front, back;
 
     if (hm == NULL)
         return NULL;

@@ -20,85 +20,21 @@ struct report_info
     char** backtrace;
 #endif
 };
-struct report_kvs
-{
-    uintptr_t*          keys;
-    struct report_info* values;
-};
 
-static int
-report_kvs_alloc(
-    struct report_kvs* kvs, struct report_kvs* old_kvs, int32_t capacity)
-{
-    if ((kvs->keys = mem_alloc(sizeof(uintptr_t) * capacity)) == NULL)
-        return -1;
-    if ((kvs->values = mem_alloc(sizeof(struct report_info) * capacity))
-        == NULL)
-    {
-        mem_free(kvs->keys);
-        return -1;
-    }
-
-    return 0;
-}
-static void
-report_kvs_free(struct report_kvs* kvs)
-{
-    mem_free(kvs->values);
-    mem_free(kvs->keys);
-}
-static uintptr_t
-report_kvs_get_key(const struct report_kvs* kvs, int32_t slot)
-{
-    return kvs->keys[slot];
-}
-static int
-report_kvs_set_key(struct report_kvs* kvs, int32_t slot, uintptr_t key)
-{
-    kvs->keys[slot] = key;
-    return 0;
-}
-static int
-report_kvs_keys_equal(uintptr_t k1, uintptr_t k2)
-{
-    return k1 == k2;
-}
-static struct report_info*
-report_kvs_get_value(const struct report_kvs* kvs, int32_t slot)
-{
-    return &kvs->values[slot];
-}
-static void
-report_kvs_set_value(
-    struct report_kvs* kvs, int32_t slot, struct report_info* value)
-{
-    kvs->values[slot] = *value;
-}
-
-HM_DECLARE_API_FULL(
+HM_DECLARE_API_HASH(
     static,
     report,
     hash32,
     uintptr_t,
     struct report_info,
-    32,
-    struct report_kvs)
-HM_DEFINE_API_FULL(
+    32)
+HM_DEFINE_API_HASH(
     report,
     hash32,
     uintptr_t,
     struct report_info,
     32,
-    hash32_aligned_ptr,
-    report_kvs_alloc,
-    report_kvs_free,
-    report_kvs_get_key,
-    report_kvs_set_key,
-    report_kvs_keys_equal,
-    report_kvs_get_value,
-    report_kvs_set_value,
-    128,
-    70)
+    hash32_aligned_ptr)
 
 struct state
 {
