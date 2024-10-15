@@ -8,7 +8,7 @@
 #include <assert.h>
 
 static ast_id
-new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
+ast_grow(struct ast** astp)
 {
     struct ast* ast = *astp;
     if (ast == NULL || ast->count == ast->capacity)
@@ -28,7 +28,18 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
         *astp = new_ast;
     }
 
-    ast_id n = ast->count++;
+    return ast->count++;
+}
+
+static ast_id
+new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
+{
+    struct ast* ast;
+    ast_id      n = ast_grow(astp);
+    if (n < 0)
+        return -1;
+    ast = *astp;
+
     ast->nodes[n].base.info.location = location;
     ast->nodes[n].base.info.node_type = type;
     ast->nodes[n].base.info.type_info = TYPE_INVALID;
@@ -44,6 +55,7 @@ ast_deinit(struct ast* ast)
     if (ast)
         mem_free(ast);
 }
+#if defined(ODBUTIL_MEM_DEBUGGING)
 void
 mem_acquire_ast(struct ast* ast)
 {
@@ -55,11 +67,22 @@ mem_acquire_ast(struct ast* ast)
     nodes = sizeof(union ast_node) * ast->capacity;
     mem_acquire(ast, header + nodes);
 }
-
 void
 mem_release_ast(struct ast* ast)
 {
     mem_release(ast);
+}
+#endif
+
+ast_id
+ast_dup_node(struct ast** astp, ast_id n)
+{
+    ast_id dup = ast_grow(astp);
+    if (dup < 0)
+        return -1;
+
+    memcpy(&(*astp)->nodes[dup], &(*astp)->nodes[n], sizeof(union ast_node));
+    return dup;
 }
 
 ast_id

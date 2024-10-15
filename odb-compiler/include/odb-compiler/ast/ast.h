@@ -367,10 +367,15 @@ ast_init(struct ast** astp)
 ODBCOMPILER_PUBLIC_API void 
 ast_deinit(struct ast* ast);
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void
 mem_acquire_ast(struct ast* ast);
 ODBCOMPILER_PUBLIC_API void
 mem_release_ast(struct ast* ast);
+#else
+#define mem_acquire_ast(ast)
+#define mem_release_ast(ast)
+#endif
 
 static inline void
 ast_set_root(struct ast* ast, ast_id n)
@@ -379,43 +384,45 @@ ast_set_root(struct ast* ast, ast_id n)
         ast->root = n;
 }
 
-ast_id ast_block(struct ast** ast, ast_id stmt, struct utf8_span location);
+ast_id ast_dup_node(struct ast** astp, ast_id n);
+
+ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
-ast_id ast_block_append_stmt(struct ast** ast, ast_id block, ast_id stmt, struct utf8_span location);
-ast_id ast_end(struct ast** ast, struct utf8_span location);
-ast_id ast_arglist(struct ast** ast, ast_id expr, struct utf8_span location);
-ast_id ast_arglist_append(struct ast** ast, ast_id arglist, ast_id expr, struct utf8_span location);
-ast_id ast_paramlist(struct ast** ast, ast_id expr, struct utf8_span location);
-ast_id ast_paramlist_append(struct ast** ast, ast_id paramlist, ast_id expr, struct utf8_span location);
-ast_id ast_command(struct ast** ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
-ast_id ast_assign(struct ast** ast, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
-ast_id ast_inc_step(struct ast** ast, ast_id var, ast_id expr, struct utf8_span location);
-ast_id ast_inc(struct ast** ast, ast_id var, struct utf8_span location);
-ast_id ast_dec_step(struct ast** ast, ast_id var, ast_id expr, struct utf8_span location);
-ast_id ast_dec(struct ast** ast, ast_id var, struct utf8_span location);
-ast_id ast_identifier(struct ast** ast, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-ast_id ast_binop(struct ast** ast, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
-ast_id ast_unop(struct ast** ast, enum unop_type op, ast_id expr, struct utf8_span location);
-ast_id ast_cond(struct ast** ast, ast_id expr, ast_id cond_branch, struct utf8_span location);
-ast_id ast_cond_branch(struct ast** ast, ast_id yes, ast_id no, struct utf8_span location);
-ast_id ast_loop(struct ast** ast, ast_id body, struct utf8_span name, struct utf8_span implicit_name, struct utf8_span location);
-ast_id ast_loop_while(struct ast** ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
-ast_id ast_loop_until(struct ast** ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
-ast_id ast_loop_for(struct ast** ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, const char* source);
-ast_id ast_loop_cont(struct ast** ast, struct utf8_span name, ast_id step, struct utf8_span location);
-ast_id ast_loop_exit(struct ast** ast, struct utf8_span name, struct utf8_span location);
-ast_id ast_func(struct ast** ast, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
-ast_id ast_func_or_container_ref(struct ast** ast, ast_id identifier, ast_id arglist, struct utf8_span location);
-ast_id ast_boolean_literal(struct ast** ast, char is_true, struct utf8_span location);
-ast_id ast_byte_literal(struct ast** ast, uint8_t value, struct utf8_span location);
-ast_id ast_word_literal(struct ast** ast, uint16_t value, struct utf8_span location);
-ast_id ast_integer_literal(struct ast** ast, int32_t value, struct utf8_span location);
-ast_id ast_dword_literal(struct ast** ast, uint32_t value, struct utf8_span location);
-ast_id ast_double_integer_literal(struct ast** ast, int64_t value, struct utf8_span location);
-ast_id ast_integer_like_literal(struct ast** ast, int64_t value, struct utf8_span location);
-ast_id ast_float_literal(struct ast** ast, float value, struct utf8_span location);
-ast_id ast_double_literal(struct ast** ast, double value, struct utf8_span location);
-ast_id ast_string_literal(struct ast** ast, struct utf8_span str, struct utf8_span location);
-ast_id ast_cast(struct ast** ast, ast_id expr, enum type target_type, struct utf8_span location);
-ast_id ast_scope(struct ast** ast, ast_id child, struct utf8_span location);
+ast_id ast_block_append_stmt(struct ast** astp, ast_id block, ast_id stmt, struct utf8_span location);
+ast_id ast_end(struct ast** astp, struct utf8_span location);
+ast_id ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location);
+ast_id ast_arglist_append(struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location);
+ast_id ast_paramlist(struct ast** astp, ast_id expr, struct utf8_span location);
+ast_id ast_paramlist_append(struct ast** astp, ast_id paramlist, ast_id expr, struct utf8_span location);
+ast_id ast_command(struct ast** astp, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
+ast_id ast_assign(struct ast** astp, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
+ast_id ast_inc_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
+ast_id ast_inc(struct ast** astp, ast_id var, struct utf8_span location);
+ast_id ast_dec_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
+ast_id ast_dec(struct ast** astp, ast_id var, struct utf8_span location);
+ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
+ast_id ast_binop(struct ast** astp, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
+ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
+ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branch, struct utf8_span location);
+ast_id ast_cond_branch(struct ast** astp, ast_id yes, ast_id no, struct utf8_span location);
+ast_id ast_loop(struct ast** astp, ast_id body, struct utf8_span name, struct utf8_span implicit_name, struct utf8_span location);
+ast_id ast_loop_while(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
+ast_id ast_loop_until(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
+ast_id ast_loop_for(struct ast** astp, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, const char* source);
+ast_id ast_loop_cont(struct ast** astp, struct utf8_span name, ast_id step, struct utf8_span location);
+ast_id ast_loop_exit(struct ast** astp, struct utf8_span name, struct utf8_span location);
+ast_id ast_func(struct ast** astp, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
+ast_id ast_func_or_container_ref(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
+ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);
+ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);
+ast_id ast_word_literal(struct ast** astp, uint16_t value, struct utf8_span location);
+ast_id ast_integer_literal(struct ast** astp, int32_t value, struct utf8_span location);
+ast_id ast_dword_literal(struct ast** astp, uint32_t value, struct utf8_span location);
+ast_id ast_double_integer_literal(struct ast** astp, int64_t value, struct utf8_span location);
+ast_id ast_integer_like_literal(struct ast** astp, int64_t value, struct utf8_span location);
+ast_id ast_float_literal(struct ast** astp, float value, struct utf8_span location);
+ast_id ast_double_literal(struct ast** astp, double value, struct utf8_span location);
+ast_id ast_string_literal(struct ast** astp, struct utf8_span str, struct utf8_span location);
+ast_id ast_cast(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
+ast_id ast_scope(struct ast** astp, ast_id child, struct utf8_span location);
 /* clang-format on */

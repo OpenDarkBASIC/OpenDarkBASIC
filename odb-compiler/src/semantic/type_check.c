@@ -1,5 +1,7 @@
+#include "odb-compiler/config.h"
 #include "./type_check.h"
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
@@ -283,6 +285,82 @@ cast_expr_to_boolean(
     }
 
     return -1;
+}
+
+static ast_id
+instantiate_func(struct ctx* ctx, ast_id func_template, ast_id arglist)
+{
+    ast_id       func, decl, template_block, paramlist;
+    struct ast** astp = &ctx->tus[ctx->tu_id];
+
+    ODBUTIL_DEBUG_ASSERT(
+        (*astp)->nodes[func_template].info.node_type == AST_FUNC_TEMPLATE,
+        log_semantic_err(
+            "type: %d\n", (*astp)->nodes[func_template].info.node_type));
+
+    template_block = ast_find_parent(*astp, func_template);
+    ODBUTIL_DEBUG_ASSERT(
+        (*astp)->nodes[template_block].info.node_type == AST_BLOCK,
+        log_semantic_err(
+            "type: %d\n", (*astp)->nodes[template_block].info.node_type));
+    ODBUTIL_DEBUG_ASSERT(
+        (*astp)->nodes[template_block].block.next == -1,
+        log_semantic_err(
+            "next: %d\n", (*astp)->nodes[template_block].block.next));
+
+    func = ast_dup_subtree(astp, func_template);
+    if (func < 0)
+        return -1;
+
+    /* Insert new function into AST after the template */
+    if (ast_block_append_stmt(
+            astp, template_block, func, (*astp)->nodes[func].info.location)
+        < 0)
+    {
+        return -1;
+    }
+
+    /* The arguments passed to the function determine the parameter types. We
+     * copy them over here. Some function templates are "partial" templates,
+     * i.e. one parameter carries type information but another does not. In
+     * these cases we must insert casts to the correct type. */
+    decl = (*astp)->nodes[func].func.decl;
+    for (paramlist = (*astp)->nodes[decl].func_decl.paramlist;
+         paramlist > -1 && arglist > -1;
+         paramlist = (*astp)->nodes[paramlist].paramlist.next,
+        arglist = (*astp)->nodes[arglist].arglist.next)
+    {
+        ast_id    param = (*astp)->nodes[paramlist].paramlist.identifier;
+        ast_id    arg = (*astp)->nodes[arglist].arglist.expr;
+        enum type param_type = (*astp)->nodes[param].info.type_info;
+        enum type arg_type = (*astp)->nodes[arg].info.type_info;
+
+        if ((*astp)->nodes[param].identifier.explicit_type == TYPE_INVALID)
+            (*astp)->nodes[param].identifier.explicit_type = arg_type;
+        else if (param_type != arg_type)
+        {
+            ast_id cast = ast_cast(
+                astp, arg, param_type, (*astp)->nodes[arg].info.location);
+            if (cast < -1)
+                return -1;
+            (*astp)->nodes[arglist].arglist.expr = cast;
+        }
+    }
+    if (paramlist > -1 || arglist > -1)
+    {
+        log_flc_err(
+            utf8_cstr(ctx->filenames[ctx->tu_id]),
+            ctx->sources[ctx->tu_id].text.data,
+            (*astp)->nodes[func].info.location,
+            "Function instantiation failed: Argument count mismatch.\n");
+        return -1;
+    }
+
+    /* Since the function parameter types are all known now, this is no longer a
+     * function template */
+    (*astp)->nodes[func].info.node_type = AST_FUNC;
+
+    return func;
 }
 
 static enum type
@@ -858,34 +936,30 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         }
 
         case AST_FUNC: {
-            enum type ret_type, ident_type, func_type;
-            ast_id    decl, def, identifier, paramlist, body, ret;
+            enum type ret_type;
+            ast_id    decl, def, paramlist, body, ret;
+
+            /* Function opens a new scope */
+            scope++;
 
             decl = (*astp)->nodes[n].func.decl;
             def = (*astp)->nodes[n].func.def;
             ODBUTIL_DEBUG_ASSERT(decl > -1, (void)0);
             ODBUTIL_DEBUG_ASSERT(def > -1, (void)0);
 
-            identifier = (*astp)->nodes[decl].func_decl.identifier;
-            paramlist = (*astp)->nodes[decl].func_decl.paramlist;
             body = (*astp)->nodes[def].func_def.body;
             ret = (*astp)->nodes[def].func_def.retval;
-            ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
 
+            /* TODO: Type check function's annotation
+            identifier = (*astp)->nodes[decl].func_decl.identifier;
+            ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
             ident_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
             (*astp)->nodes[identifier].info.type_info = ident_type;
+            */
 
-            if (ret > -1)
-            {
-                ret_type = resolve_node_type(ctx, ret, scope);
-                if (ret_type == TYPE_INVALID)
-                    return TYPE_INVALID;
-            }
-
-            func_type = ret > -1 ? ret_type : TYPE_VOID;
-
-            for (; paramlist > -1;
+            for (paramlist = (*astp)->nodes[decl].func_decl.paramlist;
+                 paramlist > -1;
                  paramlist = (*astp)->nodes[paramlist].paramlist.next)
             {
                 ast_id param = (*astp)->nodes[paramlist].paramlist.identifier;
@@ -897,12 +971,26 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             if (body > -1
                 && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
+            {
                 return TYPE_INVALID;
+            }
 
-            (*astp)->nodes[decl].info.type_info = func_type;
-            (*astp)->nodes[def].info.type_info = func_type;
-            (*astp)->nodes[n].info.type_info = func_type;
-            return func_type;
+            ret_type = TYPE_VOID;
+            if (ret > -1)
+            {
+                ret_type = resolve_node_type(ctx, ret, scope);
+                if (ret_type == TYPE_INVALID)
+                    return TYPE_INVALID;
+            }
+
+            (*astp)->nodes[decl].info.type_info = ret_type;
+            (*astp)->nodes[def].info.type_info = ret_type;
+            (*astp)->nodes[n].info.type_info = ret_type;
+
+            /* Close scope again */
+            typemap_clear_all_with_scope(ctx->typemap, scope--);
+
+            return ret_type;
         }
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
@@ -911,17 +999,6 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_INVALID;
 
         case AST_FUNC_OR_CONTAINER_REF: {
-            /* Determine types of arguments */
-            ast_id arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
-            for (; arglist > -1; arglist = (*astp)->nodes[arglist].arglist.next)
-            {
-                ast_id arg = (*astp)->nodes[arglist].arglist.expr;
-                if (resolve_node_type(ctx, arg, scope) == TYPE_INVALID)
-                    return TYPE_INVALID;
-
-                (*astp)->nodes[arglist].info.type_info = TYPE_VOID;
-            }
-
             /* Check if a definition of this symbol exists globally */
             ast_id identifier
                 = (*astp)->nodes[n].func_or_container_ref.identifier;
@@ -940,12 +1017,30 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 return TYPE_INVALID;
             }
 
+            /* Determine types of arguments */
+            ast_id arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
+            for (; arglist > -1; arglist = (*astp)->nodes[arglist].arglist.next)
+            {
+                ast_id arg = (*astp)->nodes[arglist].arglist.expr;
+                if (resolve_node_type(ctx, arg, scope) == TYPE_INVALID)
+                    return TYPE_INVALID;
+
+                (*astp)->nodes[arglist].info.type_info = TYPE_VOID;
+            }
+
             enum type ret_type;
             if (entry->tu_id == ctx->tu_id)
             {
                 /* The function definition exists in our own AST. Therefore, can
                  * recurse here */
-                ret_type = resolve_node_type(ctx, entry->ast_node, 0);
+                ast_id func = instantiate_func(
+                    ctx,
+                    entry->ast_node,
+                    (*astp)->nodes[n].func_or_container_ref.arglist);
+                if (func < 0)
+                    return TYPE_INVALID;
+
+                ret_type = resolve_node_type(ctx, func, 0);
                 if (ret_type == TYPE_INVALID)
                     return TYPE_INVALID;
             }
@@ -1007,7 +1102,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             enum type type = resolve_node_type(ctx, expr, scope);
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
-            return type_check_casts(*astp, n, filename, source);
+            return type_check_cast(*astp, n, filename, source);
         }
 
         case AST_SCOPE: {

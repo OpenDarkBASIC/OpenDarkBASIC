@@ -359,6 +359,7 @@ create_db_function_table(
         bool result = db_func_table->insert({identifier_name, F}).second;
         ODBUTIL_DEBUG_ASSERT(
             result, log_codegen_err("Function already exists!"));
+        (void)result;
     }
 
     return 0;

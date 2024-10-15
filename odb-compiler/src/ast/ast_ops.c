@@ -130,6 +130,43 @@ ast_find_parent(const struct ast* ast, ast_id n)
     return -1;
 }
 
+int
+ast_dup_subtree(struct ast** astp, int n)
+{
+    ast_id dup, lhs = -1, rhs = -1;
+    if ((*astp)->nodes[n].base.left > -1)
+        lhs = ast_dup_subtree(astp, (*astp)->nodes[n].base.left);
+    if ((*astp)->nodes[n].base.right > -1)
+        rhs = ast_dup_subtree(astp, (*astp)->nodes[n].base.right);
+
+    dup = ast_dup_node(astp, n);
+    if (dup < 0)
+        return -1;
+
+    (*astp)->nodes[dup].base.left = lhs;
+    (*astp)->nodes[dup].base.right = rhs;
+
+    if ((*astp)->nodes[n].info.node_type == AST_LOOP)
+    {
+        ast_id loop_for
+            = ast_dup_subtree(astp, (*astp)->nodes[n].loop.loop_for);
+        if (loop_for < 0)
+            return -1;
+        (*astp)->nodes[dup].loop.loop_for = loop_for;
+    }
+    if ((*astp)->nodes[n].info.node_type == AST_LOOP_FOR)
+    {
+        ast_id step = ast_dup_subtree(astp, (*astp)->nodes[n].loop_for.step);
+        ast_id next = ast_dup_subtree(astp, (*astp)->nodes[n].loop_for.next);
+        if (step < 0 || next < 0)
+            return -1;
+        (*astp)->nodes[dup].loop_for.step = step;
+        (*astp)->nodes[dup].loop_for.next = next;
+    }
+
+    return dup;
+}
+
 void
 ast_delete_node(struct ast* ast, ast_id n)
 {
@@ -355,4 +392,3 @@ ast_trees_equal(
 
     return 1;
 }
-

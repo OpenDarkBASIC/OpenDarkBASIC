@@ -535,7 +535,7 @@ ast_export_dot(
 {
     FILE* fp = fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
-        return -1;
+       return -1;
     ast_export_dot_fp(ast, fp, source, commands);
     fclose(fp);
 

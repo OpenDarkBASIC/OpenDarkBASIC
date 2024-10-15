@@ -6,7 +6,7 @@
 #include <assert.h>
 
 enum type
-type_check_casts(
+type_check_cast(
     struct ast* ast, ast_id cast, const char* filename, const char* source)
 {
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
