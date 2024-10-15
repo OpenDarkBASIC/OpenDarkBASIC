@@ -241,7 +241,7 @@ write_node(
                 style->keyword.color,
                 style->keyword.fontcolor);
             break;
-        case AST_COND_BRANCH:
+        case AST_COND_BRANCHES:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
@@ -580,8 +580,8 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")
         case AST_UNOP: NAMES("expr", "")
-        case AST_COND: NAMES("expr", "cond_branch")
-        case AST_COND_BRANCH: NAMES("yes", "no")
+        case AST_COND: NAMES("expr", "cond_branches")
+        case AST_COND_BRANCHES: NAMES("yes", "no")
         case AST_LOOP: NAMES("loop_body", "loop_for1")
         case AST_LOOP_BODY: NAMES("body", "post_body")
         case AST_LOOP_FOR1: NAMES("loop_for2", "init")

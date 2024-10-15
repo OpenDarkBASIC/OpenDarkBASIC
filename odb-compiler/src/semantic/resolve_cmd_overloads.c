@@ -485,4 +485,4 @@ fail:
 static const struct semantic_check* depends[] = {&semantic_type_check, NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads
-    = {resolve_cmd_overloads, depends};
+    = {resolve_cmd_overloads, depends, "resolve_cmd_overloads"};

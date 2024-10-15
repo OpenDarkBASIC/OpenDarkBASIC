@@ -48,7 +48,7 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_BINOP: print_node("BINOP", depth); break;
         case AST_UNOP: print_node("UNOP", depth); break;
         case AST_COND: print_node("COND", depth); break;
-        case AST_COND_BRANCH: print_node("COND_BRANCH", depth); break;
+        case AST_COND_BRANCHES: print_node("COND_BRANCHES", depth); break;
         case AST_LOOP: print_node("LOOP", depth); break;
         case AST_LOOP_BODY: print_node("LOOP_BODY", depth); break;
         case AST_LOOP_FOR1: print_node("LOOP_FOR1", depth); break;

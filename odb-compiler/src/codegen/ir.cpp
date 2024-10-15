@@ -770,7 +770,7 @@ gen_expr(
         case AST_UNOP: break;
 
         case AST_COND: break;
-        case AST_COND_BRANCH: break;
+        case AST_COND_BRANCHES: break;
 
         case AST_LOOP: break;
         case AST_LOOP_BODY: break;
@@ -1118,9 +1118,9 @@ gen_block(
 
             case AST_COND: {
                 ast_id expr_node = ast->nodes[stmt].cond.expr;
-                ast_id branch_node = ast->nodes[stmt].cond.cond_branch;
-                ast_id yes_node = ast->nodes[branch_node].cond_branch.yes;
-                ast_id no_node = ast->nodes[branch_node].cond_branch.no;
+                ast_id branch_node = ast->nodes[stmt].cond.cond_branches;
+                ast_id yes_node = ast->nodes[branch_node].cond_branches.yes;
+                ast_id no_node = ast->nodes[branch_node].cond_branches.no;
 
                 llvm::Value* expr = gen_expr(
                     ir,
@@ -1199,7 +1199,7 @@ gen_block(
                 builder.SetInsertPoint(BBMerge);
                 break;
             }
-            case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_LOOP: {
                 ast_id ast_loop_body = ast->nodes[stmt].loop.loop_body;

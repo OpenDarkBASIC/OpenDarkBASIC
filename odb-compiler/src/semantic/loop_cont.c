@@ -170,4 +170,4 @@ static const struct semantic_check* depends[]
     = {&semantic_loop_for, /* Need loop.post_body to resolve cont.step */
        NULL};
 
-const struct semantic_check semantic_loop_cont = {check_loop_cont, depends};
+const struct semantic_check semantic_loop_cont = {check_loop_cont, depends, "loop_cont"};

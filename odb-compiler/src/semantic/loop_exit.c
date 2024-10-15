@@ -123,4 +123,4 @@ check_loop_exit(
 
 static const struct semantic_check* depends[] = {NULL};
 
-const struct semantic_check semantic_loop_exit = {check_loop_exit, depends};
+const struct semantic_check semantic_loop_exit = {check_loop_exit, depends, "loop_exit"};

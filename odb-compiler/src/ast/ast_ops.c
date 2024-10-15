@@ -207,7 +207,7 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_COND: break;
-        case AST_COND_BRANCH: break;
+        case AST_COND_BRANCHES: break;
         case AST_LOOP:
             if (!utf8_equal(
                     utf8_span_view(source_text, ast->nodes[n1].loop.name),

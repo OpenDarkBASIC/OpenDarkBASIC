@@ -85,7 +85,7 @@ enum ast_type
     /*! Unary operator such as -a, !a, etc. */
     AST_UNOP,
     AST_COND,
-    AST_COND_BRANCH,
+    AST_COND_BRANCHES,
     AST_LOOP,
     AST_LOOP_BODY,
     AST_LOOP_FOR1,
@@ -127,8 +127,9 @@ union ast_node
     struct info
     {
         struct utf8_span location;
-        enum ast_type node_type;
-        enum type type_info;
+        int32_t scope_id;
+        enum ast_type node_type : 5;
+        enum type type_info : 4;
     } info;
 
     struct base
@@ -211,13 +212,13 @@ union ast_node
     struct {
         struct info info;
         ast_id expr;
-        ast_id cond_branch;
+        ast_id cond_branches;
     } cond;
     struct {
         struct info info;
         ast_id yes;
         ast_id no;
-    } cond_branch;
+    } cond_branches;
 
     struct {
         struct info info;
@@ -440,8 +441,8 @@ ast_id ast_dec(struct ast** astp, ast_id var, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_binop(struct ast** astp, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
-ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branch, struct utf8_span location);
-ast_id ast_cond_branch(struct ast** astp, ast_id yes, ast_id no, struct utf8_span location);
+ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branches, struct utf8_span location);
+ast_id ast_cond_branches(struct ast** astp, ast_id yes, ast_id no, struct utf8_span location);
 ast_id ast_loop(struct ast** astp, ast_id body, struct utf8_span name, struct utf8_span implicit_name, struct utf8_span location);
 ast_id ast_loop_while(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_until(struct ast** astp, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);

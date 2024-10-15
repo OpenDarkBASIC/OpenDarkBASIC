@@ -19,10 +19,34 @@ def find_test_name(current_line):
             return lines[current_line - 1].split(",")[1].strip(") ")
         current_line -= 1
 
-suite = find_suite_name()
-test = find_test_name(line_num)
-ast_path = "./build-debug/bin/x86_64/linux/bin/ast"
-dotfile = f"{os.path.join(ast_path, f'{suite}__{test}')}{ast_type}.dot"
+def find_parser_source(current_line):
+    while current_line > 1:
+        if "TEST(" in lines[current_line - 1] or "TEST_F(" in lines[current_line -1]:
+            break
+        current_line -= 1
+    while current_line < len(lines):
+        if "parse(" in lines[current_line] or "const char*" in lines[current_line]:
+            break
+        current_line += 1
+    while current_line < len(lines):
+        if '"' in lines[current_line]:
+            break;
+        current_line += 1
+    source = str()
+    while '"' in lines[current_line]:
+        source += lines[current_line].split('"')[1]
+        current_line += 1
+    return "\n".join(source.split("\\n"))
 
-subprocess.run(["dot", "-Tx11", dotfile])
+
+source = find_parser_source(line_num)
+odb_path = "./build-debug/bin/x86_64/linux/bin"
+subprocess.run([f"./odb-cli -b --dba --ast{ast_type} | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
+
+#suite = find_suite_name()
+#test = find_test_name(line_num)
+#ast_path = "./build-debug/bin/x86_64/linux/bin/ast"
+#dotfile = f"{os.path.join(ast_path, f'{suite}__{test}')}{ast_type}.dot"
+#
+#subprocess.run(["dot", "-Tx11", dotfile])
 

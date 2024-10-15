@@ -8,7 +8,10 @@ struct symbol_table_entry
     /* Index into the list of TUs (translation units) of the AST in which this
      * symbol is defined */
     int tu_id;
-    /* Index of the AST node that defines this symbol */
+    /* Index of the AST node that defines this symbol.
+     *   - In the case of functions, this will point either to the function
+     *     template, or if the function is not a template, point to a AST_FUNC
+     */
     ast_id ast_node;
 };
 

@@ -112,7 +112,9 @@ run_check(
     if (run_dependencies(ctx, check->depends_on, visited) < 0)
         return -1;
 
-    if (ptr_set_emplace_new(visited, check))
+    if (ptr_set_emplace_new(visited, check) != NULL)
+    {
+        log_dbg("[semantic] ", "Running check %s\n", check->name);
         if (check->execute(
                 ctx->tus,
                 ctx->tu_count,
@@ -127,6 +129,7 @@ run_check(
         {
             return -1;
         }
+    }
 
     return 0;
 }
@@ -170,7 +173,7 @@ semantic_check_run(
            cmds,
            symbols};
 
-    if (ast_count(*astp))
+    if (ast_count(*astp) == 0)
     {
         log_semantic_warn(
             "AST is empty for source file {quote:%s}\n", utf8_cstr(filename));
@@ -224,7 +227,7 @@ semantic_run_essential_checks(
            &semantic_loop_for,
            NULL};
     static const struct semantic_check essential_check
-        = {dummy_check, essential_checks};
+        = {dummy_check, essential_checks, "essential_checks"};
 
     return semantic_check_run(
         &essential_check,

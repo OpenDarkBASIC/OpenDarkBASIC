@@ -206,6 +206,14 @@
      */                                                                        \
     API void prefix##_erase(struct prefix* v, int##bits##_t i);                \
                                                                                \
+    static inline void prefix##_swap_values(                                   \
+        struct prefix* v, int##bits##_t a, int##bits##_t b)                    \
+    {                                                                          \
+        T tmp = v->data[a];                                                    \
+        v->data[a] = v->data[b];                                               \
+        v->data[b] = tmp;                                                      \
+    }                                                                          \
+                                                                               \
     /*!                                                                        \
      * @brief Removes all elements for which the callback function returns     \
      * false (0).                                                              \

@@ -328,7 +328,7 @@ TEST_F(NAME, recursion_1)
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
     ASSERT_THAT(
         parse("PRINT fib(5)\n"
-              "FUNCTION fib(n)\n"
+             "FUNCTION fib(n)\n"
               "  IF n < 2 THEN EXITFUNCTION n\n"
               "ENDFUNCTION fib(n-1) + fib(n-2)\n"),
         Eq(0))

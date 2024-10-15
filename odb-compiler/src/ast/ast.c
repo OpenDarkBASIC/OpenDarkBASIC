@@ -41,6 +41,7 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
     ast = *astp;
 
     ast->nodes[n].info.location = location;
+    ast->nodes[n].info.scope_id = 0;
     ast->nodes[n].info.node_type = type;
     ast->nodes[n].info.type_info = TYPE_INVALID;
     ast->nodes[n].base.left = -1;
@@ -395,7 +396,7 @@ ast_id
 ast_cond(
     struct ast**     astp,
     ast_id           expr,
-    ast_id           cond_branch,
+    ast_id           cond_branches,
     struct utf8_span location)
 {
     ast_id      n = new_node(astp, AST_COND, location);
@@ -405,21 +406,21 @@ ast_cond(
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ODBUTIL_DEBUG_ASSERT(
-        cond_branch > -1, log_parser_err("cond_branch: %d\n", cond_branch));
+        cond_branches > -1, log_parser_err("cond_branches: %d\n", cond_branches));
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
-        log_parser_err("type: %d\n", ast->nodes[cond_branch].info.node_type));
+        ast->nodes[cond_branches].info.node_type == AST_COND_BRANCHES,
+        log_parser_err("type: %d\n", ast->nodes[cond_branches].info.node_type));
 
     ast->nodes[n].cond.expr = expr;
-    ast->nodes[n].cond.cond_branch = cond_branch;
+    ast->nodes[n].cond.cond_branches = cond_branches;
     return n;
 }
 
 ast_id
-ast_cond_branch(
+ast_cond_branches(
     struct ast** astp, ast_id yes, ast_id no, struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_COND_BRANCH, location);
+    ast_id      n = new_node(astp, AST_COND_BRANCHES, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
@@ -431,8 +432,8 @@ ast_cond_branch(
         no == -1 || ast->nodes[no].info.node_type == AST_BLOCK,
         log_parser_err("type: %d\n", ast->nodes[no].info.node_type));
 
-    ast->nodes[n].cond_branch.yes = yes;
-    ast->nodes[n].cond_branch.no = no;
+    ast->nodes[n].cond_branches.yes = yes;
+    ast->nodes[n].cond_branches.no = no;
 
     return n;
 }
@@ -470,8 +471,8 @@ ast_loop_while(
 {
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), location);
     ast_id exit_block = ast_block(astp, exit, location);
-    ast_id cond_branch = ast_cond_branch(astp, -1, exit_block, location);
-    ast_id cond = ast_cond(astp, expr, cond_branch, location);
+    ast_id cond_branches = ast_cond_branches(astp, -1, exit_block, location);
+    ast_id cond = ast_cond(astp, expr, cond_branches, location);
     ast_id block = ast_block(astp, cond, location);
 
     if (body > -1)
@@ -490,8 +491,8 @@ ast_loop_until(
 {
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), location);
     ast_id exit_block = ast_block(astp, exit, location);
-    ast_id cond_branch = ast_cond_branch(astp, exit_block, -1, location);
-    ast_id cond = ast_cond(astp, expr, cond_branch, location);
+    ast_id cond_branches = ast_cond_branches(astp, exit_block, -1, location);
+    ast_id cond = ast_cond(astp, expr, cond_branches, location);
 
     if (body > -1)
         ast_block_append_stmt(astp, body, cond, location);

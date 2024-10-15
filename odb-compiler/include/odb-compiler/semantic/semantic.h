@@ -26,6 +26,7 @@ struct semantic_check
 {
     semantic_check_func           execute;
     const struct semantic_check** depends_on;
+    const char*                   name;
 };
 
 ODBCOMPILER_PUBLIC_API int
@@ -92,4 +93,3 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_cont;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_name;
-

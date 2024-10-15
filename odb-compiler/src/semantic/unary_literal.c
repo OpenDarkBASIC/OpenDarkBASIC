@@ -25,7 +25,7 @@ child_changed:
             goto child_changed;
 
         case AST_COND: return -1;
-        case AST_COND_BRANCH: return -1;
+        case AST_COND_BRANCHES: return -1;
         case AST_LOOP: return -1;
         case AST_LOOP_BODY: return -1;
         case AST_LOOP_FOR1: return -1;
@@ -228,4 +228,5 @@ unary_literal(
 
 static const struct semantic_check* depends[] = {NULL};
 
-const struct semantic_check semantic_unary_literal = {unary_literal, depends};
+const struct semantic_check semantic_unary_literal
+    = {unary_literal, depends, "unary_literal"};

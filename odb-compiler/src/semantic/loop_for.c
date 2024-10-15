@@ -34,7 +34,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_BINOP: break;
         case AST_UNOP: break;
         case AST_COND: break;
-        case AST_COND_BRANCH: break;
+        case AST_COND_BRANCHES: break;
         case AST_LOOP: break;
         case AST_LOOP_BODY: break;
         case AST_LOOP_FOR1: break;
@@ -240,7 +240,7 @@ create_exit_stmt(
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), begin_loc);
     ast_id exit_cond_block = ast_block(astp, exit, begin_loc);
     ast_id exit_cond_branch
-        = ast_cond_branch(astp, exit_cond_block, -1, begin_loc);
+        = ast_cond_branches(astp, exit_cond_block, -1, begin_loc);
     ast_id exit_var = ast_dup_lvalue(astp, loop_var);
     ast_id exit_expr
         = ast_binop(astp, cmp_op, exit_var, end, begin_loc, end_loc);
@@ -429,4 +429,4 @@ static const struct semantic_check* depends[]
     = {&semantic_unary_literal, /* Required for deducing the step direction */
        NULL};
 
-const struct semantic_check semantic_loop_for = {loop_for, depends};
+const struct semantic_check semantic_loop_for = {loop_for, depends, "loop_for"};

@@ -24,4 +24,5 @@ check_loop_names(
 
 static const struct semantic_check* depends[] = {NULL};
 
-const struct semantic_check semantic_loop_name = {check_loop_names, depends};
+const struct semantic_check semantic_loop_name
+    = {check_loop_names, depends, "loop_name"};
