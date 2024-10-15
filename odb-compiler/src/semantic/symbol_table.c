@@ -203,7 +203,7 @@ symbol_table_add_declarations_from_ast(
     return 0;
 }
 
-struct symbol_table_entry*
+const struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key)
 {
     return hm_find(&table->hm, key);

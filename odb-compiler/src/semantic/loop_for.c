@@ -274,15 +274,17 @@ compare_next_stmt_with_loop_var(
 }
 
 static ast_id
-primitives_from_for_loop(
+convert_for_loop_to_primitives(
     struct ast** astp,
     ast_id       loop,
     const char*  source_filename,
     const char*  source_text)
 {
+    struct utf8_span loop_loc;
     ast_id           for1, for2, for3, loop_body, body, post_body;
     ast_id           init, loop_var, begin, end, step, next;
-    struct utf8_span loop_loc;
+
+    loop_loc = (*astp)->nodes[loop].info.location;
 
     for1 = (*astp)->nodes[loop].loop.loop_for1;
     ODBUTIL_DEBUG_ASSERT(for1 > -1, log_semantic_err("loop_for1: %d\n", for1));
@@ -311,13 +313,19 @@ primitives_from_for_loop(
     ODBUTIL_DEBUG_ASSERT(
         post_body == -1, log_semantic_err("post_body: %d\n", post_body));
 
+    /* Check next expr if one exists, then delete it as it has no meaning.
+     * Historyically, this was used to be more explicit about which loop the
+     * "next" belongs to. */
     if (next > -1)
+    {
         compare_next_stmt_with_loop_var(
             (*astp), next, loop_var, source_filename, source_text);
-    (*astp)->nodes[for3].loop_for3.next = -1;
-    ast_delete_tree(*astp, next);
+        (*astp)->nodes[for3].loop_for3.next = -1;
+        ast_delete_tree(*astp, next);
+    }
 
-    loop_loc = (*astp)->nodes[loop].info.location;
+    /* Creates the exit condition as a statement. This gets inserted at the very
+     * beginning of the loop's body. */
     ast_id exit_stmt = create_exit_stmt(
         astp,
         begin,
@@ -329,7 +337,12 @@ primitives_from_for_loop(
         source_text);
     if (exit_stmt < 0)
         return -1;
+    /* The above function "steals" the end node */
+    (*astp)->nodes[for2].loop_for2.end = -1;
 
+    /* Create the post-increment statement. This gets inserted into the loop's
+     * "post_body" property, which will effectively insert it at the end of the
+     * body later on */
     ast_id inc_var = ast_dup_lvalue(astp, loop_var);
     ast_id inc_stmt
         = step > -1
@@ -337,42 +350,46 @@ primitives_from_for_loop(
                     astp, inc_var, step, (*astp)->nodes[step].info.location)
               : ast_inc(astp, inc_var, (*astp)->nodes[inc_var].info.location);
 
-    ast_id new_body = ast_block(astp, exit_stmt, loop_loc);
-    if (body > -1)
-        ast_block_append((*astp), new_body, body);
+    /* Insert the exit condition into the beginning of the loop body */
+    ast_id exit_block = ast_block(astp, exit_stmt, loop_loc);
+    (*astp)->nodes[exit_block].block.next = body;
+    (*astp)->nodes[loop_body].loop_body.body = exit_block;
 
-    (*astp)->nodes[loop_body].loop_body.body = new_body;
-    (*astp)->nodes[loop_body].loop_body.post_body
-        = ast_block(astp, inc_stmt, (*astp)->nodes[inc_stmt].info.location);
-
-    (*astp)->nodes[loop].loop.loop_for1 = -1;
-
-    ast_id init_block = ast_find_parent((*astp), loop);
+    /* Insert post-increment into the end, and make sure to remove it as a child
+     * from the loop_for nodes */
     ODBUTIL_DEBUG_ASSERT(
-        init_block > -1, log_semantic_err("init_block: %d\n", init_block));
+        post_body == -1, log_semantic_err("post_body: %d\n", post_body));
+    ast_id inc_block = ast_block(astp, inc_stmt, loop_loc);
+    (*astp)->nodes[loop_body].loop_body.post_body = inc_block;
+    (*astp)->nodes[for3].loop_for3.step = -1;
+
+    /* Loop variable initialization statement is inserted outside of the loop */
+    ast_id loop_block = ast_find_parent((*astp), loop);
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[init_block].info.node_type == AST_BLOCK,
+        loop_block > -1, log_semantic_err("loop_block: %d\n", loop_block));
+    ODBUTIL_DEBUG_ASSERT(
+        (*astp)->nodes[loop_block].info.node_type == AST_BLOCK,
         log_semantic_err(
-            "init_block: %d\n", (*astp)->nodes[init_block].info.node_type));
+            "loop_block: %d\n", (*astp)->nodes[loop_block].info.node_type));
+    ast_id init_block = ast_block_append_stmt(
+        astp, loop_block, init, (*astp)->nodes[init].info.location);
+    /* Block "steals" ownership of the init statement */
+    (*astp)->nodes[for1].loop_for1.init = -1;
 
-    ast_id loop_block = for1;
-    (*astp)->nodes[loop_block].info.node_type = AST_BLOCK;
-    (*astp)->nodes[loop_block].info.location = loop_loc;
-    (*astp)->nodes[loop_block].block.stmt = loop;
-    (*astp)->nodes[loop_block].block.next
-        = (*astp)->nodes[init_block].block.next;
+    ast_id tmp = (*astp)->nodes[init_block].block.stmt;
+    (*astp)->nodes[init_block].block.stmt
+        = (*astp)->nodes[loop_block].block.stmt;
+    (*astp)->nodes[loop_block].block.stmt = tmp;
 
-    (*astp)->nodes[init_block].info.location = loop_loc;
-    (*astp)->nodes[init_block].block.next = loop_block;
-    (*astp)->nodes[init_block].block.stmt = init;
-
-    ast_delete_tree((*astp), for2);
+    /* Clean up dangling nodes */
+    (*astp)->nodes[loop].loop.loop_for1 = -1;
+    ast_delete_tree((*astp), for1);
 
     return 0;
 }
 
 static int
-translate_loop_for(
+loop_for(
     struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
@@ -396,7 +413,7 @@ translate_loop_for(
         if (ast->nodes[n].loop.loop_for1 == -1)
             continue;
 
-        if (primitives_from_for_loop(astp, n, filename, source) != 0)
+        if (convert_for_loop_to_primitives(astp, n, filename, source) != 0)
             return -1;
         ast = *astp;
     }
@@ -412,4 +429,4 @@ static const struct semantic_check* depends[]
     = {&semantic_unary_literal, /* Required for deducing the step direction */
        NULL};
 
-const struct semantic_check semantic_loop_for = {translate_loop_for, depends};
+const struct semantic_check semantic_loop_for = {loop_for, depends};

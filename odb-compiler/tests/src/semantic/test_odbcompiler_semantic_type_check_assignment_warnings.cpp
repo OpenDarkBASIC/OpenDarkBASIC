@@ -35,14 +35,15 @@ TEST_F(NAME, truncated)
               "   | ^ INTEGER\n"));
     ast_id ass1 = ast->nodes[ast->root].block.stmt;
     ast_id ass2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id ass3 = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
-                      .block.stmt;
+    ast_id ass3
+        = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
+              .block.stmt;
     ast_id lhs1 = ast->nodes[ass1].assignment.lvalue;
     ast_id rhs1 = ast->nodes[ass1].assignment.expr;
     ASSERT_THAT(ast->nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs1].info.node_type, Eq(AST_DOUBLE_LITERAL));
-    ASSERT_THAT(ast->nodes[lhs1].info.type_info, Eq(TYPE_F64));
-    ASSERT_THAT(ast->nodes[rhs1].info.type_info, Eq(TYPE_F64));
+    ASSERT_THAT(ast->nodes[rhs1].info.node_type, Eq(AST_FLOAT_LITERAL));
+    ASSERT_THAT(ast->nodes[lhs1].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast->nodes[rhs1].info.type_info, Eq(TYPE_F32));
     ast_id lhs2 = ast->nodes[ass2].assignment.lvalue;
     ast_id rhs2 = ast->nodes[ass2].assignment.expr;
     ASSERT_THAT(ast->nodes[lhs2].info.node_type, Eq(AST_IDENTIFIER));
@@ -81,8 +82,9 @@ TEST_F(NAME, implicit_conversion)
               "   | ^ INTEGER\n"));
     ast_id ass1 = ast->nodes[ast->root].block.stmt;
     ast_id ass2 = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id ass3 = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
-                      .block.stmt;
+    ast_id ass3
+        = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
+              .block.stmt;
     ast_id lhs1 = ast->nodes[ass1].assignment.lvalue;
     ast_id rhs1 = ast->nodes[ass1].assignment.expr;
     ASSERT_THAT(ast->nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
@@ -92,9 +94,7 @@ TEST_F(NAME, implicit_conversion)
     ast_id lhs2 = ast->nodes[ass2].assignment.lvalue;
     ast_id rhs2 = ast->nodes[ass2].assignment.expr;
     ASSERT_THAT(ast->nodes[lhs2].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(
-        ast->nodes[rhs2].info.node_type,
-        Eq(AST_CAST)); // BYTE literal is cast to INTEGER
+    ASSERT_THAT(ast->nodes[rhs2].info.node_type, Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[lhs2].info.type_info, Eq(TYPE_I32));
     ASSERT_THAT(ast->nodes[rhs2].info.type_info, Eq(TYPE_I32));
     ast_id lhs3 = ast->nodes[ass3].assignment.lvalue;
@@ -124,7 +124,9 @@ TEST_F(NAME, integer_to_float_conversion)
               "   = note: a# was previously declared as FLOAT at test:1:1:\n"
               " 1 | a# AS FLOAT\n"
               "   | ^< FLOAT\n"));
-    ast_id ass = ast->nodes[ast->root].block.stmt;
+    ast_id block1 = ast->root; // Initializer
+    ast_id block2 = ast->nodes[block1].block.next;
+    ast_id ass = ast->nodes[block2].block.stmt;
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id rhs = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));

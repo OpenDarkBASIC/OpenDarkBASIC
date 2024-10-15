@@ -30,7 +30,7 @@ struct style
     struct node_style scope;
 };
 
-static const struct style dark_style = {
+static const struct style dark_nightfly = {
     "#011627",
     "#8792a7",
     {
@@ -557,26 +557,87 @@ write_nodes_nonrecursive(
         write_node(ast, n, fp, source, commands, style);
 }
 
+static const char*
+get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
+{
+    switch (ast->nodes[parent].info.node_type)
+    {
+#define NAMES(lname, rname)                                                    \
+    if (ast->nodes[parent].base.left == child)                                 \
+        return lname;                                                          \
+    if (ast->nodes[parent].base.right == child)                                \
+        return rname;                                                          \
+    break;
+
+        case AST_GC:
+        case AST_BLOCK: NAMES("stmt", "next")
+        case AST_END: break;
+        case AST_ARGLIST: NAMES("expr", "next")
+        case AST_PARAMLIST: NAMES("identifier", "next")
+        case AST_COMMAND: NAMES("arglist", "")
+        case AST_ASSIGNMENT: NAMES("lvalue", "expr")
+        case AST_IDENTIFIER: break;
+        case AST_BINOP: NAMES("left", "right")
+        case AST_UNOP: NAMES("expr", "")
+        case AST_COND: NAMES("expr", "cond_branch")
+        case AST_COND_BRANCH: NAMES("yes", "no")
+        case AST_LOOP: NAMES("loop_body", "loop_for1")
+        case AST_LOOP_BODY: NAMES("body", "post_body")
+        case AST_LOOP_FOR1: NAMES("loop_for2", "init")
+        case AST_LOOP_FOR2: NAMES("loop_for3", "end")
+        case AST_LOOP_FOR3: NAMES("step", "next")
+        case AST_LOOP_CONT: NAMES("step", "")
+        case AST_LOOP_EXIT: break;
+        case AST_FUNC_TEMPLATE: NAMES("decl", "def")
+        case AST_FUNC: NAMES("decl", "def")
+        case AST_FUNC_DECL: NAMES("identifier", "paramlist")
+        case AST_FUNC_DEF: NAMES("body", "retval")
+        case AST_FUNC_EXIT: NAMES("retval", "")
+        case AST_FUNC_OR_CONTAINER_REF: NAMES("identifier", "arglist")
+        case AST_FUNC_CALL: NAMES("identifier", "arglist")
+        case AST_BOOLEAN_LITERAL: break;
+        case AST_BYTE_LITERAL: break;
+        case AST_WORD_LITERAL: break;
+        case AST_DWORD_LITERAL: break;
+        case AST_INTEGER_LITERAL: break;
+        case AST_DOUBLE_INTEGER_LITERAL: break;
+        case AST_FLOAT_LITERAL: break;
+        case AST_DOUBLE_LITERAL: break;
+        case AST_STRING_LITERAL: break;
+        case AST_CAST: NAMES("expr", "")
+        case AST_SCOPE: NAMES("child", "")
+#undef NAMES
+    }
+
+    return "";
+}
+
 static void
 write_edges(const struct ast* ast, FILE* fp, const struct style* style)
 {
     ast_id n;
     for (n = 0; n != ast->count; ++n)
     {
-        if (ast->nodes[n].base.left >= 0)
+        ast_id left = ast->nodes[n].base.left;
+        ast_id right = ast->nodes[n].base.right;
+        if (left > -1)
             fprintf(
                 fp,
-                "  n%d -> n%d [color=\"%s\"];\n",
+                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", label=\"%s\"];\n",
                 n,
                 ast->nodes[n].base.left,
-                style->edgecolor);
-        if (ast->nodes[n].base.right >= 0)
+                style->edgecolor,
+                style->edgecolor,
+                get_edge_label(ast, n, left));
+        if (right > -1)
             fprintf(
                 fp,
-                "  n%d -> n%d [color=\"%s\"];\n",
+                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", label=\"%s\"];\n",
                 n,
                 ast->nodes[n].base.right,
-                style->edgecolor);
+                style->edgecolor,
+                style->edgecolor,
+                get_edge_label(ast, n, right));
     }
 }
 
@@ -622,7 +683,7 @@ ast_export_dot_fp(
     const char*            source,
     const struct cmd_list* commands)
 {
-    const struct style* style = &dark_style;
+    const struct style* style = &dark_nightfly;
     fprintf(fp, "digraph ast {\n");
     fprintf(fp, "  bgcolor=\"%s\";\n", style->bgcolor);
     if (ast)

@@ -31,7 +31,7 @@ symbol_table_add_declarations_from_ast(
     int                     tu_id,
     const struct db_source* sources);
 
-ODBCOMPILER_PUBLIC_API struct symbol_table_entry*
+ODBCOMPILER_PUBLIC_API const struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key);
 
 ODBCOMPILER_PUBLIC_API void

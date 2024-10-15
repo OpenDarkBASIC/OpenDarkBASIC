@@ -31,7 +31,7 @@ TEST_F(NAME, transform_implicit_step_1)
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
-    ast_id init_block = 0;
+    ast_id init_block = ast->root;
     ast_id loop_block = ast->nodes[init_block].block.next;
     ASSERT_THAT(ast->nodes[init_block].info.node_type, Eq(AST_BLOCK));
     ASSERT_THAT(ast->nodes[loop_block].info.node_type, Eq(AST_BLOCK));

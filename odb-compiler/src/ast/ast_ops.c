@@ -40,69 +40,20 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
 void
 ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
-    ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type,
-        log_err(
-            "",
-            "n1: %d, n2: %d\n",
-            ast->nodes[n1].info.node_type,
-            ast->nodes[n2].info.node_type));
+    /* Swap "contents" of nodes, but preserve relationships */
+    ast_id n1_left = ast->nodes[n1].base.left;
+    ast_id n1_right = ast->nodes[n1].base.right;
+    ast_id n2_left = ast->nodes[n2].base.left;
+    ast_id n2_right = ast->nodes[n2].base.right;
 
-#define SWAP(T, node_name, field)                                              \
-    {                                                                          \
-        T tmp = ast->nodes[n1].node_name.field;                                \
-        ast->nodes[n1].node_name.field = ast->nodes[n2].node_name.field;       \
-        ast->nodes[n2].node_name.field = tmp;                                  \
-    }
+    union ast_node tmp = ast->nodes[n1];
+    ast->nodes[n1] = ast->nodes[n2];
+    ast->nodes[n2] = tmp;
 
-    switch (ast->nodes[n1].info.node_type)
-    {
-        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0);
-        case AST_BLOCK: break;
-        case AST_END: break;
-        case AST_ARGLIST: break;
-        case AST_PARAMLIST: break;
-        case AST_COMMAND: SWAP(cmd_id, cmd, id) break;
-        case AST_ASSIGNMENT: break;
-        case AST_IDENTIFIER:
-            SWAP(struct utf8_span, identifier, name)
-            SWAP(enum type_annotation, identifier, annotation)
-            break;
-        case AST_BINOP: SWAP(enum binop_type, binop, op) break;
-        case AST_UNOP: SWAP(enum unop_type, unop, op) break;
-        case AST_COND: break;
-        case AST_COND_BRANCH: break;
-        case AST_LOOP:
-            SWAP(struct utf8_span, loop, name)
-            SWAP(struct utf8_span, loop, implicit_name) break;
-        case AST_LOOP_BODY: break;
-        case AST_LOOP_FOR1: break;
-        case AST_LOOP_FOR2: break;
-        case AST_LOOP_FOR3: break;
-        case AST_LOOP_CONT: SWAP(struct utf8_span, cont, name) break;
-        case AST_LOOP_EXIT: SWAP(struct utf8_span, loop_exit, name) break;
-        case AST_FUNC_TEMPLATE: break;
-        case AST_FUNC: break;
-        case AST_FUNC_DECL: break;
-        case AST_FUNC_DEF: break;
-        case AST_FUNC_EXIT: break;
-        case AST_FUNC_OR_CONTAINER_REF: break;
-        case AST_FUNC_CALL: break;
-        case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
-        case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
-        case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
-        case AST_INTEGER_LITERAL: SWAP(int32_t, integer_literal, value) break;
-        case AST_DWORD_LITERAL: SWAP(uint32_t, dword_literal, value) break;
-        case AST_DOUBLE_INTEGER_LITERAL:
-            SWAP(int64_t, double_integer_literal, value) break;
-        case AST_FLOAT_LITERAL: SWAP(float, float_literal, value) break;
-        case AST_DOUBLE_LITERAL: SWAP(double, double_literal, value) break;
-        case AST_STRING_LITERAL:
-            SWAP(struct utf8_span, string_literal, str) break;
-        case AST_CAST: break;
-        case AST_SCOPE: break;
-    }
-#undef SWAP
+    ast->nodes[n1].base.left = n1_left;
+    ast->nodes[n1].base.right = n1_right;
+    ast->nodes[n2].base.left = n2_left;
+    ast->nodes[n2].base.right = n2_right;
 }
 
 int

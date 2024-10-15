@@ -1113,7 +1113,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             identifier = (*astp)->nodes[n].func_or_container_ref.identifier;
             struct utf8_view key = utf8_span_view(
                 source, (*astp)->nodes[identifier].identifier.name);
-            struct symbol_table_entry* entry
+            const struct symbol_table_entry* entry
                 = symbol_table_find(ctx->symbols, key);
             if (entry == NULL)
             {
@@ -1149,7 +1149,6 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         = instantiate_func(ctx, entry->ast_node, ctx, n);
                     if (func < 0)
                         return TYPE_INVALID;
-                    entry->ast_node = func;
                 }
 
                 /* Can now get the return type by type checking the function
