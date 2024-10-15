@@ -53,6 +53,18 @@ stack_push_entry(struct stack** stack, ast_id node)
     return 0;
 }
 
+static void
+stack_erase_node(struct stack* stack, ast_id node)
+{
+    int32_t i = stack ? stack->count : 0;
+    while (i--)
+        if (vec_get(stack, i)->node == node)
+        {
+            stack_erase(stack, i);
+            break;
+        }
+}
+
 /* The "typemap" is used to track the types of variables. When a variable first
  * appears, it is inserted into the typemap and its type is determined based on
  * the context surrounding it. If the variable is later referenced, then the
@@ -1877,21 +1889,26 @@ process_func_or_container_ref(
             return DEP_OK;
         }
 
-        /* If the function is recursive, it will already be on the stack. The
-         * important thing is that all calls to the function are resolved after
-         * the function's return type has been determined. */
+        /* If the function is recursive, it will already be on the stack. We
+         * want to pop all direct nodes from the stack up until this function.
+         * Sibling nodes are preserved, because we want to explore the breadth
+         * of the tree more in this situation to see if there are any other
+         * exitfunction/return statements that might help define the return type
+         * of the function. */
         struct stack_entry* entry;
         int32_t             i;
         vec_enumerate(*stack, i, entry)
         {
             if (entry->node == func)
             {
-                /* Move ourselves to get processed after the function def */
-                stack_insert(stack, i, *stack_pop(*stack));
+                for (; n > -1; n = ast_find_parent(*astp, n))
+                    if (ast_is_in_subtree_of(*astp, n, func))
+                        stack_erase_node(*stack, n);
                 return DEP_ADDED;
             }
         }
 
+        /* Otherwise add it to be processed now */
         stack_push_entry(stack, func);
         return DEP_ADDED;
     }

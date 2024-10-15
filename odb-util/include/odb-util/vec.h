@@ -281,6 +281,11 @@
             *v = NULL;                                                         \
             return 0;                                                          \
         }                                                                      \
+        else if (count <= prefix##_count(*v))                                  \
+        {                                                                      \
+            (*v)->count = count;                                               \
+            return 0;                                                          \
+        }                                                                      \
         else if (prefix##_reserve((v), count) == 0)                            \
         {                                                                      \
             (*v)->count = count;                                               \

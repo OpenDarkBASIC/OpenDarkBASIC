@@ -403,19 +403,19 @@ conditional
   | cond_begin                              { $$ = $1; }
   ;
 cond_oneline
-  : IF expr THEN iblock ELSE iblock         { ast_id branch = ast_cond_branch(ctx->astp, $4, $6, @$);
+  : IF expr THEN iblock ELSE iblock         { ast_id branch = ast_cond_branches(ctx->astp, $4, $6, @$);
                                               $$ = ast_cond(ctx->astp, $2, branch, @$); }
-  | IF expr THEN iblock %prec NO_ELSE       { ast_id branch = ast_cond_branch(ctx->astp, $4, -1, @$);
+  | IF expr THEN iblock %prec NO_ELSE       { ast_id branch = ast_cond_branches(ctx->astp, $4, -1, @$);
                                               $$ = ast_cond(ctx->astp, $2, branch, @$); }
-  | IF expr THEN ELSE iblock                { ast_id branch = ast_cond_branch(ctx->astp, -1, $5, @$);
+  | IF expr THEN ELSE iblock                { ast_id branch = ast_cond_branches(ctx->astp, -1, $5, @$);
                                               $$ = ast_cond(ctx->astp, $2, branch, @$); }
   ;
 cond_begin
-  : IF expr maybe_block cond_next           { ast_id branch = ast_cond_branch(ctx->astp, $3, $4, @$);
+  : IF expr maybe_block cond_next           { ast_id branch = ast_cond_branches(ctx->astp, $3, $4, @$);
                                               $$ = ast_cond(ctx->astp, $2, branch, @$); }
   ;
 cond_next
-  : ELSEIF expr maybe_block cond_next       { ast_id branch = ast_cond_branch(ctx->astp, $3, $4, @$);
+  : ELSEIF expr maybe_block cond_next       { ast_id branch = ast_cond_branches(ctx->astp, $3, $4, @$);
                                               ast_id cond = ast_cond(ctx->astp, $2, branch, @$);
                                               $$ = ast_block(ctx->astp, cond, @$); }
   | ELSE maybe_block ENDIF                  { $$ = $2; }

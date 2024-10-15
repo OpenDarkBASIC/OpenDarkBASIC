@@ -155,14 +155,8 @@ ast_gc(struct ast* ast)
 ast_id
 ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root)
 {
-    if (node == root)
-        return 1;
-
-    if (ast->nodes[root].base.left >= 0)
-        if (ast_is_in_subtree_of(ast, node, ast->nodes[root].base.left))
-            return 1;
-    if (ast->nodes[root].base.right >= 0)
-        if (ast_is_in_subtree_of(ast, node, ast->nodes[root].base.right))
+    for (; node > -1; node = ast_find_parent(ast, node))
+        if (node == root)
             return 1;
 
     return 0;
