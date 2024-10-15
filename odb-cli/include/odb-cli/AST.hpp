@@ -17,7 +17,7 @@ bool dumpASTJSON(const std::vector<std::string>& args);
 
 struct ast* getAST();
 const char* getSourceFilepath();
-struct db_source getSource();
+const char* getSource();
 
 ActionHandler parseDBPro(const std::vector<std::string>& args);
 ActionHandler autoDetectInput(const std::vector<std::string>& args);

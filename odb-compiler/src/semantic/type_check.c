@@ -1,8 +1,9 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/config.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
@@ -938,6 +939,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             ast_id identifier = ctx->ast->nodes[n].func_call.identifier;
             struct utf8_view key = utf8_span_view(
                 ctx->source_text, ctx->ast->nodes[identifier].identifier.name);
+            // func_inst_request(kkk)
             const struct symbol_table_entry* entry
                 = symbol_table_find(ctx->symbols, key);
             ODBUTIL_DEBUG_ASSERT(
@@ -1032,16 +1034,22 @@ sanity_check(
 
 static int
 type_check(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
-    int        return_code;
-    struct ctx ctx
-        = {ast, 0, cmds, symbols, source_filename, source_text, NULL};
+    int         return_code;
+    struct ast* ast = &asts[asts_id];
+    const char* filename = filenames[asts_id];
+    const char* source = sources[asts_id].text.data;
+    struct ctx  ctx = {ast, 0, cmds, symbols, filename, source, NULL};
+
     typemap_init(&ctx.typemap);
 
     /*
@@ -1065,50 +1073,7 @@ type_check(
     typemap_deinit(ctx.typemap);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    if (sanity_check(ast, source_filename, source_text) != 0)
-        return -1;
-#endif
-
-    return return_code;
-}
-
-enum type
-semantic_resolve_function_return_type(
-    struct ast*                ast,
-    ast_id                     node_id,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
-{
-    int        return_code;
-    struct ctx ctx
-        = {ast, 0, cmds, symbols, source_filename, source_text, NULL};
-    typemap_init(&ctx.typemap);
-
-    /*
-     * It's necessary to traverse the AST in a way where statements are
-     * evaluated in the order they appear in the source code, and in a way
-     * where the scope of each block is visited depth-first.
-     *
-     * This will make it a lot easier to propagate the type information of
-     * variables, because they will be processed in the same order the data
-     * flows.
-     */
-    ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[0].info.node_type == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast->nodes[0].info.node_type));
-    return_code = resolve_node_type(&ctx, node_id, 0) == TYPE_INVALID ? -1 : 0;
-
-    if (ctx.root != 0)
-        ast_set_root(ast, ctx.root);
-
-    ast_gc(ast);
-    typemap_deinit(ctx.typemap);
-
-#if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    if (sanity_check(ast, source_filename, source_text) != 0)
+    if (sanity_check(ast, filename, source) != 0)
         return -1;
 #endif
 
@@ -1116,8 +1081,7 @@ semantic_resolve_function_return_type(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations,
-       &semantic_resolve_func_or_container_refs,
+    = {&semantic_resolve_func_or_container_refs,
        &semantic_loop_for,
        &semantic_loop_cont,
        NULL};

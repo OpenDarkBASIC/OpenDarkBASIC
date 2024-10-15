@@ -1,21 +1,25 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-compiler/sdk/type.h"
 #include <stdint.h>
 
 struct ast;
 struct cmd_list;
+struct db_source;
+struct mutex;
 struct plugin_list;
 struct symbol_table;
 
 typedef int (*semantic_check_func)(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text);
+    const struct symbol_table* symbols);
 
 struct semantic_check
 {
@@ -26,43 +30,27 @@ struct semantic_check
 ODBCOMPILER_PUBLIC_API int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                  ast,
+    struct ast*                  asts,
+    int                          asts_count,
+    int                          asts_id,
+    struct mutex**               asts_mutex,
+    const char**                 filenames,
+    const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
-    const struct symbol_table*   symbols,
-    const char*                  source_filename,
-    const char*                  source_text);
+    const struct symbol_table*   symbols);
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text);
-
-typedef int32_t ast_id;
-ODBCOMPILER_PUBLIC_API enum type
-semantic_resolve_function_return_type(
-    struct ast*                ast,
-    ast_id                     node_id,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text);
-
-/*!
- * The DBPro #constant declaration functions essentially exactly like a C
- * #define macro. The expression within is copied verbatim into every location
- * where the constant is used.
- *
- * This pass expands all references to #constant declarations, and eliminates
- * all AST_CONST_DECL nodes from the AST.
- */
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_expand_constant_declarations;
+    const struct symbol_table* symbols);
 
 /*!
  * Analyzes all expression trees and ensures that the types of the operands are

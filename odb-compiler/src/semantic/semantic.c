@@ -77,43 +77,45 @@ HM_DEFINE_API_FULL(
     32,
     70)
 
+struct ctx
+{
+    struct ast*                asts;
+    int                        asts_count;
+    int                        asts_id;
+    struct mutex**             asts_mutex;
+    const char**               filenames;
+    const struct db_source*    sources;
+    const struct plugin_list*  plugins;
+    const struct cmd_list*     cmds;
+    const struct symbol_table* symbols;
+};
+
 static int
 run_dependencies(
+    struct ctx*                   ctx,
     const struct semantic_check** dependencies,
-    struct ptr_set**              visited,
-    struct ast*                   ast,
-    const struct plugin_list*     plugins,
-    const struct cmd_list*        cmds,
-    const struct symbol_table*    symbols,
-    const char*                   source_filename,
-    const char*                   source_text);
+    struct ptr_set**              visited);
 
 static int
 run_check(
+    struct ctx*                  ctx,
     const struct semantic_check* check,
-    struct ptr_set**             visited,
-    struct ast*                  ast,
-    const struct plugin_list*    plugins,
-    const struct cmd_list*       cmds,
-    const struct symbol_table*   symbols,
-    const char*                  source_filename,
-    const char*                  source_text)
+    struct ptr_set**             visited)
 {
-    if (run_dependencies(
-            check->depends_on,
-            visited,
-            ast,
-            plugins,
-            cmds,
-            symbols,
-            source_filename,
-            source_text)
-        < 0)
+    if (run_dependencies(ctx, check->depends_on, visited) < 0)
         return -1;
 
     if (ptr_set_emplace_new(visited, check))
         if (check->execute(
-                ast, plugins, cmds, symbols, source_filename, source_text)
+                ctx->asts,
+                ctx->asts_count,
+                ctx->asts_id,
+                ctx->asts_mutex,
+                ctx->filenames,
+                ctx->sources,
+                ctx->plugins,
+                ctx->cmds,
+                ctx->symbols)
             < 0)
         {
             return -1;
@@ -123,27 +125,13 @@ run_check(
 }
 static int
 run_dependencies(
+    struct ctx*                   ctx,
     const struct semantic_check** dependencies,
-    struct ptr_set**              visited,
-    struct ast*                   ast,
-    const struct plugin_list*     plugins,
-    const struct cmd_list*        cmds,
-    const struct symbol_table*    symbols,
-    const char*                   source_filename,
-    const char*                   source_text)
+    struct ptr_set**              visited)
 {
     const struct semantic_check** check;
     for (check = dependencies; *check != NULL; ++check)
-        if (run_check(
-                *check,
-                visited,
-                ast,
-                plugins,
-                cmds,
-                symbols,
-                source_filename,
-                source_text)
-            != 0)
+        if (run_check(ctx, *check, visited) != 0)
             return -1;
     return 0;
 }
@@ -151,33 +139,40 @@ run_dependencies(
 int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                  ast,
+    struct ast*                  asts,
+    int                          asts_count,
+    int                          asts_id,
+    struct mutex**               asts_mutex,
+    const char**                 filenames,
+    const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
-    const struct symbol_table*   symbols,
-    const char*                  source_filename,
-    const char*                  source_text)
+    const struct symbol_table*   symbols)
 {
     struct ptr_set* check_visited;
+    struct ast*     ast = &asts[asts_id];
+    const char*     filename = filenames[asts_id];
+    struct ctx      ctx
+        = {asts,
+           asts_count,
+           asts_id,
+           asts_mutex,
+           filenames,
+           sources,
+           plugins,
+           cmds,
+           symbols};
+
     if (ast->node_count == 0)
     {
         log_semantic_warn(
-            "AST is empty for source file {quote:%s}\n", source_filename);
+            "AST is empty for source file {quote:%s}\n", filename);
         return 0;
     }
 
     ptr_set_init(&check_visited);
 
-    if (run_check(
-            check,
-            &check_visited,
-            ast,
-            plugins,
-            cmds,
-            symbols,
-            source_filename,
-            source_text)
-        < 0)
+    if (run_check(&ctx, check, &check_visited) < 0)
     {
         ptr_set_deinit(check_visited);
         return -1;
@@ -189,28 +184,33 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
     return 0;
 }
 
 int
 semantic_run_essential_checks(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
     static const struct semantic_check* essential_checks[]
-        = {&semantic_expand_constant_declarations,
-           &semantic_type_check,
+        = {&semantic_type_check,
            &semantic_resolve_cmd_overloads,
            &semantic_loop_exit,
            &semantic_loop_cont,
@@ -221,10 +221,13 @@ semantic_run_essential_checks(
 
     return semantic_check_run(
         &essential_check,
-        ast,
+        asts,
+        asts_count,
+        asts_id,
+        asts_mutex,
+        filenames,
+        sources,
         plugins,
         cmds,
-        symbols,
-        source_filename,
-        source_text);
+        symbols);
 }

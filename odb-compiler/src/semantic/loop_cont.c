@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
 static int
@@ -119,20 +120,27 @@ check_cont(
 
 static int
 check_loop_cont(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
-    ast_id n, loop;
+    ast_id      n, loop;
+    struct ast* ast = &asts[asts_id];
+    const char* filename = filenames[asts_id];
+    const char* source = sources[asts_id].text.data;
+
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP_CONT)
             continue;
 
-        loop = check_cont(ast, n, source_filename, source_text);
+        loop = check_cont(ast, n, filename, source);
         if (loop == -1)
             return -1;
 
@@ -143,8 +151,7 @@ check_loop_cont(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations,
-       &semantic_loop_for, /* Need loop.post_body to resolve cont.step */
+    = {&semantic_loop_for, /* Need loop.post_body to resolve cont.step */
        NULL};
 
 const struct semantic_check semantic_loop_cont = {check_loop_cont, depends};

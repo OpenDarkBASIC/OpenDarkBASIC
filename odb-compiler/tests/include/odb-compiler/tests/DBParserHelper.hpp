@@ -5,9 +5,10 @@
 extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/parser/db_parser.h"
-#include "odb-compiler/parser/db_source.h"
-#include "odb-compiler/sdk/plugin_list.h"
-#include "odb-compiler/sdk/cmd_list.h"
+
+struct mutex;
+struct symbol_table;
+struct plugin_list;
 }
 
 struct DBParserHelper
@@ -27,4 +28,5 @@ struct DBParserHelper
     struct db_parser     p;
     struct db_source     src;
     struct ast           ast;
+    struct mutex*        ast_mutex;
 };

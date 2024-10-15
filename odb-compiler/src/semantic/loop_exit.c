@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
 #include "odb-util/utf8.h"
@@ -93,27 +94,33 @@ check_exit(
 
 static int
 check_loop_exit(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
-    ast_id n;
+    ast_id      n;
+    struct ast* ast = &asts[asts_id];
+    const char* filename = filenames[asts_id];
+    const char* source = sources[asts_id].text.data;
+
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP_EXIT)
             continue;
 
-        if (check_exit(ast, n, source_filename, source_text) != 0)
+        if (check_exit(ast, n, filename, source) != 0)
             return -1;
     }
 
     return 0;
 }
 
-static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, NULL};
+static const struct semantic_check* depends[] = {NULL};
 
 const struct semantic_check semantic_loop_exit = {check_loop_exit, depends};

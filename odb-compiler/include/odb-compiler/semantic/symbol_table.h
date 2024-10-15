@@ -1,8 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-compiler/parser/db_source.h"
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/vec.h"
 
 VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, func_param_types_list, enum type, 8)
@@ -27,9 +26,9 @@ symbol_table_deinit(struct symbol_table* table);
 
 ODBCOMPILER_PUBLIC_API int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table**  table,
-    const struct ast*      ast,
-    const struct db_source source);
+    struct symbol_table** table,
+    const struct ast*     ast,
+    const char*           source_text);
 
 ODBCOMPILER_PUBLIC_API const struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key);

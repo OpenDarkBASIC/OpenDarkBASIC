@@ -1,9 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/sdk/type.h"
 #include "odb-util/utf8.h"
 
 /*!
@@ -395,7 +393,7 @@ ast_id ast_cond_branch(struct ast* ast, ast_id yes, ast_id no, struct utf8_span 
 ast_id ast_loop(struct ast* ast, ast_id body, struct utf8_span name, struct utf8_span implicit_name, struct utf8_span location);
 ast_id ast_loop_while(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_until(struct ast* ast, ast_id body, ast_id expr, struct utf8_span name, struct utf8_span location);
-ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, struct db_source source);
+ast_id ast_loop_for(struct ast* ast, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location, const char* source_filename, const char* source);
 ast_id ast_loop_cont(struct ast* ast, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_func(struct ast* ast, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);

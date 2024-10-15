@@ -1,7 +1,8 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/log.h"
 #include "odb-util/vec.h"
 #include <assert.h>
@@ -359,12 +360,15 @@ typecheck_warnings(
 
 static int
 resolve_cmd_overloads(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
     ast_id             n;
     ast_id             arglist;
@@ -372,7 +376,11 @@ resolve_cmd_overloads(
     struct utf8_view   cmd_name;
     struct candidates* candidates;
     struct candidates* prev_candidates;
-    struct ctx         ctx = {ast, cmds, 0, -1};
+
+    struct ast* ast = &asts[asts_id];
+    const char* filename = filenames[asts_id];
+    const char* source = sources[asts_id].text.data;
+    struct ctx  ctx = {ast, cmds, 0, -1};
 
     candidates_init(&candidates);
     candidates_init(&prev_candidates);
@@ -430,8 +438,7 @@ resolve_cmd_overloads(
         if (candidates_count(candidates) == 1)
         {
             ast->nodes[n].cmd.id = *vec_first(candidates);
-            typecheck_warnings(
-                ast, n, plugins, cmds, source_filename, source_text);
+            typecheck_warnings(ast, n, plugins, cmds, filename, source);
             continue;
         }
 
@@ -442,8 +449,8 @@ resolve_cmd_overloads(
                 plugins,
                 cmds,
                 ast->nodes[n].cmd.id,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 candidates);
         else
             report_ambiguous_overloads(
@@ -452,8 +459,8 @@ resolve_cmd_overloads(
                 plugins,
                 cmds,
                 ast->nodes[n].cmd.id,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 prev_candidates);
 
         goto fail;
@@ -469,8 +476,7 @@ fail:
     return -1;
 }
 
-static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, &semantic_type_check, NULL};
+static const struct semantic_check* depends[] = {&semantic_type_check, NULL};
 
 const struct semantic_check semantic_resolve_cmd_overloads
     = {resolve_cmd_overloads, depends};

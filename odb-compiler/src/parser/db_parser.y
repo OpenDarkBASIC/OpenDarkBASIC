@@ -19,7 +19,7 @@
     struct parse_param
     {
         const char* filename;
-        struct db_source source;
+        const char* source;
         struct ast* ast;
     };
 }
@@ -346,9 +346,13 @@ maybe_arglist
   : arglist                                 { $$ = $1; } 
   |                                         { $$ = -1; }
   ;
-/* TODO: Support AS TYPE */
 paramlist
-  : paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->ast, $$, $3, @$); }
+  : paramlist ',' identifier AS type        { $$ = $1;
+                                              ctx->ast->nodes[$3].identifier.explicit_type = $5;
+                                              ast_paramlist_append(ctx->ast, $$, $3, @$); }
+  | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->ast, $$, $3, @$); }
+  | identifier AS type                      { ctx->ast->nodes[$1].identifier.explicit_type = $3;
+                                              $$ = ast_paramlist(ctx->ast, $1, @$); }
   | identifier                              { $$ = ast_paramlist(ctx->ast, $1, @$); }
   ;
 maybe_paramlist
@@ -504,7 +508,7 @@ maybe_as_type
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
   | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->ast, $1, TA_BOOL, @$); }
-  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_I16, @$); }
+  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_U16, @$); }
   | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->ast, $1, TA_I64, @$); }
   | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_F32, @$); }
   | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_F64, @$); }
@@ -537,11 +541,11 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     {
         log_flc_err(
             parse_param->filename,
-            parse_param->source.text.data,
+            parse_param->source,
             *yypcontext_location(ctx),
             "Unexpected %s\n",
             yysymbol_name(lookahead));
-        log_excerpt_1(parse_param->source.text.data, *yypcontext_location(ctx), "");
+        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "");
     }
 
     if (n < 0)
@@ -552,7 +556,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
         int i;
         log_flc_err(
             parse_param->filename,
-            parse_param->source.text.data,
+            parse_param->source,
             *yypcontext_location(ctx),
             "Expected ");
         for (i = 0; i < n; ++i)

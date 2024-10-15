@@ -1,4 +1,4 @@
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/type.h"
 
 char
 type_to_char(enum type type)

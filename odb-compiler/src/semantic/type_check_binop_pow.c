@@ -1,5 +1,5 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"

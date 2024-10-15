@@ -410,8 +410,8 @@ ast_loop_for(
     ast_id           next,
     struct utf8_span name,
     struct utf8_span location,
-    const char*      source_filename,
-    struct db_source source)
+    const char*      filename,
+    const char*      source)
 {
     ast_id           loop, loop_for, loop_var;
     struct utf8_span implicit_name;

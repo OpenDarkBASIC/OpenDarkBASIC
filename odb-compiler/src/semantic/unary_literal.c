@@ -196,14 +196,19 @@ child_changed:
 
 static int
 unary_literal(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
-    ast_id n;
+    ast_id      n;
+    struct ast* ast = &asts[asts_id];
+
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_UNOP)
@@ -215,7 +220,6 @@ unary_literal(
     return 0;
 }
 
-static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations, NULL};
+static const struct semantic_check* depends[] = {NULL};
 
 const struct semantic_check semantic_unary_literal = {unary_literal, depends};

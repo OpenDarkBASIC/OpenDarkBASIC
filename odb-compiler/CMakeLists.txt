@@ -27,6 +27,7 @@ option (ODBCOMPILER_PIC "Enable building with -fPIC (position independent code)"
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
 option (ODBCOMPILER_TESTS "Build unit tests" ON)
+option (ODBCOMPILER_WERROR "Treat compiler warnings as errors" OFF)
 
 check_include_file ("unistd.h" HAVE_UNISTD_H)
 
@@ -162,7 +163,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/sdk/used_cmds.h"
     "include/odb-compiler/sdk/cmd_list.h"
     "include/odb-compiler/sdk/plugin_list.h"
-    "include/odb-compiler/sdk/type.h"
     "src/sdk/cmd_cache.c"
     "src/sdk/used_cmds.c"
     "src/sdk/cmd_list.c"
@@ -170,7 +170,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_loader_dbpro.cpp"
     "src/sdk/cmd_loader_odb.cpp"
     "src/sdk/plugin_list.c"
-    "src/sdk/type.c"
     "src/sdk/sdk_type.c"
 
     "include/odb-compiler/parser/db_keyword.h"
@@ -196,7 +195,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
    
     "include/odb-compiler/semantic/semantic.h"
     "include/odb-compiler/semantic/symbol_table.h"
-    "src/semantic/expand_constant_declarations.c"
+    "include/odb-compiler/semantic/type.h"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"
@@ -205,6 +204,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/resolve_func_or_container_refs.c"
     "src/semantic/semantic.c"
     "src/semantic/symbol_table.c"
+    "src/semantic/type.c"
     "src/semantic/type_check.c"
     "src/semantic/type_check_binop_symmetric.c"
     "src/semantic/type_check_binop_pow.c"
@@ -245,9 +245,9 @@ target_compile_definitions (odb-compiler
         $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>)
 target_compile_options (odb-compiler
     PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
-        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
-        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>
+        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
+        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
+        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)

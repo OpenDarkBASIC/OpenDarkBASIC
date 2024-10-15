@@ -76,6 +76,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "include/odb-util/mem.h"
     "include/odb-util/mfile.h"
     "include/odb-util/mstream.h"
+    "include/odb-util/mutex.h"
     "include/odb-util/ospath.h"
     "include/odb-util/ospath_list.h"
     "include/odb-util/process.h"
@@ -101,6 +102,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     $<$<PLATFORM_ID:Linux>:src/dynlib_linux.c>
     $<$<PLATFORM_ID:Linux>:src/fs_linux.c>
     $<$<PLATFORM_ID:Linux>:src/mfile_linux.c>
+    $<$<PLATFORM_ID:Linux>:src/mutex_linux.c>
     $<$<PLATFORM_ID:Linux>:src/ospath_linux.c>
     $<$<PLATFORM_ID:Linux>:src/process_linux.c>
     $<$<PLATFORM_ID:Linux>:src/thread_linux.c>
@@ -109,6 +111,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     $<$<PLATFORM_ID:Windows>:$<$<BOOL:${ODBUTIL_MEM_BACKTRACE}>:src/backtrace_win32.c>>
     $<$<PLATFORM_ID:Windows>:src/dynlib_win32.c>
     $<$<PLATFORM_ID:Windows>:src/fs_win32.c>
+    $<$<PLATFORM_ID:Windows>:src/mutex_win32.c>
     $<$<PLATFORM_ID:Windows>:src/mfile_win32.c>
     $<$<PLATFORM_ID:Windows>:src/ospath_win32.c>
     $<$<PLATFORM_ID:Windows>:src/process_win32.c>

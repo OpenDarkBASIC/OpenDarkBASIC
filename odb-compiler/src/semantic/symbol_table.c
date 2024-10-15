@@ -165,9 +165,7 @@ symbol_table_deinit(struct symbol_table* table)
 
 int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table**  table,
-    const struct ast*      ast,
-    const struct db_source source)
+    struct symbol_table** table, const struct ast* ast, const char* source_text)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)
@@ -178,7 +176,7 @@ symbol_table_add_declarations_from_ast(
         ast_id           decl = ast->nodes[n].func.decl;
         ast_id           ident = ast->nodes[decl].func_decl.identifier;
         struct utf8_span span = ast->nodes[ident].identifier.name;
-        struct utf8_view func_name = utf8_span_view(source.text.data, span);
+        struct utf8_view func_name = utf8_span_view(source_text, span);
 
         struct symbol_table_entry* entry;
         switch (hm_emplace_or_get((struct hm**)table, func_name, &entry))
@@ -206,8 +204,9 @@ symbol_table_add_declarations_from_ast(
                     }
                 }
 
-                /* TODO: entry->return_type = semantic_resolve_function_return_type(
-                    ast, n, plugins, cmds, table, source_filename, source_text);*/
+                /* TODO: entry->return_type =
+                   semantic_resolve_function_return_type( ast, n, plugins, cmds,
+                   table, source_filename, source_text);*/
             }
             break;
         }

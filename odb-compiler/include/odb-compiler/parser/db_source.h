@@ -14,7 +14,7 @@
  *      memory buffer. The source must be closed again with
  *      @see db_source_close().
  *   3) If you are managing the lifetime of the input string, then use
- *      @see db_source_open_string() to point db_source at it. You do not need
+ *      @see db_source_ref_string() to point db_source at it. You do not need
  *      to free anything in this case.
  *
  * This abstraction is required to hide some parser details.
@@ -68,7 +68,8 @@ ODBCOMPILER_PUBLIC_API int
 db_source_ref_string(struct db_source* s, struct utf8* str);
 
 /*!
- * @brief Close a source.
+ * @brief Close a source. Don't call this if the source was opened with
+ * @see db_source_ref_string().
  */
 ODBCOMPILER_PUBLIC_API void
 db_source_close(struct db_source* s);

@@ -1,7 +1,7 @@
 #include "odb-util/cli_colors.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
-#include "odb-util/thread.h"
+#include "odb-util/mutex.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>

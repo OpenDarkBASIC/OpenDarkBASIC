@@ -151,7 +151,7 @@ create_global_string_table(
     struct ir_module*                       ir,
     llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const struct ast*                       ast,
-    struct db_source                        source)
+    const char*                             source_text)
 {
     for (ast_id n = 0; n != ast->node_count; ++n)
     {
@@ -159,7 +159,7 @@ create_global_string_table(
             continue;
 
         struct utf8_span str = ast->nodes[n].string_literal.str;
-        llvm::StringRef  str_ref(source.text.data + str.off, str.len);
+        llvm::StringRef  str_ref(source_text + str.off, str.len);
 
         auto result = string_table->try_emplace(str_ref, nullptr);
         if (result.second == false)
@@ -269,8 +269,8 @@ create_global_command_function_table(
     struct ir_module*                       ir,
     llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const struct ast*                       ast,
-    struct db_source                        source,
-    const struct cmd_list*                  cmds)
+    const struct cmd_list*                  cmds,
+    const char*                             source_text)
 {
     for (ast_id n = 0; n != ast->node_count; ++n)
     {
@@ -307,16 +307,16 @@ ODBUTIL_PRINTF_FORMAT(4, 5)
 static void
 log_semantic_err(
     const char*      filename,
-    struct db_source source,
+    const char*      source_text,
     struct utf8_span location,
     const char*      fmt,
     ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    log_flc_verr(filename, source.text.data, location, fmt, ap);
+    log_flc_verr(filename, source_text, location, fmt, ap);
     va_end(ap);
-    log_excerpt_1(source.text.data, location, "");
+    log_excerpt_1(source_text, location, "");
 }
 
 static llvm::Value*
@@ -328,7 +328,7 @@ gen_expr(
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
-    struct db_source                              source,
+    const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap);
@@ -342,7 +342,7 @@ gen_cmd_call(
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
-    struct db_source                              source,
+    const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
@@ -373,7 +373,7 @@ gen_cmd_call(
             sdk_type,
             cmds,
             source_filename,
-            source,
+            source_text,
             string_table,
             cmd_func_table,
             allocamap);
@@ -407,7 +407,7 @@ gen_expr(
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
-    struct db_source                              source,
+    const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     struct allocamap**                            allocamap)
@@ -429,7 +429,7 @@ gen_expr(
                 sdk_type,
                 cmds,
                 source_filename,
-                source,
+                source_text,
                 string_table,
                 cmd_func_table,
                 allocamap);
@@ -437,8 +437,8 @@ gen_expr(
         case AST_ASSIGNMENT: break;
 
         case AST_IDENTIFIER: {
-            struct utf8_view name = utf8_span_view(
-                source.text.data, ast->nodes[expr].identifier.name);
+            struct utf8_view name
+                = utf8_span_view(source_text, ast->nodes[expr].identifier.name);
             struct view_scope  name_scope = {name, 0};
             llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
             /* The AST should be constructed in a way where we do not have to
@@ -466,7 +466,7 @@ gen_expr(
                 sdk_type,
                 cmds,
                 source_filename,
-                source,
+                source_text,
                 string_table,
                 cmd_func_table,
                 allocamap);
@@ -478,7 +478,7 @@ gen_expr(
                 sdk_type,
                 cmds,
                 source_filename,
-                source,
+                source_text,
                 string_table,
                 cmd_func_table,
                 allocamap);
@@ -729,7 +729,7 @@ gen_expr(
 
         case AST_STRING_LITERAL: {
             struct utf8_span span = ast->nodes[expr].string_literal.str;
-            llvm::StringRef  str_ref(source.text.data + span.off, span.len);
+            llvm::StringRef  str_ref(source_text + span.off, span.len);
             return string_table->find(str_ref)->getValue();
         }
 
@@ -745,7 +745,7 @@ gen_expr(
                 sdk_type,
                 cmds,
                 source_filename,
-                source,
+                source_text,
                 string_table,
                 cmd_func_table,
                 allocamap);
@@ -858,7 +858,7 @@ gen_block(
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
     const char*                                   source_filename,
-    const struct db_source                        source,
+    const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
@@ -908,7 +908,7 @@ gen_block(
                     sdk_type,
                     cmds,
                     source_filename,
-                    source,
+                    source_text,
                     string_table,
                     cmd_func_table,
                     allocamap);
@@ -926,7 +926,7 @@ gen_block(
                     sdk_type,
                     cmds,
                     source_filename,
-                    source,
+                    source_text,
                     string_table,
                     cmd_func_table,
                     allocamap);
@@ -937,7 +937,7 @@ gen_block(
                         "type: %d\n", ast->nodes[lhs_node].info.node_type));
                 enum type        type = ast->nodes[lhs_node].info.type_info;
                 struct utf8_view name = utf8_span_view(
-                    source.text.data, ast->nodes[lhs_node].identifier.name);
+                    source_text, ast->nodes[lhs_node].identifier.name);
                 struct view_scope  name_scope = {name, 0};
                 llvm::AllocaInst** A;
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
@@ -988,7 +988,7 @@ gen_block(
                     sdk_type,
                     cmds,
                     source_filename,
-                    source,
+                    source_text,
                     string_table,
                     cmd_func_table,
                     allocamap);
@@ -1013,7 +1013,7 @@ gen_block(
                         sdk_type,
                         cmds,
                         source_filename,
-                        source,
+                        source_text,
                         string_table,
                         cmd_func_table,
                         loop_stack,
@@ -1037,7 +1037,7 @@ gen_block(
                         sdk_type,
                         cmds,
                         source_filename,
-                        source,
+                        source_text,
                         string_table,
                         cmd_func_table,
                         loop_stack,
@@ -1075,7 +1075,7 @@ gen_block(
                     sdk_type,
                     cmds,
                     source_filename,
-                    source,
+                    source_text,
                     string_table,
                     cmd_func_table,
                     loop_stack,
@@ -1092,7 +1092,7 @@ gen_block(
                         sdk_type,
                         cmds,
                         source_filename,
-                        source,
+                        source_text,
                         string_table,
                         cmd_func_table,
                         loop_stack,
@@ -1120,12 +1120,9 @@ gen_block(
                         struct utf8_span loop_implicit_name
                             = ast->nodes[it->loop].loop.implicit_name;
 
-                        if (utf8_equal_span(
-                                source.text.data, target_name, loop_name)
+                        if (utf8_equal_span(source_text, target_name, loop_name)
                             || utf8_equal_span(
-                                source.text.data,
-                                target_name,
-                                loop_implicit_name))
+                                source_text, target_name, loop_implicit_name))
                         {
                             break;
                         }
@@ -1150,7 +1147,7 @@ gen_block(
                         sdk_type,
                         cmds,
                         source_filename,
-                        source,
+                        source_text,
                         string_table,
                         cmd_func_table,
                         loop_stack,
@@ -1176,10 +1173,9 @@ gen_block(
                     struct utf8_span loop_implicit_name
                         = ast->nodes[it->loop].loop.implicit_name;
 
-                    if (utf8_equal_span(
-                            source.text.data, target_name, loop_name)
+                    if (utf8_equal_span(source_text, target_name, loop_name)
                         || utf8_equal_span(
-                            source.text.data, target_name, loop_implicit_name))
+                            source_text, target_name, loop_implicit_name))
                     {
                         builder.CreateBr(it->BBExit);
                         goto loop_exit_found;
@@ -1247,14 +1243,14 @@ ir_translate_ast(
     enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,
-    struct db_source       source)
+    const char*            source_text)
 {
     llvm::StringMap<llvm::GlobalVariable*> string_table;
-    create_global_string_table(ir, &string_table, program, source);
+    create_global_string_table(ir, &string_table, program, source_text);
 
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
     create_global_command_function_table(
-        ir, &cmd_func_table, program, source, cmds);
+        ir, &cmd_func_table, program, cmds, source_text);
 
     llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
 
@@ -1288,7 +1284,7 @@ ir_translate_ast(
             sdk_type,
             cmds,
             source_filename,
-            source,
+            source_text,
             &string_table,
             &cmd_func_table,
             &loop_exit_stack,

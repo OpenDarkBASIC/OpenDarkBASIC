@@ -1,6 +1,6 @@
 #include "odb-compiler/ast/ast.h"
-#include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
 #include <assert.h>
@@ -69,10 +69,10 @@ log_implicit_binop(
 
 static void
 log_error_binop(
-    struct ast*      ast,
-    ast_id           source_node,
-    ast_id           op,
-    const char*      source_filename,
+    struct ast* ast,
+    ast_id      source_node,
+    ast_id      op,
+    const char* source_filename,
     const char* source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
@@ -100,9 +100,9 @@ log_error_binop(
 
 enum type
 type_check_binop_symmetric(
-    struct ast*      ast,
-    ast_id           op,
-    const char*      source_filename,
+    struct ast* ast,
+    ast_id      op,
+    const char* source_filename,
     const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
@@ -121,8 +121,10 @@ type_check_binop_symmetric(
      * These operations require that both LHS and RHS have the same
      * type. The result type will be the "wider" of the two types.
      */
-    enum type_conversion_result left_to_right = type_convert(lhs_type, rhs_type);
-    enum type_conversion_result right_to_left = type_convert(rhs_type, lhs_type);
+    enum type_conversion_result left_to_right
+        = type_convert(lhs_type, rhs_type);
+    enum type_conversion_result right_to_left
+        = type_convert(rhs_type, lhs_type);
 
     if (left_to_right == TC_ALLOW)
         target_type = rhs_type;

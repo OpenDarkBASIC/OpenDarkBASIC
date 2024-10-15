@@ -1,6 +1,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
 enum expr_type
@@ -347,14 +348,21 @@ primitives_from_for_loop(
 
 static int
 translate_loop_for(
-    struct ast*                ast,
+    struct ast*                asts,
+    int                        asts_count,
+    int                        asts_id,
+    struct mutex**             asts_mutex,
+    const char**               filenames,
+    const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols,
-    const char*                source_filename,
-    const char*                source_text)
+    const struct symbol_table* symbols)
 {
-    ast_id n;
+    ast_id      n;
+    struct ast* ast = &asts[asts_id];
+    const char* filename = filenames[asts_id];
+    const char* source = sources[asts_id].text.data;
+
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP)
@@ -362,8 +370,10 @@ translate_loop_for(
         if (ast->nodes[n].loop.loop_for == -1)
             continue;
 
-        if (primitives_from_for_loop(ast, n, source_filename, source_text) != 0)
+        if (primitives_from_for_loop(ast, n, filename, source) != 0)
+        {
             return -1;
+        }
     }
 
     ast_gc(ast);
@@ -374,8 +384,7 @@ translate_loop_for(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_expand_constant_declarations,
-       &semantic_unary_literal, /* Required for deducing the step direction */
+    = {&semantic_unary_literal, /* Required for deducing the step direction */
        NULL};
 
 const struct semantic_check semantic_loop_for = {translate_loop_for, depends};

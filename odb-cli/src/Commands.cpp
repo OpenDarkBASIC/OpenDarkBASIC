@@ -5,7 +5,7 @@
 extern "C" {
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/log.h"
 }
 

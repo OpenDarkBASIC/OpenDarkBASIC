@@ -2,7 +2,6 @@
 
 #include "odb-compiler/codegen/target.h"
 #include "odb-compiler/config.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/sdk_type.h"
 
 struct ast;
@@ -25,7 +24,7 @@ ir_translate_ast(
     enum target_platform   platform,
     const struct cmd_list* cmds,
     const char*            source_filename,
-    struct db_source       source);
+    const char*            source_text);
 
 ODBCOMPILER_PUBLIC_API int
 ir_create_harness(

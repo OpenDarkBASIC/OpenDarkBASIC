@@ -1,3 +1,9 @@
+/* TODO: Remove this once LIEF Is gone */
+#if __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Woverloaded-virtual"
+#endif
+
 #include "LIEF/ELF.hpp"
 #include "LIEF/MachO.hpp"
 #include "LIEF/PE.hpp"
@@ -161,3 +167,7 @@ fatal_error:
     plugin_ids_deinit(cached_plugins);
     return -1;
 }
+
+#if __GNUC__
+#pragma GCC diagnostic pop
+#endif

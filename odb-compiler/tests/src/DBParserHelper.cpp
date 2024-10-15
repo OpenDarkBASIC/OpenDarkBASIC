@@ -6,9 +6,10 @@
 extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
-#include "odb-compiler/sdk/type.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
+#include "odb-compiler/semantic/type.h"
+#include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
 }
 
@@ -20,6 +21,7 @@ DBParserHelper::DBParserHelper()
     db_parser_init(&p);
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
+    ast_mutex = mutex_create();
 
     struct plugin_info* plugin = plugin_list_emplace(&plugins);
     plugin_info_init(plugin);
@@ -37,9 +39,12 @@ DBParserHelper::~DBParserHelper()
         std::string filename = std::string("ast/") + info->test_suite_name()
                                + "__" + info->name() + ".dot";
         std::filesystem::create_directory("ast");
-        ast_export_dot(&ast, cstr_ospathc(filename.c_str()), src, &cmds);
+        ast_export_dot(
+            &ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
 #endif
     }
+
+    mutex_destroy(ast_mutex);
 
     struct plugin_info* plugin;
     vec_for_each(plugins, plugin)
@@ -70,8 +75,18 @@ DBParserHelper::parse(const char* code)
 int
 DBParserHelper::semantic(const struct semantic_check* check)
 {
+    const char* source_filenames[] = {"test"};
     return semantic_check_run(
-        check, &ast, plugins, &cmds, symbols, "test", src.text.data);
+        check,
+        &ast,
+        1,
+        0,
+        &ast_mutex,
+        source_filenames,
+        &src,
+        plugins,
+        &cmds,
+        symbols);
 }
 
 int

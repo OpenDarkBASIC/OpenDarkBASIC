@@ -233,7 +233,7 @@ db_parse(
     int                 parse_result = -1;
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
-    struct parse_param  parse_param = {filename, source, ast};
+    struct parse_param  parse_param = {filename, source.text.data, ast};
 
     if (source.text.len == 0)
     {

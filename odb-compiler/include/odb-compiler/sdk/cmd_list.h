@@ -2,7 +2,7 @@
 
 #include "odb-compiler/config.h"
 #include "odb-compiler/sdk/plugin_list.h"
-#include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/type.h"
 #include "odb-util/utf8_list.h"
 #include "odb-util/vec.h"
 
