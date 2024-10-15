@@ -36,7 +36,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
     {
         ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
         enum type param = params->data[i].type;
-        enum type arg = ctx->ast->nodes[expr].info.type_info;
+        enum type arg = ast_type_info(ctx->ast, expr);
 
         /* Incompatible types */
         switch (type_convert(arg, param))
@@ -69,7 +69,7 @@ eliminate_problematic_casts(cmd_id* cmd_id, void* user)
     {
         ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
         enum type param = params->data[i].type;
-        enum type arg = ctx->ast->nodes[expr].info.type_info;
+        enum type arg = ast_type_info(ctx->ast, expr);
 
         switch (type_convert(arg, param))
         {
@@ -100,7 +100,7 @@ eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
     {
         ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
         enum type param = params->data[i].type;
-        enum type arg = ctx->ast->nodes[expr].info.type_info;
+        enum type arg = ast_type_info(ctx->ast, expr);
 
         if (arg != param)
             return 0;
@@ -285,18 +285,18 @@ typecheck_warnings(
     const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[cmd_node].info.node_type == AST_COMMAND,
-        log_semantic_err("type: %d\n", ast->nodes[cmd_node].info.node_type));
+        ast_node_type(ast, cmd_node) == AST_COMMAND,
+        log_semantic_err("type: %d\n", ast_node_type(ast, cmd_node)));
 
     for (i = 0; i != cmd_param_types_list_count(params);
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
         ODBUTIL_DEBUG_ASSERT(
-            ast->nodes[arglist].info.node_type == AST_ARGLIST,
-            log_semantic_err("type: %d\n", ast->nodes[arglist].info.node_type));
+            ast_node_type(ast, arglist) == AST_ARGLIST,
+            log_semantic_err("type: %d\n", ast_node_type(ast, arglist)));
         int       gutter;
         ast_id    arg = ast->nodes[arglist].arglist.expr;
-        enum type arg_type = ast->nodes[arg].info.type_info;
+        enum type arg_type = ast_type_info(ast, arg);
         enum type param_type = params->data[i].type;
 
         switch (type_convert(arg_type, param_type))
@@ -385,9 +385,9 @@ resolve_cmd_overloads(
     candidates_init(&candidates);
     candidates_init(&prev_candidates);
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_COMMAND)
+        if (ast_node_type(ast, n) != AST_COMMAND)
             continue;
 
         /* Build a list of candidates.

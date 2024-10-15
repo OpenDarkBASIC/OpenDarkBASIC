@@ -27,13 +27,13 @@ TEST_F(NAME, implicit_step_1)
 
     /* clang-format off */
     ast_id loop = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
+    ASSERT_THAT(ast_node_type(ast, loop), Eq(AST_LOOP));
     ast_id for1 = ast->nodes[loop].loop.loop_for1;
     ast_id for2 = ast->nodes[for1].loop_for1.loop_for2;
     ast_id for3 = ast->nodes[for2].loop_for2.loop_for3;
-    ASSERT_THAT(ast->nodes[for1].info.node_type, Eq(AST_LOOP_FOR1));
-    ASSERT_THAT(ast->nodes[for2].info.node_type, Eq(AST_LOOP_FOR2));
-    ASSERT_THAT(ast->nodes[for3].info.node_type, Eq(AST_LOOP_FOR3));
+    ASSERT_THAT(ast_node_type(ast, for1), Eq(AST_LOOP_FOR1));
+    ASSERT_THAT(ast_node_type(ast, for2), Eq(AST_LOOP_FOR2));
+    ASSERT_THAT(ast_node_type(ast, for3), Eq(AST_LOOP_FOR3));
     ast_id ass = ast->nodes[for1].loop_for1.init;
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
@@ -44,7 +44,7 @@ TEST_F(NAME, implicit_step_1)
     ast_id next = ast->nodes[for3].loop_for3.next;
     ASSERT_THAT(ast->nodes[next].identifier.name, Utf8SpanEq(30, 1));
     ast_id body = ast->nodes[ast->nodes[loop].loop.loop_body].loop_body.body;
-    ASSERT_THAT(ast->nodes[body].info.node_type, Eq(AST_BLOCK));
+    ASSERT_THAT(ast_node_type(ast, body), Eq(AST_BLOCK));
     ast_id post_body = ast->nodes[ast->nodes[loop].loop.loop_body].loop_body.post_body;
     ASSERT_THAT(post_body, Eq(-1));
     /* clang-format on */
@@ -59,13 +59,13 @@ TEST_F(NAME, implicit_step_1_empty_loop)
 
     /* clang-format off */
     ast_id loop = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
+    ASSERT_THAT(ast_node_type(ast, loop), Eq(AST_LOOP));
     ast_id for1 = ast->nodes[loop].loop.loop_for1;
     ast_id for2 = ast->nodes[for1].loop_for1.loop_for2;
     ast_id for3 = ast->nodes[for2].loop_for2.loop_for3;
-    ASSERT_THAT(ast->nodes[for1].info.node_type, Eq(AST_LOOP_FOR1));
-    ASSERT_THAT(ast->nodes[for2].info.node_type, Eq(AST_LOOP_FOR2));
-    ASSERT_THAT(ast->nodes[for3].info.node_type, Eq(AST_LOOP_FOR3));
+    ASSERT_THAT(ast_node_type(ast, for1), Eq(AST_LOOP_FOR1));
+    ASSERT_THAT(ast_node_type(ast, for2), Eq(AST_LOOP_FOR2));
+    ASSERT_THAT(ast_node_type(ast, for3), Eq(AST_LOOP_FOR3));
     ast_id ass = ast->nodes[for1].loop_for1.init;
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
@@ -93,13 +93,13 @@ TEST_F(NAME, implicit_step_1_empty_next)
 
     /* clang-format off */
     ast_id loop = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
+    ASSERT_THAT(ast_node_type(ast, loop), Eq(AST_LOOP));
     ast_id for1 = ast->nodes[loop].loop.loop_for1;
     ast_id for2 = ast->nodes[for1].loop_for1.loop_for2;
     ast_id for3 = ast->nodes[for2].loop_for2.loop_for3;
-    ASSERT_THAT(ast->nodes[for1].info.node_type, Eq(AST_LOOP_FOR1));
-    ASSERT_THAT(ast->nodes[for2].info.node_type, Eq(AST_LOOP_FOR2));
-    ASSERT_THAT(ast->nodes[for3].info.node_type, Eq(AST_LOOP_FOR3));
+    ASSERT_THAT(ast_node_type(ast, for1), Eq(AST_LOOP_FOR1));
+    ASSERT_THAT(ast_node_type(ast, for2), Eq(AST_LOOP_FOR2));
+    ASSERT_THAT(ast_node_type(ast, for3), Eq(AST_LOOP_FOR3));
     ast_id ass = ast->nodes[for1].loop_for1.init;
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
@@ -110,7 +110,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ast_id next = ast->nodes[for3].loop_for3.next;
     ASSERT_THAT(next, Eq(-1));
     ast_id body = ast->nodes[ast->nodes[loop].loop.loop_body].loop_body.body;
-    ASSERT_THAT(ast->nodes[body].info.node_type, Eq(AST_BLOCK));
+    ASSERT_THAT(ast_node_type(ast, body), Eq(AST_BLOCK));
     ast_id post_body = ast->nodes[ast->nodes[loop].loop.loop_body].loop_body.post_body;
     ASSERT_THAT(post_body, Eq(-1));
     /* clang-format on */
@@ -125,13 +125,13 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
 
     /* clang-format off */
     ast_id loop = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
+    ASSERT_THAT(ast_node_type(ast, loop), Eq(AST_LOOP));
     ast_id for1 = ast->nodes[loop].loop.loop_for1;
     ast_id for2 = ast->nodes[for1].loop_for1.loop_for2;
     ast_id for3 = ast->nodes[for2].loop_for2.loop_for3;
-    ASSERT_THAT(ast->nodes[for1].info.node_type, Eq(AST_LOOP_FOR1));
-    ASSERT_THAT(ast->nodes[for2].info.node_type, Eq(AST_LOOP_FOR2));
-    ASSERT_THAT(ast->nodes[for3].info.node_type, Eq(AST_LOOP_FOR3));
+    ASSERT_THAT(ast_node_type(ast, for1), Eq(AST_LOOP_FOR1));
+    ASSERT_THAT(ast_node_type(ast, for2), Eq(AST_LOOP_FOR2));
+    ASSERT_THAT(ast_node_type(ast, for3), Eq(AST_LOOP_FOR3));
     ast_id ass = ast->nodes[for1].loop_for1.init;
     ast_id loop_var = ast->nodes[ass].assignment.lvalue;
     ast_id begin = ast->nodes[ass].assignment.expr;
@@ -160,13 +160,13 @@ TEST_F(NAME, step_expression_range)
 
     /* clang-format off */
     ast_id loop = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
+    ASSERT_THAT(ast_node_type(ast, loop), Eq(AST_LOOP));
     ast_id for1 = ast->nodes[loop].loop.loop_for1;
     ast_id for2 = ast->nodes[for1].loop_for1.loop_for2;
     ast_id for3 = ast->nodes[for2].loop_for2.loop_for3;
-    ASSERT_THAT(ast->nodes[for1].info.node_type, Eq(AST_LOOP_FOR1));
-    ASSERT_THAT(ast->nodes[for2].info.node_type, Eq(AST_LOOP_FOR2));
-    ASSERT_THAT(ast->nodes[for3].info.node_type, Eq(AST_LOOP_FOR3));
+    ASSERT_THAT(ast_node_type(ast, for1), Eq(AST_LOOP_FOR1));
+    ASSERT_THAT(ast_node_type(ast, for2), Eq(AST_LOOP_FOR2));
+    ASSERT_THAT(ast_node_type(ast, for3), Eq(AST_LOOP_FOR3));
     ast_id ass = ast->nodes[for1].loop_for1.init;
     ast_id loop_var = ast->nodes[ass].assignment.lvalue;
     ast_id begin = ast->nodes[ass].assignment.expr;

@@ -11,13 +11,13 @@ type_check_cast(
 {
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[cast].info.node_type == AST_CAST,
-        log_semantic_err("type: %d\n", ast->nodes[cast].info.node_type));
+        ast_node_type(ast, cast) == AST_CAST,
+        log_semantic_err("type: %d\n", ast_node_type(ast, cast)));
 
     ast_id expr = ast->nodes[cast].cast.expr;
 
-    enum type source_type = ast->nodes[expr].info.type_info;
-    enum type target_type = ast->nodes[cast].info.type_info;
+    enum type source_type = ast_type_info(ast, expr);
+    enum type target_type = ast_type_info(ast, cast);
 
     switch (type_convert(source_type, target_type))
     {

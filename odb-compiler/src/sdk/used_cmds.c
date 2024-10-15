@@ -100,8 +100,8 @@ used_cmds_append(struct used_cmds** used_cmds, const struct ast* ast)
 {
     ast_id n;
     char*  c;
-    for (n = 0; n != ast->count; n++)
-        if (ast->nodes[n].info.node_type == AST_COMMAND)
+    for (n = 0; n != ast_count(ast); n++)
+        if (ast_node_type(ast, n) == AST_COMMAND)
             if (used_cmds_hm_emplace_or_get(
                     (struct used_cmds_hm**)used_cmds, ast->nodes[n].cmd.id, &c)
                 == HM_OOM)

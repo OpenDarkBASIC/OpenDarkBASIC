@@ -10,21 +10,21 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
     ast_id         n;
     union ast_node tmp;
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count_unsafe(ast); ++n)
     {
         if (ast->nodes[n].base.left == n1)
             ast->nodes[n].base.left = -2;
         if (ast->nodes[n].base.right == n1)
             ast->nodes[n].base.right = -2;
     }
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count_unsafe(ast); ++n)
     {
         if (ast->nodes[n].base.left == n2)
             ast->nodes[n].base.left = n1;
         if (ast->nodes[n].base.right == n2)
             ast->nodes[n].base.right = n1;
     }
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count_unsafe(ast); ++n)
     {
         if (ast->nodes[n].base.left == -2)
             ast->nodes[n].base.left = n2;
@@ -77,7 +77,7 @@ int
 ast_find_parent(const struct ast* ast, ast_id n)
 {
     ast_id p;
-    for (p = 0; p != ast->count; ++p)
+    for (p = 0; p != ast_count_unsafe(ast); ++p)
         if (ast->nodes[p].base.left == n || ast->nodes[p].base.right == n)
             return p;
     return -1;
@@ -137,11 +137,11 @@ void
 ast_gc(struct ast* ast)
 {
     ast_id n, p;
-    for (n = 0; n < ast->count; ++n)
+    for (n = 0; n < ast_count(ast); ++n)
         if (ast->nodes[n].info.node_type == AST_GC)
         {
             ast_id last = --ast->count;
-            for (p = 0; p != ast->count; ++p)
+            for (p = 0; p != ast_count_unsafe(ast); ++p)
             {
                 if (ast->nodes[p].base.left == last)
                     ast->nodes[p].base.left = n;
@@ -172,12 +172,12 @@ ast_id
 ast_trees_equal(
     const char* source_text, const struct ast* ast, ast_id n1, ast_id n2)
 {
-    if (ast->nodes[n1].info.node_type != ast->nodes[n2].info.node_type)
+    if (ast_node_type(ast, n1) != ast_node_type(ast, n1))
         return 0;
-    if (ast->nodes[n1].info.type_info != ast->nodes[n2].info.type_info)
+    if (ast_type_info(ast, n1) != ast_type_info(ast, n2))
         return 0;
 
-    switch (ast->nodes[n1].info.node_type)
+    switch (ast_node_type(ast, n1))
     {
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0);
         case AST_BLOCK: break;

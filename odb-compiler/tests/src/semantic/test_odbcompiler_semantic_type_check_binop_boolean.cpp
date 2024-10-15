@@ -33,8 +33,8 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
 }

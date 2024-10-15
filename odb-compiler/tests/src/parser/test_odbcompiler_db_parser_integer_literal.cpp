@@ -33,8 +33,8 @@ TEST_F(NAME, value_of_0_and_1_is_type_byte_and_not_boolean)
     ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
-    EXPECT_THAT(ast->nodes[lit1].info.node_type, Eq(AST_BYTE_LITERAL));
-    EXPECT_THAT(ast->nodes[lit2].info.node_type, Eq(AST_BYTE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_BYTE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit2), Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].byte_literal.value, Eq(0u));
     EXPECT_THAT(ast->nodes[lit2].byte_literal.value, Eq(1u));
 }
@@ -52,8 +52,8 @@ TEST_F(NAME, byte_literal)
     ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
-    EXPECT_THAT(ast->nodes[lit1].info.node_type, Eq(AST_BYTE_LITERAL));
-    EXPECT_THAT(ast->nodes[lit2].info.node_type, Eq(AST_BYTE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_BYTE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit2), Eq(AST_BYTE_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].byte_literal.value, Eq(2u));
     EXPECT_THAT(ast->nodes[lit2].byte_literal.value, Eq(255u));
 }
@@ -71,8 +71,8 @@ TEST_F(NAME, word_literal)
     ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
-    EXPECT_THAT(ast->nodes[lit1].info.node_type, Eq(AST_WORD_LITERAL));
-    EXPECT_THAT(ast->nodes[lit2].info.node_type, Eq(AST_WORD_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_WORD_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit2), Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].word_literal.value, Eq(256u));
     EXPECT_THAT(ast->nodes[lit2].word_literal.value, Eq(65535u));
 }
@@ -90,8 +90,8 @@ TEST_F(NAME, integer_literal)
     ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
-    EXPECT_THAT(ast->nodes[lit1].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lit2].info.node_type, Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit2), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].integer_literal.value, Eq(65536u));
     EXPECT_THAT(ast->nodes[lit2].integer_literal.value, Eq(2147483647u));
 }
@@ -109,8 +109,8 @@ TEST_F(NAME, dword_literal)
     ast_id arg2 = ast->nodes[cmd2].cmd.arglist;
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
-    EXPECT_THAT(ast->nodes[lit1].info.node_type, Eq(AST_DWORD_LITERAL));
-    EXPECT_THAT(ast->nodes[lit2].info.node_type, Eq(AST_DWORD_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit1), Eq(AST_DWORD_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit2), Eq(AST_DWORD_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].dword_literal.value, Eq(2147483648u));
     EXPECT_THAT(ast->nodes[lit2].dword_literal.value, Eq(4294967295u));
 }
@@ -129,9 +129,9 @@ TEST_F(NAME, double_integer_literal)
     ast_id lit1 = ast->nodes[arg1].arglist.expr;
     ast_id lit2 = ast->nodes[arg2].arglist.expr;
     EXPECT_THAT(
-        ast->nodes[lit1].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+        ast_node_type(ast, lit1), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(
-        ast->nodes[lit2].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+        ast_node_type(ast, lit2), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[lit1].double_integer_literal.value, Eq(4294967296u));
     EXPECT_THAT(
         ast->nodes[lit2].double_integer_literal.value,
@@ -172,15 +172,15 @@ TEST_F(NAME, hex_literals)
     ast_id litdint = ast->nodes[argdint].arglist.expr;
 
     /* clang-format off */
-    ASSERT_THAT(ast->nodes[litbyte].info.node_type, Eq(AST_BYTE_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litbyte), Eq(AST_BYTE_LITERAL));
     ASSERT_THAT(ast->nodes[litbyte].byte_literal.value, Eq(0xFF));
-    ASSERT_THAT(ast->nodes[litword].info.node_type, Eq(AST_WORD_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litword), Eq(AST_WORD_LITERAL));
     ASSERT_THAT(ast->nodes[litword].word_literal.value, Eq(0xFFFF));
-    ASSERT_THAT(ast->nodes[litint].info.node_type, Eq(AST_INTEGER_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litint), Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[litint].integer_literal.value, Eq(0x7FFFFFFF));
-    ASSERT_THAT(ast->nodes[litdword].info.node_type, Eq(AST_DWORD_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litdword), Eq(AST_DWORD_LITERAL));
     ASSERT_THAT(ast->nodes[litdword].dword_literal.value, Eq(0xFFFFFFFF));
-    ASSERT_THAT(ast->nodes[litdint].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litdint), Eq(AST_DOUBLE_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[litdint].double_integer_literal.value, Eq(0x7FFFFFFFFFFFFFFF));
     /* clang-format on */
 }
@@ -221,15 +221,15 @@ TEST_F(NAME, binary_literals)
     ast_id litdint = ast->nodes[argdint].arglist.expr;
 
     /* clang-format off */
-    ASSERT_THAT(ast->nodes[litbyte].info.node_type, Eq(AST_BYTE_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litbyte), Eq(AST_BYTE_LITERAL));
     ASSERT_THAT(ast->nodes[litbyte].byte_literal.value, Eq(0xFF));
-    ASSERT_THAT(ast->nodes[litword].info.node_type, Eq(AST_WORD_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litword), Eq(AST_WORD_LITERAL));
     ASSERT_THAT(ast->nodes[litword].word_literal.value, Eq(0xFFFF));
-    ASSERT_THAT(ast->nodes[litint].info.node_type, Eq(AST_INTEGER_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litint), Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[litint].integer_literal.value, Eq(0x7FFFFFFF));
-    ASSERT_THAT(ast->nodes[litdword].info.node_type, Eq(AST_DWORD_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litdword), Eq(AST_DWORD_LITERAL));
     ASSERT_THAT(ast->nodes[litdword].dword_literal.value, Eq(0xFFFFFFFF));
-    ASSERT_THAT(ast->nodes[litdint].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, litdint), Eq(AST_DOUBLE_INTEGER_LITERAL));
     ASSERT_THAT(ast->nodes[litdint].double_integer_literal.value, Eq(0x7FFFFFFFFFFFFFFF));
     /* clang-format on */
 }

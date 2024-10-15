@@ -23,12 +23,12 @@ TEST_F(NAME, variable_initialized_with_byte_defaults_to_integer)
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id rhs = ast->nodes[ass].assignment.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
     ASSERT_THAT(
-        ast->nodes[rhs].info.node_type,
+        ast_node_type(ast, rhs),
         Eq(AST_CAST)); // BYTE literal cast to INTEGER
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
 }
 
 TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
@@ -55,11 +55,11 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[cast].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
@@ -84,11 +84,11 @@ TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
@@ -110,11 +110,11 @@ TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_U32));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U32));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
@@ -142,11 +142,11 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I64));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I64));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
@@ -172,11 +172,11 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F32));
 }
 
 TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
@@ -201,11 +201,11 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
     ast_id lhs = ast->nodes[ass].assignment.lvalue;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
-    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_F64));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F64));
 }
 
 TEST_F(NAME, circular_dependencies_default_to_integer)
@@ -227,30 +227,30 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
     ast_id op1 = ast->nodes[ass1].assignment.expr;
     ast_id lhs1 = ast->nodes[op1].binop.left;
     ast_id rhs1 = ast->nodes[op1].binop.right;
-    ASSERT_THAT(ast->nodes[lval1].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs1].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lval1].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[lhs1].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs1].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_node_type(ast, lval1), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs1), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs1), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_type_info(ast, lval1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs1), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs1), Eq(TYPE_I32));
     ast_id lval2 = ast->nodes[ass2].assignment.lvalue;
     ast_id op2 = ast->nodes[ass2].assignment.expr;
     ast_id lhs2 = ast->nodes[op2].binop.left;
     ast_id rhs2 = ast->nodes[op2].binop.right;
-    ASSERT_THAT(ast->nodes[lval2].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lhs2].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs2].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lval2].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[lhs2].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs2].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_node_type(ast, lval2), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs2), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs2), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_type_info(ast, lval2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs2), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs2), Eq(TYPE_I32));
     ast_id lval3 = ast->nodes[ass3].assignment.lvalue;
     ast_id op3 = ast->nodes[ass3].assignment.expr;
     ast_id lhs3 = ast->nodes[op3].binop.left;
     ast_id rhs3 = ast->nodes[op3].binop.right;
-    ASSERT_THAT(ast->nodes[lval3].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lhs3].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[rhs3].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast->nodes[lval3].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[lhs3].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast->nodes[rhs3].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_node_type(ast, lval3), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs3), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs3), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_type_info(ast, lval3), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, lhs3), Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, rhs3), Eq(TYPE_I32));
 }

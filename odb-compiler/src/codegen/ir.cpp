@@ -167,9 +167,9 @@ create_global_string_table(
     const struct ast*                       ast,
     const char*                             source_text)
 {
-    for (ast_id n = 0; n != ast->count; ++n)
+    for (ast_id n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_STRING_LITERAL)
+        if (ast_node_type(ast, n) != AST_STRING_LITERAL)
             continue;
 
         struct utf8_span str = ast->nodes[n].string_literal.str;
@@ -242,8 +242,8 @@ get_command_function_signature(
     const struct cmd_list* cmds)
 {
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[cmd].info.node_type == AST_COMMAND,
-        log_codegen_err("type: %d\n", ast->nodes[cmd].info.node_type));
+        ast_node_type(ast, cmd) == AST_COMMAND,
+        log_codegen_err("type: %d\n", ast_node_type(ast, cmd)));
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
@@ -285,9 +285,9 @@ create_global_command_function_table(
     const struct cmd_list*                  cmds,
     const char*                             source_text)
 {
-    for (ast_id n = 0; n != ast->count; ++n)
+    for (ast_id n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_COMMAND)
+        if (ast_node_type(ast, n) != AST_COMMAND)
             continue;
 
         cmd_id           cmd_id = ast->nodes[n].cmd.id;
@@ -317,9 +317,9 @@ create_db_function_table(
     const struct ast*                 ast,
     const char*                       source)
 {
-    for (ast_id n = 0; n != ast->count; ++n)
+    for (ast_id n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_FUNC)
+        if (ast_node_type(ast, n) != AST_FUNC)
             continue;
 
         ast_id ast_decl = ast->nodes[n].func.decl;
@@ -333,15 +333,14 @@ create_db_function_table(
              ast_paramlist = ast->nodes[ast_paramlist].arglist.next)
         {
             ast_id      ast_param = ast->nodes[ast_paramlist].arglist.expr;
-            enum type   param_type = ast->nodes[ast_param].info.type_info;
+            enum type   param_type = ast_type_info(ast, ast_param);
             llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
             param_types.push_back(Ty);
         }
 
         llvm::Type* llvm_retval
             = ast_retval > -1
-                  ? type_to_llvm(
-                        ast->nodes[ast_retval].info.type_info, &ir->ctx)
+                  ? type_to_llvm(ast_type_info(ast, ast_retval), &ir->ctx)
                   : llvm::Type::getVoidTy(ir->ctx);
 
         struct utf8_span identifier_span
@@ -468,7 +467,7 @@ gen_cmd_call(
             loop_stack,
             allocamap);
         if (sdk_type == SDK_DBPRO)
-            if (ast->nodes[ast_expr].info.type_info == TYPE_F32)
+            if (ast_type_info(ast, ast_expr) == TYPE_F32)
                 llvm_expr = builder.CreateBitCast(
                     llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
         param_values.push_back(llvm_expr);
@@ -481,7 +480,7 @@ gen_cmd_call(
     llvm::Value* retval = builder.CreateCall(FT, cmd_func_addr, param_values);
 
     if (sdk_type == SDK_DBPRO)
-        if (ast->nodes[cmd].info.type_info == TYPE_F32)
+        if (ast_type_info(ast, cmd) == TYPE_F32)
             retval = builder.CreateBitCast(
                 retval, llvm::Type::getFloatTy(ir->ctx));
 
@@ -504,7 +503,7 @@ gen_expr(
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
-    switch (ast->nodes[expr].info.node_type)
+    switch (ast_node_type(ast, expr))
     {
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_BLOCK: break;
@@ -549,9 +548,9 @@ gen_expr(
         case AST_BINOP: {
             ast_id       lhs_node = ast->nodes[expr].binop.left;
             ast_id       rhs_node = ast->nodes[expr].binop.right;
-            enum type    lhs_type = ast->nodes[lhs_node].info.type_info;
-            enum type    rhs_type = ast->nodes[rhs_node].info.type_info;
-            enum type    result_type = ast->nodes[expr].binop.info.type_info;
+            enum type    lhs_type = ast_type_info(ast, lhs_node);
+            enum type    rhs_type = ast_type_info(ast, rhs_node);
+            enum type    result_type = ast_type_info(ast, expr);
             llvm::Value* lhs = gen_expr(
                 ir,
                 builder,
@@ -877,9 +876,8 @@ gen_expr(
         }
 
         case AST_CAST: {
-            enum type from
-                = ast->nodes[ast->nodes[expr].cast.expr].info.type_info;
-            enum type    to = ast->nodes[expr].cast.info.type_info;
+            enum type    from = ast_type_info(ast, ast->nodes[expr].cast.expr);
+            enum type    to = ast_type_info(ast, expr);
             llvm::Value* child_value = gen_expr(
                 ir,
                 builder,
@@ -984,8 +982,7 @@ gen_expr(
     }
 
     log_codegen_err(
-        "Expression type %d not implemeneted\n",
-        ast->nodes[expr].info.node_type);
+        "Expression type %d not implemeneted\n", ast_node_type(ast, expr));
     return nullptr;
 }
 
@@ -1007,14 +1004,14 @@ gen_block(
 {
     ODBUTIL_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[block].info.node_type == AST_BLOCK,
-        log_codegen_err("type: %d\n", ast->nodes[block].info.node_type));
+        ast_node_type(ast, block) == AST_BLOCK,
+        log_codegen_err("type: %d\n", ast_node_type(ast, block)));
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
         ODBUTIL_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
-        switch (ast->nodes[stmt].info.node_type)
+        switch (ast_node_type(ast, stmt))
         {
             case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
@@ -1077,10 +1074,10 @@ gen_block(
                     allocamap);
 
                 ODBUTIL_DEBUG_ASSERT(
-                    ast->nodes[lhs_node].info.node_type == AST_IDENTIFIER,
+                    ast_node_type(ast, lhs_node) == AST_IDENTIFIER,
                     log_codegen_err(
-                        "type: %d\n", ast->nodes[lhs_node].info.node_type));
-                enum type        type = ast->nodes[lhs_node].info.type_info;
+                        "type: %d\n", ast_node_type(ast, lhs_node)));
+                enum type        type = ast_type_info(ast, lhs_node);
                 struct utf8_view name = utf8_span_view(
                     source, ast->nodes[lhs_node].identifier.name);
                 struct view_scope  name_scope = {name, 0};
@@ -1297,7 +1294,7 @@ gen_block(
                 if (step > -1)
                 {
                     ODBUTIL_DEBUG_ASSERT(
-                        ast->nodes[step].info.node_type == AST_BLOCK,
+                        ast_node_type(ast, step) == AST_BLOCK,
                         log_semantic_err("step: %d\n", step));
                     gen_block(
                         ir,
@@ -1381,7 +1378,7 @@ gen_block(
                      ++param_idx)
                 {
                     ast_id ast_param = ast->nodes[ast_paramlist].arglist.expr;
-                    enum type param_type = ast->nodes[ast_param].info.type_info;
+                    enum type        param_type = ast_type_info(ast, ast_param);
                     struct utf8_view name = utf8_span_view(
                         source, ast->nodes[ast_param].identifier.name);
                     struct view_scope  name_scope = {name, 0};
@@ -1557,7 +1554,7 @@ ir_translate_ast(
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
-    if (ast->count == 0)
+    if (ast_count(ast) == 0)
         log_codegen_warn("AST is empty for source file {quote:%s}\n", filename);
     else
         gen_block(

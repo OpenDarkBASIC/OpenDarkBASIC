@@ -82,8 +82,8 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
 
     ASSERT_THAT(parse("randomize timer"), Eq(0));
     int cmd = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast->nodes[cmd].info.node_type, Eq(AST_COMMAND));
+    ASSERT_THAT(ast_node_type(ast, cmd), Eq(AST_COMMAND));
     ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(1));
     int ident = ast->nodes[ast->nodes[cmd].cmd.arglist].arglist.expr;
-    ASSERT_THAT(ast->nodes[ident].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
 }

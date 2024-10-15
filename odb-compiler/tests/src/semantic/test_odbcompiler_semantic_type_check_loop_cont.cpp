@@ -34,12 +34,12 @@ TEST_F(NAME, continue_with_step)
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ast_id cont_step_block = ast->nodes[cont_stmt].cont.step;
     ast_id cont_step = ast->nodes[cont_step_block].block.stmt;
-    ASSERT_THAT(ast->nodes[cont_step].info.node_type, Eq(AST_ASSIGNMENT));
+    ASSERT_THAT(ast_node_type(ast, cont_step), Eq(AST_ASSIGNMENT));
     ast_id cont_step_op = ast->nodes[cont_step].assignment.expr;
-    ASSERT_THAT(ast->nodes[cont_step_op].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_type_info(ast, cont_step_op), Eq(TYPE_I32));
     ast_id cont_step_expr = ast->nodes[cont_step_op].binop.right;
-    ASSERT_THAT(ast->nodes[cont_step_expr].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[cont_step_expr].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_node_type(ast, cont_step_expr), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, cont_step_expr), Eq(TYPE_I32));
     ast_id cont_step_value = ast->nodes[cont_step_expr].cast.expr;
     ASSERT_THAT(ast->nodes[cont_step_value].byte_literal.value, Eq(2));
 }

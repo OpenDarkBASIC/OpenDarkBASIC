@@ -7,7 +7,7 @@ process_unop(struct ast* ast, ast_id n)
 {
     ast_id expr = ast->nodes[n].unop.expr;
 child_changed:
-    switch (ast->nodes[expr].info.node_type)
+    switch (ast_node_type(ast, expr))
     {
         case AST_GC:
         case AST_BLOCK:
@@ -215,9 +215,9 @@ unary_literal(
     ast_id      n;
     struct ast* ast = tus[tu_id];
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_UNOP)
+        if (ast_node_type(ast, n) != AST_UNOP)
             continue;
 
         process_unop(ast, n);

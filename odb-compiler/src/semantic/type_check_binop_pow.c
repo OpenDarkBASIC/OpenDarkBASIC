@@ -15,14 +15,14 @@ type_check_binop_pow(
     struct ast* ast = *astp;
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[op].info.node_type == AST_BINOP,
-        log_semantic_err("type: %d\n", ast->nodes[op].info.node_type));
+        ast_node_type(ast, op) == AST_BINOP,
+        log_semantic_err("type: %d\n", ast_node_type(ast, op)));
 
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
 
-    enum type base_type = ast->nodes[lhs].info.type_info;
-    enum type exp_type = ast->nodes[rhs].info.type_info;
+    enum type base_type = ast_type_info(ast, lhs);
+    enum type exp_type = ast_type_info(ast, rhs);
 
     /*
      * The supported instructions are as of this writing:
@@ -252,5 +252,5 @@ type_check_binop_pow(
     }
 
     /* The result type is the same as LHS */
-    return ast->nodes[op].binop.info.type_info = base_target_type;
+    return ast->nodes[op].info.type_info = base_target_type;
 }

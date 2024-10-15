@@ -24,7 +24,7 @@ TEST_F(NAME, negative_zero_is_just_zero)
 
     int ass = ast->nodes[ast->root].block.stmt;
     int lit = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast->nodes[lit].info.node_type, Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lit), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[lit].byte_literal.value, Eq(0u));
 }
 
@@ -41,8 +41,8 @@ TEST_F(NAME, negative_byte_literal_is_converted_to_integer)
     int assy = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
     int litx = ast->nodes[assx].assignment.expr;
     int lity = ast->nodes[assy].assignment.expr;
-    EXPECT_THAT(ast->nodes[litx].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lity].info.node_type, Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litx), Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lity), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[litx].info.location, Utf8SpanEq(4, 2));
     EXPECT_THAT(ast->nodes[lity].info.location, Utf8SpanEq(11, 4));
     EXPECT_THAT(ast->nodes[litx].integer_literal.value, Eq(-2));
@@ -62,8 +62,8 @@ TEST_F(NAME, word_literal_is_converted_to_integer)
     int assy = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
     int litx = ast->nodes[assx].assignment.expr;
     int lity = ast->nodes[assy].assignment.expr;
-    EXPECT_THAT(ast->nodes[litx].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lity].info.node_type, Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litx), Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lity), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[litx].info.location, Utf8SpanEq(4, 4));
     EXPECT_THAT(ast->nodes[lity].info.location, Utf8SpanEq(13, 6));
     EXPECT_THAT(ast->nodes[litx].integer_literal.value, Eq(-256));
@@ -82,14 +82,15 @@ TEST_F(NAME, integer_literal)
 
     int assx = ast->nodes[ast->root].block.stmt;
     int assy = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    int assz = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
-                   .block.stmt;
+    int assz
+        = ast->nodes[ast->nodes[ast->nodes[ast->root].block.next].block.next]
+              .block.stmt;
     int litx = ast->nodes[assx].assignment.expr;
     int lity = ast->nodes[assy].assignment.expr;
     int litz = ast->nodes[assz].assignment.expr;
-    EXPECT_THAT(ast->nodes[litx].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lity].info.node_type, Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[litz].info.node_type, Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litx), Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lity), Eq(AST_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litz), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[litx].info.location, Utf8SpanEq(4, 6));
     EXPECT_THAT(ast->nodes[lity].info.location, Utf8SpanEq(15, 11));
     EXPECT_THAT(ast->nodes[litz].info.location, Utf8SpanEq(31, 2));
@@ -111,10 +112,8 @@ TEST_F(NAME, dword_literal_is_converted_to_double_integer)
     int assy = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
     int litx = ast->nodes[assx].assignment.expr;
     int lity = ast->nodes[assy].assignment.expr;
-    EXPECT_THAT(
-        ast->nodes[litx].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(
-        ast->nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litx), Eq(AST_DOUBLE_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lity), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[litx].info.location, Utf8SpanEq(4, 11));
     EXPECT_THAT(ast->nodes[lity].info.location, Utf8SpanEq(20, 11));
     EXPECT_THAT(
@@ -142,9 +141,9 @@ TEST_F(NAME, double_integer_literal)
     int litx = ast->nodes[assx].assignment.expr;
     int lity = ast->nodes[assy].assignment.expr;
     int litz = ast->nodes[assz].assignment.expr;
-    EXPECT_THAT(ast->nodes[litx].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[lity].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[litz].info.node_type, Eq(AST_DOUBLE_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litx), Eq(AST_DOUBLE_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lity), Eq(AST_DOUBLE_INTEGER_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, litz), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[litx].info.location, Utf8SpanEq(4, 11));
     EXPECT_THAT(ast->nodes[lity].info.location, Utf8SpanEq(20, 20));
     EXPECT_THAT(ast->nodes[litz].info.location, Utf8SpanEq(45, 11));

@@ -15,7 +15,7 @@ check_loop_names(
 {
     ast_id      n;
     struct ast* ast = tus[tu_id];
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
     }
 

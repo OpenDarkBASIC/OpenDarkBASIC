@@ -59,8 +59,8 @@ check_exit(
 {
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[exit].info.node_type == AST_LOOP_EXIT,
-        log_semantic_err("type: %d\n", ast->nodes[exit].info.node_type));
+        ast_node_type(ast, exit) == AST_LOOP_EXIT,
+        log_semantic_err("type: %d\n", ast_node_type(ast, exit)));
 
     ast_id first_loop = -1;
     ast_id loop = exit;
@@ -71,7 +71,7 @@ check_exit(
             return log_exit_error(
                 ast, exit, first_loop, source_filename, source_text);
 
-        if (ast->nodes[loop].info.node_type == AST_LOOP)
+        if (ast_node_type(ast, loop) == AST_LOOP)
         {
             if (ast->nodes[exit].loop_exit.name.len == 0
                 || utf8_equal_span(
@@ -106,12 +106,12 @@ check_loop_exit(
 {
     ast_id            n;
     const struct ast* ast = tus[tu_id];
-    const char*  filename = utf8_cstr(filenames[tu_id]);
+    const char*       filename = utf8_cstr(filenames[tu_id]);
     const char*       source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_LOOP_EXIT)
+        if (ast_node_type(ast, n) != AST_LOOP_EXIT)
             continue;
 
         if (check_exit(ast, n, filename, source) != 0)

@@ -29,9 +29,9 @@ struct NAME : DBParserHelper, LogHelper, Test
             retval = ast->nodes[def].func_def.retval;
 
             /* These nodes always exist */
-            EXPECT_THAT(ast->nodes[ast->root].info.node_type, Eq(AST_BLOCK));
-            EXPECT_THAT(ast->nodes[def].info.node_type, Eq(AST_FUNC_DEF));
-            EXPECT_THAT(ast->nodes[decl].info.node_type, Eq(AST_FUNC_DECL));
+            EXPECT_THAT(ast_node_type(ast, ast->root), Eq(AST_BLOCK));
+            EXPECT_THAT(ast_node_type(ast, def), Eq(AST_FUNC_DEF));
+            EXPECT_THAT(ast_node_type(ast, decl), Eq(AST_FUNC_DECL));
         }
         return result;
     }
@@ -51,9 +51,9 @@ TEST_F(NAME, empty_body_no_params_no_return)
         = "FUNCTION foo()\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(5));
+    ASSERT_THAT(ast_count(ast), Eq(5));
 
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(paramlist, Eq(-1));
     EXPECT_THAT(body, Eq(-1));
@@ -66,13 +66,13 @@ TEST_F(NAME, empty_body_no_params_returning_integer)
         = "FUNCTION foo()\n"
           "ENDFUNCTION 5\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(6));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(paramlist, Eq(-1));
     EXPECT_THAT(body, Eq(-1));
-    EXPECT_THAT(ast->nodes[retval].info.node_type, Eq(AST_BYTE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, retval), Eq(AST_BYTE_LITERAL));
 }
 
 TEST_F(NAME, empty_body_one_param_no_return)
@@ -81,12 +81,12 @@ TEST_F(NAME, empty_body_one_param_no_return)
         = "FUNCTION foo(a)\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(pl2, Eq(-1));
@@ -100,7 +100,7 @@ TEST_F(NAME, empty_body_three_params_no_return)
         = "FUNCTION foo(a, b, c)\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(11));
+    ASSERT_THAT(ast_count(ast), Eq(11));
 
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
@@ -109,7 +109,7 @@ TEST_F(NAME, empty_body_three_params_no_return)
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
     ast_id param3 = ast->nodes[pl3].paramlist.identifier;
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(16, 1));
@@ -128,14 +128,14 @@ TEST_F(NAME, function_with_multiple_statements)
           "    PRINT b\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(20));
+    ASSERT_THAT(ast_count(ast), Eq(20));
 
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(
         ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_INVALID));
@@ -154,15 +154,15 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
     ast_id arg11 = ast->nodes[arglist1].arglist.expr;
     ast_id arg21 = ast->nodes[arglist2].arglist.expr;
-    EXPECT_THAT(ast->nodes[cmd1].info.node_type, Eq(AST_COMMAND));
-    EXPECT_THAT(ast->nodes[cmd2].info.node_type, Eq(AST_COMMAND));
+    EXPECT_THAT(ast_node_type(ast, cmd1), Eq(AST_COMMAND));
+    EXPECT_THAT(ast_node_type(ast, cmd2), Eq(AST_COMMAND));
     EXPECT_THAT(ast->nodes[arg11].identifier.name, Utf8SpanEq(29, 1));
     EXPECT_THAT(ast->nodes[arg21].identifier.name, Utf8SpanEq(41, 1));
 
     ast_id binop = retval;
     ast_id lhs = ast->nodes[binop].binop.left;
     ast_id rhs = ast->nodes[binop].binop.right;
-    EXPECT_THAT(ast->nodes[binop].info.node_type, Eq(AST_BINOP));
+    EXPECT_THAT(ast_node_type(ast, binop), Eq(AST_BINOP));
     EXPECT_THAT(ast->nodes[binop].binop.op, Eq(BINOP_ADD));
     EXPECT_THAT(ast->nodes[lhs].identifier.name, Utf8SpanEq(55, 1));
     EXPECT_THAT(ast->nodes[rhs].identifier.name, Utf8SpanEq(59, 1));
@@ -177,14 +177,14 @@ TEST_F(NAME, function_with_explicit_types)
           "    PRINT b\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(ast->count, Eq(20));
+    ASSERT_THAT(ast_count(ast), Eq(20));
 
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
-    EXPECT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_F32));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
@@ -202,15 +202,15 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
     ast_id arg11 = ast->nodes[arglist1].arglist.expr;
     ast_id arg21 = ast->nodes[arglist2].arglist.expr;
-    EXPECT_THAT(ast->nodes[cmd1].info.node_type, Eq(AST_COMMAND));
-    EXPECT_THAT(ast->nodes[cmd2].info.node_type, Eq(AST_COMMAND));
+    EXPECT_THAT(ast_node_type(ast, cmd1), Eq(AST_COMMAND));
+    EXPECT_THAT(ast_node_type(ast, cmd2), Eq(AST_COMMAND));
     EXPECT_THAT(ast->nodes[arg11].identifier.name, Utf8SpanEq(56, 1));
     EXPECT_THAT(ast->nodes[arg21].identifier.name, Utf8SpanEq(68, 1));
 
     ast_id binop = retval;
     ast_id lhs = ast->nodes[binop].binop.left;
     ast_id rhs = ast->nodes[binop].binop.right;
-    EXPECT_THAT(ast->nodes[binop].info.node_type, Eq(AST_BINOP));
+    EXPECT_THAT(ast_node_type(ast, binop), Eq(AST_BINOP));
     EXPECT_THAT(ast->nodes[binop].binop.op, Eq(BINOP_ADD));
     EXPECT_THAT(ast->nodes[lhs].identifier.name, Utf8SpanEq(82, 1));
     EXPECT_THAT(ast->nodes[rhs].identifier.name, Utf8SpanEq(86, 1));

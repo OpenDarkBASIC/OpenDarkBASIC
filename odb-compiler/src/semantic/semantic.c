@@ -170,7 +170,7 @@ semantic_check_run(
            cmds,
            symbols};
 
-    if ((*astp)->count == 0)
+    if (ast_count(*astp))
     {
         log_semantic_warn(
             "AST is empty for source file {quote:%s}\n", utf8_cstr(filename));

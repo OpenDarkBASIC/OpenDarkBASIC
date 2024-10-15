@@ -21,20 +21,20 @@ TEST_F(NAME, print_command)
     addCommand("PRINT STDOUT");
     ASSERT_THAT(parse("print \"hello world\"\n"), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(4));
-    ASSERT_THAT(ast->nodes[ast->root].info.node_type, Eq(AST_BLOCK));
+    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_node_type(ast, ast->root), Eq(AST_BLOCK));
     ASSERT_THAT(ast->nodes[ast->root].block.next, Eq(-1));
     ast_id stmt = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(stmt, Gt(-1));
-    ASSERT_THAT(ast->nodes[stmt].info.node_type, Eq(AST_COMMAND));
+    ASSERT_THAT(ast_node_type(ast, stmt), Eq(AST_COMMAND));
     ASSERT_THAT(ast->nodes[stmt].cmd.id, Eq(1));
     ast_id arglist = ast->nodes[stmt].cmd.arglist;
     ASSERT_THAT(arglist, Gt(-1));
-    ASSERT_THAT(ast->nodes[arglist].info.node_type, Eq(AST_ARGLIST));
+    ASSERT_THAT(ast_node_type(ast, arglist), Eq(AST_ARGLIST));
     ASSERT_THAT(ast->nodes[arglist].arglist.next, Eq(-1));
     ast_id expr = ast->nodes[arglist].arglist.expr;
     ASSERT_THAT(expr, Gt(-1));
-    ASSERT_THAT(ast->nodes[expr].info.node_type, Eq(AST_STRING_LITERAL));
+    ASSERT_THAT(ast_node_type(ast, expr), Eq(AST_STRING_LITERAL));
     ASSERT_THAT(ast->nodes[expr].string_literal.str.off, Eq(7));
     ASSERT_THAT(ast->nodes[expr].string_literal.str.len, Eq(11));
 }

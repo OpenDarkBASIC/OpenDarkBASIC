@@ -26,10 +26,10 @@ TEST_F(NAME, exponent_cast_to_integer)
     ast_id op = ast->nodes[args].arglist.expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
-    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    EXPECT_THAT(ast_node_type(ast, lhs), Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(
-        ast->nodes[rhs].info.node_type,
+        ast_node_type(ast, rhs),
         Eq(AST_CAST)); // BYTE literal cast to INTEGER
-    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F64));
-    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
+    EXPECT_THAT(ast_type_info(ast, lhs), Eq(TYPE_F64));
+    EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
 }

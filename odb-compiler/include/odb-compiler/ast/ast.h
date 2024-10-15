@@ -408,6 +408,19 @@ ast_set_root(struct ast* ast, ast_id n)
         ast->root = n;
 }
 
+static inline ast_id
+ast_count(const struct ast* ast)
+    { return ast ? ast->count : 0; }
+static inline ast_id
+ast_count_unsafe(const struct ast* ast)
+    { return ast->count; }
+static inline enum ast_type
+ast_node_type(const struct ast* ast, ast_id n)
+    { return ast->nodes[n].info.node_type; }
+static inline enum type
+ast_type_info(const struct ast* ast, ast_id n)
+    { return ast->nodes[n].info.type_info; }
+
 ast_id ast_dup_node(struct ast** astp, ast_id n);
 
 ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);

@@ -31,17 +31,17 @@ TEST_F(NAME, unused_template_function_is_not_instantiated)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(7));
     ast_id func = ast->nodes[ast->root].block.stmt;
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
     ast_id ident = ast->nodes[decl].func_decl.identifier;
     ast_id ret = ast->nodes[def].func_def.retval;
     ASSERT_THAT(ret, Eq(-1));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_INVALID));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_INVALID));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_INVALID));
-    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_INVALID));
+    ASSERT_THAT(ast_type_info(ast, func), Eq(TYPE_INVALID));
 }
 
 TEST_F(NAME, function_with_no_args_is_typechecked)
@@ -57,17 +57,17 @@ TEST_F(NAME, function_with_no_args_is_typechecked)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(5));
+    ASSERT_THAT(ast_count(ast), Eq(5));
     ast_id func = ast->nodes[ast->root].block.stmt;
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
     ast_id ret = ast->nodes[def].func_def.retval;
     ast_id ident = ast->nodes[decl].func_decl.identifier;
     ASSERT_THAT(ret, Eq(-1));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, func), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
 }
 
 TEST_F(NAME, function_with_no_args_called)
@@ -84,7 +84,7 @@ TEST_F(NAME, function_with_no_args_called)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(8));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id call = ast->nodes[block1].block.stmt;
@@ -94,10 +94,10 @@ TEST_F(NAME, function_with_no_args_called)
     ast_id ret = ast->nodes[def].func_def.retval;
     ast_id ident = ast->nodes[decl].func_decl.identifier;
     ASSERT_THAT(ret, Eq(-1));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_VOID));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, func), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
 }
 
 TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
@@ -115,7 +115,7 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(33));
+    ASSERT_THAT(ast_count(ast), Eq(33));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -127,26 +127,26 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ast_id decl = ast->nodes[func].func.decl;
     ast_id def = ast->nodes[func].func.def;
     ast_id ident = ast->nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
-    ASSERT_THAT(ast->nodes[func].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
+    ASSERT_THAT(ast_type_info(ast, func), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_U8));
 
     ast_id paramlist1 = ast->nodes[decl].func_decl.paramlist;
     ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
     ast_id paramlist3 = ast->nodes[paramlist2].paramlist.next;
     ast_id param1 = ast->nodes[paramlist1].paramlist.identifier;
     ast_id param2 = ast->nodes[paramlist2].paramlist.identifier;
-    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_U8));
     ASSERT_THAT(paramlist3, Eq(-1));
 
     ast_id body = ast->nodes[def].func_def.body;
     ASSERT_THAT(body, Eq(-1));
 
     ast_id ret = ast->nodes[def].func_def.retval;
-    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_U8));
 }
 
 TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
@@ -163,11 +163,11 @@ TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(34));
+    ASSERT_THAT(ast_count(ast), Eq(34));
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
-    ASSERT_THAT(ast->nodes[cast].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast->nodes[cast].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
 }
 
 TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
@@ -186,7 +186,7 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
-    ASSERT_THAT(ast->count, Eq(54));
+    ASSERT_THAT(ast_count(ast), Eq(54));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -203,51 +203,51 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ast_id decl = ast->nodes[byte_func].func.decl;
     ast_id def = ast->nodes[byte_func].func.def;
     ast_id ident = ast->nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast->nodes[byte_func].info.node_type, Eq(AST_FUNC));
-    ASSERT_THAT(ast->nodes[byte_func].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast_node_type(ast, byte_func), Eq(AST_FUNC));
+    ASSERT_THAT(ast_type_info(ast, byte_func), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_U8));
 
     ast_id paramlist1 = ast->nodes[decl].func_decl.paramlist;
     ast_id paramlist2 = ast->nodes[paramlist1].paramlist.next;
     ast_id paramlist3 = ast->nodes[paramlist2].paramlist.next;
     ast_id param1 = ast->nodes[paramlist1].paramlist.identifier;
     ast_id param2 = ast->nodes[paramlist2].paramlist.identifier;
-    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_U8));
-    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_U8));
+    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_U8));
     ASSERT_THAT(paramlist3, Eq(-1));
 
     ast_id body = ast->nodes[def].func_def.body;
     ASSERT_THAT(body, Eq(-1));
 
     ast_id ret = ast->nodes[def].func_def.retval;
-    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_U8));
-    
+    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_U8));
+
     // Float function --------------------------------------------------------
     decl = ast->nodes[float_func].func.decl;
     def = ast->nodes[float_func].func.def;
     ident = ast->nodes[float_func].func_decl.identifier;
-    ASSERT_THAT(ast->nodes[float_func].info.node_type, Eq(AST_FUNC));
-    ASSERT_THAT(ast->nodes[float_func].info.type_info, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[decl].info.type_info, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[def].info.type_info, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[ident].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast_node_type(ast, float_func), Eq(AST_FUNC));
+    ASSERT_THAT(ast_type_info(ast, float_func), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, decl), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, def), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_F32));
 
     paramlist1 = ast->nodes[decl].func_decl.paramlist;
     paramlist2 = ast->nodes[paramlist1].paramlist.next;
     paramlist3 = ast->nodes[paramlist2].paramlist.next;
     param1 = ast->nodes[paramlist1].paramlist.identifier;
     param2 = ast->nodes[paramlist2].paramlist.identifier;
-    ASSERT_THAT(ast->nodes[param1].info.type_info, Eq(TYPE_F32));
-    ASSERT_THAT(ast->nodes[param2].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param1), Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, param2), Eq(TYPE_F32));
     ASSERT_THAT(paramlist3, Eq(-1));
 
     body = ast->nodes[def].func_def.body;
     ASSERT_THAT(body, Eq(-1));
 
     ret = ast->nodes[def].func_def.retval;
-    ASSERT_THAT(ast->nodes[ret].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast_type_info(ast, ret), Eq(TYPE_F32));
 }
 
 TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
@@ -265,7 +265,7 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
         << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
-    
+
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -277,10 +277,10 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
     ast_id call2 = ast->nodes[block2].block.stmt;
     ast_id func_template = ast->nodes[block3].block.stmt;
     ast_id func = ast->nodes[block4].block.stmt;
-    ASSERT_THAT(ast->nodes[call1].info.node_type, Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast->nodes[call2].info.node_type, Eq(AST_FUNC_CALL));
-    ASSERT_THAT(ast->nodes[func_template].info.node_type, Eq(AST_FUNC_TEMPLATE));
-    ASSERT_THAT(ast->nodes[func].info.node_type, Eq(AST_FUNC));
+    ASSERT_THAT(ast_node_type(ast, call1), Eq(AST_FUNC_CALL));
+    ASSERT_THAT(ast_node_type(ast, call2), Eq(AST_FUNC_CALL));
+    ASSERT_THAT(ast_node_type(ast, func_template), Eq(AST_FUNC_TEMPLATE));
+    ASSERT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
 }
 
 TEST_F(NAME, func_returns_result_of_another_func)

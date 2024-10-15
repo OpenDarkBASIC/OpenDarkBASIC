@@ -21,7 +21,7 @@ union expr_value
 static enum expr_type
 eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 {
-    switch (ast->nodes[n].info.node_type)
+    switch (ast_node_type(ast, n))
     {
         case AST_GC: break;
         case AST_BLOCK: break;
@@ -300,8 +300,8 @@ convert_for_loop_to_primitives(
     ODBUTIL_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
     ODBUTIL_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[init].info.node_type == AST_ASSIGNMENT,
-        log_semantic_err("type: %d\n", (*astp)->nodes[init].info.node_type));
+        ast_node_type((*astp), init) == AST_ASSIGNMENT,
+        log_semantic_err("type: %d\n", ast_node_type((*astp), init)));
     loop_var = (*astp)->nodes[init].assignment.lvalue;
     begin = (*astp)->nodes[init].assignment.expr;
 
@@ -368,9 +368,9 @@ convert_for_loop_to_primitives(
     ODBUTIL_DEBUG_ASSERT(
         loop_block > -1, log_semantic_err("loop_block: %d\n", loop_block));
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[loop_block].info.node_type == AST_BLOCK,
+        ast_node_type((*astp), loop_block) == AST_BLOCK,
         log_semantic_err(
-            "loop_block: %d\n", (*astp)->nodes[loop_block].info.node_type));
+            "loop_block: %d\n", ast_node_type((*astp), loop_block)));
     ast_id init_block = ast_block_append_stmt(
         astp, loop_block, init, (*astp)->nodes[init].info.location);
     /* Block "steals" ownership of the init statement */
@@ -406,9 +406,9 @@ loop_for(
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_LOOP)
+        if (ast_node_type(ast, n) != AST_LOOP)
             continue;
         if (ast->nodes[n].loop.loop_for1 == -1)
             continue;

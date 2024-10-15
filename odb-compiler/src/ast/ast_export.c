@@ -99,8 +99,7 @@ write_node(
     const struct cmd_list* commands,
     const struct style*    style)
 {
-    const union ast_node* nd = &ast->nodes[n];
-    switch (nd->info.node_type)
+    switch (ast_node_type(ast, n))
     {
         case AST_GC:
             fprintf(
@@ -152,8 +151,9 @@ write_node(
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
-                = utf8_list_view(commands->db_cmd_names, nd->cmd.id);
-            enum type ret_type = commands->return_types->data[nd->cmd.id];
+                = utf8_list_view(commands->db_cmd_names, ast->nodes[n].cmd.id);
+            enum type ret_type
+                = commands->return_types->data[ast->nodes[n].cmd.id];
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
@@ -162,7 +162,7 @@ write_node(
                 style->cmd.color,
                 style->cmd.fontcolor,
                 style->cmd.shape,
-                nd->cmd.id,
+                ast->nodes[n].cmd.id,
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
                 ret_type == TYPE_VOID ? "" : "()");
@@ -187,14 +187,15 @@ write_node(
                 style->identifier.color,
                 style->type.fontcolor,
                 style->identifier.shape,
-                nd->identifier.scope == SCOPE_LOCAL ? "LOCAL" : "GLOBAL",
+                ast->nodes[n].identifier.scope == SCOPE_LOCAL ? "LOCAL"
+                                                              : "GLOBAL",
                 style->identifier.fontcolor,
-                nd->identifier.name.len,
-                source + nd->identifier.name.off,
-                type_to_db_name(nd->identifier.info.type_info));
+                ast->nodes[n].identifier.name.len,
+                source + ast->nodes[n].identifier.name.off,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_BINOP:
-            switch (nd->binop.op)
+            switch (ast->nodes[n].binop.op)
             {
 #define X(op, tok)                                                             \
     case BINOP_##op:                                                           \
@@ -213,7 +214,7 @@ write_node(
             }
             break;
         case AST_UNOP:
-            switch (nd->unop.op)
+            switch (ast->nodes[n].unop.op)
             {
 #define X(op, tok)                                                             \
     case UNOP_##op:                                                            \
@@ -250,7 +251,7 @@ write_node(
                 style->keyword.fontcolor);
             break;
         case AST_LOOP:
-            if (nd->loop.name.len)
+            if (ast->nodes[n].loop.name.len)
                 fprintf(
                     fp,
                     "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
@@ -258,10 +259,10 @@ write_node(
                     n,
                     style->keyword.color,
                     style->keyword.fontcolor,
-                    nd->loop.name.len,
-                    source + nd->loop.name.off,
-                    nd->loop.implicit_name.len,
-                    source + nd->loop.implicit_name.off);
+                    ast->nodes[n].loop.name.len,
+                    source + ast->nodes[n].loop.name.off,
+                    ast->nodes[n].loop.implicit_name.len,
+                    source + ast->nodes[n].loop.implicit_name.off);
             else
                 fprintf(
                     fp,
@@ -270,8 +271,8 @@ write_node(
                     n,
                     style->keyword.color,
                     style->keyword.fontcolor,
-                    nd->loop.implicit_name.len,
-                    source + nd->loop.implicit_name.off);
+                    ast->nodes[n].loop.implicit_name.len,
+                    source + ast->nodes[n].loop.implicit_name.off);
             break;
         case AST_LOOP_BODY:
             fprintf(
@@ -292,7 +293,7 @@ write_node(
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                nd->info.node_type - AST_LOOP_FOR1 + 1);
+                ast_node_type(ast, n) - AST_LOOP_FOR1 + 1);
             break;
         case AST_LOOP_CONT:
             fprintf(
@@ -302,8 +303,8 @@ write_node(
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                nd->cont.name.len,
-                source + nd->cont.name.off);
+                ast->nodes[n].cont.name.len,
+                source + ast->nodes[n].cont.name.off);
             break;
         case AST_LOOP_EXIT:
             fprintf(
@@ -313,8 +314,8 @@ write_node(
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                nd->loop_exit.name.len,
-                source + nd->loop_exit.name.off);
+                ast->nodes[n].loop_exit.name.len,
+                source + ast->nodes[n].loop_exit.name.off);
             break;
         case AST_FUNC_TEMPLATE:
             fprintf(
@@ -334,7 +335,7 @@ write_node(
                 style->keyword.color,
                 style->keyword.fontcolor,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_DECL:
             fprintf(
@@ -345,7 +346,7 @@ write_node(
                 style->keyword.color,
                 style->keyword.fontcolor,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_DEF:
             fprintf(
@@ -356,7 +357,7 @@ write_node(
                 style->keyword.color,
                 style->keyword.fontcolor,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_EXIT:
             fprintf(
@@ -394,9 +395,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                nd->boolean_literal.is_true ? "true" : "false",
+                ast->nodes[n].boolean_literal.is_true ? "true" : "false",
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_BYTE_LITERAL:
             fprintf(
@@ -407,9 +408,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                (int)nd->byte_literal.value,
+                (int)ast->nodes[n].byte_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_WORD_LITERAL:
             fprintf(
@@ -420,9 +421,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                (int)nd->word_literal.value,
+                (int)ast->nodes[n].word_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_INTEGER_LITERAL:
             fprintf(
@@ -433,9 +434,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                nd->integer_literal.value,
+                ast->nodes[n].integer_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_DWORD_LITERAL:
             fprintf(
@@ -446,9 +447,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                nd->dword_literal.value,
+                ast->nodes[n].dword_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_DOUBLE_INTEGER_LITERAL:
             fprintf(
@@ -459,9 +460,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                nd->double_integer_literal.value,
+                ast->nodes[n].double_integer_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FLOAT_LITERAL:
             fprintf(
@@ -472,9 +473,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                (double)nd->float_literal.value,
+                (double)ast->nodes[n].float_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_DOUBLE_LITERAL:
             fprintf(
@@ -485,9 +486,9 @@ write_node(
                 style->numeric.color,
                 style->numeric.fontcolor,
                 style->numeric.shape,
-                nd->double_literal.value,
+                ast->nodes[n].double_literal.value,
                 style->type.fontcolor,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_STRING_LITERAL:
             fprintf(
@@ -498,8 +499,8 @@ write_node(
                 style->string.color,
                 style->string.fontcolor,
                 style->string.shape,
-                nd->string_literal.str.len,
-                source + nd->string_literal.str.off);
+                ast->nodes[n].string_literal.str.len,
+                source + ast->nodes[n].string_literal.str.off);
             break;
         case AST_CAST:
             fprintf(
@@ -510,7 +511,7 @@ write_node(
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                type_to_db_name(nd->info.type_info));
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_SCOPE:
             fprintf(
@@ -553,14 +554,14 @@ write_nodes_nonrecursive(
     const struct style*    style)
 {
     ast_id n;
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
         write_node(ast, n, fp, source, commands, style);
 }
 
 static const char*
 get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
 {
-    switch (ast->nodes[parent].info.node_type)
+    switch (ast_node_type(ast, parent))
     {
 #define NAMES(lname, rname)                                                    \
     if (ast->nodes[parent].base.left == child)                                 \
@@ -616,14 +617,15 @@ static void
 write_edges(const struct ast* ast, FILE* fp, const struct style* style)
 {
     ast_id n;
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
         ast_id left = ast->nodes[n].base.left;
         ast_id right = ast->nodes[n].base.right;
         if (left > -1)
             fprintf(
                 fp,
-                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", label=\"%s\"];\n",
+                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", "
+                "label=\"%s\"];\n",
                 n,
                 ast->nodes[n].base.left,
                 style->edgecolor,
@@ -632,7 +634,8 @@ write_edges(const struct ast* ast, FILE* fp, const struct style* style)
         if (right > -1)
             fprintf(
                 fp,
-                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", label=\"%s\"];\n",
+                "  n%d -> n%d [color=\"%s\", fontcolor=\"%s\", "
+                "label=\"%s\"];\n",
                 n,
                 ast->nodes[n].base.right,
                 style->edgecolor,
@@ -647,7 +650,7 @@ max_depth_is_unreasonable(const struct ast* ast, ast_id n, ast_id depth)
     ast_id left = ast->nodes[n].base.left;
     ast_id right = ast->nodes[n].base.right;
 
-    if (depth >= ast->count)
+    if (depth >= ast_count_unsafe(ast))
         return 1;
 
     if (left > -1)

@@ -40,9 +40,9 @@ new_node(struct ast** astp, enum ast_type type, struct utf8_span location)
         return -1;
     ast = *astp;
 
-    ast->nodes[n].base.info.location = location;
-    ast->nodes[n].base.info.node_type = type;
-    ast->nodes[n].base.info.type_info = TYPE_INVALID;
+    ast->nodes[n].info.location = location;
+    ast->nodes[n].info.node_type = type;
+    ast->nodes[n].info.type_info = TYPE_INVALID;
     ast->nodes[n].base.left = -1;
     ast->nodes[n].base.right = -1;
 

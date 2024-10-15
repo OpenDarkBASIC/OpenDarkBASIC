@@ -17,8 +17,8 @@ log_narrow_binop(
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
-    enum type source_type = ast->nodes[source_node].info.type_info;
-    enum type target_type = ast->nodes[target_node].info.type_info;
+    enum type source_type = ast_type_info(ast, source_node);
+    enum type target_type = ast_type_info(ast, target_node);
 
     log_flc_warn(
         filename,
@@ -48,8 +48,8 @@ log_implicit_binop(
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
-    enum type source_type = ast->nodes[source_node].info.type_info;
-    enum type target_type = ast->nodes[target_node].info.type_info;
+    enum type source_type = ast_type_info(ast, source_node);
+    enum type target_type = ast_type_info(ast, target_node);
 
     log_flc_warn(
         source_filename,
@@ -78,8 +78,8 @@ log_error_binop(
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
-    enum type source_type = ast->nodes[source_node].info.type_info;
-    enum type target_type = ast->nodes[op].info.type_info;
+    enum type source_type = ast_type_info(ast, source_node);
+    enum type target_type = ast_type_info(ast, op);
 
     log_flc_err(
         source_filename,
@@ -109,15 +109,15 @@ type_check_binop_symmetric(
     struct ast* ast = *astp;
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[op].info.node_type == AST_BINOP,
-        log_semantic_err("type: %d\n", ast->nodes[op].info.node_type));
+        ast_node_type(ast, op) == AST_BINOP,
+        log_semantic_err("type: %d\n", ast_node_type(ast, op)));
 
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
 
     enum type target_type = TYPE_INVALID;
-    enum type lhs_type = ast->nodes[lhs].info.type_info;
-    enum type rhs_type = ast->nodes[rhs].info.type_info;
+    enum type lhs_type = ast_type_info(ast, lhs);
+    enum type rhs_type = ast_type_info(ast, rhs);
 
     /*
      * These operations require that both LHS and RHS have the same
@@ -176,7 +176,7 @@ type_check_binop_symmetric(
     }
 
     /* Insert casts to result type, if necessary */
-    if (ast->nodes[lhs].info.type_info != target_type)
+    if (ast_type_info(ast, lhs) != target_type)
     {
         ast_id cast_lhs
             = ast_cast(astp, lhs, target_type, ast->nodes[lhs].info.location);
@@ -186,7 +186,7 @@ type_check_binop_symmetric(
         ast->nodes[op].binop.left = cast_lhs;
     }
 
-    if (ast->nodes[rhs].info.type_info != target_type)
+    if (ast_type_info(ast, rhs) != target_type)
     {
         ast_id cast_rhs
             = ast_cast(astp, rhs, target_type, ast->nodes[rhs].info.location);

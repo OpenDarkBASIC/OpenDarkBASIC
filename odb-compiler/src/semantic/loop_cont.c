@@ -18,8 +18,8 @@ get_loop_var(const struct ast* ast, ast_id loop)
     ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
 
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[post_body].info.node_type == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast->nodes[post_body].info.node_type));
+        ast_node_type(ast, post_body) == AST_BLOCK,
+        log_semantic_err("type: %d\n", ast_node_type(ast, post_body)));
     step_stmt = ast->nodes[post_body].block.stmt;
     return ast->nodes[step_stmt].assignment.lvalue;
 }
@@ -99,8 +99,8 @@ check_cont(
 {
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[cont].info.node_type == AST_LOOP_CONT,
-        log_semantic_err("type: %d\n", ast->nodes[cont].info.node_type));
+        ast_node_type(ast, cont) == AST_LOOP_CONT,
+        log_semantic_err("type: %d\n", ast_node_type(ast, cont)));
 
     ast_id first_loop = -1;
     ast_id loop = cont;
@@ -111,7 +111,7 @@ check_cont(
             return log_cont_error(
                 ast, cont, first_loop, source_filename, source_text);
 
-        if (ast->nodes[loop].info.node_type == AST_LOOP)
+        if (ast_node_type(ast, loop) == AST_LOOP)
         {
             if (ast->nodes[cont].cont.name.len == 0
                 || utf8_equal_span(
@@ -150,9 +150,9 @@ check_loop_cont(
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->count; ++n)
+    for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_LOOP_CONT)
+        if (ast_node_type(ast, n) != AST_LOOP_CONT)
             continue;
 
         loop = check_cont(ast, n, filename, source);
