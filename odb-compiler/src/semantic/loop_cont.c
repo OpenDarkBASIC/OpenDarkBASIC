@@ -13,22 +13,22 @@ get_loop_var(const struct ast* ast, ast_id loop)
 }
 
 static void
-create_step_block(struct ast* ast, ast_id loop, ast_id cont)
+create_step_block(struct ast** astp, ast_id loop, ast_id cont)
 {
-    if (ast->nodes[cont].cont.step > -1)
+    if ((*astp)->nodes[cont].cont.step > -1)
     {
-        ast_id step_expr = ast->nodes[cont].cont.step;
-        ast_id loop_var = get_loop_var(ast, loop);
-        ast_id inc_var = ast_dup_lvalue(ast, loop_var);
+        ast_id step_expr = (*astp)->nodes[cont].cont.step;
+        ast_id loop_var = get_loop_var(*astp, loop);
+        ast_id inc_var = ast_dup_lvalue(astp, loop_var);
         ast_id inc_stmt = ast_inc_step(
-            ast, inc_var, step_expr, ast->nodes[step_expr].info.location);
-        ast->nodes[cont].cont.step
-            = ast_block(ast, inc_stmt, ast->nodes[step_expr].info.location);
+            astp, inc_var, step_expr, (*astp)->nodes[step_expr].info.location);
+        (*astp)->nodes[cont].cont.step = ast_block(
+            astp, inc_stmt, (*astp)->nodes[step_expr].info.location);
     }
     else
     {
-        ODBUTIL_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
-        ast->nodes[cont].cont.step = ast->nodes[loop].loop.post_body;
+        ODBUTIL_DEBUG_ASSERT((*astp)->nodes[loop].loop.post_body > -1, (void)0);
+        (*astp)->nodes[cont].cont.step = (*astp)->nodes[loop].loop.post_body;
     }
 }
 
@@ -78,10 +78,10 @@ log_cont_error(
 
 static int
 check_cont(
-    struct ast* ast,
-    ast_id      cont,
-    const char* source_filename,
-    const char* source_text)
+    const struct ast* ast,
+    ast_id            cont,
+    const char*       source_filename,
+    const char*       source_text)
 {
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -120,22 +120,23 @@ check_cont(
 
 static int
 check_loop_cont(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
-    ast_id      n, loop;
-    struct ast* ast = &tus[tu_id];
-    const char* filename = filenames[tu_id];
-    const char* source = sources[tu_id].text.data;
+    ast_id       n, loop;
+    struct ast** astp = &tus[tu_id];
+    struct ast*  ast = *astp;
+    const char*  filename = utf8_cstr(filenames[tu_id]);
+    const char*  source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP_CONT)
             continue;
@@ -144,7 +145,8 @@ check_loop_cont(
         if (loop == -1)
             return -1;
 
-        create_step_block(ast, loop, n);
+        create_step_block(astp, loop, n);
+        ast = *astp;
     }
 
     return 0;

@@ -31,7 +31,7 @@ DBParserHelper::DBParserHelper()
 
 DBParserHelper::~DBParserHelper()
 {
-    if (ast.node_count)
+    if (ast)
     {
 #if defined(ODBCOMPILER_DOT_EXPORT)
         const testing::TestInfo* info
@@ -40,7 +40,7 @@ DBParserHelper::~DBParserHelper()
                                + "__" + info->name() + ".dot";
         std::filesystem::create_directory("ast");
         ast_export_dot(
-            &ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
+            ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
 #endif
     }
 
@@ -53,7 +53,7 @@ DBParserHelper::~DBParserHelper()
         utf8_deinit(plugin->name);
     }
 
-    ast_deinit(&ast);
+    ast_deinit(ast);
     db_parser_deinit(&p);
     if (src.text.data)
         db_source_close(&src);
@@ -75,18 +75,23 @@ DBParserHelper::parse(const char* code)
 int
 DBParserHelper::semantic(const struct semantic_check* check)
 {
-    const char* source_filenames[] = {"test"};
-    return semantic_check_run(
+    int         result;
+    struct utf8 filename = empty_utf8();
+
+    utf8_set_cstr(&filename, "test");
+    result = semantic_check_run(
         check,
         &ast,
         1,
         0,
         &ast_mutex,
-        source_filenames,
+        &filename,
         &src,
         plugins,
         &cmds,
         symbols);
+    utf8_deinit(filename);
+    return result;
 }
 
 int

@@ -156,14 +156,14 @@ symbol_table_deinit(struct symbol_table* table)
 int
 symbol_table_add_declarations_from_ast(
     struct symbol_table**   table,
-    const struct ast*       tus,
+    struct ast**            tus,
     int                     tu_id,
     const struct db_source* sources)
 {
     ast_id            n;
-    const struct ast* ast = &tus[tu_id];
+    const struct ast* ast = tus[tu_id];
     const char*       source = sources[tu_id].text.data;
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_FUNC)
             continue;

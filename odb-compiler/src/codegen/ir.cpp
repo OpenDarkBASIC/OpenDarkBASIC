@@ -153,7 +153,7 @@ create_global_string_table(
     const struct ast*                       ast,
     const char*                             source_text)
 {
-    for (ast_id n = 0; n != ast->node_count; ++n)
+    for (ast_id n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_STRING_LITERAL)
             continue;
@@ -272,7 +272,7 @@ create_global_command_function_table(
     const struct cmd_list*                  cmds,
     const char*                             source_text)
 {
-    for (ast_id n = 0; n != ast->node_count; ++n)
+    for (ast_id n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_COMMAND)
             continue;
@@ -1237,7 +1237,7 @@ gen_block(
 int
 ir_translate_ast(
     struct ir_module*      ir,
-    const struct ast*      program,
+    const struct ast*      ast,
     enum sdk_type          sdk_type,
     enum target_arch       arch,
     enum target_platform   platform,
@@ -1246,11 +1246,11 @@ ir_translate_ast(
     const char*            source_text)
 {
     llvm::StringMap<llvm::GlobalVariable*> string_table;
-    create_global_string_table(ir, &string_table, program, source_text);
+    create_global_string_table(ir, &string_table, ast, source_text);
 
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
     create_global_command_function_table(
-        ir, &cmd_func_table, program, cmds, source_text);
+        ir, &cmd_func_table, ast, cmds, source_text);
 
     llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
 
@@ -1272,15 +1272,15 @@ ir_translate_ast(
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
-    if (program->node_count == 0)
+    if (ast->count == 0)
         log_codegen_warn(
             "AST is empty for source file {quote:%s}\n", source_filename);
     else
         gen_block(
             ir,
             builder,
-            program,
-            0,
+            ast,
+            ast->root,
             sdk_type,
             cmds,
             source_filename,

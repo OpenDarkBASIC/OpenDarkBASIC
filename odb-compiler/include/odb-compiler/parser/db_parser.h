@@ -24,7 +24,7 @@ db_parser_deinit(struct db_parser* parser);
 ODBCOMPILER_PUBLIC_API int
 db_parse(
     struct db_parser*      parser,
-    struct ast*            ast,
+    struct ast**           ast,
     const char*            filename,
     struct db_source       source,
     const struct cmd_list* commands);

@@ -26,15 +26,15 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(log(), LogEq(""));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }

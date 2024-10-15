@@ -68,6 +68,9 @@ type_from_char(char c);
 ODBCOMPILER_PUBLIC_API enum type_annotation
 type_to_annotation(enum type type);
 
+ODBCOMPILER_PUBLIC_API enum type
+annotation_to_type(enum type_annotation annotation);
+
 ODBCOMPILER_PUBLIC_API const char*
 type_to_db_name(enum type type);
 

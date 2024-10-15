@@ -1,6 +1,5 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/type.h"
 #include <stdio.h>
@@ -10,15 +9,15 @@ write_nodes(
     const struct ast*      ast,
     ast_id                 n,
     FILE*                  fp,
-    const char*            source_text,
+    const char*            source,
     const struct cmd_list* commands)
 {
-    union ast_node* nd = &ast->nodes[n];
+    const union ast_node* nd = &ast->nodes[n];
 
     if (nd->base.left >= 0)
-        write_nodes(ast, nd->base.left, fp, source_text, commands);
+        write_nodes(ast, nd->base.left, fp, source, commands);
     if (nd->base.right >= 0)
-        write_nodes(ast, nd->base.right, fp, source_text, commands);
+        write_nodes(ast, nd->base.right, fp, source, commands);
 
     switch (nd->info.node_type)
     {
@@ -59,7 +58,7 @@ write_nodes(
                 n,
                 nd->identifier.scope == SCOPE_LOCAL ? "LOCAL" : "GLOBAL",
                 nd->identifier.name.len,
-                source_text + nd->identifier.name.off,
+                source + nd->identifier.name.off,
                 type_to_db_name(nd->identifier.info.type_info));
             break;
         case AST_BINOP:
@@ -93,7 +92,7 @@ write_nodes(
         case AST_LOOP:
             if (nd->loop.loop_for > -1)
             {
-                write_nodes(ast, nd->loop.loop_for, fp, source_text, commands);
+                write_nodes(ast, nd->loop.loop_for, fp, source, commands);
                 fprintf(fp, "  n%d -> n%d;\n", n, nd->loop.loop_for);
             }
             if (nd->loop.name.len)
@@ -103,16 +102,16 @@ write_nodes(
                     "\\\"%.*s\\\"\"];\n",
                     n,
                     nd->loop.name.len,
-                    source_text + nd->loop.name.off,
+                    source + nd->loop.name.off,
                     nd->loop.implicit_name.len,
-                    source_text + nd->loop.implicit_name.off);
+                    source + nd->loop.implicit_name.off);
             else
                 fprintf(
                     fp,
                     "  n%d [shape=\"diamond\", label=\"loop \\\"%.*s\\\"\"];\n",
                     n,
                     nd->loop.implicit_name.len,
-                    source_text + nd->loop.implicit_name.off);
+                    source + nd->loop.implicit_name.off);
             break;
         case AST_LOOP_FOR:
             fprintf(fp, "  n%d [shape=\"diamond\", label=\"for\"];\n", n);
@@ -123,7 +122,7 @@ write_nodes(
                 "  n%d [shape=\"diamond\", label=\"continue %.*s\"];\n",
                 n,
                 nd->cont.name.len,
-                source_text + nd->cont.name.off);
+                source + nd->cont.name.off);
             break;
         case AST_LOOP_EXIT:
             fprintf(
@@ -131,7 +130,7 @@ write_nodes(
                 "  n%d [shape=\"record\", label=\"exit %.*s\"];\n",
                 n,
                 nd->loop_exit.name.len,
-                source_text + nd->loop_exit.name.off);
+                source + nd->loop_exit.name.off);
             break;
         case AST_FUNC:
             fprintf(fp, "  n%d [shape=\"record\", label=\"func\"];\n", n);
@@ -215,7 +214,7 @@ write_nodes(
                 "label=\"\\\"%.*s\\\"\"];\n",
                 n,
                 nd->string_literal.str.len,
-                source_text + nd->string_literal.str.off);
+                source + nd->string_literal.str.off);
             break;
         case AST_CAST:
             fprintf(
@@ -231,7 +230,7 @@ static void
 write_edges(const struct ast* ast, FILE* fp)
 {
     ast_id n;
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].base.left >= 0)
             fprintf(fp, "  n%d -> n%d;\n", n, ast->nodes[n].base.left);
@@ -244,13 +243,13 @@ ast_id
 ast_export_dot(
     const struct ast*      ast,
     struct ospathc         filepath,
-    const char*            source_text,
+    const char*            source,
     const struct cmd_list* commands)
 {
     FILE* fp = fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
         return -1;
-    ast_export_dot_fp(ast, fp, source_text, commands);
+    ast_export_dot_fp(ast, fp, source, commands);
     fclose(fp);
 
     return 0;
@@ -260,11 +259,11 @@ ast_id
 ast_export_dot_fp(
     const struct ast*      ast,
     FILE*                  fp,
-    const char*            source_text,
+    const char*            source,
     const struct cmd_list* commands)
 {
     fprintf(fp, "digraph ast {\n");
-    write_nodes(ast, 0, fp, source_text, commands);
+    write_nodes(ast, ast->root, fp, source, commands);
     write_edges(ast, fp);
     fprintf(fp, "}\n");
 

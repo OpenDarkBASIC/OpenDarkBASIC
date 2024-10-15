@@ -196,20 +196,20 @@ child_changed:
 
 static int
 unary_literal(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
     ast_id      n;
-    struct ast* ast = &tus[tu_id];
+    struct ast* ast = tus[tu_id];
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_UNOP)
             continue;

@@ -18,9 +18,9 @@
 
     struct parse_param
     {
+        struct ast** astp;
         const char* filename;
         const char* source;
-        struct ast* ast;
     };
 }
 
@@ -262,20 +262,20 @@ sep: '\n' ;
 seps: seps sep | sep ;
 maybe_seps: seps | ;
 program
-  : maybe_seps block maybe_seps             { ast_set_root(ctx->ast, $2); }
+  : maybe_seps block maybe_seps             { ast_set_root(*ctx->astp, $2); }
   | maybe_seps                              {}
   ;
 block
-  : block seps stmt                         { $$ = $1; ast_block_append_stmt(ctx->ast, $$, $3, @$); }
-  | stmt                                    { $$ = ast_block(ctx->ast, $1, @$); }
+  : block seps stmt                         { $$ = $1; ast_block_append_stmt(ctx->astp, $$, $3, @$); }
+  | stmt                                    { $$ = ast_block(ctx->astp, $1, @$); }
   ;
 maybe_block
   : seps block seps                         { $$ = $2; }
   | seps                                    { $$ = -1; }
   ;
 iblock
-  : iblock iseps istmt                      { $$ = $1; ast_block_append_stmt(ctx->ast, $$, $3, @$); }
-  | istmt                                   { $$ = ast_block(ctx->ast, $1, @$); }
+  : iblock iseps istmt                      { $$ = $1; ast_block_append_stmt(ctx->astp, $$, $3, @$); }
+  | istmt                                   { $$ = ast_block(ctx->astp, $1, @$); }
   ;
 stmt
   : conditional                             { $$ = $1; }
@@ -286,7 +286,7 @@ stmt
   ;
 // Statements that can appear "inline", e.g. "if x then istmt"
 istmt
-  : END                                     { $$ = ast_end(ctx->ast, @$); }
+  : END                                     { $$ = ast_end(ctx->astp, @$); }
   | command_stmt                            { $$ = $1; }
   | assignment                              { $$ = $1; }
   | inc                                     { $$ = $1; }
@@ -299,36 +299,36 @@ expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
   /* Unary operators */
   | '+' expr %prec UPLUS                    { $$ = $2; }
-  | '-' expr %prec UMINUS                   { $$ = ast_unop(ctx->ast, UNOP_NEGATE, $2, @$); }
-  | BNOT expr %prec UNOT                    { $$ = ast_unop(ctx->ast, UNOP_BITWISE_NOT, $2, @$); }
-  | LNOT expr                               { $$ = ast_unop(ctx->ast, UNOP_LOGICAL_NOT, $2, @$); }
+  | '-' expr %prec UMINUS                   { $$ = ast_unop(ctx->astp, UNOP_NEGATE, $2, @$); }
+  | BNOT expr %prec UNOT                    { $$ = ast_unop(ctx->astp, UNOP_BITWISE_NOT, $2, @$); }
+  | LNOT expr                               { $$ = ast_unop(ctx->astp, UNOP_LOGICAL_NOT, $2, @$); }
   /* arithmetic binops */
-  | expr '+' expr                           { $$ = ast_binop(ctx->ast, BINOP_ADD, $1, $3, @2, @$); }
-  | expr '-' expr                           { $$ = ast_binop(ctx->ast, BINOP_SUB, $1, $3, @2, @$); }
-  | expr '*' expr                           { $$ = ast_binop(ctx->ast, BINOP_MUL, $1, $3, @2, @$); }
-  | expr '/' expr                           { $$ = ast_binop(ctx->ast, BINOP_DIV, $1, $3, @2, @$); }
-  | expr MOD expr                           { $$ = ast_binop(ctx->ast, BINOP_MOD, $1, $3, @2, @$); }
-  | expr '^' expr                           { $$ = ast_binop(ctx->ast, BINOP_POW, $1, $3, @2, @$); }
+  | expr '+' expr                           { $$ = ast_binop(ctx->astp, BINOP_ADD, $1, $3, @2, @$); }
+  | expr '-' expr                           { $$ = ast_binop(ctx->astp, BINOP_SUB, $1, $3, @2, @$); }
+  | expr '*' expr                           { $$ = ast_binop(ctx->astp, BINOP_MUL, $1, $3, @2, @$); }
+  | expr '/' expr                           { $$ = ast_binop(ctx->astp, BINOP_DIV, $1, $3, @2, @$); }
+  | expr MOD expr                           { $$ = ast_binop(ctx->astp, BINOP_MOD, $1, $3, @2, @$); }
+  | expr '^' expr                           { $$ = ast_binop(ctx->astp, BINOP_POW, $1, $3, @2, @$); }
   /* logical binops */
-  | expr '<' expr                           { $$ = ast_binop(ctx->ast, BINOP_LESS_THAN, $1, $3, @2, @$); }
-  | expr '>' expr                           { $$ = ast_binop(ctx->ast, BINOP_GREATER_THAN, $1, $3, @2, @$); }
-  | expr '=' expr                           { $$ = ast_binop(ctx->ast, BINOP_EQUAL, $1, $3, @2, @$); }
-  | expr GE expr                            { $$ = ast_binop(ctx->ast, BINOP_GREATER_EQUAL, $1, $3, @2, @$); }
-  | expr LE expr                            { $$ = ast_binop(ctx->ast, BINOP_LESS_EQUAL, $1, $3, @2, @$); }
-  | expr NE expr                            { $$ = ast_binop(ctx->ast, BINOP_NOT_EQUAL, $1, $3, @2, @$); }
+  | expr '<' expr                           { $$ = ast_binop(ctx->astp, BINOP_LESS_THAN, $1, $3, @2, @$); }
+  | expr '>' expr                           { $$ = ast_binop(ctx->astp, BINOP_GREATER_THAN, $1, $3, @2, @$); }
+  | expr '=' expr                           { $$ = ast_binop(ctx->astp, BINOP_EQUAL, $1, $3, @2, @$); }
+  | expr GE expr                            { $$ = ast_binop(ctx->astp, BINOP_GREATER_EQUAL, $1, $3, @2, @$); }
+  | expr LE expr                            { $$ = ast_binop(ctx->astp, BINOP_LESS_EQUAL, $1, $3, @2, @$); }
+  | expr NE expr                            { $$ = ast_binop(ctx->astp, BINOP_NOT_EQUAL, $1, $3, @2, @$); }
   /* Logical boolean binops */
-  | expr LOR expr                           { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_OR, $1, $3, @2, @$); }
-  | expr LAND expr                          { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_AND, $1, $3, @2, @$); }
-  | expr LXOR expr                          { $$ = ast_binop(ctx->ast, BINOP_LOGICAL_XOR, $1, $3, @2, @$); }
+  | expr LOR expr                           { $$ = ast_binop(ctx->astp, BINOP_LOGICAL_OR, $1, $3, @2, @$); }
+  | expr LAND expr                          { $$ = ast_binop(ctx->astp, BINOP_LOGICAL_AND, $1, $3, @2, @$); }
+  | expr LXOR expr                          { $$ = ast_binop(ctx->astp, BINOP_LOGICAL_XOR, $1, $3, @2, @$); }
   /* Bitwise binops */
-  | expr BOR expr                           { $$ = ast_binop(ctx->ast, BINOP_BITWISE_OR, $1, $3, @2, @$); }
-  | expr BAND expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_AND, $1, $3, @2, @$); }
-  | expr BXOR expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_XOR, $1, $3, @2, @$); }
-  | expr BNOT expr                          { $$ = ast_binop(ctx->ast, BINOP_BITWISE_NOT, $1, $3, @2, @$); }
-  | expr BSHL expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
-  | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
+  | expr BOR expr                           { $$ = ast_binop(ctx->astp, BINOP_BITWISE_OR, $1, $3, @2, @$); }
+  | expr BAND expr                          { $$ = ast_binop(ctx->astp, BINOP_BITWISE_AND, $1, $3, @2, @$); }
+  | expr BXOR expr                          { $$ = ast_binop(ctx->astp, BINOP_BITWISE_XOR, $1, $3, @2, @$); }
+  | expr BNOT expr                          { $$ = ast_binop(ctx->astp, BINOP_BITWISE_NOT, $1, $3, @2, @$); }
+  | expr BSHL expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
+  | expr BSHR expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
-  | expr AS type                            { $$ = ast_cast(ctx->ast, $1, $3, @$); }
+  | expr AS type                            { $$ = ast_cast(ctx->astp, $1, $3, @$); }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
   | identifier                              { $$ = $1; }
@@ -339,8 +339,8 @@ maybe_expr
   |                                         { $$ = -1; }
   ;
 arglist
-  : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->ast, $$, $3, @$); }
-  | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
+  : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->astp, $$, $3, @$); }
+  | expr                                    { $$ = ast_arglist(ctx->astp, $1, @$); }
   ;
 maybe_arglist
   : arglist                                 { $$ = $1; } 
@@ -348,12 +348,12 @@ maybe_arglist
   ;
 paramlist
   : paramlist ',' identifier AS type        { $$ = $1;
-                                              ctx->ast->nodes[$3].identifier.explicit_type = $5;
-                                              ast_paramlist_append(ctx->ast, $$, $3, @$); }
-  | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->ast, $$, $3, @$); }
-  | identifier AS type                      { ctx->ast->nodes[$1].identifier.explicit_type = $3;
-                                              $$ = ast_paramlist(ctx->ast, $1, @$); }
-  | identifier                              { $$ = ast_paramlist(ctx->ast, $1, @$); }
+                                              (*ctx->astp)->nodes[$3].identifier.explicit_type = $5;
+                                              ast_paramlist_append(ctx->astp, $$, $3, @$); }
+  | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->astp, $$, $3, @$); }
+  | identifier AS type                      { (*ctx->astp)->nodes[$1].identifier.explicit_type = $3;
+                                              $$ = ast_paramlist(ctx->astp, $1, @$); }
+  | identifier                              { $$ = ast_paramlist(ctx->astp, $1, @$); }
   ;
 maybe_paramlist
   : paramlist                               { $$ = $1; }
@@ -362,60 +362,60 @@ maybe_paramlist
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
 command_stmt
-  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->ast, $1, $2, @$); }
-  | COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
-//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
+  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->astp, $1, $2, @$); }
+  | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, @$); }
+//| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
 // Commands appearing as expressions must be csalled with arguments in brackets
 command_expr
-  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->ast, $1, $3, @$); }
+  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
 assignment
-  : identifier '=' expr                     { $$ = ast_assign(ctx->ast, $1, $3, @2, @$); }
+  : identifier '=' expr                     { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;
 var_init_decl
-  : var_decl '=' expr                       { $$ = ast_assign(ctx->ast, $1, $3, @2, @$); }
+  : var_decl '=' expr                       { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
   | var_decl                                { $$ = $1; }
   ;
 var_decl
   : scope identifier AS type                { $$ = $2;
-                                              ctx->ast->nodes[$2].identifier.explicit_type = $4;
-                                              ctx->ast->nodes[$2].identifier.scope = $1; }
+                                              (*ctx->astp)->nodes[$2].identifier.explicit_type = $4;
+                                              (*ctx->astp)->nodes[$2].identifier.scope = $1; }
   | identifier AS type                      { $$ = $1;
-                                              ctx->ast->nodes[$1].identifier.explicit_type = $3; }
+                                              (*ctx->astp)->nodes[$1].identifier.explicit_type = $3; }
   | scope identifier                        { $$ = $2;
-                                              ctx->ast->nodes[$2].identifier.scope = $1; }
+                                              (*ctx->astp)->nodes[$2].identifier.scope = $1; }
   ;
 inc
-  : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->ast, $2, $4, @$); }
-  | INC identifier                          { $$ = ast_inc(ctx->ast, $2, @$); }
+  : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
+  | INC identifier                          { $$ = ast_inc(ctx->astp, $2, @$); }
   ;
 dec
-  : DEC identifier ',' expr                 { $$ = ast_dec_step(ctx->ast, $2, $4, @$); }
-  | DEC identifier                          { $$ = ast_dec(ctx->ast, $2, @$); }
+  : DEC identifier ',' expr                 { $$ = ast_dec_step(ctx->astp, $2, $4, @$); }
+  | DEC identifier                          { $$ = ast_dec(ctx->astp, $2, @$); }
   ;
 conditional
   : cond_oneline                            { $$ = $1; }
   | cond_begin                              { $$ = $1; }
   ;
 cond_oneline
-  : IF expr THEN iblock ELSE iblock         { ast_id branch = ast_cond_branch(ctx->ast, $4, $6, @$);
-                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
-  | IF expr THEN iblock %prec NO_ELSE       { ast_id branch = ast_cond_branch(ctx->ast, $4, -1, @$);
-                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
-  | IF expr THEN ELSE iblock                { ast_id branch = ast_cond_branch(ctx->ast, -1, $5, @$);
-                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  : IF expr THEN iblock ELSE iblock         { ast_id branch = ast_cond_branch(ctx->astp, $4, $6, @$);
+                                              $$ = ast_cond(ctx->astp, $2, branch, @$); }
+  | IF expr THEN iblock %prec NO_ELSE       { ast_id branch = ast_cond_branch(ctx->astp, $4, -1, @$);
+                                              $$ = ast_cond(ctx->astp, $2, branch, @$); }
+  | IF expr THEN ELSE iblock                { ast_id branch = ast_cond_branch(ctx->astp, -1, $5, @$);
+                                              $$ = ast_cond(ctx->astp, $2, branch, @$); }
   ;
 cond_begin
-  : IF expr maybe_block cond_next           { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
-                                              $$ = ast_cond(ctx->ast, $2, branch, @$); }
+  : IF expr maybe_block cond_next           { ast_id branch = ast_cond_branch(ctx->astp, $3, $4, @$);
+                                              $$ = ast_cond(ctx->astp, $2, branch, @$); }
   ;
 cond_next
-  : ELSEIF expr maybe_block cond_next       { ast_id branch = ast_cond_branch(ctx->ast, $3, $4, @$);
-                                              ast_id cond = ast_cond(ctx->ast, $2, branch, @$);
-                                              $$ = ast_block(ctx->ast, cond, @$); }
+  : ELSEIF expr maybe_block cond_next       { ast_id branch = ast_cond_branch(ctx->astp, $3, $4, @$);
+                                              ast_id cond = ast_cond(ctx->astp, $2, branch, @$);
+                                              $$ = ast_block(ctx->astp, cond, @$); }
   | ELSE maybe_block ENDIF                  { $$ = $2; }
   | ENDIF                                   { $$ = -1; }
   ;
@@ -426,25 +426,25 @@ loop
   | loop_for                                { $$ = $1; }
   ;
 loop_do
-  : loop_name DO maybe_block LOOP           { $$ = ast_loop(ctx->ast, $3, $1, empty_utf8_span(), @$); }
+  : loop_name DO maybe_block LOOP           { $$ = ast_loop(ctx->astp, $3, $1, empty_utf8_span(), @$); }
   ;
 loop_while
   : loop_name WHILE expr
         maybe_block
-    ENDWHILE                                { $$ = ast_loop_while(ctx->ast, $4, $3, $1, @$); }
+    ENDWHILE                                { $$ = ast_loop_while(ctx->astp, $4, $3, $1, @$); }
   ;
 loop_until
   : loop_name REPEAT
         maybe_block
-    UNTIL expr                              { $$ = ast_loop_until(ctx->ast, $3, $5, $1, @$); }
+    UNTIL expr                              { $$ = ast_loop_until(ctx->astp, $3, $5, $1, @$); }
   ;
 loop_for
   : loop_name FOR assignment TO expr STEP expr
         maybe_block
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $8, $3, $5, $7, $9, $1, @$, ctx->filename, ctx->source); }
+    loop_next                               { $$ = ast_loop_for(ctx->astp, $8, $3, $5, $7, $9, $1, @$, ctx->filename, ctx->source); }
   | loop_name FOR assignment TO expr
         maybe_block
-    loop_next                               { $$ = ast_loop_for(ctx->ast, $6, $3, $5, -1, $7, $1, @$, ctx->filename, ctx->source); }
+    loop_next                               { $$ = ast_loop_for(ctx->astp, $6, $3, $5, -1, $7, $1, @$, ctx->filename, ctx->source); }
   ;
 // TODO: Change to same as assignemnt (lvalue) eventually
 loop_next
@@ -452,14 +452,14 @@ loop_next
   | NEXT                                    { $$ = -1; }
   ;
 loop_cont
-  : CONTINUE IDENTIFIER STEP expr           { $$ = ast_loop_cont(ctx->ast, $2, $4, @$); }
-  | CONTINUE IDENTIFIER                     { $$ = ast_loop_cont(ctx->ast, $2, -1, @$); }
-  | CONTINUE STEP expr                      { $$ = ast_loop_cont(ctx->ast, empty_utf8_span(), $3, @$); }
-  | CONTINUE                                { $$ = ast_loop_cont(ctx->ast, empty_utf8_span(), -1, @$); }
+  : CONTINUE IDENTIFIER STEP expr           { $$ = ast_loop_cont(ctx->astp, $2, $4, @$); }
+  | CONTINUE IDENTIFIER                     { $$ = ast_loop_cont(ctx->astp, $2, -1, @$); }
+  | CONTINUE STEP expr                      { $$ = ast_loop_cont(ctx->astp, empty_utf8_span(), $3, @$); }
+  | CONTINUE                                { $$ = ast_loop_cont(ctx->astp, empty_utf8_span(), -1, @$); }
   ;
 loop_exit
-  : EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->ast, $2, @$); }
-  | EXIT                                    { $$ = ast_loop_exit(ctx->ast, empty_utf8_span(), @$); }
+  : EXIT IDENTIFIER                         { $$ = ast_loop_exit(ctx->astp, $2, @$); }
+  | EXIT                                    { $$ = ast_loop_exit(ctx->astp, empty_utf8_span(), @$); }
   ;
 loop_name
   : IDENTIFIER ':'                          { $$ = $1; }
@@ -468,19 +468,19 @@ loop_name
 func
   : maybe_scope FUNCTION identifier '(' maybe_paramlist ')' maybe_as_type
         maybe_block
-    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->ast, $3, $5, $8, $10, @$);
-                                              ctx->ast->nodes[$3].identifier.scope = $1;
-                                              ctx->ast->nodes[$3].identifier.explicit_type = $7; }
+    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @$);
+                                              (*ctx->astp)->nodes[$3].identifier.scope = $1;
+                                              (*ctx->astp)->nodes[$3].identifier.explicit_type = $7; }
   ;
 func_or_container_ref
-  : identifier '(' maybe_arglist ')'        { $$ = ast_func_or_container_ref(ctx->ast, $1, $3, @$); }
+  : identifier '(' maybe_arglist ')'        { $$ = ast_func_or_container_ref(ctx->astp, $1, $3, @$); }
   ;
 literal
-  : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
-  | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->ast, $1, @$); }
-  | FLOAT_LITERAL                           { $$ = ast_float_literal(ctx->ast, $1, @$); }
-  | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
-  | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
+  : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->astp, $1, @$); }
+  | INTEGER_LITERAL                         { $$ = ast_integer_like_literal(ctx->astp, $1, @$); }
+  | FLOAT_LITERAL                           { $$ = ast_float_literal(ctx->astp, $1, @$); }
+  | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->astp, $1, @$); }
+  | STRING_LITERAL                          { $$ = ast_string_literal(ctx->astp, $1, @$); }
   ;
 scope
   : GLOBAL                                  { $$ = SCOPE_GLOBAL; }
@@ -506,13 +506,13 @@ maybe_as_type
   |                                         { $$ = TYPE_INVALID; }
   ;
 identifier
-  : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
-  | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->ast, $1, TA_BOOL, @$); }
-  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_U16, @$); }
-  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->ast, $1, TA_I64, @$); }
-  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_F32, @$); }
-  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_F64, @$); }
-  | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
+  : IDENTIFIER                              { $$ = ast_identifier(ctx->astp, $1, TA_NONE, @$); }
+  | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->astp, $1, TA_BOOL, @$); }
+  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->astp, $1, TA_U16, @$); }
+  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->astp, $1, TA_I64, @$); }
+  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->astp, $1, TA_F32, @$); }
+  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->astp, $1, TA_F64, @$); }
+  | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->astp, $1, TA_STRING, @$); }
   ;
 %%
 

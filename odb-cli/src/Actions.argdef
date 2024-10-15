@@ -145,7 +145,7 @@ section parser:
           file, i.e. where execution starts. If no files are listed, then the
           source is read from stdin.
     args: [file...]
-    func: parseDBA
+    func: parse_dba
     runafter: load-commands
 
   dbpro()[dba]:
@@ -159,12 +159,23 @@ section parser:
     args: <file> [files...]
     func: autoDetectInput
     runafter: load-commands
-
-  ast():
-    help: Dump AST to Graphviz DOT format. The default file is stdout.
+  
+  ast1():
+    help: Dump parser AST to Graphviz DOT format. The default file is stdout.
     args: [file]
-    func: dumpASTDOT
+    func: dump_ast_pre_semantic
     runafter: dba, dbpro, input
+    requires: dba
+
+  semantic:
+    func: run_semantic_checks
+    runafter: ast1
+
+  ast2():
+    help: Dump semantic AST to Graphviz DOT format. The default file is stdout.
+    args: [file]
+    func: dump_ast_post_semantic
+    runafter: semantic
     requires: dba
 
 ###############################################################################
@@ -187,7 +198,7 @@ section codegen:
     func: setPlatform
     runafter: global
 
-  dump-ir():
+  ir():
     help: Dump LLVM IR to output.
     args: [file]
     func: dumpIR

@@ -7,10 +7,7 @@
 
 enum type
 type_check_casts(
-    struct ast* ast,
-    ast_id      cast,
-    const char* source_filename,
-    const char* source_text)
+    struct ast* ast, ast_id cast, const char* filename, const char* source)
 {
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -28,15 +25,15 @@ type_check_casts(
 
         case TC_DISALLOW:
             log_flc_err(
-                source_filename,
-                source_text,
+                filename,
+                source,
                 ast->nodes[cast].info.location,
                 "Cannot cast from {emph1:%s} to {emph2:%s}: Types are "
                 "incompatible\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source_text,
+                source,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),
@@ -45,8 +42,8 @@ type_check_casts(
 
         case TC_TRUNCATE:
             log_flc_warn(
-                source_filename,
-                source_text,
+                filename,
+                source,
                 ast->nodes[cast].info.location,
                 "Value is truncated when converting from {emph1:%s} to "
                 "{emph2:%s} "
@@ -54,7 +51,7 @@ type_check_casts(
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source_text,
+                source,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),
@@ -66,15 +63,15 @@ type_check_casts(
         case TC_INT_TO_FLOAT:
         case TC_BOOL_PROMOTION:
             log_flc_warn(
-                source_filename,
-                source_text,
+                filename,
+                source,
                 ast->nodes[cast].info.location,
                 "Implicit conversion from {emph1:%s} to {emph2:%s} in "
                 "expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source_text,
+                source,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),

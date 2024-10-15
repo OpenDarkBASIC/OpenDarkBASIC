@@ -21,15 +21,15 @@ TEST_F(NAME, exponent_cast_to_integer)
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(log(), LogEq(""));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    ast_id cmd = ast->nodes[ast->root].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(
-        ast.nodes[rhs].info.node_type,
+        ast->nodes[rhs].info.node_type,
         Eq(AST_CAST)); // BYTE literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F64));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_I32));
+    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F64));
+    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
 }

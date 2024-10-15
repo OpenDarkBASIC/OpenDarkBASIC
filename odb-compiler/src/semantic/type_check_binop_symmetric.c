@@ -1,3 +1,4 @@
+#include "./type_check.h"
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
@@ -7,12 +8,12 @@
 
 static void
 log_narrow_binop(
-    struct ast* ast,
-    ast_id      op,
-    ast_id      source_node,
-    ast_id      target_node,
-    const char* source_filename,
-    const char* source_text)
+    const struct ast* ast,
+    ast_id            op,
+    ast_id            source_node,
+    ast_id            target_node,
+    const char*       filename,
+    const char*       source)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -20,15 +21,15 @@ log_narrow_binop(
     enum type target_type = ast->nodes[target_node].info.type_info;
 
     log_flc_warn(
-        source_filename,
-        source_text,
+        filename,
+        source,
         ast->nodes[op].info.location,
         "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
         "binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
-        source_text,
+        source,
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
@@ -38,12 +39,12 @@ log_narrow_binop(
 
 static void
 log_implicit_binop(
-    struct ast* ast,
-    ast_id      op,
-    ast_id      source_node,
-    ast_id      target_node,
-    const char* source_filename,
-    const char* source_text)
+    const struct ast* ast,
+    ast_id            op,
+    ast_id            source_node,
+    ast_id            target_node,
+    const char*       source_filename,
+    const char*       source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -69,11 +70,11 @@ log_implicit_binop(
 
 static void
 log_error_binop(
-    struct ast* ast,
-    ast_id      source_node,
-    ast_id      op,
-    const char* source_filename,
-    const char* source_text)
+    const struct ast* ast,
+    ast_id            source_node,
+    ast_id            op,
+    const char*       source_filename,
+    const char*       source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -100,11 +101,12 @@ log_error_binop(
 
 enum type
 type_check_binop_symmetric(
-    struct ast* ast,
-    ast_id      op,
-    const char* source_filename,
-    const char* source_text)
+    struct ast** astp,
+    ast_id       op,
+    const char*  source_filename,
+    const char*  source_text)
 {
+    struct ast* ast = *astp;
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[op].info.node_type == AST_BINOP,
@@ -177,7 +179,8 @@ type_check_binop_symmetric(
     if (ast->nodes[lhs].info.type_info != target_type)
     {
         ast_id cast_lhs
-            = ast_cast(ast, lhs, target_type, ast->nodes[lhs].info.location);
+            = ast_cast(astp, lhs, target_type, ast->nodes[lhs].info.location);
+        ast = *astp;
         if (cast_lhs == TYPE_INVALID)
             return TYPE_INVALID;
         ast->nodes[op].binop.left = cast_lhs;
@@ -186,7 +189,8 @@ type_check_binop_symmetric(
     if (ast->nodes[rhs].info.type_info != target_type)
     {
         ast_id cast_rhs
-            = ast_cast(ast, rhs, target_type, ast->nodes[rhs].info.location);
+            = ast_cast(astp, rhs, target_type, ast->nodes[rhs].info.location);
+        ast = *astp;
         if (cast_rhs == TYPE_INVALID)
             return TYPE_INVALID;
         ast->nodes[op].binop.right = cast_rhs;

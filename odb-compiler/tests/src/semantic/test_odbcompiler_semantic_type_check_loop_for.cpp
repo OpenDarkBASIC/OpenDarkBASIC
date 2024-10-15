@@ -24,19 +24,19 @@ TEST_F(NAME, implicit_step_1)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ast_id init = ast.nodes[0].block.stmt;
-    ASSERT_THAT(ast.nodes[init].info.node_type, Eq(AST_ASSIGNMENT));
-    ast_id loop_var = ast.nodes[init].assignment.lvalue;
-    ast_id begin = ast.nodes[init].assignment.expr;
-    ASSERT_THAT(ast.nodes[loop_var].info.type_info, Eq(TYPE_I32));
-    ASSERT_THAT(ast.nodes[begin].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[begin].info.type_info, Eq(TYPE_I32));
-    ast_id loop_block = ast.nodes[0].block.next;
-    ast_id loop = ast.nodes[loop_block].block.stmt;
-    ast_id post = ast.nodes[loop].loop.post_body;
+    ast_id init = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast->nodes[init].info.node_type, Eq(AST_ASSIGNMENT));
+    ast_id loop_var = ast->nodes[init].assignment.lvalue;
+    ast_id begin = ast->nodes[init].assignment.expr;
+    ASSERT_THAT(ast->nodes[loop_var].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast->nodes[begin].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[begin].info.type_info, Eq(TYPE_I32));
+    ast_id loop_block = ast->nodes[ast->root].block.next;
+    ast_id loop = ast->nodes[loop_block].block.stmt;
+    ast_id post = ast->nodes[loop].loop.post_body;
     ASSERT_THAT(post, Gt(0));
-    ast_id step_stmt = ast.nodes[post].block.stmt;
-    ASSERT_THAT(ast.nodes[step_stmt].info.node_type, Eq(AST_ASSIGNMENT));
-    ast_id step_op = ast.nodes[step_stmt].assignment.expr;
-    ASSERT_THAT(ast.nodes[step_op].info.type_info, Eq(TYPE_I32));
+    ast_id step_stmt = ast->nodes[post].block.stmt;
+    ASSERT_THAT(ast->nodes[step_stmt].info.node_type, Eq(AST_ASSIGNMENT));
+    ast_id step_op = ast->nodes[step_stmt].assignment.expr;
+    ASSERT_THAT(ast->nodes[step_op].info.type_info, Eq(TYPE_I32));
 }

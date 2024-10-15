@@ -30,15 +30,15 @@ TEST_F(NAME, exponent_truncated_from_double)
               "   = note: The exponent is always converted to the same type as "
               "the base when using floating point exponents.\n"
               "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_FLOAT_LITERAL));
-    EXPECT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F32));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_F32));
+    ast_id cmd = ast->nodes[ast->root].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_FLOAT_LITERAL));
+    EXPECT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F32));
+    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_F32));
 }
 
 TEST_F(NAME, exponent_strange_conversion)
@@ -53,17 +53,17 @@ TEST_F(NAME, exponent_strange_conversion)
               " 1 | print 2.0 ^ true\n"
               "   |       >~~ ^ ~~~< BOOLEAN\n"
               "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    ast_id cmd = ast->nodes[ast->root].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(
-        ast.nodes[rhs].info.node_type,
+        ast->nodes[rhs].info.node_type,
         Eq(AST_CAST)); // BOOLEAN literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F64));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_I32));
+    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F64));
+    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, exponent_truncated_from_dword)
@@ -80,17 +80,17 @@ TEST_F(NAME, exponent_truncated_from_dword)
               "   = note: INTEGER is the largest possible integral type for "
               "exponents.\n"
               "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    ast_id cmd = ast->nodes[ast->root].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(
-        ast.nodes[rhs].info.node_type,
+        ast->nodes[rhs].info.node_type,
         Eq(AST_CAST)); // DWORD literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F64));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_I32));
+    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F64));
+    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, exponent_truncated_from_long_integer)
@@ -107,15 +107,15 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
               "   = note: INTEGER is the largest possible integral type for "
               "exponents.\n"
               "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    EXPECT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
+    ast_id cmd = ast->nodes[ast->root].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    EXPECT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(
-        ast.nodes[rhs].info.node_type,
+        ast->nodes[rhs].info.node_type,
         Eq(AST_CAST)); // LONG INTEGER literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F64));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_I32));
+    EXPECT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_F64));
+    EXPECT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_I32));
 }

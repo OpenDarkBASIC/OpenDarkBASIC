@@ -13,6 +13,7 @@ struct symbol_table_entry
 };
 
 struct symbol_table;
+struct db_source;
 
 static inline void
 symbol_table_init(struct symbol_table** table)
@@ -26,7 +27,7 @@ symbol_table_deinit(struct symbol_table* table);
 ODBCOMPILER_PUBLIC_API int
 symbol_table_add_declarations_from_ast(
     struct symbol_table**   table,
-    const struct ast*       tus,
+    struct ast**            tus,
     int                     tu_id,
     const struct db_source* sources);
 

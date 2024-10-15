@@ -52,10 +52,10 @@ log_exit_error(
 
 static int
 check_exit(
-    struct ast* ast,
-    ast_id      exit,
-    const char* source_filename,
-    const char* source_text)
+    const struct ast* ast,
+    ast_id            exit,
+    const char*       source_filename,
+    const char*       source_text)
 {
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -94,22 +94,22 @@ check_exit(
 
 static int
 check_loop_exit(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
-    ast_id      n;
-    struct ast* ast = &tus[tu_id];
-    const char* filename = filenames[tu_id];
-    const char* source = sources[tu_id].text.data;
+    ast_id            n;
+    const struct ast* ast = tus[tu_id];
+    const char*  filename = utf8_cstr(filenames[tu_id]);
+    const char*       source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP_EXIT)
             continue;

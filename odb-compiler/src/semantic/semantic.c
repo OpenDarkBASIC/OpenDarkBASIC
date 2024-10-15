@@ -79,11 +79,11 @@ HM_DEFINE_API_FULL(
 
 struct ctx
 {
-    struct ast*                tus;
+    struct ast**               tus;
     int                        tu_count;
     int                        tu_id;
     struct mutex**             tu_mutexes;
-    const char**               filenames;
+    const struct utf8*         filenames;
     const struct db_source*    sources;
     const struct plugin_list*  plugins;
     const struct cmd_list*     cmds;
@@ -139,19 +139,19 @@ run_dependencies(
 int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const char**                 filenames,
+    struct ast**                 tus,
+    int                          tu_count,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
+    const struct utf8*           filenames,
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
     const struct symbol_table*   symbols)
 {
     struct ptr_set* check_visited;
-    struct ast*     ast = &tus[tu_id];
-    const char*     filename = filenames[tu_id];
+    struct ast**    astp = &tus[tu_id];
+    struct utf8     filename = filenames[tu_id];
     struct ctx      ctx
         = {tus,
            tu_count,
@@ -163,10 +163,10 @@ semantic_check_run(
            cmds,
            symbols};
 
-    if (ast->node_count == 0)
+    if ((*astp)->count == 0)
     {
         log_semantic_warn(
-            "AST is empty for source file {quote:%s}\n", filename);
+            "AST is empty for source file {quote:%s}\n", utf8_cstr(filename));
         return 0;
     }
 
@@ -184,11 +184,11 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
@@ -199,11 +199,11 @@ dummy_check(
 
 int
 semantic_run_essential_checks(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,

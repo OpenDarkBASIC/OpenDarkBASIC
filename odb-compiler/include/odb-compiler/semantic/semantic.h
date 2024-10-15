@@ -1,6 +1,7 @@
 #pragma once
 
 #include "odb-compiler/config.h"
+#include "odb-util/utf8.h"
 #include <stdint.h>
 
 struct ast;
@@ -11,11 +12,11 @@ struct plugin_list;
 struct symbol_table;
 
 typedef int (*semantic_check_func)(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
@@ -30,11 +31,11 @@ struct semantic_check
 ODBCOMPILER_PUBLIC_API int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                  tus,
+    struct ast**                 tus,
     int                          tu_count,
     int                          tu_id,
     struct mutex**               tu_mutexes,
-    const char**                 filenames,
+    const struct utf8*           filenames,
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
@@ -42,11 +43,11 @@ semantic_check_run(
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,

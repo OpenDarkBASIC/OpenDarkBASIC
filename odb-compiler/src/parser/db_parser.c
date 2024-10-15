@@ -1,3 +1,4 @@
+#include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/parser/db_keyword.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_parser.y.h"
@@ -223,7 +224,7 @@ get_next_token_ignoring_comments(
 int
 db_parse(
     struct db_parser*      parser,
-    struct ast*            ast,
+    struct ast**           astp,
     const char*            filename,
     struct db_source       source,
     const struct cmd_list* commands)
@@ -233,7 +234,7 @@ db_parse(
     int                 parse_result = -1;
     struct utf8_span    scanner_location = empty_utf8_span();
     struct utf8         cmd_buf = empty_utf8();
-    struct parse_param  parse_param = {filename, source.text.data, ast};
+    struct parse_param  parse_param = {astp, filename, source.text.data};
 
     if (source.text.len == 0)
     {
@@ -284,6 +285,15 @@ db_parse(
     } while (parse_result == YYPUSH_MORE);
 
 parse_failed:
+    if (parse_result != 0)
+    {
+        ast_deinit(*astp);
+        *astp = NULL;
+    }
+#if defined(ODBCOMPILER_AST_SANITY_CHECK)
+    if (*astp != NULL)
+        ast_verify_connectivity(*astp);
+#endif
     dbset_extra(NULL, parser->scanner);
     token_queue_deinit(tokens);
 init_token_queue_failed:

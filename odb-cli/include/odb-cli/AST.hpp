@@ -11,9 +11,10 @@ struct ast;
 int initAST(void);
 void deinitAST(void);
 
-bool parseDBA(const std::vector<std::string>& args);
-bool dumpASTDOT(const std::vector<std::string>& args);
-bool dumpASTJSON(const std::vector<std::string>& args);
+bool parse_dba(const std::vector<std::string>& args);
+bool run_semantic_checks(const std::vector<std::string>& args);
+bool dump_ast_pre_semantic(const std::vector<std::string>& args);
+bool dump_ast_post_semantic(const std::vector<std::string>& args);
 
 struct ast* getAST();
 const char* getSourceFilepath();

@@ -37,17 +37,17 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
               " 1 | print a and b <> 0\n"
               "   |              ^~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_float)
@@ -72,17 +72,17 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
               " 1 | print a# and b# <> 0.0f\n"
               "   |                ^~~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_double)
@@ -107,17 +107,17 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
               " 1 | print a! and b! <> 0.0\n"
               "   |                ^~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_integer)
@@ -142,17 +142,17 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
               " 1 | print a or b <> 0\n"
               "   |             ^~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_float)
@@ -177,17 +177,17 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
               " 1 | print a# or b# <> 0.0f\n"
               "   |               ^~~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_double)
@@ -212,17 +212,17 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
               " 1 | print a! or b! <> 0.0\n"
               "   |               ^~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_integer)
@@ -247,17 +247,17 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
               " 1 | print a xor b <> 0\n"
               "   |              ^~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_float)
@@ -282,17 +282,17 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
               " 1 | print a# xor b# <> 0.0f\n"
               "   |                ^~~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_double)
@@ -317,15 +317,15 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
               " 1 | print a! xor b! <> 0.0\n"
               "   |                ^~~~~~<\n"));
 
-    ast_id initb = ast.nodes[0].block.next;
-    ast_id cmd_block = ast.nodes[initb].block.next;
-    ast_id cmd = ast.nodes[cmd_block].block.stmt;
-    ast_id args = ast.nodes[cmd].cmd.arglist;
-    ast_id op = ast.nodes[args].arglist.expr;
-    ast_id lhs = ast.nodes[op].binop.left;
-    ast_id rhs = ast.nodes[op].binop.right;
-    ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
+    ast_id initb = ast->nodes[ast->root].block.next;
+    ast_id cmd_block = ast->nodes[initb].block.next;
+    ast_id cmd = ast->nodes[cmd_block].block.stmt;
+    ast_id args = ast->nodes[cmd].cmd.arglist;
+    ast_id op = ast->nodes[args].arglist.expr;
+    ast_id lhs = ast->nodes[op].binop.left;
+    ast_id rhs = ast->nodes[op].binop.right;
+    ASSERT_THAT(ast->nodes[lhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[rhs].info.node_type, Eq(AST_CAST));
+    ASSERT_THAT(ast->nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast->nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }

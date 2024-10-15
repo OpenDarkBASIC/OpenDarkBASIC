@@ -4,6 +4,10 @@
 
 #include "gmock/gmock.h"
 
+extern "C" {
+#include "odb-compiler/ast/ast.h"
+}
+
 #define NAME odbcompiler_db_parser_func_annotation
 
 using namespace testing;
@@ -20,12 +24,12 @@ TEST_F(NAME, no_annotation)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 4));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_NONE));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 4));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_NONE));
 }
 
 TEST_F(NAME, word)
@@ -36,12 +40,12 @@ TEST_F(NAME, word)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_U16));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 5));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_U16));
 }
 
 TEST_F(NAME, double_integer)
@@ -52,12 +56,12 @@ TEST_F(NAME, double_integer)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_I64));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 5));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_I64));
 }
 
 TEST_F(NAME, float)
@@ -68,12 +72,12 @@ TEST_F(NAME, float)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_F32));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 5));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_F32));
 }
 
 TEST_F(NAME, double)
@@ -84,12 +88,12 @@ TEST_F(NAME, double)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_F64));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 5));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_F64));
 }
 
 TEST_F(NAME, string)
@@ -100,10 +104,10 @@ TEST_F(NAME, string)
         Eq(0))
         << log().text;
 
-    ast_id func = ast.nodes[0].block.stmt;
-    ast_id decl = ast.nodes[func].func.decl;
-    ast_id def = ast.nodes[func].func.def;
-    ast_id ident = ast.nodes[decl].func_decl.identifier;
-    ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_STRING));
+    ast_id func = ast->nodes[ast->root].block.stmt;
+    ast_id decl = ast->nodes[func].func.decl;
+    ast_id def = ast->nodes[func].func.def;
+    ast_id ident = ast->nodes[decl].func_decl.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(9, 5));
+    ASSERT_THAT(ast->nodes[ident].identifier.annotation, Eq(TA_STRING));
 }

@@ -51,6 +51,22 @@ type_to_annotation(enum type type)
     return TA_NONE;
 }
 
+enum type
+annotation_to_type(enum type_annotation annotation)
+{
+    switch (annotation)
+    {
+        case TA_NONE: break;
+        case TA_BOOL: return TYPE_BOOL;
+        case TA_I64: return TYPE_I64;
+        case TA_U16: return TYPE_U16;
+        case TA_F64: return TYPE_F64;
+        case TA_F32: return TYPE_F32;
+        case TA_STRING: return TYPE_STRING;
+    }
+    return TYPE_I32;
+}
+
 const char*
 type_to_db_name(enum type type)
 {

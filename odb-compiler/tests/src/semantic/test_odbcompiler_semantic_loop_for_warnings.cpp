@@ -4,6 +4,7 @@
 #include "gmock/gmock.h"
 
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/semantic.h"
 }
 
@@ -16,12 +17,12 @@ struct NAME : DBParserHelper, LogHelper, Test
     enum binop_type
     getExitOp()
     {
-        ast_id loop_block = ast.nodes[0].block.next;
-        ast_id loop = ast.nodes[loop_block].block.stmt;
-        ast_id body = ast.nodes[loop].loop.body;
-        ast_id exit_cond = ast.nodes[body].block.stmt;
-        ast_id exit_expr = ast.nodes[exit_cond].cond.expr;
-        return ast.nodes[exit_expr].binop.op;
+        ast_id loop_block = ast->nodes[ast->root].block.next;
+        ast_id loop = ast->nodes[loop_block].block.stmt;
+        ast_id body = ast->nodes[loop].loop.body;
+        ast_id exit_cond = ast->nodes[body].block.stmt;
+        ast_id exit_expr = ast->nodes[exit_cond].cond.expr;
+        return ast->nodes[exit_expr].binop.op;
     }
 };
 

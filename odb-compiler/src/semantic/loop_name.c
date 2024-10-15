@@ -3,19 +3,19 @@
 
 static int
 check_loop_names(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
     ast_id      n;
-    struct ast* ast = &tus[tu_id];
-    for (n = 0; n != ast->node_count; ++n)
+    struct ast* ast = tus[tu_id];
+    for (n = 0; n != ast->count; ++n)
     {
     }
 

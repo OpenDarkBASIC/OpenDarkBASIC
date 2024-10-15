@@ -1,15 +1,8 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
-#include "odb-compiler/parser/db_source.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
 #include <assert.h>
-
-void
-ast_set_root(struct ast* ast, ast_id node)
-{
-    ast_swap_node_idxs(ast, 0, node);
-}
 
 void
 ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
@@ -17,21 +10,21 @@ ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2)
     ast_id         n;
     union ast_node tmp;
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].base.left == n1)
             ast->nodes[n].base.left = -2;
         if (ast->nodes[n].base.right == n1)
             ast->nodes[n].base.right = -2;
     }
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].base.left == n2)
             ast->nodes[n].base.left = n1;
         if (ast->nodes[n].base.right == n2)
             ast->nodes[n].base.right = n1;
     }
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].base.left == -2)
             ast->nodes[n].base.left = n2;
@@ -108,8 +101,10 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 }
 
 int
-ast_dup_lvalue(struct ast* ast, int lvalue)
+ast_dup_lvalue(struct ast** astp, int lvalue)
 {
+    struct ast* ast = *astp;
+
     ODBUTIL_DEBUG_ASSERT(lvalue > -1, log_parser_err("lvalue: %d\n", lvalue));
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
@@ -118,59 +113,60 @@ ast_dup_lvalue(struct ast* ast, int lvalue)
     struct utf8_span     name = ast->nodes[lvalue].identifier.name;
     struct utf8_span     location = ast->nodes[lvalue].info.location;
     enum type_annotation annotation = ast->nodes[lvalue].identifier.annotation;
-    return ast_identifier(ast, name, annotation, location);
+
+    return ast_identifier(astp, name, annotation, location);
 }
 
 int
-ast_find_parent(const struct ast* ast, int node)
+ast_find_parent(const struct ast* ast, ast_id n)
 {
-    ast_id n;
-    for (n = 0; n != ast->node_count; ++n)
-        if (ast->nodes[n].base.left == node || ast->nodes[n].base.right == node)
-            return n;
+    ast_id p;
+    for (p = 0; p != ast->count; ++p)
+        if (ast->nodes[p].base.left == n || ast->nodes[p].base.right == n)
+            return p;
     return -1;
 }
 
 void
-ast_delete_node(struct ast* ast, int node)
+ast_delete_node(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
-        ast_find_parent(ast, node) == -1,
-        log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
-    ast->nodes[node].info.node_type = AST_GC;
+        ast_find_parent(ast, n) == -1,
+        log_parser_err("parent: %d\n", ast_find_parent(ast, n)));
+    ast->nodes[n].info.node_type = AST_GC;
 }
 
 static void
-delete_tree_recurse(struct ast* ast, int node)
+delete_tree_recurse(struct ast* ast, ast_id n)
 {
-    ast_id left = ast->nodes[node].base.left;
-    ast_id right = ast->nodes[node].base.right;
+    ast_id left = ast->nodes[n].base.left;
+    ast_id right = ast->nodes[n].base.right;
     if (left > -1)
         ast_delete_tree(ast, left);
     if (right > -1)
         ast_delete_tree(ast, right);
 
-    ast->nodes[node].info.node_type = AST_GC;
+    ast->nodes[n].info.node_type = AST_GC;
 }
 
 void
-ast_delete_tree(struct ast* ast, int node)
+ast_delete_tree(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
-        ast_find_parent(ast, node) == -1,
-        log_parser_err("parent: %d\n", ast_find_parent(ast, node)));
-    delete_tree_recurse(ast, node);
+        ast_find_parent(ast, n) == -1,
+        log_parser_err("parent: %d\n", ast_find_parent(ast, n)));
+    delete_tree_recurse(ast, n);
 }
 
 void
 ast_gc(struct ast* ast)
 {
     ast_id n, n2;
-    for (n = 0; n < ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
         if (ast->nodes[n].info.node_type == AST_GC)
         {
-            ast_id last = --ast->node_count;
-            for (n2 = 0; n2 != ast->node_count; ++n2)
+            ast_id last = --ast->count;
+            for (n2 = 0; n2 != ast->count; ++n2)
             {
                 if (ast->nodes[n2].base.left == last)
                     ast->nodes[n2].base.left = n;

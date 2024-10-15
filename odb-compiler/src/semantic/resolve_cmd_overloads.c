@@ -116,8 +116,8 @@ report_no_commands_found(
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     cmd_id                    cmd,
-    const char*               source_filename,
-    const char*               source_text,
+    const char*               filename,
+    const char*               source,
     const struct candidates*  candidates)
 {
     int              gutter;
@@ -132,12 +132,12 @@ report_no_commands_found(
                      + ast->nodes[arglist].info.location.len;
 
     log_flc_err(
-        source_filename,
-        source_text,
+        filename,
+        source,
         params_loc,
         "Parameter mismatch: No version of this command takes the "
         "argument types used here.\n");
-    gutter = log_excerpt_1(source_text, params_loc, "");
+    gutter = log_excerpt_1(source, params_loc, "");
     log_excerpt_note(gutter, "Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
@@ -179,8 +179,8 @@ report_ambiguous_overloads(
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
     cmd_id                    cmd,
-    const char*               source_filename,
-    const char*               source_text,
+    const char*               filename,
+    const char*               source,
     const struct candidates*  candidates)
 {
     const cmd_id* pcmd;
@@ -195,11 +195,8 @@ report_ambiguous_overloads(
                      + ast->nodes[arglist].info.location.len;
 
     log_flc_err(
-        source_filename,
-        source_text,
-        params_loc,
-        "Command has ambiguous overloads.\n");
-    gutter = log_excerpt_1(source_text, params_loc, "");
+        filename, source, params_loc, "Command has ambiguous overloads.\n");
+    gutter = log_excerpt_1(source, params_loc, "");
     log_excerpt_note(gutter, "Conflicting overloads are:\n");
     vec_for_each(candidates, pcmd)
     {
@@ -274,16 +271,17 @@ log_cmd_signature(
 
 static int
 typecheck_warnings(
-    struct ast*               ast,
+    struct ast**              astp,
     ast_id                    cmd_node,
     const struct plugin_list* plugins,
     const struct cmd_list*    cmds,
-    const char*               source_filename,
-    const char*               source_text)
+    const char*               filename,
+    const char*               source)
 {
-    int    i;
-    cmd_id cmd_id = ast->nodes[cmd_node].cmd.id;
-    ast_id arglist = ast->nodes[cmd_node].cmd.arglist;
+    int         i;
+    struct ast* ast = *astp;
+    cmd_id      cmd_id = ast->nodes[cmd_node].cmd.id;
+    ast_id      arglist = ast->nodes[cmd_node].cmd.arglist;
     const struct cmd_param_types_list* params = cmds->param_types->data[cmd_id];
 
     ODBUTIL_DEBUG_ASSERT(
@@ -308,8 +306,8 @@ typecheck_warnings(
 
             case TC_TRUNCATE:
                 log_flc_warn(
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     ast->nodes[arg].info.location,
                     "Argument %d is truncated in conversion from {emph1:%s} to "
                     "{emph2:%s} in command call.\n",
@@ -317,7 +315,7 @@ typecheck_warnings(
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source_text,
+                    source,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
@@ -328,8 +326,8 @@ typecheck_warnings(
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
                 log_flc_warn(
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     ast->nodes[arg].info.location,
                     "Implicit conversion of argument %d from {emph1:%s} to "
                     "{emph2:%s} in command call.\n",
@@ -337,7 +335,7 @@ typecheck_warnings(
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source_text,
+                    source,
                     ast->nodes[arg].info.location,
                     type_to_db_name(arg_type));
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
@@ -347,10 +345,11 @@ typecheck_warnings(
         /* Insert cast to correct type if necessary */
         if (arg_type != param_type)
         {
-            ast_id cast
-                = ast_cast(ast, arg, param_type, ast->nodes[arg].info.location);
+            ast_id cast = ast_cast(
+                astp, arg, param_type, ast->nodes[arg].info.location);
             if (cast < -1)
                 return -1;
+            ast = *astp;
             ast->nodes[arglist].arglist.expr = cast;
         }
     }
@@ -360,11 +359,11 @@ typecheck_warnings(
 
 static int
 resolve_cmd_overloads(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
@@ -377,15 +376,16 @@ resolve_cmd_overloads(
     struct candidates* candidates;
     struct candidates* prev_candidates;
 
-    struct ast* ast = &tus[tu_id];
-    const char* filename = filenames[tu_id];
-    const char* source = sources[tu_id].text.data;
-    struct ctx  ctx = {ast, cmds, 0, -1};
+    struct ast** astp = &tus[tu_id];
+    struct ast*  ast = *astp;
+    const char*  filename = utf8_cstr(filenames[tu_id]);
+    const char*  source = sources[tu_id].text.data;
+    struct ctx   ctx = {ast, cmds, 0, -1};
 
     candidates_init(&candidates);
     candidates_init(&prev_candidates);
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_COMMAND)
             continue;
@@ -438,7 +438,13 @@ resolve_cmd_overloads(
         if (candidates_count(candidates) == 1)
         {
             ast->nodes[n].cmd.id = *vec_first(candidates);
-            typecheck_warnings(ast, n, plugins, cmds, filename, source);
+            if (typecheck_warnings(astp, n, plugins, cmds, filename, source)
+                != 0)
+            {
+                goto fail;
+            }
+
+            ast = *astp;
             continue;
         }
 

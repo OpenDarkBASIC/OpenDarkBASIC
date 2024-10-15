@@ -4,6 +4,7 @@
 #include "gmock/gmock.h"
 
 extern "C" {
+#include "odb-compiler/ast/ast.h"
 }
 
 #define NAME odbcompiler_cmd_matcher
@@ -28,8 +29,8 @@ TEST_F(NAME, match_shorter_command)
     addCommand("READ");
 
     ASSERT_THAT(parse("RANDOMIZE"), Eq(0));
-    int cmd = ast.nodes[0].block.stmt;
-    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
+    int cmd = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(1));
 }
 
 TEST_F(NAME, match_mid_command)
@@ -42,8 +43,8 @@ TEST_F(NAME, match_mid_command)
     addCommand("READ");
 
     ASSERT_THAT(parse("randomize matrix"), Eq(0));
-    int cmd = ast.nodes[0].block.stmt;
-    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(2));
+    int cmd = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(2));
 }
 
 TEST_F(NAME, match_longest_command)
@@ -56,8 +57,8 @@ TEST_F(NAME, match_longest_command)
     addCommand("READ");
 
     ASSERT_THAT(parse("randomize matrix normalized"), Eq(0));
-    int cmd = ast.nodes[0].block.stmt;
-    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(3));
+    int cmd = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(3));
 }
 
 TEST_F(NAME, dont_match_nonexisting_command)
@@ -80,9 +81,9 @@ TEST_F(NAME, match_longer_string_to_shorter_command)
     addCommand("READ");
 
     ASSERT_THAT(parse("randomize timer"), Eq(0));
-    int cmd = ast.nodes[0].block.stmt;
-    ASSERT_THAT(ast.nodes[cmd].info.node_type, Eq(AST_COMMAND));
-    ASSERT_THAT(ast.nodes[cmd].cmd.id, Eq(1));
-    int ident = ast.nodes[ast.nodes[cmd].cmd.arglist].arglist.expr;
-    ASSERT_THAT(ast.nodes[ident].info.node_type, Eq(AST_IDENTIFIER));
+    int cmd = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast->nodes[cmd].info.node_type, Eq(AST_COMMAND));
+    ASSERT_THAT(ast->nodes[cmd].cmd.id, Eq(1));
+    int ident = ast->nodes[ast->nodes[cmd].cmd.arglist].arglist.expr;
+    ASSERT_THAT(ast->nodes[ident].info.node_type, Eq(AST_IDENTIFIER));
 }

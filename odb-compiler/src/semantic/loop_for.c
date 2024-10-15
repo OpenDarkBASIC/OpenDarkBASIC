@@ -107,7 +107,7 @@ step_direction(enum expr_type step_type, union expr_value step_val)
 
 static ast_id
 create_exit_stmt(
-    struct ast*      ast,
+    struct ast**     astp,
     ast_id           begin,
     ast_id           end,
     ast_id           step,
@@ -117,10 +117,10 @@ create_exit_stmt(
     const char*      source_text)
 {
     union expr_value begin_val, end_val, step_val = {0};
-    enum expr_type   begin_type = eval_constant_expr(ast, begin, &begin_val);
-    enum expr_type   end_type = eval_constant_expr(ast, end, &end_val);
+    enum expr_type   begin_type = eval_constant_expr(*astp, begin, &begin_val);
+    enum expr_type   end_type = eval_constant_expr(*astp, end, &end_val);
     enum expr_type   step_type = step > -1
-                                     ? eval_constant_expr(ast, step, &step_val)
+                                     ? eval_constant_expr(*astp, step, &step_val)
                                      : EXPR_TYPE_UNKNOWN;
     int loop_dir = loop_direction(begin_type, begin_val, end_type, end_val);
     int step_dir = step_direction(step_type, step_val);
@@ -132,8 +132,9 @@ create_exit_stmt(
     {
         int              gutter;
         struct utf8_span loc1 = utf8_span_union(
-            ast->nodes[begin].info.location, ast->nodes[end].info.location);
-        struct utf8_span     loc2 = ast->nodes[step].info.location;
+            (*astp)->nodes[begin].info.location,
+            (*astp)->nodes[end].info.location);
+        struct utf8_span     loc2 = (*astp)->nodes[step].info.location;
         struct log_highlight hl[]
             = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
                {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
@@ -158,7 +159,8 @@ create_exit_stmt(
     {
         int              gutter;
         struct utf8_span loc = utf8_span_union(
-            ast->nodes[begin].info.location, ast->nodes[end].info.location);
+            (*astp)->nodes[begin].info.location,
+            (*astp)->nodes[end].info.location);
         utf8_idx             ins = loc.off + loc.len;
         struct log_highlight hl_step_forwards[]
             = {{" STEP 1", "", {ins, 7}, LOG_INSERT, LOG_MARKERS, 0},
@@ -184,8 +186,9 @@ create_exit_stmt(
         && step_type != EXPR_TYPE_UNKNOWN && loop_dir != step_dir)
     {
         struct utf8_span loc1 = utf8_span_union(
-            ast->nodes[begin].info.location, ast->nodes[end].info.location);
-        struct utf8_span     loc2 = ast->nodes[step].info.location;
+            (*astp)->nodes[begin].info.location,
+            (*astp)->nodes[end].info.location);
+        struct utf8_span     loc2 = (*astp)->nodes[step].info.location;
         struct log_highlight hl[]
             = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
                {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
@@ -204,7 +207,8 @@ create_exit_stmt(
     {
         int              gutter;
         struct utf8_span loc = utf8_span_union(
-            ast->nodes[begin].info.location, ast->nodes[end].info.location);
+            (*astp)->nodes[begin].info.location,
+            (*astp)->nodes[end].info.location);
         utf8_idx             ins = loc.off + loc.len;
         struct log_highlight hl[]
             = {{" STEP -1", "", {ins, 8}, LOG_INSERT, LOG_MARKERS, 0},
@@ -223,17 +227,17 @@ create_exit_stmt(
         log_excerpt(source_text, hl);
     }
 
-    struct utf8_span begin_loc = ast->nodes[begin].info.location;
-    struct utf8_span end_loc = ast->nodes[end].info.location;
+    struct utf8_span begin_loc = (*astp)->nodes[begin].info.location;
+    struct utf8_span end_loc = (*astp)->nodes[end].info.location;
 
-    ast_id exit = ast_loop_exit(ast, empty_utf8_span(), begin_loc);
-    ast_id exit_cond_block = ast_block(ast, exit, begin_loc);
+    ast_id exit = ast_loop_exit(astp, empty_utf8_span(), begin_loc);
+    ast_id exit_cond_block = ast_block(astp, exit, begin_loc);
     ast_id exit_cond_branch
-        = ast_cond_branch(ast, exit_cond_block, -1, begin_loc);
-    ast_id exit_var = ast_dup_lvalue(ast, loop_var);
+        = ast_cond_branch(astp, exit_cond_block, -1, begin_loc);
+    ast_id exit_var = ast_dup_lvalue(astp, loop_var);
     ast_id exit_expr
-        = ast_binop(ast, cmp_op, exit_var, end, begin_loc, end_loc);
-    ast_id exit_stmt = ast_cond(ast, exit_expr, exit_cond_branch, begin_loc);
+        = ast_binop(astp, cmp_op, exit_var, end, begin_loc, end_loc);
+    ast_id exit_stmt = ast_cond(astp, exit_expr, exit_cond_branch, begin_loc);
 
     return exit_stmt;
 }
@@ -265,42 +269,43 @@ handle_next_stmt(
 
 static ast_id
 primitives_from_for_loop(
-    struct ast* ast,
-    ast_id      loop,
-    const char* source_filename,
-    const char* source_text)
+    struct ast** astp,
+    ast_id       loop,
+    const char*  source_filename,
+    const char*  source_text)
 {
     ast_id           loop_for;
     ast_id           init, loop_var, begin, end, step, next, body;
     struct utf8_span loop_loc;
 
-    loop_for = ast->nodes[loop].loop.loop_for;
+    loop_for = (*astp)->nodes[loop].loop.loop_for;
     ODBUTIL_DEBUG_ASSERT(
         loop_for > -1, log_semantic_err("loop_for: %d\n", loop_for));
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[loop].loop.post_body == -1,
-        log_semantic_err("post_body: %d\n", ast->nodes[loop].loop.post_body));
+        (*astp)->nodes[loop].loop.post_body == -1,
+        log_semantic_err(
+            "post_body: %d\n", (*astp)->nodes[loop].loop.post_body));
 
-    loop_loc = ast->nodes[loop].info.location;
-    body = ast->nodes[loop].loop.body;
-    init = ast->nodes[loop_for].loop_for.init;
-    end = ast->nodes[loop_for].loop_for.end;
-    step = ast->nodes[loop_for].loop_for.step;
-    next = ast->nodes[loop_for].loop_for.next;
+    loop_loc = (*astp)->nodes[loop].info.location;
+    body = (*astp)->nodes[loop].loop.body;
+    init = (*astp)->nodes[loop_for].loop_for.init;
+    end = (*astp)->nodes[loop_for].loop_for.end;
+    step = (*astp)->nodes[loop_for].loop_for.step;
+    next = (*astp)->nodes[loop_for].loop_for.next;
     ODBUTIL_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
     ODBUTIL_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
 
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[init].info.node_type == AST_ASSIGNMENT,
-        log_semantic_err("type: %d\n", ast->nodes[init].info.node_type));
-    loop_var = ast->nodes[init].assignment.lvalue;
-    begin = ast->nodes[init].assignment.expr;
+        (*astp)->nodes[init].info.node_type == AST_ASSIGNMENT,
+        log_semantic_err("type: %d\n", (*astp)->nodes[init].info.node_type));
+    loop_var = (*astp)->nodes[init].assignment.lvalue;
+    begin = (*astp)->nodes[init].assignment.expr;
 
     if (next > -1)
-        handle_next_stmt(ast, next, loop_var, source_filename, source_text);
+        handle_next_stmt((*astp), next, loop_var, source_filename, source_text);
 
     ast_id exit_stmt = create_exit_stmt(
-        ast,
+        astp,
         begin,
         end,
         step,
@@ -311,69 +316,72 @@ primitives_from_for_loop(
     if (exit_stmt < 0)
         return -1;
 
-    ast_id inc_var = ast_dup_lvalue(ast, loop_var);
+    ast_id inc_var = ast_dup_lvalue(astp, loop_var);
     ast_id inc_stmt
         = step > -1
-              ? ast_inc_step(ast, inc_var, step, ast->nodes[step].info.location)
-              : ast_inc(ast, inc_var, ast->nodes[inc_var].info.location);
+              ? ast_inc_step(
+                    astp, inc_var, step, (*astp)->nodes[step].info.location)
+              : ast_inc(astp, inc_var, (*astp)->nodes[inc_var].info.location);
 
-    ast_id new_body = ast_block(ast, exit_stmt, loop_loc);
+    ast_id new_body = ast_block(astp, exit_stmt, loop_loc);
     if (body > -1)
-        ast_block_append(ast, new_body, body);
-    ast->nodes[loop].loop.body = new_body;
-    ast->nodes[loop].loop.post_body
-        = ast_block(ast, inc_stmt, ast->nodes[inc_stmt].info.location);
-    ast->nodes[loop].loop.loop_for = -1;
+        ast_block_append((*astp), new_body, body);
 
-    ast_id init_block = ast_find_parent(ast, loop);
+    (*astp)->nodes[loop].loop.body = new_body;
+    (*astp)->nodes[loop].loop.post_body
+        = ast_block(astp, inc_stmt, (*astp)->nodes[inc_stmt].info.location);
+    (*astp)->nodes[loop].loop.loop_for = -1;
+
+    ast_id init_block = ast_find_parent((*astp), loop);
     ODBUTIL_DEBUG_ASSERT(
         init_block > -1, log_semantic_err("init_block: %d\n", init_block));
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[init_block].info.node_type == AST_BLOCK,
+        (*astp)->nodes[init_block].info.node_type == AST_BLOCK,
         log_semantic_err(
-            "init_block: %d\n", ast->nodes[init_block].info.node_type));
+            "init_block: %d\n", (*astp)->nodes[init_block].info.node_type));
 
     ast_id loop_block = loop_for;
-    ast->nodes[loop_block].info.node_type = AST_BLOCK;
-    ast->nodes[loop_block].info.location = loop_loc;
-    ast->nodes[loop_block].block.stmt = loop;
-    ast->nodes[loop_block].block.next = ast->nodes[init_block].block.next;
+    (*astp)->nodes[loop_block].info.node_type = AST_BLOCK;
+    (*astp)->nodes[loop_block].info.location = loop_loc;
+    (*astp)->nodes[loop_block].block.stmt = loop;
+    (*astp)->nodes[loop_block].block.next
+        = (*astp)->nodes[init_block].block.next;
 
-    ast->nodes[init_block].info.location = loop_loc;
-    ast->nodes[init_block].block.next = loop_block;
-    ast->nodes[init_block].block.stmt = init;
+    (*astp)->nodes[init_block].info.location = loop_loc;
+    (*astp)->nodes[init_block].block.next = loop_block;
+    (*astp)->nodes[init_block].block.stmt = init;
 
     return 0;
 }
 
 static int
 translate_loop_for(
-    struct ast*                tus,
+    struct ast**               tus,
     int                        tu_count,
     int                        tu_id,
     struct mutex**             tu_mutexes,
-    const char**               filenames,
+    const struct utf8*         filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
-    ast_id      n;
-    struct ast* ast = &tus[tu_id];
-    const char* filename = filenames[tu_id];
-    const char* source = sources[tu_id].text.data;
+    ast_id       n;
+    struct ast** astp = &tus[tu_id];
+    struct ast*  ast = *astp;
+    const char*  filename = utf8_cstr(filenames[tu_id]);
+    const char*  source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast->node_count; ++n)
+    for (n = 0; n != ast->count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_LOOP)
             continue;
         if (ast->nodes[n].loop.loop_for == -1)
             continue;
 
-        if (primitives_from_for_loop(ast, n, filename, source) != 0)
-        {
+        if (primitives_from_for_loop(astp, n, filename, source) != 0)
             return -1;
-        }
+        ast = *astp;
     }
 
     ast_gc(ast);
