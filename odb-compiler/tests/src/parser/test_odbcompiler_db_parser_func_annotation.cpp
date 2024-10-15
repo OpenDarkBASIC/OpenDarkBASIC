@@ -41,7 +41,7 @@ TEST_F(NAME, word)
     ast_id def = ast.nodes[func].func.def;
     ast_id ident = ast.nodes[decl].func_decl.identifier;
     ASSERT_THAT(ast.nodes[ident].identifier.name, Utf8SpanEq(9, 5));
-    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_I16));
+    ASSERT_THAT(ast.nodes[ident].identifier.annotation, Eq(TA_U16));
 }
 
 TEST_F(NAME, double_integer)

@@ -37,6 +37,17 @@ enum type
 #undef X
 };
 
+enum type_annotation
+{
+    TA_NONE,
+    TA_BOOL = '?',
+    TA_U16 = '%',
+    TA_I64 = '&',
+    TA_F32 = '#',
+    TA_F64 = '!',
+    TA_STRING = '$'
+};
+
 enum type_conversion_result
 {
     TC_DISALLOW = 0,
@@ -53,6 +64,9 @@ type_to_char(enum type type);
 
 ODBCOMPILER_PUBLIC_API enum type
 type_from_char(char c);
+
+ODBCOMPILER_PUBLIC_API enum type_annotation
+type_to_annotation(enum type type);
 
 ODBCOMPILER_PUBLIC_API const char*
 type_to_db_name(enum type type);

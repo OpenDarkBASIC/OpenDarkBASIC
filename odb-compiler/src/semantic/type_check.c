@@ -318,6 +318,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 enum type type = resolve_node_type(ctx, stmt, 0);
                 if (type == TYPE_INVALID)
                     return TYPE_INVALID;
+
                 /* Blocks are not expressions */
                 ctx->ast->nodes[block].info.type_info = TYPE_VOID;
             }
@@ -326,8 +327,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_END: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
-        case AST_ARGLIST: break;
-        case AST_PARAMLIST: break;
+        case AST_ARGLIST: goto not_yet_implemented;
+        case AST_PARAMLIST: goto not_yet_implemented;
 
         case AST_ASSIGNMENT: {
             ast_id    lhs = ctx->ast->nodes[n].assignment.lvalue;
@@ -342,8 +343,10 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 struct utf8_view    lhs_name = utf8_span_view(
                     ctx->source_text, ctx->ast->nodes[lhs].identifier.name);
                 struct view_scope lhs_name_scope = {lhs_name, scope};
-                switch (typemap_emplace_or_get(
-                    &ctx->typemap, lhs_name_scope, &lhs_type))
+
+                enum hm_status lhs_insertion = typemap_emplace_or_get(
+                    &ctx->typemap, lhs_name_scope, &lhs_type);
+                switch (lhs_insertion)
                 {
                     case HM_OOM: return TYPE_INVALID;
                     case HM_EXISTS: break;
@@ -352,7 +355,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
                         /* Prefer the explicit type ("AS TYPE"). This is set by
                          * the parser */
-                        lhs_type->type = ctx->ast->nodes[lhs].info.type_info;
+                        lhs_type->type
+                            = ctx->ast->nodes[lhs].identifier.explicit_type;
                         if (lhs_type->type != TYPE_INVALID)
                             break;
 
@@ -431,38 +435,87 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         case TC_TRUENESS:
                         case TC_INT_TO_FLOAT:
                         case TC_BOOL_PROMOTION:
-                            log_flc_warn(
-                                ctx->source_filename,
-                                ctx->source_text,
-                                ctx->ast->nodes[rhs].info.location,
-                                "Implicit conversion from {emph2:%s} to "
-                                "{emph1:%s} in assignment.\n",
-                                type_to_db_name(rhs_type),
-                                type_to_db_name(lhs_type->type));
-                            gutter = log_excerpt_binop(
-                                ctx->source_text,
-                                ctx->ast->nodes[lhs].info.location,
-                                ctx->ast->nodes[n].assignment.op_location,
-                                ctx->ast->nodes[rhs].info.location,
-                                type_to_db_name(lhs_type->type),
-                                type_to_db_name(rhs_type));
-                            log_excerpt_note(
-                                gutter,
-                                "{emph1:%.*s} was previously declared as "
-                                "{emph1:%s} at ",
-                                orig_name.len,
-                                ctx->source_text + orig_name.off,
-                                type_to_db_name(lhs_type->type));
-                            log_flc(
-                                "",
-                                ctx->source_filename,
-                                ctx->source_text,
-                                orig_loc,
-                                "\n");
-                            log_excerpt_1(
-                                ctx->source_text,
-                                orig_loc,
-                                type_to_db_name(lhs_type->type));
+                            if (lhs_insertion == HM_NEW)
+                            {
+                                /* clang-format off */
+                                const char* as_type = type_to_db_name(rhs_type);
+                                char ann[2] = {type_to_annotation(rhs_type), '\0'};
+                                struct utf8_span lhs_loc = ctx->ast->nodes[lhs].info.location;
+                                utf8_idx lhs_end = lhs_loc.off + lhs_loc.len;
+                                struct log_highlight hl_annotation[] = {
+                                    {ann, "", {lhs_end, 1}, LOG_INSERT, LOG_MARKERS, 0},
+                                    LOG_HIGHLIGHT_SENTINAL
+                                };
+                                struct log_highlight hl_as_type[] = {
+                                    {" AS ", "", {lhs_end, 4}, LOG_INSERT, {'^', '~', '~'}, 0},
+                                    {as_type, "", {lhs_end, strlen(as_type)}, LOG_INSERT, {'~', '~', '<'}, 0},
+                                    LOG_HIGHLIGHT_SENTINAL
+                                };
+                                /* clang-format on */
+                                log_flc_warn(
+                                    ctx->source_filename,
+                                    ctx->source_text,
+                                    ctx->ast->nodes[rhs].info.location,
+                                    "Implicit conversion from {emph2:%s} to "
+                                    "{emph1:%s} in variable initialization.\n",
+                                    type_to_db_name(rhs_type),
+                                    type_to_db_name(lhs_type->type));
+                                gutter = log_excerpt_binop(
+                                    ctx->source_text,
+                                    ctx->ast->nodes[lhs].info.location,
+                                    ctx->ast->nodes[n].assignment.op_location,
+                                    ctx->ast->nodes[rhs].info.location,
+                                    type_to_db_name(lhs_type->type),
+                                    type_to_db_name(rhs_type));
+                                if (ann[0] != TA_NONE)
+                                {
+                                    log_excerpt_help(
+                                        gutter, "Annotate the variable:\n");
+                                    log_excerpt(
+                                        ctx->source_text, hl_annotation);
+                                }
+                                log_excerpt_help(
+                                    gutter,
+                                    "%sexplicitly declare the type of the "
+                                    "variable:\n",
+                                    ann[0] != TA_NONE ? "Or " : "");
+                                log_excerpt(ctx->source_text, hl_as_type);
+                            }
+                            else
+                            {
+                                log_flc_warn(
+                                    ctx->source_filename,
+                                    ctx->source_text,
+                                    ctx->ast->nodes[rhs].info.location,
+                                    "Implicit conversion from {emph2:%s} to "
+                                    "{emph1:%s} in assignment.\n",
+                                    type_to_db_name(rhs_type),
+                                    type_to_db_name(lhs_type->type));
+                                gutter = log_excerpt_binop(
+                                    ctx->source_text,
+                                    ctx->ast->nodes[lhs].info.location,
+                                    ctx->ast->nodes[n].assignment.op_location,
+                                    ctx->ast->nodes[rhs].info.location,
+                                    type_to_db_name(lhs_type->type),
+                                    type_to_db_name(rhs_type));
+                                log_excerpt_note(
+                                    gutter,
+                                    "{emph1:%.*s} was previously declared as "
+                                    "{emph1:%s} at ",
+                                    orig_name.len,
+                                    ctx->source_text + orig_name.off,
+                                    type_to_db_name(lhs_type->type));
+                                log_flc(
+                                    "",
+                                    ctx->source_filename,
+                                    ctx->source_text,
+                                    orig_loc,
+                                    "\n");
+                                log_excerpt_1(
+                                    ctx->source_text,
+                                    orig_loc,
+                                    type_to_db_name(lhs_type->type));
+                            }
                             break;
 
                         case TC_TRUNCATE:
@@ -535,41 +588,53 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 typemap_emplace_or_get(&ctx->typemap, view_scope, &type_origin))
             {
                 case HM_NEW: {
-                    type_origin->original_declaration = n;
-                    type_origin->type = type_annotation_to_type(
-                        ctx->ast->nodes[n].identifier.annotation);
-                    struct utf8_span loc = ctx->ast->nodes[n].info.location;
+                    struct utf8_span loc;
+                    ast_id           init_expr;
 
-                    ast_id init_value;
+                    type_origin->original_declaration = n;
+
+                    /* Prefer the explicit type ("AS TYPE"). This is set by the
+                     * parser */
+                    type_origin->type
+                        = ctx->ast->nodes[n].identifier.explicit_type;
+
+                    /* Otherwise use annotated type */
+                    if (type_origin->type == TYPE_INVALID)
+                        type_origin->type = type_annotation_to_type(
+                            ctx->ast->nodes[n].identifier.annotation);
+
+                    /* Determine initializer expression based on the deduced
+                     * type */
+                    loc = ctx->ast->nodes[n].info.location;
                     switch (type_origin->type)
                     {
                         case TYPE_BOOL:
-                            init_value = ast_boolean_literal(ctx->ast, 0, loc);
+                            init_expr = ast_boolean_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_I64:
-                            init_value
+                            init_expr
                                 = ast_double_integer_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_U32:
-                            init_value = ast_dword_literal(ctx->ast, 0, loc);
+                            init_expr = ast_dword_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_I32:
-                            init_value = ast_integer_literal(ctx->ast, 0, loc);
+                            init_expr = ast_integer_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_U16:
-                            init_value = ast_word_literal(ctx->ast, 0, loc);
+                            init_expr = ast_word_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_U8:
-                            init_value = ast_byte_literal(ctx->ast, 0, loc);
+                            init_expr = ast_byte_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_F32:
-                            init_value = ast_float_literal(ctx->ast, 0, loc);
+                            init_expr = ast_float_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_F64:
-                            init_value = ast_double_literal(ctx->ast, 0, loc);
+                            init_expr = ast_double_literal(ctx->ast, 0, loc);
                             break;
                         case TYPE_STRING:
-                            init_value = ast_string_literal(
+                            init_expr = ast_string_literal(
                                 ctx->ast, empty_utf8_span(), loc);
                             break;
 
@@ -581,37 +646,86 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         case TYPE_ANY:
                         case TYPE_USER_DEFINED_VAR_PTR:
                             ODBUTIL_DEBUG_ASSERT(0, (void)0);
-                            break;
+                            goto not_yet_implemented;
                     }
 
-                    /* Create initializer for variable, since it is unreferenced
-                     * at this point */
-                    ast_id init_var = ast_dup_lvalue(ctx->ast, n);
-                    ast_id init_ass = ast_assign_var(
-                        ctx->ast, init_var, init_value, loc, loc);
-                    ast_id init_block = ast_block(ctx->ast, init_ass, loc);
+                    /* The initializer is inserted into the AST differently
+                     * depending on the context. There are two cases.
+                     *
+                     * 1. If the variable is a declaration, i.e. it is its own
+                     *    statement within a block, then we must remove the
+                     *    declaration from the AST and replace it with the
+                     *    initializer (which is just an assignemnt statement).
+                     *    In code:
+                     *      a AS INTEGER
+                     *    becomes:
+                     *      a AS INTEGER = 0
+                     *
+                     * 2. If the variable is an expression, e.g. it is being
+                     *    referenced on the RHS of an assignment, or appeared in
+                     *    a function call, then we must insert an initializer
+                     *    somewhere before that statement. The best place to
+                     *    insert it is at the beginning of the current scope.
+                     *    In code:
+                     *      print a
+                     *    becomes:
+                     *      a = 0
+                     *      print a
+                     */
 
-                    /* Fill in type info */
-                    ctx->ast->nodes[init_value].info.type_info
-                        = type_origin->type;
-                    ctx->ast->nodes[init_var].info.type_info
-                        = type_origin->type;
-                    ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
-                    ctx->ast->nodes[init_block].info.type_info = TYPE_VOID;
+                    /* Currently, if the identifier's explicit_type property is
+                     * set, only then can it be an lvalue. This is enforced by
+                     * the parser. In all other cases it is an rvalue. */
+                    if (ctx->ast->nodes[n].identifier.explicit_type
+                        != TYPE_INVALID)
+                    {
+                        /* Case 1: Declaration */
+                        ast_id init_ass
+                            = ast_assign(ctx->ast, n, init_expr, loc, loc);
 
-                    /* Insert the initializer at the very beginning of the
-                     * program */
-                    /* XXX: This won't work for variables created on the stack
-                     * in function bodies. I don't know if DBP creates scopes
-                     * in other constructs such as if-endif blocks. Need to
-                     * investigate. */
-                    ctx->ast->nodes[init_block].block.next = ctx->root;
-                    ctx->root = init_block;
+                        ast_id parent = ast_find_parent(ctx->ast, n);
+                        if (ctx->ast->nodes[parent].base.left == n)
+                            ctx->ast->nodes[parent].base.left = init_ass;
+                        if (ctx->ast->nodes[parent].base.right == n)
+                            ctx->ast->nodes[parent].base.right = init_ass;
+
+                        ctx->ast->nodes[init_expr].info.type_info
+                            = type_origin->type;
+                        ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
+
+                        break;
+                    }
+                    else
+                    {
+                        /* Case 2: Need to insert an init block */
+
+                        ast_id init_var = ast_dup_lvalue(ctx->ast, n);
+                        ast_id init_ass = ast_assign(
+                            ctx->ast, init_var, init_expr, loc, loc);
+                        ast_id init_block = ast_block(ctx->ast, init_ass, loc);
+
+                        /* Fill in type info */
+                        ctx->ast->nodes[init_expr].info.type_info
+                            = type_origin->type;
+                        ctx->ast->nodes[init_var].info.type_info
+                            = type_origin->type;
+                        ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
+                        ctx->ast->nodes[init_block].info.type_info = TYPE_VOID;
+
+                        /* Insert the initializer at the very beginning of the
+                         * program */
+                        /* XXX: This won't work for variables created on the
+                         * stack in function bodies. I don't know if DBP creates
+                         * scopes in other constructs such as if-endif blocks.
+                         * Need to investigate. */
+                        ctx->ast->nodes[init_block].block.next = ctx->root;
+                        ctx->root = init_block;
+                    }
+                    break;
                 }
-                break;
 
                 case HM_EXISTS: break;
-                case HM_OOM: goto error;
+                case HM_OOM: goto not_yet_implemented;
             }
             return ctx->ast->nodes[n].identifier.info.type_info
                    = type_origin->type;
@@ -868,7 +982,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         }
     }
 
-error:
+not_yet_implemented:
     log_flc_err(
         ctx->source_filename,
         ctx->source_text,

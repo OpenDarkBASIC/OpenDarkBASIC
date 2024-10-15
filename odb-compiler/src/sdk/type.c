@@ -24,6 +24,33 @@ type_from_char(char c)
     return TYPE_INVALID;
 }
 
+enum type_annotation
+type_to_annotation(enum type type)
+{
+    switch (type)
+    {
+        case TYPE_BOOL: return TA_BOOL;
+        case TYPE_U16: return TA_U16;
+        case TYPE_I64: return TA_I64;
+        case TYPE_F32: return TA_F32;
+        case TYPE_F64: return TA_F64;
+        case TYPE_STRING: return TA_STRING;
+
+        case TYPE_INVALID:
+        case TYPE_VOID:
+        case TYPE_U32:
+        case TYPE_I32:
+        case TYPE_U8:
+        case TYPE_ARRAY:
+        case TYPE_LABEL:
+        case TYPE_DABEL:
+        case TYPE_ANY:
+        case TYPE_USER_DEFINED_VAR_PTR: break;
+    }
+
+    return TA_NONE;
+}
+
 const char*
 type_to_db_name(enum type type)
 {

@@ -192,7 +192,7 @@ ast_command(
 }
 
 ast_id
-ast_assign_var(
+ast_assign(
     struct ast*      ast,
     ast_id           identifier,
     ast_id           expr,
@@ -278,7 +278,7 @@ ast_inc_step(
 {
     ast_id add = ast_binop(ast, BINOP_ADD, var, expr, location, location);
     var = ast_dup_lvalue(ast, var);
-    return ast_assign_var(ast, var, add, location, location);
+    return ast_assign(ast, var, add, location, location);
 }
 
 ast_id
@@ -294,7 +294,7 @@ ast_dec_step(
 {
     ast_id add = ast_binop(ast, BINOP_SUB, var, expr, location, location);
     var = ast_dup_lvalue(ast, var);
-    return ast_assign_var(ast, var, add, location, location);
+    return ast_assign(ast, var, add, location, location);
 }
 
 ast_id

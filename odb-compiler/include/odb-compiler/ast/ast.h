@@ -57,17 +57,6 @@ enum unop_type
 #undef X
 };
 
-enum type_annotation
-{
-    TA_NONE,
-    TA_BOOL = '?',
-    TA_I16 = '%',
-    TA_I64 = '&',
-    TA_F32 = '#',
-    TA_F64 = '!',
-    TA_STRING = '$'
-};
-
 enum scope
 {
     SCOPE_GLOBAL,
@@ -376,7 +365,7 @@ type_annotation_to_type(enum type_annotation annotation)
         case TA_NONE: break;
         case TA_BOOL: return TYPE_BOOL;
         case TA_I64: return TYPE_I64;
-        case TA_I16: return TYPE_U16;
+        case TA_U16: return TYPE_U16;
         case TA_F64: return TYPE_F64;
         case TA_F32: return TYPE_F32;
         case TA_STRING: return TYPE_STRING;
@@ -393,7 +382,7 @@ ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct u
 ast_id ast_paramlist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist_append(struct ast* ast, ast_id paramlist, ast_id expr, struct utf8_span location);
 ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
-ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
+ast_id ast_assign(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_inc_step(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location);
 ast_id ast_inc(struct ast* ast, ast_id var, struct utf8_span location);
 ast_id ast_dec_step(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location);

@@ -509,14 +509,10 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_func_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_cont.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_variable.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_variable_warnings.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_type_check_variable_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_variable_declaration.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_variable_rhs_initialization.cpp")
+        "tests/src/semantic/test_odbcompiler_semantic_variable_initialization.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

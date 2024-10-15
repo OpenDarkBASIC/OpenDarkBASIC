@@ -55,8 +55,9 @@ write_nodes(
             fprintf(
                 fp,
                 "  n%d [shape=\"record\", fontcolor=\"purple\", "
-                "label=\"{%.*s|%s}\"];\n",
+                "label=\"%s %.*s AS %s\"];\n",
                 n,
+                nd->identifier.scope == SCOPE_LOCAL ? "LOCAL" : "GLOBAL",
                 nd->identifier.name.len,
                 source.text.data + nd->identifier.name.off,
                 type_to_db_name(nd->identifier.info.type_info));

@@ -36,12 +36,13 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
     const char* source = "a = false\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
     EXPECT_THAT(
         log(),
         LogEq("test:1:5: warning: Implicit conversion from BOOLEAN to INTEGER "
               "in variable initialization.\n"
               " 1 | a = false\n"
-              "   | ^ ^ ^~~~< BOOLEAN\n"
+              "   | ^ ^ ~~~~< BOOLEAN\n"
               "   | INTEGER\n"
               "   = help: Annotate the variable with the BOOLEAN annotation:\n"
               " 1 | a? = false\n"
@@ -49,6 +50,7 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
               "   = help: Or declare the type of the variable AS BOOLEAN:\n"
               " 1 | a AS BOOLEAN = false\n"
               "   |  ^~~~~~~~~~<\n"));
+
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;

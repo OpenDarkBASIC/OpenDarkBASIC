@@ -8,7 +8,7 @@
 
 static char                 progress_active;
 static struct log_interface g_log;
-static struct mutex* g_mutex;
+static struct mutex*        g_mutex;
 
 /* -------------------------------------------------------------------------- */
 static void
@@ -291,6 +291,13 @@ next_control_sequence(
             *end = reset_style();
             return 1;
         case 'i':
+            if (memcmp(&fmt[*i], "nsert", 5) == 0)
+            {
+                (*i) += 5;
+                *start = insert_style();
+                *end = reset_style();
+                return 1;
+            }
             *start = info_style();
             *end = reset_style();
             return 1;
@@ -445,7 +452,7 @@ log_vimpl(
 {
     struct varef args;
     va_copy(args.ap, ap);
-    
+
     mutex_lock(g_mutex);
 
     if (is_progress && !progress_active)
@@ -462,7 +469,7 @@ log_vimpl(
     fprintf_with_color(group);
     fprintf_with_color(severity);
     vfprintf_with_color(fmt, &args);
-    
+
     mutex_unlock(g_mutex);
 }
 
@@ -493,7 +500,7 @@ log_vflc(
     utf8_idx     i;
     utf8_idx     l1, c1;
     struct varef args;
-    
+
     mutex_lock(g_mutex);
 
     l1 = 1, c1 = 1;
@@ -513,7 +520,7 @@ log_vflc(
 
     va_copy(args.ap, ap);
     vfprintf_with_color(fmt, &args);
-    
+
     mutex_unlock(g_mutex);
 }
 
@@ -526,7 +533,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
     int              num_highlights;
     struct utf8_span loc;
     struct utf8_span block;
-    
+
     mutex_lock(g_mutex);
 
     ODBUTIL_DEBUG_ASSERT(
@@ -885,7 +892,7 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
         log_putc('\n');
         c = c_end;
     }
-    
+
     mutex_unlock(g_mutex);
 
     return gutter_indent;

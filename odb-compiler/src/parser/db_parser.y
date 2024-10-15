@@ -250,7 +250,7 @@
 %type<type_value> type maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
-%type<node_value> identifier var_decl
+%type<node_value> identifier var_decl var_init_decl
 %type<node_value> func func_or_container_ref
 
 %start program
@@ -281,6 +281,7 @@ stmt
   : conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
+  | var_init_decl                           { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
 // Statements that can appear "inline", e.g. "if x then istmt"
@@ -366,10 +367,13 @@ command_expr
   : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
-  : identifier '=' expr                     { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
-  | var_decl '=' expr                       { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
+  : identifier '=' expr                     { $$ = ast_assign(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
+  ;
+var_init_decl
+  : var_decl '=' expr                       { $$ = ast_assign(ctx->ast, $1, $3, @2, @$); }
+  | var_decl                                { $$ = $1; }
   ;
 var_decl
   : scope identifier AS type                { $$ = $2;
