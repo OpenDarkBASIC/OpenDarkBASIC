@@ -24,11 +24,7 @@ TEST_F(NAME, no_return_default_to_void)
               "endfunction\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds,symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     ast_id func = ast.nodes[0].block.stmt;

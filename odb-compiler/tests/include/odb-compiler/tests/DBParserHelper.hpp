@@ -16,6 +16,7 @@ struct DBParserHelper
     ~DBParserHelper();
 
     int parse(const char* code);
+    int runSemanticCheck(const struct semantic_check* check);
     int addCommand(const char* name);
     int addCommand(type return_type, const char* name);
     int addCommand(type return_type, const char* name, std::initializer_list<type> param_types);

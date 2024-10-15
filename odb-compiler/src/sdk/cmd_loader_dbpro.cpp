@@ -15,14 +15,14 @@ convert_char_to_return_type(char c)
     switch (c)
     {
         case '0': return TYPE_VOID;
-        case 'R': return TYPE_DOUBLE_INTEGER;
-        case 'D': return TYPE_DWORD;
-        case 'L': return TYPE_INTEGER;
-        case 'W': return TYPE_WORD;
-        case 'Y': return TYPE_BYTE;
-        case 'B': return TYPE_BOOLEAN;
-        case 'F': return TYPE_FLOAT;
-        case 'O': return TYPE_DOUBLE;
+        case 'R': return TYPE_I64;
+        case 'D': return TYPE_U32;
+        case 'L': return TYPE_I32;
+        case 'W': return TYPE_U16;
+        case 'Y': return TYPE_U8;
+        case 'B': return TYPE_BOOL;
+        case 'F': return TYPE_F32;
+        case 'O': return TYPE_F64;
         case 'S': return TYPE_STRING;
         case 'H': return TYPE_ARRAY;
         case 'P': return TYPE_LABEL;
@@ -41,14 +41,14 @@ convert_char_to_param_type(char c)
     switch (c)
     {
         case '0': return TYPE_VOID;
-        case 'R': return TYPE_DOUBLE_INTEGER;
-        case 'D': return TYPE_DWORD;
-        case 'L': return TYPE_INTEGER;
-        case 'W': return TYPE_WORD;
-        case 'Y': return TYPE_BYTE;
-        case 'B': return TYPE_BOOLEAN;
-        case 'F': return TYPE_FLOAT;
-        case 'O': return TYPE_DOUBLE;
+        case 'R': return TYPE_I64;
+        case 'D': return TYPE_U32;
+        case 'L': return TYPE_I32;
+        case 'W': return TYPE_U16;
+        case 'Y': return TYPE_U8;
+        case 'B': return TYPE_BOOL;
+        case 'F': return TYPE_F32;
+        case 'O': return TYPE_F64;
         case 'S': return TYPE_STRING;
         case 'H': return TYPE_ARRAY;
         case 'P': return TYPE_LABEL;

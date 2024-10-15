@@ -127,6 +127,7 @@ parse_worker(void* arg)
 
         log_parser_info(
             "Parsing source file: {emph:%s}\n", tus[i].source_filename.c_str());
+        mem_acquire(tus[i].ast.nodes, 0);
         parse_result = db_parse(
             &parser,
             &tus[i].ast,
@@ -172,6 +173,9 @@ semantic_worker(void* arg)
         if (i % worker->tus->size() != worker->id)
             continue;
 
+        log_parser_info(
+            "Running semantic checks: {emph:%s}\n",
+            tus[i].source_filename.c_str());
         mem_acquire(tus[i].ast.nodes, 0);
         result = semantic_run_essential_checks(
             &tus[i].ast,
@@ -179,7 +183,7 @@ semantic_worker(void* arg)
             getCommandList(),
             *worker->symbol_table,
             tus[i].source_filename.c_str(),
-            tus[i].source);
+            tus[i].source.text.data);
         mem_release(tus[i].ast.nodes);
 
         if (result != 0)

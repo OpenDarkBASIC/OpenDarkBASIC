@@ -547,16 +547,6 @@ ast_func_or_container_ref(
 }
 
 ast_id
-ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location)
-{
-    ast_id n = new_node(ast, AST_LABEL, location);
-    if (n < 0)
-        return -1;
-    ast->nodes[n].label.name = name;
-    return n;
-}
-
-ast_id
 ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location)
 {
     ast_id n = new_node(ast, AST_BOOLEAN_LITERAL, location);

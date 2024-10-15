@@ -153,14 +153,6 @@ write_nodes(
         case AST_FUNC_CALL:
             fprintf(fp, "  n%d [shape=\"record\", label=\"call\"];\n", n);
             break;
-        case AST_LABEL:
-            fprintf(
-                fp,
-                "  n%d [shape=\"record\", label=\"%.*s:\"];\n",
-                n,
-                nd->label.name.len,
-                source.text.data + nd->label.name.off);
-            break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
                 fp,

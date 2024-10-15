@@ -86,7 +86,7 @@ run_dependencies(
     const struct cmd_list*        cmds,
     const struct symbol_table*    symbols,
     const char*                   source_filename,
-    struct db_source              source);
+    const char*                   source_text);
 
 static int
 run_check(
@@ -97,7 +97,7 @@ run_check(
     const struct cmd_list*       cmds,
     const struct symbol_table*   symbols,
     const char*                  source_filename,
-    struct db_source             source)
+    const char*                  source_text)
 {
     if (run_dependencies(
             check->depends_on,
@@ -107,14 +107,17 @@ run_check(
             cmds,
             symbols,
             source_filename,
-            source)
+            source_text)
         < 0)
         return -1;
 
     if (ptr_set_emplace_new(visited, check))
-        if (check->execute(ast, plugins, cmds, symbols, source_filename, source)
+        if (check->execute(
+                ast, plugins, cmds, symbols, source_filename, source_text)
             < 0)
+        {
             return -1;
+        }
 
     return 0;
 }
@@ -127,7 +130,7 @@ run_dependencies(
     const struct cmd_list*        cmds,
     const struct symbol_table*    symbols,
     const char*                   source_filename,
-    struct db_source              source)
+    const char*                   source_text)
 {
     const struct semantic_check** check;
     for (check = dependencies; *check != NULL; ++check)
@@ -139,7 +142,7 @@ run_dependencies(
                 cmds,
                 symbols,
                 source_filename,
-                source)
+                source_text)
             != 0)
             return -1;
     return 0;
@@ -153,7 +156,7 @@ semantic_check_run(
     const struct cmd_list*       cmds,
     const struct symbol_table*   symbols,
     const char*                  source_filename,
-    struct db_source             source)
+    const char*                  source_text)
 {
     struct ptr_set* check_visited;
     if (ast->node_count == 0)
@@ -173,7 +176,7 @@ semantic_check_run(
             cmds,
             symbols,
             source_filename,
-            source)
+            source_text)
         < 0)
     {
         ptr_set_deinit(check_visited);
@@ -191,7 +194,7 @@ dummy_check(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     return 0;
 }
@@ -203,7 +206,7 @@ semantic_run_essential_checks(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_expand_constant_declarations,
@@ -217,5 +220,11 @@ semantic_run_essential_checks(
         = {dummy_check, essential_checks};
 
     return semantic_check_run(
-        &essential_check, ast, plugins, cmds, symbols, source_filename, source);
+        &essential_check,
+        ast,
+        plugins,
+        cmds,
+        symbols,
+        source_filename,
+        source_text);
 }

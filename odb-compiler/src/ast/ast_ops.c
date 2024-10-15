@@ -92,7 +92,6 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_FUNC_DEF: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
-        case AST_LABEL: SWAP(struct utf8_span, label, name) break;
         case AST_BOOLEAN_LITERAL: SWAP(char, boolean_literal, is_true) break;
         case AST_BYTE_LITERAL: SWAP(uint8_t, byte_literal, value) break;
         case AST_WORD_LITERAL: SWAP(uint16_t, word_literal, value) break;
@@ -201,7 +200,7 @@ ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root)
 
 ast_id
 ast_trees_equal(
-    struct db_source source, const struct ast* ast, ast_id n1, ast_id n2)
+    const char* source_text, const struct ast* ast, ast_id n1, ast_id n2)
 {
     if (ast->nodes[n1].info.node_type != ast->nodes[n2].info.node_type)
         return 0;
@@ -225,10 +224,9 @@ ast_trees_equal(
         case AST_ASSIGNMENT: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
+                    utf8_span_view(source_text, ast->nodes[n1].identifier.name),
                     utf8_span_view(
-                        source.text.data, ast->nodes[n1].identifier.name),
-                    utf8_span_view(
-                        source.text.data, ast->nodes[n2].identifier.name)))
+                        source_text, ast->nodes[n2].identifier.name)))
                 return 0;
             break;
         case AST_BINOP:
@@ -245,14 +243,14 @@ ast_trees_equal(
             if (ast->nodes[n1].loop.loop_for != ast->nodes[n2].loop.loop_for)
                 return 0;
             if (!utf8_equal(
-                    utf8_span_view(source.text.data, ast->nodes[n1].loop.name),
-                    utf8_span_view(source.text.data, ast->nodes[n2].loop.name)))
+                    utf8_span_view(source_text, ast->nodes[n1].loop.name),
+                    utf8_span_view(source_text, ast->nodes[n2].loop.name)))
                 return 0;
             if (!utf8_equal(
                     utf8_span_view(
-                        source.text.data, ast->nodes[n1].loop.implicit_name),
+                        source_text, ast->nodes[n1].loop.implicit_name),
                     utf8_span_view(
-                        source.text.data, ast->nodes[n2].loop.implicit_name)))
+                        source_text, ast->nodes[n2].loop.implicit_name)))
                 return 0;
             break;
         case AST_LOOP_FOR:
@@ -264,16 +262,14 @@ ast_trees_equal(
             break;
         case AST_LOOP_CONT:
             if (!utf8_equal(
-                    utf8_span_view(source.text.data, ast->nodes[n1].cont.name),
-                    utf8_span_view(source.text.data, ast->nodes[n2].cont.name)))
+                    utf8_span_view(source_text, ast->nodes[n1].cont.name),
+                    utf8_span_view(source_text, ast->nodes[n2].cont.name)))
                 return 0;
             break;
         case AST_LOOP_EXIT:
             if (!utf8_equal(
-                    utf8_span_view(
-                        source.text.data, ast->nodes[n1].loop_exit.name),
-                    utf8_span_view(
-                        source.text.data, ast->nodes[n2].loop_exit.name)))
+                    utf8_span_view(source_text, ast->nodes[n1].loop_exit.name),
+                    utf8_span_view(source_text, ast->nodes[n2].loop_exit.name)))
                 return 0;
             break;
         case AST_FUNC: break;
@@ -281,13 +277,6 @@ ast_trees_equal(
         case AST_FUNC_DEF: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
-        case AST_LABEL:
-            if (!utf8_equal(
-                    utf8_span_view(source.text.data, ast->nodes[n1].label.name),
-                    utf8_span_view(
-                        source.text.data, ast->nodes[n2].label.name)))
-                return 0;
-            break;
         case AST_BOOLEAN_LITERAL:
             if (ast->nodes[n1].boolean_literal.is_true
                 != ast->nodes[n2].boolean_literal.is_true)
@@ -331,9 +320,9 @@ ast_trees_equal(
         case AST_STRING_LITERAL:
             if (!utf8_equal(
                     utf8_span_view(
-                        source.text.data, ast->nodes[n1].string_literal.str),
+                        source_text, ast->nodes[n1].string_literal.str),
                     utf8_span_view(
-                        source.text.data, ast->nodes[n2].string_literal.str)))
+                        source_text, ast->nodes[n2].string_literal.str)))
                 return 0;
             break;
         case AST_CAST: break;
@@ -350,12 +339,15 @@ ast_trees_equal(
 
     if (ast->nodes[n1].base.left >= 0)
         if (ast_trees_equal(
-                source, ast, ast->nodes[n1].base.left, ast->nodes[n2].base.left)
+                source_text,
+                ast,
+                ast->nodes[n1].base.left,
+                ast->nodes[n2].base.left)
             == 0)
             return 0;
     if (ast->nodes[n1].base.right >= 0)
         if (ast_trees_equal(
-                source,
+                source_text,
                 ast,
                 ast->nodes[n1].base.right,
                 ast->nodes[n2].base.right)

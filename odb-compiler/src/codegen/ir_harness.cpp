@@ -493,6 +493,7 @@ ir_create_harness(
         llvm::Function::ExternalLinkage,
         "odbrt_exit",
         ir->mod);
+    FSDKDeInit->setDoesNotReturn();
     b.CreateCall(FSDKDeInit, {});
 
     b.CreateRet(llvm::ConstantInt::get(ir->ctx, llvm::APInt(32, 0)));

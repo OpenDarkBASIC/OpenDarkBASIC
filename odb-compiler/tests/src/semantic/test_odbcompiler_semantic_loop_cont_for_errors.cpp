@@ -22,10 +22,7 @@ TEST_F(NAME, exit_outside_of_loop)
               "next n\n"
               "continue\n"),
         Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:3:1: error: CONTINUE statement must be inside a loop.\n"
@@ -41,10 +38,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:2:14: error: Unknown loop name referenced in CONTINUE "
@@ -64,10 +58,7 @@ TEST_F(NAME, continue_nonexisting_named_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:2:14: error: Unknown loop name referenced in CONTINUE "
@@ -89,10 +80,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop)
               "next x\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:3:18: error: Unknown loop name referenced in CONTINUE "
@@ -114,10 +102,7 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop)
               "next x\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:3:18: error: Unknown loop name referenced in CONTINUE "
@@ -139,10 +124,7 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop_outer)
               "next x\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:4:14: error: Unknown loop name referenced in CONTINUE "
@@ -164,10 +146,7 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop_outer)
               "next x\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_cont, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:4:14: error: Unknown loop name referenced in CONTINUE "

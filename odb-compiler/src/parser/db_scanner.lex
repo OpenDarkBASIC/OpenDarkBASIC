@@ -133,12 +133,13 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     "~~"                  { RETURN_TOKEN(TOK_BXOR); }
     ".."                  { RETURN_TOKEN(TOK_BNOT); }
 
-    {IDENTIFIER}"&"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
+    {IDENTIFIER}"?"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_BOOLEAN); }
     {IDENTIFIER}"%"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
-    {IDENTIFIER}"!"      { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
-    {IDENTIFIER}"#"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
-    {IDENTIFIER}"$"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
-    {IDENTIFIER}        { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER); }
+    {IDENTIFIER}"&"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
+    {IDENTIFIER}"#"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
+    {IDENTIFIER}"!"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
+    {IDENTIFIER}"$"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
+    {IDENTIFIER}          { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }
     "$"                 { RETURN_TOKEN('$'); }

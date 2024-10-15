@@ -8,7 +8,7 @@ check_loop_names(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)

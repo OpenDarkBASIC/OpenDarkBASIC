@@ -13,14 +13,14 @@
 #define TYPE_LIST                                                              \
     /* DBPro types */                                                          \
     X(VOID,           '0')                                                     \
-    X(DOUBLE_INTEGER, 'R') /* 8 bytes -- signed int */                         \
-    X(DWORD,          'D') /* 4 bytes -- unsigned int */                       \
-    X(INTEGER,        'L') /* 4 bytes -- signed int */                         \
-    X(WORD,           'W') /* 2 bytes -- unsigned int */                       \
-    X(BYTE,           'Y') /* 1 byte  -- unsigned int */                       \
-    X(BOOLEAN,        'B') /* 1 byte  -- boolean */                            \
-    X(FLOAT,          'F') /* 4 bytes -- float */                              \
-    X(DOUBLE,         'O') /* 8 bytes -- double */                             \
+    X(I64,            'R') /* 8 bytes -- signed int */                         \
+    X(U32,            'D') /* 4 bytes -- unsigned int */                       \
+    X(I32,            'L') /* 4 bytes -- signed int */                         \
+    X(U16,            'W') /* 2 bytes -- unsigned int */                       \
+    X(U8,             'Y') /* 1 byte  -- unsigned int */                       \
+    X(BOOL,           'B') /* 1 byte  -- boolean */                            \
+    X(F32,            'F') /* 4 bytes -- float */                              \
+    X(F64,            'O') /* 8 bytes -- double */                             \
     X(STRING,         'S') /* 4/8 bytes -- char* (passed as DWORD on 32-bit) */\
     X(ARRAY,          'H') /* 4/8 bytes -- Pass array address directly */      \
     X(LABEL,          'P') /* 4 bytes -- ? */                                  \
@@ -37,14 +37,15 @@ enum type
 #undef X
 };
 
-enum type_promotion_result
+enum type_conversion_result
 {
-    TP_DISALLOW = 0,
-    TP_ALLOW = 1,
-    TP_TRUNCATE = 2,
-    TP_TRUENESS = 3,
-    TP_INT_TO_FLOAT = 4,
-    TP_BOOL_PROMOTION = 5,
+    TC_DISALLOW = 0,
+    TC_ALLOW = 1,
+    TC_TRUNCATE = 2,
+    TC_SIGN_CHANGE = 3,
+    TC_TRUENESS = 4,
+    TC_INT_TO_FLOAT = 5,
+    TC_BOOL_PROMOTION = 6,
 };
 
 ODBCOMPILER_PUBLIC_API char
@@ -56,8 +57,8 @@ type_from_char(char c);
 ODBCOMPILER_PUBLIC_API const char*
 type_to_db_name(enum type type);
 
-ODBCOMPILER_PUBLIC_API enum type_promotion_result
-type_promote(enum type from, enum type to);
+ODBCOMPILER_PUBLIC_API enum type_conversion_result
+type_convert(enum type from, enum type to);
 
 ODBCOMPILER_PUBLIC_API enum type
 type_widest(enum type t1, enum type t2);

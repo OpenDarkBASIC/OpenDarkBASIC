@@ -17,18 +17,9 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, float_accepts_integer_with_warning)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     ASSERT_THAT(parse("print 5"), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_resolve_cmd_overloads,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0));
+    EXPECT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit conversion of argument 1 from BYTE "
@@ -40,18 +31,9 @@ TEST_F(NAME, float_accepts_integer_with_warning)
 
 TEST_F(NAME, integer_accepts_float_with_warning)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_resolve_cmd_overloads,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0));
+    EXPECT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq(
@@ -65,19 +47,10 @@ TEST_F(NAME, integer_accepts_float_with_warning)
 TEST_F(NAME, dword_accepts_integer_with_warning)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
-    addCommand(TYPE_VOID, "PRINT", {TYPE_DWORD});
-    addCommand(TYPE_VOID, "PRINT", {TYPE_FLOAT});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U32});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     ASSERT_THAT(parse("print n"), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_resolve_cmd_overloads,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0));
+    EXPECT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7: warning: Argument 1 is truncated in conversion "

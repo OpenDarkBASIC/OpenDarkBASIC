@@ -13,6 +13,7 @@
 %define hash-function-name db_keyword_hash
 %define lookup-function-name db_keyword_lookup_impl
 %struct-type
+%ignore-case
 // Strings passed in are not null terminated
 %compare-lengths
 
@@ -24,6 +25,14 @@ struct db_keyword
 
 %%
 as,                 TOK_AS
+boolean,            TOK_BOOLEAN
+byte,               TOK_BYTE
+word,               TOK_WORD
+integer,            TOK_INTEGER
+dword,              TOK_DWORD
+float,              TOK_FLOAT
+double,             TOK_DOUBLE
+string,             TOK_STRING
 end,                TOK_END
 inc,                TOK_INC
 dec,                TOK_DEC
@@ -56,23 +65,17 @@ function,           TOK_FUNCTION
 endfunction,        TOK_ENDFUNCTION
 %%
 
-//boolean,          TOK_BOOLEAN
-//byte,             TOK_BYTE
 //case,             TOK_CASE
 //complex,          TOK_COMPLEX
 //dim,              TOK_DIM
 //default,          TOK_DEFAULT
-//double,           TOK_DOUBLE
-//dword,            TOK_DWORD
 //endcase,          TOK_ENDCASE
 //endselect,        TOK_ENDSELECT
 //endtype,          TOK_ENDTYPE
 //exitfunction,     TOK_EXITFUNCTION
-//float,            TOK_FLOAT
 //global,           TOK_GLOBAL
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
-//integer,          TOK_INTEGER
 //local,            TOK_LOCAL
 //mat2x2,           TOK_MAT2X2
 //mat2x3,           TOK_MAT2X3
@@ -87,13 +90,11 @@ endfunction,        TOK_ENDFUNCTION
 //quat,             TOK_QUAT
 //return,           TOK_RETURN
 //select,           TOK_SELECT
-//string,           TOK_STRING
 //type,             TOK_TYPE
 //undim,            TOK_UNDIM
 //vec2,             TOK_VEC2
 //vec3,             TOK_VEC3
 //vec4,             TOK_VEC4
-//word,             TOK_WORD
 
 dbtoken_kind_t
 db_keyword_lookup(const char* data, struct utf8_span ref)

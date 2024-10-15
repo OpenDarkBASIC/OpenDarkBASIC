@@ -11,7 +11,7 @@ struct NAME : DBParserHelper, Test
     void
     SetUp() override
     {
-        addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+        addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     }
 
     void

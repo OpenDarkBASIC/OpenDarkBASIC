@@ -126,6 +126,7 @@ ODB_COMMAND1(
     SEE_ALSO("PRINT", "PRINTC", "STR$"))
 {
     puts(str);
+    fflush(stdout);
 }
 ODB_OVERLOAD1(
     /* clang-format off */

@@ -25,10 +25,7 @@ TEST_F(NAME, nested_loops_share_same_name_1)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:2:5: error: Loop name already exists.\n"
@@ -48,10 +45,7 @@ TEST_F(NAME, nested_loops_share_same_name_2)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:2:5: error: Loop name already exists.\n"
@@ -71,10 +65,7 @@ TEST_F(NAME, nested_loops_share_same_name_3)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(-1));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:2:9: error: Loop name already exists.\n"

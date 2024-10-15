@@ -17,13 +17,9 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, and_implicit_evaluation_of_integer)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a and b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -50,19 +46,15 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_float)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# and b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -89,19 +81,15 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, and_implicit_evaluation_of_double)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! and b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -128,19 +116,15 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_integer)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a or b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -167,19 +151,15 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_float)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# or b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -206,19 +186,15 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, or_implicit_evaluation_of_double)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! or b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -245,19 +221,15 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_integer)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a xor b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -284,19 +256,15 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_float)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# xor b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -323,19 +291,15 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }
 
 TEST_F(NAME, xor_implicit_evaluation_of_double)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! xor b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -362,6 +326,6 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_CAST));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }

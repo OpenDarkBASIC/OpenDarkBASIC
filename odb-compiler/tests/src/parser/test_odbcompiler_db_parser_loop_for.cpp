@@ -14,7 +14,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, implicit_step_1)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(
         parse("for n=1 to 5\n"
               "    print 5\n"
@@ -68,7 +68,7 @@ TEST_F(NAME, implicit_step_1_empty_loop)
 
 TEST_F(NAME, implicit_step_1_empty_next)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(
         parse("for n=1 to 5\n"
               "    print 5\n"

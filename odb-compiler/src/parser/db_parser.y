@@ -125,9 +125,9 @@
 /* Keywords */
 %token CONSTANT "constant"
 %token END
-%token AS "AS"
 %token INC "increment"
 %token DEC "decrement"
+%token BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
 /* Control flow */
 %token IF "IF"
 %token THEN "THEN"
@@ -221,13 +221,15 @@
 %right UPLUS
 %right UMINUS
 %right UNOT
+%nonassoc AS
 
 /* Identifiers */
 %token<string_value> IDENTIFIER "identifier"
-%token<string_value> IDENTIFIER_DOUBLE_INTEGER "DOUBLE INTEGER identifier"
+%token<string_value> IDENTIFIER_BOOLEAN "BOOLEAN identifier"
 %token<string_value> IDENTIFIER_WORD "WORD identifier"
-%token<string_value> IDENTIFIER_DOUBLE "DOUBLE identifier"
+%token<string_value> IDENTIFIER_DOUBLE_INTEGER "DOUBLE INTEGER identifier"
 %token<string_value> IDENTIFIER_FLOAT "FLOAT identifier"
+%token<string_value> IDENTIFIER_DOUBLE "DOUBLE identifier"
 %token<string_value> IDENTIFIER_STRING "STRING identifier"
 %token<cmd_value> COMMAND "command"
 
@@ -239,6 +241,7 @@
 %type<node_value> arglist paramlist
 %type<node_value> const_decl
 %type<node_value> inc dec
+%type<node_value> cast_expr
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
@@ -247,7 +250,6 @@
 %type<node_value> literal
 %type<node_value> identifier
 %type<node_value> func func_or_container_ref
-//%type<node_value> label
 
 %start program
 
@@ -324,10 +326,22 @@ expr
   | expr BSHL expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
   | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
+  | cast_expr                               { $$ = $1; }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
   | identifier                              { $$ = $1; }
   | literal                                 { $$ = $1; }
+  ;
+cast_expr
+  : expr AS BOOLEAN                         { $$ = ast_cast(ctx->ast, $1, TYPE_BOOL, @$); }
+  | expr AS BYTE                            { $$ = ast_cast(ctx->ast, $1, TYPE_U8, @$); }
+  | expr AS WORD                            { $$ = ast_cast(ctx->ast, $1, TYPE_U16, @$); }
+  | expr AS INTEGER                         { $$ = ast_cast(ctx->ast, $1, TYPE_I32, @$); }
+  | expr AS DWORD                           { $$ = ast_cast(ctx->ast, $1, TYPE_U32, @$); }
+  | expr AS DOUBLE INTEGER                  { $$ = ast_cast(ctx->ast, $1, TYPE_I64, @$); }
+  | expr AS FLOAT                           { $$ = ast_cast(ctx->ast, $1, TYPE_F32, @$); }
+  | expr AS DOUBLE                          { $$ = ast_cast(ctx->ast, $1, TYPE_F64, @$); }
+  | expr AS STRING                          { $$ = ast_cast(ctx->ast, $1, TYPE_STRING, @$); }
   ;
 arglist
   : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->ast, $$, $3, @$); }
@@ -464,15 +478,13 @@ literal
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }
-  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->ast, $1, TA_INT64, @$); }
-  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_INT16, @$); }
-  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_DOUBLE, @$); }
-  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_FLOAT, @$); }
+  | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->ast, $1, TA_BOOL, @$); }
+  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->ast, $1, TA_I16, @$); }
+  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->ast, $1, TA_I64, @$); }
+  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->ast, $1, TA_F32, @$); }
+  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->ast, $1, TA_F64, @$); }
   | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->ast, $1, TA_STRING, @$); }
   ;
-//label
-//  : IDENTIFIER ':'                          { $$ = ast_label(ctx->ast, $1, @$); }
-//  ;
 %%
 
 #include <stdarg.h>

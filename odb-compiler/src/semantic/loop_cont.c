@@ -37,17 +37,17 @@ log_cont_error(
     ast_id            cont,
     ast_id            first_loop,
     const char*       source_filename,
-    struct db_source  source)
+    const char*       source_text)
 {
     int gutter;
     if (first_loop == -1)
     {
         log_flc_err(
             source_filename,
-            source.text.data,
+            source_text,
             ast->nodes[cont].info.location,
             "CONTINUE statement must be inside a loop.\n");
-        log_excerpt_1(source.text.data, ast->nodes[cont].info.location, "");
+        log_excerpt_1(source_text, ast->nodes[cont].info.location, "");
     }
     else
     {
@@ -58,19 +58,18 @@ log_cont_error(
                                     : empty_utf8_span();
         log_flc_err(
             source_filename,
-            source.text.data,
+            source_text,
             ast->nodes[cont].cont.name,
             "Unknown loop name referenced in CONTINUE statement.\n");
-        gutter
-            = log_excerpt_1(source.text.data, ast->nodes[cont].cont.name, "");
+        gutter = log_excerpt_1(source_text, ast->nodes[cont].cont.name, "");
         if (name.len)
         {
             log_excerpt_help(
                 gutter,
                 "Did you mean {quote:%.*s}?\n",
                 name.len,
-                source.text.data + name.off);
-            log_excerpt_1(source.text.data, name, "");
+                source_text + name.off);
+            log_excerpt_1(source_text, name, "");
         }
     }
     return -1;
@@ -78,10 +77,10 @@ log_cont_error(
 
 static int
 check_cont(
-    struct ast*      ast,
-    ast_id           cont,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      cont,
+    const char* source_filename,
+    const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -95,17 +94,17 @@ check_cont(
         loop = ast_find_parent(ast, loop);
         if (loop == -1)
             return log_cont_error(
-                ast, cont, first_loop, source_filename, source);
+                ast, cont, first_loop, source_filename, source_text);
 
         if (ast->nodes[loop].info.node_type == AST_LOOP)
         {
             if (ast->nodes[cont].cont.name.len == 0
                 || utf8_equal_span(
-                    source.text.data,
+                    source_text,
                     ast->nodes[cont].cont.name,
                     ast->nodes[loop].loop.name)
                 || utf8_equal_span(
-                    source.text.data,
+                    source_text,
                     ast->nodes[cont].cont.name,
                     ast->nodes[loop].loop.implicit_name))
             {
@@ -125,7 +124,7 @@ check_loop_cont(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     ast_id n, loop;
     for (n = 0; n != ast->node_count; ++n)
@@ -133,7 +132,7 @@ check_loop_cont(
         if (ast->nodes[n].info.node_type != AST_LOOP_CONT)
             continue;
 
-        loop = check_cont(ast, n, source_filename, source);
+        loop = check_cont(ast, n, source_filename, source_text);
         if (loop == -1)
             return -1;
 

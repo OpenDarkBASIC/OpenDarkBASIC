@@ -7,10 +7,10 @@
 
 enum type
 type_check_casts(
-    struct ast*      ast,
-    ast_id           cast,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      cast,
+    const char* source_filename,
+    const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -22,56 +22,59 @@ type_check_casts(
     enum type source_type = ast->nodes[expr].info.type_info;
     enum type target_type = ast->nodes[cast].info.type_info;
 
-    switch (type_promote(source_type, target_type))
+    switch (type_convert(source_type, target_type))
     {
-        case TP_ALLOW: return target_type;
+        case TC_ALLOW: return target_type;
 
-        case TP_DISALLOW:
+        case TC_DISALLOW:
             log_flc_err(
                 source_filename,
-                source.text.data,
+                source_text,
                 ast->nodes[cast].info.location,
                 "Cannot cast from {emph1:%s} to {emph2:%s}: Types are "
                 "incompatible\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source.text.data,
+                source_text,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             break;
 
-        case TP_TRUNCATE:
+        case TC_TRUNCATE:
             log_flc_warn(
                 source_filename,
-                source.text.data,
+                source_text,
                 ast->nodes[cast].info.location,
-                "Value is truncated when converting from {emph1:%s} to {emph2:%s} "
+                "Value is truncated when converting from {emph1:%s} to "
+                "{emph2:%s} "
                 "in expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source.text.data,
+                source_text,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             break;
 
-        case TP_TRUENESS:
-        case TP_INT_TO_FLOAT:
-        case TP_BOOL_PROMOTION:
+        case TC_SIGN_CHANGE:
+        case TC_TRUENESS:
+        case TC_INT_TO_FLOAT:
+        case TC_BOOL_PROMOTION:
             log_flc_warn(
                 source_filename,
-                source.text.data,
+                source_text,
                 ast->nodes[cast].info.location,
-                "Implicit conversion from {emph1:%s} to {emph2:%s} in expression\n",
+                "Implicit conversion from {emph1:%s} to {emph2:%s} in "
+                "expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
-                source.text.data,
+                source_text,
                 ast->nodes[expr].info.location,
                 ast->nodes[cast].info.location,
                 type_to_db_name(source_type),

@@ -17,17 +17,13 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, and_boolean_doesnt_insert_casts)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOLEAN});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     const char* source
         = "a = true\n"
           "b = false\n"
           "print a and b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds,symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(log(), LogEq(""));
 
     ast_id initb = ast.nodes[0].block.next;
@@ -39,6 +35,6 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ast_id rhs = ast.nodes[op].binop.right;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_BOOL));
 }

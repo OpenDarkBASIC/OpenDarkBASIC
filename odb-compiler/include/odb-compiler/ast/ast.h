@@ -60,10 +60,11 @@ enum unop_type
 enum type_annotation
 {
     TA_NONE,
-    TA_INT64 = '&',
-    TA_INT16 = '%',
-    TA_DOUBLE = '!',
-    TA_FLOAT = '#',
+    TA_BOOL = '?',
+    TA_I16 = '%',
+    TA_I64 = '&',
+    TA_F32 = '#',
+    TA_F64 = '!',
     TA_STRING = '$'
 };
 
@@ -103,7 +104,6 @@ enum ast_type
     AST_FUNC_DEF,
     AST_FUNC_OR_CONTAINER_REF,
     AST_FUNC_CALL,
-    AST_LABEL,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
     /*! A literal between 0 and 255. Maps to uint8_t. */
@@ -295,12 +295,6 @@ union ast_node
         ast_id arglist;
     } func_call;
 
-    struct label {
-        struct info info;
-        ast_id _pad1, _pad2;
-        struct utf8_span name;
-    } label;
-
     struct boolean_literal {
         struct info info;
         ast_id _pad1, _pad2;
@@ -381,13 +375,14 @@ type_annotation_to_type(enum type_annotation annotation)
     switch (annotation)
     {
         case TA_NONE: break;
-        case TA_INT64: return TYPE_DOUBLE_INTEGER;
-        case TA_INT16: return TYPE_WORD;
-        case TA_DOUBLE: return TYPE_DOUBLE;
-        case TA_FLOAT: return TYPE_FLOAT;
+        case TA_BOOL: return TYPE_BOOL;
+        case TA_I64: return TYPE_I64;
+        case TA_I16: return TYPE_U16;
+        case TA_F64: return TYPE_F64;
+        case TA_F32: return TYPE_F32;
         case TA_STRING: return TYPE_STRING;
     }
-    return TYPE_INTEGER;
+    return TYPE_I32;
 }
 
 ast_id ast_block(struct ast* ast, ast_id stmt, struct utf8_span location);
@@ -418,7 +413,6 @@ ast_id ast_loop_cont(struct ast* ast, struct utf8_span name, ast_id step, struct
 ast_id ast_loop_exit(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_func(struct ast* ast, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
 ast_id ast_func_or_container_ref(struct ast* ast, ast_id identifier, ast_id arglist, struct utf8_span location);
-ast_id ast_label(struct ast* ast, struct utf8_span name, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast* ast, char is_true, struct utf8_span location);
 ast_id ast_byte_literal(struct ast* ast, uint8_t value, struct utf8_span location);
 ast_id ast_word_literal(struct ast* ast, uint16_t value, struct utf8_span location);

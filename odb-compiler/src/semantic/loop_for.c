@@ -42,8 +42,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
         case AST_FUNC_OR_CONTAINER_REF:
-        case AST_FUNC_CALL:
-        case AST_LABEL: break;
+        case AST_FUNC_CALL: break;
 
         case AST_BOOLEAN_LITERAL:
             value->i = ast->nodes[n].boolean_literal.is_true ? 1 : 0;
@@ -115,7 +114,7 @@ create_exit_stmt(
     ast_id           loop_var,
     struct utf8_span location,
     const char*      source_filename,
-    struct db_source source)
+    const char*      source_text)
 {
     union expr_value begin_val, end_val, step_val = {0};
     enum expr_type   begin_type = eval_constant_expr(ast, begin, &begin_val);
@@ -141,10 +140,10 @@ create_exit_stmt(
                LOG_HIGHLIGHT_SENTINAL};
         log_flc_err(
             source_filename,
-            source.text.data,
+            source_text,
             loc1,
             "Unable to determine direction of for-loop.\n");
-        gutter = log_excerpt(source.text.data, hl);
+        gutter = log_excerpt(source_text, hl);
         log_excerpt_note(
             gutter,
             "The direction a for-loop counts must be known at compile-time, "
@@ -169,16 +168,16 @@ create_exit_stmt(
                LOG_HIGHLIGHT_SENTINAL};
         log_flc_warn(
             source_filename,
-            source.text.data,
+            source_text,
             loc,
             "For-loop direction may be incorrect.\n");
-        gutter = log_excerpt_1(source.text.data, loc, "");
+        gutter = log_excerpt_1(source_text, loc, "");
         log_excerpt_help(
             gutter,
             "If no STEP is specified, it will default to 1. You can silence "
             "this warning by making the STEP explicit:\n");
-        log_excerpt(source.text.data, hl_step_forwards);
-        log_excerpt(source.text.data, hl_step_backwards);
+        log_excerpt(source_text, hl_step_forwards);
+        log_excerpt(source_text, hl_step_backwards);
     }
 
     if (begin_type != EXPR_TYPE_UNKNOWN && end_type != EXPR_TYPE_UNKNOWN
@@ -193,11 +192,11 @@ create_exit_stmt(
                LOG_HIGHLIGHT_SENTINAL};
         log_flc_warn(
             source_filename,
-            source.text.data,
+            source_text,
             loc1,
             "For-loop does nothing, because it STEPs in the wrong "
             "direction.\n");
-        log_excerpt(source.text.data, hl);
+        log_excerpt(source_text, hl);
     }
 
     if (begin_type != EXPR_TYPE_UNKNOWN && end_type != EXPR_TYPE_UNKNOWN
@@ -212,16 +211,16 @@ create_exit_stmt(
                LOG_HIGHLIGHT_SENTINAL};
         log_flc_warn(
             source_filename,
-            source.text.data,
+            source_text,
             loc,
             "For-loop does nothing, because it STEPs in the wrong "
             "direction.\n");
-        gutter = log_excerpt_1(source.text.data, loc, "");
+        gutter = log_excerpt_1(source_text, loc, "");
         log_excerpt_help(
             gutter,
             "If no STEP is specified, it will default to 1. You can make a "
             "loop count backwards as follows:\n");
-        log_excerpt(source.text.data, hl);
+        log_excerpt(source_text, hl);
     }
 
     struct utf8_span begin_loc = ast->nodes[begin].info.location;
@@ -241,36 +240,35 @@ create_exit_stmt(
 
 static void
 handle_next_stmt(
-    struct ast*      ast,
-    ast_id           next,
-    ast_id           loop_var,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      next,
+    ast_id      loop_var,
+    const char* source_filename,
+    const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(next > -1, log_err("ast", "next: %d\n", next));
-    if (!ast_trees_equal(source, ast, loop_var, next))
+    if (!ast_trees_equal(source_text, ast, loop_var, next))
     {
         int gutter;
         log_flc_warn(
             source_filename,
-            source.text.data,
+            source_text,
             ast->nodes[next].info.location,
             "Loop variable in next statement is different from the one "
             "used in the for-loop statement.\n");
-        gutter = log_excerpt_1(
-            source.text.data, ast->nodes[next].info.location, "");
+        gutter = log_excerpt_1(source_text, ast->nodes[next].info.location, "");
         log_excerpt_note(gutter, "Loop variable declared here:\n");
-        log_excerpt_1(source.text.data, ast->nodes[loop_var].info.location, "");
+        log_excerpt_1(source_text, ast->nodes[loop_var].info.location, "");
     }
     ast_delete_tree(ast, next);
 }
 
 static ast_id
 primitives_from_for_loop(
-    struct ast*      ast,
-    ast_id           loop,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      loop,
+    const char* source_filename,
+    const char* source_text)
 {
     ast_id           loop_for;
     ast_id           init, loop_var, begin, end, step, next, body;
@@ -299,10 +297,17 @@ primitives_from_for_loop(
     begin = ast->nodes[init].assignment.expr;
 
     if (next > -1)
-        handle_next_stmt(ast, next, loop_var, source_filename, source);
+        handle_next_stmt(ast, next, loop_var, source_filename, source_text);
 
     ast_id exit_stmt = create_exit_stmt(
-        ast, begin, end, step, loop_var, loop_loc, source_filename, source);
+        ast,
+        begin,
+        end,
+        step,
+        loop_var,
+        loop_loc,
+        source_filename,
+        source_text);
     if (exit_stmt < 0)
         return -1;
 
@@ -348,7 +353,7 @@ translate_loop_for(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)
@@ -358,7 +363,7 @@ translate_loop_for(
         if (ast->nodes[n].loop.loop_for == -1)
             continue;
 
-        if (primitives_from_for_loop(ast, n, source_filename, source) != 0)
+        if (primitives_from_for_loop(ast, n, source_filename, source_text) != 0)
             return -1;
     }
 

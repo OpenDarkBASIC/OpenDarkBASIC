@@ -20,17 +20,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, negative_zero_is_just_zero)
 {
     ASSERT_THAT(parse("x = -0\n"), Eq(0)) << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     int ass = ast.nodes[0].block.stmt;
     int lit = ast.nodes[ass].assignment.expr;
@@ -45,17 +35,7 @@ TEST_F(NAME, negative_byte_literal_is_converted_to_integer)
               "y = -255\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -76,17 +56,7 @@ TEST_F(NAME, word_literal_is_converted_to_integer)
               "y = -65535\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -108,17 +78,7 @@ TEST_F(NAME, integer_literal)
               "z = -1\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -145,17 +105,7 @@ TEST_F(NAME, dword_literal_is_converted_to_double_integer)
               "y = -4294967295\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     int assx = ast.nodes[0].block.stmt;
     int assy = ast.nodes[ast.nodes[0].block.next].block.stmt;
@@ -179,17 +129,7 @@ TEST_F(NAME, double_integer_literal)
               "z = -2147483649\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_unary_literal,
-            &ast,
-            plugins,
-            &cmds,
-            symbols,
-            "test",
-            src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_unary_literal), Eq(0)) << log().text;
 
     // clang-format off
     int assx = ast.nodes[0].block.stmt;

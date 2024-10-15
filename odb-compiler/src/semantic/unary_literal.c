@@ -35,8 +35,7 @@ child_changed:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
         case AST_FUNC_OR_CONTAINER_REF:
-        case AST_FUNC_CALL:
-        case AST_LABEL: return -1;
+        case AST_FUNC_CALL: return -1;
 
         case AST_BOOLEAN_LITERAL:
             switch (ast->nodes[n].unop.op)
@@ -203,7 +202,7 @@ unary_literal(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)

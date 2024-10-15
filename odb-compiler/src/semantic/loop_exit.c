@@ -10,17 +10,17 @@ log_exit_error(
     ast_id            exit,
     ast_id            first_loop,
     const char*       source_filename,
-    struct db_source  source)
+    const char*       source_text)
 {
     int gutter;
     if (first_loop == -1)
     {
         log_flc_err(
             source_filename,
-            source.text.data,
+            source_text,
             ast->nodes[exit].info.location,
             "EXIT statement must be inside a loop.\n");
-        log_excerpt_1(source.text.data, ast->nodes[exit].info.location, "");
+        log_excerpt_1(source_text, ast->nodes[exit].info.location, "");
     }
     else
     {
@@ -31,19 +31,19 @@ log_exit_error(
                                     : empty_utf8_span();
         log_flc_err(
             source_filename,
-            source.text.data,
+            source_text,
             ast->nodes[exit].loop_exit.name,
             "Unknown loop name referenced in EXIT statement.\n");
-        gutter = log_excerpt_1(
-            source.text.data, ast->nodes[exit].loop_exit.name, "");
+        gutter
+            = log_excerpt_1(source_text, ast->nodes[exit].loop_exit.name, "");
         if (name.len)
         {
             log_excerpt_help(
                 gutter,
                 "Did you mean {quote:%.*s}?\n",
                 name.len,
-                source.text.data + name.off);
-            log_excerpt_1(source.text.data, name, "");
+                source_text + name.off);
+            log_excerpt_1(source_text, name, "");
         }
     }
     return -1;
@@ -51,10 +51,10 @@ log_exit_error(
 
 static int
 check_exit(
-    struct ast*      ast,
-    ast_id           exit,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      exit,
+    const char* source_filename,
+    const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -68,17 +68,17 @@ check_exit(
         loop = ast_find_parent(ast, loop);
         if (loop == -1)
             return log_exit_error(
-                ast, exit, first_loop, source_filename, source);
+                ast, exit, first_loop, source_filename, source_text);
 
         if (ast->nodes[loop].info.node_type == AST_LOOP)
         {
             if (ast->nodes[exit].loop_exit.name.len == 0
                 || utf8_equal_span(
-                    source.text.data,
+                    source_text,
                     ast->nodes[exit].loop_exit.name,
                     ast->nodes[loop].loop.name)
                 || utf8_equal_span(
-                    source.text.data,
+                    source_text,
                     ast->nodes[exit].loop_exit.name,
                     ast->nodes[loop].loop.implicit_name))
             {
@@ -98,7 +98,7 @@ check_loop_exit(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source)
+    const char*                source_text)
 {
     ast_id n;
     for (n = 0; n != ast->node_count; ++n)
@@ -106,7 +106,7 @@ check_loop_exit(
         if (ast->nodes[n].info.node_type != AST_LOOP_EXIT)
             continue;
 
-        if (check_exit(ast, n, source_filename, source) != 0)
+        if (check_exit(ast, n, source_filename, source_text) != 0)
             return -1;
     }
 

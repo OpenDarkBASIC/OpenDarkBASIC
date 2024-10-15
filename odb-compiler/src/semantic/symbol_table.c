@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
@@ -205,7 +206,8 @@ symbol_table_add_declarations_from_ast(
                     }
                 }
 
-                entry->return_type = ast->nodes[n].info.type_info;
+                /* TODO: entry->return_type = semantic_resolve_function_return_type(
+                    ast, n, plugins, cmds, table, source_filename, source_text);*/
             }
             break;
         }
@@ -229,14 +231,34 @@ mem_acquire_symbol_table(struct symbol_table* table)
     if (table == NULL)
         return;
 
-    mem_acquire(table, 0);
-    mem_acquire(table->hm.kvs.key_data, 0);
-    mem_acquire(table->hm.kvs.key_spans, 0);
-    mem_acquire(table->hm.kvs.values, 0);
+    mem_acquire(
+        table,
+        offsetof(struct hm, hashes)
+            + table->hm.capacity * sizeof(table->hm.hashes[0]));
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_data != NULL, (void)0);
+    mem_acquire(
+        table->hm.kvs.key_data,
+        offsetof(struct kvs_key_data, data)
+            + sizeof(table->hm.kvs.key_data->data[0])
+                  * table->hm.kvs.key_data->capacity);
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_spans != NULL, (void)0);
+    mem_acquire(
+        table->hm.kvs.key_spans,
+        sizeof(table->hm.kvs.key_spans[0]) * table->hm.capacity);
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.values != NULL, (void)0);
+    mem_acquire(
+        table->hm.kvs.values,
+        sizeof(table->hm.kvs.values[0]) * table->hm.capacity);
 
     hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
     {
-        mem_acquire(entry->param_types, 0);
+        if (entry == NULL)
+            continue;
+        mem_acquire(
+            entry->param_types,
+            offsetof(struct func_param_types_list, data)
+                + sizeof(entry->param_types->data[0])
+                      * entry->param_types->capacity);
         (void)func_name;
     }
 }

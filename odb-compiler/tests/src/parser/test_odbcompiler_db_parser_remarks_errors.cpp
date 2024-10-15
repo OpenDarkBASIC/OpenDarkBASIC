@@ -12,7 +12,7 @@ struct NAME : DBParserHelper, LogHelper, Test
     void
     SetUp() override
     {
-        addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+        addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     }
 };
 

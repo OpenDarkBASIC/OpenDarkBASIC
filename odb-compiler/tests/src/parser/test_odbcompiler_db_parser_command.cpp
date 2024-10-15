@@ -37,7 +37,7 @@ TEST_F(NAME, print_command)
 
 TEST_F(NAME, command_expr_with_type_annotation_int64)
 {
-    addCommand(TYPE_DOUBLE_INTEGER, "GET DIR&");
+    addCommand(TYPE_I64, "GET DIR&");
 
     ASSERT_THAT(parse("OriginalDirectory& = get dir&()"), Eq(0));
 }

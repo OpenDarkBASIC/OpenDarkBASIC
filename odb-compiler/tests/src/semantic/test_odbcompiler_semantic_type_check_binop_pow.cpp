@@ -17,12 +17,9 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, exponent_cast_to_integer)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_DOUBLE});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
-    EXPECT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds,symbols, "test", src),
-        Eq(0));
+    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
     EXPECT_THAT(log(), LogEq(""));
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id args = ast.nodes[cmd].cmd.arglist;
@@ -33,7 +30,6 @@ TEST_F(NAME, exponent_cast_to_integer)
     EXPECT_THAT(
         ast.nodes[rhs].info.node_type,
         Eq(AST_CAST)); // BYTE literal cast to INTEGER
-    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_DOUBLE));
-    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_INTEGER));
+    EXPECT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F64));
+    EXPECT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_I32));
 }
-

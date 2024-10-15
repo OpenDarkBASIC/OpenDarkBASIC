@@ -1,7 +1,8 @@
 #pragma once
 
 #include "odb-compiler/config.h"
-#include "odb-compiler/parser/db_source.h"
+#include "odb-compiler/sdk/type.h"
+#include <stdint.h>
 
 struct ast;
 struct cmd_list;
@@ -14,7 +15,7 @@ typedef int (*semantic_check_func)(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source);
+    const char*                source_text);
 
 struct semantic_check
 {
@@ -30,7 +31,7 @@ semantic_check_run(
     const struct cmd_list*       cmds,
     const struct symbol_table*   symbols,
     const char*                  source_filename,
-    struct db_source             source);
+    const char*                  source_text);
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
@@ -39,7 +40,18 @@ semantic_run_essential_checks(
     const struct cmd_list*     cmds,
     const struct symbol_table* symbols,
     const char*                source_filename,
-    struct db_source           source);
+    const char*                source_text);
+
+typedef int32_t ast_id;
+ODBCOMPILER_PUBLIC_API enum type
+semantic_resolve_function_return_type(
+    struct ast*                ast,
+    ast_id                     node_id,
+    const struct plugin_list*  plugins,
+    const struct cmd_list*     cmds,
+    const struct symbol_table* symbols,
+    const char*                source_filename,
+    const char*                source_text);
 
 /*!
  * The DBPro #constant declaration functions essentially exactly like a C
@@ -88,11 +100,8 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_unary_literal;
 
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
-
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
-
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_cont;
-
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_name;
 
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check

@@ -20,18 +20,14 @@ struct NAME : DBParserHelper, LogHelper, Test
 
 TEST_F(NAME, transform_implicit_step_1)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(
         parse("for n=1 to 5\n"
               "    print 5\n"
               "next a\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -72,11 +68,7 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -107,18 +99,14 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
 
 TEST_F(NAME, implicit_step_1_empty_next)
 {
-    addCommand(TYPE_VOID, "PRINT", {TYPE_INTEGER});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(
         parse("for n=1 to 5\n"
               "    print 5\n"
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -154,11 +142,7 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -194,11 +178,7 @@ TEST_F(NAME, step_expression_range)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_for, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */

@@ -22,10 +22,7 @@ TEST_F(NAME, exit_no_name)
               "    exit\n"
               "next n\n"),
         Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0));
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(0));
     ASSERT_THAT(log(), LogEq(""));
 
     // TODO check AST
@@ -39,11 +36,7 @@ TEST_F(NAME, exit_implicitly_named_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_loop_exit, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(0)) << log().text;
 
     // TODO check AST
 }

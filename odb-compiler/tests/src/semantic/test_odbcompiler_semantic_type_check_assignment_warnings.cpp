@@ -18,21 +18,17 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, truncated)
 {
     const char* source
-        = "a = 5.5\n"
+        = "a# = 5.5\n"
           "b = 2\n"
-          "b = a\n";
+          "b = a#\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Value is truncated when converting from "
               "DOUBLE to INTEGER in assignment.\n"
-              " 3 | b = a\n"
-              "   | ^ ^ ^ DOUBLE\n"
+              " 3 | b = a#\n"
+              "   | ^ ^ ^< DOUBLE\n"
               "   | INTEGER\n"
               "   = note: b was previously declared as INTEGER at test:2:1:\n"
               " 2 | b = 2\n"
@@ -45,24 +41,24 @@ TEST_F(NAME, truncated)
     ast_id rhs1 = ast.nodes[ass1].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[rhs1].info.node_type, Eq(AST_DOUBLE_LITERAL));
-    ASSERT_THAT(ast.nodes[lhs1].info.type_info, Eq(TYPE_DOUBLE));
-    ASSERT_THAT(ast.nodes[rhs1].info.type_info, Eq(TYPE_DOUBLE));
+    ASSERT_THAT(ast.nodes[lhs1].info.type_info, Eq(TYPE_F64));
+    ASSERT_THAT(ast.nodes[rhs1].info.type_info, Eq(TYPE_F64));
     ast_id lhs2 = ast.nodes[ass2].assignment.lvalue;
     ast_id rhs2 = ast.nodes[ass2].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs2].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(
         ast.nodes[rhs2].info.node_type,
         Eq(AST_CAST)); // BYTE literal is cast to INTEGER
-    ASSERT_THAT(ast.nodes[lhs2].info.type_info, Eq(TYPE_INTEGER));
-    ASSERT_THAT(ast.nodes[rhs2].info.type_info, Eq(TYPE_INTEGER));
+    ASSERT_THAT(ast.nodes[lhs2].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast.nodes[rhs2].info.type_info, Eq(TYPE_I32));
     ast_id lhs3 = ast.nodes[ass3].assignment.lvalue;
     ast_id rhs3 = ast.nodes[ass3].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs3].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(
         ast.nodes[rhs3].info.node_type,
         Eq(AST_CAST)); // DOUBLE identifier "a" is cast to INTEGER
-    ASSERT_THAT(ast.nodes[lhs3].info.type_info, Eq(TYPE_INTEGER));
-    ASSERT_THAT(ast.nodes[rhs3].info.type_info, Eq(TYPE_INTEGER));
+    ASSERT_THAT(ast.nodes[lhs3].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast.nodes[rhs3].info.type_info, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, implicit_conversion)
@@ -72,11 +68,7 @@ TEST_F(NAME, implicit_conversion)
           "b = 2\n"
           "b = a\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Implicit conversion from BOOLEAN to INTEGER "
@@ -95,35 +87,31 @@ TEST_F(NAME, implicit_conversion)
     ast_id rhs1 = ast.nodes[ass1].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs1].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[rhs1].info.node_type, Eq(AST_BOOLEAN_LITERAL));
-    ASSERT_THAT(ast.nodes[lhs1].info.type_info, Eq(TYPE_BOOLEAN));
-    ASSERT_THAT(ast.nodes[rhs1].info.type_info, Eq(TYPE_BOOLEAN));
+    ASSERT_THAT(ast.nodes[lhs1].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[rhs1].info.type_info, Eq(TYPE_BOOL));
     ast_id lhs2 = ast.nodes[ass2].assignment.lvalue;
     ast_id rhs2 = ast.nodes[ass2].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs2].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(
         ast.nodes[rhs2].info.node_type,
         Eq(AST_CAST)); // BYTE literal is cast to INTEGER
-    ASSERT_THAT(ast.nodes[lhs2].info.type_info, Eq(TYPE_INTEGER));
-    ASSERT_THAT(ast.nodes[rhs2].info.type_info, Eq(TYPE_INTEGER));
+    ASSERT_THAT(ast.nodes[lhs2].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast.nodes[rhs2].info.type_info, Eq(TYPE_I32));
     ast_id lhs3 = ast.nodes[ass3].assignment.lvalue;
     ast_id rhs3 = ast.nodes[ass3].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs3].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(
         ast.nodes[rhs3].info.node_type,
         Eq(AST_CAST)); // BOOLEAN identifier "a" is cast to INTEGER
-    ASSERT_THAT(ast.nodes[lhs3].info.type_info, Eq(TYPE_INTEGER));
-    ASSERT_THAT(ast.nodes[rhs3].info.type_info, Eq(TYPE_INTEGER));
+    ASSERT_THAT(ast.nodes[lhs3].info.type_info, Eq(TYPE_I32));
+    ASSERT_THAT(ast.nodes[rhs3].info.type_info, Eq(TYPE_I32));
 }
 
 TEST_F(NAME, integer_to_float_conversion)
 {
     const char* source = "a# = 0\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(
-        semantic_check_run(
-            &semantic_type_check, &ast, plugins, &cmds, symbols, "test", src),
-        Eq(0))
-        << log().text;
+    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:6: warning: Implicit conversion from BYTE to FLOAT "
@@ -138,7 +126,7 @@ TEST_F(NAME, integer_to_float_conversion)
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
     ASSERT_THAT(ast.nodes[lhs].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_FLOAT));
+    ASSERT_THAT(ast.nodes[lhs].info.type_info, Eq(TYPE_F32));
     ASSERT_THAT(ast.nodes[rhs].info.node_type, Eq(AST_CAST));
-    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_FLOAT));
+    ASSERT_THAT(ast.nodes[rhs].info.type_info, Eq(TYPE_F32));
 }

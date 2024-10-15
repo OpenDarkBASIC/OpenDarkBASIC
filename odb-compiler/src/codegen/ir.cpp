@@ -190,18 +190,18 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_INVALID: break;
 
         case TYPE_VOID: return llvm::Type::getVoidTy(*ctx);
-        case TYPE_DOUBLE_INTEGER: return llvm::Type::getInt64Ty(*ctx);
+        case TYPE_I64: return llvm::Type::getInt64Ty(*ctx);
 
-        case TYPE_DWORD:
-        case TYPE_INTEGER: return llvm::Type::getInt32Ty(*ctx);
+        case TYPE_U32:
+        case TYPE_I32: return llvm::Type::getInt32Ty(*ctx);
 
-        case TYPE_WORD: return llvm::Type::getInt16Ty(*ctx);
+        case TYPE_U16: return llvm::Type::getInt16Ty(*ctx);
 
-        case TYPE_BYTE:
-        case TYPE_BOOLEAN: return llvm::Type::getInt1Ty(*ctx);
+        case TYPE_U8:
+        case TYPE_BOOL: return llvm::Type::getInt1Ty(*ctx);
 
-        case TYPE_FLOAT: return llvm::Type::getFloatTy(*ctx);
-        case TYPE_DOUBLE: return llvm::Type::getDoubleTy(*ctx);
+        case TYPE_F32: return llvm::Type::getFloatTy(*ctx);
+        case TYPE_F64: return llvm::Type::getDoubleTy(*ctx);
 
         case TYPE_STRING:
         case TYPE_ARRAY:
@@ -240,7 +240,7 @@ get_command_function_signature(
     const struct cmd_param*           odb_param;
     vec_for_each(odb_param_types, odb_param)
     {
-        if (sdk_type == SDK_DBPRO && odb_param->type == TYPE_FLOAT)
+        if (sdk_type == SDK_DBPRO && odb_param->type == TYPE_F32)
             llvm_param_types.push_back(llvm::Type::getInt32Ty(ir->ctx));
         else
         {
@@ -252,7 +252,7 @@ get_command_function_signature(
     /* Convert return type from command list as well, and create LLVM FT */
     enum type odb_return_type = cmds->return_types->data[cmd_id];
     if (sdk_type == SDK_DBPRO)
-        if (odb_return_type == TYPE_FLOAT)
+        if (odb_return_type == TYPE_F32)
             return llvm::FunctionType::get(
                 llvm::Type::getInt32Ty(ir->ctx),
                 llvm_param_types,
@@ -364,7 +364,7 @@ gen_cmd_call(
     for (ast_id arg = ast->nodes[cmd].cmd.arglist; arg > -1;
          arg = ast->nodes[arg].arglist.next)
     {
-        ast_id ast_expr = ast->nodes[arg].arglist.expr;
+        ast_id       ast_expr = ast->nodes[arg].arglist.expr;
         llvm::Value* llvm_expr = gen_expr(
             ir,
             builder,
@@ -378,19 +378,22 @@ gen_cmd_call(
             cmd_func_table,
             allocamap);
         if (sdk_type == SDK_DBPRO)
-            if (ast->nodes[ast_expr].info.type_info == TYPE_FLOAT)
-                llvm_expr = builder.CreateBitCast(llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
+            if (ast->nodes[ast_expr].info.type_info == TYPE_F32)
+                llvm_expr = builder.CreateBitCast(
+                    llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
         param_values.push_back(llvm_expr);
     }
 
-    llvm::FunctionType* FT = get_command_function_signature(ir, ast, cmd, sdk_type, cmds);
-    llvm::Value*        cmd_func_addr = builder.CreateLoad(
+    llvm::FunctionType* FT
+        = get_command_function_signature(ir, ast, cmd, sdk_type, cmds);
+    llvm::Value* cmd_func_addr = builder.CreateLoad(
         llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
     llvm::Value* retval = builder.CreateCall(FT, cmd_func_addr, param_values);
-    
+
     if (sdk_type == SDK_DBPRO)
-        if (ast->nodes[cmd].info.type_info == TYPE_FLOAT)
-            retval = builder.CreateBitCast(retval, llvm::Type::getFloatTy(ir->ctx));
+        if (ast->nodes[cmd].info.type_info == TYPE_F32)
+            retval = builder.CreateBitCast(
+                retval, llvm::Type::getFloatTy(ir->ctx));
 
     return retval;
 }
@@ -496,7 +499,9 @@ gen_expr(
                 FLOAT
             } type_family
                 = INT;
-            ODBUTIL_DEBUG_ASSERT(lhs_type == rhs_type, log_codegen_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
+            ODBUTIL_DEBUG_ASSERT(
+                lhs_type == rhs_type,
+                log_codegen_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
             switch (lhs_type)
             {
                 case TYPE_INVALID:
@@ -510,16 +515,16 @@ gen_expr(
                     ODBUTIL_DEBUG_ASSERT(false, (void)0);
                     return nullptr;
 
-                case TYPE_BOOLEAN:
-                case TYPE_INTEGER:
-                case TYPE_DOUBLE_INTEGER: type_family = INT; break;
+                case TYPE_BOOL:
+                case TYPE_I32:
+                case TYPE_I64: type_family = INT; break;
 
-                case TYPE_DWORD:
-                case TYPE_WORD:
-                case TYPE_BYTE: type_family = UINT; break;
+                case TYPE_U32:
+                case TYPE_U16:
+                case TYPE_U8: type_family = UINT; break;
 
-                case TYPE_FLOAT:
-                case TYPE_DOUBLE: type_family = FLOAT; break;
+                case TYPE_F32:
+                case TYPE_F64: type_family = FLOAT; break;
             }
 
             switch (ast->nodes[expr].binop.op)
@@ -565,7 +570,7 @@ gen_expr(
                     }
                     break;
                 case BINOP_POW:
-                    if (lhs_type == TYPE_FLOAT && rhs_type == TYPE_INTEGER)
+                    if (lhs_type == TYPE_F32 && rhs_type == TYPE_I32)
                     {
                         llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
                             &ir->mod,
@@ -574,8 +579,7 @@ gen_expr(
                              llvm::Type::getInt32Ty(ir->ctx)});
                         return builder.CreateCall(FPowi, {lhs, rhs});
                     }
-                    else if (
-                        lhs_type == TYPE_DOUBLE && rhs_type == TYPE_INTEGER)
+                    else if (lhs_type == TYPE_F64 && rhs_type == TYPE_I32)
                     {
                         llvm::Function* FPowi = llvm::Intrinsic::getDeclaration(
                             &ir->mod,
@@ -584,7 +588,7 @@ gen_expr(
                              llvm::Type::getInt32Ty(ir->ctx)});
                         return builder.CreateCall(FPowi, {lhs, rhs});
                     }
-                    else if (lhs_type == TYPE_FLOAT && rhs_type == TYPE_FLOAT)
+                    else if (lhs_type == TYPE_F32 && rhs_type == TYPE_F32)
                     {
                         llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
                             &ir->mod,
@@ -593,7 +597,7 @@ gen_expr(
                              llvm::Type::getFloatTy(ir->ctx)});
                         return builder.CreateCall(FPow, {lhs, rhs});
                     }
-                    else if (lhs_type == TYPE_DOUBLE && rhs_type == TYPE_DOUBLE)
+                    else if (lhs_type == TYPE_F64 && rhs_type == TYPE_F64)
                     {
 
                         llvm::Function* FPow = llvm::Intrinsic::getDeclaration(
@@ -665,8 +669,8 @@ gen_expr(
                 case BINOP_LOGICAL_AND: return builder.CreateAnd(lhs, rhs);
                 case BINOP_LOGICAL_XOR: return builder.CreateXor(lhs, rhs);
             }
+            break;
         }
-        break;
         case AST_UNOP: break;
 
         case AST_COND:
@@ -682,8 +686,6 @@ gen_expr(
         case AST_FUNC_DEF: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
-
-        case AST_LABEL: break;
 
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
@@ -754,13 +756,13 @@ gen_expr(
                 case TYPE_INVALID:
                 case TYPE_VOID: break;
 
-                case TYPE_DOUBLE_INTEGER:
-                case TYPE_DWORD:
-                case TYPE_INTEGER:
-                case TYPE_WORD:
-                case TYPE_BYTE:
-                case TYPE_FLOAT:
-                case TYPE_DOUBLE: {
+                case TYPE_I64:
+                case TYPE_U32:
+                case TYPE_I32:
+                case TYPE_U16:
+                case TYPE_U8:
+                case TYPE_F32:
+                case TYPE_F64: {
                     /* clang-format off */
             using Op = llvm::Instruction::CastOps;
             Op O = Op::CastOpsBegin;
@@ -791,25 +793,25 @@ gen_expr(
                         type_to_llvm(to, &ir->ctx));
                 }
 
-                case TYPE_BOOLEAN:
+                case TYPE_BOOL:
                     switch (from)
                     {
                         case TYPE_INVALID: break;
                         case TYPE_VOID: break;
 
-                        case TYPE_DOUBLE_INTEGER:
-                        case TYPE_DWORD:
-                        case TYPE_INTEGER:
-                        case TYPE_WORD:
-                        case TYPE_BYTE:
-                        case TYPE_BOOLEAN:
+                        case TYPE_I64:
+                        case TYPE_U32:
+                        case TYPE_I32:
+                        case TYPE_U16:
+                        case TYPE_U8:
+                        case TYPE_BOOL:
                             return builder.CreateICmpNE(
                                 child_value,
                                 llvm::ConstantInt::get(
                                     type_to_llvm(from, &ir->ctx), 0));
 
-                        case TYPE_FLOAT:
-                        case TYPE_DOUBLE:
+                        case TYPE_F32:
+                        case TYPE_F64:
                             return builder.CreateFCmpONE(
                                 child_value,
                                 llvm::ConstantFP::get(
@@ -831,6 +833,7 @@ gen_expr(
                 case TYPE_ANY:
                 case TYPE_USER_DEFINED_VAR_PTR: break;
             }
+            break;
         }
     }
 
@@ -873,6 +876,35 @@ gen_block(
         ODBUTIL_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
         switch (ast->nodes[stmt].info.node_type)
         {
+            case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+
+            case AST_BLOCK:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err(
+                        "Block within block should never occur.\n"));
+                return -1;
+
+            case AST_END: {
+                llvm::Function* FSDKDeInit = llvm::Function::Create(
+                    llvm::FunctionType::get(
+                        llvm::Type::getVoidTy(ir->ctx), {}, false),
+                    llvm::Function::ExternalLinkage,
+                    "odbrt_exit",
+                    ir->mod);
+                FSDKDeInit->setDoesNotReturn();
+                builder.CreateCall(FSDKDeInit, {});
+                break;
+            }
+
+            case AST_ARGLIST:
+            case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+
+            case AST_CONST_DECL:
+                ODBUTIL_DEBUG_ASSERT(
+                    0, log_codegen_err("#constant not yet implemented\n"));
+                return -1;
+
             case AST_COMMAND: {
                 gen_cmd_call(
                     ir,
@@ -928,6 +960,25 @@ gen_block(
                 builder.CreateStore(rhs, *A);
                 break;
             }
+
+            case AST_IDENTIFIER:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Identifiers should never occur directly "
+                                    "in a block.\n"));
+                return -1;
+            case AST_BINOP:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Binary operators should never occur "
+                                    "directly in a block"));
+                return -1;
+            case AST_UNOP:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Unary operators should never occur "
+                                    "directly in a block"));
+                return -1;
 
             case AST_COND: {
                 ast_id expr_node = ast->nodes[stmt].cond.expr;
@@ -1006,8 +1057,9 @@ gen_block(
 
                 F->insert(F->end(), BBMerge);
                 builder.SetInsertPoint(BBMerge);
+                break;
             }
-            break;
+            case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_LOOP: {
                 llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
@@ -1111,8 +1163,8 @@ gen_block(
                         allocamap);
                     builder.CreateBr(it->BBLoop);
                 }
+                break;
             }
-            break;
 
             case AST_LOOP_EXIT: {
                 struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
@@ -1141,14 +1193,50 @@ gen_block(
                 }
                 ODBUTIL_DEBUG_ASSERT(0, (void)0);
             loop_exit_found:;
+                break;
             }
-            break;
 
-            default:
-                log_codegen_err(
-                    "Statement type %d not implemented while translating "
-                    "block\n",
-                    stmt);
+            case AST_FUNC:
+                ODBUTIL_DEBUG_ASSERT(
+                    0, log_codegen_err("Function calls not yet implemented\n"));
+                return -1;
+            case AST_FUNC_DECL:
+            case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+
+            case AST_FUNC_OR_CONTAINER_REF:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err(
+                        "This node should never exist when translating to LLVM "
+                        "IR! Semantic analysis should have resolved everything "
+                        "at this point.\n"));
+                return -1;
+
+            case AST_FUNC_CALL:
+                ODBUTIL_DEBUG_ASSERT(
+                    0, log_codegen_err("Function calls not yet implemented\n"));
+                return -1;
+
+            case AST_BOOLEAN_LITERAL:
+            case AST_BYTE_LITERAL:
+            case AST_WORD_LITERAL:
+            case AST_DWORD_LITERAL:
+            case AST_INTEGER_LITERAL:
+            case AST_DOUBLE_INTEGER_LITERAL:
+            case AST_FLOAT_LITERAL:
+            case AST_DOUBLE_LITERAL:
+            case AST_STRING_LITERAL:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Literals should never occur directly in a "
+                                    "block.\n"));
+                return -1;
+
+            case AST_CAST:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Casts should never occur directly in a "
+                                    "block.\n"));
                 return -1;
         }
     }
@@ -1195,7 +1283,8 @@ ir_translate_ast(
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
     if (program->node_count == 0)
-        log_codegen_warn("AST is empty for source file {quote:%s}\n", source_filename);
+        log_codegen_warn(
+            "AST is empty for source file {quote:%s}\n", source_filename);
     else
         gen_block(
             ir,

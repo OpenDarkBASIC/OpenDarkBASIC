@@ -7,6 +7,7 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/type.h"
+#include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/utf8.h"
 }
@@ -64,6 +65,13 @@ DBParserHelper::parse(const char* code)
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
         return -1;
     return db_parse(&p, &ast, "test", src, &cmds);
+}
+
+int
+DBParserHelper::runSemanticCheck(const struct semantic_check* check)
+{
+    return semantic_check_run(
+        check, &ast, plugins, &cmds, symbols, "test", src.text.data);
 }
 
 int

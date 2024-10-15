@@ -7,12 +7,12 @@
 
 static void
 log_narrow_binop(
-    struct ast*      ast,
-    ast_id           op,
-    ast_id           source_node,
-    ast_id           target_node,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      op,
+    ast_id      source_node,
+    ast_id      target_node,
+    const char* source_filename,
+    const char* source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -21,14 +21,14 @@ log_narrow_binop(
 
     log_flc_warn(
         source_filename,
-        source.text.data,
+        source_text,
         ast->nodes[op].info.location,
         "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
         "binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
-        source.text.data,
+        source_text,
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
@@ -38,12 +38,12 @@ log_narrow_binop(
 
 static void
 log_implicit_binop(
-    struct ast*      ast,
-    ast_id           op,
-    ast_id           source_node,
-    ast_id           target_node,
-    const char*      source_filename,
-    struct db_source source)
+    struct ast* ast,
+    ast_id      op,
+    ast_id      source_node,
+    ast_id      target_node,
+    const char* source_filename,
+    const char* source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -52,13 +52,14 @@ log_implicit_binop(
 
     log_flc_warn(
         source_filename,
-        source.text.data,
+        source_text,
         ast->nodes[op].info.location,
-        "Implicit conversion from {emph1:%s} to {emph2:%s} in binary expression.\n",
+        "Implicit conversion from {emph1:%s} to {emph2:%s} in binary "
+        "expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
-        source.text.data,
+        source_text,
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
@@ -72,7 +73,7 @@ log_error_binop(
     ast_id           source_node,
     ast_id           op,
     const char*      source_filename,
-    struct db_source source)
+    const char* source_text)
 {
     ast_id    lhs = ast->nodes[op].binop.left;
     ast_id    rhs = ast->nodes[op].binop.right;
@@ -81,14 +82,15 @@ log_error_binop(
 
     log_flc_err(
         source_filename,
-        source.text.data,
+        source_text,
         ast->nodes[op].info.location,
-        "Invalid conversion from {emph1:%s} to {emph2:%s} in binary expression. "
+        "Invalid conversion from {emph1:%s} to {emph2:%s} in binary "
+        "expression. "
         "Types are incompatible.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
-        source.text.data,
+        source_text,
         ast->nodes[lhs].info.location,
         ast->nodes[op].binop.op_location,
         ast->nodes[rhs].info.location,
@@ -101,7 +103,7 @@ type_check_binop_symmetric(
     struct ast*      ast,
     ast_id           op,
     const char*      source_filename,
-    struct db_source source)
+    const char* source_text)
 {
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -119,51 +121,53 @@ type_check_binop_symmetric(
      * These operations require that both LHS and RHS have the same
      * type. The result type will be the "wider" of the two types.
      */
-    enum type_promotion_result left_to_right = type_promote(lhs_type, rhs_type);
-    enum type_promotion_result right_to_left = type_promote(rhs_type, lhs_type);
+    enum type_conversion_result left_to_right = type_convert(lhs_type, rhs_type);
+    enum type_conversion_result right_to_left = type_convert(rhs_type, lhs_type);
 
-    if (left_to_right == TP_ALLOW)
+    if (left_to_right == TC_ALLOW)
         target_type = rhs_type;
-    else if (right_to_left == TP_ALLOW)
+    else if (right_to_left == TC_ALLOW)
         target_type = lhs_type;
 
-    else if (left_to_right == TP_INT_TO_FLOAT || left_to_right == TP_BOOL_PROMOTION)
+    else if (
+        left_to_right == TC_INT_TO_FLOAT || left_to_right == TC_BOOL_PROMOTION)
     {
         target_type = rhs_type;
-        log_implicit_binop(ast, op, lhs, rhs, source_filename, source);
+        log_implicit_binop(ast, op, lhs, rhs, source_filename, source_text);
     }
-    else if (right_to_left == TP_INT_TO_FLOAT || right_to_left == TP_BOOL_PROMOTION)
+    else if (
+        right_to_left == TC_INT_TO_FLOAT || right_to_left == TC_BOOL_PROMOTION)
     {
         target_type = lhs_type;
-        log_implicit_binop(ast, op, rhs, lhs, source_filename, source);
+        log_implicit_binop(ast, op, rhs, lhs, source_filename, source_text);
     }
 
-    else if (left_to_right == TP_TRUNCATE)
+    else if (left_to_right == TC_TRUNCATE)
     {
         target_type = rhs_type;
-        log_narrow_binop(ast, op, lhs, rhs, source_filename, source);
+        log_narrow_binop(ast, op, lhs, rhs, source_filename, source_text);
     }
-    else if (right_to_left == TP_TRUNCATE)
+    else if (right_to_left == TC_TRUNCATE)
     {
         target_type = lhs_type;
-        log_narrow_binop(ast, op, rhs, lhs, source_filename, source);
+        log_narrow_binop(ast, op, rhs, lhs, source_filename, source_text);
     }
 
-    else if (left_to_right == TP_TRUENESS)
+    else if (left_to_right == TC_TRUENESS)
     {
         target_type = rhs_type;
-        log_implicit_binop(ast, op, lhs, rhs, source_filename, source);
+        log_implicit_binop(ast, op, lhs, rhs, source_filename, source_text);
     }
-    else if (right_to_left == TP_TRUENESS)
+    else if (right_to_left == TC_TRUENESS)
     {
         target_type = lhs_type;
-        log_implicit_binop(ast, op, rhs, lhs, source_filename, source);
+        log_implicit_binop(ast, op, rhs, lhs, source_filename, source_text);
     }
 
     /* Invalid conversion */
     if (target_type == TYPE_INVALID)
     {
-        log_error_binop(ast, lhs, op, source_filename, source);
+        log_error_binop(ast, lhs, op, source_filename, source_text);
         return TYPE_INVALID;
     }
 
