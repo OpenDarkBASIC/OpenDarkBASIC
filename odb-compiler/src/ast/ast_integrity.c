@@ -61,6 +61,7 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_LOOP_FOR: print_node("LOOP_FOR", depth); break;
         case AST_LOOP_CONT: print_node("LOOP_CONT", depth); break;
         case AST_LOOP_EXIT: print_node("LOOP_EXIT", depth); break;
+        case AST_FUNC_TEMPLATE: print_node("FUNC TEMPLATE", depth); break;
         case AST_FUNC: print_node("FUNC", depth); break;
         case AST_FUNC_DECL: print_node("FUNC_DECL", depth); break;
         case AST_FUNC_DEF: print_node("FUNC_DEF", depth); break;
@@ -76,6 +77,7 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_DOUBLE_LITERAL: print_node("DOUBLE_LITERAL", depth); break;
         case AST_STRING_LITERAL: print_node("STRING_LITERAL", depth); break;
         case AST_CAST: break; print_node("CAST", depth); break;
+        case AST_SCOPE: break; print_node("SCOPE", depth); break;
             /* clang-format on */
     }
 

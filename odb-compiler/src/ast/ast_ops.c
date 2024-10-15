@@ -42,7 +42,8 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[n1].info.node_type == ast->nodes[n2].info.node_type,
-        log_parser_err(
+        log_err(
+            "",
             "n1: %d, n2: %d\n",
             ast->nodes[n1].info.node_type,
             ast->nodes[n2].info.node_type));
@@ -79,6 +80,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
             SWAP(ast_id, loop_for, next) break;
         case AST_LOOP_CONT: SWAP(struct utf8_span, cont, name) break;
         case AST_LOOP_EXIT: SWAP(struct utf8_span, loop_exit, name) break;
+        case AST_FUNC_TEMPLATE: break;
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
@@ -96,6 +98,7 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_STRING_LITERAL:
             SWAP(struct utf8_span, string_literal, str) break;
         case AST_CAST: break;
+        case AST_SCOPE: break;
     }
 #undef SWAP
 }
@@ -105,10 +108,10 @@ ast_dup_lvalue(struct ast** astp, int lvalue)
 {
     struct ast* ast = *astp;
 
-    ODBUTIL_DEBUG_ASSERT(lvalue > -1, log_parser_err("lvalue: %d\n", lvalue));
+    ODBUTIL_DEBUG_ASSERT(lvalue > -1, log_err("", "lvalue: %d\n", lvalue));
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
-        log_parser_err("type: %d\n", ast->nodes[lvalue].info.node_type));
+        log_err("", "type: %d\n", ast->nodes[lvalue].info.node_type));
 
     struct utf8_span     name = ast->nodes[lvalue].identifier.name;
     struct utf8_span     location = ast->nodes[lvalue].info.location;
@@ -132,7 +135,7 @@ ast_delete_node(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, n) == -1,
-        log_parser_err("parent: %d\n", ast_find_parent(ast, n)));
+        log_err("", "parent: %d\n", ast_find_parent(ast, n)));
     ast->nodes[n].info.node_type = AST_GC;
 }
 
@@ -154,7 +157,7 @@ ast_delete_tree(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, n) == -1,
-        log_parser_err("parent: %d\n", ast_find_parent(ast, n)));
+        log_err("", "parent: %d\n", ast_find_parent(ast, n)));
     delete_tree_recurse(ast, n);
 }
 
@@ -266,6 +269,7 @@ ast_trees_equal(
                     utf8_span_view(source_text, ast->nodes[n2].loop_exit.name)))
                 return 0;
             break;
+        case AST_FUNC_TEMPLATE: break;
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;
@@ -320,6 +324,7 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_CAST: break;
+        case AST_SCOPE: break;
     }
 
     if (ast->nodes[n1].base.left >= 0 && ast->nodes[n2].base.left < 0)
@@ -350,3 +355,4 @@ ast_trees_equal(
 
     return 1;
 }
+

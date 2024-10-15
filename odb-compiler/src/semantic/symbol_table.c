@@ -165,10 +165,15 @@ symbol_table_add_declarations_from_ast(
     const char*       source = sources[tu_id].text.data;
     for (n = 0; n != ast->count; ++n)
     {
-        if (ast->nodes[n].info.node_type != AST_FUNC)
+        if (ast->nodes[n].info.node_type != AST_FUNC
+            && ast->nodes[n].info.node_type != AST_FUNC_TEMPLATE)
+        {
             continue;
+        }
 
-        ast_id           decl = ast->nodes[n].func.decl;
+        ast_id           decl = ast->nodes[n].info.node_type == AST_FUNC
+                                    ? ast->nodes[n].func.decl
+                                    : ast->nodes[n].func_template.decl;
         ast_id           ident = ast->nodes[decl].func_decl.identifier;
         struct utf8_span span = ast->nodes[ident].identifier.name;
         struct utf8_view func_name = utf8_span_view(source, span);

@@ -179,7 +179,7 @@ ast_paramlist_append(
     ast_id           identifier,
     struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_ARGLIST, location);
+    ast_id      n = new_node(astp, AST_PARAMLIST, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
@@ -532,6 +532,29 @@ ast_loop_exit(
     return n;
 }
 
+static int
+ast_func_is_template(const struct ast* ast, int func)
+{
+    ast_id paramlist;
+    ast_id decl;
+
+    ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast->nodes[func].info.node_type == AST_FUNC,
+        log_err("", "type: %d\n", ast->nodes[func].info.node_type));
+
+    decl = ast->nodes[func].func.decl;
+    for (paramlist = ast->nodes[decl].func_decl.paramlist; paramlist > -1;
+         paramlist = ast->nodes[paramlist].paramlist.next)
+    {
+        ast_id identifier = ast->nodes[paramlist].paramlist.identifier;
+        if (ast->nodes[identifier].identifier.explicit_type == TYPE_INVALID)
+            return 1;
+    }
+
+    return 0;
+}
+
 ast_id
 ast_func(
     struct ast**     astp,
@@ -571,6 +594,9 @@ ast_func(
 
     ast->nodes[func].func.decl = decl;
     ast->nodes[func].func.def = def;
+
+    if (ast_func_is_template(ast, func))
+        ast->nodes[func].info.node_type = AST_FUNC_TEMPLATE;
 
     return func;
 }
@@ -753,6 +779,21 @@ ast_cast(
 
     ast->nodes[n].cast.expr = expr;
     ast->nodes[n].info.type_info = target_type;
+
+    return n;
+}
+
+ast_id
+ast_scope(struct ast** astp, ast_id child, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_SCOPE, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(child > -1, log_parser_err("expr: %d\n", child));
+
+    ast->nodes[n].scope.child = child;
 
     return n;
 }

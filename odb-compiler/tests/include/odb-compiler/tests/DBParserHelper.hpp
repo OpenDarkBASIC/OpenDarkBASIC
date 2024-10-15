@@ -18,16 +18,11 @@ struct DBParserHelper
     DBParserHelper();
     ~DBParserHelper();
 
-    int
-    parse(const char* code);
-    int
-    semantic(const struct semantic_check* check);
-    int
-    addCommand(const char* name);
-    int
-    addCommand(type return_type, const char* name);
-    int
-    addCommand(
+    virtual int parse(const char* code);
+    int semantic(const struct semantic_check* check);
+    int addCommand(const char* name);
+    int addCommand(type return_type, const char* name);
+    int addCommand(
         type                        return_type,
         const char*                 name,
         std::initializer_list<type> param_types);

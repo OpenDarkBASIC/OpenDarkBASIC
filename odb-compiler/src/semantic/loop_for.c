@@ -22,26 +22,27 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 {
     switch (ast->nodes[n].info.node_type)
     {
-        case AST_GC:
-        case AST_BLOCK:
-        case AST_END:
-        case AST_ARGLIST:
-        case AST_PARAMLIST:
-        case AST_COMMAND:
-        case AST_ASSIGNMENT:
-        case AST_IDENTIFIER:
-        case AST_BINOP:
-        case AST_UNOP:
-        case AST_COND:
-        case AST_COND_BRANCH:
-        case AST_LOOP:
-        case AST_LOOP_FOR:
-        case AST_LOOP_CONT:
-        case AST_LOOP_EXIT:
-        case AST_FUNC:
-        case AST_FUNC_DECL:
-        case AST_FUNC_DEF:
-        case AST_FUNC_OR_CONTAINER_REF:
+        case AST_GC: break;
+        case AST_BLOCK: break;
+        case AST_END: break;
+        case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
+        case AST_COMMAND: break;
+        case AST_ASSIGNMENT: break;
+        case AST_IDENTIFIER: break;
+        case AST_BINOP: break;
+        case AST_UNOP: break;
+        case AST_COND: break;
+        case AST_COND_BRANCH: break;
+        case AST_LOOP: break;
+        case AST_LOOP_FOR: break;
+        case AST_LOOP_CONT: break;
+        case AST_LOOP_EXIT: break;
+        case AST_FUNC_TEMPLATE: break;
+        case AST_FUNC: break;
+        case AST_FUNC_DECL: break;
+        case AST_FUNC_DEF: break;
+        case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
 
         case AST_BOOLEAN_LITERAL:
@@ -70,8 +71,9 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
             value->f = ast->nodes[n].double_literal.value;
             return EXPR_TYPE_FLOAT;
 
-        case AST_STRING_LITERAL:
+        case AST_STRING_LITERAL: break;
         case AST_CAST: break;
+        case AST_SCOPE: break;
     }
 
     return EXPR_TYPE_UNKNOWN;

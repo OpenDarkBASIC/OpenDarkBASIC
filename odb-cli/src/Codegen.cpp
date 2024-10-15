@@ -170,11 +170,11 @@ output(const std::vector<std::string>& args)
         getCommandList(),
         getSourceFilepath(),
         getSource());
+    if (dumpIR_)
+        ir_dump(ir);
     if (optimize_)
         ir_optimize(ir);
     ir_compile(ir, ospath_cstr(objfilepath), arch_, platform_);
-    if (dumpIR_)
-        ir_dump(ir);
     ir_free(ir);
 
     struct ospath rtlib = empty_ospath();

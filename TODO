@@ -9,6 +9,16 @@ endif
 
 --------------------------------------------
 
+- typemap could contain only variable declarations (types) without
+  generating default initialiers. Default initializers are necessary if the
+  variable is GLOBAL. If it is local, the initializer only has to be generated
+  when it is first referenced.
+- implement scopes for local variables and function arguments
+- implement function instantiation
+- implement function call typecheck
+
+--------------------------------------------
+
 arrays, maps, and sets
 
 dim a(20, 20) as integer

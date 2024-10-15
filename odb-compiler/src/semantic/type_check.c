@@ -682,7 +682,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     }
                     else
                     {
-                        /* Case 2: Need to insert an init block */
+                        /* Case 2: Need to insert an init statement */
 
                         ast_id init_var = ast_dup_lvalue(astp, n);
                         ast_id init_ass
@@ -844,6 +844,19 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_LOOP_EXIT: return (*astp)->nodes[n].info.type_info = TYPE_VOID;
 
+        case AST_FUNC_TEMPLATE: {
+            /* Function templates cannot be resolved without knowing the input
+             * parameters at the callsite. The node is encountered because it is
+             * a child of block nodes. It should never be encountered in any
+             * other situation. Functions are instantiated in case
+             * AST_FUNC_OR_CONTAINER_REF. */
+            ODBUTIL_DEBUG_ASSERT(
+                (*astp)->nodes[ast_find_parent(*astp, n)].info.node_type
+                    == AST_BLOCK,
+                (void)0);
+            return TYPE_VOID;
+        }
+
         case AST_FUNC: {
             enum type ret_type, ident_type, func_type;
             ast_id    decl, def, identifier, paramlist, body, ret;
@@ -878,6 +891,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 ast_id param = (*astp)->nodes[paramlist].paramlist.identifier;
                 if (resolve_node_type(ctx, param, scope) == TYPE_INVALID)
                     return TYPE_INVALID;
+
+                (*astp)->nodes[paramlist].info.type_info = TYPE_VOID;
             }
 
             if (body > -1
@@ -896,7 +911,16 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             return TYPE_INVALID;
 
         case AST_FUNC_OR_CONTAINER_REF: {
-            /* Determine types of arglist */
+            /* Determine types of arguments */
+            ast_id arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
+            for (; arglist > -1; arglist = (*astp)->nodes[arglist].arglist.next)
+            {
+                ast_id arg = (*astp)->nodes[arglist].arglist.expr;
+                if (resolve_node_type(ctx, arg, scope) == TYPE_INVALID)
+                    return TYPE_INVALID;
+
+                (*astp)->nodes[arglist].info.type_info = TYPE_VOID;
+            }
 
             /* Check if a definition of this symbol exists globally */
             ast_id identifier
@@ -910,14 +934,20 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 log_flc_err(
                     filename,
                     source,
-                    (*astp)->nodes[n].info.location,
+                    (*astp)->nodes[identifier].info.location,
                     "No function with this name exists.\n");
                 log_excerpt_1(source, (*astp)->nodes[n].info.location, "");
                 return TYPE_INVALID;
             }
 
+            enum type ret_type;
             if (entry->tu_id == ctx->tu_id)
             {
+                /* The function definition exists in our own AST. Therefore, can
+                 * recurse here */
+                ret_type = resolve_node_type(ctx, entry->ast_node, 0);
+                if (ret_type == TYPE_INVALID)
+                    return TYPE_INVALID;
             }
             else
             {
@@ -931,13 +961,18 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 mutex_unlock(our_mutex);
                 mutex_lock(their_mutex);
 
-                resolve_node_type(&their_ctx, entry->ast_node, 0);
+                ret_type = resolve_node_type(&their_ctx, entry->ast_node, 0);
 
                 mutex_unlock(their_mutex);
                 mutex_lock(our_mutex);
+
+                if (ret_type == TYPE_INVALID)
+                    return TYPE_INVALID;
             }
 
-            break;
+            (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
+            (*astp)->nodes[identifier].info.type_info = ret_type;
+            return (*astp)->nodes[n].info.type_info = ret_type;
         }
 
         case AST_FUNC_CALL:
@@ -973,6 +1008,13 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
             return type_check_casts(*astp, n, filename, source);
+        }
+
+        case AST_SCOPE: {
+            if (resolve_node_type(ctx, (*astp)->nodes[n].scope.child, scope)
+                == TYPE_INVALID)
+                return TYPE_INVALID;
+            return (*astp)->nodes[n].info.type_info = TYPE_VOID;
         }
     }
 
@@ -1036,8 +1078,6 @@ type_check(
 {
     int          return_code;
     struct ast** astp = &tus[tu_id];
-    const char*  filename = utf8_cstr(filenames[tu_id]);
-    const char*  source = sources[tu_id].text.data;
     struct ctx   ctx
         = {tus, tu_mutexes, filenames, sources, cmds, symbols, NULL, tu_id};
     typemap_init(&ctx.typemap);
@@ -1055,16 +1095,22 @@ type_check(
         (*astp)->nodes[(*astp)->root].info.node_type == AST_BLOCK,
         log_semantic_err(
             "type: %d\n", (*astp)->nodes[(*astp)->root].info.node_type));
+    mutex_lock(tu_mutexes[tu_id]);
     return_code
         = resolve_node_type(&ctx, (*astp)->root, 0) == TYPE_INVALID ? -1 : 0;
+    mutex_unlock(tu_mutexes[tu_id]);
 
     ast_gc(*astp);
     typemap_deinit(ctx.typemap);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (return_code == 0)
-        if (sanity_check(*astp, filename, source) != 0)
+        if (sanity_check(
+                *astp, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data)
+            != 0)
+        {
             return -1;
+        }
 #endif
 
     return return_code;

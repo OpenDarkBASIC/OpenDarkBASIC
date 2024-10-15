@@ -475,7 +475,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_conditionals_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_command_matcher.cpp"
-        "tests/src/parser/test_odbcompiler_db_parser_func_annotation.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_func.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_loop_for_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_remarks.cpp"

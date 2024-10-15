@@ -30,6 +30,7 @@ child_changed:
         case AST_LOOP_FOR:
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT:
+        case AST_FUNC_TEMPLATE:
         case AST_FUNC:
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
@@ -183,8 +184,9 @@ child_changed:
             }
             break;
 
-        case AST_STRING_LITERAL:
+        case AST_STRING_LITERAL: return -1;
         case AST_CAST: return -1;
+        case AST_SCOPE: return -1;
     }
 
     ast->nodes[expr].info.location = utf8_span_union(

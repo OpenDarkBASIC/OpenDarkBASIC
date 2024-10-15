@@ -90,6 +90,7 @@ enum ast_type
     AST_LOOP_FOR,
     AST_LOOP_CONT,
     AST_LOOP_EXIT,
+    AST_FUNC_TEMPLATE,
     AST_FUNC,
     AST_FUNC_DECL,
     AST_FUNC_DEF,
@@ -112,6 +113,7 @@ enum ast_type
     /*! String. Should be UTF-8 encoded. */
     AST_STRING_LITERAL,
     AST_CAST,
+    AST_SCOPE,
 };
 
 /* clang-format off */
@@ -132,32 +134,32 @@ union ast_node
         ast_id right;
     } base;
 
-    struct block {
+    struct {
         struct info info;
         ast_id stmt;
         ast_id next;
     } block;
 
-    struct end {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
     } end;
 
-    struct arglist
+    struct 
     {
         struct info info;
         ast_id expr;
         ast_id next;
     } arglist;
 
-    struct paramlist
+    struct 
     {
         struct info info;
         ast_id identifier;
         ast_id next;
     } paramlist;
 
-    struct cmd
+    struct 
     {
         struct info info;
         ast_id arglist;
@@ -165,7 +167,7 @@ union ast_node
         cmd_id id;
     } cmd;
 
-    struct assignment
+    struct 
     {
         struct info info;
         ast_id lvalue;
@@ -173,7 +175,7 @@ union ast_node
         struct utf8_span op_location;
     } assignment;
 
-    struct identifier
+    struct 
     {
         struct info info;
         ast_id _pad1, _pad2;
@@ -183,7 +185,7 @@ union ast_node
         enum type explicit_type : 4;
     } identifier;
 
-    struct binop
+    struct 
     {
         struct info info;
         ast_id left;
@@ -192,7 +194,7 @@ union ast_node
         enum binop_type op : 5;
     } binop;
 
-    struct unop
+    struct 
     {
         struct info info;
         ast_id expr;
@@ -200,18 +202,18 @@ union ast_node
         enum unop_type op : 3;
     } unop;
 
-    struct cond {
+    struct {
         struct info info;
         ast_id expr;
         ast_id cond_branch;
     } cond;
-    struct cond_branch {
+    struct {
         struct info info;
         ast_id yes;
         ast_id no;
     } cond_branch;
 
-    struct loop {
+    struct {
         struct info info;
         ast_id body;
         ast_id post_body;
@@ -224,7 +226,7 @@ union ast_node
     /* Holds info necessary for semantic to generate error messages.
      * Instances of this node are removed from the tree during
      * semantic analysis. */
-    struct loop_for {
+    struct {
         struct info info;
         ast_id init;
         ast_id end;
@@ -232,109 +234,121 @@ union ast_node
         ast_id next;
     } loop_for;
 
-    struct cont {
+    struct {
         struct info info;
         ast_id step;
         ast_id _pad;
         struct utf8_span name;
     } cont;
 
-    struct loop_exit {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
     } loop_exit;
 
-    struct func {
+    struct {
+        struct info info;
+        ast_id decl;
+        ast_id def;
+    } func_template;
+
+    struct {
         struct info info;
         ast_id decl;
         ast_id def;
     } func;
 
-    struct func_decl {
+    struct {
         struct info info;
         ast_id identifier;
         ast_id paramlist;
     } func_decl;
 
-    struct func_def {
+    struct {
         struct info info;
         ast_id body;
         ast_id retval;
     } func_def;
 
-    struct func_exit {
+    struct {
         struct info info;
         ast_id retval;
         ast_id _pad;
     } func_exit;
 
-    struct func_or_container_ref {
+    struct {
         struct info info;
         ast_id identifier;
         ast_id arglist;
     } func_or_container_ref;
 
-    struct func_call {
+    struct {
         struct info info;
         ast_id identifier;
         ast_id arglist;
     } func_call;
 
-    struct boolean_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         char is_true;
     } boolean_literal;
 
-    struct byte_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         uint8_t value;
     } byte_literal;
-    struct word_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         uint16_t value;
     } word_literal;
-    struct integer_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         int32_t value;
     } integer_literal;
-    struct dword_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         uint32_t value;
     } dword_literal;
-    struct double_integer_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         int64_t value;
     } double_integer_literal;
 
-    struct float_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         float value;
     } float_literal;
-    struct double_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         double value;
     } double_literal;
 
-    struct string_literal {
+    struct {
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span str;
     } string_literal;
 
-    struct cast {
+    struct {
         struct info info;
         ast_id expr;
         ast_id _pad;
     } cast;
+
+    struct {
+        struct info info;
+        ast_id child;
+        ast_id _pad;
+    } scope;
 };
 
 struct ast
@@ -403,4 +417,5 @@ ast_id ast_float_literal(struct ast** ast, float value, struct utf8_span locatio
 ast_id ast_double_literal(struct ast** ast, double value, struct utf8_span location);
 ast_id ast_string_literal(struct ast** ast, struct utf8_span str, struct utf8_span location);
 ast_id ast_cast(struct ast** ast, ast_id expr, enum type target_type, struct utf8_span location);
+ast_id ast_scope(struct ast** ast, ast_id child, struct utf8_span location);
 /* clang-format on */

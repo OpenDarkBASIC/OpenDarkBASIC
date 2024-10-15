@@ -31,6 +31,13 @@ struct view_scope
     int16_t          scope;
 };
 
+struct loop_stack_entry
+{
+    llvm::BasicBlock* BBLoop;
+    llvm::BasicBlock* BBExit;
+    ast_id            loop;
+};
+
 VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
@@ -292,12 +299,66 @@ create_global_command_function_table(
             llvm::GlobalVariable::ExternalLinkage,
             /*Initializer=*/nullptr,
             c_sym_ref));
+    }
 
-        // result.first->setValue(llvm::Function::Create(
-        //     get_command_function_signature(ir, ast, n, cmds),
-        //     llvm::Function::ExternalLinkage,
-        //     c_sym_ref,
-        //     ir->mod));
+    return 0;
+}
+
+static int
+create_db_function_table(
+    struct ir_module*                 ir,
+    llvm::StringMap<llvm::Function*>* db_func_table,
+    const struct ast*                 ast,
+    const char*                       source)
+{
+    for (ast_id n = 0; n != ast->count; ++n)
+    {
+        if (ast->nodes[n].info.node_type != AST_FUNC)
+            continue;
+
+        ast_id ast_decl = ast->nodes[n].func.decl;
+        ast_id ast_def = ast->nodes[n].func.def;
+        ast_id ast_identifier = ast->nodes[ast_decl].func_decl.identifier;
+        ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
+
+        llvm::SmallVector<llvm::Type*, 8> param_types;
+        for (ast_id ast_paramlist = ast->nodes[ast_decl].func_decl.paramlist;
+             ast_paramlist > -1;
+             ast_paramlist = ast->nodes[ast_paramlist].arglist.next)
+        {
+            ast_id      ast_param = ast->nodes[ast_paramlist].arglist.expr;
+            enum type   param_type = ast->nodes[ast_param].info.type_info;
+            llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
+            param_types.push_back(Ty);
+        }
+
+        llvm::Type* llvm_retval
+            = ast_retval > -1
+                  ? type_to_llvm(
+                        ast->nodes[ast_retval].info.type_info, &ir->ctx)
+                  : llvm::Type::getVoidTy(ir->ctx);
+
+        struct utf8_span identifier_span
+            = ast->nodes[ast_identifier].identifier.name;
+        llvm::StringRef identifier_name(
+            source + identifier_span.off, identifier_span.len);
+
+        llvm::Function::LinkageTypes llvm_linkage
+            = ast->nodes[ast_identifier].identifier.scope == SCOPE_GLOBAL
+                  ? llvm::Function::ExternalLinkage
+                  : llvm::Function::InternalLinkage;
+
+        llvm::Function* F = llvm::Function::Create(
+            llvm::FunctionType::get(
+                llvm_retval,
+                param_types,
+                /* isVarArg */ false),
+            llvm_linkage,
+            identifier_name,
+            &ir->mod);
+        bool result = db_func_table->insert({identifier_name, F}).second;
+        ODBUTIL_DEBUG_ASSERT(
+            result, log_codegen_err("Function already exists!"));
     }
 
     return 0;
@@ -331,6 +392,23 @@ gen_expr(
     const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
+    struct allocamap**                            allocamap);
+
+int
+gen_block(
+    struct ir_module*                             ir,
+    llvm::IRBuilder<>&                            builder,
+    const struct ast*                             ast,
+    ast_id                                        block,
+    enum sdk_type                                 sdk_type,
+    const struct cmd_list*                        cmds,
+    const char*                                   source_filename,
+    const char*                                   source_text,
+    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
+    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap);
 
 static llvm::Value*
@@ -345,6 +423,7 @@ gen_cmd_call(
     const char*                                   source_text,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
     struct allocamap**                            allocamap)
 {
     // Function table for commands should be generated at this
@@ -376,6 +455,7 @@ gen_cmd_call(
             source_text,
             string_table,
             cmd_func_table,
+            db_func_table,
             allocamap);
         if (sdk_type == SDK_DBPRO)
             if (ast->nodes[ast_expr].info.type_info == TYPE_F32)
@@ -406,10 +486,11 @@ gen_expr(
     ast_id                                        expr,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
-    const char*                                   source_filename,
-    const char*                                   source_text,
+    const char*                                   filename,
+    const char*                                   source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
     struct allocamap**                            allocamap)
 {
     switch (ast->nodes[expr].info.node_type)
@@ -428,17 +509,18 @@ gen_expr(
                 expr,
                 sdk_type,
                 cmds,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 string_table,
                 cmd_func_table,
+                db_func_table,
                 allocamap);
 
         case AST_ASSIGNMENT: break;
 
         case AST_IDENTIFIER: {
             struct utf8_view name
-                = utf8_span_view(source_text, ast->nodes[expr].identifier.name);
+                = utf8_span_view(source, ast->nodes[expr].identifier.name);
             struct view_scope  name_scope = {name, 0};
             llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
             /* The AST should be constructed in a way where we do not have to
@@ -465,10 +547,11 @@ gen_expr(
                 lhs_node,
                 sdk_type,
                 cmds,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 string_table,
                 cmd_func_table,
+                db_func_table,
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
@@ -477,10 +560,11 @@ gen_expr(
                 rhs_node,
                 sdk_type,
                 cmds,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 string_table,
                 cmd_func_table,
+                db_func_table,
                 allocamap);
 
             /* Handle string operations seperately from arithmetic, since there
@@ -680,11 +764,51 @@ gen_expr(
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT: break;
 
-        case AST_FUNC:
-        case AST_FUNC_DECL:
-        case AST_FUNC_DEF: break;
-        case AST_FUNC_OR_CONTAINER_REF: break;
-        case AST_FUNC_CALL: break;
+        case AST_FUNC_CALL: {
+            llvm::SmallVector<llvm::Value*, 8> llvm_args;
+            for (ast_id ast_arglist = ast->nodes[expr].func_call.arglist;
+                 ast_arglist > -1;
+                 ast_arglist = ast->nodes[ast_arglist].arglist.next)
+            {
+                llvm::Value* llvm_arg = gen_expr(
+                    ir,
+                    builder,
+                    ast,
+                    ast->nodes[ast_arglist].arglist.expr,
+                    sdk_type,
+                    cmds,
+                    filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    db_func_table,
+                    allocamap);
+                llvm_args.push_back(llvm_arg);
+            }
+
+            ast_id ast_identifier = ast->nodes[expr].func_call.identifier;
+            struct utf8_span identifier_span
+                = ast->nodes[ast_identifier].identifier.name;
+            llvm::StringRef identifier_name(
+                source + identifier_span.off, identifier_span.len);
+
+            const auto result = db_func_table->find(identifier_name);
+            ODBUTIL_DEBUG_ASSERT(
+                result != db_func_table->end(),
+                log_semantic_err(
+                    "Function {quote:%s} not found in function table\n",
+                    identifier_name.data()));
+
+            llvm::Function* F = result->getValue();
+            return builder.CreateCall(F, llvm_args);
+        }
+        case AST_FUNC_TEMPLATE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC_OR_CONTAINER_REF:
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return NULL;
 
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
@@ -729,7 +853,7 @@ gen_expr(
 
         case AST_STRING_LITERAL: {
             struct utf8_span span = ast->nodes[expr].string_literal.str;
-            llvm::StringRef  str_ref(source_text + span.off, span.len);
+            llvm::StringRef  str_ref(source + span.off, span.len);
             return string_table->find(str_ref)->getValue();
         }
 
@@ -744,10 +868,11 @@ gen_expr(
                 ast->nodes[expr].cast.expr,
                 sdk_type,
                 cmds,
-                source_filename,
-                source_text,
+                filename,
+                source,
                 string_table,
                 cmd_func_table,
+                db_func_table,
                 allocamap);
 
             switch (to)
@@ -834,6 +959,8 @@ gen_expr(
             }
             break;
         }
+
+        case AST_SCOPE: break;
     }
 
     log_codegen_err(
@@ -841,13 +968,6 @@ gen_expr(
         ast->nodes[expr].info.node_type);
     return nullptr;
 }
-
-struct loop_stack_entry
-{
-    llvm::BasicBlock* BBLoop;
-    llvm::BasicBlock* BBExit;
-    ast_id            loop;
-};
 
 int
 gen_block(
@@ -857,10 +977,11 @@ gen_block(
     ast_id                                        block,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
-    const char*                                   source_filename,
-    const char*                                   source_text,
+    const char*                                   filename,
+    const char*                                   source,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
@@ -907,10 +1028,11 @@ gen_block(
                     stmt,
                     sdk_type,
                     cmds,
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     string_table,
                     cmd_func_table,
+                    db_func_table,
                     allocamap);
                 break;
             }
@@ -925,10 +1047,11 @@ gen_block(
                     rhs_node,
                     sdk_type,
                     cmds,
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     string_table,
                     cmd_func_table,
+                    db_func_table,
                     allocamap);
 
                 ODBUTIL_DEBUG_ASSERT(
@@ -937,7 +1060,7 @@ gen_block(
                         "type: %d\n", ast->nodes[lhs_node].info.node_type));
                 enum type        type = ast->nodes[lhs_node].info.type_info;
                 struct utf8_view name = utf8_span_view(
-                    source_text, ast->nodes[lhs_node].identifier.name);
+                    source, ast->nodes[lhs_node].identifier.name);
                 struct view_scope  name_scope = {name, 0};
                 llvm::AllocaInst** A;
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
@@ -987,10 +1110,11 @@ gen_block(
                     expr_node,
                     sdk_type,
                     cmds,
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     string_table,
                     cmd_func_table,
+                    db_func_table,
                     allocamap);
                 llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node));
@@ -1012,10 +1136,11 @@ gen_block(
                         yes_node,
                         sdk_type,
                         cmds,
-                        source_filename,
-                        source_text,
+                        filename,
+                        source,
                         string_table,
                         cmd_func_table,
+                        db_func_table,
                         loop_stack,
                         allocamap);
                 }
@@ -1036,10 +1161,11 @@ gen_block(
                         no_node,
                         sdk_type,
                         cmds,
-                        source_filename,
-                        source_text,
+                        filename,
+                        source,
                         string_table,
                         cmd_func_table,
+                        db_func_table,
                         loop_stack,
                         allocamap);
                 }
@@ -1074,10 +1200,11 @@ gen_block(
                     ast->nodes[stmt].loop.body,
                     sdk_type,
                     cmds,
-                    source_filename,
-                    source_text,
+                    filename,
+                    source,
                     string_table,
                     cmd_func_table,
+                    db_func_table,
                     loop_stack,
                     allocamap);
                 // For-loops keep the code for stepping separate from the rest
@@ -1091,10 +1218,11 @@ gen_block(
                         ast->nodes[stmt].loop.post_body,
                         sdk_type,
                         cmds,
-                        source_filename,
-                        source_text,
+                        filename,
+                        source,
                         string_table,
                         cmd_func_table,
+                        db_func_table,
                         loop_stack,
                         allocamap);
                 // Codegen can change the current block. Update
@@ -1120,9 +1248,9 @@ gen_block(
                         struct utf8_span loop_implicit_name
                             = ast->nodes[it->loop].loop.implicit_name;
 
-                        if (utf8_equal_span(source_text, target_name, loop_name)
+                        if (utf8_equal_span(source, target_name, loop_name)
                             || utf8_equal_span(
-                                source_text, target_name, loop_implicit_name))
+                                source, target_name, loop_implicit_name))
                         {
                             break;
                         }
@@ -1146,10 +1274,11 @@ gen_block(
                         step,
                         sdk_type,
                         cmds,
-                        source_filename,
-                        source_text,
+                        filename,
+                        source,
                         string_table,
                         cmd_func_table,
+                        db_func_table,
                         loop_stack,
                         allocamap);
                     builder.CreateBr(it->BBLoop);
@@ -1173,9 +1302,9 @@ gen_block(
                     struct utf8_span loop_implicit_name
                         = ast->nodes[it->loop].loop.implicit_name;
 
-                    if (utf8_equal_span(source_text, target_name, loop_name)
+                    if (utf8_equal_span(source, target_name, loop_name)
                         || utf8_equal_span(
-                            source_text, target_name, loop_implicit_name))
+                            source, target_name, loop_implicit_name))
                     {
                         builder.CreateBr(it->BBExit);
                         goto loop_exit_found;
@@ -1186,11 +1315,82 @@ gen_block(
                 break;
             }
 
-            case AST_FUNC:
+            case AST_FUNC_TEMPLATE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC: {
+                ast_id ast_decl = ast->nodes[stmt].func.decl;
+                ast_id ast_def = ast->nodes[stmt].func.def;
+                ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
+                ast_id ast_body = ast->nodes[ast_def].func_def.body;
+                ast_id ast_identifier
+                    = ast->nodes[ast_decl].func_decl.identifier;
+
+                llvm::SmallVector<llvm::Type*, 8> param_types;
+                for (ast_id ast_paramlist
+                     = ast->nodes[ast_decl].func_decl.paramlist;
+                     ast_paramlist > -1;
+                     ast_paramlist = ast->nodes[ast_paramlist].arglist.next)
+                {
+                    ast_id ast_param = ast->nodes[ast_paramlist].arglist.expr;
+                    enum type param_type = ast->nodes[ast_param].info.type_info;
+                    llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
+                    param_types.push_back(Ty);
+                }
+
+                struct utf8_span identifier_span
+                    = ast->nodes[ast_identifier].identifier.name;
+                llvm::StringRef identifier_name(
+                    source + identifier_span.off, identifier_span.len);
+
+                const auto result = db_func_table->find(identifier_name);
                 ODBUTIL_DEBUG_ASSERT(
-                    0, log_codegen_err("Function calls not yet implemented\n"));
-                return -1;
-            case AST_FUNC_DECL:
+                    result != db_func_table->end(),
+                    log_semantic_err(
+                        "Function {quote:%s} not found in function table\n",
+                        identifier_name.data()));
+
+                llvm::Function*   F = result->getValue();
+                llvm::BasicBlock* BB = llvm::BasicBlock::Create(
+                    ir->ctx, llvm::Twine("entry"), F);
+                llvm::IRBuilder<> func_builder(BB);
+
+                if (ast_body > -1)
+                    gen_block(
+                        ir,
+                        func_builder,
+                        ast,
+                        ast_body,
+                        sdk_type,
+                        cmds,
+                        filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        db_func_table,
+                        loop_stack,
+                        allocamap);
+
+                if (ast_retval > -1)
+                    func_builder.CreateRet(gen_expr(
+                        ir,
+                        func_builder,
+                        ast,
+                        ast_retval,
+                        sdk_type,
+                        cmds,
+                        filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        db_func_table,
+                        allocamap));
+                else
+                    func_builder.CreateRetVoid();
+#if defined(ODBCOMPILER_IR_SANITY_CHECK)
+                llvm::verifyFunction(*F);
+#endif
+                break;
+            }
+            case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_FUNC_OR_CONTAINER_REF:
@@ -1228,6 +1428,13 @@ gen_block(
                     log_codegen_err("Casts should never occur directly in a "
                                     "block.\n"));
                 return -1;
+
+            case AST_SCOPE:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("Scopes should never occur directly in a "
+                                    "block.\n"));
+                return -1;
         }
     }
 
@@ -1242,15 +1449,18 @@ ir_translate_ast(
     enum target_arch       arch,
     enum target_platform   platform,
     const struct cmd_list* cmds,
-    const char*            source_filename,
-    const char*            source_text)
+    const char*            filename,
+    const char*            source)
 {
     llvm::StringMap<llvm::GlobalVariable*> string_table;
-    create_global_string_table(ir, &string_table, ast, source_text);
+    create_global_string_table(ir, &string_table, ast, source);
 
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
     create_global_command_function_table(
-        ir, &cmd_func_table, ast, cmds, source_text);
+        ir, &cmd_func_table, ast, cmds, source);
+
+    llvm::StringMap<llvm::Function*> db_func_table;
+    create_db_function_table(ir, &db_func_table, ast, source);
 
     llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
 
@@ -1273,8 +1483,7 @@ ir_translate_ast(
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
     if (ast->count == 0)
-        log_codegen_warn(
-            "AST is empty for source file {quote:%s}\n", source_filename);
+        log_codegen_warn("AST is empty for source file {quote:%s}\n", filename);
     else
         gen_block(
             ir,
@@ -1283,10 +1492,11 @@ ir_translate_ast(
             ast->root,
             sdk_type,
             cmds,
-            source_filename,
-            source_text,
+            filename,
+            source,
             &string_table,
             &cmd_func_table,
+            &db_func_table,
             &loop_exit_stack,
             &allocamap);
     allocamap_deinit(allocamap);
