@@ -414,12 +414,11 @@ gen_expr(
 {
     switch (ast->nodes[expr].info.node_type)
     {
-        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return nullptr;
-        case AST_BLOCK:
-        case AST_END:
-        case AST_ARGLIST:
-        case AST_PARAMLIST:
-        case AST_CONST_DECL: break;
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_BLOCK: break;
+        case AST_END: break;
+        case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
 
         case AST_COMMAND:
             return gen_cmd_call(
@@ -899,11 +898,6 @@ gen_block(
 
             case AST_ARGLIST:
             case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-
-            case AST_CONST_DECL:
-                ODBUTIL_DEBUG_ASSERT(
-                    0, log_codegen_err("#constant not yet implemented\n"));
-                return -1;
 
             case AST_COMMAND: {
                 gen_cmd_call(

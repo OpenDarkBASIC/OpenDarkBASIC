@@ -326,9 +326,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
         case AST_END: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
-        case AST_ARGLIST:
-        case AST_PARAMLIST:
-        case AST_CONST_DECL: break;
+        case AST_ARGLIST: break;
+        case AST_PARAMLIST: break;
 
         case AST_ASSIGNMENT: {
             ast_id    lhs = ctx->ast->nodes[n].assignment.lvalue;

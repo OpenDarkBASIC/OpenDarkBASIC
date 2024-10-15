@@ -68,7 +68,6 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_END: break;
         case AST_ARGLIST: break;
         case AST_PARAMLIST: break;
-        case AST_CONST_DECL: break;
         case AST_COMMAND: SWAP(cmd_id, cmd, id) break;
         case AST_ASSIGNMENT: break;
         case AST_IDENTIFIER:
@@ -214,7 +213,6 @@ ast_trees_equal(
         case AST_END: break;
         case AST_ARGLIST: break;
         case AST_PARAMLIST: break;
-        case AST_CONST_DECL: break;
         case AST_COMMAND:
             /* Command references are unique, so there is no need to compare
              * deeper */

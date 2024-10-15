@@ -38,7 +38,7 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:1: warning: Implicit conversion from BOOLEAN to INTEGER "
+        LogEq("test:1:5: warning: Implicit conversion from BOOLEAN to INTEGER "
               "in variable initialization.\n"
               " 1 | a = false\n"
               "   | ^ ^ ^~~~< BOOLEAN\n"

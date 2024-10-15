@@ -35,9 +35,6 @@ write_nodes(
         case AST_PARAMLIST:
             fprintf(fp, "  n%d [shape=\"box3d\", label=\"paramlist\"];\n", n);
             break;
-        case AST_CONST_DECL:
-            fprintf(fp, "  n%d [label=\"#constant\"];\n", n);
-            break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
                 = utf8_list_view(commands->db_cmd_names, nd->cmd.id);

@@ -86,8 +86,6 @@ enum ast_type
     AST_END,
     AST_ARGLIST,
     AST_PARAMLIST,
-    /*! #constant statements */
-    AST_CONST_DECL,
     /*! Function call to a plugin. Known in DBPro as a "command" */
     AST_COMMAND,
     /*! Assignment statement, e.g. x=5 */
@@ -172,13 +170,6 @@ union ast_node
         ast_id next;
     } paramlist;
 
-    struct const_decl
-    {
-        struct info info;
-        ast_id identifier;
-        ast_id expr;
-    } const_decl;
-
     struct cmd
     {
         struct info info;
@@ -200,9 +191,9 @@ union ast_node
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
-        enum type explicit_type : 4;
-        enum type_annotation annotation : 3;
+        enum type_annotation annotation : 7;
         enum scope scope : 1;
+        enum type explicit_type : 4;
     } identifier;
 
     struct binop
@@ -401,7 +392,6 @@ ast_id ast_arglist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_arglist_append(struct ast* ast, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist(struct ast* ast, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist_append(struct ast* ast, ast_id paramlist, ast_id expr, struct utf8_span location);
-ast_id ast_const_decl(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location);
 ast_id ast_command(struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location);
 ast_id ast_assign_var(struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_inc_step(struct ast* ast, ast_id var, ast_id expr, struct utf8_span location);

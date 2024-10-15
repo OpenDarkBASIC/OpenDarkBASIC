@@ -14,7 +14,6 @@ child_changed:
         case AST_END:
         case AST_ARGLIST:
         case AST_PARAMLIST:
-        case AST_CONST_DECL:
         case AST_COMMAND:
         case AST_ASSIGNMENT:
         case AST_IDENTIFIER:

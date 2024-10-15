@@ -112,6 +112,8 @@
     struct utf8_span string_value;
     ast_id node_value;  /* Index into the ast->nodes[] array */
     cmd_id cmd_value;  /* Index into the command_list */
+    enum scope scope_value;
+    enum type type_value;
 }
 
 /* Add a description to some of the tokens */
@@ -127,7 +129,7 @@
 %token END
 %token INC "increment"
 %token DEC "decrement"
-%token BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
+%token GLOBAL LOCAL BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
 /* Control flow */
 %token IF "IF"
 %token THEN "THEN"
@@ -221,7 +223,7 @@
 %right UPLUS
 %right UMINUS
 %right UNOT
-%nonassoc AS
+%right AS
 
 /* Identifiers */
 %token<string_value> IDENTIFIER "identifier"
@@ -237,18 +239,18 @@
 %type<node_value> program
 %type<node_value> block iblock maybe_block
 %type<node_value> stmt istmt
-%type<node_value> expr
-%type<node_value> arglist paramlist
-%type<node_value> const_decl
+%type<node_value> expr maybe_expr
+%type<node_value> arglist maybe_arglist paramlist maybe_paramlist
 %type<node_value> inc dec
-%type<node_value> cast_expr
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_cont loop_exit
 %type<string_value> loop_name
+%type<type_value> type maybe_as_type
+%type<scope_value> scope maybe_scope
 %type<node_value> literal
-%type<node_value> identifier typed_identifier
+%type<node_value> identifier var_decl
 %type<node_value> func func_or_container_ref
 
 %start program
@@ -276,8 +278,7 @@ iblock
   | istmt                                   { $$ = ast_block(ctx->ast, $1, @$); }
   ;
 stmt
-  : const_decl                              { $$ = $1; }
-  | conditional                             { $$ = $1; }
+  : conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
   | istmt                                   { $$ = $1; }
@@ -326,54 +327,58 @@ expr
   | expr BSHL expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
   | expr BSHR expr                          { $$ = ast_binop(ctx->ast, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
-  | cast_expr                               { $$ = $1; }
+  | expr AS type                            { $$ = ast_cast(ctx->ast, $1, $3, @$); }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
   | identifier                              { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
-cast_expr
-  : expr AS BOOLEAN                         { $$ = ast_cast(ctx->ast, $1, TYPE_BOOL, @$); }
-  | expr AS BYTE                            { $$ = ast_cast(ctx->ast, $1, TYPE_U8, @$); }
-  | expr AS WORD                            { $$ = ast_cast(ctx->ast, $1, TYPE_U16, @$); }
-  | expr AS INTEGER                         { $$ = ast_cast(ctx->ast, $1, TYPE_I32, @$); }
-  | expr AS DWORD                           { $$ = ast_cast(ctx->ast, $1, TYPE_U32, @$); }
-  | expr AS DOUBLE INTEGER                  { $$ = ast_cast(ctx->ast, $1, TYPE_I64, @$); }
-  | expr AS FLOAT                           { $$ = ast_cast(ctx->ast, $1, TYPE_F32, @$); }
-  | expr AS DOUBLE                          { $$ = ast_cast(ctx->ast, $1, TYPE_F64, @$); }
-  | expr AS STRING                          { $$ = ast_cast(ctx->ast, $1, TYPE_STRING, @$); }
+maybe_expr
+  : expr                                    { $$ = $1; }
+  |                                         { $$ = -1; }
   ;
 arglist
   : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->ast, $$, $3, @$); }
   | expr                                    { $$ = ast_arglist(ctx->ast, $1, @$); }
+  ;
+maybe_arglist
+  : arglist                                 { $$ = $1; } 
+  |                                         { $$ = -1; }
   ;
 /* TODO: Support AS TYPE */
 paramlist
   : paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->ast, $$, $3, @$); }
   | identifier                              { $$ = ast_paramlist(ctx->ast, $1, @$); }
   ;
-const_decl
-  : CONSTANT identifier expr                { $$ = ast_const_decl(ctx->ast, $2, $3, @$); }
-  | CONSTANT identifier '=' expr            { $$ = ast_const_decl(ctx->ast, $2, $4, @$); }
+maybe_paramlist
+  : paramlist                               { $$ = $1; }
+  |                                         { $$ = -1; }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
 command_stmt
-  : COMMAND                                 { $$ = ast_command(ctx->ast, $1, -1, @$); }
-  | COMMAND arglist                         { $$ = ast_command(ctx->ast, $1, $2, @$); }
+  : COMMAND maybe_arglist                   { $$ = ast_command(ctx->ast, $1, $2, @$); }
   | COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
 //| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 // Commands appearing as expressions must be csalled with arguments in brackets
 command_expr
-  : COMMAND '(' ')'                         { $$ = ast_command(ctx->ast, $1, -1, @$); }
-  | COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->ast, $1, $3, @$); }
+  : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->ast, $1, $3, @$); }
   ;
 assignment
   : identifier '=' expr                     { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
-  | typed_identifier '=' expr               { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
+  | var_decl '=' expr                       { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
+  ;
+var_decl
+  : scope identifier AS type                { $$ = $2;
+                                              ctx->ast->nodes[$2].identifier.explicit_type = $4;
+                                              ctx->ast->nodes[$2].identifier.scope = $1; }
+  | identifier AS type                      { $$ = $1;
+                                              ctx->ast->nodes[$1].identifier.explicit_type = $3; }
+  | scope identifier                        { $$ = $2;
+                                              ctx->ast->nodes[$2].identifier.scope = $1; }
   ;
 inc
   : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->ast, $2, $4, @$); }
@@ -453,22 +458,14 @@ loop_name
   |                                         { $$ = empty_utf8_span(); }
   ;
 func
-  : FUNCTION identifier '(' paramlist ')'
+  : maybe_scope FUNCTION identifier '(' maybe_paramlist ')' maybe_as_type
         maybe_block
-    ENDFUNCTION expr                        { $$ = ast_func(ctx->ast, $2, $4, $6, $8, @$); }
-  | FUNCTION identifier '(' paramlist ')'
-        maybe_block
-    ENDFUNCTION                             { $$ = ast_func(ctx->ast, $2, $4, $6, -1, @$); }
-  | FUNCTION identifier '(' ')'
-        maybe_block
-    ENDFUNCTION expr                        { $$ = ast_func(ctx->ast, $2, -1, $5, $7, @$); }
-  | FUNCTION identifier '(' ')'
-        maybe_block
-    ENDFUNCTION                             { $$ = ast_func(ctx->ast, $2, -1, $5, -1, @$); }
+    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->ast, $3, $5, $8, $10, @$);
+                                              ctx->ast->nodes[$3].identifier.scope = $1;
+                                              ctx->ast->nodes[$3].identifier.explicit_type = $7; }
   ;
 func_or_container_ref
-  : identifier '(' arglist ')'              { $$ = ast_func_or_container_ref(ctx->ast, $1, $3, @$); }
-  | identifier '(' ')'                      { $$ = ast_func_or_container_ref(ctx->ast, $1, -1, @$); }
+  : identifier '(' maybe_arglist ')'        { $$ = ast_func_or_container_ref(ctx->ast, $1, $3, @$); }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->ast, $1, @$); }
@@ -477,24 +474,28 @@ literal
   | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
   ;
-var_decl
-  : scoped_typed_identifier '=' expr        { $$ = ast_var_decl(ctx->ast, $1, $3, @$); }
-  | scoped_typed_identifier                 { $$ = ast_var_decl(ctx->ast, $1, -1, @$); }
-  ;
 scope
   : GLOBAL                                  { $$ = SCOPE_GLOBAL; }
   | LOCAL                                   { $$ = SCOPE_LOCAL; }
   ;
-as_type
-  : AS BOOLEAN                              { $$ = TYPE_BOOL; }
-  | AS BYTE                                 { $$ = TYPE_U8; }
-  | AS WORD                                 { $$ = TYPE_U16; }
-  | AS INTEGER                              { $$ = TYPE_I32; }
-  | AS DWORD                                { $$ = TYPE_U32; }
-  | AS DOUBLE INTEGER                       { $$ = TYPE_I64; }
-  | AS FLOAT                                { $$ = TYPE_F32; }
-  | AS DOUBLE                               { $$ = TYPE_F64; }
-  | AS STRING                               { $$ = TYPE_STRING; }
+maybe_scope
+  : scope                                   { $$ = $1; }
+  |                                         { $$ = SCOPE_LOCAL; }
+  ;
+type
+  : BOOLEAN                                 { $$ = TYPE_BOOL; }
+  | BYTE                                    { $$ = TYPE_U8; }
+  | WORD                                    { $$ = TYPE_U16; }
+  | INTEGER                                 { $$ = TYPE_I32; }
+  | DWORD                                   { $$ = TYPE_U32; }
+  | DOUBLE INTEGER                          { $$ = TYPE_I64; }
+  | FLOAT                                   { $$ = TYPE_F32; }
+  | DOUBLE                                  { $$ = TYPE_F64; }
+  | STRING                                  { $$ = TYPE_STRING; }
+  ;
+maybe_as_type
+  : AS type                                 { $$ = $2; }
+  |                                         { $$ = TYPE_INVALID; }
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }

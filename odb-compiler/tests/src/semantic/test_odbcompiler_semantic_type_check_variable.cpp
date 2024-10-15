@@ -13,88 +13,95 @@ using namespace testing;
 
 struct NAME : DBParserHelper, LogHelper, Test
 {
+    ast_id
+    getVarNode()
+    {
+        ast_id cmdblock = ast.nodes[0].block.next; // skip initializer
+        ast_id cmd = ast.nodes[cmdblock].block.stmt;
+        ast_id arg = ast.nodes[cmd].cmd.arglist;
+        ast_id var = ast.nodes[arg].arglist.expr;
+        return var;
+    }
 };
 
-TEST_F(NAME, undeclared_variable_defaults_to_integer)
+TEST_F(NAME, undeclared_integer_is_integer_type)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_I32});
+      addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     const char* source = "print a";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
+    ast_id var = getVarNode();
     ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_I32));
     ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_NONE));
 }
 
-TEST_F(NAME, undeclared_float_variable_defaults_to_float)
+TEST_F(NAME, undeclared_boolean_is_boolean_type)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_F32});
-    const char* source = "print b#";
+    const char* source = "print a?";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
+    ast_id var = getVarNode();
     ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_F32));
-    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_F32));
+    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_BOOL));
+    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_NONE));
 }
 
-TEST_F(NAME, undeclared_double_variable_defaults_to_double)
+TEST_F(NAME, undeclared_word_is_word_type)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_F64});
-    const char* source = "print b!";
+    const char* source = "print a%";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
+    ast_id var = getVarNode();
     ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_F64));
-    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_F64));
+    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_U16));
+    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_NONE));
 }
 
-TEST_F(NAME, undeclared_double_integer_variable_defaults_to_double_integer)
+TEST_F(NAME, undeclared_double_integer_is_double_integer_type)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_I64});
     const char* source = "print b&";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
+    ast_id var = getVarNode();
     ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_I64));
     ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_I64));
 }
 
-TEST_F(NAME, undeclared_string_variable_defaults_to_string)
+TEST_F(NAME, undeclared_float_defaults_to_float)
 {
-    addCommand(TYPE_VOID, "print", {TYPE_STRING});
+    addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
+    const char* source = "print b#";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ast_id var = getVarNode();
+    ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_F32));
+    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_I64));
+}
+
+TEST_F(NAME, undeclared_double_defaults_to_double)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
+    const char* source = "print b!";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ast_id var = getVarNode();
+    ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_F64));
+    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_F64));
+}
+
+TEST_F(NAME, undeclared_string_defaults_to_string)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     const char* source = "print b$";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
+    ast_id var = getVarNode();
     ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_STRING));
     ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_STRING));
 }
 
-TEST_F(NAME, undeclared_word_variable_defaults_to_word)
-{
-    addCommand(TYPE_VOID, "print", {TYPE_U16});
-    const char* source = "print b%";
-    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ast_id cmd = ast.nodes[0].block.stmt;
-    ast_id arg = ast.nodes[cmd].cmd.arglist;
-    ast_id var = ast.nodes[arg].arglist.expr;
-    ASSERT_THAT(ast.nodes[var].info.node_type, Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast.nodes[var].info.type_info, Eq(TYPE_U16));
-    ASSERT_THAT(ast.nodes[var].identifier.annotation, Eq(TA_I16));
-}

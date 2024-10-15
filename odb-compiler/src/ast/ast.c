@@ -174,23 +174,6 @@ ast_paramlist_append(
 }
 
 ast_id
-ast_const_decl(
-    struct ast* ast, ast_id identifier, ast_id expr, struct utf8_span location)
-{
-    ast_id n = new_node(ast, AST_CONST_DECL, location);
-    if (n < 0)
-        return -1;
-
-    ODBUTIL_DEBUG_ASSERT(
-        identifier > -1, log_parser_err("identifier: %d\n", identifier));
-    ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
-
-    ast->nodes[n].const_decl.identifier = identifier;
-    ast->nodes[n].const_decl.expr = expr;
-    return n;
-}
-
-ast_id
 ast_command(
     struct ast* ast, cmd_id cmd_id, ast_id arglist, struct utf8_span location)
 {
@@ -245,9 +228,9 @@ ast_identifier(
     if (n < 0)
         return -1;
     ast->nodes[n].identifier.name = name;
-    ast->nodes[n].identifier.explicit_type = TYPE_INVALID;
     ast->nodes[n].identifier.annotation = annotation;
-    ast->nodes[n].identifier.is_global = 0;
+    ast->nodes[n].identifier.explicit_type = TYPE_INVALID;
+    ast->nodes[n].identifier.scope = SCOPE_LOCAL;
     return n;
 }
 
