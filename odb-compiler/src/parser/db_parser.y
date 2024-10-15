@@ -477,16 +477,24 @@ literal
   | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
   ;
-typed_identifier
-  : identifier AS BOOLEAN                   { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_BOOL; }
-  | identifier AS BYTE                      { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U8; }
-  | identifier AS WORD                      { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U16; }
-  | identifier AS INTEGER                   { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_I32; }
-  | identifier AS DWORD                     { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U32; }
-  | identifier AS DOUBLE INTEGER            { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_I64; }
-  | identifier AS FLOAT                     { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_F32; }
-  | identifier AS DOUBLE                    { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_F64; }
-  | identifier AS STRING                    { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_STRING; }
+var_decl
+  : scoped_typed_identifier '=' expr        { $$ = ast_var_decl(ctx->ast, $1, $3, @$); }
+  | scoped_typed_identifier                 { $$ = ast_var_decl(ctx->ast, $1, -1, @$); }
+  ;
+scope
+  : GLOBAL                                  { $$ = SCOPE_GLOBAL; }
+  | LOCAL                                   { $$ = SCOPE_LOCAL; }
+  ;
+as_type
+  : AS BOOLEAN                              { $$ = TYPE_BOOL; }
+  | AS BYTE                                 { $$ = TYPE_U8; }
+  | AS WORD                                 { $$ = TYPE_U16; }
+  | AS INTEGER                              { $$ = TYPE_I32; }
+  | AS DWORD                                { $$ = TYPE_U32; }
+  | AS DOUBLE INTEGER                       { $$ = TYPE_I64; }
+  | AS FLOAT                                { $$ = TYPE_F32; }
+  | AS DOUBLE                               { $$ = TYPE_F64; }
+  | AS STRING                               { $$ = TYPE_STRING; }
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }

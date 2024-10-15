@@ -245,7 +245,9 @@ ast_identifier(
     if (n < 0)
         return -1;
     ast->nodes[n].identifier.name = name;
+    ast->nodes[n].identifier.explicit_type = TYPE_INVALID;
     ast->nodes[n].identifier.annotation = annotation;
+    ast->nodes[n].identifier.is_global = 0;
     return n;
 }
 

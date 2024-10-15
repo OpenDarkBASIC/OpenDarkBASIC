@@ -68,6 +68,12 @@ enum type_annotation
     TA_STRING = '$'
 };
 
+enum scope
+{
+    SCOPE_GLOBAL,
+    SCOPE_LOCAL,
+};
+
 enum ast_type
 {
     /*! Marks a node as being deleted. All unused nodes are removed using
@@ -194,7 +200,9 @@ union ast_node
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
-        enum type_annotation annotation;
+        enum type explicit_type : 4;
+        enum type_annotation annotation : 3;
+        enum scope scope : 1;
     } identifier;
 
     struct binop
@@ -203,7 +211,7 @@ union ast_node
         ast_id left;
         ast_id right;
         struct utf8_span op_location;
-        enum binop_type op;
+        enum binop_type op : 5;
     } binop;
 
     struct unop
@@ -211,7 +219,7 @@ union ast_node
         struct info info;
         ast_id expr;
         ast_id _pad;
-        enum unop_type op;
+        enum unop_type op : 3;
     } unop;
 
     struct cond {
