@@ -196,6 +196,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "include/odb-compiler/semantic/semantic.h"
     "include/odb-compiler/semantic/symbol_table.h"
     "include/odb-compiler/semantic/type.h"
+    "src/semantic/calculate_scope_ids.c"
     "src/semantic/loop_cont.c"
     "src/semantic/loop_exit.c"
     "src/semantic/loop_for.c"
@@ -482,6 +483,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_remarks.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_remarks_errors.cpp"
 
+        "tests/src/semantic/test_odbcompiler_semantic_calculate_scope_ids.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_conditionals_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_for_errors.cpp"

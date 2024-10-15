@@ -56,6 +56,7 @@ ast_deinit(struct ast* ast)
     if (ast)
         mem_free(ast);
 }
+
 #if defined(ODBUTIL_MEM_DEBUGGING)
 void
 mem_acquire_ast(struct ast* ast)

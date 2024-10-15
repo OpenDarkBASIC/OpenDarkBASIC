@@ -89,6 +89,9 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_unary_literal;
 
+ODBCOMPILER_PUBLIC_API extern const struct semantic_check
+    semantic_calculate_scope_ids;
+
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_cont;

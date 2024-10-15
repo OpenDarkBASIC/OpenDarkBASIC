@@ -128,7 +128,7 @@ union ast_node
     {
         struct utf8_span location;
         int32_t scope_id;
-        enum ast_type node_type : 5;
+        enum ast_type node_type : 6;
         enum type type_info : 4;
     } info;
 

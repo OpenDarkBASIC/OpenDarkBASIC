@@ -1272,7 +1272,7 @@ not_yet_implemented:
 }
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-static int
+static void
 sanity_check(struct ast* ast, const char* filename, const char* source)
 {
     ast_id n;
@@ -1313,13 +1313,13 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
         }
     }
 
-    if (error)
+    ODBUTIL_DEBUG_ASSERT(
+        !error,
         log_excerpt_note(
             gutter,
-            "This should not happen, and means there is a bug in the semantic "
-            "analysis of the compiler.\n");
-
-    return error;
+            "This should not happen, and means there is a bug in the "
+            "semantic "
+            "analysis of the compiler.\n"));
 }
 #endif
 
@@ -2384,12 +2384,8 @@ type_check(
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (return_code == 0)
-        if (sanity_check(
-                *astp, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data)
-            != 0)
-        {
-            return -1;
-        }
+        sanity_check(
+            *astp, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data);
 #endif
 
     return return_code;
@@ -2434,19 +2430,16 @@ type_check_old(
     typemap_deinit(ctx.typemap);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    if (return_code == 0)
-        if (sanity_check(
-                *astp, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data)
-            != 0)
-        {
-            return -1;
-        }
+    sanity_check(*astp, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data);
 #endif
 
     return return_code;
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_loop_for, &semantic_loop_cont, NULL};
+    = {&semantic_calculate_scope_ids,
+       &semantic_loop_for,
+       &semantic_loop_cont,
+       NULL};
 const struct semantic_check semantic_type_check
     = {type_check, depends, "loop_for"};
