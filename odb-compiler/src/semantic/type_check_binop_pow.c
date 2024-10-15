@@ -7,10 +7,7 @@
 
 enum type
 type_check_binop_pow(
-    struct ast** astp,
-    ast_id       op,
-    const char*  filename,
-    const char*  source)
+    struct ast** astp, ast_id op, const char* filename, const char* source)
 {
     struct ast* ast = *astp;
     ODBUTIL_DEBUG_ASSERT(op > -1, (void)0);
@@ -56,14 +53,14 @@ type_check_binop_pow(
                 log_flc_err(
                     filename,
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     "Incompatible base type {emph1:%s} can't be converted to "
                     "{emph2:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_2(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
                     type_to_db_name(base_type),
                     "");
@@ -78,7 +75,7 @@ type_check_binop_pow(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     "Base value is truncated when converting from {emph1:%s} "
                     "to "
                     "{emph2:%s} in binary expression.\n",
@@ -86,9 +83,9 @@ type_check_binop_pow(
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_binop(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     type_to_db_name(base_type),
                     type_to_db_name(exp_type));
                 log_excerpt_note(
@@ -104,14 +101,14 @@ type_check_binop_pow(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     "Implicit conversion of base from {emph1:%s} to "
                     "{emph2:%s}.\n",
                     type_to_db_name(base_type),
                     type_to_db_name(base_target_type));
                 gutter = log_excerpt_2(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
                     type_to_db_name(base_type),
                     "");
@@ -124,8 +121,7 @@ type_check_binop_pow(
         }
 
         /* Cast is required, insert one in the AST */
-        cast_lhs = ast_cast(
-            astp, lhs, base_target_type, ast->nodes[lhs].info.location);
+        cast_lhs = ast_cast(astp, lhs, base_target_type, ast_loc(ast, lhs));
         ast = *astp;
         if (cast_lhs == TYPE_INVALID)
             return TYPE_INVALID;
@@ -145,7 +141,7 @@ type_check_binop_pow(
                 log_flc_err(
                     filename,
                     source,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     "Incompatible exponent type {emph1:%s} can't be converted "
                     "to "
                     "{emph2:%s}.\n",
@@ -153,9 +149,9 @@ type_check_binop_pow(
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     "",
                     type_to_db_name(exp_type));
                 log_excerpt_note(
@@ -171,7 +167,7 @@ type_check_binop_pow(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     "Exponent value is truncated when converting from "
                     "{emph2:%s} "
                     "to {emph1:%s}.\n",
@@ -179,9 +175,9 @@ type_check_binop_pow(
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     exp_target_type == TYPE_F32 ? type_to_db_name(TYPE_F32)
                                                 : "",
                     type_to_db_name(exp_type));
@@ -210,16 +206,16 @@ type_check_binop_pow(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     "Implicit conversion of exponent from {emph2:%s} to "
                     "{emph1:%s}.\n",
                     type_to_db_name(exp_type),
                     type_to_db_name(exp_target_type));
                 gutter = log_excerpt_binop(
                     source,
-                    ast->nodes[lhs].info.location,
+                    ast_loc(ast, lhs),
                     ast->nodes[op].binop.op_location,
-                    ast->nodes[rhs].info.location,
+                    ast_loc(ast, rhs),
                     "",
                     type_to_db_name(exp_type));
                 if (exp_target_type == TYPE_F32)
@@ -243,8 +239,7 @@ type_check_binop_pow(
         }
 
         /* Cast is required, insert one in the AST */
-        cast_rhs = ast_cast(
-            astp, rhs, exp_target_type, ast->nodes[rhs].info.location);
+        cast_rhs = ast_cast(astp, rhs, exp_target_type, ast_loc(ast, rhs));
         ast = *astp;
         if (cast_rhs == TYPE_INVALID)
             return TYPE_INVALID;

@@ -138,10 +138,9 @@ create_exit_stmt(
         && (begin_type == EXPR_TYPE_UNKNOWN || end_type == EXPR_TYPE_UNKNOWN))
     {
         int              gutter;
-        struct utf8_span loc1 = utf8_span_union(
-            (*astp)->nodes[begin].info.location,
-            (*astp)->nodes[end].info.location);
-        struct utf8_span     loc2 = (*astp)->nodes[step].info.location;
+        struct utf8_span loc1
+            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
+        struct utf8_span     loc2 = ast_loc(*astp, step);
         struct log_highlight hl[]
             = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
                {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
@@ -165,9 +164,8 @@ create_exit_stmt(
         && (begin_type == EXPR_TYPE_UNKNOWN || end_type == EXPR_TYPE_UNKNOWN))
     {
         int              gutter;
-        struct utf8_span loc = utf8_span_union(
-            (*astp)->nodes[begin].info.location,
-            (*astp)->nodes[end].info.location);
+        struct utf8_span loc
+            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
         utf8_idx             ins = loc.off + loc.len;
         struct log_highlight hl_step_forwards[]
             = {{" STEP 1", "", {ins, 7}, LOG_INSERT, LOG_MARKERS, 0},
@@ -192,10 +190,9 @@ create_exit_stmt(
     if (begin_type != EXPR_TYPE_UNKNOWN && end_type != EXPR_TYPE_UNKNOWN
         && step_type != EXPR_TYPE_UNKNOWN && loop_dir != step_dir)
     {
-        struct utf8_span loc1 = utf8_span_union(
-            (*astp)->nodes[begin].info.location,
-            (*astp)->nodes[end].info.location);
-        struct utf8_span     loc2 = (*astp)->nodes[step].info.location;
+        struct utf8_span loc1
+            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
+        struct utf8_span     loc2 = ast_loc(*astp, step);
         struct log_highlight hl[]
             = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
                {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
@@ -213,9 +210,8 @@ create_exit_stmt(
         && step == -1 && loop_dir < 0)
     {
         int              gutter;
-        struct utf8_span loc = utf8_span_union(
-            (*astp)->nodes[begin].info.location,
-            (*astp)->nodes[end].info.location);
+        struct utf8_span loc
+            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
         utf8_idx             ins = loc.off + loc.len;
         struct log_highlight hl[]
             = {{" STEP -1", "", {ins, 8}, LOG_INSERT, LOG_MARKERS, 0},
@@ -234,8 +230,8 @@ create_exit_stmt(
         log_excerpt(source_text, hl);
     }
 
-    struct utf8_span begin_loc = (*astp)->nodes[begin].info.location;
-    struct utf8_span end_loc = (*astp)->nodes[end].info.location;
+    struct utf8_span begin_loc = ast_loc(*astp, begin);
+    struct utf8_span end_loc = ast_loc(*astp, end);
 
     ast_id exit = ast_loop_exit(astp, empty_utf8_span(), begin_loc);
     ast_id exit_cond_block = ast_block(astp, exit, begin_loc);
@@ -264,12 +260,12 @@ compare_next_stmt_with_loop_var(
         log_flc_warn(
             source_filename,
             source_text,
-            ast->nodes[next].info.location,
+            ast_loc(ast, next),
             "Loop variable in next statement is different from the one "
             "used in the for-loop statement.\n");
-        gutter = log_excerpt_1(source_text, ast->nodes[next].info.location, "");
+        gutter = log_excerpt_1(source_text, ast_loc(ast, next), "");
         log_excerpt_note(gutter, "Loop variable declared here:\n");
-        log_excerpt_1(source_text, ast->nodes[loop_var].info.location, "");
+        log_excerpt_1(source_text, ast_loc(ast, loop_var), "");
     }
 }
 
@@ -284,7 +280,7 @@ convert_for_loop_to_primitives(
     ast_id           for1, for2, for3, loop_body, body, post_body;
     ast_id           init, loop_var, begin, end, step, next;
 
-    loop_loc = (*astp)->nodes[loop].info.location;
+    loop_loc = ast_loc(*astp, loop);
 
     for1 = (*astp)->nodes[loop].loop.loop_for1;
     ODBUTIL_DEBUG_ASSERT(for1 > -1, log_semantic_err("loop_for1: %d\n", for1));
@@ -345,10 +341,8 @@ convert_for_loop_to_primitives(
      * body later on */
     ast_id inc_var = ast_dup_lvalue(astp, loop_var);
     ast_id inc_stmt
-        = step > -1
-              ? ast_inc_step(
-                    astp, inc_var, step, (*astp)->nodes[step].info.location)
-              : ast_inc(astp, inc_var, (*astp)->nodes[inc_var].info.location);
+        = step > -1 ? ast_inc_step(astp, inc_var, step, ast_loc(*astp, step))
+                    : ast_inc(astp, inc_var, ast_loc(*astp, inc_var));
 
     /* Insert the exit condition into the beginning of the loop body */
     ast_id exit_block = ast_block(astp, exit_stmt, loop_loc);
@@ -371,8 +365,8 @@ convert_for_loop_to_primitives(
         ast_node_type((*astp), loop_block) == AST_BLOCK,
         log_semantic_err(
             "loop_block: %d\n", ast_node_type((*astp), loop_block)));
-    ast_id init_block = ast_block_append_stmt(
-        astp, loop_block, init, (*astp)->nodes[init].info.location);
+    ast_id init_block
+        = ast_block_append_stmt(astp, loop_block, init, ast_loc(*astp, init));
     /* Block "steals" ownership of the init statement */
     (*astp)->nodes[for1].loop_for1.init = -1;
 

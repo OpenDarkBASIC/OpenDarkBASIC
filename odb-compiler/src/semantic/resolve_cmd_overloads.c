@@ -125,11 +125,11 @@ report_no_commands_found(
 
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
-    struct utf8_span params_loc = ast->nodes[arglist].info.location;
+    struct utf8_span params_loc = ast_loc(ast, arglist);
     while (ast->nodes[arglist].arglist.next > -1)
         arglist = ast->nodes[arglist].arglist.next;
-    params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
-                     + ast->nodes[arglist].info.location.len;
+    params_loc.len = ast_loc(ast, arglist).off - params_loc.off
+                     + ast_loc(ast, arglist).len;
 
     log_flc_err(
         filename,
@@ -188,11 +188,11 @@ report_ambiguous_overloads(
 
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
-    struct utf8_span params_loc = ast->nodes[arglist].info.location;
+    struct utf8_span params_loc = ast_loc(ast, arglist);
     while (ast->nodes[arglist].arglist.next > -1)
         arglist = ast->nodes[arglist].arglist.next;
-    params_loc.len = ast->nodes[arglist].info.location.off - params_loc.off
-                     + ast->nodes[arglist].info.location.len;
+    params_loc.len = ast_loc(ast, arglist).off - params_loc.off
+                     + ast_loc(ast, arglist).len;
 
     log_flc_err(
         filename, source, params_loc, "Command has ambiguous overloads.\n");
@@ -308,16 +308,14 @@ typecheck_warnings(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[arg].info.location,
+                    ast_loc(ast, arg),
                     "Argument %d is truncated in conversion from {emph1:%s} to "
                     "{emph2:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source,
-                    ast->nodes[arg].info.location,
-                    type_to_db_name(arg_type));
+                    source, ast_loc(ast, arg), type_to_db_name(arg_type));
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
 
@@ -328,16 +326,14 @@ typecheck_warnings(
                 log_flc_warn(
                     filename,
                     source,
-                    ast->nodes[arg].info.location,
+                    ast_loc(ast, arg),
                     "Implicit conversion of argument %d from {emph1:%s} to "
                     "{emph2:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source,
-                    ast->nodes[arg].info.location,
-                    type_to_db_name(arg_type));
+                    source, ast_loc(ast, arg), type_to_db_name(arg_type));
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
         }
@@ -345,8 +341,7 @@ typecheck_warnings(
         /* Insert cast to correct type if necessary */
         if (arg_type != param_type)
         {
-            ast_id cast = ast_cast(
-                astp, arg, param_type, ast->nodes[arg].info.location);
+            ast_id cast = ast_cast(astp, arg, param_type, ast_loc(ast, arg));
             if (cast < -1)
                 return -1;
             ast = *astp;

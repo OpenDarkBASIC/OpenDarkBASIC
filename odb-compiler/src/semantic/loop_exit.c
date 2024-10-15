@@ -19,9 +19,9 @@ log_exit_error(
         log_flc_err(
             source_filename,
             source_text,
-            ast->nodes[exit].info.location,
+            ast_loc(ast, exit),
             "EXIT statement must be inside a loop.\n");
-        log_excerpt_1(source_text, ast->nodes[exit].info.location, "");
+        log_excerpt_1(source_text, ast_loc(ast, exit), "");
     }
     else
     {
@@ -123,4 +123,5 @@ check_loop_exit(
 
 static const struct semantic_check* depends[] = {NULL};
 
-const struct semantic_check semantic_loop_exit = {check_loop_exit, depends, "loop_exit"};
+const struct semantic_check semantic_loop_exit
+    = {check_loop_exit, depends, "loop_exit"};

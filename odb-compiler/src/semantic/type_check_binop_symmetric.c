@@ -23,16 +23,16 @@ log_narrow_binop(
     log_flc_warn(
         filename,
         source,
-        ast->nodes[op].info.location,
+        ast_loc(ast, op),
         "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
         "binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
         source,
-        ast->nodes[lhs].info.location,
+        ast_loc(ast, lhs),
         ast->nodes[op].binop.op_location,
-        ast->nodes[rhs].info.location,
+        ast_loc(ast, rhs),
         type_to_db_name(lhs == source_node ? source_type : target_type),
         type_to_db_name(lhs == source_node ? target_type : source_type));
 }
@@ -54,16 +54,16 @@ log_implicit_binop(
     log_flc_warn(
         source_filename,
         source_text,
-        ast->nodes[op].info.location,
+        ast_loc(ast, op),
         "Implicit conversion from {emph1:%s} to {emph2:%s} in binary "
         "expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_binop(
         source_text,
-        ast->nodes[lhs].info.location,
+        ast_loc(ast, lhs),
         ast->nodes[op].binop.op_location,
-        ast->nodes[rhs].info.location,
+        ast_loc(ast, rhs),
         type_to_db_name(lhs == source_node ? source_type : target_type),
         type_to_db_name(lhs == source_node ? target_type : source_type));
 }
@@ -84,7 +84,7 @@ log_error_binop(
     log_flc_err(
         source_filename,
         source_text,
-        ast->nodes[op].info.location,
+        ast_loc(ast, op),
         "Invalid conversion from {emph1:%s} to {emph2:%s} in binary "
         "expression. "
         "Types are incompatible.\n",
@@ -92,9 +92,9 @@ log_error_binop(
         type_to_db_name(target_type));
     log_excerpt_binop(
         source_text,
-        ast->nodes[lhs].info.location,
+        ast_loc(ast, lhs),
         ast->nodes[op].binop.op_location,
-        ast->nodes[rhs].info.location,
+        ast_loc(ast, rhs),
         type_to_db_name(lhs == source_node ? source_type : target_type),
         type_to_db_name(lhs == source_node ? target_type : source_type));
 }
@@ -178,8 +178,7 @@ type_check_binop_symmetric(
     /* Insert casts to result type, if necessary */
     if (ast_type_info(ast, lhs) != target_type)
     {
-        ast_id cast_lhs
-            = ast_cast(astp, lhs, target_type, ast->nodes[lhs].info.location);
+        ast_id cast_lhs = ast_cast(astp, lhs, target_type, ast_loc(ast, lhs));
         ast = *astp;
         if (cast_lhs == TYPE_INVALID)
             return TYPE_INVALID;
@@ -188,8 +187,7 @@ type_check_binop_symmetric(
 
     if (ast_type_info(ast, rhs) != target_type)
     {
-        ast_id cast_rhs
-            = ast_cast(astp, rhs, target_type, ast->nodes[rhs].info.location);
+        ast_id cast_rhs = ast_cast(astp, rhs, target_type, ast_loc(ast, rhs));
         ast = *astp;
         if (cast_rhs == TYPE_INVALID)
             return TYPE_INVALID;

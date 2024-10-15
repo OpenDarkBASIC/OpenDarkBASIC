@@ -220,7 +220,7 @@ cast_expr_to_boolean(
     {
         case TC_TRUENESS: {
             int                  gutter;
-            struct utf8_span     expr_loc = ast->nodes[n].info.location;
+            struct utf8_span     expr_loc = ast_loc(ast, n);
             utf8_idx             expr_start = expr_loc.off;
             utf8_idx             expr_end = expr_start + expr_loc.len;
             struct log_highlight hl_int[]
@@ -238,12 +238,12 @@ cast_expr_to_boolean(
             log_flc_warn(
                 filename,
                 source,
-                ast->nodes[n].info.location,
+                ast_loc(ast, n),
                 "Implicit evaluation of {emph1:%s} as a boolean expression.\n",
                 type_to_db_name(ast_type_info(ast, n)));
             gutter = log_excerpt_1(
                 source,
-                ast->nodes[n].info.location,
+                ast_loc(ast, n),
                 type_to_db_name(ast_type_info(ast, n)));
 
             log_excerpt_help(
@@ -275,8 +275,7 @@ cast_expr_to_boolean(
         }
             /* fallthrough */
         case TC_ALLOW: {
-            ast_id cast
-                = ast_cast(astp, n, TYPE_BOOL, ast->nodes[n].info.location);
+            ast_id cast = ast_cast(astp, n, TYPE_BOOL, ast_loc(ast, n));
             ast = *astp;
             if (cast < 0)
                 return TYPE_INVALID;
@@ -294,12 +293,12 @@ cast_expr_to_boolean(
             log_flc_err(
                 filename,
                 source,
-                ast->nodes[n].info.location,
+                ast_loc(ast, n),
                 "Cannot evaluate {emph1:%s} as a boolean expression.\n",
                 type_to_db_name(ast_type_info(ast, n)));
             log_excerpt_1(
                 source,
-                ast->nodes[n].info.location,
+                ast_loc(ast, n),
                 type_to_db_name(ast_type_info(ast, n)));
             break;
 
@@ -514,10 +513,9 @@ process_assignment(
                     "type: %d\n", ast_node_type((*astp), orig_node)));
             struct utf8_span orig_name
                 = (*astp)->nodes[orig_node].identifier.name;
-            struct utf8_span orig_loc = (*astp)->nodes[orig_node].info.location;
+            struct utf8_span orig_loc = ast_loc(*astp, orig_node);
 
-            cast = ast_cast(
-                astp, rhs, lhs_type->type, (*astp)->nodes[rhs].info.location);
+            cast = ast_cast(astp, rhs, lhs_type->type, ast_loc(*astp, rhs));
             if (cast < -1)
                 return DEP_ERROR;
             (*astp)->nodes[ass].assignment.expr = cast;
@@ -529,16 +527,16 @@ process_assignment(
                     log_flc_err(
                         filename,
                         source,
-                        (*astp)->nodes[rhs].info.location,
+                        ast_loc(*astp, rhs),
                         "Cannot assign {emph2:%s} to {emph1:%s}. Types "
                         "are incompatible.\n",
                         type_to_db_name(rhs_type),
                         type_to_db_name(lhs_type->type));
                     gutter = log_excerpt_binop(
                         source,
-                        (*astp)->nodes[lhs].info.location,
+                        ast_loc(*astp, lhs),
                         (*astp)->nodes[ass].assignment.op_location,
-                        (*astp)->nodes[rhs].info.location,
+                        ast_loc(*astp, rhs),
                         type_to_db_name(lhs_type->type),
                         type_to_db_name(rhs_type));
                     log_excerpt_note(
@@ -562,7 +560,7 @@ process_assignment(
                         /* clang-format off */
                         const char* as_type = type_to_db_name(rhs_type);
                         char ann[2] = {type_to_annotation(rhs_type), '\0'};
-                        struct utf8_span lhs_loc = (*astp)->nodes[lhs].info.location;
+                        struct utf8_span lhs_loc = ast_loc(*astp, lhs);
                         utf8_idx lhs_end = lhs_loc.off + lhs_loc.len;
                         struct log_highlight hl_annotation[] = {
                             {ann, "", {lhs_end, 1}, LOG_INSERT, LOG_MARKERS, 0},
@@ -577,16 +575,16 @@ process_assignment(
                         log_flc_warn(
                             filename,
                             source,
-                            (*astp)->nodes[rhs].info.location,
+                            ast_loc(*astp, rhs),
                             "Implicit conversion from {emph2:%s} to "
                             "{emph1:%s} in variable initialization.\n",
                             type_to_db_name(rhs_type),
                             type_to_db_name(lhs_type->type));
                         gutter = log_excerpt_binop(
                             source,
-                            (*astp)->nodes[lhs].info.location,
+                            ast_loc(*astp, lhs),
                             (*astp)->nodes[ass].assignment.op_location,
-                            (*astp)->nodes[rhs].info.location,
+                            ast_loc(*astp, rhs),
                             type_to_db_name(lhs_type->type),
                             type_to_db_name(rhs_type));
                         if (ann[0] != TA_NONE)
@@ -607,16 +605,16 @@ process_assignment(
                         log_flc_warn(
                             filename,
                             source,
-                            (*astp)->nodes[rhs].info.location,
+                            ast_loc(*astp, rhs),
                             "Implicit conversion from {emph2:%s} to "
                             "{emph1:%s} in assignment.\n",
                             type_to_db_name(rhs_type),
                             type_to_db_name(lhs_type->type));
                         gutter = log_excerpt_binop(
                             source,
-                            (*astp)->nodes[lhs].info.location,
+                            ast_loc(*astp, lhs),
                             (*astp)->nodes[ass].assignment.op_location,
-                            (*astp)->nodes[rhs].info.location,
+                            ast_loc(*astp, rhs),
                             type_to_db_name(lhs_type->type),
                             type_to_db_name(rhs_type));
                         log_excerpt_note(
@@ -636,16 +634,16 @@ process_assignment(
                     log_flc_warn(
                         filename,
                         source,
-                        (*astp)->nodes[rhs].info.location,
+                        ast_loc(*astp, rhs),
                         "Value is truncated when converting from "
                         "{emph2:%s} to {emph1:%s} in assignment.\n",
                         type_to_db_name(rhs_type),
                         type_to_db_name(lhs_type->type));
                     gutter = log_excerpt_binop(
                         source,
-                        (*astp)->nodes[lhs].info.location,
+                        ast_loc(*astp, lhs),
                         (*astp)->nodes[ass].assignment.op_location,
-                        (*astp)->nodes[rhs].info.location,
+                        ast_loc(*astp, rhs),
                         type_to_db_name(lhs_type->type),
                         type_to_db_name(rhs_type));
                     log_excerpt_note(
@@ -718,7 +716,7 @@ process_identifier(
 
             /* Determine initializer expression based on the deduced
              * type */
-            loc = (*astp)->nodes[n].info.location;
+            loc = ast_loc(*astp, n);
             switch (type_origin->type)
             {
                 case TYPE_BOOL:
@@ -1293,10 +1291,7 @@ instantiate_func(
              * cast */
             /* TODO: Verify the cast is valid */
             ast_id cast = ast_cast(
-                call_astp,
-                arg,
-                param_type,
-                (*call_astp)->nodes[arg].info.location);
+                call_astp, arg, param_type, ast_loc(*call_astp, arg));
             if (cast < -1)
                 return -1;
             (*call_astp)->nodes[al_entry].arglist.expr = cast;
@@ -1313,7 +1308,7 @@ instantiate_func(
                           : "Too few arguments to function call.\n");
         gutter = log_excerpt_1(call_source, call_location, "");
         log_excerpt_note(gutter, "Function has the following signature:\n");
-        log_excerpt_1(call_source, (*func_astp)->nodes[decl].info.location, "");
+        log_excerpt_1(call_source, ast_loc(*func_astp, decl), "");
         return -1;
     }
 
@@ -1463,9 +1458,9 @@ process_func_or_container_ref(
         log_flc_err(
             filename,
             source,
-            (*astp)->nodes[identifier].info.location,
+            ast_loc(*astp, identifier),
             "No function with this name exists.\n");
-        log_excerpt_1(source, (*astp)->nodes[n].info.location, "");
+        log_excerpt_1(source, ast_loc(*astp, n), "");
         return -1;
     }
 
@@ -1491,7 +1486,7 @@ process_func_or_container_ref(
                     source,
                     astp,
                     (*astp)->nodes[n].func_or_container_ref.arglist,
-                    (*astp)->nodes[n].info.location,
+                    ast_loc(*astp, n),
                     filename,
                     source);
                 if (func < 0)
@@ -1764,11 +1759,11 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
             log_flc_err(
                 filename,
                 source,
-                ast->nodes[n].info.location,
+                ast_loc(ast, n),
                 "Failed to determine type of AST node id:%d, node_type: %d.\n",
                 n,
                 ast_node_type(ast, n));
-            gutter = log_excerpt_1(source, ast->nodes[n].info.location, "");
+            gutter = log_excerpt_1(source, ast_loc(ast, n), "");
             error = -1;
         }
 

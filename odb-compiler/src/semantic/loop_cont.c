@@ -32,10 +32,10 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
         ast_id step_expr = (*astp)->nodes[cont].cont.step;
         ast_id loop_var = get_loop_var(*astp, loop);
         ast_id inc_var = ast_dup_lvalue(astp, loop_var);
-        ast_id inc_stmt = ast_inc_step(
-            astp, inc_var, step_expr, (*astp)->nodes[step_expr].info.location);
-        (*astp)->nodes[cont].cont.step = ast_block(
-            astp, inc_stmt, (*astp)->nodes[step_expr].info.location);
+        ast_id inc_stmt
+            = ast_inc_step(astp, inc_var, step_expr, ast_loc(*astp, step_expr));
+        (*astp)->nodes[cont].cont.step
+            = ast_block(astp, inc_stmt, ast_loc(*astp, step_expr));
     }
     else
     {
@@ -60,9 +60,9 @@ log_cont_error(
         log_flc_err(
             source_filename,
             source_text,
-            ast->nodes[cont].info.location,
+            ast_loc(ast, cont),
             "CONTINUE statement must be inside a loop.\n");
-        log_excerpt_1(source_text, ast->nodes[cont].info.location, "");
+        log_excerpt_1(source_text, ast_loc(ast, cont), "");
     }
     else
     {
@@ -170,4 +170,5 @@ static const struct semantic_check* depends[]
     = {&semantic_loop_for, /* Need loop.post_body to resolve cont.step */
        NULL};
 
-const struct semantic_check semantic_loop_cont = {check_loop_cont, depends, "loop_cont"};
+const struct semantic_check semantic_loop_cont
+    = {check_loop_cont, depends, "loop_cont"};

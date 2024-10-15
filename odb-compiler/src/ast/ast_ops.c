@@ -67,7 +67,7 @@ ast_dup_lvalue(struct ast** astp, int lvalue)
         log_err("", "type: %d\n", ast->nodes[lvalue].info.node_type));
 
     struct utf8_span     name = ast->nodes[lvalue].identifier.name;
-    struct utf8_span     location = ast->nodes[lvalue].info.location;
+    struct utf8_span     location = ast_loc(ast, lvalue);
     enum type_annotation annotation = ast->nodes[lvalue].identifier.annotation;
 
     return ast_identifier(astp, name, annotation, location);

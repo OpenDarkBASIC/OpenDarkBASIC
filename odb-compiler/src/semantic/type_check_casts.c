@@ -27,15 +27,15 @@ type_check_cast(
             log_flc_err(
                 filename,
                 source,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, cast),
                 "Cannot cast from {emph1:%s} to {emph2:%s}: Types are "
                 "incompatible\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
                 source,
-                ast->nodes[expr].info.location,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, expr),
+                ast_loc(ast, cast),
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             break;
@@ -44,7 +44,7 @@ type_check_cast(
             log_flc_warn(
                 filename,
                 source,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, cast),
                 "Value is truncated when converting from {emph1:%s} to "
                 "{emph2:%s} "
                 "in expression\n",
@@ -52,8 +52,8 @@ type_check_cast(
                 type_to_db_name(target_type));
             log_excerpt_2(
                 source,
-                ast->nodes[expr].info.location,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, expr),
+                ast_loc(ast, cast),
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             break;
@@ -65,15 +65,15 @@ type_check_cast(
             log_flc_warn(
                 filename,
                 source,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, cast),
                 "Implicit conversion from {emph1:%s} to {emph2:%s} in "
                 "expression\n",
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             log_excerpt_2(
                 source,
-                ast->nodes[expr].info.location,
-                ast->nodes[cast].info.location,
+                ast_loc(ast, expr),
+                ast_loc(ast, cast),
                 type_to_db_name(source_type),
                 type_to_db_name(target_type));
             break;

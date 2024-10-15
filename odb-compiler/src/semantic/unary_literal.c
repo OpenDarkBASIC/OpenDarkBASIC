@@ -193,8 +193,8 @@ child_changed:
         case AST_SCOPE: return -1;
     }
 
-    ast->nodes[expr].info.location = utf8_span_union(
-        ast->nodes[n].info.location, ast->nodes[expr].info.location);
+    ast->nodes[expr].info.location
+        = utf8_span_union(ast_loc(ast, n), ast_loc(ast, expr));
     memcpy(&ast->nodes[n], &ast->nodes[expr], sizeof(ast->nodes[expr]));
     ast_delete_node(ast, expr);
     return 0;
