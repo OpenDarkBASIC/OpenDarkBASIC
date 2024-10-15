@@ -37,29 +37,20 @@ VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct stack_entry
 {
-    ast_id  node;
-    int16_t scope;
+    ast_id node;
 };
 
 VEC_DECLARE_API(static, stack, struct stack_entry, 32)
 VEC_DEFINE_API(stack, struct stack_entry, 32)
 
 static int
-stack_push_entry(struct stack** stack, ast_id node, int16_t scope)
+stack_push_entry(struct stack** stack, ast_id node)
 {
     struct stack_entry* entry = stack_emplace(stack);
     if (entry == NULL)
         return -1;
     entry->node = node;
-    entry->scope = scope;
     return 0;
-}
-
-static int
-stack_push_with_default_scope(struct stack** stack, ast_id node)
-{
-    int16_t scope = stack_count(*stack) ? vec_last(*stack)->scope : 0;
-    return stack_push_entry(stack, node, scope);
 }
 
 /* The "typemap" is used to track the types of variables. When a variable first
@@ -1323,23 +1314,15 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
 }
 #endif
 
-enum dependency_result
+enum process_result
 {
     DEP_ADDED = 1,
-    DEP_NOTHING_CHANGED = 0,
+    DEP_OK = 0,
     DEP_ERROR = -1,
 };
 
-enum process_result
-{
-    PROC_DEPENDENCY_CHANGE = 1,
-    PROC_OK = 0,
-    PROC_ERROR = -1,
-};
-
-static enum dependency_result
-add_block_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id block)
+static enum process_result
+process_block(struct stack** stack, struct ast* ast, ast_id block)
 {
     ast_id  stmt, next;
     int32_t top = stack_count(*stack);
@@ -1351,36 +1334,29 @@ add_block_dependencies(
 
     next = ast->nodes[block].block.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, next);
+        stack_push_entry(stack, next);
 
     stmt = ast->nodes[block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
-    if (ast_type_info(ast, stmt) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, stmt);
+    if (ast_type_info(ast, stmt) == TYPE_INVALID
+        && ast_node_type(ast, stmt) != AST_FUNC_TEMPLATE)
+    {
+        stack_push_entry(stack, stmt);
+    }
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
-}
-static enum process_result
-process_block(struct stack** stack, struct ast* ast, ast_id block)
-{
-    ODBUTIL_DEBUG_ASSERT(block > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, block) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type(ast, block)));
 
     /* Blocks (statements) are not expressions, so set the entire list to VOID
      */
     ast->nodes[block].info.type_info = TYPE_VOID;
 
     stack_pop(*stack);
-    return PROC_OK;
+    return DEP_OK;
 }
 
-static enum dependency_result
-add_arglist_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id arglist)
+static enum process_result
+process_arglist(struct stack** stack, struct ast* ast, ast_id arglist)
 {
     ast_id  expr, next;
     int32_t top = stack_count(*stack);
@@ -1392,34 +1368,25 @@ add_arglist_dependencies(
 
     next = ast->nodes[arglist].arglist.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, next);
+        stack_push_entry(stack, next);
+
     expr = ast->nodes[arglist].arglist.expr;
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     if (ast_type_info(ast, expr) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, expr);
+        stack_push_entry(stack, expr);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
-}
-static enum process_result
-process_arglist(struct stack** stack, struct ast* ast, ast_id arglist)
-{
-    ODBUTIL_DEBUG_ASSERT(arglist > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, arglist) == AST_ARGLIST,
-        log_semantic_err("type: %d\n", ast_node_type(ast, arglist)));
 
     /* Arglists are not expressions, so set the entire list to VOID */
     ast->nodes[arglist].info.type_info = TYPE_VOID;
 
     stack_pop(*stack);
-    return PROC_OK;
+    return DEP_OK;
 }
 
-static enum dependency_result
-add_paramlist_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id paramlist)
+static enum process_result
+process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
 {
     ast_id  identifier, next;
     int32_t top = stack_count(*stack);
@@ -1431,54 +1398,52 @@ add_paramlist_dependencies(
 
     next = ast->nodes[paramlist].paramlist.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, next);
+        stack_push_entry(stack, next);
 
     identifier = ast->nodes[paramlist].paramlist.identifier;
     ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
     if (ast_type_info(ast, identifier) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, identifier);
+        stack_push_entry(stack, identifier);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
-}
-static enum process_result
-process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
-{
-    ODBUTIL_DEBUG_ASSERT(paramlist > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, paramlist) == AST_PARAMLIST,
-        log_semantic_err("type: %d\n", ast_node_type(ast, paramlist)));
 
     /* Arglists are not expressions, so set the entire list to VOID */
     ast->nodes[paramlist].info.type_info = TYPE_VOID;
 
     stack_pop(*stack);
-    return PROC_OK;
+    return DEP_OK;
 }
 
-static enum dependency_result
-add_binop_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id binop)
+static enum process_result
+process_command(
+    struct stack**         stack,
+    struct ast*            ast,
+    ast_id                 cmd,
+    const struct cmd_list* cmds)
 {
-    int32_t top = stack_count(*stack);
-    ast_id  lhs = ast->nodes[binop].binop.left;
-    ast_id  rhs = ast->nodes[binop].binop.right;
+    ast_id arglist;
+    cmd_id cmd_id;
 
-    ODBUTIL_DEBUG_ASSERT(binop > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(cmd > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, binop) == AST_BINOP,
-        log_semantic_err("type: %d\n", ast_node_type(ast, binop)));
+        ast_node_type(ast, cmd) == AST_COMMAND,
+        log_semantic_err("type: %d\n", ast_node_type(ast, cmd)));
 
-    if (ast_type_info(ast, lhs) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, lhs);
-    if (ast_type_info(ast, rhs) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, rhs);
+    arglist = ast->nodes[cmd].cmd.arglist;
+    cmd_id = ast->nodes[cmd].cmd.id;
 
-    if (stack_count(*stack) != top)
+    if (arglist > -1 && ast_type_info(ast, arglist) == TYPE_INVALID)
+    {
+        stack_push_entry(stack, arglist);
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
+    }
+
+    ast->nodes[cmd].info.type_info = cmds->return_types->data[cmd_id];
+    stack_pop(*stack);
+    return DEP_OK;
 }
+
 static enum process_result
 process_binop(
     struct stack** stack,
@@ -1487,8 +1452,24 @@ process_binop(
     const char*    filename,
     const char*    source)
 {
-    ast_id lhs = (*astp)->nodes[binop].binop.left;
-    ast_id rhs = (*astp)->nodes[binop].binop.right;
+    ast_id  lhs, rhs;
+    int32_t top = stack_count(*stack);
+
+    ODBUTIL_DEBUG_ASSERT(binop > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, binop) == AST_BINOP,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, binop)));
+
+    lhs = (*astp)->nodes[binop].binop.left;
+    rhs = (*astp)->nodes[binop].binop.right;
+
+    if (ast_type_info(*astp, lhs) == TYPE_INVALID)
+        stack_push_entry(stack, lhs);
+    if (ast_type_info(*astp, rhs) == TYPE_INVALID)
+        stack_push_entry(stack, rhs);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED;
 
     switch ((*astp)->nodes[binop].binop.op)
     {
@@ -1500,21 +1481,21 @@ process_binop(
             if (type_check_binop_symmetric(astp, binop, filename, source)
                 == TYPE_INVALID)
             {
-                return PROC_ERROR;
+                return DEP_ERROR;
             }
 
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
 
         case BINOP_POW:
             if (type_check_binop_pow(astp, binop, filename, source)
                 == TYPE_INVALID)
             {
-                return PROC_ERROR;
+                return DEP_ERROR;
             }
 
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
 
         case BINOP_SHIFT_LEFT:
         case BINOP_SHIFT_RIGHT:
@@ -1523,7 +1504,7 @@ process_binop(
         case BINOP_BITWISE_XOR:
         case BINOP_BITWISE_NOT:
             log_semantic_err("Bitwise operators not yet implemented\n");
-            return PROC_ERROR;
+            return DEP_ERROR;
 
         case BINOP_LESS_THAN:
         case BINOP_LESS_EQUAL:
@@ -1534,91 +1515,55 @@ process_binop(
             if (type_check_binop_symmetric(astp, binop, filename, source)
                 == TYPE_INVALID)
             {
-                return PROC_ERROR;
+                return DEP_ERROR;
             }
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
 
         case BINOP_LOGICAL_OR:
         case BINOP_LOGICAL_AND:
         case BINOP_LOGICAL_XOR: {
             if (cast_expr_to_boolean(astp, lhs, binop, filename, source) != 0)
-                return PROC_ERROR;
+                return DEP_ERROR;
             if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 0)
-                return PROC_ERROR;
+                return DEP_ERROR;
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         }
     }
 
-    return PROC_OK;
+    return DEP_ERROR;
 }
 
-static enum dependency_result
-add_unop_dependencies(struct stack** stack, const struct ast* ast, ast_id unop)
-{
-    ast_id expr = ast->nodes[unop].binop.left;
-
-    ODBUTIL_DEBUG_ASSERT(unop > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, unop) == AST_UNOP,
-        log_semantic_err("type: %d\n", ast_node_type(ast, unop)));
-
-    if (ast_type_info(ast, expr) == TYPE_INVALID)
-    {
-        stack_push_with_default_scope(stack, expr);
-        return DEP_ADDED;
-    }
-
-    return DEP_NOTHING_CHANGED;
-}
 static enum process_result
 process_unop(
     struct stack** stack,
     struct ast**   astp,
-    ast_id         binop,
+    ast_id         unop,
     const char*    filename,
     const char*    source)
 {
-    ODBUTIL_DEBUG_ASSERT(0, log_semantic_err("Not yet implemented\n"));
-    return PROC_ERROR;
-}
+    ast_id expr = (*astp)->nodes[unop].unop.expr;
 
-static enum dependency_result
-add_cond_dependencies(struct stack** stack, const struct ast* ast, ast_id cond)
-{
-    ast_id  expr, branches, yes, no;
-    int32_t top = stack_count(*stack);
-
-    ODBUTIL_DEBUG_ASSERT(cond > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(unop > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, cond) == AST_COND,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cond)));
+        ast_node_type(*astp, unop) == AST_UNOP,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, unop)));
 
-    expr = ast->nodes[cond].cond.expr;
-    branches = ast->nodes[cond].cond.cond_branches;
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, branches) == AST_COND_BRANCHES,
-        log_semantic_err("type: %d\n", ast_node_type(ast, branches)));
-
-    yes = ast->nodes[branches].cond_branches.yes;
-    no = ast->nodes[branches].cond_branches.no;
-
-    if (no > -1 && ast_type_info(ast, no) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, no);
-    if (yes > -1 && ast_type_info(ast, yes) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, yes);
-    if (ast_type_info(ast, expr) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, expr);
-
-    if (stack_count(*stack) != top)
+    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+    {
+        stack_push_entry(stack, expr);
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(0, log_semantic_err("Not yet implemented\n"));
+    return DEP_ERROR;
 }
+
 static enum process_result
 process_cond(
     struct stack** stack,
@@ -1627,7 +1572,8 @@ process_cond(
     const char*    filename,
     const char*    source)
 {
-    ast_id expr, branches;
+    ast_id  expr, branches, yes, no;
+    int32_t top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(cond > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1636,25 +1582,41 @@ process_cond(
 
     expr = (*astp)->nodes[cond].cond.expr;
     branches = (*astp)->nodes[cond].cond.cond_branches;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, branches) == AST_COND_BRANCHES,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, branches)));
+
+    yes = (*astp)->nodes[branches].cond_branches.yes;
+    no = (*astp)->nodes[branches].cond_branches.no;
+
+    if (no > -1 && ast_type_info(*astp, no) == TYPE_INVALID)
+        stack_push_entry(stack, no);
+    if (yes > -1 && ast_type_info(*astp, yes) == TYPE_INVALID)
+        stack_push_entry(stack, yes);
+    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+        stack_push_entry(stack, expr);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED;
 
     /* The expression is always evaluated to a bool. If this is not the case
      * here, then insert a cast */
-    ODBUTIL_DEBUG_ASSERT(ast_type_info(*astp, expr) != TYPE_INVALID, (void)0);
     if (cast_expr_to_boolean(astp, expr, cond, filename, source) != 0)
-        return PROC_ERROR;
+        return DEP_ERROR;
 
     (*astp)->nodes[branches].info.type_info = TYPE_VOID;
     (*astp)->nodes[cond].info.type_info = TYPE_VOID;
 
     stack_pop(*stack);
-    return PROC_OK;
+    return DEP_OK;
 }
 
-static enum dependency_result
-add_func_exit_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id exit)
+static enum process_result
+process_func_exit(struct stack** stack, struct ast* ast, ast_id exit)
 {
-    ast_id ret;
+    int32_t   p;
+    enum type ret_type;
+    ast_id    func, decl, def, ident, ret;
 
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1664,28 +1626,50 @@ add_func_exit_dependencies(
     ret = ast->nodes[exit].func_exit.retval;
     if (ret > -1 && ast_type_info(ast, ret) == TYPE_INVALID)
     {
-        stack_push_with_default_scope(stack, ret);
+        stack_push_entry(stack, ret);
         return DEP_ADDED;
     }
 
-    return DEP_NOTHING_CHANGED;
+    /* The type returned by the exitfunction expression also sets the return
+     * type of the entire function */
+    ret_type = ret > -1 ? ast_type_info(ast, ret) : TYPE_VOID;
+
+    p = stack_count(*stack) - 1;
+    for (; p >= 0; --p)
+        if (ast_node_type(ast, vec_get(*stack, p)->node) == AST_FUNC)
+            break;
+    ODBUTIL_DEBUG_ASSERT(p >= 0, (void)0);
+    func = vec_get(*stack, p)->node;
+    decl = ast->nodes[func].func.decl;
+    def = ast->nodes[func].func.def;
+    ident = ast->nodes[decl].func_decl.identifier;
+
+    if (ast_type_info(ast, func) == TYPE_INVALID)
+    {
+        ast->nodes[func].info.type_info = ret_type;
+        ast->nodes[decl].info.type_info = ret_type;
+        ast->nodes[def].info.type_info = ret_type;
+        ast->nodes[ident].info.type_info = ret_type;
+    }
+    else
+    {
+        /* TODO: Insert cast (and check) to return type. */
+    }
+
+    /* The exitfunction statement itself is not an expression, so it "returns"
+     * VOID */
+    ast->nodes[exit].info.type_info = TYPE_VOID;
+    stack_pop(*stack);
+    return DEP_OK;
 }
 
 static enum process_result
-process_func_exit(struct stack** stack, struct ast* ast, ast_id exit)
-{
-    ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, exit) == AST_FUNC_EXIT,
-        log_semantic_err("type: %d\n", ast_node_type(ast, exit)));
-
-    ast->nodes[exit].info.type_info = TYPE_VOID;
-    stack_pop(*stack);
-    return PROC_OK;
-}
-
-static enum dependency_result
-add_func_dependencies(struct stack** stack, const struct ast* ast, ast_id func)
+process_func(
+    struct stack**   stack,
+    struct ast*      ast,
+    ast_id           func,
+    const char*      source,
+    struct typemap** typemap)
 {
     ast_id  decl, def, paramlist, body, ret;
     int32_t top = stack_count(*stack);
@@ -1705,35 +1689,25 @@ add_func_dependencies(struct stack** stack, const struct ast* ast, ast_id func)
     ret = ast->nodes[def].func_def.retval;
 
     if (ret > -1 && ast_type_info(ast, ret) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, ret);
+        stack_push_entry(stack, ret);
     if (body > -1 && ast_type_info(ast, body) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, body);
+        stack_push_entry(stack, body);
     if (paramlist > -1 && ast_type_info(ast, paramlist) == TYPE_INVALID)
-        stack_push_with_default_scope(stack, paramlist);
+        stack_push_entry(stack, paramlist);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
-    return DEP_NOTHING_CHANGED;
-}
-static enum process_result
-process_func(
-    struct stack**   stack,
-    struct ast*      ast,
-    ast_id           func,
-    const char*      source,
-    struct typemap** typemap)
-{
-    enum type ret_type;
-    ast_id    decl, def, identifier;
 
-    /* Function opens a new scope */
-    /* TODO: scope++; */
-    int scope = 1;
+    if (ast_type_info(ast, func) == TYPE_INVALID)
+    {
+        ast_id identifier = ast->nodes[decl].func_decl.identifier;
+        ast->nodes[identifier].info.type_info = TYPE_VOID;
+        ast->nodes[decl].info.type_info = TYPE_VOID;
+        ast->nodes[def].info.type_info = TYPE_VOID;
+        ast->nodes[func].info.type_info = TYPE_VOID;
+    }
 
-    decl = ast->nodes[func].func.decl;
-    def = ast->nodes[func].func.def;
-    ODBUTIL_DEBUG_ASSERT(decl > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(def > -1, (void)0);
+    /* TODO: Type check identifier's return type with explicit_type */
 
     /* TODO: Type check function's annotation
     ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
@@ -1742,19 +1716,8 @@ process_func(
     ast->nodes[identifier].info.type_info = ident_type;
     */
 
-    /* TODO: Type check identifier's return type with explicit_type */
-    ret_type = TYPE_VOID;
-
-    identifier = ast->nodes[decl].func_decl.identifier;
-    ast->nodes[identifier].info.type_info = ret_type;
-    ast->nodes[decl].info.type_info = ret_type;
-    ast->nodes[def].info.type_info = ret_type;
-    ast->nodes[func].info.type_info = ret_type;
-
-    /* Close scope again */
-    typemap_clear_all_with_scope(*typemap, scope--);
-
-    return PROC_OK;
+    stack_pop(*stack);
+    return DEP_OK;
 }
 
 static ast_id
@@ -1818,22 +1781,7 @@ find_func_instantiation(
     no_match:;
     }
 }
-static enum dependency_result
-add_func_or_container_ref_dependencies(
-    struct stack** stack, const struct ast* ast, ast_id n)
-{
-    /* NOTE: The function has an identifier, but the type of it is set when the
-     * return type is known. */
 
-    ast_id arglist = ast->nodes[n].func_or_container_ref.arglist;
-    if (ast_type_info(ast, arglist) == TYPE_INVALID)
-    {
-        stack_push_with_default_scope(stack, arglist);
-        return DEP_ADDED;
-    }
-
-    return DEP_NOTHING_CHANGED;
-}
 static enum process_result
 process_func_or_container_ref(
     struct stack**             stack,
@@ -1854,6 +1802,15 @@ process_func_or_container_ref(
     struct utf8_view                 key;
     const struct symbol_table_entry* entry;
 
+    /* NOTE: The function has an identifier, but the type of it is set when the
+     * return type is known. */
+    ast_id arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
+    if (ast_type_info(*astp, arglist) == TYPE_INVALID)
+    {
+        stack_push_entry(stack, arglist);
+        return DEP_ADDED;
+    }
+
     identifier = (*astp)->nodes[n].func_or_container_ref.identifier;
     key = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
     entry = symbol_table_find(symbols, key);
@@ -1867,10 +1824,6 @@ process_func_or_container_ref(
         log_excerpt_1(source, (*astp)->nodes[n].info.location, "");
         return -1;
     }
-
-    /* At this point we know it is a function call */
-    /* TODO: Global variables */
-    (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
 
     if (entry->tu_id == tu_id)
     {
@@ -1900,8 +1853,8 @@ process_func_or_container_ref(
                 if (func < 0)
                     return -1;
 
-                stack_push_with_default_scope(stack, func);
-                return PROC_DEPENDENCY_CHANGE;
+                stack_push_entry(stack, func);
+                return DEP_ADDED;
             }
         }
         else
@@ -1915,11 +1868,13 @@ process_func_or_container_ref(
 
         if (ast_type_info(*astp, func) != TYPE_INVALID)
         {
+            (*astp)->nodes[n].info.node_type = AST_FUNC_CALL;
             (*astp)->nodes[n].info.type_info = ast_type_info(*astp, func);
             (*astp)->nodes[identifier].info.type_info
                 = ast_type_info(*astp, func);
+
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         }
 
         /* If the function is recursive, it will already be on the stack. The
@@ -1933,12 +1888,12 @@ process_func_or_container_ref(
             {
                 /* Move ourselves to get processed after the function def */
                 stack_insert(stack, i, *stack_pop(*stack));
-                return PROC_DEPENDENCY_CHANGE;
+                return DEP_ADDED;
             }
         }
 
-        stack_push_with_default_scope(stack, func);
-        return PROC_DEPENDENCY_CHANGE;
+        stack_push_entry(stack, func);
+        return DEP_ADDED;
     }
     else
     {
@@ -1957,7 +1912,7 @@ process_func_or_container_ref(
         mutex_lock(our_mutex);
     }
 
-    return PROC_ERROR;
+    return DEP_ERROR;
 }
 
 static int
@@ -1969,18 +1924,15 @@ process_identifier(
     const char*      source,
     struct typemap** typemap)
 {
-    /* TODO */
-    int scope = 0;
-
     struct type_origin* type_origin;
     struct utf8_view    name
         = utf8_span_view(source, (*astp)->nodes[n].identifier.name);
-    struct view_scope view_scope = {name, scope};
+    struct view_scope view_scope = {name, (*astp)->nodes[n].info.scope_id};
     switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
     {
         case HM_NEW: {
             struct utf8_span loc;
-            ast_id           init_lit;
+            ast_id           init_lit, init_var, init_ass, init_block, parent;
 
             type_origin->original_declaration = n;
 
@@ -1992,6 +1944,22 @@ process_identifier(
             if (type_origin->type == TYPE_INVALID)
                 type_origin->type = annotation_to_type(
                     (*astp)->nodes[n].identifier.annotation);
+
+            /* Find beginning of current scope -- this is where we potentially
+             * insert an initializer */
+            for (parent = n; parent > -1;
+                 parent = ast_find_parent(*astp, parent))
+            {
+                if ((*astp)->nodes[parent].info.scope_id
+                    != (*astp)->nodes[n].info.scope_id)
+                {
+                    break;
+                }
+            }
+
+            /* Function parameters don't need initializers */
+            if (parent > -1 && ast_node_type(*astp, parent) == AST_FUNC_DECL)
+                break;
 
             /* Determine initializer expression based on the deduced
              * type */
@@ -2038,75 +2006,20 @@ process_identifier(
                     return -1;
             }
 
-            /* The initializer is inserted into the AST differently
-             * depending on the context. There are two cases.
-             *
-             * 1. If the variable is a declaration, i.e. it is its own
-             *    statement within a block, then we must remove the
-             *    declaration from the AST and replace it with the
-             *    initializer (which is just an assignemnt statement).
-             *    In code:
-             *      a AS INTEGER
-             *    becomes:
-             *      a AS INTEGER = 0
-             *
-             * 2. If the variable is an expression, e.g. it is being
-             *    referenced on the RHS of an assignment, or appeared in
-             *    a function call, then we must insert an initializer
-             *    somewhere before that statement. The best place to
-             *    insert it is at the beginning of the current scope.
-             *    In code:
-             *      print a
-             *    becomes:
-             *      a = 0
-             *      print a
-             */
+            init_var = ast_dup_lvalue(astp, n);
+            init_ass = ast_assign(astp, init_var, init_lit, loc, loc);
+            init_block = ast_block(astp, init_ass, loc);
 
-            /* TODO: Global variables are not yet supported */
+            /* Fill in type info */
+            (*astp)->nodes[init_lit].info.type_info = type_origin->type;
+            (*astp)->nodes[init_var].info.type_info = type_origin->type;
+            (*astp)->nodes[init_ass].info.type_info = TYPE_VOID;
+            (*astp)->nodes[init_block].info.type_info = TYPE_VOID;
 
-            /* Currently, if the identifier's explicit_type property is
-             * set, only then can it be an lvalue. This is enforced by
-             * the parser. In all other cases it is an rvalue. */
-            if ((*astp)->nodes[n].identifier.explicit_type != TYPE_INVALID)
-            {
-                /* Case 1: Declaration */
-                ast_id init_ass = ast_assign(astp, n, init_lit, loc, loc);
+            ODBUTIL_DEBUG_ASSERT(parent == -1, (void)0);
+            (*astp)->nodes[init_block].block.next = (*astp)->root;
+            (*astp)->root = init_block;
 
-                ast_id parent = ast_find_parent(*astp, n);
-                if ((*astp)->nodes[parent].base.left == n)
-                    (*astp)->nodes[parent].base.left = init_ass;
-                if ((*astp)->nodes[parent].base.right == n)
-                    (*astp)->nodes[parent].base.right = init_ass;
-
-                (*astp)->nodes[init_lit].info.type_info = type_origin->type;
-                (*astp)->nodes[init_ass].info.type_info = TYPE_VOID;
-
-                break;
-            }
-            else
-            {
-                /* Case 2: Need to insert an init statement */
-
-                ast_id init_var = ast_dup_lvalue(astp, n);
-                ast_id init_ass
-                    = ast_assign(astp, init_var, init_lit, loc, loc);
-                ast_id init_block = ast_block(astp, init_ass, loc);
-
-                /* Fill in type info */
-                (*astp)->nodes[init_lit].info.type_info = type_origin->type;
-                (*astp)->nodes[init_var].info.type_info = type_origin->type;
-                (*astp)->nodes[init_ass].info.type_info = TYPE_VOID;
-                (*astp)->nodes[init_block].info.type_info = TYPE_VOID;
-
-                /* Insert the initializer at the very beginning of the
-                 * program */
-                /* XXX: This won't work for variables created on the
-                 * stack in function bodies. I don't know if DBP creates
-                 * scopes in other constructs such as if-endif blocks.
-                 * Need to investigate. */
-                (*astp)->nodes[init_block].block.next = (*astp)->root;
-                (*astp)->root = init_block;
-            }
             break;
         }
 
@@ -2116,85 +2029,7 @@ process_identifier(
 
     stack_pop(*stack);
     (*astp)->nodes[n].info.type_info = type_origin->type;
-    return PROC_OK;
-}
-
-static enum dependency_result
-add_node_dependencies(
-    struct stack**             stack,
-    struct typemap**           typemap,
-    struct ast**               tus,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct symbol_table* symbols)
-{
-    struct ast**        astp = &tus[tu_id];
-    struct stack_entry* entry = vec_last(*stack);
-    ast_id              n = entry->node;
-
-    switch (ast_node_type(*astp, n))
-    {
-        case AST_GC: return DEP_ERROR;
-        case AST_BLOCK: return add_block_dependencies(stack, *astp, n);
-        case AST_END: return DEP_ERROR;
-        case AST_ARGLIST: return add_arglist_dependencies(stack, *astp, n);
-        case AST_PARAMLIST: return add_paramlist_dependencies(stack, *astp, n);
-        case AST_COMMAND: return DEP_ERROR;
-        case AST_ASSIGNMENT: return DEP_ERROR;
-        case AST_IDENTIFIER: return DEP_NOTHING_CHANGED;
-        case AST_BINOP: return add_binop_dependencies(stack, *astp, n);
-        case AST_UNOP: return add_unop_dependencies(stack, *astp, n); ;
-        case AST_COND: return add_cond_dependencies(stack, *astp, n); ;
-        case AST_COND_BRANCHES:
-            /* Is handled by AST_COND */
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return DEP_ERROR;
-        case AST_LOOP: return DEP_ERROR;
-        case AST_LOOP_BODY: return DEP_ERROR;
-        case AST_LOOP_FOR1: return DEP_ERROR;
-        case AST_LOOP_FOR2: return DEP_ERROR;
-        case AST_LOOP_FOR3: return DEP_ERROR;
-        case AST_LOOP_CONT: return DEP_ERROR;
-        case AST_LOOP_EXIT: return DEP_ERROR;
-        case AST_FUNC: return add_func_dependencies(stack, *astp, n);
-        case AST_FUNC_OR_CONTAINER_REF:
-            return add_func_or_container_ref_dependencies(stack, *astp, n);
-        case AST_FUNC_CALL: return add_func_dependencies(stack, *astp, n);
-        case AST_FUNC_EXIT: return add_func_exit_dependencies(stack, *astp, n);
-        case AST_FUNC_TEMPLATE:
-            /* Function templates cannot be resolved without knowing the input
-             * parameters at the callsite. The node is encountered because it is
-             * a child of block nodes. It should never be encountered in any
-             * other situation. Functions are instantiated in case
-             * AST_FUNC_OR_CONTAINER_REF. */
-            ODBUTIL_DEBUG_ASSERT(
-                ast_node_type((*astp), ast_find_parent(*astp, n)) == AST_BLOCK,
-                (void)0);
-            return DEP_NOTHING_CHANGED;
-        case AST_FUNC_DECL:
-            /* Is handled by AST_FUNC */
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return DEP_ERROR;
-        case AST_FUNC_DEF:
-            /* Is handled by AST_FUNC */
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return DEP_ERROR;
-        case AST_BOOLEAN_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_BYTE_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_WORD_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_DWORD_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_INTEGER_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_DOUBLE_INTEGER_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_FLOAT_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_DOUBLE_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_STRING_LITERAL: return DEP_NOTHING_CHANGED;
-        case AST_CAST: return DEP_ERROR;
-        case AST_SCOPE: return DEP_ERROR;
-    }
-
-    return DEP_ERROR;
+    return DEP_OK;
 }
 
 static enum process_result
@@ -2206,6 +2041,7 @@ process_node(
     struct mutex**             tu_mutexes,
     const struct utf8*         filenames,
     const struct db_source*    sources,
+    const struct cmd_list*     cmds,
     const struct symbol_table* symbols)
 {
     struct ast**        astp = &tus[tu_id];
@@ -2216,13 +2052,13 @@ process_node(
 
     switch (ast_node_type(*astp, n))
     {
-        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return PROC_ERROR;
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BLOCK: return process_block(stack, *astp, n);
         case AST_END: break;
         case AST_ARGLIST: return process_arglist(stack, *astp, n);
         case AST_PARAMLIST: return process_paramlist(stack, *astp, n);
-        case AST_COMMAND: return PROC_ERROR;
-        case AST_ASSIGNMENT: return PROC_ERROR;
+        case AST_COMMAND: return process_command(stack, *astp, n, cmds);
+        case AST_ASSIGNMENT: return DEP_ERROR;
         case AST_IDENTIFIER:
             return process_identifier(
                 stack, astp, n, filename, source, typemap);
@@ -2232,14 +2068,14 @@ process_node(
         case AST_COND_BRANCHES:
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return PROC_ERROR;
-        case AST_LOOP: return PROC_ERROR;
-        case AST_LOOP_BODY: return PROC_ERROR;
-        case AST_LOOP_FOR1: return PROC_ERROR;
-        case AST_LOOP_FOR2: return PROC_ERROR;
-        case AST_LOOP_FOR3: return PROC_ERROR;
-        case AST_LOOP_CONT: return PROC_ERROR;
-        case AST_LOOP_EXIT: return PROC_ERROR;
+            return DEP_ERROR;
+        case AST_LOOP: return DEP_ERROR;
+        case AST_LOOP_BODY: return DEP_ERROR;
+        case AST_LOOP_FOR1: return DEP_ERROR;
+        case AST_LOOP_FOR2: return DEP_ERROR;
+        case AST_LOOP_FOR3: return DEP_ERROR;
+        case AST_LOOP_CONT: return DEP_ERROR;
+        case AST_LOOP_EXIT: return DEP_ERROR;
         case AST_FUNC_EXIT: return process_func_exit(stack, *astp, n);
         case AST_FUNC: return process_func(stack, *astp, n, source, typemap);
         case AST_FUNC_OR_CONTAINER_REF:
@@ -2256,59 +2092,59 @@ process_node(
                 ast_node_type((*astp), ast_find_parent(*astp, n)) == AST_BLOCK,
                 (void)0);
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_FUNC_CALL:
             /* This value is already set by AST_FUNC_OR_CONTAINER_REF -- nothing
              * to do here */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return PROC_ERROR;
+            return DEP_ERROR;
         case AST_FUNC_DECL:
         case AST_FUNC_DEF:
             /* Are handled by AST_FUNC */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return PROC_ERROR;
+            return DEP_ERROR;
 
         case AST_BOOLEAN_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_BOOL;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_BYTE_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_U8;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_WORD_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_U16;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_INTEGER_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_I32;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_DWORD_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_U32;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_DOUBLE_INTEGER_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_I64;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_FLOAT_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_F32;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_DOUBLE_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_F64;
             stack_pop(*stack);
-            return PROC_OK;
+            return DEP_OK;
         case AST_STRING_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_STRING;
             stack_pop(*stack);
-            return PROC_OK;
-        case AST_CAST: return PROC_ERROR;
-        case AST_SCOPE: return PROC_ERROR;
+            return DEP_OK;
+        case AST_CAST: return DEP_ERROR;
+        case AST_SCOPE: return DEP_ERROR;
     }
 
-    return PROC_OK;
+    return DEP_OK;
 }
 
 static int
@@ -2325,11 +2161,15 @@ type_check(
 {
     struct typemap* typemap;
     struct stack*   stack;
-    int             return_code = -1;
+    int             return_code;
     struct ast**    astp = &tus[tu_id];
 
     typemap_init(&typemap);
     stack_init(&stack);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type((*astp), (*astp)->root) == AST_BLOCK,
+        log_semantic_err("type: %d\n", ast_node_type((*astp), (*astp)->root)));
 
     /*
      * It's necessary to traverse the AST in a way where statements are
@@ -2340,14 +2180,13 @@ type_check(
      * variables, because they will be processed in the same order the data
      * flows.
      */
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type((*astp), (*astp)->root) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type((*astp), (*astp)->root)));
+
+    return_code = 0;
     mutex_lock(tu_mutexes[tu_id]);
-    add_block_dependencies(&stack, *astp, (*astp)->root);
+    stack_push_entry(&stack, (*astp)->root);
     while (stack_count(stack) > 0)
     {
-        int depends = add_node_dependencies(
+        switch (process_node(
             &stack,
             &typemap,
             tus,
@@ -2355,26 +2194,16 @@ type_check(
             tu_mutexes,
             filenames,
             sources,
-            symbols);
-        if (depends > 0)
-            continue;
-        if (depends < 0)
+            cmds,
+            symbols))
         {
-            return_code = -1;
-            break;
+            case DEP_ADDED: break;
+            case DEP_OK: break;
+            case DEP_ERROR:
+                return_code = -1;
+                stack_clear(stack);
+                break;
         }
-
-        if (process_node(
-                &stack,
-                &typemap,
-                tus,
-                tu_id,
-                tu_mutexes,
-                filenames,
-                sources,
-                symbols)
-            < 0)
-            break;
     }
     mutex_unlock(tu_mutexes[tu_id]);
 
