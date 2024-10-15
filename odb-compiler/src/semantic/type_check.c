@@ -809,8 +809,10 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         case AST_FUNC_DECL:
         case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_FUNC_OR_CONTAINER_REF: break;
-        case AST_FUNC_CALL: break;
+        /* All instances of this node should be replaced with "real" calls
+         * by semantic_resolve_func_or_container_refs */
+        case AST_FUNC_OR_CONTAINER_REF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_FUNC_CALL: /*ctx->ast->nodes[n].func_call.*/; break;
 
         case AST_LABEL: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
 
@@ -942,6 +944,7 @@ type_check(
 
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations,
+       &semantic_resolve_func_or_container_refs,
        &semantic_loop_for,
        &semantic_loop_cont,
        NULL};

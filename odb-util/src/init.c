@@ -25,11 +25,12 @@ backtrace_init_failed:
 }
 
 /* ------------------------------------------------------------------------- */
-void
+int
 odbutil_deinit(void)
 {
+    int leaks;
     log_deinit();
-    mem_deinit();
+    leaks = mem_deinit();
     backtrace_deinit();
+    return leaks;
 }
-

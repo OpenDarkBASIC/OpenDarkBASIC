@@ -9,12 +9,12 @@
 #include "odb-util/init.h"
 
 static void
-exit_process(void)
+exit_process(int exit_code)
 {
 #if defined(_WIN32)
-    ExitProcess(0);
+    ExitProcess(exit_code);
 #else
-    _exit(0);
+    _exit(exit_code);
 #endif
 }
 
@@ -27,6 +27,5 @@ odbrt_init(void)
 ODBRUNTIME_API void
 odbrt_exit(void)
 {
-    odbutil_deinit();
-    exit_process();
+    exit_process(odbutil_deinit());
 }

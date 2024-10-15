@@ -26,9 +26,8 @@ kvs_alloc(
     static const int avg_func_name_len = 32;
     int header_size = offsetof(struct symbol_table_kvs_key_data, data);
     int data_size = sizeof(char) * avg_func_name_len * capacity;
-    kvs->key_data = old_kvs
-        ? old_kvs->key_data
-        : mem_alloc(header_size + data_size);
+    kvs->key_data
+        = old_kvs ? old_kvs->key_data : mem_alloc(header_size + data_size);
     if (kvs->key_data == NULL)
         goto alloc_data_failed;
     kvs->key_data->count = 0;
@@ -59,8 +58,7 @@ alloc_data_failed:
 static void
 kvs_free(struct symbol_table_kvs* kvs)
 {
-    if (kvs->key_data != NULL)
-        mem_free(kvs->key_data);
+    mem_free(kvs->key_data);
     mem_free(kvs->key_spans);
     mem_free(kvs->values);
 }
@@ -81,16 +79,25 @@ kvs_set_key(struct symbol_table_kvs* kvs, utf8_idx idx, struct utf8_view key)
         void* new_mem = mem_realloc(kvs->key_data, header_size + data_size);
         if (new_mem == NULL)
             return log_oom(header_size + data_size, "kvs_set_key()");
+        kvs->key_data = new_mem;
+        kvs->key_data->capacity *= 2;
     }
 
-    return -1;
+    kvs->key_spans[idx].off = kvs->key_data->count;
+    kvs->key_spans[idx].len = key.len;
+    memcpy(
+        kvs->key_data->data + kvs->key_data->count,
+        key.data + key.off,
+        key.len);
+    kvs->key_data->count += key.len;
+
+    return 0;
 }
 
 static int
 kvs_keys_equal(struct utf8_view a, struct utf8_view b)
 {
-    ODBUTIL_DEBUG_ASSERT(a.data == b.data, (void)0);
-    return a.off == b.off && a.len == b.len;
+    return utf8_equal(a, b);
 }
 
 static struct symbol_table_entry*

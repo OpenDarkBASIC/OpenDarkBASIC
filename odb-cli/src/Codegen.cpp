@@ -400,6 +400,8 @@ exec_output(const std::vector<std::string>& args)
         log_info("[exec] ", "Process exited with %d\n", exit_code);
     else
         log_err("[exec] ", "Process exited with %d\n", exit_code);
+
+    ospath_deinit(working_dir);
     return exit_code == 0;
 
 start_process_failed:

@@ -24,9 +24,20 @@ resolve_func_call(
         const struct symbol_table_entry* entry
             = symbol_table_find(symbols, key);
 
+        if (entry == NULL)
+        {
+            log_flc_err(
+                source_filename,
+                source.text.data,
+                ast->nodes[n].info.location,
+                "No function with this name exists.\n");
+            log_excerpt_1(source.text.data, ast->nodes[n].info.location, "");
+            return -1;
+        }
+
         /* TODO: Type check arguments and return value */
-        
-        /* TODO: Change func_or_container_ref -> func_call */
+
+        ast->nodes[n].info.node_type = AST_FUNC_CALL;
     }
 
     return 0;
@@ -35,5 +46,5 @@ resolve_func_call(
 static const struct semantic_check* depends[]
     = {&semantic_expand_constant_declarations, NULL};
 
-const struct semantic_check semantic_func_call_resolve
+const struct semantic_check semantic_resolve_func_or_container_refs
     = {resolve_func_call, depends};

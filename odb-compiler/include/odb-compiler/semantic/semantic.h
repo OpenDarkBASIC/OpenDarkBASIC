@@ -80,9 +80,9 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check
 
 /*!
  * The parser does not create negative integer/float literals. Instead, it
- * creates a unary negation that proceeds the positive literal.
+ * creates a unary negation that preceeds the positive literal.
  *
- * This pass simplifies all unary operators that preceed a literal.
+ * This pass combines these expressions into a single literal.
  */
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
     semantic_unary_literal;
@@ -96,4 +96,4 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_cont;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_name;
 
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_func_call_resolve;
+    semantic_resolve_func_or_container_refs;

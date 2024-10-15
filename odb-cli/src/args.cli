@@ -176,4 +176,112 @@ section: codegen {
         func: generate_output
         runafter: generate-ir
     }
+
+    option: list-warnings {
+        en_US: "Lists all possible warnings and their default values. These "
+                "can be passed to -W<warning> or -Wno-<warning> to "
+                "enable/disable the warning."
+        func: list_warnings
+    }
+}
+
+section: sdk {
+    en_US: "Configure the SDK, plugins and commands."
+
+    option: sdk-root {
+        en_US: "Tells the compiler where to look for plugins, help files, and "
+                "other necessary information. In the case of DBPro this should "
+                "be a path to the DBPro installation directory (e.g. "
+                "\"C:\\Program Files\\Dark Basic Professional Online\"). "
+                "In the case of ODB this should be a path to the directory "
+                "\"odb-sdk\". The default is to use the built-in \"odb-sdk\"."
+        args: <path>
+        func: set_sdk_root
+    }
+
+    option: sdk-type {
+        en_US: "Specify if the SDK is the original DBPro SDK, or if it is the "
+                "ODB reimplementation. --sdk-root will autodetect the type so "
+                "this is usually not needed. If specified, it will override the "
+                "autodetected value."
+        args: <odb|dbpro>
+        func: set_sdk_type
+        runafter: sdk-root
+    }
+
+    option: plugins {
+        en_US: "Add additional directories to scan for thirdparty plugins. Note "
+                "that ODB and DBPro plugins are not compatible with each other."
+        args: <path|file> [path|file...]
+        func: set_additional_plugin_dirs
+        runafter: sdk-root
+    }
+
+    task: setup-sdk {
+        func: setup_sdk
+        runafter: { sdk-root, sdk-type, plugins }
+    }
+
+    option: print-sdk {
+        en_US: "Print the SDK root, type and plugin directories."
+        func: print_sdk
+        runafter: setup-sdk
+    }
+
+    task: load-commands {
+        func: load_commands
+        runafter: setup-sdk
+    }
+
+    option: dump-commands {
+        en_US: "Dump all command names in alphabetical order."
+        args: [file]
+        func: dump_command_names
+        runafter: load-commands
+    }
+}
+
+section: parser {
+    en_US: ".dba and .dbpro file related options."
+
+    option: dba {
+        en_US: "Parse DBA source file(s). The first file listed will become "
+                "the \"main\" file, i.e. where execution starts. If no files "
+                "are listed, then the source is read from stdin."
+        args: [file...]
+        func: set_dba_files
+        runafter: load-commands
+    }
+
+    option: dbpro {
+        en_US: "Load a DBPro project file (.dbpro) and parse all DBA files "
+                "in it. "
+        args: <file>
+        func: set_dbpro_file
+        runafter: load-commands
+    }
+
+    option: input {
+        en_US: "Parse input file(s). Can be a .dbpro file or a list of .dba files."
+        args: <file> [files...]
+        func: set_input_files
+        runafter: load-commands
+    }
+
+    task: parse {
+        func: parse_files
+        runafter: { dba, dbpro, input }
+    }
+
+    option: dump-ast {
+        en_US: "Export parsed ASTs to DOT format."
+        args: [file]
+        func: dump_ast_dot
+        runafter: parse
+        requires: { dba | dbpro | input }
+    }
+}
+
+section: semantic {
+    
 }
