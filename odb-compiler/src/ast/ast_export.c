@@ -91,7 +91,7 @@ static const struct style dark_style = {
 };
 
 static void
-write_nodes(
+write_node(
     const struct ast*      ast,
     ast_id                 n,
     FILE*                  fp,
@@ -100,12 +100,6 @@ write_nodes(
     const struct style*    style)
 {
     const union ast_node* nd = &ast->nodes[n];
-
-    if (nd->base.left >= 0)
-        write_nodes(ast, nd->base.left, fp, source, commands, style);
-    if (nd->base.right >= 0)
-        write_nodes(ast, nd->base.right, fp, source, commands, style);
-
     switch (nd->info.node_type)
     {
         case AST_GC:
@@ -532,6 +526,38 @@ write_nodes(
 }
 
 static void
+write_nodes(
+    const struct ast*      ast,
+    ast_id                 n,
+    FILE*                  fp,
+    const char*            source,
+    const struct cmd_list* commands,
+    const struct style*    style)
+{
+    ast_id left = ast->nodes[n].base.left;
+    ast_id right = ast->nodes[n].base.right;
+    if (left > -1)
+        write_nodes(ast, left, fp, source, commands, style);
+    if (right > -1)
+        write_nodes(ast, right, fp, source, commands, style);
+
+    write_node(ast, n, fp, source, commands, style);
+}
+
+static void
+write_nodes_nonrecursive(
+    const struct ast*      ast,
+    FILE*                  fp,
+    const char*            source,
+    const struct cmd_list* commands,
+    const struct style*    style)
+{
+    ast_id n;
+    for (n = 0; n != ast->count; ++n)
+        write_node(ast, n, fp, source, commands, style);
+}
+
+static void
 write_edges(const struct ast* ast, FILE* fp, const struct style* style)
 {
     ast_id n;
@@ -552,6 +578,25 @@ write_edges(const struct ast* ast, FILE* fp, const struct style* style)
                 ast->nodes[n].base.right,
                 style->edgecolor);
     }
+}
+
+static int
+max_depth_is_unreasonable(const struct ast* ast, ast_id n, ast_id depth)
+{
+    ast_id left = ast->nodes[n].base.left;
+    ast_id right = ast->nodes[n].base.right;
+
+    if (depth >= ast->count)
+        return 1;
+
+    if (left > -1)
+        if (max_depth_is_unreasonable(ast, left, depth + 1))
+            return 1;
+    if (right > -1)
+        if (max_depth_is_unreasonable(ast, right, depth + 1))
+            return 1;
+
+    return 0;
 }
 
 ast_id
@@ -582,7 +627,10 @@ ast_export_dot_fp(
     fprintf(fp, "  bgcolor=\"%s\";\n", style->bgcolor);
     if (ast)
     {
-        write_nodes(ast, ast->root, fp, source, commands, style);
+        if (max_depth_is_unreasonable(ast, ast->root, 0))
+            write_nodes_nonrecursive(ast, fp, source, commands, style);
+        else
+            write_nodes(ast, ast->root, fp, source, commands, style);
         write_edges(ast, fp, style);
     }
     fprintf(fp, "}\n");
