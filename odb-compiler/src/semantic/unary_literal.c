@@ -196,10 +196,10 @@ child_changed:
 
 static int
 unary_literal(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -207,7 +207,7 @@ unary_literal(
     const struct symbol_table* symbols)
 {
     ast_id      n;
-    struct ast* ast = &asts[asts_id];
+    struct ast* ast = &tus[tu_id];
 
     for (n = 0; n != ast->node_count; ++n)
     {

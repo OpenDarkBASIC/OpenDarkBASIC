@@ -24,19 +24,19 @@ struct translation_unit
 
 VEC_DECLARE_API(static, filenames, const char*, 32)
 VEC_DECLARE_API(static, sources, struct db_source, 32)
-VEC_DECLARE_API(static, asts, struct ast, 32)
+VEC_DECLARE_API(static, tus, struct ast, 32)
 VEC_DECLARE_API(static, ast_mutexes, struct mutex*, 32)
 
 VEC_DEFINE_API(filenames, const char*, 32)
 VEC_DEFINE_API(sources, struct db_source, 32)
-VEC_DEFINE_API(asts, struct ast, 32)
+VEC_DEFINE_API(tus, struct ast, 32)
 VEC_DEFINE_API(ast_mutexes, struct mutex*, 32)
 
 struct ctx
 {
     struct filenames*   filenames;
     struct sources*     sources;
-    struct asts*        asts;
+    struct tus*         tus;
     struct ast_mutexes* ast_mutexes;
 };
 
@@ -57,7 +57,7 @@ close_tus(struct ctx* ctx)
     while (sources_count(ctx->sources) > 0)
     {
         struct mutex*     mutex = *ast_mutexes_pop(ctx->ast_mutexes);
-        struct ast*       ast = asts_pop(ctx->asts);
+        struct ast*       ast = tus_pop(ctx->tus);
         struct db_source* source = sources_pop(ctx->sources);
         const char*       filename = *filenames_pop(ctx->filenames);
 
@@ -89,7 +89,7 @@ open_stdin_as_tu(struct ctx* ctx)
     source = sources_emplace(&ctx->sources);
     if (source == NULL)
         goto push_source_failed;
-    ast = asts_emplace(&ctx->asts);
+    ast = tus_emplace(&ctx->tus);
     if (ast == NULL)
         goto push_ast_failed;
     ast_mutex = ast_mutexes_emplace(&ctx->ast_mutexes);
@@ -124,7 +124,7 @@ create_mutex_failed:
 read_failed:
     ast_mutexes_pop(ctx->ast_mutexes);
 push_ast_mutex_failed:
-    asts_pop(ctx->asts);
+    tus_pop(ctx->tus);
 push_ast_failed:
     sources_pop(ctx->sources);
 push_source_failed:
@@ -149,7 +149,7 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
         source = sources_emplace(&ctx->sources);
         if (source == NULL)
             goto push_source_failed;
-        ast = asts_emplace(&ctx->asts);
+        ast = tus_emplace(&ctx->tus);
         if (ast == NULL)
             goto push_ast_failed;
         ast_mutex = ast_mutexes_emplace(&ctx->ast_mutexes);
@@ -173,7 +173,7 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
     open_source_failed:
         ast_mutexes_pop(ctx->ast_mutexes);
     push_ast_mutex_failed:
-        asts_pop(ctx->asts);
+        tus_pop(ctx->tus);
     push_ast_failed:
         sources_pop(ctx->sources);
     push_source_failed:
@@ -188,7 +188,7 @@ open_tus_failed:
     while (sources_count(ctx->sources) > 0)
     {
         struct mutex*     mutex = *ast_mutexes_pop(ctx->ast_mutexes);
-        struct ast*       ast = asts_pop(ctx->asts);
+        struct ast*       ast = tus_pop(ctx->tus);
         struct db_source* source = sources_pop(ctx->sources);
         const char*       filename = *filenames_pop(ctx->filenames);
 
@@ -202,7 +202,7 @@ open_tus_failed:
 static void*
 parse_worker(void* arg)
 {
-    int               i, parse_result;
+    int               tu_id, parse_result;
     struct db_parser  parser;
     struct db_source* source;
     struct worker*    worker = (struct worker*)arg;
@@ -212,12 +212,12 @@ parse_worker(void* arg)
     if (db_parser_init(&parser) != 0)
         goto init_parser_failed;
 
-    vec_enumerate(worker->ctx->sources, i, source)
+    vec_enumerate(worker->ctx->sources, tu_id, source)
     {
-        const char* filename = *vec_get(worker->ctx->filenames, i);
-        struct ast* ast = vec_get(worker->ctx->asts, i);
+        const char* filename = *vec_get(worker->ctx->filenames, tu_id);
+        struct ast* ast = vec_get(worker->ctx->tus, tu_id);
 
-        if (i % sources_count(worker->ctx->sources) != worker->id)
+        if (tu_id % sources_count(worker->ctx->sources) != worker->id)
             continue;
 
         log_parser_info(
@@ -237,7 +237,10 @@ parse_worker(void* arg)
         mutex_lock(worker->mutex);
         mem_acquire_symbol_table(*worker->symbol_table);
         symbol_table_add_declarations_from_ast(
-            worker->symbol_table, ast, source->text.data);
+            worker->symbol_table,
+            worker->ctx->tus->data,
+            tu_id,
+            worker->ctx->sources->data);
         mem_release_symbol_table(*worker->symbol_table);
         mutex_unlock(worker->mutex);
     }
@@ -268,7 +271,7 @@ semantic_worker(void* arg)
     vec_enumerate(worker->ctx->sources, i, source)
     {
         const char* filename = *vec_get(worker->ctx->filenames, i);
-        struct ast* ast = vec_get(worker->ctx->asts, i);
+        struct ast* ast = vec_get(worker->ctx->tus, i);
 
         if (i % sources_count(worker->ctx->sources) != worker->id)
             continue;
@@ -278,7 +281,7 @@ semantic_worker(void* arg)
             filename ? filename : "<stdin>");
         mem_acquire(ast->nodes, 0);
         result = semantic_run_essential_checks(
-            worker->ctx->asts->data,
+            worker->ctx->tus->data,
             sources_count(worker->ctx->sources),
             i,
             worker->ctx->ast_mutexes->data,
@@ -308,7 +311,7 @@ initAST(void)
 {
     filenames_init(&ctx.filenames);
     sources_init(&ctx.sources);
-    asts_init(&ctx.asts);
+    tus_init(&ctx.tus);
     ast_mutexes_init(&ctx.ast_mutexes);
 
     return 0;
@@ -318,7 +321,7 @@ deinitAST(void)
 {
     close_tus(&ctx);
     ast_mutexes_deinit(ctx.ast_mutexes);
-    asts_deinit(ctx.asts);
+    tus_deinit(ctx.tus);
     sources_deinit(ctx.sources);
     filenames_deinit(ctx.filenames);
 }
@@ -444,7 +447,7 @@ parseDBA(const std::vector<std::string>& args)
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
 
-    vec_for_each(ctx.asts, ast)
+    vec_for_each(ctx.tus, ast)
     {
         mem_acquire(ast->nodes, ast->node_capacity * sizeof(union ast_node));
     }
@@ -487,10 +490,10 @@ dumpASTDOT(const std::vector<std::string>& args)
             "Dumping AST to Graphviz DOT format: {quote:%s}\n",
             args[0].c_str());
 
-        for (i = 0; i != asts_count(ctx.asts); i++)
+        for (i = 0; i != tus_count(ctx.tus); i++)
         {
             ast_export_dot(
-                vec_get(ctx.asts, i),
+                vec_get(ctx.tus, i),
                 cstr_ospathc(args[0].c_str()),
                 vec_get(ctx.sources, i)->text.data,
                 getCommandList());
@@ -499,10 +502,10 @@ dumpASTDOT(const std::vector<std::string>& args)
     else
     {
         log_parser_info("Dumping AST to Graphviz DOT format\n");
-        for (i = 0; i != asts_count(ctx.asts); i++)
+        for (i = 0; i != tus_count(ctx.tus); i++)
         {
             ast_export_dot_fp(
-                vec_get(ctx.asts, i),
+                vec_get(ctx.tus, i),
                 stdout,
                 vec_get(ctx.sources, i)->text.data,
                 getCommandList());
@@ -552,7 +555,7 @@ dumpASTJSON(const std::vector<std::string>& args)
 struct ast*
 getAST()
 {
-    return vec_get(ctx.asts, 0);
+    return vec_get(ctx.tus, 0);
 }
 const char*
 getSourceFilepath()

@@ -79,10 +79,10 @@ HM_DEFINE_API_FULL(
 
 struct ctx
 {
-    struct ast*                asts;
-    int                        asts_count;
-    int                        asts_id;
-    struct mutex**             asts_mutex;
+    struct ast*                tus;
+    int                        tu_count;
+    int                        tu_id;
+    struct mutex**             tu_mutexes;
     const char**               filenames;
     const struct db_source*    sources;
     const struct plugin_list*  plugins;
@@ -107,10 +107,10 @@ run_check(
 
     if (ptr_set_emplace_new(visited, check))
         if (check->execute(
-                ctx->asts,
-                ctx->asts_count,
-                ctx->asts_id,
-                ctx->asts_mutex,
+                ctx->tus,
+                ctx->tu_count,
+                ctx->tu_id,
+                ctx->tu_mutexes,
                 ctx->filenames,
                 ctx->sources,
                 ctx->plugins,
@@ -139,10 +139,10 @@ run_dependencies(
 int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                  asts,
-    int                          asts_count,
-    int                          asts_id,
-    struct mutex**               asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**                 filenames,
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
@@ -150,13 +150,13 @@ semantic_check_run(
     const struct symbol_table*   symbols)
 {
     struct ptr_set* check_visited;
-    struct ast*     ast = &asts[asts_id];
-    const char*     filename = filenames[asts_id];
+    struct ast*     ast = &tus[tu_id];
+    const char*     filename = filenames[tu_id];
     struct ctx      ctx
-        = {asts,
-           asts_count,
-           asts_id,
-           asts_mutex,
+        = {tus,
+           tu_count,
+           tu_id,
+           tu_mutexes,
            filenames,
            sources,
            plugins,
@@ -184,10 +184,10 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -199,10 +199,10 @@ dummy_check(
 
 int
 semantic_run_essential_checks(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -221,10 +221,10 @@ semantic_run_essential_checks(
 
     return semantic_check_run(
         &essential_check,
-        asts,
-        asts_count,
-        asts_id,
-        asts_mutex,
+        tus,
+        tu_count,
+        tu_id,
+        tu_mutexes,
         filenames,
         sources,
         plugins,

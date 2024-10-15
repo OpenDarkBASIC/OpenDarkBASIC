@@ -348,10 +348,10 @@ primitives_from_for_loop(
 
 static int
 translate_loop_for(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -359,9 +359,9 @@ translate_loop_for(
     const struct symbol_table* symbols)
 {
     ast_id      n;
-    struct ast* ast = &asts[asts_id];
-    const char* filename = filenames[asts_id];
-    const char* source = sources[asts_id].text.data;
+    struct ast* ast = &tus[tu_id];
+    const char* filename = filenames[tu_id];
+    const char* source = sources[tu_id].text.data;
 
     for (n = 0; n != ast->node_count; ++n)
     {

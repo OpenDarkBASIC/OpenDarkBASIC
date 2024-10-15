@@ -201,7 +201,6 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/loop_for.c"
     "src/semantic/loop_name.c"
     "src/semantic/resolve_cmd_overloads.c"
-    "src/semantic/resolve_func_or_container_refs.c"
     "src/semantic/semantic.c"
     "src/semantic/symbol_table.c"
     "src/semantic/type.c"

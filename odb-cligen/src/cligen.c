@@ -1118,6 +1118,15 @@ ll_prepend(struct ll** head, struct ll* node)
     *head = node;
 }
 
+static int
+ll_count(const struct ll* head)
+{
+    int count = 0;
+    for (; head; head = head->next)
+        count++;
+    return count;
+}
+
 struct strlist
 {
     struct strlist* next;
@@ -1136,11 +1145,10 @@ struct option
     struct option*    next;
     struct help_lang* help;
     struct strlist*   runafter;
-    struct strlist*
-        requires;
-    struct str_view name;
-    struct str_view func;
-    char            short_name;
+    struct strlist*   require;
+    struct str_view   name;
+    struct str_view   func;
+    char              short_name;
 };
 
 struct task
@@ -1157,7 +1165,6 @@ struct section
     struct option*    options;
     struct task*      tasks;
     struct help_lang* help;
-    struct strlist*   runafter;
     struct str_view   name;
 };
 
@@ -1183,9 +1190,7 @@ new_option(struct str_view name)
     o->next = NULL;
     o->help = NULL;
     o->runafter = NULL;
-    o->
-        requires
-    = NULL;
+    o->require = NULL;
     o->name = name;
     o->func = empty_str_view();
     o->short_name = '\0';
@@ -1211,7 +1216,6 @@ new_section(struct str_view name)
     s->options = NULL;
     s->tasks = NULL;
     s->help = NULL;
-    s->runafter = NULL;
     s->name = name;
     return s;
 }
@@ -1381,7 +1385,7 @@ parse_option(struct parser* p, struct option* option)
                 if (scan_next(p) != ':')
                     return print_loc_error(
                         p, "Expected ':' after 'requires'\n");
-                if (parse_requires(p, &option->requires) != 0)
+                if (parse_requires(p, &option->require) != 0)
                     return -1;
                 break;
             }
@@ -1580,12 +1584,78 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
  * Dependency solver
  * ------------------------------------------------------------------------- */
 
-struct table_entry
+enum node_type
 {
-    struct str_view long_opt;
-    struct str_view short_opt;
-    int             priority;
+    NODE_OPTION,
+    NODE_TASK,
 };
+
+struct node
+{
+    union
+    {
+        const struct option* option;
+        const struct task*   task;
+    } ref;
+
+    int*           children;
+    int            priority;
+    enum node_type type;
+};
+
+struct graph
+{
+    int         node_count;
+    struct node table[1];
+};
+
+static int
+count_tasks_and_options(const struct root* root)
+{
+    int                   count = 0;
+    const struct section* section;
+    for (section = root->sections; section; section = section->next)
+    {
+        count += ll_count((struct ll*)section->options);
+        count += ll_count((struct ll*)section->tasks);
+    }
+    return count;
+}
+
+static struct node*
+create_dependency_graph_from_ast(const struct root* root)
+{
+    const struct section* section;
+    int                   node;
+    int                   node_count = count_tasks_and_options(root);
+    struct node*          table = malloc(sizeof(*table) * node_count);
+
+    node = 0;
+    for (section = root->sections; section; section = section->next)
+    {
+        const struct option* option;
+        for (option = section->options; option; option = option->next)
+        {
+            table[node].type = NODE_OPTION;
+            table[node].ref.option = option;
+            table[node].children = NULL;
+            table[node].priority = 0;
+            node++;
+        }
+
+        const struct task* task;
+        for (task = section->tasks; task; task = task->next)
+        {
+            table[node].type = NODE_TASK;
+            table[node].ref.task = task;
+            table[node].children = NULL;
+            table[node].priority = 0;
+            node++;
+        }
+    }
+
+    return table;
+}
 
 static void
 gen_table(struct mstream* ms, const struct root* root, const char* data)

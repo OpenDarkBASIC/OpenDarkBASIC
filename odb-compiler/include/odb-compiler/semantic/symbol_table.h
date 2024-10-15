@@ -1,19 +1,18 @@
 #pragma once
 
-#include "odb-compiler/config.h"
-#include "odb-compiler/semantic/type.h"
-#include "odb-util/vec.h"
-
-VEC_DECLARE_API(ODBCOMPILER_PUBLIC_API, func_param_types_list, enum type, 8)
+#include "odb-compiler/ast/ast.h"
+#include "odb-util/utf8.h"
 
 struct symbol_table_entry
 {
-    struct func_param_types_list* param_types;
-    enum type                     return_type;
+    /* Index into the list of TUs (translation units) of the AST in which this
+     * symbol is defined */
+    int tu_id;
+    /* Index of the AST node that defines this symbol */
+    ast_id ast_node;
 };
 
 struct symbol_table;
-struct ast;
 
 static inline void
 symbol_table_init(struct symbol_table** table)
@@ -26,9 +25,10 @@ symbol_table_deinit(struct symbol_table* table);
 
 ODBCOMPILER_PUBLIC_API int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table** table,
-    const struct ast*     ast,
-    const char*           source_text);
+    struct symbol_table**   table,
+    const struct ast*       tus,
+    int                     tu_id,
+    const struct db_source* sources);
 
 ODBCOMPILER_PUBLIC_API const struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key);

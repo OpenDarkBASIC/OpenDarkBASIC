@@ -8,6 +8,7 @@
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
 #include "odb-util/log.h"
+#include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
 #include "odb-util/vec.h"
 #include <assert.h>
@@ -165,13 +166,19 @@ typemap_clear_all_with_scope(struct typemap* hm, int16_t scope)
 
 struct ctx
 {
-    struct ast*                ast;
-    ast_id                     root;
+    struct ast*                tus;
+    struct mutex**             tu_mutexes;
+    const char**               filenames;
+    const struct db_source*    sources;
     const struct cmd_list*     cmds;
     const struct symbol_table* symbols;
-    const char*                source_filename;
-    const char*                source_text;
     struct typemap*            typemap;
+    const int                  tu_id;
+    /* Some operations prepend nodes to the AST, causing a change-of-root.
+     * It's not possible to update the root node in-place, because we are
+     * iterating and modifying the AST at the same time. The root node is
+     * updated later during garbage collection */
+    ast_id root;
 };
 
 enum type
@@ -304,45 +311,61 @@ cast_expr_to_boolean(
 static enum type
 resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 {
+    struct ast* ast = &ctx->tus[ctx->tu_id];
+    const char* filename = ctx->filenames[ctx->tu_id];
+    const char* source = ctx->sources[ctx->tu_id].text.data;
     ODBUTIL_DEBUG_ASSERT(n > -1, (void)0);
 
     /* Nodes that don't return a value should be marked as TYPE_VOID */
-    switch (ctx->ast->nodes[n].info.node_type)
+    switch (ast->nodes[n].info.node_type)
     {
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_BLOCK: {
             ast_id block;
-            for (block = n; block > -1;
-                 block = ctx->ast->nodes[block].block.next)
+            for (block = n; block > -1; block = ast->nodes[block].block.next)
             {
-                ast_id    stmt = ctx->ast->nodes[block].block.stmt;
+                ast_id    stmt = ast->nodes[block].block.stmt;
                 enum type type = resolve_node_type(ctx, stmt, 0);
                 if (type == TYPE_INVALID)
                     return TYPE_INVALID;
 
                 /* Blocks are not expressions */
-                ctx->ast->nodes[block].info.type_info = TYPE_VOID;
+                ast->nodes[block].info.type_info = TYPE_VOID;
             }
             return TYPE_VOID; /* Blocks are not expressions */
         }
 
-        case AST_END: return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_END: return ast->nodes[n].info.type_info = TYPE_VOID;
 
-        case AST_ARGLIST: goto not_yet_implemented;
+        case AST_ARGLIST: {
+            ast_id arg;
+            for (arg = n; arg > -1; arg = ast->nodes[arg].arglist.next)
+            {
+                ast_id    expr = ast->nodes[arg].arglist.expr;
+                enum type type = resolve_node_type(ctx, expr, scope);
+                if (type == TYPE_INVALID)
+                    return TYPE_INVALID;
+
+                /* Argument lists are not expressions */
+                ast->nodes[arg].info.type_info = TYPE_VOID;
+            }
+            return TYPE_VOID; /* Argument lists are not expressions */
+        }
+
         case AST_PARAMLIST: goto not_yet_implemented;
 
         case AST_ASSIGNMENT: {
-            ast_id    lhs = ctx->ast->nodes[n].assignment.lvalue;
-            ast_id    rhs = ctx->ast->nodes[n].assignment.expr;
+            ast_id    lhs = ast->nodes[n].assignment.lvalue;
+            ast_id    rhs = ast->nodes[n].assignment.expr;
             enum type rhs_type = resolve_node_type(ctx, rhs, scope);
             if (rhs_type == TYPE_INVALID)
                 return TYPE_INVALID;
 
-            if (ctx->ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
+            if (ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
                 struct type_origin* lhs_type;
-                struct utf8_view    lhs_name = utf8_span_view(
-                    ctx->source_text, ctx->ast->nodes[lhs].identifier.name);
+                struct utf8_view    lhs_name
+                    = utf8_span_view(source, ast->nodes[lhs].identifier.name);
                 struct view_scope lhs_name_scope = {lhs_name, scope};
 
                 enum hm_status lhs_insertion = typemap_emplace_or_get(
@@ -357,17 +380,17 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                         /* Prefer the explicit type ("AS TYPE"). This is set by
                          * the parser */
                         lhs_type->type
-                            = ctx->ast->nodes[lhs].identifier.explicit_type;
+                            = ast->nodes[lhs].identifier.explicit_type;
                         if (lhs_type->type != TYPE_INVALID)
                             break;
 
                         /* Otherwise use annotated type */
                         lhs_type->type = type_annotation_to_type(
-                            ctx->ast->nodes[lhs].identifier.annotation);
+                            ast->nodes[lhs].identifier.annotation);
                         break;
                     }
                 }
-                ctx->ast->nodes[lhs].info.type_info = lhs_type->type;
+                ast->nodes[lhs].info.type_info = lhs_type->type;
 
                 /* May need to insert a cast from rhs to lhs */
                 if (rhs_type != lhs_type->type)
@@ -375,42 +398,41 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     int    gutter;
                     ast_id orig_node = lhs_type->original_declaration;
                     ODBUTIL_DEBUG_ASSERT(
-                        ctx->ast->nodes[orig_node].info.node_type
-                            == AST_IDENTIFIER,
+                        ast->nodes[orig_node].info.node_type == AST_IDENTIFIER,
                         log_semantic_err(
                             "type: %d\n",
-                            ctx->ast->nodes[orig_node].info.node_type));
+                            ast->nodes[orig_node].info.node_type));
                     struct utf8_span orig_name
-                        = ctx->ast->nodes[orig_node].identifier.name;
+                        = ast->nodes[orig_node].identifier.name;
                     struct utf8_span orig_loc
-                        = ctx->ast->nodes[orig_node].info.location;
+                        = ast->nodes[orig_node].info.location;
 
                     ast_id cast = ast_cast(
-                        ctx->ast,
+                        ast,
                         rhs,
                         lhs_type->type,
-                        ctx->ast->nodes[rhs].info.location);
+                        ast->nodes[rhs].info.location);
                     if (cast < -1)
                         return TYPE_INVALID;
-                    ctx->ast->nodes[n].assignment.expr = cast;
+                    ast->nodes[n].assignment.expr = cast;
 
                     switch (type_convert(rhs_type, lhs_type->type))
                     {
                         case TC_ALLOW: break;
                         case TC_DISALLOW:
                             log_flc_err(
-                                ctx->source_filename,
-                                ctx->source_text,
-                                ctx->ast->nodes[rhs].info.location,
+                                filename,
+                                source,
+                                ast->nodes[rhs].info.location,
                                 "Cannot assign {emph2:%s} to {emph1:%s}. Types "
                                 "are incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
-                                ctx->source_text,
-                                ctx->ast->nodes[lhs].info.location,
-                                ctx->ast->nodes[n].assignment.op_location,
-                                ctx->ast->nodes[rhs].info.location,
+                                source,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
                                 type_to_db_name(lhs_type->type),
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
@@ -418,16 +440,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 "{emph1:%.*s} was previously declared as "
                                 "{emph1:%s} at ",
                                 orig_name.len,
-                                ctx->source_text + orig_name.off,
+                                source + orig_name.off,
                                 type_to_db_name(lhs_type->type));
-                            log_flc(
-                                "",
-                                ctx->source_filename,
-                                ctx->source_text,
-                                orig_loc,
-                                "\n");
+                            log_flc("", filename, source, orig_loc, "\n");
                             log_excerpt_1(
-                                ctx->source_text,
+                                source,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             return TYPE_INVALID;
@@ -441,7 +458,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 /* clang-format off */
                                 const char* as_type = type_to_db_name(rhs_type);
                                 char ann[2] = {type_to_annotation(rhs_type), '\0'};
-                                struct utf8_span lhs_loc = ctx->ast->nodes[lhs].info.location;
+                                struct utf8_span lhs_loc = ast->nodes[lhs].info.location;
                                 utf8_idx lhs_end = lhs_loc.off + lhs_loc.len;
                                 struct log_highlight hl_annotation[] = {
                                     {ann, "", {lhs_end, 1}, LOG_INSERT, LOG_MARKERS, 0},
@@ -454,49 +471,48 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 };
                                 /* clang-format on */
                                 log_flc_warn(
-                                    ctx->source_filename,
-                                    ctx->source_text,
-                                    ctx->ast->nodes[rhs].info.location,
+                                    filename,
+                                    source,
+                                    ast->nodes[rhs].info.location,
                                     "Implicit conversion from {emph2:%s} to "
                                     "{emph1:%s} in variable initialization.\n",
                                     type_to_db_name(rhs_type),
                                     type_to_db_name(lhs_type->type));
                                 gutter = log_excerpt_binop(
-                                    ctx->source_text,
-                                    ctx->ast->nodes[lhs].info.location,
-                                    ctx->ast->nodes[n].assignment.op_location,
-                                    ctx->ast->nodes[rhs].info.location,
+                                    source,
+                                    ast->nodes[lhs].info.location,
+                                    ast->nodes[n].assignment.op_location,
+                                    ast->nodes[rhs].info.location,
                                     type_to_db_name(lhs_type->type),
                                     type_to_db_name(rhs_type));
                                 if (ann[0] != TA_NONE)
                                 {
                                     log_excerpt_help(
                                         gutter, "Annotate the variable:\n");
-                                    log_excerpt(
-                                        ctx->source_text, hl_annotation);
+                                    log_excerpt(source, hl_annotation);
                                 }
                                 log_excerpt_help(
                                     gutter,
                                     "%sxplicitly declare the type of the "
                                     "variable:\n",
                                     ann[0] != TA_NONE ? "Or e" : "E");
-                                log_excerpt(ctx->source_text, hl_as_type);
+                                log_excerpt(source, hl_as_type);
                             }
                             else
                             {
                                 log_flc_warn(
-                                    ctx->source_filename,
-                                    ctx->source_text,
-                                    ctx->ast->nodes[rhs].info.location,
+                                    filename,
+                                    source,
+                                    ast->nodes[rhs].info.location,
                                     "Implicit conversion from {emph2:%s} to "
                                     "{emph1:%s} in assignment.\n",
                                     type_to_db_name(rhs_type),
                                     type_to_db_name(lhs_type->type));
                                 gutter = log_excerpt_binop(
-                                    ctx->source_text,
-                                    ctx->ast->nodes[lhs].info.location,
-                                    ctx->ast->nodes[n].assignment.op_location,
-                                    ctx->ast->nodes[rhs].info.location,
+                                    source,
+                                    ast->nodes[lhs].info.location,
+                                    ast->nodes[n].assignment.op_location,
+                                    ast->nodes[rhs].info.location,
                                     type_to_db_name(lhs_type->type),
                                     type_to_db_name(rhs_type));
                                 log_excerpt_note(
@@ -504,16 +520,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                     "{emph1:%.*s} was previously declared as "
                                     "{emph1:%s} at ",
                                     orig_name.len,
-                                    ctx->source_text + orig_name.off,
+                                    source + orig_name.off,
                                     type_to_db_name(lhs_type->type));
-                                log_flc(
-                                    "",
-                                    ctx->source_filename,
-                                    ctx->source_text,
-                                    orig_loc,
-                                    "\n");
+                                log_flc("", filename, source, orig_loc, "\n");
                                 log_excerpt_1(
-                                    ctx->source_text,
+                                    source,
                                     orig_loc,
                                     type_to_db_name(lhs_type->type));
                             }
@@ -521,18 +532,18 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
                         case TC_TRUNCATE:
                             log_flc_warn(
-                                ctx->source_filename,
-                                ctx->source_text,
-                                ctx->ast->nodes[rhs].info.location,
+                                filename,
+                                source,
+                                ast->nodes[rhs].info.location,
                                 "Value is truncated when converting from "
                                 "{emph2:%s} to {emph1:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
-                                ctx->source_text,
-                                ctx->ast->nodes[lhs].info.location,
-                                ctx->ast->nodes[n].assignment.op_location,
-                                ctx->ast->nodes[rhs].info.location,
+                                source,
+                                ast->nodes[lhs].info.location,
+                                ast->nodes[n].assignment.op_location,
+                                ast->nodes[rhs].info.location,
                                 type_to_db_name(lhs_type->type),
                                 type_to_db_name(rhs_type));
                             log_excerpt_note(
@@ -540,16 +551,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 "{emph1:%.*s} was previously declared as "
                                 "{emph1:%s} at ",
                                 orig_name.len,
-                                ctx->source_text + orig_name.off,
+                                source + orig_name.off,
                                 type_to_db_name(lhs_type->type));
-                            log_flc(
-                                "",
-                                ctx->source_filename,
-                                ctx->source_text,
-                                orig_loc,
-                                "\n");
+                            log_flc("", filename, source, orig_loc, "\n");
                             log_excerpt_1(
-                                ctx->source_text,
+                                source,
                                 orig_loc,
                                 type_to_db_name(lhs_type->type));
                             break;
@@ -559,31 +565,30 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             /* Assignments are not expressions, thus they do not evaluate to a
              * type */
-            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+            return ast->nodes[n].info.type_info = TYPE_VOID;
         }
 
         case AST_COMMAND: {
-            ast_id arglist = ctx->ast->nodes[n].cmd.arglist;
-            cmd_id cmd_id = ctx->ast->nodes[n].cmd.id;
-            for (; arglist > -1;
-                 arglist = ctx->ast->nodes[arglist].arglist.next)
+            ast_id arglist = ast->nodes[n].cmd.arglist;
+            cmd_id cmd_id = ast->nodes[n].cmd.id;
+            for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
             {
-                ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
+                ast_id    expr = ast->nodes[arglist].arglist.expr;
                 enum type arg_type = resolve_node_type(ctx, expr, scope);
                 if (arg_type == TYPE_INVALID)
                     return TYPE_INVALID;
                 /* Argument lists are not expressions */
-                ctx->ast->nodes[arglist].info.type_info = TYPE_VOID;
+                ast->nodes[arglist].info.type_info = TYPE_VOID;
             }
 
-            return ctx->ast->nodes[n].cmd.info.type_info
+            return ast->nodes[n].cmd.info.type_info
                    = ctx->cmds->return_types->data[cmd_id];
         }
 
         case AST_IDENTIFIER: {
             struct type_origin* type_origin;
-            struct utf8_view    name = utf8_span_view(
-                ctx->source_text, ctx->ast->nodes[n].identifier.name);
+            struct utf8_view    name
+                = utf8_span_view(source, ast->nodes[n].identifier.name);
             struct view_scope view_scope = {name, scope};
             switch (
                 typemap_emplace_or_get(&ctx->typemap, view_scope, &type_origin))
@@ -596,47 +601,45 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
                     /* Prefer the explicit type ("AS TYPE"). This is set by the
                      * parser */
-                    type_origin->type
-                        = ctx->ast->nodes[n].identifier.explicit_type;
+                    type_origin->type = ast->nodes[n].identifier.explicit_type;
 
                     /* Otherwise use annotated type */
                     if (type_origin->type == TYPE_INVALID)
                         type_origin->type = type_annotation_to_type(
-                            ctx->ast->nodes[n].identifier.annotation);
+                            ast->nodes[n].identifier.annotation);
 
                     /* Determine initializer expression based on the deduced
                      * type */
-                    loc = ctx->ast->nodes[n].info.location;
+                    loc = ast->nodes[n].info.location;
                     switch (type_origin->type)
                     {
                         case TYPE_BOOL:
-                            init_expr = ast_boolean_literal(ctx->ast, 0, loc);
+                            init_expr = ast_boolean_literal(ast, 0, loc);
                             break;
                         case TYPE_I64:
-                            init_expr
-                                = ast_double_integer_literal(ctx->ast, 0, loc);
+                            init_expr = ast_double_integer_literal(ast, 0, loc);
                             break;
                         case TYPE_U32:
-                            init_expr = ast_dword_literal(ctx->ast, 0, loc);
+                            init_expr = ast_dword_literal(ast, 0, loc);
                             break;
                         case TYPE_I32:
-                            init_expr = ast_integer_literal(ctx->ast, 0, loc);
+                            init_expr = ast_integer_literal(ast, 0, loc);
                             break;
                         case TYPE_U16:
-                            init_expr = ast_word_literal(ctx->ast, 0, loc);
+                            init_expr = ast_word_literal(ast, 0, loc);
                             break;
                         case TYPE_U8:
-                            init_expr = ast_byte_literal(ctx->ast, 0, loc);
+                            init_expr = ast_byte_literal(ast, 0, loc);
                             break;
                         case TYPE_F32:
-                            init_expr = ast_float_literal(ctx->ast, 0, loc);
+                            init_expr = ast_float_literal(ast, 0, loc);
                             break;
                         case TYPE_F64:
-                            init_expr = ast_double_literal(ctx->ast, 0, loc);
+                            init_expr = ast_double_literal(ast, 0, loc);
                             break;
                         case TYPE_STRING:
                             init_expr = ast_string_literal(
-                                ctx->ast, empty_utf8_span(), loc);
+                                ast, empty_utf8_span(), loc);
                             break;
 
                         case TYPE_INVALID:
@@ -677,22 +680,21 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     /* Currently, if the identifier's explicit_type property is
                      * set, only then can it be an lvalue. This is enforced by
                      * the parser. In all other cases it is an rvalue. */
-                    if (ctx->ast->nodes[n].identifier.explicit_type
-                        != TYPE_INVALID)
+                    if (ast->nodes[n].identifier.explicit_type != TYPE_INVALID)
                     {
                         /* Case 1: Declaration */
                         ast_id init_ass
-                            = ast_assign(ctx->ast, n, init_expr, loc, loc);
+                            = ast_assign(ast, n, init_expr, loc, loc);
 
-                        ast_id parent = ast_find_parent(ctx->ast, n);
-                        if (ctx->ast->nodes[parent].base.left == n)
-                            ctx->ast->nodes[parent].base.left = init_ass;
-                        if (ctx->ast->nodes[parent].base.right == n)
-                            ctx->ast->nodes[parent].base.right = init_ass;
+                        ast_id parent = ast_find_parent(ast, n);
+                        if (ast->nodes[parent].base.left == n)
+                            ast->nodes[parent].base.left = init_ass;
+                        if (ast->nodes[parent].base.right == n)
+                            ast->nodes[parent].base.right = init_ass;
 
-                        ctx->ast->nodes[init_expr].info.type_info
+                        ast->nodes[init_expr].info.type_info
                             = type_origin->type;
-                        ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
+                        ast->nodes[init_ass].info.type_info = TYPE_VOID;
 
                         break;
                     }
@@ -700,18 +702,17 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                     {
                         /* Case 2: Need to insert an init block */
 
-                        ast_id init_var = ast_dup_lvalue(ctx->ast, n);
-                        ast_id init_ass = ast_assign(
-                            ctx->ast, init_var, init_expr, loc, loc);
-                        ast_id init_block = ast_block(ctx->ast, init_ass, loc);
+                        ast_id init_var = ast_dup_lvalue(ast, n);
+                        ast_id init_ass
+                            = ast_assign(ast, init_var, init_expr, loc, loc);
+                        ast_id init_block = ast_block(ast, init_ass, loc);
 
                         /* Fill in type info */
-                        ctx->ast->nodes[init_expr].info.type_info
+                        ast->nodes[init_expr].info.type_info
                             = type_origin->type;
-                        ctx->ast->nodes[init_var].info.type_info
-                            = type_origin->type;
-                        ctx->ast->nodes[init_ass].info.type_info = TYPE_VOID;
-                        ctx->ast->nodes[init_block].info.type_info = TYPE_VOID;
+                        ast->nodes[init_var].info.type_info = type_origin->type;
+                        ast->nodes[init_ass].info.type_info = TYPE_VOID;
+                        ast->nodes[init_block].info.type_info = TYPE_VOID;
 
                         /* Insert the initializer at the very beginning of the
                          * program */
@@ -719,7 +720,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                          * stack in function bodies. I don't know if DBP creates
                          * scopes in other constructs such as if-endif blocks.
                          * Need to investigate. */
-                        ctx->ast->nodes[init_block].block.next = ctx->root;
+                        ast->nodes[init_block].block.next = ctx->root;
                         ctx->root = init_block;
                     }
                     break;
@@ -728,31 +729,28 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case HM_EXISTS: break;
                 case HM_OOM: goto not_yet_implemented;
             }
-            return ctx->ast->nodes[n].identifier.info.type_info
-                   = type_origin->type;
+            return ast->nodes[n].identifier.info.type_info = type_origin->type;
         }
 
         case AST_BINOP: {
-            ast_id lhs = ctx->ast->nodes[n].binop.left;
-            ast_id rhs = ctx->ast->nodes[n].binop.right;
+            ast_id lhs = ast->nodes[n].binop.left;
+            ast_id rhs = ast->nodes[n].binop.right;
             if (resolve_node_type(ctx, lhs, scope) < 0)
                 return TYPE_INVALID;
             if (resolve_node_type(ctx, rhs, scope) < 0)
                 return TYPE_INVALID;
 
-            switch (ctx->ast->nodes[n].binop.op)
+            switch (ast->nodes[n].binop.op)
             {
                 case BINOP_ADD:
                 case BINOP_SUB:
                 case BINOP_MUL:
                 case BINOP_DIV:
                 case BINOP_MOD:
-                    return type_check_binop_symmetric(
-                        ctx->ast, n, ctx->source_filename, ctx->source_text);
+                    return type_check_binop_symmetric(ast, n, filename, source);
 
                 case BINOP_POW:
-                    return type_check_binop_pow(
-                        ctx->ast, n, ctx->source_filename, ctx->source_text);
+                    return type_check_binop_pow(ast, n, filename, source);
 
                 case BINOP_SHIFT_LEFT:
                 case BINOP_SHIFT_RIGHT:
@@ -767,39 +765,28 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 case BINOP_GREATER_EQUAL:
                 case BINOP_EQUAL:
                 case BINOP_NOT_EQUAL:
-                    if (type_check_binop_symmetric(
-                            ctx->ast, n, ctx->source_filename, ctx->source_text)
+                    if (type_check_binop_symmetric(ast, n, filename, source)
                         == TYPE_INVALID)
                     {
                         return TYPE_INVALID;
                     }
-                    return ctx->ast->nodes[n].binop.info.type_info = TYPE_BOOL;
+                    return ast->nodes[n].binop.info.type_info = TYPE_BOOL;
 
                 case BINOP_LOGICAL_OR:
                 case BINOP_LOGICAL_AND:
                 case BINOP_LOGICAL_XOR: {
-                    if (cast_expr_to_boolean(
-                            ctx->ast,
-                            lhs,
-                            n,
-                            ctx->source_filename,
-                            ctx->source_text)
+                    if (cast_expr_to_boolean(ast, lhs, n, filename, source)
                         != 0)
                     {
                         return TYPE_INVALID;
                     }
-                    if (cast_expr_to_boolean(
-                            ctx->ast,
-                            rhs,
-                            n,
-                            ctx->source_filename,
-                            ctx->source_text)
+                    if (cast_expr_to_boolean(ast, rhs, n, filename, source)
                         != 0)
                     {
                         return TYPE_INVALID;
                     }
 
-                    return ctx->ast->nodes[n].binop.info.type_info = TYPE_BOOL;
+                    return ast->nodes[n].binop.info.type_info = TYPE_BOOL;
                 }
                 break;
             }
@@ -809,19 +796,19 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         case AST_UNOP: break;
 
         case AST_COND: {
-            ast_id expr = ctx->ast->nodes[n].cond.expr;
-            ast_id cond_branch = ctx->ast->nodes[n].cond.cond_branch;
+            ast_id expr = ast->nodes[n].cond.expr;
+            ast_id cond_branch = ast->nodes[n].cond.cond_branch;
 
             ODBUTIL_DEBUG_ASSERT(
-                ctx->ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
+                ast->nodes[cond_branch].info.node_type == AST_COND_BRANCH,
                 log_semantic_err(
-                    "type: %d\n", ctx->ast->nodes[cond_branch].info.node_type));
-            ast_id yes = ctx->ast->nodes[cond_branch].cond_branch.yes;
-            ast_id no = ctx->ast->nodes[cond_branch].cond_branch.no;
+                    "type: %d\n", ast->nodes[cond_branch].info.node_type));
+            ast_id yes = ast->nodes[cond_branch].cond_branch.yes;
+            ast_id no = ast->nodes[cond_branch].cond_branch.no;
 
-            ctx->ast->nodes[expr].info.type_info
+            ast->nodes[expr].info.type_info
                 = resolve_node_type(ctx, expr, scope);
-            if (ctx->ast->nodes[expr].info.type_info == TYPE_INVALID)
+            if (ast->nodes[expr].info.type_info == TYPE_INVALID)
                 return TYPE_INVALID;
 
             if (yes > -1 && resolve_node_type(ctx, yes, scope) == TYPE_INVALID)
@@ -831,27 +818,25 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             /* The expression is always evaluated to a bool. If this is not the
              * case here, then insert a cast */
-            if (cast_expr_to_boolean(
-                    ctx->ast, expr, n, ctx->source_filename, ctx->source_text)
-                != 0)
+            if (cast_expr_to_boolean(ast, expr, n, filename, source) != 0)
             {
                 return TYPE_INVALID;
             }
 
-            ctx->ast->nodes[cond_branch].info.type_info = TYPE_VOID;
-            ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+            ast->nodes[cond_branch].info.type_info = TYPE_VOID;
+            ast->nodes[n].info.type_info = TYPE_VOID;
             return TYPE_VOID;
         }
         break;
         case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_LOOP: {
-            ast_id body = ctx->ast->nodes[n].loop.body;
-            ast_id step = ctx->ast->nodes[n].loop.post_body;
+            ast_id body = ast->nodes[n].loop.body;
+            ast_id step = ast->nodes[n].loop.post_body;
             ODBUTIL_DEBUG_ASSERT(
-                ctx->ast->nodes[n].loop.loop_for == -1,
+                ast->nodes[n].loop.loop_for == -1,
                 log_semantic_err(
-                    "loop_for: %d\n", ctx->ast->nodes[n].loop.loop_for));
+                    "loop_for: %d\n", ast->nodes[n].loop.loop_for));
 
             if (body > -1
                 && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
@@ -864,41 +849,40 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             {
                 return TYPE_INVALID;
             }
-            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+            return ast->nodes[n].info.type_info = TYPE_VOID;
         }
 
         case AST_LOOP_FOR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_LOOP_CONT: {
-            ast_id step = ctx->ast->nodes[n].cont.step;
+            ast_id step = ast->nodes[n].cont.step;
             if (step > -1
                 && resolve_node_type(ctx, step, scope) == TYPE_INVALID)
             {
                 return TYPE_INVALID;
             }
-            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+            return ast->nodes[n].info.type_info = TYPE_VOID;
         }
 
-        case AST_LOOP_EXIT:
-            return ctx->ast->nodes[n].info.type_info = TYPE_VOID;
+        case AST_LOOP_EXIT: return ast->nodes[n].info.type_info = TYPE_VOID;
 
         case AST_FUNC: {
             enum type ret_type, ident_type, func_type;
             ast_id    decl, def, identifier, paramlist, body, ret;
 
-            decl = ctx->ast->nodes[n].func.decl;
-            def = ctx->ast->nodes[n].func.def;
+            decl = ast->nodes[n].func.decl;
+            def = ast->nodes[n].func.def;
             ODBUTIL_DEBUG_ASSERT(decl > -1, (void)0);
             ODBUTIL_DEBUG_ASSERT(def > -1, (void)0);
 
-            identifier = ctx->ast->nodes[decl].func_decl.identifier;
-            paramlist = ctx->ast->nodes[decl].func_decl.paramlist;
-            body = ctx->ast->nodes[def].func_def.body;
-            ret = ctx->ast->nodes[def].func_def.retval;
+            identifier = ast->nodes[decl].func_decl.identifier;
+            paramlist = ast->nodes[decl].func_decl.paramlist;
+            body = ast->nodes[def].func_def.body;
+            ret = ast->nodes[def].func_def.retval;
             ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
 
             ident_type = type_annotation_to_type(
-                ctx->ast->nodes[identifier].identifier.annotation);
-            ctx->ast->nodes[identifier].info.type_info = ident_type;
+                ast->nodes[identifier].identifier.annotation);
+            ast->nodes[identifier].info.type_info = ident_type;
 
             if (ret > -1)
             {
@@ -910,9 +894,9 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             func_type = ret > -1 ? ret_type : TYPE_VOID;
 
             for (; paramlist > -1;
-                 paramlist = ctx->ast->nodes[paramlist].paramlist.next)
+                 paramlist = ast->nodes[paramlist].paramlist.next)
             {
-                ast_id param = ctx->ast->nodes[paramlist].paramlist.identifier;
+                ast_id param = ast->nodes[paramlist].paramlist.identifier;
                 if (resolve_node_type(ctx, param, scope) == TYPE_INVALID)
                     return TYPE_INVALID;
             }
@@ -923,74 +907,99 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 return TYPE_INVALID;
             }
 
-            ctx->ast->nodes[decl].info.type_info = func_type;
-            ctx->ast->nodes[def].info.type_info = func_type;
-            ctx->ast->nodes[n].info.type_info = func_type;
+            ast->nodes[decl].info.type_info = func_type;
+            ast->nodes[def].info.type_info = func_type;
+            ast->nodes[n].info.type_info = func_type;
             return func_type;
         }
-        /* Are handled by AST_FUNC */
         case AST_FUNC_DECL:
-        case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_FUNC_DEF:
+            /* Are handled by AST_FUNC */
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return TYPE_INVALID;
 
-        /* All instances of this node should be replaced with "real" calls
-         * by semantic_resolve_func_or_container_refs */
-        case AST_FUNC_OR_CONTAINER_REF: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_FUNC_CALL: {
-            ast_id identifier = ctx->ast->nodes[n].func_call.identifier;
+        case AST_FUNC_OR_CONTAINER_REF: {
+            /* Determine types of arglist */
+
+            /* Check if a definition of this symbol exists globally */
+            ast_id identifier = ast->nodes[n].func_or_container_ref.identifier;
             struct utf8_view key = utf8_span_view(
-                ctx->source_text, ctx->ast->nodes[identifier].identifier.name);
-            // func_inst_request(kkk)
+                source, ast->nodes[identifier].identifier.name);
             const struct symbol_table_entry* entry
                 = symbol_table_find(ctx->symbols, key);
-            ODBUTIL_DEBUG_ASSERT(
-                entry != NULL,
-                log_codegen_err("Function should be guaranteed to exist in the "
-                                "symbol table by "
-                                "resolve_func_or_container_refs() pass.\n"));
+            if (entry == NULL)
+            {
+                log_flc_err(
+                    filename,
+                    source,
+                    ast->nodes[n].info.location,
+                    "No function with this name exists.\n");
+                log_excerpt_1(source, ast->nodes[n].info.location, "");
+                return TYPE_INVALID;
+            }
 
-            return ctx->ast->nodes[n].func_call.info.type_info
-                   = entry->return_type;
+            if (entry->tu_id == ctx->tu_id)
+            {
+            }
+            else
+            {
+                /* The function definition exists in another AST. Since semantic
+                 * checks are run in parallel, the ASTs are protected by a mutex
+                 */
+                struct mutex* their_mutex = ctx->tu_mutexes[entry->tu_id];
+                struct mutex* our_mutex = ctx->tu_mutexes[ctx->tu_id];
+                mutex_unlock(our_mutex);
+                mutex_lock(their_mutex);
+
+                mutex_unlock(their_mutex);
+                mutex_lock(our_mutex);
+            }
+
+            break;
         }
 
+        case AST_FUNC_CALL:
+            /* This value is already set by AST_FUNC_OR_CONTAINER_REF -- nothing
+             * to do here */
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return TYPE_INVALID;
+
         case AST_BOOLEAN_LITERAL:
-            return ctx->ast->nodes[n].boolean_literal.info.type_info
-                   = TYPE_BOOL;
+            return ast->nodes[n].boolean_literal.info.type_info = TYPE_BOOL;
         case AST_BYTE_LITERAL:
-            return ctx->ast->nodes[n].byte_literal.info.type_info = TYPE_U8;
+            return ast->nodes[n].byte_literal.info.type_info = TYPE_U8;
         case AST_WORD_LITERAL:
-            return ctx->ast->nodes[n].word_literal.info.type_info = TYPE_U16;
+            return ast->nodes[n].word_literal.info.type_info = TYPE_U16;
         case AST_INTEGER_LITERAL:
-            return ctx->ast->nodes[n].integer_literal.info.type_info = TYPE_I32;
+            return ast->nodes[n].integer_literal.info.type_info = TYPE_I32;
         case AST_DWORD_LITERAL:
-            return ctx->ast->nodes[n].dword_literal.info.type_info = TYPE_U32;
+            return ast->nodes[n].dword_literal.info.type_info = TYPE_U32;
         case AST_DOUBLE_INTEGER_LITERAL:
-            return ctx->ast->nodes[n].double_integer_literal.info.type_info
+            return ast->nodes[n].double_integer_literal.info.type_info
                    = TYPE_I64;
         case AST_FLOAT_LITERAL:
-            return ctx->ast->nodes[n].float_literal.info.type_info = TYPE_F32;
+            return ast->nodes[n].float_literal.info.type_info = TYPE_F32;
         case AST_DOUBLE_LITERAL:
-            return ctx->ast->nodes[n].double_literal.info.type_info = TYPE_F64;
+            return ast->nodes[n].double_literal.info.type_info = TYPE_F64;
         case AST_STRING_LITERAL:
-            return ctx->ast->nodes[n].string_literal.info.type_info
-                   = TYPE_STRING;
+            return ast->nodes[n].string_literal.info.type_info = TYPE_STRING;
 
         case AST_CAST: {
-            ast_id    expr = ctx->ast->nodes[n].cast.expr;
+            ast_id    expr = ast->nodes[n].cast.expr;
             enum type type = resolve_node_type(ctx, expr, scope);
             if (type == TYPE_INVALID)
                 return TYPE_INVALID;
-            return type_check_casts(
-                ctx->ast, n, ctx->source_filename, ctx->source_text);
+            return type_check_casts(ast, n, filename, source);
         }
     }
 
 not_yet_implemented:
     log_flc_err(
-        ctx->source_filename,
-        ctx->source_text,
-        ctx->ast->nodes[n].info.location,
+        filename,
+        source,
+        ast->nodes[n].info.location,
         "Type check not yet implemented for this node.\n");
-    log_excerpt_1(ctx->source_text, ctx->ast->nodes[n].info.location, "");
+    log_excerpt_1(source, ast->nodes[n].info.location, "");
     return TYPE_INVALID;
 }
 
@@ -1034,10 +1043,10 @@ sanity_check(
 
 static int
 type_check(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -1045,10 +1054,11 @@ type_check(
     const struct symbol_table* symbols)
 {
     int         return_code;
-    struct ast* ast = &asts[asts_id];
-    const char* filename = filenames[asts_id];
-    const char* source = sources[asts_id].text.data;
-    struct ctx  ctx = {ast, 0, cmds, symbols, filename, source, NULL};
+    struct ast* ast = &tus[tu_id];
+    const char* filename = filenames[tu_id];
+    const char* source = sources[tu_id].text.data;
+    struct ctx  ctx
+        = {tus, tu_mutexes, filenames, sources, cmds, symbols, NULL, tu_id, 0};
 
     typemap_init(&ctx.typemap);
 
@@ -1082,8 +1092,5 @@ type_check(
 }
 
 static const struct semantic_check* depends[]
-    = {&semantic_resolve_func_or_container_refs,
-       &semantic_loop_for,
-       &semantic_loop_cont,
-       NULL};
+    = {&semantic_loop_for, &semantic_loop_cont, NULL};
 const struct semantic_check semantic_type_check = {type_check, depends};

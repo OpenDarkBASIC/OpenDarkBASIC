@@ -1,11 +1,10 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
 #include "odb-util/mem.h"
-
-VEC_DEFINE_API(func_param_types_list, enum type, 8)
 
 struct kvs_key_data
 {
@@ -151,23 +150,19 @@ struct symbol_table
 void
 symbol_table_deinit(struct symbol_table* table)
 {
-    struct symbol_table_entry* entry;
-    struct utf8_view           func_name;
-
-    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
-    {
-        func_param_types_list_deinit(entry->param_types);
-        (void)func_name;
-    }
-
     hm_deinit(&table->hm);
 }
 
 int
 symbol_table_add_declarations_from_ast(
-    struct symbol_table** table, const struct ast* ast, const char* source_text)
+    struct symbol_table**   table,
+    const struct ast*       tus,
+    int                     tu_id,
+    const struct db_source* sources)
 {
-    ast_id n;
+    ast_id            n;
+    const struct ast* ast = &tus[tu_id];
+    const char*       source = sources[tu_id].text.data;
     for (n = 0; n != ast->node_count; ++n)
     {
         if (ast->nodes[n].info.node_type != AST_FUNC)
@@ -176,7 +171,7 @@ symbol_table_add_declarations_from_ast(
         ast_id           decl = ast->nodes[n].func.decl;
         ast_id           ident = ast->nodes[decl].func_decl.identifier;
         struct utf8_span span = ast->nodes[ident].identifier.name;
-        struct utf8_view func_name = utf8_span_view(source_text, span);
+        struct utf8_view func_name = utf8_span_view(source, span);
 
         struct symbol_table_entry* entry;
         switch (hm_emplace_or_get((struct hm**)table, func_name, &entry))
@@ -185,30 +180,10 @@ symbol_table_add_declarations_from_ast(
             case HM_EXISTS: return -1;
 
             case HM_NEW: {
-                ast_id paramlist;
-
-                func_param_types_list_init(&entry->param_types);
-                for (paramlist = ast->nodes[decl].func_decl.paramlist;
-                     paramlist > -1;
-                     paramlist = ast->nodes[paramlist].paramlist.next)
-                {
-                    ast_id param_ident
-                        = ast->nodes[paramlist].paramlist.identifier;
-                    enum type param_type
-                        = ast->nodes[param_ident].info.type_info;
-                    if (func_param_types_list_push(
-                            &entry->param_types, param_type)
-                        != 0)
-                    {
-                        return -1;
-                    }
-                }
-
-                /* TODO: entry->return_type =
-                   semantic_resolve_function_return_type( ast, n, plugins, cmds,
-                   table, source_filename, source_text);*/
+                entry->tu_id = tu_id;
+                entry->ast_node = n;
+                break;
             }
-            break;
         }
     }
 
@@ -224,58 +199,35 @@ symbol_table_find(const struct symbol_table* table, struct utf8_view key)
 void
 mem_acquire_symbol_table(struct symbol_table* table)
 {
-    struct symbol_table_entry* entry;
-    struct utf8_view           func_name;
-
     if (table == NULL)
         return;
+
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_data != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_spans != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.values != NULL, (void)0);
 
     mem_acquire(
         table,
         offsetof(struct hm, hashes)
             + table->hm.capacity * sizeof(table->hm.hashes[0]));
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_data != NULL, (void)0);
     mem_acquire(
         table->hm.kvs.key_data,
         offsetof(struct kvs_key_data, data)
             + sizeof(table->hm.kvs.key_data->data[0])
                   * table->hm.kvs.key_data->capacity);
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.key_spans != NULL, (void)0);
     mem_acquire(
         table->hm.kvs.key_spans,
         sizeof(table->hm.kvs.key_spans[0]) * table->hm.capacity);
-    ODBUTIL_DEBUG_ASSERT(table->hm.kvs.values != NULL, (void)0);
     mem_acquire(
         table->hm.kvs.values,
         sizeof(table->hm.kvs.values[0]) * table->hm.capacity);
-
-    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
-    {
-        if (entry == NULL)
-            continue;
-        mem_acquire(
-            entry->param_types,
-            offsetof(struct func_param_types_list, data)
-                + sizeof(entry->param_types->data[0])
-                      * entry->param_types->capacity);
-        (void)func_name;
-    }
 }
 
 void
 mem_release_symbol_table(struct symbol_table* table)
 {
-    struct symbol_table_entry* entry;
-    struct utf8_view           func_name;
-
     if (table == NULL)
         return;
-
-    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
-    {
-        mem_release(entry->param_types);
-        (void)func_name;
-    }
 
     mem_release(table->hm.kvs.values);
     mem_release(table->hm.kvs.key_spans);

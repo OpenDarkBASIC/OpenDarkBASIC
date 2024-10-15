@@ -11,10 +11,10 @@ struct plugin_list;
 struct symbol_table;
 
 typedef int (*semantic_check_func)(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -30,10 +30,10 @@ struct semantic_check
 ODBCOMPILER_PUBLIC_API int
 semantic_check_run(
     const struct semantic_check* check,
-    struct ast*                  asts,
-    int                          asts_count,
-    int                          asts_id,
-    struct mutex**               asts_mutex,
+    struct ast*                  tus,
+    int                          tu_count,
+    int                          tu_id,
+    struct mutex**               tu_mutexes,
     const char**                 filenames,
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
@@ -42,10 +42,10 @@ semantic_check_run(
 
 ODBCOMPILER_PUBLIC_API int
 semantic_run_essential_checks(
-    struct ast*                asts,
-    int                        asts_count,
-    int                        asts_id,
-    struct mutex**             asts_mutex,
+    struct ast*                tus,
+    int                        tu_count,
+    int                        tu_id,
+    struct mutex**             tu_mutexes,
     const char**               filenames,
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
@@ -91,6 +91,3 @@ ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_for;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_exit;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_cont;
 ODBCOMPILER_PUBLIC_API extern const struct semantic_check semantic_loop_name;
-
-ODBCOMPILER_PUBLIC_API extern const struct semantic_check
-    semantic_resolve_func_or_container_refs;
