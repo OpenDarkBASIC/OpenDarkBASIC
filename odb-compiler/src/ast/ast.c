@@ -446,13 +446,15 @@ ast_loop(
     struct utf8_span location)
 {
     ast_id      n = new_node(astp, AST_LOOP, location);
+    ast_id      loop_body = new_node(astp, AST_LOOP_BODY, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
 
-    ast->nodes[n].loop.body = body;
+    ast->nodes[loop_body].loop_body.body = body;
+
+    ast->nodes[n].loop.loop_body = loop_body;
     ast->nodes[n].loop.name = name;
-    ast->nodes[n].loop.loop_for = -1;
     ast->nodes[n].loop.implicit_name = implicit_name;
 
     return n;
@@ -508,11 +510,9 @@ ast_loop_for(
     ast_id           step,
     ast_id           next,
     struct utf8_span name,
-    struct utf8_span location,
-    const char*      filename,
-    const char*      source)
+    struct utf8_span location)
 {
-    ast_id           loop, loop_for, loop_var;
+    ast_id           loop, loop_for1, loop_for2, loop_for3, loop_var;
     struct utf8_span implicit_name;
     struct ast*      ast = *astp;
 
@@ -527,17 +527,24 @@ ast_loop_for(
         log_parser_err("type: %d\n", ast->nodes[loop_var].info.node_type));
     implicit_name = ast->nodes[loop_var].identifier.name;
 
-    loop_for = new_node(astp, AST_LOOP_FOR, location);
+    loop_for1 = new_node(astp, AST_LOOP_FOR1, location);
+    loop_for2 = new_node(astp, AST_LOOP_FOR2, location);
+    loop_for3 = new_node(astp, AST_LOOP_FOR3, location);
     loop = ast_loop(astp, body, name, implicit_name, location);
     ast = *astp;
-    if (loop < 0 || loop_for < 0)
+    if (loop < 0 || loop_for1 < 0 || loop_for2 < 0 || loop_for3 < 0)
         return -1;
 
-    ast->nodes[loop].loop.loop_for = loop_for;
-    ast->nodes[loop_for].loop_for.init = init;
-    ast->nodes[loop_for].loop_for.end = end;
-    ast->nodes[loop_for].loop_for.step = step;
-    ast->nodes[loop_for].loop_for.next = next;
+    ast->nodes[loop_for3].loop_for3.step = step;
+    ast->nodes[loop_for3].loop_for3.next = next;
+
+    ast->nodes[loop_for2].loop_for2.loop_for3 = loop_for3;
+    ast->nodes[loop_for2].loop_for2.end = end;
+
+    ast->nodes[loop_for1].loop_for1.loop_for2 = loop_for2;
+    ast->nodes[loop_for1].loop_for1.init = init;
+
+    ast->nodes[loop].loop.loop_for1 = loop_for1;
 
     return loop;
 }

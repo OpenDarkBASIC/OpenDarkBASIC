@@ -443,10 +443,10 @@ loop_until
 loop_for
   : loop_name FOR assignment TO expr STEP expr
         maybe_block
-    loop_next                               { $$ = ast_loop_for(ctx->astp, $8, $3, $5, $7, $9, $1, @$, ctx->filename, ctx->source); }
+    loop_next                               { $$ = ast_loop_for(ctx->astp, $8, $3, $5, $7, $9, $1, @$); }
   | loop_name FOR assignment TO expr
         maybe_block
-    loop_next                               { $$ = ast_loop_for(ctx->astp, $6, $3, $5, -1, $7, $1, @$, ctx->filename, ctx->source); }
+    loop_next                               { $$ = ast_loop_for(ctx->astp, $6, $3, $5, -1, $7, $1, @$); }
   ;
 // TODO: Change to same as assignemnt (lvalue) eventually
 loop_next

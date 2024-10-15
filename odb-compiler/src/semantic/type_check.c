@@ -956,12 +956,13 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
         case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_LOOP: {
-            ast_id body = (*astp)->nodes[n].loop.body;
-            ast_id step = (*astp)->nodes[n].loop.post_body;
+            ast_id loop_body = (*astp)->nodes[n].loop.loop_body;
+            ast_id body = (*astp)->nodes[loop_body].loop_body.body;
+            ast_id step = (*astp)->nodes[loop_body].loop_body.post_body;
             ODBUTIL_DEBUG_ASSERT(
-                (*astp)->nodes[n].loop.loop_for == -1,
+                (*astp)->nodes[n].loop.loop_for1 == -1,
                 log_semantic_err(
-                    "loop_for: %d\n", (*astp)->nodes[n].loop.loop_for));
+                    "loop_for1: %d\n", (*astp)->nodes[n].loop.loop_for1));
 
             if (body > -1
                 && resolve_node_type(ctx, body, scope) == TYPE_INVALID)
@@ -973,8 +974,11 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
 
             return (*astp)->nodes[n].info.type_info = TYPE_VOID;
         }
+        case AST_LOOP_BODY: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_LOOP_FOR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_LOOP_CONT: {
             ast_id step = (*astp)->nodes[n].cont.step;
             if (step > -1

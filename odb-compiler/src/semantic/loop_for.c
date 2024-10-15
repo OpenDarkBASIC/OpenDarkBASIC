@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/parser/db_source.h"
@@ -35,7 +36,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_COND: break;
         case AST_COND_BRANCH: break;
         case AST_LOOP: break;
-        case AST_LOOP_FOR: break;
+        case AST_LOOP_BODY: break;
+        case AST_LOOP_FOR1: break;
+        case AST_LOOP_FOR2: break;
+        case AST_LOOP_FOR3: break;
         case AST_LOOP_CONT: break;
         case AST_LOOP_EXIT: break;
         case AST_FUNC_TEMPLATE: break;
@@ -246,7 +250,7 @@ create_exit_stmt(
 }
 
 static void
-handle_next_stmt(
+compare_next_stmt_with_loop_var(
     struct ast* ast,
     ast_id      next,
     ast_id      loop_var,
@@ -267,7 +271,6 @@ handle_next_stmt(
         log_excerpt_note(gutter, "Loop variable declared here:\n");
         log_excerpt_1(source_text, ast->nodes[loop_var].info.location, "");
     }
-    ast_delete_tree(ast, next);
 }
 
 static ast_id
@@ -277,36 +280,44 @@ primitives_from_for_loop(
     const char*  source_filename,
     const char*  source_text)
 {
-    ast_id           loop_for;
-    ast_id           init, loop_var, begin, end, step, next, body;
+    ast_id           for1, for2, for3, loop_body, body, post_body;
+    ast_id           init, loop_var, begin, end, step, next;
     struct utf8_span loop_loc;
 
-    loop_for = (*astp)->nodes[loop].loop.loop_for;
-    ODBUTIL_DEBUG_ASSERT(
-        loop_for > -1, log_semantic_err("loop_for: %d\n", loop_for));
-    ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[loop].loop.post_body == -1,
-        log_semantic_err(
-            "post_body: %d\n", (*astp)->nodes[loop].loop.post_body));
+    for1 = (*astp)->nodes[loop].loop.loop_for1;
+    ODBUTIL_DEBUG_ASSERT(for1 > -1, log_semantic_err("loop_for1: %d\n", for1));
+    for2 = (*astp)->nodes[for1].loop_for1.loop_for2;
+    ODBUTIL_DEBUG_ASSERT(for2 > -1, log_semantic_err("loop_for2: %d\n", for2));
+    for3 = (*astp)->nodes[for2].loop_for2.loop_for3;
+    ODBUTIL_DEBUG_ASSERT(for3 > -1, log_semantic_err("loop_for3: %d\n", for3));
 
-    loop_loc = (*astp)->nodes[loop].info.location;
-    body = (*astp)->nodes[loop].loop.body;
-    init = (*astp)->nodes[loop_for].loop_for.init;
-    end = (*astp)->nodes[loop_for].loop_for.end;
-    step = (*astp)->nodes[loop_for].loop_for.step;
-    next = (*astp)->nodes[loop_for].loop_for.next;
+    init = (*astp)->nodes[for1].loop_for1.init;
+    end = (*astp)->nodes[for2].loop_for2.end;
+    step = (*astp)->nodes[for3].loop_for3.step;
+    next = (*astp)->nodes[for3].loop_for3.next;
     ODBUTIL_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
     ODBUTIL_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
-
     ODBUTIL_DEBUG_ASSERT(
         (*astp)->nodes[init].info.node_type == AST_ASSIGNMENT,
         log_semantic_err("type: %d\n", (*astp)->nodes[init].info.node_type));
     loop_var = (*astp)->nodes[init].assignment.lvalue;
     begin = (*astp)->nodes[init].assignment.expr;
 
-    if (next > -1)
-        handle_next_stmt((*astp), next, loop_var, source_filename, source_text);
+    loop_body = (*astp)->nodes[loop].loop.loop_body;
+    ODBUTIL_DEBUG_ASSERT(
+        loop_body > -1, log_semantic_err("loop_body: %d\n", loop_body));
+    body = (*astp)->nodes[loop_body].loop_body.body;
+    post_body = (*astp)->nodes[loop_body].loop_body.post_body;
+    ODBUTIL_DEBUG_ASSERT(
+        post_body == -1, log_semantic_err("post_body: %d\n", post_body));
 
+    if (next > -1)
+        compare_next_stmt_with_loop_var(
+            (*astp), next, loop_var, source_filename, source_text);
+    (*astp)->nodes[for3].loop_for3.next = -1;
+    ast_delete_tree(*astp, next);
+
+    loop_loc = (*astp)->nodes[loop].info.location;
     ast_id exit_stmt = create_exit_stmt(
         astp,
         begin,
@@ -330,10 +341,11 @@ primitives_from_for_loop(
     if (body > -1)
         ast_block_append((*astp), new_body, body);
 
-    (*astp)->nodes[loop].loop.body = new_body;
-    (*astp)->nodes[loop].loop.post_body
+    (*astp)->nodes[loop_body].loop_body.body = new_body;
+    (*astp)->nodes[loop_body].loop_body.post_body
         = ast_block(astp, inc_stmt, (*astp)->nodes[inc_stmt].info.location);
-    (*astp)->nodes[loop].loop.loop_for = -1;
+
+    (*astp)->nodes[loop].loop.loop_for1 = -1;
 
     ast_id init_block = ast_find_parent((*astp), loop);
     ODBUTIL_DEBUG_ASSERT(
@@ -343,7 +355,7 @@ primitives_from_for_loop(
         log_semantic_err(
             "init_block: %d\n", (*astp)->nodes[init_block].info.node_type));
 
-    ast_id loop_block = loop_for;
+    ast_id loop_block = for1;
     (*astp)->nodes[loop_block].info.node_type = AST_BLOCK;
     (*astp)->nodes[loop_block].info.location = loop_loc;
     (*astp)->nodes[loop_block].block.stmt = loop;
@@ -353,6 +365,8 @@ primitives_from_for_loop(
     (*astp)->nodes[init_block].info.location = loop_loc;
     (*astp)->nodes[init_block].block.next = loop_block;
     (*astp)->nodes[init_block].block.stmt = init;
+
+    ast_delete_tree((*astp), for2);
 
     return 0;
 }
@@ -379,7 +393,7 @@ translate_loop_for(
     {
         if (ast->nodes[n].info.node_type != AST_LOOP)
             continue;
-        if (ast->nodes[n].loop.loop_for == -1)
+        if (ast->nodes[n].loop.loop_for1 == -1)
             continue;
 
         if (primitives_from_for_loop(astp, n, filename, source) != 0)

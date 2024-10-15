@@ -75,9 +75,10 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
         case AST_LOOP:
             SWAP(struct utf8_span, loop, name)
             SWAP(struct utf8_span, loop, implicit_name) break;
-        case AST_LOOP_FOR:
-            SWAP(ast_id, loop_for, step)
-            SWAP(ast_id, loop_for, next) break;
+        case AST_LOOP_BODY: break;
+        case AST_LOOP_FOR1: break;
+        case AST_LOOP_FOR2: break;
+        case AST_LOOP_FOR3: break;
         case AST_LOOP_CONT: SWAP(struct utf8_span, cont, name) break;
         case AST_LOOP_EXIT: SWAP(struct utf8_span, loop_exit, name) break;
         case AST_FUNC_TEMPLATE: break;
@@ -146,24 +147,6 @@ ast_dup_subtree(struct ast** astp, int n)
 
     (*astp)->nodes[dup].base.left = lhs;
     (*astp)->nodes[dup].base.right = rhs;
-
-    if ((*astp)->nodes[n].info.node_type == AST_LOOP)
-    {
-        ast_id loop_for
-            = ast_dup_subtree(astp, (*astp)->nodes[n].loop.loop_for);
-        if (loop_for < 0)
-            return -1;
-        (*astp)->nodes[dup].loop.loop_for = loop_for;
-    }
-    if ((*astp)->nodes[n].info.node_type == AST_LOOP_FOR)
-    {
-        ast_id step = ast_dup_subtree(astp, (*astp)->nodes[n].loop_for.step);
-        ast_id next = ast_dup_subtree(astp, (*astp)->nodes[n].loop_for.next);
-        if (step < 0 || next < 0)
-            return -1;
-        (*astp)->nodes[dup].loop_for.step = step;
-        (*astp)->nodes[dup].loop_for.next = next;
-    }
 
     return dup;
 }
@@ -275,8 +258,6 @@ ast_trees_equal(
         case AST_COND: break;
         case AST_COND_BRANCH: break;
         case AST_LOOP:
-            if (ast->nodes[n1].loop.loop_for != ast->nodes[n2].loop.loop_for)
-                return 0;
             if (!utf8_equal(
                     utf8_span_view(source_text, ast->nodes[n1].loop.name),
                     utf8_span_view(source_text, ast->nodes[n2].loop.name)))
@@ -288,13 +269,10 @@ ast_trees_equal(
                         source_text, ast->nodes[n2].loop.implicit_name)))
                 return 0;
             break;
-        case AST_LOOP_FOR:
-            /* init and end are handled by node.base */
-            if (ast->nodes[n1].loop_for.step != ast->nodes[n2].loop_for.step)
-                return 0;
-            if (ast->nodes[n1].loop_for.next != ast->nodes[n2].loop_for.next)
-                return 0;
-            break;
+        case AST_LOOP_BODY: break;
+        case AST_LOOP_FOR1: break;
+        case AST_LOOP_FOR2: break;
+        case AST_LOOP_FOR3: break;
         case AST_LOOP_CONT:
             if (!utf8_equal(
                     utf8_span_view(source_text, ast->nodes[n1].cont.name),

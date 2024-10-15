@@ -45,7 +45,8 @@ TEST_F(NAME, continue_no_name)
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
     ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast->nodes[cont_stmt].info.node_type, Eq(AST_LOOP_CONT));
@@ -65,7 +66,8 @@ TEST_F(NAME, continue_implicitly_named_loop)
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
     ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast->nodes[cont_stmt].info.node_type, Eq(AST_LOOP_CONT));
@@ -85,7 +87,8 @@ TEST_F(NAME, continue_named_loop)
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
     ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast->nodes[cont_stmt].info.node_type, Eq(AST_LOOP_CONT));

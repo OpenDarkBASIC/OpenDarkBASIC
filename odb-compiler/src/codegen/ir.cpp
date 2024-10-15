@@ -770,12 +770,15 @@ gen_expr(
         }
         case AST_UNOP: break;
 
-        case AST_COND:
+        case AST_COND: break;
         case AST_COND_BRANCH: break;
 
-        case AST_LOOP:
-        case AST_LOOP_FOR:
-        case AST_LOOP_CONT:
+        case AST_LOOP: break;
+        case AST_LOOP_BODY: break;
+        case AST_LOOP_FOR1: break;
+        case AST_LOOP_FOR2: break;
+        case AST_LOOP_FOR3: break;
+        case AST_LOOP_CONT: break;
         case AST_LOOP_EXIT: break;
 
         case AST_FUNC_CALL: {
@@ -1202,6 +1205,11 @@ gen_block(
             case AST_COND_BRANCH: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_LOOP: {
+                ast_id ast_loop_body = ast->nodes[stmt].loop.loop_body;
+                ast_id ast_body = ast->nodes[ast_loop_body].loop_body.body;
+                ast_id ast_post_body
+                    = ast->nodes[ast_loop_body].loop_body.post_body;
+
                 llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
                 llvm::BasicBlock* BBExit = llvm::BasicBlock::Create(
@@ -1217,7 +1225,7 @@ gen_block(
                     ir,
                     builder,
                     ast,
-                    ast->nodes[stmt].loop.body,
+                    ast_body,
                     sdk_type,
                     cmds,
                     filename,
@@ -1230,12 +1238,12 @@ gen_block(
                 // For-loops keep the code for stepping separate from the rest
                 // of the body, because it can be overriden in "continue"
                 // statements
-                if (ast->nodes[stmt].loop.post_body > -1)
+                if (ast_post_body > -1)
                     gen_block(
                         ir,
                         builder,
                         ast,
-                        ast->nodes[stmt].loop.post_body,
+                        ast_post_body,
                         sdk_type,
                         cmds,
                         filename,
@@ -1252,10 +1260,14 @@ gen_block(
                 F->insert(F->end(), BBExit);
                 builder.SetInsertPoint(BBExit);
                 loop_stack->pop_back();
-            }
-            break;
 
-            case AST_LOOP_FOR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+                break;
+            }
+            case AST_LOOP_BODY: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+
+            case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+            case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+            case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
             case AST_LOOP_CONT: {
                 struct utf8_span target_name = ast->nodes[stmt].cont.name;

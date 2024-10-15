@@ -28,7 +28,8 @@ TEST_F(NAME, continue_with_step)
     ast_id init = ast->root;
     ast_id loop_block = ast->nodes[init].block.next;
     ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id exit_block = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id exit_block = ast->nodes[loop_body].loop_body.body;
     ast_id cont_block = ast->nodes[exit_block].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ast_id cont_step_block = ast->nodes[cont_stmt].cont.step;

@@ -4,27 +4,19 @@
 #include "odb-util/log.h"
 
 static int
-count_nodes_recurse(const struct ast* ast, ast_id n)
+count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
 {
     ast_id count = 1;
-    if (ast->nodes[n].base.left > -1)
-        count += count_nodes_recurse(ast, ast->nodes[n].base.left);
-    if (ast->nodes[n].base.right > -1)
-        count += count_nodes_recurse(ast, ast->nodes[n].base.right);
+    ast_id left = ast->nodes[n].base.left;
+    ast_id right = ast->nodes[n].base.right;
 
-    /* Special case with for-loops, they have more than 2 children */
-    if (ast->nodes[n].info.node_type == AST_LOOP
-        && ast->nodes[n].loop.loop_for > -1)
-    {
-        count += count_nodes_recurse(ast, ast->nodes[n].loop.loop_for);
-    }
-    if (ast->nodes[n].info.node_type == AST_LOOP_FOR)
-    {
-        if (ast->nodes[n].loop_for.step > -1)
-            count += count_nodes_recurse(ast, ast->nodes[n].loop_for.step);
-        if (ast->nodes[n].loop_for.next > -1)
-            count += count_nodes_recurse(ast, ast->nodes[n].loop_for.next);
-    }
+    if (depth > ast->count)
+        return -1;
+
+    if (left > -1 && left < ast->count)
+        count += count_nodes_recurse(ast, left, depth + 1);
+    if (right > -1 && right < ast->count)
+        count += count_nodes_recurse(ast, right, depth + 1);
 
     return count;
 }
@@ -58,7 +50,10 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_COND: print_node("COND", depth); break;
         case AST_COND_BRANCH: print_node("COND_BRANCH", depth); break;
         case AST_LOOP: print_node("LOOP", depth); break;
-        case AST_LOOP_FOR: print_node("LOOP_FOR", depth); break;
+        case AST_LOOP_BODY: print_node("LOOP_BODY", depth); break;
+        case AST_LOOP_FOR1: print_node("LOOP_FOR1", depth); break;
+        case AST_LOOP_FOR2: print_node("LOOP_FOR2", depth); break;
+        case AST_LOOP_FOR3: print_node("LOOP_FOR3", depth); break;
         case AST_LOOP_CONT: print_node("LOOP_CONT", depth); break;
         case AST_LOOP_EXIT: print_node("LOOP_EXIT", depth); break;
         case AST_FUNC_TEMPLATE: print_node("FUNC TEMPLATE", depth); break;
@@ -103,8 +98,13 @@ report_unconnected_nodes(const struct ast* ast)
 int
 ast_verify_connectivity(const struct ast* ast)
 {
-    ast_id count = count_nodes_recurse(ast, ast->root);
-    if (count != ast->count)
+    ast_id count = count_nodes_recurse(ast, ast->root, 0);
+    if (count < 0)
+    {
+        log_err("[ast] ", "AST recursion depth exceeds node count\n");
+        return -1;
+    }
+    else if (count != ast->count)
     {
         log_err(
             "[ast] ",

@@ -24,18 +24,21 @@ child_changed:
                 return -1;
             goto child_changed;
 
-        case AST_COND:
-        case AST_COND_BRANCH:
-        case AST_LOOP:
-        case AST_LOOP_FOR:
-        case AST_LOOP_CONT:
-        case AST_LOOP_EXIT:
-        case AST_FUNC_TEMPLATE:
-        case AST_FUNC:
-        case AST_FUNC_DECL:
-        case AST_FUNC_DEF:
-        case AST_FUNC_EXIT:
-        case AST_FUNC_OR_CONTAINER_REF:
+        case AST_COND: return -1;
+        case AST_COND_BRANCH: return -1;
+        case AST_LOOP: return -1;
+        case AST_LOOP_BODY: return -1;
+        case AST_LOOP_FOR1: return -1;
+        case AST_LOOP_FOR2: return -1;
+        case AST_LOOP_FOR3: return -1;
+        case AST_LOOP_CONT: return -1;
+        case AST_LOOP_EXIT: return -1;
+        case AST_FUNC_TEMPLATE: return -1;
+        case AST_FUNC: return -1;
+        case AST_FUNC_DECL: return -1;
+        case AST_FUNC_DEF: return -1;
+        case AST_FUNC_EXIT: return -1;
+        case AST_FUNC_OR_CONTAINER_REF: return -1;
         case AST_FUNC_CALL: return -1;
 
         case AST_BOOLEAN_LITERAL:

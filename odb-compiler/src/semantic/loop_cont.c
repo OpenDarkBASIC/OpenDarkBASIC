@@ -3,12 +3,24 @@
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
+/* TODO: This code sucks. It was written to get for loops working as fast as
+ * possible with no error checking */
+
 static int
 get_loop_var(const struct ast* ast, ast_id loop)
 {
-    ODBUTIL_DEBUG_ASSERT(ast->nodes[loop].loop.post_body > -1, (void)0);
-    ast_id post = ast->nodes[loop].loop.post_body;
-    ast_id step_stmt = ast->nodes[post].block.stmt;
+    ast_id loop_body, post_body, step_stmt;
+
+    loop_body = ast->nodes[loop].loop.loop_body;
+    ODBUTIL_DEBUG_ASSERT(loop_body > -1, (void)0);
+
+    post_body = ast->nodes[loop_body].loop_body.post_body;
+    ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast->nodes[post_body].info.node_type == AST_BLOCK,
+        log_semantic_err("type: %d\n", ast->nodes[post_body].info.node_type));
+    step_stmt = ast->nodes[post_body].block.stmt;
     return ast->nodes[step_stmt].assignment.lvalue;
 }
 
@@ -27,8 +39,10 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
     }
     else
     {
-        ODBUTIL_DEBUG_ASSERT((*astp)->nodes[loop].loop.post_body > -1, (void)0);
-        (*astp)->nodes[cont].cont.step = (*astp)->nodes[loop].loop.post_body;
+        ast_id loop_body = (*astp)->nodes[loop].loop.loop_body;
+        ast_id post_body = (*astp)->nodes[loop_body].loop_body.post_body;
+        ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
+        (*astp)->nodes[cont].cont.step = post_body;
     }
 }
 

@@ -256,12 +256,6 @@ write_nodes(
                 style->keyword.fontcolor);
             break;
         case AST_LOOP:
-            if (nd->loop.loop_for > -1)
-            {
-                write_nodes(
-                    ast, nd->loop.loop_for, fp, source, commands, style);
-                fprintf(fp, "  n%d -> n%d;\n", n, nd->loop.loop_for);
-            }
             if (nd->loop.name.len)
                 fprintf(
                     fp,
@@ -285,14 +279,26 @@ write_nodes(
                     nd->loop.implicit_name.len,
                     source + nd->loop.implicit_name.off);
             break;
-        case AST_LOOP_FOR:
+        case AST_LOOP_BODY:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"for\"];\n",
+                "label=\"loop_body\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor);
+            break;
+        case AST_LOOP_FOR1:
+        case AST_LOOP_FOR2:
+        case AST_LOOP_FOR3:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
+                "label=\"loop_for%d\"];\n",
+                n,
+                style->keyword.color,
+                style->keyword.fontcolor,
+                nd->info.node_type - AST_LOOP_FOR1 + 1);
             break;
         case AST_LOOP_CONT:
             fprintf(
@@ -574,8 +580,11 @@ ast_export_dot_fp(
     const struct style* style = &dark_style;
     fprintf(fp, "digraph ast {\n");
     fprintf(fp, "  bgcolor=\"%s\";\n", style->bgcolor);
-    write_nodes(ast, ast->root, fp, source, commands, style);
-    write_edges(ast, fp, style);
+    if (ast)
+    {
+        write_nodes(ast, ast->root, fp, source, commands, style);
+        write_edges(ast, fp, style);
+    }
     fprintf(fp, "}\n");
 
     return 0;

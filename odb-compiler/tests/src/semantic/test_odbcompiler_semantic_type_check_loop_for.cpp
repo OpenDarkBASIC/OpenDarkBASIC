@@ -33,7 +33,8 @@ TEST_F(NAME, implicit_step_1)
     ASSERT_THAT(ast->nodes[begin].info.type_info, Eq(TYPE_I32));
     ast_id loop_block = ast->nodes[ast->root].block.next;
     ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id post = ast->nodes[loop].loop.post_body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id post = ast->nodes[loop_body].loop_body.post_body;
     ASSERT_THAT(post, Gt(0));
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast->nodes[step_stmt].info.node_type, Eq(AST_ASSIGNMENT));

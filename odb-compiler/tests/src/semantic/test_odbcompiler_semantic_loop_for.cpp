@@ -41,7 +41,8 @@ TEST_F(NAME, transform_implicit_step_1)
     ast_id loop = ast->nodes[loop_block].block.stmt;
     ASSERT_THAT(ast->nodes[loop].info.node_type, Eq(AST_LOOP));
 
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id exit_cond = ast->nodes[body].block.stmt;
     ast_id gt = ast->nodes[exit_cond].cond.expr;
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
@@ -51,7 +52,7 @@ TEST_F(NAME, transform_implicit_step_1)
     ast_id exit_block = ast->nodes[ast->nodes[exit_cond].cond.cond_branch].cond_branch.yes;
     ASSERT_THAT(ast->nodes[ast->nodes[exit_block].block.stmt].info.node_type,Eq(AST_LOOP_EXIT));
 
-    ast_id post = ast->nodes[loop].loop.post_body;
+    ast_id post = ast->nodes[loop_body].loop_body.post_body;
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast->nodes[ast->nodes[step_stmt].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_stmt].assignment.expr;
@@ -77,7 +78,8 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
 
     ast_id loop = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id exit_cond = ast->nodes[body].block.stmt;
     ast_id gt = ast->nodes[exit_cond].cond.expr;
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
@@ -87,7 +89,7 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
     ast_id exit_block = ast->nodes[ast->nodes[exit_cond].cond.cond_branch].cond_branch.yes;
     ASSERT_THAT(ast->nodes[ast->nodes[exit_block].block.stmt].info.node_type,Eq(AST_LOOP_EXIT));
 
-    ast_id post = ast->nodes[loop].loop.post_body;
+    ast_id post = ast->nodes[loop_body].loop_body.post_body;
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast->nodes[ast->nodes[step_stmt].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_stmt].assignment.expr;
@@ -115,7 +117,8 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
 
     ast_id loop = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id exit_cond = ast->nodes[body].block.stmt;
     ast_id gt = ast->nodes[exit_cond].cond.expr;
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
@@ -125,7 +128,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ast_id exit_block = ast->nodes[ast->nodes[exit_cond].cond.cond_branch].cond_branch.yes;
     ASSERT_THAT(ast->nodes[ast->nodes[exit_block].block.stmt].info.node_type,Eq(AST_LOOP_EXIT));
 
-    ast_id post = ast->nodes[loop].loop.post_body;
+    ast_id post = ast->nodes[loop_body].loop_body.post_body;
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast->nodes[ast->nodes[step_stmt].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_stmt].assignment.expr;
@@ -151,7 +154,8 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].byte_literal.value, Eq(1));
 
     ast_id loop = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id exit_cond = ast->nodes[body].block.stmt;
     ast_id gt = ast->nodes[exit_cond].cond.expr;
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
@@ -161,7 +165,7 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
     ast_id exit_block = ast->nodes[ast->nodes[exit_cond].cond.cond_branch].cond_branch.yes;
     ASSERT_THAT(ast->nodes[ast->nodes[exit_block].block.stmt].info.node_type,Eq(AST_LOOP_EXIT));
 
-    ast_id post = ast->nodes[loop].loop.post_body;
+    ast_id post = ast->nodes[loop_body].loop_body.post_body;
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast->nodes[ast->nodes[step_stmt].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_stmt].assignment.expr;
@@ -187,7 +191,8 @@ TEST_F(NAME, step_expression_range)
     ASSERT_THAT(ast->nodes[ast->nodes[ass].assignment.expr].identifier.name,Utf8SpanEq(6, 1));
 
     ast_id loop = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id body = ast->nodes[loop].loop.body;
+    ast_id loop_body = ast->nodes[loop].loop.loop_body;
+    ast_id body = ast->nodes[loop_body].loop_body.body;
     ast_id exit_cond = ast->nodes[body].block.stmt;
     ast_id gt = ast->nodes[exit_cond].cond.expr;
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
@@ -197,7 +202,7 @@ TEST_F(NAME, step_expression_range)
     ast_id exit_block = ast->nodes[ast->nodes[exit_cond].cond.cond_branch].cond_branch.yes;
     ASSERT_THAT(ast->nodes[ast->nodes[exit_block].block.stmt].info.node_type,Eq(AST_LOOP_EXIT));
 
-    ast_id step = ast->nodes[loop].loop.post_body;
+    ast_id step = ast->nodes[loop_body].loop_body.post_body;
     ast_id step_stmt = ast->nodes[step].block.stmt;
     ASSERT_THAT(ast->nodes[ast->nodes[step_stmt].assignment.lvalue].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_stmt].assignment.expr;
