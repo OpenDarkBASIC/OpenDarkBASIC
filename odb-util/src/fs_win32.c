@@ -1,11 +1,11 @@
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+#include <KnownFolders.h>
+#include <ShlObj.h>
+
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
 #include "odb-util/utf8.h"
-
-#define WIN32_LEAN_AND_MEAN
-#include <KnownFolders.h>
-#include <ShlObj.h>
-#include <Windows.h>
 
 int
 fs_get_path_to_self(struct ospath* path)
@@ -238,10 +238,9 @@ fs_mtime_ms(struct ospathc path)
         NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        if (log_error)
-            log_util_err(
-                "Failed to open file {quote:%s}: {win32error}\n",
-                ospathc_cstr(path));
+        log_util_err(
+            "Failed to open file {quote:%s}: {win32error}\n",
+            ospathc_cstr(path));
         goto open_file_failed;
     }
 

@@ -9,7 +9,7 @@ typedef int32_t mem_idx;
 #if !defined(ODBUTIL_MEM_DEBUGGING)
 #   include <stdlib.h>
 #   define mem_init() (0)
-#   define mem_deinit()
+#   define mem_deinit() (0)
 #   define mem_alloc     malloc
 #   define mem_free      free
 #   define mem_realloc   realloc
