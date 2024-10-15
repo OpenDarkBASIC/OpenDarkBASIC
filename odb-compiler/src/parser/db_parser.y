@@ -248,7 +248,7 @@
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_cont loop_exit
 %type<string_value> loop_name
 %type<node_value> literal
-%type<node_value> identifier
+%type<node_value> identifier typed_identifier
 %type<node_value> func func_or_container_ref
 
 %start program
@@ -371,6 +371,7 @@ command_expr
   ;
 assignment
   : identifier '=' expr                     { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
+  | typed_identifier '=' expr               { $$ = ast_assign_var(ctx->ast, $1, $3, @2, @$); }
 //| array_ref '=' expr
 //| udt_field_lvalue '=' expr
   ;
@@ -475,6 +476,17 @@ literal
   | FLOAT_LITERAL                           { $$ = ast_float_literal(ctx->ast, $1, @$); }
   | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->ast, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->ast, $1, @$); }
+  ;
+typed_identifier
+  : identifier AS BOOLEAN                   { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_BOOL; }
+  | identifier AS BYTE                      { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U8; }
+  | identifier AS WORD                      { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U16; }
+  | identifier AS INTEGER                   { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_I32; }
+  | identifier AS DWORD                     { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_U32; }
+  | identifier AS DOUBLE INTEGER            { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_I64; }
+  | identifier AS FLOAT                     { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_F32; }
+  | identifier AS DOUBLE                    { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_F64; }
+  | identifier AS STRING                    { $$ = $1; ctx->ast->nodes[$$].info.type_info = TYPE_STRING; }
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->ast, $1, TA_NONE, @$); }

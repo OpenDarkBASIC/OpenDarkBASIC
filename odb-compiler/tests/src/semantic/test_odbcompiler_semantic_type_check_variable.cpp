@@ -20,7 +20,7 @@ TEST_F(NAME, undeclared_variable_defaults_to_integer)
     addCommand(TYPE_VOID, "print", {TYPE_I32});
     const char* source = "print a";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;
@@ -34,7 +34,7 @@ TEST_F(NAME, undeclared_float_variable_defaults_to_float)
     addCommand(TYPE_VOID, "print", {TYPE_F32});
     const char* source = "print b#";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;
@@ -48,7 +48,7 @@ TEST_F(NAME, undeclared_double_variable_defaults_to_double)
     addCommand(TYPE_VOID, "print", {TYPE_F64});
     const char* source = "print b!";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;
@@ -62,7 +62,7 @@ TEST_F(NAME, undeclared_double_integer_variable_defaults_to_double_integer)
     addCommand(TYPE_VOID, "print", {TYPE_I64});
     const char* source = "print b&";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;
@@ -76,7 +76,7 @@ TEST_F(NAME, undeclared_string_variable_defaults_to_string)
     addCommand(TYPE_VOID, "print", {TYPE_STRING});
     const char* source = "print b$";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;
@@ -90,7 +90,7 @@ TEST_F(NAME, undeclared_word_variable_defaults_to_word)
     addCommand(TYPE_VOID, "print", {TYPE_U16});
     const char* source = "print b%";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id arg = ast.nodes[cmd].cmd.arglist;
     ast_id var = ast.nodes[arg].arglist.expr;

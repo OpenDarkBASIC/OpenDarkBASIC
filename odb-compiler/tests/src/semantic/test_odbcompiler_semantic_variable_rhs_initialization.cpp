@@ -9,7 +9,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_initialize_undeclared_variables
+#define NAME odbcompiler_semantic_variable_rhs_initialization
 
 using namespace testing;
 
@@ -22,7 +22,7 @@ TEST_F(NAME, integer_initialized_to_0)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     const char* source = "print a";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -37,7 +37,7 @@ TEST_F(NAME, double_integer_initialized_to_0)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I64});
     const char* source = "print a&";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -52,7 +52,7 @@ TEST_F(NAME, word_initialized_to_0)
     addCommand(TYPE_VOID, "PRINT", {TYPE_U16});
     const char* source = "print a%";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -67,7 +67,7 @@ TEST_F(NAME, double_initialized_to_0)
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     const char* source = "print a!";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -82,7 +82,7 @@ TEST_F(NAME, float_initialized_to_0)
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     const char* source = "print a#";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -97,7 +97,7 @@ TEST_F(NAME, string_initialized_to_empty)
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     const char* source = "print a$";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
     ast_id init = ast.nodes[ass].assignment.expr;
@@ -115,7 +115,7 @@ TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)
           "    print a\n"
           "loop\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id var = ast.nodes[ass].assignment.lvalue;
@@ -134,7 +134,7 @@ TEST_F(NAME, variable_in_while_statement_is_initialized_outside_of_loop)
           "    print a\n"
           "endwhile\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     ast_id assa = ast.nodes[0].block.stmt;
     ast_id vara = ast.nodes[assa].assignment.lvalue;

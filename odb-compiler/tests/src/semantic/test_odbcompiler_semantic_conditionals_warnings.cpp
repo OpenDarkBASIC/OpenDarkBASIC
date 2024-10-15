@@ -18,7 +18,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal)
 {
     const char* source = "if a then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
@@ -34,7 +34,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
 {
     const char* source = "if a+b then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
@@ -50,7 +50,7 @@ TEST_F(NAME, implicit_evaluation_of_float_literal)
 {
     const char* source = "if 3.3f then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of FLOAT as a boolean "
@@ -66,7 +66,7 @@ TEST_F(NAME, implicit_evaluation_of_float_expression)
 {
     const char* source = "if 3.3f+5.5f then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of FLOAT as a boolean "
@@ -82,7 +82,7 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
 {
     const char* source = "if 3.3 then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -98,7 +98,7 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
 {
     const char* source = "if 3.3+5.5 then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -114,7 +114,7 @@ TEST_F(NAME, implicit_evaluation_of_string_literal)
 {
     const char* source = "if a$ then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of STRING as a boolean "
@@ -130,7 +130,7 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
 {
     const char* source = "if a$+b$ then a = 1\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of STRING as a boolean "
@@ -149,7 +149,7 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal_multiline)
           "    a = 1\n"
           "endif\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "

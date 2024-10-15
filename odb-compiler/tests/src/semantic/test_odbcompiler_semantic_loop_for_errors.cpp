@@ -22,7 +22,7 @@ TEST_F(NAME, unknown_direction_1)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(-1));
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"
@@ -41,7 +41,7 @@ TEST_F(NAME, unknown_direction_2)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(-1));
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"

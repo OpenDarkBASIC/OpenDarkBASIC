@@ -22,7 +22,7 @@ TEST_F(NAME, exit_outside_of_while_loop)
               "endwhile\n"
               "exit\n"),
         Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_exit), Eq(-1));
+    ASSERT_THAT(semantic(&semantic_loop_exit), Eq(-1));
     ASSERT_THAT(
         log(),
         LogEq("test:3:1: error: EXIT statement must be inside a loop.\n"

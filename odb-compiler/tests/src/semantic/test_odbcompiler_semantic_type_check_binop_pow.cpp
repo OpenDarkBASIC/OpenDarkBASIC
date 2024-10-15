@@ -19,7 +19,7 @@ TEST_F(NAME, exponent_cast_to_integer)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ 2"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(log(), LogEq(""));
     ast_id cmd = ast.nodes[0].block.stmt;
     ast_id args = ast.nodes[cmd].cmd.arglist;

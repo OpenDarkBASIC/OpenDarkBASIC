@@ -40,7 +40,7 @@ TEST_F(NAME, continue_no_name)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast.nodes[0].block.next;
     ast_id loop = ast.nodes[loop_block].block.stmt;
@@ -60,7 +60,7 @@ TEST_F(NAME, continue_implicitly_named_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast.nodes[0].block.next;
     ast_id loop = ast.nodes[loop_block].block.stmt;
@@ -80,7 +80,7 @@ TEST_F(NAME, continue_named_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_cont), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast.nodes[0].block.next;
     ast_id loop = ast.nodes[loop_block].block.stmt;

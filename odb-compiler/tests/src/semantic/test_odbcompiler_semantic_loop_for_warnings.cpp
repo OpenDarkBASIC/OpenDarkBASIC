@@ -32,7 +32,7 @@ TEST_F(NAME, wrong_next_var_warning)
               "next a\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:2:6: warning: Loop variable in next statement is different "
@@ -52,7 +52,7 @@ TEST_F(NAME, step_wrong_direction_1)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
@@ -73,7 +73,7 @@ TEST_F(NAME, step_wrong_direction_2)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
@@ -90,7 +90,7 @@ TEST_F(NAME, step_wrong_direction_3)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop does nothing, because it STEPs in "
@@ -107,7 +107,7 @@ TEST_F(NAME, unknown_range_1)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
@@ -129,7 +129,7 @@ TEST_F(NAME, unknown_range_2)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"
@@ -151,7 +151,7 @@ TEST_F(NAME, unknown_range_3)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: For-loop direction may be incorrect.\n"

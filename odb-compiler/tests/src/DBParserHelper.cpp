@@ -68,7 +68,7 @@ DBParserHelper::parse(const char* code)
 }
 
 int
-DBParserHelper::runSemanticCheck(const struct semantic_check* check)
+DBParserHelper::semantic(const struct semantic_check* check)
 {
     return semantic_check_run(
         check, &ast, plugins, &cmds, symbols, "test", src.text.data);

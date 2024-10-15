@@ -515,7 +515,8 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_variable_initialize_undeclared.cpp")
+        "tests/src/semantic/test_odbcompiler_semantic_variable_declaration.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_variable_rhs_initialization.cpp")
     target_link_libraries (odb-tests PRIVATE odb-compiler)
     target_include_directories (odb-tests
         PRIVATE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/tests/include>)

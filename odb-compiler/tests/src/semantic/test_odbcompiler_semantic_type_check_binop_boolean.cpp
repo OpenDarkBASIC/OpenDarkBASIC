@@ -23,7 +23,7 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
           "b = false\n"
           "print a and b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(log(), LogEq(""));
 
     ast_id initb = ast.nodes[0].block.next;

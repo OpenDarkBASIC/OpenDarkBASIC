@@ -30,6 +30,17 @@ struct type_origin
 VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
+/* The "typemap" is used to track the types of variables. When a variable first
+ * appears, it is inserted into the typemap and its type is determined based on
+ * the context surrounding it. If the variable is later referenced, then the
+ * type is extracted from the typemap.
+ *
+ * The "text" field references the source text. The spanlist contains
+ * utf8_span's that index into the source code. Because it's possible to have
+ * the same variable name in a different scope, the key also contains the
+ * current scope (0=global, 1, 2, 3, ... = nesting) such that the same variable
+ * name hashes to a different value if it is in a different scope.
+ */
 struct typemap_kvs
 {
     const char*         text;
@@ -130,6 +141,26 @@ HM_DEFINE_API_FULL(
     typemap_kvs_set_value,
     32,
     70)
+
+static void
+typemap_clear_all_with_scope(struct typemap* hm, int16_t scope)
+{
+    int slot;
+    for (slot = 0; slot != hm->capacity; ++slot)
+    {
+        if (hm->hashes[slot] == HM_SLOT_UNUSED
+            || hm->hashes[slot] == HM_SLOT_RIP)
+        {
+            continue;
+        }
+
+        if (vec_get(hm->kvs.keys, slot)->scope == scope)
+        {
+            hm->hashes[slot] = HM_SLOT_RIP;
+            hm->count--;
+        }
+    }
+}
 
 struct ctx
 {
@@ -306,15 +337,6 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
             if (rhs_type == TYPE_INVALID)
                 return TYPE_INVALID;
 
-            /* When assigning to variables, the type of that variable is
-             * inherited from the type of the assignment, if that variable has
-             * not yet been declared. If it has been declared, then we need to
-             * insert a cast to the variable's type instead of transferring the
-             * RHS type.
-             *
-             * If the variable additionally has a type annotation, then the
-             * annotated type determines the variable's type instead of the RHS.
-             */
             if (ctx->ast->nodes[lhs].info.node_type == AST_IDENTIFIER)
             {
                 struct type_origin* lhs_type;
@@ -326,34 +348,24 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                 {
                     case HM_OOM: return TYPE_INVALID;
                     case HM_EXISTS: break;
-                    case HM_NEW:
+                    case HM_NEW: {
                         lhs_type->original_declaration = lhs;
-                        /* If the variable has a type annotation, it has
-                         * precedence */
-                        switch (ctx->ast->nodes[lhs].identifier.annotation)
-                        {
-                            case TA_NONE:
-                                /* If the RHS is a smaller type, e.g. BYTE or
-                                 * WORD, prefer to set the identifier's type to
-                                 * INTEGER */
-                                lhs_type->type
-                                    = type_convert(rhs_type, TYPE_I32)
-                                              == TC_ALLOW
-                                          ? TYPE_I32
-                                          : rhs_type;
-                                break;
-                            case TA_BOOL: lhs_type->type = TYPE_BOOL; break;
-                            case TA_I64: lhs_type->type = TYPE_I64; break;
-                            case TA_I16: lhs_type->type = TYPE_U16; break;
-                            case TA_F64: lhs_type->type = TYPE_F64; break;
-                            case TA_F32: lhs_type->type = TYPE_F32; break;
-                            case TA_STRING: lhs_type->type = TYPE_STRING; break;
-                        }
+
+                        /* Prefer the explicit type ("AS TYPE"). This is set by
+                         * the parser */
+                        lhs_type->type = ctx->ast->nodes[lhs].info.type_info;
+                        if (lhs_type->type != TYPE_INVALID)
+                            break;
+
+                        /* Otherwise use annotated type */
+                        lhs_type->type = type_annotation_to_type(
+                            ctx->ast->nodes[lhs].identifier.annotation);
+                        break;
+                    }
                 }
                 ctx->ast->nodes[lhs].info.type_info = lhs_type->type;
 
-                /* The variable already exists and has a type different from RHS
-                 */
+                /* May need to insert a cast from rhs to lhs */
                 if (rhs_type != lhs_type->type)
                 {
                     int    gutter;
@@ -386,9 +398,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 ctx->source_filename,
                                 ctx->source_text,
                                 ctx->ast->nodes[rhs].info.location,
-                                "Cannot assign {emph1:%s} to {emph2:%s}. Types "
-                                "are "
-                                "incompatible.\n",
+                                "Cannot assign {emph2:%s} to {emph1:%s}. Types "
+                                "are incompatible.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
@@ -425,9 +436,8 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 ctx->source_filename,
                                 ctx->source_text,
                                 ctx->ast->nodes[rhs].info.location,
-                                "Implicit conversion from {emph1:%s} to "
-                                "{emph2:%s} "
-                                "in assignment.\n",
+                                "Implicit conversion from {emph2:%s} to "
+                                "{emph1:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(
@@ -462,7 +472,7 @@ resolve_node_type(struct ctx* ctx, ast_id n, int16_t scope)
                                 ctx->source_text,
                                 ctx->ast->nodes[rhs].info.location,
                                 "Value is truncated when converting from "
-                                "{emph1:%s} to {emph2:%s} in assignment.\n",
+                                "{emph2:%s} to {emph1:%s} in assignment.\n",
                                 type_to_db_name(rhs_type),
                                 type_to_db_name(lhs_type->type));
                             gutter = log_excerpt_binop(

@@ -19,7 +19,7 @@ TEST_F(NAME, variable_initialized_with_byte_defaults_to_integer)
 {
     const char* source = "a = 5";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ast_id ass = ast.nodes[0].block.stmt;
     ast_id lhs = ast.nodes[ass].assignment.lvalue;
     ast_id rhs = ast.nodes[ass].assignment.expr;
@@ -35,7 +35,7 @@ TEST_F(NAME, variable_initialized_with_false_boolean_defaults_to_integer)
 {
     const char* source = "a = false\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Implicit conversion from BOOLEAN to INTEGER "
@@ -62,7 +62,7 @@ TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
 {
     const char* source = "a = true\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Implicit conversion from BOOLEAN to INTEGER "
@@ -89,7 +89,7 @@ TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
 {
     const char* source = "a = 4294967295";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Implicit conversion from DWORD to INTEGER in "
@@ -113,7 +113,7 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
 {
     const char* source = "a = 99999999999999";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Value is truncated in conversion from DOUBLE "
@@ -142,7 +142,7 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
 {
     const char* source = "a = 5.5f";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Implicit conversion from FLOAT to INTEGER "
@@ -169,7 +169,7 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
 {
     const char* source = "a = 5.5";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:1: warning: Implicit conversion from DOUBLE to INTEGER "
@@ -199,7 +199,7 @@ TEST_F(NAME, circular_dependencies_default_to_integer)
           "b = a + c\n"
           "c = a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(log(), LogEq(""));
     ast_id block = ast.nodes[ast.nodes[0].block.next].block.next;
     ast_id ass1 = ast.nodes[block].block.stmt;

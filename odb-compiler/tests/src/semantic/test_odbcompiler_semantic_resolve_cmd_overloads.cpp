@@ -21,7 +21,7 @@ TEST_F(NAME, prefer_exact_overload)
     cmd_id expected_cmd = addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0))
+    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0))
         << log().text;
 
     int cmd = ast.nodes[0].block.stmt;
@@ -37,7 +37,7 @@ TEST_F(NAME, prefer_closer_matching_overload)
     cmd_id expected_cmd = addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print 5.5f"), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0))
+    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0))
         << log().text;
 
     int cmd = ast.nodes[0].block.stmt;
@@ -54,7 +54,7 @@ TEST_F(NAME, command_expr_passed_as_argument)
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print get float#()"), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0))
+    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0))
         << log().text;
 
     int cmd = ast.nodes[0].block.stmt;
@@ -70,7 +70,7 @@ TEST_F(NAME, bool_is_promoted_to_integer_overload)
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     addCommand(TYPE_VOID, "PRINT", {TYPE_STRING});
     ASSERT_THAT(parse("print true\n"), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(0))
+    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0))
         << log().text;
 
     int cmd = ast.nodes[0].block.stmt;

@@ -19,7 +19,7 @@ TEST_F(NAME, exponent_truncated_from_double)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0f ^ 2.0"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:14: warning: Exponent value is truncated when converting "
@@ -45,7 +45,7 @@ TEST_F(NAME, exponent_strange_conversion)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ true"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:13: warning: Implicit conversion of exponent from "
@@ -70,7 +70,7 @@ TEST_F(NAME, exponent_truncated_from_dword)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ 4294967295"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:13: warning: Exponent value is truncated when converting "
@@ -97,7 +97,7 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ 99999999999999"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(0));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
         LogEq("test:1:13: warning: Exponent value is truncated when converting "

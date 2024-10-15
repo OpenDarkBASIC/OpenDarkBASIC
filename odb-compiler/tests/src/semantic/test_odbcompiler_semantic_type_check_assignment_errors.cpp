@@ -21,7 +21,7 @@ TEST_F(NAME, invalid_assignment)
           "b = 2\n"
           "b = a\n";
     ASSERT_THAT(parse(source), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: error: Cannot assign STRING to INTEGER. Types are "

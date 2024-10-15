@@ -23,7 +23,7 @@ TEST_F(NAME, continue_with_step)
           "    continue step 2\n"
           "next n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     ast_id init = 0;
     ast_id loop_block = ast.nodes[init].block.next;

@@ -21,7 +21,7 @@ TEST_F(NAME, ambiguous_overloads)
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_U16});
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32, TYPE_U8});
     ASSERT_THAT(parse("print 5, 6"), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:1:7: error: Command has ambiguous overloads.\n"
@@ -40,7 +40,7 @@ TEST_F(NAME, dont_highlight_brackets_in_expr)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     ASSERT_THAT(parse("print(\"test\")"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_resolve_cmd_overloads), Eq(-1))
+    ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(-1))
         << log().text;
     ASSERT_THAT(
         log(),

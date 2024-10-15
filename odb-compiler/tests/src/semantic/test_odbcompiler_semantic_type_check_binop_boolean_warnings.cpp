@@ -19,7 +19,7 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a and b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -54,7 +54,7 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# and b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -89,7 +89,7 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! and b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -124,7 +124,7 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a or b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -159,7 +159,7 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# or b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -194,7 +194,7 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! or b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
@@ -229,7 +229,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a xor b\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
@@ -264,7 +264,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a# xor b#\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
@@ -299,7 +299,7 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     ASSERT_THAT(parse("print a! xor b!\n"), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
         LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "

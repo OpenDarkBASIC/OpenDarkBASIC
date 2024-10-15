@@ -19,7 +19,7 @@ TEST_F(NAME, exponent_invalid_type)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ \"oops\""), Eq(0));
-    EXPECT_THAT(runSemanticCheck(&semantic_type_check), Eq(-1));
+    EXPECT_THAT(semantic(&semantic_type_check), Eq(-1));
     EXPECT_THAT(
         log(),
         LogEq("test:1:13: error: Incompatible exponent type STRING can't be "

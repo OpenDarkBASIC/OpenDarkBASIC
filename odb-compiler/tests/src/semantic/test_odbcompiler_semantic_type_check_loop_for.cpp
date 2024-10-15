@@ -22,7 +22,7 @@ TEST_F(NAME, implicit_step_1)
         = "for n=1 to 5\n"
           "next n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     ast_id init = ast.nodes[0].block.stmt;
     ASSERT_THAT(ast.nodes[init].info.node_type, Eq(AST_ASSIGNMENT));

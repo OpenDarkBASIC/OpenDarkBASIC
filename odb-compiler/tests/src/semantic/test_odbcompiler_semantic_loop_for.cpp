@@ -27,7 +27,7 @@ TEST_F(NAME, transform_implicit_step_1)
               "next a\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -68,7 +68,7 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
               "next n\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -106,7 +106,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -142,7 +142,7 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */
@@ -178,7 +178,7 @@ TEST_F(NAME, step_expression_range)
               "next\n"),
         Eq(0))
         << log().text;
-    ASSERT_THAT(runSemanticCheck(&semantic_loop_for), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
     ASSERT_THAT(ast_verify_connectivity(&ast), Eq(0));
 
     /* clang-format off */

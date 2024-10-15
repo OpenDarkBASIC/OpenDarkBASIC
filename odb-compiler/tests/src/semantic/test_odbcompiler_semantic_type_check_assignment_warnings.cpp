@@ -22,7 +22,7 @@ TEST_F(NAME, truncated)
           "b = 2\n"
           "b = a#\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Value is truncated when converting from "
@@ -68,7 +68,7 @@ TEST_F(NAME, implicit_conversion)
           "b = 2\n"
           "b = a\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:3:5: warning: Implicit conversion from BOOLEAN to INTEGER "
@@ -111,7 +111,7 @@ TEST_F(NAME, integer_to_float_conversion)
 {
     const char* source = "a# = 0\n";
     ASSERT_THAT(parse(source), Eq(0));
-    ASSERT_THAT(runSemanticCheck(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
         LogEq("test:1:6: warning: Implicit conversion from BYTE to FLOAT "
