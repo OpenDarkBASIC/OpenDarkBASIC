@@ -1,13 +1,22 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/semantic/symbol_table.h"
+#include "odb-util/hash.h"
+#include "odb-util/hm.h"
 #include "odb-util/mem.h"
 
 VEC_DEFINE_API(func_param_types_list, enum type, 8)
 
-struct symbol_table_kvs_key_data
+struct kvs_key_data
 {
     utf8_idx count, capacity;
     char     data[1];
+};
+
+struct kvs
+{
+    struct utf8_span*          key_spans;
+    struct kvs_key_data*       key_data;
+    struct symbol_table_entry* values;
 };
 
 static hash32
@@ -18,14 +27,11 @@ kvs_hash(struct utf8_view key)
 }
 
 static int
-kvs_alloc(
-    struct symbol_table_kvs* kvs,
-    struct symbol_table_kvs* old_kvs,
-    int32_t                  capacity)
+kvs_alloc(struct kvs* kvs, struct kvs* old_kvs, int32_t capacity)
 {
     static const int avg_func_name_len = 32;
-    int header_size = offsetof(struct symbol_table_kvs_key_data, data);
-    int data_size = sizeof(char) * avg_func_name_len * capacity;
+    int              header_size = offsetof(struct kvs_key_data, data);
+    int              data_size = sizeof(char) * avg_func_name_len * capacity;
     kvs->key_data
         = old_kvs ? old_kvs->key_data : mem_alloc(header_size + data_size);
     if (kvs->key_data == NULL)
@@ -56,7 +62,7 @@ alloc_data_failed:
 }
 
 static void
-kvs_free(struct symbol_table_kvs* kvs)
+kvs_free(struct kvs* kvs)
 {
     mem_free(kvs->key_data);
     mem_free(kvs->key_spans);
@@ -64,17 +70,17 @@ kvs_free(struct symbol_table_kvs* kvs)
 }
 
 static struct utf8_view
-kvs_get_key(const struct symbol_table_kvs* kvs, utf8_idx idx)
+kvs_get_key(const struct kvs* kvs, utf8_idx idx)
 {
     return utf8_span_view(kvs->key_data->data, kvs->key_spans[idx]);
 }
 
 static int
-kvs_set_key(struct symbol_table_kvs* kvs, utf8_idx idx, struct utf8_view key)
+kvs_set_key(struct kvs* kvs, utf8_idx idx, struct utf8_view key)
 {
     while (kvs->key_data->count + key.len > kvs->key_data->capacity)
     {
-        int   header_size = offsetof(struct symbol_table_kvs_key_data, data);
+        int   header_size = offsetof(struct kvs_key_data, data);
         int   data_size = sizeof(char) * kvs->key_data->capacity * 2;
         void* new_mem = mem_realloc(kvs->key_data, header_size + data_size);
         if (new_mem == NULL)
@@ -101,22 +107,27 @@ kvs_keys_equal(struct utf8_view a, struct utf8_view b)
 }
 
 static struct symbol_table_entry*
-kvs_get_value(const struct symbol_table_kvs* kvs, utf8_idx idx)
+kvs_get_value(const struct kvs* kvs, utf8_idx idx)
 {
     return &kvs->values[idx];
 }
 
 static void
-kvs_set_value(
-    struct symbol_table_kvs*   kvs,
-    utf8_idx                   idx,
-    struct symbol_table_entry* value)
+kvs_set_value(struct kvs* kvs, utf8_idx idx, struct symbol_table_entry* value)
 {
     kvs->values[idx] = *value;
 }
 
+HM_DECLARE_API_FULL(
+    static,
+    hm,
+    hash32,
+    struct utf8_view,
+    struct symbol_table_entry,
+    32,
+    struct kvs)
 HM_DEFINE_API_FULL(
-    symbol_table,
+    hm,
     hash32,
     struct utf8_view,
     struct symbol_table_entry,
@@ -131,6 +142,25 @@ HM_DEFINE_API_FULL(
     kvs_set_value,
     128,
     70)
+struct symbol_table
+{
+    struct hm hm;
+};
+
+void
+symbol_table_deinit(struct symbol_table* table)
+{
+    struct symbol_table_entry* entry;
+    struct utf8_view           func_name;
+
+    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
+    {
+        func_param_types_list_deinit(entry->param_types);
+        (void)func_name;
+    }
+
+    hm_deinit(&table->hm);
+}
 
 int
 symbol_table_add_declarations_from_ast(
@@ -150,13 +180,10 @@ symbol_table_add_declarations_from_ast(
         struct utf8_view func_name = utf8_span_view(source.text.data, span);
 
         struct symbol_table_entry* entry;
-        switch (symbol_table_emplace_or_get(table, func_name, &entry))
+        switch (hm_emplace_or_get((struct hm**)table, func_name, &entry))
         {
             case HM_OOM: return -1;
-
-            case HM_EXISTS: {
-                return -1;
-            }
+            case HM_EXISTS: return -1;
 
             case HM_NEW: {
                 ast_id paramlist;
@@ -185,4 +212,52 @@ symbol_table_add_declarations_from_ast(
     }
 
     return 0;
+}
+
+const struct symbol_table_entry*
+symbol_table_find(const struct symbol_table* table, struct utf8_view key)
+{
+    return hm_find(&table->hm, key);
+}
+
+void
+mem_acquire_symbol_table(struct symbol_table* table)
+{
+    struct symbol_table_entry* entry;
+    struct utf8_view           func_name;
+
+    if (table == NULL)
+        return;
+
+    mem_acquire(table, 0);
+    mem_acquire(table->hm.kvs.key_data, 0);
+    mem_acquire(table->hm.kvs.key_spans, 0);
+    mem_acquire(table->hm.kvs.values, 0);
+
+    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
+    {
+        mem_acquire(entry->param_types, 0);
+        (void)func_name;
+    }
+}
+
+void
+mem_release_symbol_table(struct symbol_table* table)
+{
+    struct symbol_table_entry* entry;
+    struct utf8_view           func_name;
+
+    if (table == NULL)
+        return;
+
+    hm_for_each_full(&table->hm, func_name, entry, kvs_get_key, kvs_get_value)
+    {
+        mem_release(entry->param_types);
+        (void)func_name;
+    }
+
+    mem_release(table->hm.kvs.values);
+    mem_release(table->hm.kvs.key_spans);
+    mem_release(table->hm.kvs.key_data);
+    mem_release(table);
 }

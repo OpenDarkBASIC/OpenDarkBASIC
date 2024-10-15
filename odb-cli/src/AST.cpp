@@ -9,9 +9,9 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/thread.h"
 #include "odb-util/utf8.h"
-#include "odb-util/mem.h"
 }
 
 struct translation_unit
@@ -54,12 +54,12 @@ open_source_files(
     /* If there are no source files, we default to reading stdin */
     if (args.size() == 0)
     {
-        char buf[1024];
-        int len;
+        char        buf[1024];
+        int         len;
         struct utf8 contents = empty_utf8();
-        auto& tu = (*tus)[0];
+        auto&       tu = (*tus)[0];
         tu.source_filename = "stdin";
-        
+
         while ((len = fread(buf, 1, 1024, stdin)) > 0)
         {
             struct utf8_view view = {buf, 0, len};
@@ -68,7 +68,8 @@ open_source_files(
         }
         if (!feof(stdin))
         {
-            log_parser_err("Failed to read from stdin: {emph:%s}\n", strerror(errno));
+            log_parser_err(
+                "Failed to read from stdin: {emph:%s}\n", strerror(errno));
             goto read_failed;
         }
         if (db_source_ref_string(&tu.source, &contents) != 0)
@@ -127,32 +128,20 @@ parse_worker(void* arg)
         log_parser_info(
             "Parsing source file: {emph:%s}\n", tus[i].source_filename.c_str());
         parse_result = db_parse(
-                &parser,
-                &tus[i].ast,
-                tus[i].source_filename.c_str(),
-                tus[i].source,
-                getCommandList());
+            &parser,
+            &tus[i].ast,
+            tus[i].source_filename.c_str(),
+            tus[i].source,
+            getCommandList());
         mem_release(tus[i].ast.nodes);
         if (parse_result != 0)
             goto parse_failed;
 
         mutex_lock(worker->mutex);
-        if (*worker->symbol_table != NULL)
-        {
-            mem_acquire(*worker->symbol_table, 0);
-            mem_acquire((*worker->symbol_table)->kvs.key_data, 0);
-            mem_acquire((*worker->symbol_table)->kvs.key_spans, 0);
-            mem_acquire((*worker->symbol_table)->kvs.values, 0);
-        }
+        mem_acquire_symbol_table(*worker->symbol_table);
         symbol_table_add_declarations_from_ast(
             worker->symbol_table, &tus[i].ast, tus[i].source);
-        if (*worker->symbol_table != NULL)
-        {
-            mem_release(*worker->symbol_table);
-            mem_release((*worker->symbol_table)->kvs.key_data);
-            mem_release((*worker->symbol_table)->kvs.key_spans);
-            mem_release((*worker->symbol_table)->kvs.values);
-        }
+        mem_release_symbol_table(*worker->symbol_table);
         mutex_unlock(worker->mutex);
     }
 
@@ -185,12 +174,12 @@ semantic_worker(void* arg)
 
         mem_acquire(tus[i].ast.nodes, 0);
         result = semantic_run_essential_checks(
-                &tus[i].ast,
-                getPluginList(),
-                getCommandList(),
-                *worker->symbol_table,
-                tus[i].source_filename.c_str(),
-                tus[i].source);
+            &tus[i].ast,
+            getPluginList(),
+            getCommandList(),
+            *worker->symbol_table,
+            tus[i].source_filename.c_str(),
+            tus[i].source);
         mem_release(tus[i].ast.nodes);
 
         if (result != 0)
@@ -220,6 +209,76 @@ deinitAST(void)
 
     close_source_files(&translation_units);
     translation_units.clear();
+}
+
+static int
+execute_parse_workers(std::vector<worker>* workers)
+{
+    int worker_id;
+
+    /* Symbol table memory is modified by worker threads. Release, run the
+     * threads, then re-acquire */
+    struct symbol_table* symbol_table = *workers->at(0).symbol_table;
+    mem_release_symbol_table(symbol_table);
+
+    for (worker_id = 0; worker_id != (int)workers->size(); ++worker_id)
+    {
+        struct worker& worker = workers->at(worker_id);
+        worker.thread = thread_start(parse_worker, &worker);
+        if (worker.thread == NULL)
+            goto start_parse_thread_failed;
+    }
+    for (--worker_id; worker_id >= 0; --worker_id)
+    {
+        struct worker& worker = workers->at(worker_id);
+        if (thread_join(worker.thread) != NULL)
+            goto parse_thread_failed;
+    }
+
+    mem_acquire_symbol_table(*workers->at(0).symbol_table);
+    return 0;
+
+parse_thread_failed:
+    --worker_id;
+start_parse_thread_failed:
+    while (worker_id-- > 0)
+    {
+        struct worker& worker = workers->at(worker_id);
+        thread_join(worker.thread);
+    }
+    mem_acquire_symbol_table(*workers->at(0).symbol_table);
+    return -1;
+}
+
+static int
+execute_semantic_workers(std::vector<worker>* workers)
+{
+    int worker_id;
+    for (worker_id = 0; worker_id != (int)workers->size(); ++worker_id)
+    {
+        struct worker& worker = workers->at(worker_id);
+        worker.thread = thread_start(semantic_worker, &worker);
+        if (worker.thread == NULL)
+            goto start_semantic_thread_failed;
+    }
+    for (--worker_id; worker_id >= 0; --worker_id)
+    {
+        struct worker& worker = workers->at(worker_id);
+        if (thread_join(worker.thread) != NULL)
+            goto semantic_thread_failed;
+    }
+
+    return 0;
+
+semantic_thread_failed:
+    --worker_id;
+start_semantic_thread_failed:
+    while (worker_id-- > 0)
+    {
+        struct worker& worker = workers->at(worker_id);
+        thread_join(worker.thread);
+    }
+    return -1;
 }
 
 bool
@@ -257,77 +316,27 @@ parseDBA(const std::vector<std::string>& args)
         worker.symbol_table = &symbol_table;
     }
 
-    /* Parse all TU source files into ASTs */
-    for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
-    {
-        struct worker& worker = workers[worker_id];
-        worker.thread = thread_start(parse_worker, &worker);
-        if (worker.thread == NULL)
-            goto start_parse_thread_failed;
-    }
-    for (--worker_id; worker_id >= 0; --worker_id)
-    {
-        struct worker& worker = workers[worker_id];
-        if (thread_join(worker.thread) != NULL)
-            goto join_parse_thread_failed;
-    }
+    if (execute_parse_workers(&workers) != 0)
+        goto parse_failed;
 
     /* The reason for joining/splitting here is because we need to build a
      * symbol table from all of the ASTs before it's possible to run semantic
      * checks. The symbol table is populated in each parser worker thread */
-    if (symbol_table != NULL)
-    {
-        mem_acquire(symbol_table, 0);
-        mem_acquire(symbol_table->kvs.key_data, 0);
-        mem_acquire(symbol_table->kvs.key_spans, 0);
-        mem_acquire(symbol_table->kvs.values, 0);
-    }
 
-    /* Run semantic checks on ASTs */
-    for (worker_id = 0; worker_id != (int)workers.size(); ++worker_id)
-    {
-        struct worker& worker = workers[worker_id];
-        worker.thread = thread_start(semantic_worker, &worker);
-        if (worker.thread == NULL)
-            goto start_semantic_thread_failed;
-    }
-    for (--worker_id; worker_id >= 0; --worker_id)
-    {
-        struct worker& worker = workers[worker_id];
-        if (thread_join(worker.thread) != NULL)
-            goto join_semantic_thread_failed;
-    }
+    if (execute_semantic_workers(&workers) != 0)
+        goto semantic_failed;
 
     mutex_destroy(mutex);
     symbol_table_deinit(symbol_table);
-    
+
     for (auto& tu : translation_units)
-        mem_acquire(tu.ast.nodes, tu.ast.node_capacity * sizeof(union ast_node));
+        mem_acquire(
+            tu.ast.nodes, tu.ast.node_capacity * sizeof(union ast_node));
 
     return true;
 
-join_semantic_thread_failed:
-    --worker_id;
-start_semantic_thread_failed:
-    while (worker_id-- > 0)
-    {
-        struct worker& worker = workers[worker_id];
-        thread_join(worker.thread);
-    }
-    close_source_files(&translation_units);
-    translation_units.clear();
-    mutex_destroy(mutex);
-    symbol_table_deinit(symbol_table);
-    return false;
-
-join_parse_thread_failed:
-    --worker_id;
-start_parse_thread_failed:
-    while (worker_id-- > 0)
-    {
-        struct worker& worker = workers[worker_id];
-        thread_join(worker.thread);
-    }
+semantic_failed:
+parse_failed:
     close_source_files(&translation_units);
 open_sources_failed:
     translation_units.clear();

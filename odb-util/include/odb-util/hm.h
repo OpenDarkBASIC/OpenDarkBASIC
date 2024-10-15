@@ -415,6 +415,6 @@ hm_next_valid_slot(const hash32* hashes, intptr_t slot, intptr_t capacity)
     for (intptr_t key##_i                                                      \
          = hm_next_valid_slot((hm)->hashes, -1, (hm) ? (hm)->capacity : 0);    \
          (hm) && key##_i != (hm)->capacity                                     \
-         && ((key = get_key_func(&(hm)->kvs, key##_i)) || 1)                   \
-         && ((value = get_value_func(&(hm)->kvs, key##_i)) || 1);              \
+         && ((key = get_key_func(&(hm)->kvs, key##_i)), 1)                     \
+         && ((value = get_value_func(&(hm)->kvs, key##_i)), 1);                \
          key##_i = hm_next_valid_slot((hm)->hashes, key##_i, (hm)->capacity))
