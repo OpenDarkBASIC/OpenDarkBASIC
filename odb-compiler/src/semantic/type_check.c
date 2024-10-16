@@ -787,19 +787,22 @@ process_binop(
                 case TC_BOOL_PROMOTION: {
                     warn_binop_implicit_conversion(
                         *astp, binop, conv.src, conv.target, filename, source);
-
-                    ast_id cast = ast_cast(
-                        astp, conv.src, conv.type, ast_loc(*astp, conv.src));
-                    if (cast < 0)
-                        return DEP_ERROR;
-
-                    if ((*astp)->nodes[binop].binop.left == conv.src)
-                        (*astp)->nodes[binop].binop.left = cast;
-                    else
-                        (*astp)->nodes[binop].binop.right = cast;
-                    (*astp)->nodes[cast].info.type_info = conv.type;
                     break;
                 }
+            }
+
+            if (ast_type_info(*astp, conv.src) != conv.type)
+            {
+                ast_id cast = ast_cast(
+                    astp, conv.src, conv.type, ast_loc(*astp, conv.src));
+                if (cast < 0)
+                    return DEP_ERROR;
+
+                if ((*astp)->nodes[binop].binop.left == conv.src)
+                    (*astp)->nodes[binop].binop.left = cast;
+                else
+                    (*astp)->nodes[binop].binop.right = cast;
+                (*astp)->nodes[cast].info.type_info = conv.type;
             }
 
             /* Set result type and return success */
@@ -981,19 +984,22 @@ process_binop(
                 case TC_BOOL_PROMOTION: {
                     warn_binop_implicit_conversion(
                         *astp, binop, conv.src, conv.target, filename, source);
-
-                    ast_id cast = ast_cast(
-                        astp, conv.src, conv.type, ast_loc(*astp, conv.src));
-                    if (cast < 0)
-                        return DEP_ERROR;
-
-                    if ((*astp)->nodes[binop].binop.left == conv.src)
-                        (*astp)->nodes[binop].binop.left = cast;
-                    else
-                        (*astp)->nodes[binop].binop.right = cast;
-                    (*astp)->nodes[cast].info.type_info = conv.type;
                     break;
                 }
+            }
+
+            if (ast_type_info(*astp, conv.src) != conv.type)
+            {
+                ast_id cast = ast_cast(
+                    astp, conv.src, conv.type, ast_loc(*astp, conv.src));
+                if (cast < 0)
+                    return DEP_ERROR;
+
+                if ((*astp)->nodes[binop].binop.left == conv.src)
+                    (*astp)->nodes[binop].binop.left = cast;
+                else
+                    (*astp)->nodes[binop].binop.right = cast;
+                (*astp)->nodes[cast].info.type_info = conv.type;
             }
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
