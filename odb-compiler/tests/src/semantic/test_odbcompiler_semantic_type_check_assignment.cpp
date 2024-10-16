@@ -85,7 +85,8 @@ TEST_F(NAME, undeclared_variable_assigned_true_boolean_defaults_to_integer)
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_BOOLEAN_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_BOOL));
@@ -111,7 +112,8 @@ TEST_F(NAME, undeclared_variable_assigned_dword_defaults_to_integer)
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_DWORD_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U32));
@@ -129,13 +131,10 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
               " 1 | a = 99999999999999\n"
               "   | ^ ^ ~~~~~~~~~~~~~< DOUBLE INTEGER\n"
               "   | INTEGER\n"
-              "   = help: Annotate the variable with the DOUBLE INTEGER "
-              "annotation:\n"
-              " 1 | a& = true\n"
+              "   = help: Annotate the variable:\n"
+              " 1 | a& = 99999999999999\n"
               "   |  ^\n"
-              "   = help: Or explicitly declare the type of the variable AS "
-              "DOUBLE "
-              "INTEGER:\n"
+              "   = help: Or explicitly declare the type of the variable:\n"
               " 1 | a AS DOUBLE INTEGER = 99999999999999\n"
               "   |  ^~~~~~~~~~~~~~~~~<\n"));
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -143,7 +142,8 @@ TEST_F(NAME, undeclared_variable_assigned_double_integer_defaults_to_integer)
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_DOUBLE_INTEGER_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I64));
@@ -156,16 +156,15 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:5: warning: Implicit conversion from FLOAT to INTEGER "
-              "in variable initialization.\n"
+        LogEq("test:1:5: warning: Value is truncated in conversion from FLOAT "
+              "to INTEGER in variable initialization.\n"
               " 1 | a = 5.5f\n"
               "   | ^ ^ ~~~< FLOAT\n"
               "   | INTEGER\n"
-              "   = help: Annotate the variable with the FLOAT annotation:\n"
+              "   = help: Annotate the variable:\n"
               " 1 | a# = 5.5f\n"
               "   |  ^\n"
-              "   = help: Or explicitly declare the type of the variable AS "
-              "FLOAT:\n"
+              "   = help: Or explicitly declare the type of the variable:\n"
               " 1 | a AS FLOAT = 5.5f\n"
               "   |  ^~~~~~~~<\n"));
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -173,7 +172,8 @@ TEST_F(NAME, undeclared_variable_assigned_float_defaults_to_integer)
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_FLOAT_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F32));
@@ -186,15 +186,15 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:1:5: warning: Implicit conversion from DOUBLE to INTEGER "
-              "in variable initialization.\n"
+        LogEq("test:1:5: warning: Value is truncated in conversion from DOUBLE "
+              "to INTEGER in variable initialization.\n"
               " 1 | a = 5.5\n"
               "   | ^ ^ ~~< DOUBLE\n"
               "   | INTEGER\n"
-              "   = help: Annotate the variable with the DOUBLE annotation:\n"
+              "   = help: Annotate the variable:\n"
               " 1 | a! = 5.5\n"
               "   |  ^\n"
-              "   = help: Or declare the type of the variable AS DOUBLE:\n"
+              "   = help: Or explicitly declare the type of the variable:\n"
               " 1 | a AS DOUBLE = 5.5\n"
               "   |  ^~~~~~~~~<\n"));
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -202,7 +202,8 @@ TEST_F(NAME, undeclared_variable_assigned_double_defaults_to_integer)
     ast_id cast = ast->nodes[ass].assignment.expr;
     ast_id rhs = ast->nodes[cast].cast.expr;
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_DOUBLE_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, cast), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_F64));

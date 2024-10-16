@@ -171,6 +171,9 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/sdk/cmd_loader_odb.cpp"
     "src/sdk/plugin_list.c"
     "src/sdk/sdk_type.c"
+    
+    "include/odb-compiler/messages/messages.h"
+    "src/messages/messages.c"
 
     "include/odb-compiler/parser/db_keyword.h"
     "include/odb-compiler/parser/db_parser.h"

@@ -106,7 +106,7 @@ TEST_F(NAME, resizing_larger_than_capacity_reallocates_and_updates_size)
     EXPECT_THAT(vobj_count(vobj), Eq(MIN_CAPACITY * 32));
 }
 
-TEST_F(NAME, resizing_smaller_than_capacity_reallocates_and_updates_size)
+TEST_F(NAME, resizing_smaller_than_capacity_doesnt_reallocate)
 {
     obj* emplaced;
     emplaced = vobj_emplace(&vobj);
@@ -117,7 +117,7 @@ TEST_F(NAME, resizing_smaller_than_capacity_reallocates_and_updates_size)
 
     vobj_resize(&vobj, 8);
 
-    EXPECT_THAT(vobj_capacity(vobj), Eq(8u));
+    EXPECT_THAT(vobj_capacity(vobj), Eq(64u));
     EXPECT_THAT(vobj_count(vobj), Eq(8u));
 }
 TEST_F(NAME, resize_returns_error_if_realloc_fails)

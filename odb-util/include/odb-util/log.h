@@ -19,7 +19,7 @@ struct log_interface
 {
     ODBUTIL_PRINTF_FORMAT(1, 0)
     void (*write)(const char* fmt, va_list ap);
-    unsigned       use_color : 2;
+    char use_color;
 };
 
 ODBUTIL_PRIVATE_API int

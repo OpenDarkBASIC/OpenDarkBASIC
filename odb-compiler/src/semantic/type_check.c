@@ -2,7 +2,7 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_ops.h"
-#include "odb-compiler/config.h"
+#include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
@@ -504,51 +504,25 @@ process_assignment(
         rhs_type = ast_type_info(*astp, rhs);
         if (rhs_type != lhs_type->type)
         {
-            int    gutter;
             ast_id cast;
-            ast_id orig_node = lhs_type->original_declaration;
+            ast_id orig = lhs_type->original_declaration;
             ODBUTIL_DEBUG_ASSERT(
-                ast_node_type((*astp), orig_node) == AST_IDENTIFIER,
+                ast_node_type((*astp), lhs_type->original_declaration)
+                    == AST_IDENTIFIER,
                 log_semantic_err(
-                    "type: %d\n", ast_node_type((*astp), orig_node)));
-            struct utf8_span orig_name
-                = (*astp)->nodes[orig_node].identifier.name;
-            struct utf8_span orig_loc = ast_loc(*astp, orig_node);
-
-            cast = ast_cast(astp, rhs, lhs_type->type, ast_loc(*astp, rhs));
-            if (cast < -1)
-                return DEP_ERROR;
-            (*astp)->nodes[ass].assignment.expr = cast;
+                    "type: %d\n",
+                    ast_node_type((*astp), lhs_type->original_declaration)));
 
             switch (type_convert(rhs_type, lhs_type->type))
             {
                 case TC_ALLOW: break;
                 case TC_DISALLOW:
-                    log_flc_err(
-                        filename,
-                        source,
-                        ast_loc(*astp, rhs),
-                        "Cannot assign {emph2:%s} to {emph1:%s}. Types "
-                        "are incompatible.\n",
-                        type_to_db_name(rhs_type),
-                        type_to_db_name(lhs_type->type));
-                    gutter = log_excerpt_binop(
-                        source,
-                        ast_loc(*astp, lhs),
-                        (*astp)->nodes[ass].assignment.op_location,
-                        ast_loc(*astp, rhs),
-                        type_to_db_name(lhs_type->type),
-                        type_to_db_name(rhs_type));
-                    log_excerpt_note(
-                        gutter,
-                        "{emph1:%.*s} was previously declared as "
-                        "{emph1:%s} at ",
-                        orig_name.len,
-                        source + orig_name.off,
-                        type_to_db_name(lhs_type->type));
-                    log_flc("", filename, source, orig_loc, "\n");
-                    log_excerpt_1(
-                        source, orig_loc, type_to_db_name(lhs_type->type));
+                    if (lhs_insertion == HM_NEW)
+                        err_initialization_incompatible_types(
+                            *astp, ass, filename, source);
+                    else
+                        err_assignment_incompatible_types(
+                            *astp, ass, orig, filename, source);
                     return DEP_ERROR;
 
                 case TC_SIGN_CHANGE:
@@ -556,108 +530,27 @@ process_assignment(
                 case TC_INT_TO_FLOAT:
                 case TC_BOOL_PROMOTION:
                     if (lhs_insertion == HM_NEW)
-                    {
-                        /* clang-format off */
-                        const char* as_type = type_to_db_name(rhs_type);
-                        char ann[2] = {type_to_annotation(rhs_type), '\0'};
-                        struct utf8_span lhs_loc = ast_loc(*astp, lhs);
-                        utf8_idx lhs_end = lhs_loc.off + lhs_loc.len;
-                        struct log_highlight hl_annotation[] = {
-                            {ann, "", {lhs_end, 1}, LOG_INSERT, LOG_MARKERS, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        struct log_highlight hl_as_type[] = {
-                            {" AS ", "", {lhs_end, 4}, LOG_INSERT, {'^', '~', '~'}, 0},
-                            {as_type, "", {lhs_end, strlen(as_type)}, LOG_INSERT, {'~', '~', '<'}, 0},
-                            LOG_HIGHLIGHT_SENTINAL
-                        };
-                        /* clang-format on */
-                        log_flc_warn(
-                            filename,
-                            source,
-                            ast_loc(*astp, rhs),
-                            "Implicit conversion from {emph2:%s} to "
-                            "{emph1:%s} in variable initialization.\n",
-                            type_to_db_name(rhs_type),
-                            type_to_db_name(lhs_type->type));
-                        gutter = log_excerpt_binop(
-                            source,
-                            ast_loc(*astp, lhs),
-                            (*astp)->nodes[ass].assignment.op_location,
-                            ast_loc(*astp, rhs),
-                            type_to_db_name(lhs_type->type),
-                            type_to_db_name(rhs_type));
-                        if (ann[0] != TA_NONE)
-                        {
-                            log_excerpt_help(
-                                gutter, "Annotate the variable:\n");
-                            log_excerpt(source, hl_annotation);
-                        }
-                        log_excerpt_help(
-                            gutter,
-                            "%sxplicitly declare the type of the "
-                            "variable:\n",
-                            ann[0] != TA_NONE ? "Or e" : "E");
-                        log_excerpt(source, hl_as_type);
-                    }
+                        warn_initialization_implicit_conversion(
+                            *astp, ass, filename, source);
                     else
-                    {
-                        log_flc_warn(
-                            filename,
-                            source,
-                            ast_loc(*astp, rhs),
-                            "Implicit conversion from {emph2:%s} to "
-                            "{emph1:%s} in assignment.\n",
-                            type_to_db_name(rhs_type),
-                            type_to_db_name(lhs_type->type));
-                        gutter = log_excerpt_binop(
-                            source,
-                            ast_loc(*astp, lhs),
-                            (*astp)->nodes[ass].assignment.op_location,
-                            ast_loc(*astp, rhs),
-                            type_to_db_name(lhs_type->type),
-                            type_to_db_name(rhs_type));
-                        log_excerpt_note(
-                            gutter,
-                            "{emph1:%.*s} was previously declared as "
-                            "{emph1:%s} at ",
-                            orig_name.len,
-                            source + orig_name.off,
-                            type_to_db_name(lhs_type->type));
-                        log_flc("", filename, source, orig_loc, "\n");
-                        log_excerpt_1(
-                            source, orig_loc, type_to_db_name(lhs_type->type));
-                    }
+                        warn_assignment_implicit_conversion(
+                            *astp, ass, orig, filename, source);
                     break;
 
                 case TC_TRUNCATE:
-                    log_flc_warn(
-                        filename,
-                        source,
-                        ast_loc(*astp, rhs),
-                        "Value is truncated when converting from "
-                        "{emph2:%s} to {emph1:%s} in assignment.\n",
-                        type_to_db_name(rhs_type),
-                        type_to_db_name(lhs_type->type));
-                    gutter = log_excerpt_binop(
-                        source,
-                        ast_loc(*astp, lhs),
-                        (*astp)->nodes[ass].assignment.op_location,
-                        ast_loc(*astp, rhs),
-                        type_to_db_name(lhs_type->type),
-                        type_to_db_name(rhs_type));
-                    log_excerpt_note(
-                        gutter,
-                        "{emph1:%.*s} was previously declared as "
-                        "{emph1:%s} at ",
-                        orig_name.len,
-                        source + orig_name.off,
-                        type_to_db_name(lhs_type->type));
-                    log_flc("", filename, source, orig_loc, "\n");
-                    log_excerpt_1(
-                        source, orig_loc, type_to_db_name(lhs_type->type));
+                    if (lhs_insertion == HM_NEW)
+                        warn_initialization_truncation(
+                            *astp, ass, filename, source);
+                    else
+                        warn_assignment_truncation(
+                            *astp, ass, orig, filename, source);
                     break;
             }
+
+            cast = ast_cast(astp, rhs, lhs_type->type, ast_loc(*astp, rhs));
+            if (cast < -1)
+                return DEP_ERROR;
+            (*astp)->nodes[ass].assignment.expr = cast;
         }
     }
 
@@ -915,7 +808,7 @@ process_binop(
         case BINOP_LOGICAL_XOR: {
             if (cast_expr_to_boolean(astp, lhs, binop, filename, source) != 0)
                 return DEP_ERROR;
-            if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 0)
+            if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 1)
                 return DEP_ERROR;
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;

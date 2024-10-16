@@ -25,8 +25,8 @@ TEST_F(NAME, truncated)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     EXPECT_THAT(
         log(),
-        LogEq("test:3:5: warning: Value is truncated when converting from "
-              "FLOAT to INTEGER in assignment.\n"
+        LogEq("test:3:5: warning: Value is truncated in conversion from FLOAT "
+              "to INTEGER in assignment.\n"
               " 3 | b = a#\n"
               "   | ^ ^ ~< FLOAT\n"
               "   | INTEGER\n"
@@ -47,9 +47,7 @@ TEST_F(NAME, truncated)
     ast_id lhs2 = ast->nodes[ass2].assignment.lvalue;
     ast_id rhs2 = ast->nodes[ass2].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, lhs2), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(
-        ast_node_type(ast, rhs2),
-        Eq(AST_CAST)); // BYTE literal is cast to INTEGER
+    ASSERT_THAT(ast_node_type(ast, rhs2), Eq(AST_INTEGER_LITERAL));
     ASSERT_THAT(ast_type_info(ast, lhs2), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs2), Eq(TYPE_I32));
     ast_id lhs3 = ast->nodes[ass3].assignment.lvalue;
@@ -57,7 +55,7 @@ TEST_F(NAME, truncated)
     ASSERT_THAT(ast_node_type(ast, lhs3), Eq(AST_IDENTIFIER));
     ASSERT_THAT(
         ast_node_type(ast, rhs3),
-        Eq(AST_CAST)); // DOUBLE identifier "a" is cast to INTEGER
+        Eq(AST_CAST)); // FLOAT identifier "a" is cast to INTEGER
     ASSERT_THAT(ast_type_info(ast, lhs3), Eq(TYPE_I32));
     ASSERT_THAT(ast_type_info(ast, rhs3), Eq(TYPE_I32));
 }
