@@ -2,6 +2,7 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
@@ -120,8 +121,8 @@ create_exit_stmt(
     ast_id           step,
     ast_id           loop_var,
     struct utf8_span location,
-    const char*      source_filename,
-    const char*      source_text)
+    const char*      filename,
+    const char*      source)
 {
     union expr_value begin_val, end_val, step_val = {0};
     enum expr_type   begin_type = eval_constant_expr(*astp, begin, &begin_val);
@@ -137,97 +138,29 @@ create_exit_stmt(
     if (step > -1 && step_type == EXPR_TYPE_UNKNOWN
         && (begin_type == EXPR_TYPE_UNKNOWN || end_type == EXPR_TYPE_UNKNOWN))
     {
-        int              gutter;
-        struct utf8_span loc1
-            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
-        struct utf8_span     loc2 = ast_loc(*astp, step);
-        struct log_highlight hl[]
-            = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
-               {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
-               LOG_HIGHLIGHT_SENTINAL};
-        log_flc_err(
-            source_filename,
-            source_text,
-            loc1,
-            "Unable to determine direction of for-loop.\n");
-        gutter = log_excerpt(source_text, hl);
-        log_excerpt_note(
-            gutter,
-            "The direction a for-loop counts must be known at compile-time, "
-            "because the exit condition depends on it. You can either make the "
-            "STEP value a constant, or make both the start and end values "
-            "constants.\n");
-        return -1;
+        return err_loop_for_unknown_direction(
+            *astp, begin, end, step, filename, source);
     }
 
     if (step == -1
         && (begin_type == EXPR_TYPE_UNKNOWN || end_type == EXPR_TYPE_UNKNOWN))
     {
-        int              gutter;
-        struct utf8_span loc
-            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
-        utf8_idx             ins = loc.off + loc.len;
-        struct log_highlight hl_step_forwards[]
-            = {{" STEP 1", "", {ins, 7}, LOG_INSERT, LOG_MARKERS, 0},
-               LOG_HIGHLIGHT_SENTINAL};
-        struct log_highlight hl_step_backwards[]
-            = {{" STEP -1", "", {ins, 8}, LOG_INSERT, LOG_MARKERS, 0},
-               LOG_HIGHLIGHT_SENTINAL};
-        log_flc_warn(
-            source_filename,
-            source_text,
-            loc,
-            "For-loop direction may be incorrect.\n");
-        gutter = log_excerpt_1(source_text, loc, "");
-        log_excerpt_help(
-            gutter,
-            "If no STEP is specified, it will default to 1. You can silence "
-            "this warning by making the STEP explicit:\n");
-        log_excerpt(source_text, hl_step_forwards);
-        log_excerpt(source_text, hl_step_backwards);
+        warn_loop_for_default_step_may_be_incorrect(
+            *astp, begin, end, filename, source);
     }
 
     if (begin_type != EXPR_TYPE_UNKNOWN && end_type != EXPR_TYPE_UNKNOWN
         && step_type != EXPR_TYPE_UNKNOWN && loop_dir != step_dir)
     {
-        struct utf8_span loc1
-            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
-        struct utf8_span     loc2 = ast_loc(*astp, step);
-        struct log_highlight hl[]
-            = {{"", "", loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
-               {"", "", loc2, LOG_HIGHLIGHT, LOG_MARKERS, 0},
-               LOG_HIGHLIGHT_SENTINAL};
-        log_flc_warn(
-            source_filename,
-            source_text,
-            loc1,
-            "For-loop does nothing, because it STEPs in the wrong "
-            "direction.\n");
-        log_excerpt(source_text, hl);
+        warn_loop_for_wrong_direction(
+            *astp, begin, end, step, filename, source);
     }
 
     if (begin_type != EXPR_TYPE_UNKNOWN && end_type != EXPR_TYPE_UNKNOWN
         && step == -1 && loop_dir < 0)
     {
-        int              gutter;
-        struct utf8_span loc
-            = utf8_span_union(ast_loc(*astp, begin), ast_loc(*astp, end));
-        utf8_idx             ins = loc.off + loc.len;
-        struct log_highlight hl[]
-            = {{" STEP -1", "", {ins, 8}, LOG_INSERT, LOG_MARKERS, 0},
-               LOG_HIGHLIGHT_SENTINAL};
-        log_flc_warn(
-            source_filename,
-            source_text,
-            loc,
-            "For-loop does nothing, because it STEPs in the wrong "
-            "direction.\n");
-        gutter = log_excerpt_1(source_text, loc, "");
-        log_excerpt_help(
-            gutter,
-            "If no STEP is specified, it will default to 1. You can make a "
-            "loop count backwards as follows:\n");
-        log_excerpt(source_text, hl);
+        warn_loop_for_wrong_direction_no_step(
+            *astp, begin, end, filename, source);
     }
 
     struct utf8_span begin_loc = ast_loc(*astp, begin);
@@ -245,36 +178,9 @@ create_exit_stmt(
     return exit_stmt;
 }
 
-static void
-compare_next_stmt_with_loop_var(
-    struct ast* ast,
-    ast_id      next,
-    ast_id      loop_var,
-    const char* source_filename,
-    const char* source_text)
-{
-    ODBUTIL_DEBUG_ASSERT(next > -1, log_err("ast", "next: %d\n", next));
-    if (!ast_trees_equal(source_text, ast, loop_var, next))
-    {
-        int gutter;
-        log_flc_warn(
-            source_filename,
-            source_text,
-            ast_loc(ast, next),
-            "Loop variable in next statement is different from the one "
-            "used in the for-loop statement.\n");
-        gutter = log_excerpt_1(source_text, ast_loc(ast, next), "");
-        log_excerpt_note(gutter, "Loop variable declared here:\n");
-        log_excerpt_1(source_text, ast_loc(ast, loop_var), "");
-    }
-}
-
 static ast_id
 convert_for_loop_to_primitives(
-    struct ast** astp,
-    ast_id       loop,
-    const char*  source_filename,
-    const char*  source_text)
+    struct ast** astp, ast_id loop, const char* filename, const char* source)
 {
     struct utf8_span loop_loc;
     ast_id           for1, for2, for3, loop_body, body, post_body;
@@ -314,8 +220,12 @@ convert_for_loop_to_primitives(
      * "next" belongs to. */
     if (next > -1)
     {
-        compare_next_stmt_with_loop_var(
-            (*astp), next, loop_var, source_filename, source_text);
+        if (!ast_trees_equal(source, *astp, loop_var, next))
+        {
+            warn_loop_for_incorrect_next(
+                *astp, next, loop_var, filename, source);
+        }
+
         (*astp)->nodes[for3].loop_for3.next = -1;
         ast_delete_tree(*astp, next);
     }
@@ -323,14 +233,7 @@ convert_for_loop_to_primitives(
     /* Creates the exit condition as a statement. This gets inserted at the very
      * beginning of the loop's body. */
     ast_id exit_stmt = create_exit_stmt(
-        astp,
-        begin,
-        end,
-        step,
-        loop_var,
-        loop_loc,
-        source_filename,
-        source_text);
+        astp, begin, end, step, loop_var, loop_loc, filename, source);
     if (exit_stmt < 0)
         return -1;
     /* The above function "steals" the end node */

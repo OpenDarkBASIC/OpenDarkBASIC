@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast_integrity.h"
+#include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_keyword.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/parser/db_parser.y.h"
@@ -190,7 +191,7 @@ get_next_token_ignoring_comments(
     struct utf8*           cmd_buf,
     const struct cmd_list* commands,
     const char*            filename,
-    const char*            source_text,
+    const char*            source,
     dbscan_t               scanner,
     DBLTYPE*               scanner_location)
 {
@@ -199,24 +200,18 @@ get_next_token_ignoring_comments(
     while (1)
     {
         struct token* token = get_next_assembled_token(
-            tokens, cmd_buf, commands, source_text, scanner, scanner_location);
+            tokens, cmd_buf, commands, source, scanner, scanner_location);
         if (token == NULL)
             return NULL;
         if (token->pushed_char != TOK_REMSTART)
             return token;
 
         expect_remend = get_next_assembled_token(
-            tokens, cmd_buf, commands, source_text, scanner, scanner_location);
+            tokens, cmd_buf, commands, source, scanner, scanner_location);
         if (expect_remend->pushed_char == TOK_REMEND)
             continue;
 
-        log_flc_err(
-            filename,
-            source_text,
-            token->pushed_location,
-            "Unterminated remark.\n");
-        log_excerpt_1(
-            source_text, token->pushed_location, "Remark starts here.");
+        err_unterminated_remark(token->pushed_location, filename, source);
         return NULL;
     }
 }

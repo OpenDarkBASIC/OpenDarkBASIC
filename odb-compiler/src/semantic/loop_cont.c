@@ -1,5 +1,6 @@
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 
@@ -47,50 +48,6 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
 }
 
 static int
-log_cont_error(
-    const struct ast* ast,
-    ast_id            cont,
-    ast_id            first_loop,
-    const char*       source_filename,
-    const char*       source_text)
-{
-    int gutter;
-    if (first_loop == -1)
-    {
-        log_flc_err(
-            source_filename,
-            source_text,
-            ast_loc(ast, cont),
-            "CONTINUE statement must be inside a loop.\n");
-        log_excerpt_1(source_text, ast_loc(ast, cont), "");
-    }
-    else
-    {
-        struct utf8_span name = ast->nodes[first_loop].loop.name.len
-                                    ? ast->nodes[first_loop].loop.name
-                                : ast->nodes[first_loop].loop.implicit_name.len
-                                    ? ast->nodes[first_loop].loop.implicit_name
-                                    : empty_utf8_span();
-        log_flc_err(
-            source_filename,
-            source_text,
-            ast->nodes[cont].cont.name,
-            "Unknown loop name referenced in CONTINUE statement.\n");
-        gutter = log_excerpt_1(source_text, ast->nodes[cont].cont.name, "");
-        if (name.len)
-        {
-            log_excerpt_help(
-                gutter,
-                "Did you mean {quote:%.*s}?\n",
-                name.len,
-                source_text + name.off);
-            log_excerpt_1(source_text, name, "");
-        }
-    }
-    return -1;
-}
-
-static int
 check_cont(
     const struct ast* ast,
     ast_id            cont,
@@ -108,7 +65,7 @@ check_cont(
     {
         loop = ast_find_parent(ast, loop);
         if (loop == -1)
-            return log_cont_error(
+            return err_loop_cont(
                 ast, cont, first_loop, source_filename, source_text);
 
         if (ast_node_type(ast, loop) == AST_LOOP)

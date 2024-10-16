@@ -346,6 +346,7 @@ typecheck_warnings(
                 return -1;
             ast = *astp;
             ast->nodes[arglist].arglist.expr = cast;
+            ast->nodes[cast].info.type_info = param_type;
         }
     }
 

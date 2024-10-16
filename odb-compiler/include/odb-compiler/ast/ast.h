@@ -367,6 +367,7 @@ union ast_node
         struct info info;
         ast_id expr;
         ast_id _pad;
+        enum type explicit_type;
     } cast;
 
     struct {

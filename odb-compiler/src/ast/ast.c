@@ -849,7 +849,7 @@ ast_cast(
     ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
 
     ast->nodes[n].cast.expr = expr;
-    ast->nodes[n].info.type_info = target_type;
+    ast->nodes[n].cast.explicit_type = target_type;
 
     return n;
 }

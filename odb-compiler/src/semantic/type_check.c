@@ -218,67 +218,15 @@ cast_expr_to_boolean(
 
     switch (type_convert(ast_type_info(ast, n), TYPE_BOOL))
     {
-        case TC_TRUENESS: {
-            int                  gutter;
-            struct utf8_span     expr_loc = ast_loc(ast, n);
-            utf8_idx             expr_start = expr_loc.off;
-            utf8_idx             expr_end = expr_start + expr_loc.len;
-            struct log_highlight hl_int[]
-                = {{" <> 0", "", {expr_end, 5}, LOG_INSERT, LOG_MARKERS, 0},
-                   LOG_HIGHLIGHT_SENTINAL};
-            struct log_highlight hl_float[]
-                = {{" <> 0.0f", "", {expr_end, 8}, LOG_INSERT, LOG_MARKERS, 0},
-                   LOG_HIGHLIGHT_SENTINAL};
-            struct log_highlight hl_double[]
-                = {{" <> 0.0", "", {expr_end, 7}, LOG_INSERT, LOG_MARKERS, 0},
-                   LOG_HIGHLIGHT_SENTINAL};
-            struct log_highlight hl_string[]
-                = {{" <> \"\"", "", {expr_end, 6}, LOG_INSERT, LOG_MARKERS, 0},
-                   LOG_HIGHLIGHT_SENTINAL};
-            log_flc_warn(
-                filename,
-                source,
-                ast_loc(ast, n),
-                "Implicit evaluation of {emph1:%s} as a boolean expression.\n",
-                type_to_db_name(ast_type_info(ast, n)));
-            gutter = log_excerpt_1(
-                source,
-                ast_loc(ast, n),
-                type_to_db_name(ast_type_info(ast, n)));
-
-            log_excerpt_help(
-                gutter, "You can make it explicit by changing it to:\n");
-            switch (ast_type_info(ast, n))
-            {
-                case TYPE_INVALID:
-                case TYPE_VOID:
-                case TYPE_BOOL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-                case TYPE_I64: /* fallthrough */
-                case TYPE_U32: /* fallthrough */
-                case TYPE_I32: /* fallthrough */
-                case TYPE_U16: /* fallthrough */
-                case TYPE_U8: log_excerpt(source, hl_int); break;
-                case TYPE_F32: log_excerpt(source, hl_float); break;
-                case TYPE_F64: log_excerpt(source, hl_double); break;
-                case TYPE_STRING: log_excerpt(source, hl_string); break;
-
-                case TYPE_ARRAY: break;
-
-                case TYPE_LABEL:
-                case TYPE_DABEL:
-                case TYPE_ANY:
-                case TYPE_USER_DEFINED_VAR_PTR:
-                    ODBUTIL_DEBUG_ASSERT(0, (void)0);
-                    break;
-            }
-        }
+        case TC_TRUENESS:
+            warn_boolean_implicit_evaluation(ast, n, filename, source);
             /* fallthrough */
         case TC_ALLOW: {
             ast_id cast = ast_cast(astp, n, TYPE_BOOL, ast_loc(ast, n));
             ast = *astp;
             if (cast < 0)
                 return TYPE_INVALID;
+            (*astp)->nodes[cast].info.type_info = TYPE_BOOL;
 
             /* Insert cast in between */
             if (ast->nodes[parent].base.left == n)
@@ -290,16 +238,7 @@ cast_expr_to_boolean(
         }
 
         case TC_DISALLOW:
-            log_flc_err(
-                filename,
-                source,
-                ast_loc(ast, n),
-                "Cannot evaluate {emph1:%s} as a boolean expression.\n",
-                type_to_db_name(ast_type_info(ast, n)));
-            log_excerpt_1(
-                source,
-                ast_loc(ast, n),
-                type_to_db_name(ast_type_info(ast, n)));
+            err_boolean_invalid_evaluation(ast, n, filename, source);
             break;
 
         case TC_SIGN_CHANGE:
@@ -309,6 +248,60 @@ cast_expr_to_boolean(
     }
 
     return -1;
+}
+
+struct balanced_conversion_result
+{
+    enum type                   type;
+    enum type_conversion_result conversion;
+    ast_id                      src;
+    ast_id                      target;
+};
+
+static struct balanced_conversion_result
+make_balanced_conversion_result(
+    enum type                   type,
+    enum type_conversion_result conversion,
+    ast_id                      src,
+    ast_id                      target)
+{
+    struct balanced_conversion_result result;
+    result.type = type;
+    result.conversion = conversion;
+    result.src = src;
+    result.target = target;
+    return result;
+}
+
+static struct balanced_conversion_result
+balanced_type_conversion(const struct ast* ast, ast_id lhs, ast_id rhs)
+{
+    enum type lhs_type = ast_type_info(ast, lhs);
+    enum type rhs_type = ast_type_info(ast, rhs);
+
+    enum type_conversion_result l2r = type_convert(lhs_type, rhs_type);
+    enum type_conversion_result r2l = type_convert(rhs_type, lhs_type);
+
+    if (l2r == TC_ALLOW)
+        return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
+    if (r2l == TC_ALLOW)
+        return make_balanced_conversion_result(lhs_type, r2l, rhs, lhs);
+    if (l2r == TC_INT_TO_FLOAT)
+        return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
+    if (r2l == TC_INT_TO_FLOAT)
+        return make_balanced_conversion_result(lhs_type, r2l, rhs, lhs);
+    if (l2r == TC_BOOL_PROMOTION)
+        return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
+    if (r2l == TC_BOOL_PROMOTION)
+        return make_balanced_conversion_result(lhs_type, r2l, rhs, lhs);
+    if (l2r == TC_TRUNCATE)
+        return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
+    if (r2l == TC_TRUNCATE)
+        return make_balanced_conversion_result(lhs_type, r2l, rhs, lhs);
+    if (l2r == TC_TRUENESS)
+        return make_balanced_conversion_result(rhs_type, l2r, lhs, rhs);
+
+    return make_balanced_conversion_result(TYPE_INVALID, TC_DISALLOW, -1, -1);
 }
 
 enum process_result
@@ -335,10 +328,14 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
 
     stmt = ast->nodes[block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
-    if (ast_type_info(ast, stmt) == TYPE_INVALID
-        && ast_node_type(ast, stmt) != AST_FUNC_TEMPLATE)
+    if (ast_type_info(ast, stmt) == TYPE_INVALID)
     {
-        stack_push_entry(stack, stmt);
+        /* Function templates cannot be resolved without knowing the input
+         * parameters at the callsite. Function template nodes are procssed by
+         * AST_FUNC_OR_CONTAINER_REF nodes by looking them up in the symbol
+         * table. We avoid adding them here for that reason. */
+        if (ast_node_type(ast, stmt) != AST_FUNC_TEMPLATE)
+            stack_push_entry(stack, stmt);
     }
 
     if (stack_count(*stack) != top)
@@ -498,6 +495,7 @@ process_assignment(
                 break;
             }
         }
+        /* This needs to be set before printing errors */
         (*astp)->nodes[lhs].info.type_info = lhs_type->type;
 
         /* May need to insert a cast from rhs to lhs */
@@ -551,6 +549,7 @@ process_assignment(
             if (cast < -1)
                 return DEP_ERROR;
             (*astp)->nodes[ass].assignment.expr = cast;
+            (*astp)->nodes[cast].info.type_info = lhs_type->type;
         }
     }
 
@@ -758,25 +757,185 @@ process_binop(
         case BINOP_SUB:
         case BINOP_MUL:
         case BINOP_DIV:
-        case BINOP_MOD:
-            if (type_check_binop_symmetric(astp, binop, filename, source)
-                == TYPE_INVALID)
+        case BINOP_MOD: {
+            ast_id lhs = (*astp)->nodes[binop].binop.left;
+            ast_id rhs = (*astp)->nodes[binop].binop.right;
+
+            /*
+             * These operations require that both LHS and RHS have the same
+             * type. The result type will be the "wider" of the two types.
+             */
+            struct balanced_conversion_result conv
+                = balanced_type_conversion(*astp, lhs, rhs);
+
+            switch (conv.conversion)
             {
-                return DEP_ERROR;
+                case TC_DISALLOW:
+                    err_binop_incompatible_types(
+                        *astp, conv.src, binop, filename, source);
+                    return DEP_ERROR;
+
+                case TC_ALLOW: break;
+                case TC_TRUNCATE:
+                    warn_binop_truncation(
+                        *astp, binop, conv.src, conv.target, filename, source);
+                    break;
+
+                case TC_SIGN_CHANGE:
+                case TC_TRUENESS:
+                case TC_INT_TO_FLOAT:
+                case TC_BOOL_PROMOTION: {
+                    warn_binop_implicit_conversion(
+                        *astp, binop, conv.src, conv.target, filename, source);
+
+                    ast_id cast = ast_cast(
+                        astp, conv.src, conv.type, ast_loc(*astp, conv.src));
+                    if (cast < 0)
+                        return DEP_ERROR;
+
+                    if ((*astp)->nodes[binop].binop.left == conv.src)
+                        (*astp)->nodes[binop].binop.left = cast;
+                    else
+                        (*astp)->nodes[binop].binop.right = cast;
+                    (*astp)->nodes[cast].info.type_info = conv.type;
+                    break;
+                }
             }
+
+            /* Set result type and return success */
+            (*astp)->nodes[binop].info.type_info = conv.type;
 
             stack_pop(*stack);
             return DEP_OK;
+        }
 
-        case BINOP_POW:
-            if (type_check_binop_pow(astp, binop, filename, source)
-                == TYPE_INVALID)
+        case BINOP_POW: {
+            ast_id lhs = (*astp)->nodes[binop].binop.left;
+            ast_id rhs = (*astp)->nodes[binop].binop.right;
+
+            enum type base_type = ast_type_info(*astp, lhs);
+            enum type exp_type = ast_type_info(*astp, rhs);
+
+            /*
+             * The supported instructions are as of this writing:
+             *   powi(f32, i32)
+             *   powi(f64, i32)
+             *   pow(f32, f32)
+             *   pow(f64, f64)
+             */
+            enum type base_target_type
+                = base_type == TYPE_F64 ? TYPE_F64 : TYPE_F32;
+            enum type exp_target_type = exp_type == TYPE_F64   ? TYPE_F64
+                                        : exp_type == TYPE_F32 ? TYPE_F32
+                                                               : TYPE_I32;
+            /*
+             * It makes sense to prioritize the LHS type higher than the
+             * RHS type. For example, if the LHS is a f32, but the RHS
+             * is a f64, then the RHS should be cast to a f32.
+             */
+            if (exp_target_type != TYPE_I32)
+                exp_target_type = base_target_type;
+
+            if (base_type != base_target_type)
             {
-                return DEP_ERROR;
+                /* Cast is required, insert one in the AST */
+                ast_id cast_lhs = ast_cast(
+                    astp, lhs, base_target_type, ast_loc(*astp, lhs));
+                if (cast_lhs < 0)
+                    return DEP_ERROR;
+                (*astp)->nodes[binop].binop.left = cast_lhs;
+                (*astp)->nodes[cast_lhs].info.type_info = base_target_type;
+
+                switch (type_convert(base_type, base_target_type))
+                {
+                    case TC_ALLOW: break;
+                    case TC_TRUENESS:
+                    case TC_DISALLOW:
+                        return err_binop_pow_incompatible_base_type(
+                            *astp,
+                            binop,
+                            base_type,
+                            base_target_type,
+                            filename,
+                            source);
+
+                    case TC_TRUNCATE:
+                        warn_binop_pow_base_truncation(
+                            *astp,
+                            binop,
+                            base_type,
+                            base_target_type,
+                            filename,
+                            source);
+                        break;
+
+                    case TC_SIGN_CHANGE:
+                    case TC_BOOL_PROMOTION:
+                    case TC_INT_TO_FLOAT:
+                        warn_binop_pow_base_implicit_conversion(
+                            *astp,
+                            binop,
+                            base_type,
+                            base_target_type,
+                            filename,
+                            source);
+                        break;
+                }
             }
+
+            if (exp_type != exp_target_type)
+            {
+                /* Cast is required, insert one in the AST */
+                ast_id cast_rhs
+                    = ast_cast(astp, rhs, exp_target_type, ast_loc(*astp, rhs));
+                if (cast_rhs < 0)
+                    return DEP_ERROR;
+                (*astp)->nodes[binop].binop.right = cast_rhs;
+                (*astp)->nodes[cast_rhs].info.type_info = exp_target_type;
+
+                switch (type_convert(exp_type, exp_target_type))
+                {
+                    case TC_ALLOW: break;
+                    case TC_TRUENESS:
+                    case TC_DISALLOW:
+                        return err_binop_pow_incompatible_exponent_type(
+                            *astp,
+                            binop,
+                            exp_type,
+                            exp_target_type,
+                            filename,
+                            source);
+
+                    case TC_TRUNCATE:
+                        warn_binop_pow_exponent_truncation(
+                            *astp,
+                            binop,
+                            exp_type,
+                            exp_target_type,
+                            filename,
+                            source);
+                        break;
+
+                    case TC_SIGN_CHANGE:
+                    case TC_INT_TO_FLOAT:
+                    case TC_BOOL_PROMOTION:
+                        warn_binop_pow_exponent_implicit_conversion(
+                            *astp,
+                            binop,
+                            exp_type,
+                            exp_target_type,
+                            filename,
+                            source);
+                        break;
+                }
+            }
+
+            /* The result type is the same as LHS */
+            (*astp)->nodes[binop].info.type_info = base_target_type;
 
             stack_pop(*stack);
             return DEP_OK;
+        }
 
         case BINOP_SHIFT_LEFT:
         case BINOP_SHIFT_RIGHT:
@@ -792,23 +951,63 @@ process_binop(
         case BINOP_GREATER_THAN:
         case BINOP_GREATER_EQUAL:
         case BINOP_EQUAL:
-        case BINOP_NOT_EQUAL:
-            if (type_check_binop_symmetric(astp, binop, filename, source)
-                == TYPE_INVALID)
+        case BINOP_NOT_EQUAL: {
+            ast_id lhs = (*astp)->nodes[binop].binop.left;
+            ast_id rhs = (*astp)->nodes[binop].binop.right;
+
+            /*
+             * These operations require that both LHS and RHS have the same
+             * type. The result type will be the "wider" of the two types.
+             */
+            struct balanced_conversion_result conv
+                = balanced_type_conversion(*astp, lhs, rhs);
+
+            switch (conv.conversion)
             {
-                return DEP_ERROR;
+                case TC_DISALLOW:
+                    err_binop_incompatible_types(
+                        *astp, conv.src, binop, filename, source);
+                    return DEP_ERROR;
+
+                case TC_ALLOW: break;
+                case TC_TRUNCATE:
+                    warn_binop_truncation(
+                        *astp, binop, conv.src, conv.target, filename, source);
+                    break;
+
+                case TC_SIGN_CHANGE:
+                case TC_TRUENESS:
+                case TC_INT_TO_FLOAT:
+                case TC_BOOL_PROMOTION: {
+                    warn_binop_implicit_conversion(
+                        *astp, binop, conv.src, conv.target, filename, source);
+
+                    ast_id cast = ast_cast(
+                        astp, conv.src, conv.type, ast_loc(*astp, conv.src));
+                    if (cast < 0)
+                        return DEP_ERROR;
+
+                    if ((*astp)->nodes[binop].binop.left == conv.src)
+                        (*astp)->nodes[binop].binop.left = cast;
+                    else
+                        (*astp)->nodes[binop].binop.right = cast;
+                    (*astp)->nodes[cast].info.type_info = conv.type;
+                    break;
+                }
             }
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
+
             stack_pop(*stack);
             return DEP_OK;
+        }
 
         case BINOP_LOGICAL_OR:
         case BINOP_LOGICAL_AND:
         case BINOP_LOGICAL_XOR: {
             if (cast_expr_to_boolean(astp, lhs, binop, filename, source) != 0)
                 return DEP_ERROR;
-            if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 1)
+            if (cast_expr_to_boolean(astp, rhs, binop, filename, source) != 0)
                 return DEP_ERROR;
 
             (*astp)->nodes[binop].info.type_info = TYPE_BOOL;
@@ -1188,6 +1387,7 @@ instantiate_func(
             if (cast < -1)
                 return -1;
             (*call_astp)->nodes[al_entry].arglist.expr = cast;
+            (*call_astp)->nodes[cast].info.type_info = param_type;
         }
     }
     if (al_entry > -1 || pl_entry > -1)
@@ -1458,7 +1658,8 @@ process_cast(
     const char*    filename,
     const char*    source)
 {
-    ast_id expr;
+    ast_id    expr;
+    enum type source_type, target_type;
 
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1473,8 +1674,30 @@ process_cast(
         return DEP_ADDED;
     }
 
-    if (type_check_cast(ast, cast, filename, source) != 0)
-        return DEP_ERROR;
+    source_type = ast_type_info(ast, expr);
+    target_type = ast_type_info(ast, cast);
+
+    ast->nodes[cast].info.type_info = target_type;
+
+    switch (type_convert(source_type, target_type))
+    {
+        case TC_ALLOW: break;
+
+        case TC_DISALLOW:
+            err_cast_incompatible_types(ast, cast, filename, source);
+            return DEP_ERROR;
+
+        case TC_TRUNCATE:
+            warn_cast_truncation(ast, cast, filename, source);
+            break;
+
+        case TC_SIGN_CHANGE:
+        case TC_TRUENESS:
+        case TC_INT_TO_FLOAT:
+        case TC_BOOL_PROMOTION:
+            warn_cast_implicit_conversion(ast, cast, filename, source);
+            break;
+    }
 
     stack_pop(*stack);
     return DEP_OK;
@@ -1561,16 +1784,8 @@ process_node(
                 stack, tus, tu_id, tu_mutexes, n, filenames, sources, symbols);
 
         case AST_FUNC_TEMPLATE:
-            /* Function templates cannot be resolved without knowing the input
-             * parameters at the callsite. The node is encountered because it is
-             * a child of block nodes. It should never be encountered in any
-             * other situation. Functions are instantiated in case
-             * AST_FUNC_OR_CONTAINER_REF. */
-            ODBUTIL_DEBUG_ASSERT(
-                ast_node_type((*astp), ast_find_parent(*astp, n)) == AST_BLOCK,
-                (void)0);
-            stack_pop(*stack);
-            return DEP_OK;
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return DEP_ERROR;
         case AST_FUNC_CALL:
             /* This value is already set by AST_FUNC_OR_CONTAINER_REF -- nothing
              * to do here */
@@ -1671,8 +1886,7 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
         !error,
         log_excerpt_note(
             gutter,
-            "This should not happen, and means there is a bug in the "
-            "semantic "
+            "This should not happen, and means there is a bug in the semantic "
             "analysis of the compiler.\n"));
 }
 #endif
