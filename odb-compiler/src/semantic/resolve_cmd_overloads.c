@@ -120,27 +120,22 @@ report_no_commands_found(
     const struct cmd_list*    cmds,
     cmd_id                    cmd,
     const char*               filename,
-    const char*               source,
-    const struct candidates*  candidates)
+    const char*               source)
 {
     int              gutter;
     struct utf8_view cmd_name;
 
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
-    struct utf8_span params_loc = ast_loc(ast, arglist);
-    while (ast->nodes[arglist].arglist.next > -1)
-        arglist = ast->nodes[arglist].arglist.next;
-    params_loc.len = ast_loc(ast, arglist).off - params_loc.off
-                     + ast_loc(ast, arglist).len;
+    struct utf8_span args_loc = ast->nodes[arglist].arglist.combined_location;
 
     log_flc_err(
         filename,
         source,
-        params_loc,
+        args_loc,
         "Parameter mismatch: No version of this command takes the "
         "argument types used here.\n");
-    gutter = log_excerpt_1(source, params_loc, "");
+    gutter = log_excerpt_1(source, args_loc, "");
     log_excerpt_note(gutter, "Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
@@ -353,6 +348,25 @@ typecheck_warnings(
 }
 
 static int
+create_candidates_list(
+    struct candidates** candidates, const struct cmd_list* cmds, cmd_id cmd_id)
+{
+    /* All overloads will be next to each other in memory, where the ID
+     * assigned to the AST node will be the first overload (because it was
+     * found using utf8_lower_bound()). */
+    struct utf8_view cmd_name = utf8_list_view(cmds->db_cmd_names, cmd_id);
+    do
+    {
+        if (candidates_push(candidates, cmd_id++) != 0)
+            return -1;
+    } while (
+        cmd_id < cmd_list_count(cmds)
+        && utf8_equal(cmd_name, utf8_list_view(cmds->db_cmd_names, cmd_id)));
+
+    return 0;
+}
+
+static int
 resolve_cmd_overloads(
     struct ast**               tus,
     int                        tu_count,
@@ -366,9 +380,7 @@ resolve_cmd_overloads(
 {
     ast_id             n;
     ast_id             arglist;
-    cmd_id             cmd;
     int                rule_idx;
-    struct utf8_view   cmd_name;
     struct candidates* candidates;
     struct candidates* prev_candidates;
 
@@ -390,20 +402,12 @@ resolve_cmd_overloads(
         if (ast_type_info(ast, n) == TYPE_INVALID)
             continue;
 
-        /* Build a list of candidates.
-         * All overloads will be next to each other in memory, where the ID
-         * assigned to the AST node will be the first overload (because it was
-         * found using utf8_lower_bound()). */
         candidates_clear(candidates);
-        cmd = ast->nodes[n].cmd.id;
-        cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
-        do
+        if (create_candidates_list(&candidates, cmds, ast->nodes[n].cmd.id)
+            != 0)
         {
-            if (candidates_push(&candidates, cmd++) != 0)
-                goto fail;
-        } while (
-            cmd < cmd_list_count(cmds)
-            && utf8_equal(cmd_name, utf8_list_view(cmds->db_cmd_names, cmd)));
+            goto fail;
+        }
 
         /* Count number of arguments in the AST */
         ctx.arglist = ast->nodes[n].cmd.arglist;
@@ -460,27 +464,44 @@ resolve_cmd_overloads(
             continue;
         }
 
-        // if (candidates_count(candidates) == 0)
-        //     report_no_commands_found(
-        //         ast,
-        //         ast->nodes[n].cmd.arglist,
-        //         plugins,
-        //         cmds,
-        //         ast->nodes[n].cmd.id,
-        //         filename,
-        //         source,
-        //         candidates);
-
-        // if (candidates_count(candidates) > 1)
-        report_ambiguous_overloads(
-            ast,
-            ast->nodes[n].cmd.arglist,
-            plugins,
-            cmds,
-            ast->nodes[n].cmd.id,
-            filename,
-            source,
-            prev_candidates);
+        if (candidates_count(candidates) == 0
+            && candidates_count(prev_candidates) == 0)
+        {
+            report_no_commands_found(
+                ast,
+                ast->nodes[n].cmd.arglist,
+                plugins,
+                cmds,
+                ast->nodes[n].cmd.id,
+                filename,
+                source);
+        }
+        else if (
+            candidates_count(candidates) == 0
+            && candidates_count(prev_candidates) > 0)
+        {
+            report_ambiguous_overloads(
+                ast,
+                ast->nodes[n].cmd.arglist,
+                plugins,
+                cmds,
+                ast->nodes[n].cmd.id,
+                filename,
+                source,
+                prev_candidates);
+        }
+        else
+        {
+            report_ambiguous_overloads(
+                ast,
+                ast->nodes[n].cmd.arglist,
+                plugins,
+                cmds,
+                ast->nodes[n].cmd.id,
+                filename,
+                source,
+                prev_candidates);
+        }
 
         goto fail;
     }

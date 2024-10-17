@@ -52,9 +52,8 @@ TEST_F(NAME, multi_arg_ambiguous_overloads)
     EXPECT_THAT(
         log(),
         /* clang-format off */
-        LogEq("test:1:7: error: Command has ambiguous overloads.\n"
+        LogEq("test:1:7: error: Unable to match arguments 2, 3 and 4 to command signature.\n"
               " 1 | print 5, 6, 7, 8, 9\n"
-              "   |          |  |  |  ^ BYTE\n"
               "   |          |  |  ^ BYTE\n"
               "   |          |  ^ BYTE\n"
               "   |          ^ BYTE\n"
@@ -67,7 +66,7 @@ TEST_F(NAME, multi_arg_ambiguous_overloads)
               "casting the argument to the types required:\n"
               " 1 | print 5, 6 AS ..., 7 AS ..., 8 AS ..., 9\n"
               "   |           ^~~~~~<   ^~~~~~<   ^~~~~~<\n"));
-        /* clang-format on */
+    /* clang-format on */
 }
 
 TEST_F(NAME, dont_highlight_brackets_in_expr)
@@ -117,5 +116,6 @@ TEST_F(NAME, too_few_arguments)
               "   |       ^~~<\n"
               "   = note: Available candidates:\n"
               "   |   PRINT BYTE AS BYTE, BYTE AS BYTE, BYTE AS BYTE  [test]\n"
-              "   |   PRINT FLOAT AS FLOAT, FLOAT AS FLOAT, FLOAT AS FLOAT  [test]\n"));
+              "   |   PRINT FLOAT AS FLOAT, FLOAT AS FLOAT, FLOAT AS FLOAT  "
+              "[test]\n"));
 }
