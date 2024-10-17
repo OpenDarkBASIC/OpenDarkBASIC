@@ -10,8 +10,11 @@
 VEC_DECLARE_API(static, candidates, cmd_id, 8)
 VEC_DEFINE_API(candidates, cmd_id, 8)
 
+typedef int (*conversion_valid_func)(enum type, enum type);
+
 struct ctx
 {
+    conversion_valid_func  is_conversion_valid;
     struct ast*            ast;
     const struct cmd_list* cmds;
     ast_id                 argcount;
@@ -19,7 +22,71 @@ struct ctx
 };
 
 static int
-eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
+allow_all(enum type from, enum type to)
+{
+    switch (type_convert(from, to))
+    {
+        case TC_DISALLOW: break;
+
+        case TC_TRUNCATE:
+        case TC_SIGN_CHANGE:
+        case TC_TRUENESS:
+        case TC_INT_TO_FLOAT:
+        case TC_BOOL_PROMOTION:
+        case TC_ALLOW: return 1;
+    }
+    return 0;
+}
+
+static int
+allow_non_information_losing_casts(enum type from, enum type to)
+{
+    switch (type_convert(from, to))
+    {
+        case TC_DISALLOW:
+        case TC_TRUNCATE:
+        case TC_SIGN_CHANGE:
+        case TC_INT_TO_FLOAT: break;
+
+        case TC_TRUENESS:
+        case TC_BOOL_PROMOTION:
+        case TC_ALLOW: return 1;
+    }
+    return 0;
+}
+
+static int
+allow_non_problematic_casts(enum type from, enum type to)
+{
+    switch (type_convert(from, to))
+    {
+        case TC_DISALLOW:
+        case TC_TRUNCATE:
+        case TC_SIGN_CHANGE:
+        case TC_TRUENESS:
+        case TC_INT_TO_FLOAT:
+        case TC_BOOL_PROMOTION: break;
+
+        case TC_ALLOW: return 1;
+    }
+    return 0;
+}
+
+static int
+exact_match(enum type from, enum type to)
+{
+    return from == to;
+}
+
+static const conversion_valid_func narrowing_rules[]
+    = {allow_all,
+       allow_non_information_losing_casts,
+       allow_non_problematic_casts,
+       exact_match,
+       NULL};
+
+static int
+eliminate_candidates(cmd_id* cmd_id, void* user)
 {
     int                                i;
     ast_id                             arglist;
@@ -38,71 +105,7 @@ eliminate_obviously_wrong_overloads(cmd_id* cmd_id, void* user)
         enum type param = params->data[i].type;
         enum type arg = ast_type_info(ctx->ast, expr);
 
-        /* Incompatible types */
-        switch (type_convert(arg, param))
-        {
-            case TC_DISALLOW: return 0;
-
-            case TC_TRUNCATE:
-            case TC_SIGN_CHANGE:
-            case TC_TRUENESS:
-            case TC_INT_TO_FLOAT:
-            case TC_BOOL_PROMOTION:
-            case TC_ALLOW: continue;
-        }
-    }
-
-    return 1;
-}
-
-static int
-eliminate_problematic_casts(cmd_id* cmd_id, void* user)
-{
-    int                                i;
-    ast_id                             arglist;
-    struct ctx*                        ctx = user;
-    const struct cmd_param_types_list* params
-        = ctx->cmds->param_types->data[*cmd_id];
-
-    for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
-         ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
-    {
-        ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum type param = params->data[i].type;
-        enum type arg = ast_type_info(ctx->ast, expr);
-
-        switch (type_convert(arg, param))
-        {
-            case TC_DISALLOW:
-            case TC_TRUNCATE:
-            case TC_SIGN_CHANGE:
-            case TC_TRUENESS:
-            case TC_INT_TO_FLOAT:
-            case TC_BOOL_PROMOTION: return 0;
-
-            case TC_ALLOW: continue;
-        }
-    }
-
-    return 1;
-}
-static int
-eliminate_all_but_exact_matches(cmd_id* cmd_id, void* user)
-{
-    int                                i;
-    ast_id                             arglist;
-    struct ctx*                        ctx = user;
-    const struct cmd_param_types_list* params
-        = ctx->cmds->param_types->data[*cmd_id];
-
-    for (i = 0, arglist = ctx->arglist; i != ctx->argcount;
-         ++i, arglist = ctx->ast->nodes[arglist].arglist.next)
-    {
-        ast_id    expr = ctx->ast->nodes[arglist].arglist.expr;
-        enum type param = params->data[i].type;
-        enum type arg = ast_type_info(ctx->ast, expr);
-
-        if (arg != param)
+        if (!ctx->is_conversion_valid(arg, param))
             return 0;
     }
 
@@ -188,15 +191,11 @@ report_ambiguous_overloads(
 
     /* We want to highlight the entire argument list, not just the first. Merge
      * locations of first and last */
-    struct utf8_span params_loc = ast_loc(ast, arglist);
-    while (ast->nodes[arglist].arglist.next > -1)
-        arglist = ast->nodes[arglist].arglist.next;
-    params_loc.len = ast_loc(ast, arglist).off - params_loc.off
-                     + ast_loc(ast, arglist).len;
+    struct utf8_span args_loc = ast->nodes[arglist].arglist.combined_location;
 
     log_flc_err(
-        filename, source, params_loc, "Command has ambiguous overloads.\n");
-    gutter = log_excerpt_1(source, params_loc, "");
+        filename, source, args_loc, "Command has ambiguous overloads.\n");
+    gutter = log_excerpt_1(source, args_loc, "");
     log_excerpt_note(gutter, "Conflicting overloads are:\n");
     vec_for_each(candidates, pcmd)
     {
@@ -368,6 +367,7 @@ resolve_cmd_overloads(
     ast_id             n;
     ast_id             arglist;
     cmd_id             cmd;
+    int                rule_idx;
     struct utf8_view   cmd_name;
     struct candidates* candidates;
     struct candidates* prev_candidates;
@@ -376,7 +376,7 @@ resolve_cmd_overloads(
     struct ast*  ast = *astp;
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
-    struct ctx   ctx = {ast, cmds, 0, -1};
+    struct ctx   ctx = {NULL, ast, cmds, 0, -1};
 
     candidates_init(&candidates);
     candidates_init(&prev_candidates);
@@ -384,6 +384,10 @@ resolve_cmd_overloads(
     for (n = 0; n != ast_count(ast); ++n)
     {
         if (ast_node_type(ast, n) != AST_COMMAND)
+            continue;
+
+        /* Skip processing commands that exist in template functions */
+        if (ast_type_info(ast, n) == TYPE_INVALID)
             continue;
 
         /* Build a list of candidates.
@@ -402,38 +406,50 @@ resolve_cmd_overloads(
             && utf8_equal(cmd_name, utf8_list_view(cmds->db_cmd_names, cmd)));
 
         /* Count number of arguments in the AST */
+        ctx.arglist = ast->nodes[n].cmd.arglist;
         ctx.argcount = 0;
         for (arglist = ast->nodes[n].cmd.arglist; arglist > -1;
              arglist = ast->nodes[arglist].arglist.next)
             ctx.argcount++;
 
-        /* Filter list of candidates with increasingly strict rules */
-        ctx.arglist = ast->nodes[n].cmd.arglist;
-        candidates_retain(
-            candidates, eliminate_obviously_wrong_overloads, &ctx);
-        if (candidates_count(candidates) > 1)
-            candidates_retain(candidates, eliminate_problematic_casts, &ctx);
+        /* The first rule only eliminates impossible conversions. The loop is
+         * written so that if we eliminate all candidates in the first rule,
+         * then prev_candidates will also be empty. */
+        candidates_clear(prev_candidates);
+        for (rule_idx = 0; narrowing_rules[rule_idx] != NULL; ++rule_idx)
+        {
+            /* Filter list of candidates with increasingly strict rules */
+            ctx.is_conversion_valid = narrowing_rules[rule_idx];
+            candidates_retain(candidates, eliminate_candidates, &ctx);
 
-        /* Have to be as strict as possible. This might eliminate all commands,
-         * in which case we want to report an ambiguous overload error using the
-         * candidates list as it is now. Therefore, make a copy */
-        if (candidates_resize(&prev_candidates, candidates_count(candidates))
-            < 0)
-            goto fail;
-        memcpy(
-            prev_candidates->data,
-            candidates->data,
-            sizeof(*candidates->data) * candidates_count(candidates));
+            if (candidates_count(candidates) < 2)
+                break;
 
-        if (candidates_count(candidates) > 1)
-            candidates_retain(
-                candidates, eliminate_all_but_exact_matches, &ctx);
+            /* Each elimination process might eliminate all remaining commands,
+             * in which case we want to report an ambiguous overload error using
+             * the candidates list from the previous iteration. Therefore, make
+             * a copy */
+            if (candidates_resize(
+                    &prev_candidates, candidates_count(candidates))
+                < 0)
+            {
+                goto fail;
+            }
+
+            memcpy(
+                prev_candidates->data,
+                candidates->data,
+                sizeof(*candidates->data) * candidates_count(candidates));
+        }
 
         /* Success: Update command ID in AST and perform any necessary type
          * conversions */
-        if (candidates_count(candidates) == 1)
+        if (candidates_count(candidates) == 1
+            || candidates_count(prev_candidates) == 1)
         {
-            ast->nodes[n].cmd.id = *vec_first(candidates);
+            ast->nodes[n].cmd.id = candidates_count(candidates) == 1
+                                       ? *vec_first(candidates)
+                                       : *vec_first(prev_candidates);
             if (typecheck_warnings(astp, n, plugins, cmds, filename, source)
                 != 0)
             {
@@ -444,26 +460,27 @@ resolve_cmd_overloads(
             continue;
         }
 
-        if (candidates_count(candidates) == 0)
-            report_no_commands_found(
-                ast,
-                ast->nodes[n].cmd.arglist,
-                plugins,
-                cmds,
-                ast->nodes[n].cmd.id,
-                filename,
-                source,
-                candidates);
-        else
-            report_ambiguous_overloads(
-                ast,
-                ast->nodes[n].cmd.arglist,
-                plugins,
-                cmds,
-                ast->nodes[n].cmd.id,
-                filename,
-                source,
-                prev_candidates);
+        // if (candidates_count(candidates) == 0)
+        //     report_no_commands_found(
+        //         ast,
+        //         ast->nodes[n].cmd.arglist,
+        //         plugins,
+        //         cmds,
+        //         ast->nodes[n].cmd.id,
+        //         filename,
+        //         source,
+        //         candidates);
+
+        // if (candidates_count(candidates) > 1)
+        report_ambiguous_overloads(
+            ast,
+            ast->nodes[n].cmd.arglist,
+            plugins,
+            cmds,
+            ast->nodes[n].cmd.id,
+            filename,
+            source,
+            prev_candidates);
 
         goto fail;
     }

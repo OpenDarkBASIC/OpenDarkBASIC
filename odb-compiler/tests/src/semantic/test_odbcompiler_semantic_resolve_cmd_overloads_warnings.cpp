@@ -15,7 +15,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, float_accepts_integer_with_warning)
+TEST_F(NAME, float_accepts_byte)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
     ASSERT_THAT(parse("print 5"), Eq(0));
@@ -27,6 +27,20 @@ TEST_F(NAME, float_accepts_integer_with_warning)
               " 1 | print 5\n"
               "   |       ^ BYTE\n"
               "   = note: Calling command: PRINT FLOAT AS FLOAT  [test]\n"));
+}
+
+TEST_F(NAME, float_accepts_byte_2)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8, TYPE_F32, TYPE_U8});
+    ASSERT_THAT(parse("print 5, 6, 7"), Eq(0));
+    EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
+    EXPECT_THAT(
+        log(),
+        LogEq("test:1:10: warning: Implicit conversion of argument 2 from BYTE "
+              "to FLOAT in command call.\n"
+              " 1 | print 5, 6, 7\n"
+              "   |          ^ BYTE\n"
+              "   = note: Calling command: PRINT BYTE AS BYTE, FLOAT AS FLOAT, BYTE AS BYTE  [test]\n"));
 }
 
 TEST_F(NAME, integer_accepts_float_with_warning)

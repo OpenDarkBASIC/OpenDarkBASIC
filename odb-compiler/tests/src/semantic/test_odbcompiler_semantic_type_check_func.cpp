@@ -396,15 +396,17 @@ TEST_F(NAME, nested_recursion_2)
     // TODO: Check
 }
 
-//TEST_F(NAME, infinite_recursion)
+// TEST_F(NAME, infinite_recursion)
 //{
-//    const char* source
-//        = "foo()\n"
-//          "FUNCTION foo()\n"
-//          "ENDFUNCTION foo()\n";
-//    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-//    ASSERT_THAT(
-//        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-//        << log().text;
-//    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-//}
+//     const char* source
+//         = "foo()\n"
+//           "FUNCTION foo()\n"
+//           "ENDFUNCTION foo()\n";
+//     ASSERT_THAT(parse(source), Eq(0)) << log().text;
+//     ASSERT_THAT(
+//         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src),
+//         Eq(0))
+//         << log().text;
+//     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+// }
+
