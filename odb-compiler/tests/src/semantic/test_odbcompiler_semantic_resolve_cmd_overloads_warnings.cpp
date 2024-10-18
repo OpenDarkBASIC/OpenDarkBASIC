@@ -40,7 +40,8 @@ TEST_F(NAME, float_accepts_byte_2)
               "to FLOAT in command call.\n"
               " 1 | print 5, 6, 7\n"
               "   |          ^ BYTE\n"
-              "   = note: Calling command: PRINT BYTE AS BYTE, FLOAT AS FLOAT, BYTE AS BYTE  [test]\n"));
+              "   = note: Calling command: PRINT BYTE AS BYTE, FLOAT AS FLOAT, "
+              "BYTE AS BYTE  [test]\n"));
 }
 
 TEST_F(NAME, integer_accepts_float_with_warning)
@@ -67,9 +68,9 @@ TEST_F(NAME, dword_accepts_integer_with_warning)
     EXPECT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:7: warning: Argument 1 is truncated in conversion "
-              "from INTEGER to DWORD in command call.\n"
+        LogEq("test:1:7: warning: Implicit conversion of argument 1 from "
+              "INTEGER to DWORD in command call.\n"
               " 1 | print n\n"
               "   |       ^ INTEGER\n"
-              "   = note: Calling command: PRINT DWORD AS INTEGER  [test]\n"));
+              "   = note: Calling command: PRINT DWORD AS DWORD  [test]\n"));
 }

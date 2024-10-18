@@ -221,7 +221,8 @@ enum log_highlight_type
 struct log_highlight
 {
     /*! Only used in INSERT mode -- The text to insert at offset loc.off
-     * The length of the inserted text must equal loc.len */
+     * The length of the inserted text must equal loc.len. If unused, set to "".
+     * DON'T set to NULL. */
     const char*             new_text;
     /*! Annotate the highlighted section with additional information.
      * Can be an empty string, but should not be NULL */

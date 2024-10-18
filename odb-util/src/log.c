@@ -310,30 +310,16 @@ next_control_sequence(
             *end = reset_style();
             return 1;
         case 'e':
-            if (memcmp(&fmt[*i], "mph1", 4) == 0)
-            {
-                (*i) += 4;
-                *start = emph1_style();
-                *end = reset_style();
-                return 1;
-            }
-            if (memcmp(&fmt[*i], "mph2", 4) == 0)
-            {
-                (*i) += 4;
-                *start = emph2_style();
-                *end = reset_style();
-                return 1;
-            }
-            if (memcmp(&fmt[*i], "mph3", 4) == 0)
-            {
-                (*i) += 4;
-                *start = emph3_style();
-                *end = reset_style();
-                return 1;
-            }
             if (memcmp(&fmt[*i], "mph", 3) == 0)
             {
                 (*i) += 3;
+                if (is_ascii_numeric(fmt[*i]))
+                {
+                    *start = emphn_style(fmt[*i] - '0');
+                    *end = reset_style();
+                    (*i)++;
+                    return 1;
+                }
                 *start = emph_style();
                 *end = reset_style();
                 return 1;
@@ -537,8 +523,8 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
     mutex_lock(g_mutex);
 
     ODBUTIL_DEBUG_ASSERT(
-        highlights != NULL && highlights[0].new_text != NULL,
-        log_util_err("Require at least one location"));
+        highlights != NULL && !LOG_IS_SENTINAL(highlights[0]),
+        log_printf("Require at least one highlight"));
 
     /* Calculate union of all highlight locations, store into "loc" */
     ODBUTIL_DEBUG_ASSERT(highlights, (void)0);

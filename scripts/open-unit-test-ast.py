@@ -40,7 +40,7 @@ def find_parser_source(current_line):
 
 
 source = find_parser_source(line_num)
-odb_paths = "./build/bin/x86_64/linux/bin"
+odb_paths = "./build-debug/bin/x86_64/linux/bin"
 subprocess.run([f"./odb-cli -b --dba --ast{ast_type} | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
 
 #suite = find_suite_name()

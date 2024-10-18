@@ -66,15 +66,14 @@ TEST_F(NAME, exponent_strange_conversion)
     EXPECT_THAT(ast_type_info(ast, rhs), Eq(TYPE_I32));
 }
 
-TEST_F(NAME, exponent_truncated_from_dword)
+TEST_F(NAME, exponent_implicit_conversion_from_dword)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F64});
     ASSERT_THAT(parse("print 2.0 ^ 4294967295"), Eq(0));
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: warning: Exponent value is truncated when converting "
-              "from DWORD to INTEGER.\n"
+        LogEq("test:1:13: warning: Implicit conversion of exponent from DWORD to INTEGER.\n"
               " 1 | print 2.0 ^ 4294967295\n"
               "   |       >~~ ^ ~~~~~~~~~< DWORD\n"
               "   = note: INTEGER is the largest possible integral type for "

@@ -19,9 +19,9 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_BOOL});
     const char* source
-        = "a = true\n"
-          "b = false\n"
-          "print a and b\n";
+        = "a? = true\n"
+          "b? = false\n"
+          "print a? and b?\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(log(), LogEq(""));
