@@ -113,7 +113,7 @@ eliminate_candidates(cmd_id* cmd_id, void* user)
 }
 
 static void
-report_no_commands_found(
+report_no_overloads_found(
     const struct ast*         ast,
     ast_id                    arglist,
     const struct plugin_list* plugins,
@@ -179,27 +179,60 @@ report_ambiguous_overloads(
     cmd_id                    cmd,
     const char*               filename,
     const char*               source,
+    int                       rule_idx,
     const struct candidates*  candidates)
 {
-    const cmd_id* pcmd;
+    const cmd_id* cmdp;
     int           gutter;
+    int           arg_idx, hl_idx;
+    ast_id        arg;
 
-    /* We want to highlight the entire argument list, not just the first. Merge
-     * locations of first and last */
+    const struct cmd_param_types_list* params = cmds->param_types->data[cmd];
+    int              param_count = cmd_param_types_list_count(params);
     struct utf8_span args_loc = ast->nodes[arglist].arglist.combined_location;
+    struct log_highlight* hl = mem_alloc(sizeof(*hl) * (param_count + 1));
+
+    ODBUTIL_DEBUG_ASSERT(narrowing_rules[rule_idx] != NULL, (void)0);
 
     log_flc_err(
         filename, source, args_loc, "Command has ambiguous overloads.\n");
-    gutter = log_excerpt_1(source, args_loc, "");
-    log_excerpt_note(gutter, "Conflicting overloads are:\n");
-    vec_for_each(candidates, pcmd)
+
+    hl_idx = 0;
+    memset(hl, 0, sizeof(*hl) * (param_count + 1));
+    for (arg = arglist, arg_idx = 0; arg > -1 && arg_idx < param_count;
+         arg = ast->nodes[arg].arglist.next, ++arg_idx)
     {
-        int              i;
-        struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *pcmd);
+        ast_id    expr = ast->nodes[arglist].arglist.expr;
+        enum type param_type = params->data[arg_idx].type;
+        enum type arg_type = ast_type_info(ast, expr);
+
+        if (!narrowing_rules[rule_idx](arg_type, param_type))
+        {
+            const char default_markers[] = LOG_MARKERS;
+            hl[hl_idx].annotation = type_to_db_name(arg);
+            hl[hl_idx].loc = ast_loc(ast, expr);
+            hl[hl_idx].type = LOG_HIGHLIGHT;
+            memcpy(
+                hl[hl_idx].marker, default_markers, sizeof(hl[hl_idx].marker));
+            hl[hl_idx].group = hl_idx;
+            hl_idx++;
+        }
+    }
+    {
+        struct log_highlight sentinal = LOG_HIGHLIGHT_SENTINAL;
+        memcpy(&hl[hl_idx], &sentinal, sizeof(sentinal));
+    }
+
+    gutter = log_excerpt(source, hl);
+    log_excerpt_note(gutter, "Conflicting overloads are:\n");
+
+    vec_for_each(candidates, cmdp)
+    {
+        struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *cmdp);
         const struct cmd_param_types_list* param_types
-            = cmds->param_types->data[*pcmd];
-        struct utf8_list* param_names = cmds->db_param_names->data[*pcmd];
-        enum type         ret_type = cmds->return_types->data[*pcmd];
+            = cmds->param_types->data[*cmdp];
+        struct utf8_list* param_names = cmds->db_param_names->data[*cmdp];
+        enum type         ret_type = cmds->return_types->data[*cmdp];
         plugin_id         plugin_id = cmds->plugin_ids->data[cmd];
         const struct plugin_info* plugin = &plugins->data[plugin_id];
         log_raw(
@@ -209,14 +242,14 @@ report_ambiguous_overloads(
             name.len,
             name.data + name.off,
             ret_type == TYPE_VOID ? " " : "(");
-        for (i = 0; i != utf8_list_count(param_names); ++i)
+        for (arg_idx = 0; arg_idx != utf8_list_count(param_names); ++arg_idx)
         {
-            if (i)
+            if (arg_idx)
                 log_raw(", ");
             log_raw(
                 "%s {emph1:AS %s}",
-                utf8_list_cstr(param_names, i),
-                type_to_db_name(param_types->data[i].type));
+                utf8_list_cstr(param_names, arg_idx),
+                type_to_db_name(param_types->data[arg_idx].type));
         }
         log_raw("%s  ", ret_type == TYPE_VOID ? "" : ")");
         log_raw("[%s]\n", utf8_cstr(plugin->name));
@@ -226,6 +259,8 @@ report_ambiguous_overloads(
         "This is usually an issue with conflicting plugins, or poorly designed "
         "plugins. You can try to fix it by casting the arguments to the types "
         "required.\n");
+
+    mem_free(hl);
 }
 
 static void
@@ -467,7 +502,7 @@ resolve_cmd_overloads(
         if (candidates_count(candidates) == 0
             && candidates_count(prev_candidates) == 0)
         {
-            report_no_commands_found(
+            report_no_overloads_found(
                 ast,
                 ast->nodes[n].cmd.arglist,
                 plugins,
@@ -488,9 +523,10 @@ resolve_cmd_overloads(
                 ast->nodes[n].cmd.id,
                 filename,
                 source,
+                rule_idx,
                 prev_candidates);
         }
-        else
+        else /* if (candidates_count(candidates) > 0) */
         {
             report_ambiguous_overloads(
                 ast,
@@ -500,7 +536,8 @@ resolve_cmd_overloads(
                 ast->nodes[n].cmd.id,
                 filename,
                 source,
-                prev_candidates);
+                rule_idx,
+                candidates);
         }
 
         goto fail;

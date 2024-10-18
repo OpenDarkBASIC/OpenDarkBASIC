@@ -52,7 +52,7 @@ TEST_F(NAME, multi_arg_ambiguous_overloads)
     EXPECT_THAT(
         log(),
         /* clang-format off */
-        LogEq("test:1:7: error: Unable to match arguments 2, 3 and 4 to command signature.\n"
+        LogEq("test:1:7: error: Command has ambiguous overloads. Unable to match arguments 2, 3 and 4 to command signature.\n"
               " 1 | print 5, 6, 7, 8, 9\n"
               "   |          |  |  ^ BYTE\n"
               "   |          |  ^ BYTE\n"
