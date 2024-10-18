@@ -1477,10 +1477,47 @@ gen_block(
                         "at this point.\n"));
                 return -1;
 
-            case AST_FUNC_CALL:
+            case AST_FUNC_CALL: {
+                llvm::SmallVector<llvm::Value*, 8> llvm_args;
+                for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
+                     ast_arglist > -1;
+                     ast_arglist = ast->nodes[ast_arglist].arglist.next)
+                {
+                    llvm::Value* llvm_arg = gen_expr(
+                        ir,
+                        builder,
+                        ast,
+                        ast->nodes[ast_arglist].arglist.expr,
+                        sdk_type,
+                        cmds,
+                        filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        db_func_table,
+                        loop_stack,
+                        allocamap);
+                    llvm_args.push_back(llvm_arg);
+                }
+
+                ast_id ast_identifier = ast->nodes[stmt].func_call.identifier;
+                struct utf8_span identifier_span
+                    = ast->nodes[ast_identifier].identifier.name;
+                llvm::StringRef identifier_name(
+                    source + identifier_span.off, identifier_span.len);
+
+                const auto result = db_func_table->find(identifier_name);
                 ODBUTIL_DEBUG_ASSERT(
-                    0, log_codegen_err("Function calls not yet implemented\n"));
-                return -1;
+                    result != db_func_table->end(),
+                    log_semantic_err(
+                        "Function {quote:%s} not found in function table\n",
+                        identifier_name.data()));
+
+                llvm::Function* F = result->getValue();
+                builder.CreateCall(F, llvm_args);
+
+                break;
+            }
 
             case AST_BOOLEAN_LITERAL:
             case AST_BYTE_LITERAL:
