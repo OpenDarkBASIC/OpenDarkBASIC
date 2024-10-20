@@ -330,11 +330,11 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
     ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
     if (ast_type_info(ast, stmt) == TYPE_INVALID)
     {
-        /* Function templates cannot be resolved without knowing the input
-         * parameters at the callsite. Function template nodes are procssed by
-         * AST_FUNC_OR_CONTAINER_REF nodes by looking them up in the symbol
+        /* Polymorphic functions cannot be resolved without knowing the input
+         * parameters at the callsite. Polymorphic function nodes are procssed
+         * by AST_FUNC_OR_CONTAINER_REF nodes by looking them up in the symbol
          * table. We avoid adding them here for that reason. */
-        if (ast_node_type(ast, stmt) != AST_FUNC_TEMPLATE)
+        if (ast_node_type(ast, stmt) != AST_FUNC_POLY)
             stack_push_entry(stack, stmt);
     }
 
@@ -1162,48 +1162,134 @@ process_loop_cont(struct stack** stack, struct ast* ast, ast_id cont)
     return DEP_OK;
 }
 
-static int
-set_func_return_type(struct ast* ast, ast_id func, enum type type)
+/* Sets the return type if not yet set, and returns the type */
+static enum type
+set_or_get_return_type(struct ast* ast, ast_id func, enum type type)
 {
-    ast_id decl, def, ident;
-
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, func) == AST_FUNC,
         log_semantic_err("type: %d\n", ast_node_type(ast, func)));
 
-    decl = ast->nodes[func].func.decl;
-    def = ast->nodes[func].func.def;
-    ident = ast->nodes[decl].func_decl.identifier;
-
     if (ast_type_info(ast, func) == TYPE_INVALID)
     {
+        ast_id decl = ast->nodes[func].func.decl;
+        ast_id def = ast->nodes[func].func.def;
+        ast_id ident = ast->nodes[decl].func_decl.identifier;
+
         ast->nodes[ident].info.type_info = type;
         ast->nodes[decl].info.type_info = type;
         ast->nodes[def].info.type_info = type;
         ast->nodes[func].info.type_info = type;
+
+        return type;
+    }
+
+    return ast_type_info(ast, func);
+}
+
+static int
+process_func_return(
+    struct ast** astp,
+    ast_id       func_or_exit,
+    ast_id       retval,
+    const char*  filename,
+    const char*  source)
+{
+    ast_id    def, func;
+    enum type target_ret_type, current_ret_type;
+
+    ODBUTIL_DEBUG_ASSERT(func_or_exit > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, func_or_exit) == AST_FUNC_EXIT
+            || ast_node_type(*astp, func_or_exit) == AST_FUNC,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, func_or_exit)));
+
+    if (ast_node_type(*astp, func_or_exit) == AST_FUNC)
+    {
+        func = func_or_exit;
+        def = (*astp)->nodes[func].func.def;
     }
     else
     {
-        /* TODO: Insert cast (and check) to return type. */
+        for (func = func_or_exit; func > -1;
+             func = ast_find_parent(*astp, func))
+            if (ast_node_type(*astp, func) == AST_FUNC)
+                break;
+        ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
+        def = (*astp)->nodes[func].func.def;
+    }
+
+    target_ret_type = retval > -1 ? ast_type_info(*astp, retval) : TYPE_VOID;
+    current_ret_type = set_or_get_return_type(*astp, func, target_ret_type);
+
+    if (retval > -1 && current_ret_type != target_ret_type)
+    {
+        ast_id cast
+            = ast_cast(astp, retval, current_ret_type, ast_loc(*astp, retval));
+        if (cast < -1)
+            return DEP_ERROR;
+
+        if (ast_node_type(*astp, func_or_exit) == AST_FUNC)
+            (*astp)->nodes[def].func_def.retval = cast;
+        else
+            (*astp)->nodes[func_or_exit].func_exit.retval = cast;
+
+        (*astp)->nodes[cast].info.type_info = current_ret_type;
+
+        switch (type_convert(target_ret_type, current_ret_type))
+        {
+            case TC_ALLOW: break;
+            case TC_DISALLOW:
+                err_func_return_incompatible_types(
+                    *astp, func, retval, filename, source);
+                return -1;
+
+            case TC_SIGN_CHANGE:
+            case TC_TRUENESS:
+            case TC_INT_TO_FLOAT:
+            case TC_BOOL_PROMOTION:
+                warn_func_return_implicit_conversion(
+                    *astp, func, retval, filename, source);
+                break;
+
+            case TC_TRUNCATE:
+                warn_func_return_truncation(
+                    *astp, func, retval, filename, source);
+                break;
+        }
+    }
+
+    if (retval == -1 && current_ret_type != target_ret_type)
+    {
+        struct utf8_span ret_loc
+            = ast_node_type(*astp, func_or_exit) == AST_FUNC_EXIT
+                  ? ast_loc(*astp, func_or_exit)
+                  : (*astp)->nodes[func].func.endfunction_location;
+        err_func_missing_return_value(*astp, func, ret_loc, filename, source);
+        return -1;
     }
 
     return 0;
 }
 
 static enum process_result
-process_func_exit(struct stack** stack, struct ast* ast, ast_id exit)
+process_func_exit(
+    struct stack** stack,
+    struct ast**   astp,
+    ast_id         exit,
+    const char*    filename,
+    const char*    source)
 {
-    enum type ret_type;
-    ast_id    func, ret;
+    ast_id func, ret;
 
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, exit) == AST_FUNC_EXIT,
-        log_semantic_err("type: %d\n", ast_node_type(ast, exit)));
+        ast_node_type(*astp, exit) == AST_FUNC_EXIT,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, exit)));
 
-    ret = ast->nodes[exit].func_exit.retval;
-    if (ret > -1 && ast_type_info(ast, ret) == TYPE_INVALID)
+    ret = (*astp)->nodes[exit].func_exit.retval;
+    if (ret > -1 && ast_type_info(*astp, ret) == TYPE_INVALID)
     {
         stack_push_entry(stack, ret);
         return DEP_ADDED;
@@ -1211,17 +1297,16 @@ process_func_exit(struct stack** stack, struct ast* ast, ast_id exit)
 
     /* The type returned by the exitfunction expression also sets the return
      * type of the entire function */
-    ret_type = ret > -1 ? ast_type_info(ast, ret) : TYPE_VOID;
-    for (func = exit; func > -1; func = ast_find_parent(ast, func))
-        if (ast_node_type(ast, func) == AST_FUNC)
+    for (func = exit; func > -1; func = ast_find_parent(*astp, func))
+        if (ast_node_type(*astp, func) == AST_FUNC)
             break;
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
-    if (set_func_return_type(ast, func, ret_type) != 0)
+    if (process_func_return(astp, func, ret, filename, source) != 0)
         return DEP_ERROR;
 
     /* The exitfunction statement itself is not an expression, so it "returns"
      * VOID */
-    ast->nodes[exit].info.type_info = TYPE_VOID;
+    (*astp)->nodes[exit].info.type_info = TYPE_VOID;
     stack_pop(*stack);
     return DEP_OK;
 }
@@ -1231,10 +1316,11 @@ process_func(
     struct stack**   stack,
     struct ast*      ast,
     ast_id           func,
+    const char*      filename,
     const char*      source,
     struct typemap** typemap)
 {
-    ast_id  decl, def, paramlist, body, ret;
+    ast_id  decl, def, identifier, paramlist, body, ret;
     int32_t top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
@@ -1247,6 +1333,7 @@ process_func(
     ODBUTIL_DEBUG_ASSERT(decl > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(def > -1, (void)0);
 
+    identifier = ast->nodes[decl].func_decl.identifier;
     paramlist = ast->nodes[decl].func_decl.paramlist;
     body = ast->nodes[def].func_def.body;
     ret = ast->nodes[def].func_def.retval;
@@ -1258,19 +1345,32 @@ process_func(
     if (paramlist > -1 && ast_type_info(ast, paramlist) == TYPE_INVALID)
         stack_push_entry(stack, paramlist);
 
-    /* See if we can set the return type of the function yet */
+    /* If the function has been declared with an explicit return type, set that
+     * here now. Child nodes will attempt to set the return type and need this
+     * to generate warnings. */
+    if (ast->nodes[identifier].identifier.explicit_type != TYPE_INVALID)
+    {
+        enum type ret_type = ast->nodes[identifier].identifier.explicit_type;
+        ast->nodes[identifier].info.type_info = ret_type;
+        ast->nodes[decl].info.type_info = ret_type;
+        ast->nodes[def].info.type_info = ret_type;
+        ast->nodes[func].info.type_info = ret_type;
+    }
+
+    /* If the function's return expression has been evaluated, try to set the
+     * return type of the function. Recursive function calls depend on this to
+     * be set now. */
     if (ret > -1 && ast_type_info(ast, ret) != TYPE_INVALID)
-        if (set_func_return_type(ast, func, ast_type_info(ast, ret)) != 0)
+        if (process_func_return(&ast, func, ret, filename, source) != 0)
             return DEP_ERROR;
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
 
-    /* If no exitfunction statement existed, and no return value exists, then we
-     * default to VOID */
+    /* If no exitfunction statement existed, and no return value exists, and no
+     * explicit type was used, then we default to VOID */
     if (ast_type_info(ast, func) == TYPE_INVALID)
     {
-        ast_id identifier = ast->nodes[decl].func_decl.identifier;
         ast->nodes[identifier].info.type_info = TYPE_VOID;
         ast->nodes[decl].info.type_info = TYPE_VOID;
         ast->nodes[def].info.type_info = TYPE_VOID;
@@ -1318,7 +1418,7 @@ static ast_id
 instantiate_func(
     /* TU in which the templated function exists */
     struct ast** func_astp,
-    const ast_id func_template,
+    const ast_id func_poly,
     const char*  func_filename,
     const char*  func_source,
     /* TU in which the call is being made (contains the arglist) */
@@ -1329,36 +1429,35 @@ instantiate_func(
     const char*      call_source)
 {
     int32_t scope;
-    ast_id  func, template_block, func_block, decl, def, ret, body, paramlist,
-        pl_entry, al_entry;
+    ast_id  func, poly_block, func_block, decl, def, ret, body, paramlist,
+        pl_param, al_arg;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type((*func_astp), func_template) == AST_FUNC_TEMPLATE,
-        log_semantic_err(
-            "type: %d\n", ast_node_type((*func_astp), func_template)));
+        ast_node_type((*func_astp), func_poly) == AST_FUNC_POLY,
+        log_semantic_err("type: %d\n", ast_node_type((*func_astp), func_poly)));
 
-    template_block = ast_find_parent(*func_astp, func_template);
+    poly_block = ast_find_parent(*func_astp, func_poly);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type((*func_astp), template_block) == AST_BLOCK,
+        ast_node_type((*func_astp), poly_block) == AST_BLOCK,
         log_semantic_err(
-            "type: %d\n", ast_node_type((*func_astp), template_block)));
+            "type: %d\n", ast_node_type((*func_astp), poly_block)));
 
-    func = ast_dup_subtree(func_astp, func_template);
+    func = ast_dup_subtree(func_astp, func_poly);
     if (func < 0)
         return -1;
 
-    /* Insert new function into AST after the template */
+    /* Insert new function into AST after the polymorphic block */
     func_block = ast_block(func_astp, func, ast_loc(*func_astp, func));
     if (func_block < 0)
         return -1;
     (*func_astp)->nodes[func_block].block.next
-        = (*func_astp)->nodes[template_block].block.next;
-    (*func_astp)->nodes[template_block].block.next = func_block;
+        = (*func_astp)->nodes[poly_block].block.next;
+    (*func_astp)->nodes[poly_block].block.next = func_block;
 
     /* The arguments passed to the function determine the parameter types. We
-     * copy them over here. Some function templates are "partial" templates,
-     * i.e. one parameter carries type information but another does not. In
-     * these cases we must insert casts to the correct type. */
+     * copy them over here. Some polymorphic functions are "partial", i.e. one
+     * parameter carries type information but another does not. In these cases
+     * we must insert casts to the correct type. */
     decl = (*func_astp)->nodes[func].func.decl;
     ODBUTIL_DEBUG_ASSERT(
         call_arglist == -1
@@ -1366,14 +1465,13 @@ instantiate_func(
         log_semantic_err(
             "type: %d\n", ast_node_type((*call_astp), call_arglist)));
     paramlist = (*func_astp)->nodes[decl].func_decl.paramlist;
-    for (pl_entry = paramlist, al_entry = call_arglist;
-         pl_entry > -1 && al_entry > -1;
-         pl_entry = (*func_astp)->nodes[pl_entry].paramlist.next,
-        al_entry = (*call_astp)->nodes[al_entry].arglist.next)
+    for (pl_param = paramlist, al_arg = call_arglist;
+         pl_param > -1 && al_arg > -1;
+         pl_param = (*func_astp)->nodes[pl_param].paramlist.next,
+        al_arg = (*call_astp)->nodes[al_arg].arglist.next)
     {
-        ast_id    param = (*func_astp)->nodes[pl_entry].paramlist.identifier;
-        ast_id    arg = (*call_astp)->nodes[al_entry].arglist.expr;
-        enum type param_type = ast_type_info((*func_astp), param);
+        ast_id    param = (*func_astp)->nodes[pl_param].paramlist.identifier;
+        ast_id    arg = (*call_astp)->nodes[al_arg].arglist.expr;
         enum type arg_type = ast_type_info((*call_astp), arg);
 
         if ((*func_astp)->nodes[param].identifier.explicit_type == TYPE_INVALID)
@@ -1382,29 +1480,16 @@ instantiate_func(
              * therefore it takes the type of the argument being passed in */
             (*func_astp)->nodes[param].identifier.explicit_type = arg_type;
         }
-        else if (param_type != arg_type)
-        {
-            /* The parameter has been declared with an explicit type, and the
-             * argument being passed in has a different type. Need to insert a
-             * cast */
-            /* TODO: Verify the cast is valid */
-            ast_id cast = ast_cast(
-                call_astp, arg, param_type, ast_loc(*call_astp, arg));
-            if (cast < -1)
-                return -1;
-            (*call_astp)->nodes[al_entry].arglist.expr = cast;
-            (*call_astp)->nodes[cast].info.type_info = param_type;
-        }
     }
-    if (al_entry > -1 || pl_entry > -1)
+    if (al_arg > -1 || pl_param > -1)
     {
         int gutter;
         log_flc_err(
             call_filename,
             call_source,
             call_location,
-            al_entry > -1 ? "Too many arguments to function call.\n"
-                          : "Too few arguments to function call.\n");
+            al_arg > -1 ? "Too many arguments to function call.\n"
+                        : "Too few arguments to function call.\n");
         gutter = log_excerpt_1(call_source, call_location, "");
         log_excerpt_note(gutter, "Function has the following signature:\n");
         log_excerpt_1(call_source, ast_loc(*func_astp, decl), "");
@@ -1412,7 +1497,7 @@ instantiate_func(
     }
 
     /* The function parameter types are all known now, this is no longer a
-     * function template */
+     * polymorphic function */
     (*func_astp)->nodes[func].info.node_type = AST_FUNC;
 
     /* The parameter list, body and return value exist in a new scope */
@@ -1432,7 +1517,7 @@ instantiate_func(
 
 static ast_id
 find_func_instantiation(
-    /* TU in which the templated function exists */
+    /* TU in which the polymorphic function exists */
     struct ast* func_ast,
     ast_id      func_block,
     /* TU in which the call is being made (contains the arglist) */
@@ -1440,7 +1525,7 @@ find_func_instantiation(
     ast_id            call_arglist)
 
 {
-    ast_id           func_template, identifier, decl;
+    ast_id           poly_func, identifier, paramlist_poly, poly_decl;
     struct utf8_span func_name;
 
     ODBUTIL_DEBUG_ASSERT(func_block > -1, (void)0);
@@ -1453,21 +1538,22 @@ find_func_instantiation(
             || ast_node_type(call_ast, call_arglist) == AST_ARGLIST,
         log_semantic_err("type: %d\n", ast_node_type(call_ast, call_arglist)));
 
-    func_template = func_ast->nodes[func_block].block.stmt;
+    poly_func = func_ast->nodes[func_block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(func_ast, func_template) == AST_FUNC_TEMPLATE,
-        log_semantic_err("type: %d\n", ast_node_type(func_ast, func_template)));
-    decl = func_ast->nodes[func_template].func_template.decl;
-    identifier = func_ast->nodes[decl].func_decl.identifier;
+        ast_node_type(func_ast, poly_func) == AST_FUNC_POLY,
+        log_semantic_err("type: %d\n", ast_node_type(func_ast, poly_func)));
+    poly_decl = func_ast->nodes[poly_func].func_poly.decl;
+    identifier = func_ast->nodes[poly_decl].func_decl.identifier;
     func_name = func_ast->nodes[identifier].identifier.name;
+    paramlist_poly = func_ast->nodes[poly_decl].func_decl.paramlist;
 
     /* Function instantiations are always linked into the block list immediately
-     * *AFTER* the function template. This is done on purpose so the search here
-     * is easier. */
+     * *AFTER* the polymorphic function. This is done on purpose so the search
+     * here is easier. */
 
     while (1)
     {
-        ast_id func, paramlist, al_entry, pl_entry;
+        ast_id func, decl, al_arg, pl_param, poly_pl_param;
         func_block = func_ast->nodes[func_block].block.next;
         if (func_block < 0)
             return -1;
@@ -1486,33 +1572,48 @@ find_func_instantiation(
             return -1;
         }
 
-        paramlist = func_ast->nodes[decl].func_decl.paramlist;
-        for (pl_entry = paramlist, al_entry = call_arglist;
-             pl_entry > -1 && al_entry > -1;
-             pl_entry = func_ast->nodes[pl_entry].paramlist.next,
-            al_entry = call_ast->nodes[al_entry].arglist.next)
+        for (poly_pl_param = paramlist_poly,
+            pl_param = func_ast->nodes[decl].func_decl.paramlist,
+            al_arg = call_arglist;
+             poly_pl_param > -1;
+             poly_pl_param = func_ast->nodes[poly_pl_param].paramlist.next,
+            pl_param = func_ast->nodes[pl_param].paramlist.next,
+            al_arg = call_ast->nodes[al_arg].arglist.next)
         {
-            ast_id    param = func_ast->nodes[pl_entry].paramlist.identifier;
-            ast_id    arg = call_ast->nodes[al_entry].arglist.expr;
-            enum type param_type = ast_type_info(func_ast, param);
-            enum type arg_type = ast_type_info(call_ast, arg);
+            ast_id    poly_param, param, arg;
+            enum type param_type, arg_type;
 
-            if (param_type != arg_type)
+            ODBUTIL_DEBUG_ASSERT(pl_param > -1, (void)0);
+            ODBUTIL_DEBUG_ASSERT(al_arg > -1, (void)0);
+
+            poly_param = func_ast->nodes[poly_pl_param].paramlist.identifier;
+            param = func_ast->nodes[pl_param].paramlist.identifier;
+            arg = call_ast->nodes[al_arg].arglist.expr;
+            param_type = ast_type_info(func_ast, param);
+            arg_type = ast_type_info(call_ast, arg);
+
+            if (param_type != arg_type
+                /* Casts are inserted later. This function only tries to find a
+                   matching instantiation on parameters that are polymorphic. */
+                && func_ast->nodes[poly_param].identifier.explicit_type
+                       == TYPE_INVALID)
+            {
                 goto no_match;
+            }
         }
 
         ODBUTIL_DEBUG_ASSERT(
-            al_entry == -1,
+            al_arg == -1,
             log_semantic_err(
                 "node: %d, type: %d\n",
-                al_entry,
-                ast_node_type(call_ast, al_entry)));
+                al_arg,
+                ast_node_type(call_ast, al_arg)));
         ODBUTIL_DEBUG_ASSERT(
-            pl_entry == -1,
+            pl_param == -1,
             log_semantic_err(
                 "node: %d, type: %d\n",
-                pl_entry,
-                ast_node_type(func_ast, pl_entry)));
+                pl_param,
+                ast_node_type(func_ast, pl_param)));
 
         return func;
 
@@ -1558,7 +1659,7 @@ process_func_or_container_ref(
             filename,
             source,
             ast_loc(*astp, identifier),
-            "No function with this name exists.\n");
+            "Command or function not found.\n");
         log_excerpt_1(source, ast_loc(*astp, n), "");
         return -1;
     }
@@ -1568,12 +1669,12 @@ process_func_or_container_ref(
         /* The function definition exists in our own AST. */
 
         ast_id func;
-        if (ast_node_type((*astp), entry->ast_node) == AST_FUNC_TEMPLATE)
+        if (ast_node_type((*astp), entry->ast_node) == AST_FUNC_POLY)
         {
-            ast_id template_block = ast_find_parent(*astp, entry->ast_node);
+            ast_id poly_block = ast_find_parent(*astp, entry->ast_node);
             func = find_func_instantiation(
                 *astp,
-                template_block,
+                poly_block,
                 *astp,
                 (*astp)->nodes[n].func_or_container_ref.arglist);
             if (func < 0)
@@ -1589,7 +1690,7 @@ process_func_or_container_ref(
                     filename,
                     source);
                 if (func < 0)
-                    return -1;
+                    return DEP_ERROR;
 
                 stack_push_entry(stack, func);
                 return DEP_ADDED;
@@ -1610,6 +1711,56 @@ process_func_or_container_ref(
             (*astp)->nodes[n].info.type_info = ast_type_info(*astp, func);
             (*astp)->nodes[identifier].info.type_info
                 = ast_type_info(*astp, func);
+
+            /* May need to insert casts for the arguments */
+            int    arg_num;
+            ast_id pl_param, al_arg;
+            ast_id decl = (*astp)->nodes[func].func.decl;
+            ast_id paramlist = (*astp)->nodes[decl].func_decl.paramlist;
+            for (arg_num = 1, pl_param = paramlist, al_arg = arglist;
+                 pl_param > -1 && al_arg > -1;
+                 arg_num++,
+                pl_param = (*astp)->nodes[pl_param].paramlist.next,
+                al_arg = (*astp)->nodes[al_arg].arglist.next)
+            {
+                ast_id cast, param, arg;
+
+                param = (*astp)->nodes[pl_param].paramlist.identifier;
+                arg = (*astp)->nodes[al_arg].arglist.expr;
+                enum type param_type = ast_type_info(*astp, param);
+                enum type arg_type = ast_type_info(*astp, arg);
+
+                if (param_type == arg_type)
+                    continue;
+
+                switch (type_convert(arg_type, param_type))
+                {
+                    case TC_ALLOW: break;
+                    case TC_DISALLOW:
+                        err_func_call_incompatible_types(
+                            *astp, arg, param, arg_num, filename, source);
+                        return DEP_ERROR;
+
+                    case TC_SIGN_CHANGE:
+                    case TC_TRUENESS:
+                    case TC_INT_TO_FLOAT:
+                    case TC_BOOL_PROMOTION:
+                        warn_func_call_implicit_conversion(
+                            *astp, arg, param, arg_num, filename, source);
+                        break;
+
+                    case TC_TRUNCATE:
+                        warn_func_call_truncation(
+                            *astp, arg, param, arg_num, filename, source);
+                        break;
+                }
+
+                cast = ast_cast(astp, arg, param_type, ast_loc(*astp, arg));
+                if (cast < -1)
+                    return DEP_ERROR;
+                (*astp)->nodes[al_arg].arglist.expr = cast;
+                (*astp)->nodes[cast].info.type_info = param_type;
+            }
 
             stack_pop(*stack);
             return DEP_OK;
@@ -1768,7 +1919,7 @@ process_node(
                 stack, astp, n, filename, source, typemap);
         case AST_BINOP: return process_binop(stack, astp, n, filename, source);
         case AST_UNOP: return process_unop(stack, astp, n, filename, source);
-        case AST_COND: return process_cond(stack, astp, n, filename, source); ;
+        case AST_COND: return process_cond(stack, astp, n, filename, source);
         case AST_COND_BRANCHES:
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
@@ -1783,15 +1934,15 @@ process_node(
             (*astp)->nodes[n].info.type_info = TYPE_VOID;
             stack_pop(*stack);
             return DEP_OK;
-        case AST_FUNC_EXIT: return process_func_exit(stack, *astp, n);
-        case AST_FUNC: return process_func(stack, *astp, n, source, typemap);
+        case AST_FUNC_EXIT:
+            return process_func_exit(stack, astp, n, filename, source);
+        case AST_FUNC:
+            return process_func(stack, *astp, n, filename, source, typemap);
         case AST_FUNC_OR_CONTAINER_REF:
             return process_func_or_container_ref(
                 stack, tus, tu_id, tu_mutexes, n, filenames, sources, symbols);
 
-        case AST_FUNC_TEMPLATE:
-            ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return DEP_ERROR;
+        case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_CALL:
             /* This value is already set by AST_FUNC_OR_CONTAINER_REF -- nothing
              * to do here */
@@ -1859,13 +2010,14 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
         {
             ast_id parent;
 
-            /* Function templates are a special case and are allowed to remain
-             * in the tree. The reason is because semantic analysis runs in
-             * multiple threads, so we have to wait for all checks to complete
-             * before we can be sure that the templates are no longer required.
+            /* Polymorphic functions are a special case and are allowed to
+             * remain in the tree. The reason is because semantic analysis runs
+             * in multiple threads, so we have to wait for all checks to
+             * complete before we can be sure that the polymorphic functions
+             * are no longer required.
              */
             for (parent = n; parent > -1; parent = ast_find_parent(ast, parent))
-                if (ast_node_type(ast, parent) == AST_FUNC_TEMPLATE)
+                if (ast_node_type(ast, parent) == AST_FUNC_POLY)
                     break;
             if (parent > -1)
                 continue;

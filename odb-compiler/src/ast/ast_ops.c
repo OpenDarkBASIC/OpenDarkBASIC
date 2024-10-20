@@ -230,7 +230,7 @@ ast_trees_equal(
                     utf8_span_view(source_text, ast->nodes[n2].loop_exit.name)))
                 return 0;
             break;
-        case AST_FUNC_TEMPLATE: break;
+        case AST_FUNC_POLY: break;
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;

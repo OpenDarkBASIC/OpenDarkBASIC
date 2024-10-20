@@ -58,6 +58,28 @@ err_cast_incompatible_types(
     const char*       filename,
     const char*       source);
 int
+err_func_call_incompatible_types(
+    const struct ast* ast,
+    ast_id            arg,
+    ast_id            param,
+    int               arg_num,
+    const char*       filename,
+    const char*       source);
+int
+err_func_return_incompatible_types(
+    const struct ast* ast,
+    ast_id            exit,
+    ast_id            func,
+    const char*       filename,
+    const char*       source);
+int
+err_func_missing_return_value(
+    const struct ast* ast,
+    ast_id            func,
+    struct utf8_span  ret_loc,
+    const char*       filename,
+    const char*       source);
+int
 err_initialization_incompatible_types(
     const struct ast* ast,
     ast_id            ass,
@@ -173,6 +195,36 @@ void
 warn_cast_truncation(
     const struct ast* ast,
     ast_id            cast,
+    const char*       filename,
+    const char*       source);
+void
+warn_func_call_implicit_conversion(
+    const struct ast* ast,
+    ast_id            arg,
+    ast_id            param,
+    int               arg_num,
+    const char*       filename,
+    const char*       source);
+void
+warn_func_call_truncation(
+    const struct ast* ast,
+    ast_id            arg,
+    ast_id            param,
+    int               arg_num,
+    const char*       filename,
+    const char*       source);
+void
+warn_func_return_implicit_conversion(
+    const struct ast* ast,
+    ast_id            exit,
+    ast_id            func,
+    const char*       filename,
+    const char*       source);
+void
+warn_func_return_truncation(
+    const struct ast* ast,
+    ast_id            exit,
+    ast_id            func,
     const char*       filename,
     const char*       source);
 void

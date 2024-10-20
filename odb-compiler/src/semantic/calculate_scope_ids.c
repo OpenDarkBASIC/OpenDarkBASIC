@@ -15,7 +15,7 @@ process_node(
     switch (ast_node_type(ast, n))
     {
         case AST_FUNC:
-        case AST_FUNC_TEMPLATE: {
+        case AST_FUNC_POLY: {
             ast_id decl = ast->nodes[n].func.decl;
             ast_id def = ast->nodes[n].func.def;
             ast_id identifier = ast->nodes[decl].func_decl.identifier;

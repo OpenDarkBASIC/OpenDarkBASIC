@@ -25,7 +25,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
         NULL,                       /* Default security */
         OPEN_EXISTING,              /* File must exist */
         FILE_ATTRIBUTE_NORMAL,      /* Default attributes */
-        NULL);                      /* No attribute template */
+            NULL);                      /* No attribute template */
     if (hFile == INVALID_HANDLE_VALUE)
     {
         if (log_error)

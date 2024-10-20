@@ -329,7 +329,7 @@ report_ambiguous_overloads(
         struct utf8_span     loc = ast_loc(ast, expr);
         utf8_idx             loc_end = loc.off + loc.len;
         struct log_highlight item
-            = {" AS ...", "", {loc_end, 7}, LOG_INSERT, LOG_MARKERS, 0};
+            = {" AS <TYPE>", "", {loc_end, 7}, LOG_INSERT, LOG_MARKERS, 0};
 
         if (arg_positions[hl_count] != arg_idx + 1)
             continue;
@@ -569,7 +569,7 @@ resolve_cmd_overloads(
         if (ast_node_type(ast, n) != AST_COMMAND)
             continue;
 
-        /* Skip processing commands that exist in template functions */
+        /* Skip processing commands that exist in polymorphic functions */
         if (ast_type_info(ast, n) == TYPE_INVALID)
             continue;
 

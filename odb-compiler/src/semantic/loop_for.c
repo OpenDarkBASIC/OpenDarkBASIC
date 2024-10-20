@@ -43,7 +43,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_LOOP_FOR3: break;
         case AST_LOOP_CONT: break;
         case AST_LOOP_EXIT: break;
-        case AST_FUNC_TEMPLATE: break;
+        case AST_FUNC_POLY: break;
         case AST_FUNC: break;
         case AST_FUNC_DECL: break;
         case AST_FUNC_DEF: break;

@@ -86,7 +86,7 @@ TEST_F(NAME, empty_body_one_param_no_return)
     ast_id pl1 = paramlist;
     ast_id pl2 = ast->nodes[pl1].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
-    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_POLY));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(pl2, Eq(-1));
@@ -109,7 +109,7 @@ TEST_F(NAME, empty_body_three_params_no_return)
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
     ast_id param3 = ast->nodes[pl3].paramlist.identifier;
-    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_POLY));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(16, 1));
@@ -135,7 +135,7 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
-    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_TEMPLATE));
+    EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_POLY));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
     EXPECT_THAT(
         ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_INVALID));

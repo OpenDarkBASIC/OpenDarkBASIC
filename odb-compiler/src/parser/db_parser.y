@@ -350,10 +350,10 @@ maybe_arglist
   ;
 paramlist
   : paramlist ',' identifier AS type        { $$ = $1;
-                                              (*ctx->astp)->nodes[$3].identifier.explicit_type = $5;
+                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $5, utf8_span_union(@4, @5));
                                               ast_paramlist_append(ctx->astp, $$, $3, @$); }
   | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->astp, $$, $3, @$); }
-  | identifier AS type                      { (*ctx->astp)->nodes[$1].identifier.explicit_type = $3;
+  | identifier AS type                      { ast_identifier_set_explicit_type(*ctx->astp, $1, $3, utf8_span_union(@2, @3));
                                               $$ = ast_paramlist(ctx->astp, $1, @$); }
   | identifier                              { $$ = ast_paramlist(ctx->astp, $1, @$); }
   ;
@@ -383,12 +383,12 @@ var_init_decl
   ;
 var_decl
   : scope identifier AS type                { $$ = $2;
-                                              (*ctx->astp)->nodes[$2].identifier.explicit_type = $4;
-                                              (*ctx->astp)->nodes[$2].identifier.scope = $1; }
+                                              ast_identifier_set_explicit_type(*ctx->astp, $2, $4, utf8_span_union(@3, @4));
+                                              ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
   | identifier AS type                      { $$ = $1;
-                                              (*ctx->astp)->nodes[$1].identifier.explicit_type = $3; }
+                                              ast_identifier_set_explicit_type(*ctx->astp, $1, $3, utf8_span_union(@2, @3)); }
   | scope identifier                        { $$ = $2;
-                                              (*ctx->astp)->nodes[$2].identifier.scope = $1; }
+                                              ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
   ;
 inc
   : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
@@ -470,9 +470,9 @@ loop_name
 func
   : maybe_scope FUNCTION identifier '(' maybe_paramlist ')' maybe_as_type
         maybe_block
-    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @$);
-                                              (*ctx->astp)->nodes[$3].identifier.scope = $1;
-                                              (*ctx->astp)->nodes[$3].identifier.explicit_type = $7; }
+    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @9, @$);
+                                              ast_identifier_set_scope(*ctx->astp, $3, $1, @1);
+                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $7, @7); }
   ;
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
@@ -507,7 +507,7 @@ type
   | STRING                                  { $$ = TYPE_STRING; }
   ;
 maybe_as_type
-  : AS type                                 { $$ = $2; }
+  : AS type                                 { $$ = $2; @$ = utf8_span_union(@1, @2); }
   |                                         { $$ = TYPE_INVALID; }
   ;
 identifier

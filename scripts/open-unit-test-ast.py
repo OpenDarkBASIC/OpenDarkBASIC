@@ -2,9 +2,10 @@ import sys
 import os
 import subprocess
 
+odb_path = "./build-debug/bin/x86_64/linux/bin"
 fname = sys.argv[1]
 line_num = int(sys.argv[2])
-ast_type = sys.argv[3]
+ast_type = int(sys.argv[3])
 
 lines = open(fname, "rb").read().decode("utf8").split("\n")
 
@@ -39,14 +40,14 @@ def find_parser_source(current_line):
     return "\n".join(source.split("\\n"))
 
 
-source = find_parser_source(line_num)
-odb_paths = "./build-debug/bin/x86_64/linux/bin"
-subprocess.run([f"./odb-cli -b --dba --ast{ast_type} | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
+if ast_type > 2:
+    source = find_parser_source(line_num)
+    subprocess.run([f"./odb-cli -b --dba --ast{ast_type - 2} | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
+else:
+    suite = find_suite_name()
+    test = find_test_name(line_num)
+    ast_path = "./build-debug/bin/x86_64/linux/bin/ast"
+    dotfile = f"{os.path.join(ast_path, f'{suite}__{test}')}{ast_type}.dot"
 
-#suite = find_suite_name()
-#test = find_test_name(line_num)
-#ast_path = "./build-debug/bin/x86_64/linux/bin/ast"
-#dotfile = f"{os.path.join(ast_path, f'{suite}__{test}')}{ast_type}.dot"
-#
-#subprocess.run(["dot", "-Tx11", dotfile])
+    subprocess.run(["dot", "-Tx11", dotfile])
 

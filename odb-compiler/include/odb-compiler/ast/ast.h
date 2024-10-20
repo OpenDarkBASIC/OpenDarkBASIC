@@ -93,7 +93,7 @@ enum ast_type
     AST_LOOP_FOR3,
     AST_LOOP_CONT,
     AST_LOOP_EXIT,
-    AST_FUNC_TEMPLATE,
+    AST_FUNC_POLY,
     AST_FUNC,
     AST_FUNC_DECL,
     AST_FUNC_DEF,
@@ -187,6 +187,8 @@ union ast_node
         struct info info;
         ast_id _pad1, _pad2;
         struct utf8_span name;
+        struct utf8_span explicit_type_location;
+        struct utf8_span scope_location;
         enum type_annotation annotation : 7;
         enum scope scope : 1;
         enum type explicit_type : 4;
@@ -276,12 +278,13 @@ union ast_node
         struct info info;
         ast_id decl;
         ast_id def;
-    } func_template;
+    } func_poly;
 
     struct {
         struct info info;
         ast_id decl;
         ast_id def;
+        struct utf8_span endfunction_location;
     } func;
 
     struct {
@@ -443,6 +446,8 @@ ast_id ast_inc(struct ast** astp, ast_id var, struct utf8_span location);
 ast_id ast_dec_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
 ast_id ast_dec(struct ast** astp, ast_id var, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
+void ast_identifier_set_explicit_type(struct ast* ast, ast_id identifier, enum type explicit_type, struct utf8_span location);
+void ast_identifier_set_scope(struct ast* ast, ast_id identifier, enum scope scope, struct utf8_span location);
 ast_id ast_binop(struct ast** astp, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
 ast_id ast_cond(struct ast** astp, ast_id expr, ast_id cond_branches, struct utf8_span location);
@@ -453,7 +458,7 @@ ast_id ast_loop_until(struct ast** astp, ast_id body, ast_id expr, struct utf8_s
 ast_id ast_loop_for(struct ast** astp, ast_id body, ast_id init, ast_id end, ast_id step, ast_id next, struct utf8_span name, struct utf8_span location);
 ast_id ast_loop_cont(struct ast** astp, struct utf8_span name, ast_id step, struct utf8_span location);
 ast_id ast_loop_exit(struct ast** astp, struct utf8_span name, struct utf8_span location);
-ast_id ast_func(struct ast** astp, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span location);
+ast_id ast_func(struct ast** astp, ast_id identifier, ast_id paramlist, ast_id body, ast_id retval, struct utf8_span endfunction_location, struct utf8_span location);
 ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
 ast_id ast_func_or_container_ref(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);

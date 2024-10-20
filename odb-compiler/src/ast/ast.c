@@ -312,8 +312,42 @@ ast_identifier(
     ast->nodes[n].identifier.annotation = annotation;
     ast->nodes[n].identifier.explicit_type = TYPE_INVALID;
     ast->nodes[n].identifier.scope = SCOPE_LOCAL;
+    ast->nodes[n].identifier.explicit_type_location = empty_utf8_span();
+    ast->nodes[n].identifier.scope_location = empty_utf8_span();
 
     return n;
+}
+
+void
+ast_identifier_set_explicit_type(
+    struct ast*      ast,
+    ast_id           identifier,
+    enum type        explicit_type,
+    struct utf8_span location)
+{
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+
+    ast->nodes[identifier].identifier.explicit_type = explicit_type;
+    ast->nodes[identifier].identifier.explicit_type_location = location;
+}
+
+void
+ast_identifier_set_scope(
+    struct ast*      ast,
+    ast_id           identifier,
+    enum scope       scope,
+    struct utf8_span location)
+{
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_parser_err("type: %d\n", ast->nodes[identifier].info.node_type));
+
+    ast->nodes[identifier].identifier.scope = scope;
+    ast->nodes[identifier].identifier.scope_location = location;
 }
 
 ast_id
@@ -407,7 +441,8 @@ ast_cond(
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, log_parser_err("expr: %d\n", expr));
     ODBUTIL_DEBUG_ASSERT(
-        cond_branches > -1, log_parser_err("cond_branches: %d\n", cond_branches));
+        cond_branches > -1,
+        log_parser_err("cond_branches: %d\n", cond_branches));
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[cond_branches].info.node_type == AST_COND_BRANCHES,
         log_parser_err("type: %d\n", ast->nodes[cond_branches].info.node_type));
@@ -584,7 +619,7 @@ ast_loop_exit(
 }
 
 static int
-ast_func_is_template(const struct ast* ast, int func)
+ast_func_is_polymorphic(const struct ast* ast, int func)
 {
     ast_id paramlist;
     ast_id decl;
@@ -613,6 +648,7 @@ ast_func(
     ast_id           paramlist,
     ast_id           body,
     ast_id           retval,
+    struct utf8_span endfunction_location,
     struct utf8_span location)
 {
     struct ast* ast;
@@ -652,9 +688,10 @@ ast_func(
 
     ast->nodes[func].func.decl = decl;
     ast->nodes[func].func.def = def;
+    ast->nodes[func].func.endfunction_location = endfunction_location;
 
-    if (ast_func_is_template(ast, func))
-        ast->nodes[func].info.node_type = AST_FUNC_TEMPLATE;
+    if (ast_func_is_polymorphic(ast, func))
+        ast->nodes[func].info.node_type = AST_FUNC_POLY;
 
     return func;
 }

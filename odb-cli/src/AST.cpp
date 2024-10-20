@@ -517,7 +517,7 @@ run_semantic_checks(const std::vector<std::string>& args)
 
     mutex_destroy(mutex);
 
-    post_delete_func_templates(ctx.tus->data, tus_count(ctx.tus));
+    post_delete_polymorphic_functions(ctx.tus->data, tus_count(ctx.tus));
 
     return true;
 

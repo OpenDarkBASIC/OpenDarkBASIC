@@ -3,11 +3,13 @@
 char
 type_to_char(enum type type)
 {
-    return "\0"
-#define X(name, c) #c
-        TYPE_LIST
+    static const char table[]
+        = {'\0', /* TYPE_INVALID */
+#define X(name, c) c,
+           TYPE_LIST
 #undef X
-            [type];
+        };
+    return table[type];
 }
 
 enum type

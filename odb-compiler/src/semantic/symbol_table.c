@@ -174,14 +174,14 @@ symbol_table_add_declarations_from_ast(
     for (n = 0; n != ast_count(ast); ++n)
     {
         if (ast_node_type(ast, n) != AST_FUNC
-            && ast_node_type(ast, n) != AST_FUNC_TEMPLATE)
+            && ast_node_type(ast, n) != AST_FUNC_POLY)
         {
             continue;
         }
 
         ast_id           decl = ast_node_type(ast, n) == AST_FUNC
                                     ? ast->nodes[n].func.decl
-                                    : ast->nodes[n].func_template.decl;
+                                    : ast->nodes[n].func_poly.decl;
         ast_id           ident = ast->nodes[decl].func_decl.identifier;
         struct utf8_span span = ast->nodes[ident].identifier.name;
         struct utf8_view func_name = utf8_span_view(source, span);

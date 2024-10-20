@@ -317,11 +317,11 @@ write_node(
                 ast->nodes[n].loop_exit.name.len,
                 source + ast->nodes[n].loop_exit.name.off);
             break;
-        case AST_FUNC_TEMPLATE:
+        case AST_FUNC_POLY:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"func template\"];\n",
+                "label=\"func poly\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor);
@@ -589,7 +589,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_LOOP_FOR3: NAMES("step", "next")
         case AST_LOOP_CONT: NAMES("step", "")
         case AST_LOOP_EXIT: break;
-        case AST_FUNC_TEMPLATE: NAMES("decl", "def")
+        case AST_FUNC_POLY: NAMES("decl", "def")
         case AST_FUNC: NAMES("decl", "def")
         case AST_FUNC_DECL: NAMES("identifier", "paramlist")
         case AST_FUNC_DEF: NAMES("body", "retval")

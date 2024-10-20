@@ -4,7 +4,7 @@
 #include "odb-compiler/semantic/post.h"
 
 void
-post_delete_func_templates(struct ast** tus, int tu_count)
+post_delete_polymorphic_functions(struct ast** tus, int tu_count)
 {
     while (tu_count--)
     {
@@ -16,7 +16,7 @@ post_delete_func_templates(struct ast** tus, int tu_count)
                 continue;
 
             stmt = ast->nodes[n].block.stmt;
-            if (ast_node_type(ast, stmt) != AST_FUNC_TEMPLATE)
+            if (ast_node_type(ast, stmt) != AST_FUNC_POLY)
                 continue;
 
             parent = ast_find_parent(ast, n);

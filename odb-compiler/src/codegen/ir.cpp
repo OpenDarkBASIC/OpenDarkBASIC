@@ -11,6 +11,7 @@ extern "C" {
 
 #include "./ir_internal.hpp"
 #include "llvm/ADT/APInt.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
@@ -310,6 +311,58 @@ create_global_command_function_table(
     return 0;
 }
 
+int
+func_name_from_paramlist(
+    llvm::SmallString<128>& func_name,
+    const struct ast*       ast,
+    ast_id                  identifier,
+    ast_id                  paramlist,
+    const char*             source)
+{
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_codegen_err("type: %d\n", ast_node_type(ast, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, paramlist) == AST_PARAMLIST,
+        log_codegen_err("type: %d\n", ast_node_type(ast, paramlist)));
+
+    struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
+    func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
+    for (; paramlist > -1; paramlist = ast->nodes[paramlist].paramlist.next)
+    {
+        ast_id param = ast->nodes[paramlist].paramlist.identifier;
+        func_name += type_to_char(ast_type_info(ast, param));
+    }
+
+    return 0;
+}
+
+int
+func_name_from_arglist(
+    llvm::SmallString<128>& func_name,
+    const struct ast*       ast,
+    ast_id                  identifier,
+    ast_id                  arglist,
+    const char*             source)
+{
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_codegen_err("type: %d\n", ast_node_type(ast, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, arglist) == AST_ARGLIST,
+        log_codegen_err("type: %d\n", ast_node_type(ast, arglist)));
+
+    struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
+    func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
+    for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
+    {
+        ast_id arg = ast->nodes[arglist].arglist.expr;
+        func_name += type_to_char(ast_type_info(ast, arg));
+    }
+
+    return 0;
+}
+
 static int
 create_db_function_table(
     struct ir_module*                 ir,
@@ -317,6 +370,7 @@ create_db_function_table(
     const struct ast*                 ast,
     const char*                       source)
 {
+    llvm::SmallString<128> func_name;
     for (ast_id n = 0; n != ast_count(ast); ++n)
     {
         if (ast_node_type(ast, n) != AST_FUNC)
@@ -327,26 +381,32 @@ create_db_function_table(
         ast_id ast_identifier = ast->nodes[ast_decl].func_decl.identifier;
         ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
 
+        /* Create type vector for function signature */
         llvm::SmallVector<llvm::Type*, 8> param_types;
         for (ast_id ast_paramlist = ast->nodes[ast_decl].func_decl.paramlist;
              ast_paramlist > -1;
-             ast_paramlist = ast->nodes[ast_paramlist].arglist.next)
+             ast_paramlist = ast->nodes[ast_paramlist].paramlist.next)
         {
-            ast_id      ast_param = ast->nodes[ast_paramlist].arglist.expr;
+            ast_id ast_param = ast->nodes[ast_paramlist].paramlist.identifier;
             enum type   param_type = ast_type_info(ast, ast_param);
             llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
             param_types.push_back(Ty);
         }
 
+        /* Create return type */
         llvm::Type* llvm_retval
             = ast_retval > -1
                   ? type_to_llvm(ast_type_info(ast, ast_retval), &ir->ctx)
                   : llvm::Type::getVoidTy(ir->ctx);
 
-        struct utf8_span identifier_span
-            = ast->nodes[ast_identifier].identifier.name;
-        llvm::StringRef identifier_name(
-            source + identifier_span.off, identifier_span.len);
+        /* Because polymorphic functions exist, we append type information to
+         * the function name so it is unique */
+        func_name_from_paramlist(
+            func_name,
+            ast,
+            ast_identifier,
+            ast->nodes[ast_decl].func_decl.paramlist,
+            source);
 
         llvm::Function::LinkageTypes llvm_linkage
             = ast->nodes[ast_identifier].identifier.scope == SCOPE_GLOBAL
@@ -359,31 +419,17 @@ create_db_function_table(
                 param_types,
                 /* isVarArg */ false),
             llvm_linkage,
-            identifier_name,
+            func_name,
             &ir->mod);
-        bool result = db_func_table->insert({identifier_name, F}).second;
+        bool result = db_func_table->insert({func_name, F}).second;
         ODBUTIL_DEBUG_ASSERT(
-            result, log_codegen_err("Function already exists!"));
+            result,
+            log_codegen_err(
+                "Function {quote:%s} already exists!\n", func_name.c_str()));
         (void)result;
     }
 
     return 0;
-}
-
-ODBUTIL_PRINTF_FORMAT(4, 5)
-static void
-log_semantic_err(
-    const char*      filename,
-    const char*      source_text,
-    struct utf8_span location,
-    const char*      fmt,
-    ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    log_flc_verr(filename, source_text, location, fmt, ap);
-    va_end(ap);
-    log_excerpt_1(source_text, location, "");
 }
 
 static llvm::Value*
@@ -783,15 +829,16 @@ gen_expr(
 
         case AST_FUNC_CALL: {
             llvm::SmallVector<llvm::Value*, 8> llvm_args;
-            for (ast_id ast_arglist = ast->nodes[expr].func_call.arglist;
-                 ast_arglist > -1;
-                 ast_arglist = ast->nodes[ast_arglist].arglist.next)
+            llvm::SmallString<128>             func_name;
+            for (ast_id arglist_ast = ast->nodes[expr].func_call.arglist;
+                 arglist_ast > -1;
+                 arglist_ast = ast->nodes[arglist_ast].arglist.next)
             {
                 llvm::Value* llvm_arg = gen_expr(
                     ir,
                     builder,
                     ast,
-                    ast->nodes[ast_arglist].arglist.expr,
+                    ast->nodes[arglist_ast].arglist.expr,
                     sdk_type,
                     cmds,
                     filename,
@@ -804,23 +851,23 @@ gen_expr(
                 llvm_args.push_back(llvm_arg);
             }
 
-            ast_id ast_identifier = ast->nodes[expr].func_call.identifier;
-            struct utf8_span identifier_span
-                = ast->nodes[ast_identifier].identifier.name;
-            llvm::StringRef identifier_name(
-                source + identifier_span.off, identifier_span.len);
-
-            const auto result = db_func_table->find(identifier_name);
+            func_name_from_arglist(
+                func_name,
+                ast,
+                ast->nodes[expr].func_call.identifier,
+                ast->nodes[expr].func_call.arglist,
+                source);
+            const auto result = db_func_table->find(func_name);
             ODBUTIL_DEBUG_ASSERT(
                 result != db_func_table->end(),
-                log_semantic_err(
+                log_codegen_err(
                     "Function {quote:%s} not found in function table\n",
-                    identifier_name.data()));
+                    func_name.c_str()));
 
             llvm::Function* F = result->getValue();
             return builder.CreateCall(F, llvm_args);
         }
-        case AST_FUNC_TEMPLATE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
@@ -1297,7 +1344,7 @@ gen_block(
                 {
                     ODBUTIL_DEBUG_ASSERT(
                         ast_node_type(ast, step) == AST_BLOCK,
-                        log_semantic_err("step: %d\n", step));
+                        log_codegen_err("step: %d\n", step));
                     gen_block(
                         ir,
                         builder,
@@ -1346,26 +1393,26 @@ gen_block(
                 break;
             }
 
-            case AST_FUNC_TEMPLATE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_FUNC: {
+                llvm::SmallString<128> func_name;
+
                 ast_id ast_decl = ast->nodes[stmt].func.decl;
                 ast_id ast_def = ast->nodes[stmt].func.def;
                 ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
                 ast_id ast_body = ast->nodes[ast_def].func_def.body;
+                ast_id ast_paramlist = ast->nodes[ast_decl].func_decl.paramlist;
                 ast_id ast_identifier
                     = ast->nodes[ast_decl].func_decl.identifier;
 
-                struct utf8_span identifier_span
-                    = ast->nodes[ast_identifier].identifier.name;
-                llvm::StringRef identifier_name(
-                    source + identifier_span.off, identifier_span.len);
-
-                const auto result = db_func_table->find(identifier_name);
+                func_name_from_paramlist(
+                    func_name, ast, ast_identifier, ast_paramlist, source);
+                const auto result = db_func_table->find(func_name);
                 ODBUTIL_DEBUG_ASSERT(
                     result != db_func_table->end(),
-                    log_semantic_err(
+                    log_codegen_err(
                         "Function {quote:%s} not found in function table\n",
-                        identifier_name.data()));
+                        func_name.data()));
 
                 llvm::Function*   F = result->getValue();
                 llvm::BasicBlock* BB = llvm::BasicBlock::Create(
@@ -1478,6 +1525,7 @@ gen_block(
                 return -1;
 
             case AST_FUNC_CALL: {
+                llvm::SmallString<128>             func_name;
                 llvm::SmallVector<llvm::Value*, 8> llvm_args;
                 for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
                      ast_arglist > -1;
@@ -1500,18 +1548,18 @@ gen_block(
                     llvm_args.push_back(llvm_arg);
                 }
 
-                ast_id ast_identifier = ast->nodes[stmt].func_call.identifier;
-                struct utf8_span identifier_span
-                    = ast->nodes[ast_identifier].identifier.name;
-                llvm::StringRef identifier_name(
-                    source + identifier_span.off, identifier_span.len);
-
-                const auto result = db_func_table->find(identifier_name);
+                func_name_from_arglist(
+                    func_name,
+                    ast,
+                    ast->nodes[stmt].func_call.identifier,
+                    ast->nodes[stmt].func_call.arglist,
+                    source);
+                const auto result = db_func_table->find(func_name);
                 ODBUTIL_DEBUG_ASSERT(
                     result != db_func_table->end(),
-                    log_semantic_err(
+                    log_codegen_err(
                         "Function {quote:%s} not found in function table\n",
-                        identifier_name.data()));
+                        func_name.data()));
 
                 llvm::Function* F = result->getValue();
                 builder.CreateCall(F, llvm_args);

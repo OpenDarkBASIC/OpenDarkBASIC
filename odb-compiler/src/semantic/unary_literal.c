@@ -33,7 +33,7 @@ child_changed:
         case AST_LOOP_FOR3: return -1;
         case AST_LOOP_CONT: return -1;
         case AST_LOOP_EXIT: return -1;
-        case AST_FUNC_TEMPLATE: return -1;
+        case AST_FUNC_POLY: return -1;
         case AST_FUNC: return -1;
         case AST_FUNC_DECL: return -1;
         case AST_FUNC_DEF: return -1;
