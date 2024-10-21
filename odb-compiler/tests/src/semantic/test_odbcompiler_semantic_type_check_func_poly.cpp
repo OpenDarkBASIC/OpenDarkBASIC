@@ -360,6 +360,27 @@ TEST_F(NAME, nested_recursion_1)
           "  IF n < 2 THEN EXITFUNCTION n\n"
           "ENDFUNCTION fib2(n-1) + fib2(n-2)\n"
           "FUNCTION fib2(n)\n"
+          "  IF n < 2 THEN EXITFUNCTION n\n"
+          "ENDFUNCTION fib(n-1) + fib(n-2)\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(
+        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
+        << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+
+    // TODO: Check
+}
+
+TEST_F(NAME, nested_recursion_2)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
+    const char* source
+        = "PRINT fib(5)\n"
+          "FUNCTION fib(n)\n"
+          "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
+          "ENDFUNCTION n\n"
+          "FUNCTION fib2(n)\n"
           "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
@@ -372,7 +393,7 @@ TEST_F(NAME, nested_recursion_1)
     // TODO: Check
 }
 
-TEST_F(NAME, nested_recursion_2)
+TEST_F(NAME, nested_recursion_3)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
     const char* source

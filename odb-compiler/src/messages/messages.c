@@ -47,7 +47,7 @@ err_assignment_incompatible_types(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Cannot assign {emph2:%s} to {emph1:%s}. Types are incompatible.\n",
+        "Cannot assign {emph1:%s} to {emph0:%s}. Types are incompatible.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));
     gutter = log_excerpt_binop(
@@ -59,7 +59,7 @@ err_assignment_incompatible_types(
         type_to_db_name(ast_type_info(ast, rhs)));
     log_excerpt_note(
         gutter,
-        "{emph1:%.*s} was previously declared as {emph1:%s} at ",
+        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
         orig_name.len,
         source + orig_name.off,
         type_to_db_name(ast_type_info(ast, lhs)));
@@ -67,7 +67,8 @@ err_assignment_incompatible_types(
     log_excerpt_1(
         source,
         ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)));
+        type_to_db_name(ast_type_info(ast, lhs)),
+        0);
 
     return -1;
 }
@@ -89,7 +90,7 @@ err_binop_incompatible_types(
         filename,
         source,
         ast_loc(ast, op),
-        "Invalid conversion from {emph1:%s} to {emph2:%s} in binary "
+        "Invalid conversion from {emph0:%s} to {emph1:%s} in binary "
         "expression. Types are incompatible.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
@@ -127,7 +128,7 @@ err_binop_pow_incompatible_base_type(
         filename,
         source,
         ast_loc(ast, base),
-        "Incompatible base type {emph1:%s} can't be converted to {emph2:%s}.\n",
+        "Incompatible base type {emph0:%s} can't be converted to {emph1:%s}.\n",
         type_to_db_name(base_type),
         type_to_db_name(target_type));
     gutter = log_excerpt_2(
@@ -135,10 +136,12 @@ err_binop_pow_incompatible_base_type(
         ast_loc(ast, base),
         ast->nodes[op].binop.op_location,
         type_to_db_name(base_type),
-        "");
+        "",
+        0,
+        1);
     log_excerpt_note(
         gutter,
-        "The base can be a {emph2:%s} or {emph2:%s}.\n",
+        "The base can be a {emph1:%s} or {emph1:%s}.\n",
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
 
@@ -162,8 +165,8 @@ err_binop_pow_incompatible_exponent_type(
         filename,
         source,
         ast_loc(ast, exp),
-        "Incompatible exponent type {emph1:%s} can't be converted to "
-        "{emph2:%s}.\n",
+        "Incompatible exponent type {emph0:%s} can't be converted to "
+        "{emph1:%s}.\n",
         type_to_db_name(exp_type),
         type_to_db_name(target_type));
     gutter = log_excerpt_binop(
@@ -175,7 +178,7 @@ err_binop_pow_incompatible_exponent_type(
         type_to_db_name(exp_type));
     log_excerpt_note(
         gutter,
-        "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
+        "The exponent can be an {emph1:%s}, {emph1:%s} or {emph1:%s}.\n",
         type_to_db_name(TYPE_I32),
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
@@ -194,10 +197,13 @@ err_boolean_invalid_evaluation(
         filename,
         source,
         ast_loc(ast, expr),
-        "Cannot evaluate {emph1:%s} as a boolean expression.\n",
+        "Cannot evaluate {emph0:%s} as a boolean expression.\n",
         type_to_db_name(ast_type_info(ast, expr)));
     log_excerpt_1(
-        source, ast_loc(ast, expr), type_to_db_name(ast_type_info(ast, expr)));
+        source,
+        ast_loc(ast, expr),
+        type_to_db_name(ast_type_info(ast, expr)),
+        0);
 
     return -1;
 }
@@ -221,7 +227,7 @@ err_cast_incompatible_types(
         filename,
         source,
         ast_loc(ast, cast),
-        "Cannot cast from {emph1:%s} to {emph2:%s}: Types are incompatible\n",
+        "Cannot cast from {emph0:%s} to {emph1:%s}: Types are incompatible\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_2(
@@ -229,7 +235,9 @@ err_cast_incompatible_types(
         ast_loc(ast, expr),
         ast_loc(ast, cast),
         type_to_db_name(source_type),
-        type_to_db_name(target_type));
+        type_to_db_name(target_type),
+        0,
+        1);
 
     return -1;
 }
@@ -255,7 +263,7 @@ err_func_call_incompatible_types(
         filename,
         source,
         ast_loc(ast, arg),
-        "Cannot convert %d%s argument from {emph2:%s} to {emph1:%s} in "
+        "Cannot convert %d%s argument from {emph0:%s} to {emph1:%s} in "
         "function call. Types are incompatible.\n",
         arg_num,
         arg_num == 1   ? "st"
@@ -265,10 +273,10 @@ err_func_call_incompatible_types(
         type_to_db_name(ast_type_info(ast, arg)),
         type_to_db_name(ast_type_info(ast, param)));
     gutter = log_excerpt_1(
-        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)));
+        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "");
+        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
 
     return -1;
 }
@@ -296,17 +304,21 @@ err_func_return_incompatible_types(
         filename,
         source,
         ast_loc(ast, retval),
-        "Cannot convert {emph2:%s} to {emph1:%s} in function return. Types are "
+        "Cannot convert {emph0:%s} to {emph1:%s} in function return. Types are "
         "incompatible.\n",
         type_to_db_name(ast_type_info(ast, retval)),
         type_to_db_name(ast_type_info(ast, func_ident)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
-        type_to_db_name(ast_type_info(ast, retval)));
+        type_to_db_name(ast_type_info(ast, retval)),
+        0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[func_ident].identifier.explicit_type_location, "");
+        source,
+        ast->nodes[func_ident].identifier.explicit_type_location,
+        "",
+        1);
 
     return -1;
 }
@@ -330,10 +342,13 @@ err_func_missing_return_value(
     func_ident = ast->nodes[decl].func_decl.identifier;
 
     log_flc_err(filename, source, ret_loc, "Missing return value.\n");
-    gutter = log_excerpt_1(source, ret_loc, "");
+    gutter = log_excerpt_1(source, ret_loc, "", 0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[func_ident].identifier.explicit_type_location, "");
+        source,
+        ast->nodes[func_ident].identifier.explicit_type_location,
+        "",
+        0);
 
     return -1;
 }
@@ -349,7 +364,7 @@ err_initialization_incompatible_types(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Cannot assign {emph2:%s} to {emph1:%s}. Types are incompatible.\n",
+        "Cannot assign {emph1:%s} to {emph0:%s}. Types are incompatible.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));
     log_excerpt_binop(
@@ -379,7 +394,7 @@ err_loop_cont(
             source,
             ast_loc(ast, cont),
             "CONTINUE statement must be inside a loop.\n");
-        log_excerpt_1(source, ast_loc(ast, cont), "");
+        log_excerpt_1(source, ast_loc(ast, cont), "", 0);
     }
     else
     {
@@ -393,7 +408,7 @@ err_loop_cont(
             source,
             ast->nodes[cont].cont.name,
             "Unknown loop name referenced in CONTINUE statement.\n");
-        gutter = log_excerpt_1(source, ast->nodes[cont].cont.name, "");
+        gutter = log_excerpt_1(source, ast->nodes[cont].cont.name, "", 0);
         if (name.len)
         {
             log_excerpt_help(
@@ -401,7 +416,7 @@ err_loop_cont(
                 "Did you mean {quote:%.*s}?\n",
                 name.len,
                 source + name.off);
-            log_excerpt_1(source, name, "");
+            log_excerpt_1(source, name, "", 0);
         }
     }
     return -1;
@@ -419,7 +434,7 @@ err_loop_exit_not_inside_loop(
         source,
         ast_loc(ast, exit),
         "EXIT statement must be inside a loop.\n");
-    log_excerpt_1(source, ast_loc(ast, exit), "");
+    log_excerpt_1(source, ast_loc(ast, exit), "", 0);
 
     return -1;
 }
@@ -447,7 +462,7 @@ err_loop_exit_unknown_name(
         source,
         ast->nodes[exit].loop_exit.name,
         "Unknown loop name referenced in EXIT statement.\n");
-    gutter = log_excerpt_1(source, ast->nodes[exit].loop_exit.name, "");
+    gutter = log_excerpt_1(source, ast->nodes[exit].loop_exit.name, "", 0);
     if (name.len)
     {
         log_excerpt_help(
@@ -455,7 +470,7 @@ err_loop_exit_unknown_name(
             "Did you mean {quote:%.*s}?\n",
             name.len,
             source + name.off);
-        log_excerpt_1(source, name, "");
+        log_excerpt_1(source, name, "", 0);
     }
 
     return -1;
@@ -495,7 +510,7 @@ err_unterminated_remark(
     struct utf8_span location, const char* filename, const char* source)
 {
     log_flc_err(filename, source, location, "Unterminated remark.\n");
-    log_excerpt_1(source, location, "Remark starts here.");
+    log_excerpt_1(source, location, "Remark starts here.", 0);
     return -1;
 }
 
@@ -516,7 +531,7 @@ warn_assignment_implicit_conversion(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Implicit conversion from {emph2:%s} to {emph1:%s} in assignment.\n",
+        "Implicit conversion from {emph1:%s} to {emph0:%s} in assignment.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));
     gutter = log_excerpt_binop(
@@ -528,7 +543,7 @@ warn_assignment_implicit_conversion(
         type_to_db_name(ast_type_info(ast, rhs)));
     log_excerpt_note(
         gutter,
-        "{emph1:%.*s} was previously declared as {emph1:%s} at ",
+        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
         orig_name.len,
         source + orig_name.off,
         type_to_db_name(ast_type_info(ast, lhs)));
@@ -536,7 +551,8 @@ warn_assignment_implicit_conversion(
     log_excerpt_1(
         source,
         ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)));
+        type_to_db_name(ast_type_info(ast, lhs)),
+        0);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, rhs), ast_type_info(ast, rhs));
 }
@@ -558,7 +574,7 @@ warn_assignment_truncation(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Value is truncated in conversion from {emph2:%s} to {emph1:%s} in "
+        "Value is truncated in conversion from {emph1:%s} to {emph0:%s} in "
         "assignment.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));
@@ -571,7 +587,7 @@ warn_assignment_truncation(
         type_to_db_name(ast_type_info(ast, rhs)));
     log_excerpt_note(
         gutter,
-        "{emph1:%.*s} was previously declared as {emph1:%s} at ",
+        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
         orig_name.len,
         source + orig_name.off,
         type_to_db_name(ast_type_info(ast, lhs)));
@@ -579,7 +595,8 @@ warn_assignment_truncation(
     log_excerpt_1(
         source,
         ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)));
+        type_to_db_name(ast_type_info(ast, lhs)),
+        0);
 }
 
 void
@@ -601,7 +618,7 @@ warn_binop_implicit_conversion(
         filename,
         source,
         ast_loc(ast, op),
-        "Implicit conversion from {emph1:%s} to {emph2:%s} in binary "
+        "Implicit conversion from {emph0:%s} to {emph1:%s} in binary "
         "expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
@@ -634,7 +651,7 @@ warn_binop_truncation(
         filename,
         source,
         ast_loc(ast, op),
-        "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
+        "Value is truncated when converting from {emph0:%s} to {emph1:%s} in "
         "binary expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
@@ -663,7 +680,7 @@ warn_binop_pow_base_implicit_conversion(
         filename,
         source,
         ast_loc(ast, base),
-        "Implicit conversion of base from {emph1:%s} to {emph2:%s}.\n",
+        "Implicit conversion of base from {emph0:%s} to {emph1:%s}.\n",
         type_to_db_name(base_type),
         type_to_db_name(target_type));
     gutter = log_excerpt_2(
@@ -671,10 +688,12 @@ warn_binop_pow_base_implicit_conversion(
         ast_loc(ast, base),
         ast->nodes[op].binop.op_location,
         type_to_db_name(base_type),
-        "");
+        "",
+        0,
+        1);
     log_excerpt_note(
         gutter,
-        "The base can be a {emph2:%s} or {emph2:%s}\n",
+        "The base can be a {emph1:%s} or {emph1:%s}\n",
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
     help_insert_explicit_cast(source, gutter, ast_loc(ast, base), target_type);
@@ -697,7 +716,7 @@ warn_binop_pow_base_truncation(
         filename,
         source,
         ast_loc(ast, base),
-        "Base value is truncated when converting from {emph1:%s} to {emph2:%s} "
+        "Base value is truncated when converting from {emph0:%s} to {emph1:%s} "
         "in binary expression.\n",
         type_to_db_name(base_type),
         type_to_db_name(target_type));
@@ -710,7 +729,7 @@ warn_binop_pow_base_truncation(
         type_to_db_name(ast_type_info(ast, exp)));
     log_excerpt_note(
         gutter,
-        "The base can be a {emph2:%s} or {emph2:%s}.\n",
+        "The base can be a {emph1:%s} or {emph1:%s}.\n",
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
 }
@@ -732,7 +751,7 @@ warn_binop_pow_exponent_implicit_conversion(
         filename,
         source,
         ast_loc(ast, exp),
-        "Implicit conversion of exponent from {emph2:%s} to {emph1:%s}.\n",
+        "Implicit conversion of exponent from {emph1:%s} to {emph0:%s}.\n",
         type_to_db_name(exp_type),
         type_to_db_name(target_type));
     gutter = log_excerpt_binop(
@@ -750,11 +769,11 @@ warn_binop_pow_exponent_implicit_conversion(
     if (exp_type == TYPE_I64 || exp_type == TYPE_U32)
         log_excerpt_note(
             gutter,
-            "{emph2:INTEGER} is the largest possible integral type for "
+            "{emph1:INTEGER} is the largest possible integral type for "
             "exponents.\n");
     log_excerpt_note(
         gutter,
-        "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
+        "The exponent can be an {emph1:%s}, {emph1:%s} or {emph1:%s}.\n",
         type_to_db_name(TYPE_I32),
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
@@ -776,8 +795,8 @@ warn_binop_pow_exponent_truncation(
         filename,
         source,
         ast_loc(ast, exp),
-        "Exponent value is truncated when converting from {emph2:%s} to "
-        "{emph1:%s}.\n",
+        "Exponent value is truncated when converting from {emph1:%s} to "
+        "{emph0:%s}.\n",
         type_to_db_name(exp_type),
         type_to_db_name(target_type));
     gutter = log_excerpt_binop(
@@ -795,11 +814,11 @@ warn_binop_pow_exponent_truncation(
     if (target_type == TYPE_I32)
         log_excerpt_note(
             gutter,
-            "{emph2:INTEGER} is the largest possible integral type for "
+            "{emph1:INTEGER} is the largest possible integral type for "
             "exponents.\n");
     log_excerpt_note(
         gutter,
-        "The exponent can be an {emph2:%s}, {emph2:%s} or {emph2:%s}.\n",
+        "The exponent can be an {emph1:%s}, {emph1:%s} or {emph1:%s}.\n",
         type_to_db_name(TYPE_I32),
         type_to_db_name(TYPE_F32),
         type_to_db_name(TYPE_F64));
@@ -832,10 +851,13 @@ warn_boolean_implicit_evaluation(
         filename,
         source,
         ast_loc(ast, expr),
-        "Implicit evaluation of {emph1:%s} as a boolean expression.\n",
+        "Implicit evaluation of {emph0:%s} as a boolean expression.\n",
         type_to_db_name(ast_type_info(ast, expr)));
     gutter = log_excerpt_1(
-        source, ast_loc(ast, expr), type_to_db_name(ast_type_info(ast, expr)));
+        source,
+        ast_loc(ast, expr),
+        type_to_db_name(ast_type_info(ast, expr)),
+        0);
 
     log_excerpt_help(gutter, "You can make it explicit by changing it to:\n");
     switch (ast_type_info(ast, expr))
@@ -876,7 +898,7 @@ warn_cast_implicit_conversion(
         filename,
         source,
         ast_loc(ast, cast),
-        "Implicit conversion from {emph1:%s} to {emph2:%s} in expression.\n",
+        "Implicit conversion from {emph0:%s} to {emph1:%s} in expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
     log_excerpt_2(
@@ -884,7 +906,9 @@ warn_cast_implicit_conversion(
         ast_loc(ast, expr),
         ast_loc(ast, cast),
         type_to_db_name(source_type),
-        type_to_db_name(target_type));
+        type_to_db_name(target_type),
+        0,
+        1);
 }
 
 void
@@ -902,7 +926,7 @@ warn_cast_truncation(
         filename,
         source,
         ast_loc(ast, cast),
-        "Value is truncated when converting from {emph1:%s} to {emph2:%s} in "
+        "Value is truncated when converting from {emph0:%s} to {emph1:%s} in "
         "expression.\n",
         type_to_db_name(source_type),
         type_to_db_name(target_type));
@@ -911,7 +935,9 @@ warn_cast_truncation(
         ast_loc(ast, expr),
         ast_loc(ast, cast),
         type_to_db_name(source_type),
-        type_to_db_name(target_type));
+        type_to_db_name(target_type),
+        0,
+        1);
 }
 
 void
@@ -935,7 +961,7 @@ warn_func_call_implicit_conversion(
         filename,
         source,
         ast_loc(ast, arg),
-        "Implicit conversion of %d%s argument from {emph1:%s} to {emph2:%s} in "
+        "Implicit conversion of %d%s argument from {emph0:%s} to {emph1:%s} in "
         "function call.\n",
         arg_num,
         arg_num == 1   ? "st"
@@ -945,10 +971,10 @@ warn_func_call_implicit_conversion(
         type_to_db_name(ast_type_info(ast, arg)),
         type_to_db_name(ast_type_info(ast, param)));
     gutter = log_excerpt_1(
-        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)));
+        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
     log_excerpt_note(gutter, "Function parameter type is declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "");
+        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, arg), ast_type_info(ast, param));
 }
@@ -974,20 +1000,20 @@ warn_func_call_truncation(
         filename,
         source,
         ast_loc(ast, arg),
-        "Value is truncated when converting %d%s argument from {emph2:%s} to "
+        "Value is truncated when converting %d%s argument from {emph0:%s} to "
         "{emph1:%s} in function call.\n",
         arg_num,
         arg_num == 1   ? "st"
         : arg_num == 2 ? "nd"
         : arg_num == 3 ? "rd"
                        : "th",
-        type_to_db_name(ast_type_info(ast, arg)),
-        type_to_db_name(ast_type_info(ast, param)));
+        type_to_db_name(ast_type_info(ast, param)),
+        type_to_db_name(ast_type_info(ast, arg)));
     gutter = log_excerpt_1(
-        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)));
+        source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "");
+        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
 }
 
 void
@@ -1013,17 +1039,21 @@ warn_func_return_implicit_conversion(
         filename,
         source,
         ast_loc(ast, retval),
-        "Implicit conversion from {emph1:%s} to {emph2:%s} in function "
+        "Implicit conversion from {emph0:%s} to {emph1:%s} in function "
         "return.\n",
         type_to_db_name(ast_type_info(ast, retval)),
         type_to_db_name(ast_type_info(ast, func_ident)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
-        type_to_db_name(ast_type_info(ast, retval)));
+        type_to_db_name(ast_type_info(ast, retval)),
+        0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[func_ident].identifier.explicit_type_location, "");
+        source,
+        ast->nodes[func_ident].identifier.explicit_type_location,
+        "",
+        1);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
 }
@@ -1051,17 +1081,21 @@ warn_func_return_truncation(
         filename,
         source,
         ast_loc(ast, retval),
-        "Value is truncated when converting from {emph2:%s} to {emph1:%s} in "
+        "Value is truncated when converting from {emph1:%s} to {emph0:%s} in "
         "function return.\n",
         type_to_db_name(ast_type_info(ast, retval)),
         type_to_db_name(ast_type_info(ast, func_ident)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
-        type_to_db_name(ast_type_info(ast, retval)));
+        type_to_db_name(ast_type_info(ast, retval)),
+        0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(
-        source, ast->nodes[func_ident].identifier.explicit_type_location, "");
+        source,
+        ast->nodes[func_ident].identifier.explicit_type_location,
+        "",
+        1);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
 }
@@ -1086,7 +1120,7 @@ warn_loop_for_default_step_may_be_incorrect(
            LOG_HIGHLIGHT_SENTINAL};
     log_flc_warn(
         filename, source, loc, "For-loop direction may be incorrect.\n");
-    gutter = log_excerpt_1(source, loc, "");
+    gutter = log_excerpt_1(source, loc, "", 0);
     log_excerpt_help(
         gutter,
         "If no STEP is specified, it will default to 1. You can silence this "
@@ -1139,7 +1173,7 @@ warn_loop_for_wrong_direction_no_step(
         source,
         loc,
         "For-loop does nothing, because it STEPs in the wrong direction.\n");
-    gutter = log_excerpt_1(source, loc, "");
+    gutter = log_excerpt_1(source, loc, "", 0);
     log_excerpt_help(
         gutter,
         "If no STEP is specified, it will default to 1. You can make a loop "
@@ -1162,9 +1196,9 @@ warn_loop_for_incorrect_next(
         ast_loc(ast, next),
         "Loop variable in next statement is different from the one used in the "
         "for-loop statement.\n");
-    gutter = log_excerpt_1(source, ast_loc(ast, next), "");
+    gutter = log_excerpt_1(source, ast_loc(ast, next), "", 0);
     log_excerpt_note(gutter, "Loop variable declared here:\n");
-    log_excerpt_1(source, ast_loc(ast, loop_var), "");
+    log_excerpt_1(source, ast_loc(ast, loop_var), "", 0);
 }
 
 void
@@ -1198,7 +1232,7 @@ warn_initialization_implicit_conversion(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Implicit conversion from {emph2:%s} to {emph1:%s} in variable "
+        "Implicit conversion from {emph1:%s} to {emph0:%s} in variable "
         "initialization.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));
@@ -1252,7 +1286,7 @@ warn_initialization_truncation(
         filename,
         source,
         ast_loc(ast, rhs),
-        "Value is truncated in conversion from {emph2:%s} to {emph1:%s} in "
+        "Value is truncated in conversion from {emph1:%s} to {emph-1:%s} in "
         "variable initialization.\n",
         type_to_db_name(ast_type_info(ast, rhs)),
         type_to_db_name(ast_type_info(ast, lhs)));

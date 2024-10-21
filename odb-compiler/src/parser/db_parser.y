@@ -550,7 +550,7 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
             *yypcontext_location(ctx),
             "Unexpected %s\n",
             yysymbol_name(lookahead));
-        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "");
+        log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "", 0);
     }
 
     if (n < 0)

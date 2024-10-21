@@ -1490,9 +1490,9 @@ instantiate_func(
             call_location,
             al_arg > -1 ? "Too many arguments to function call.\n"
                         : "Too few arguments to function call.\n");
-        gutter = log_excerpt_1(call_source, call_location, "");
+        gutter = log_excerpt_1(call_source, call_location, "", 0);
         log_excerpt_note(gutter, "Function has the following signature:\n");
-        log_excerpt_1(call_source, ast_loc(*func_astp, decl), "");
+        log_excerpt_1(call_source, ast_loc(*func_astp, decl), "", 0);
         return -1;
     }
 
@@ -1660,7 +1660,7 @@ process_func_or_container_ref(
             source,
             ast_loc(*astp, identifier),
             "Command or function not found.\n");
-        log_excerpt_1(source, ast_loc(*astp, n), "");
+        log_excerpt_1(source, ast_loc(*astp, n), "", 0);
         return -1;
     }
 
@@ -2029,7 +2029,7 @@ sanity_check(struct ast* ast, const char* filename, const char* source)
                 "Failed to determine type of AST node id:%d, node_type: %d.\n",
                 n,
                 ast_node_type(ast, n));
-            gutter = log_excerpt_1(source, ast_loc(ast, n), "");
+            gutter = log_excerpt_1(source, ast_loc(ast, n), "", 0);
             error = -1;
         }
 

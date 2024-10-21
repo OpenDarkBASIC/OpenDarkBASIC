@@ -203,21 +203,21 @@ static const char*
 emph1_style(void)
 {
     return g_log.use_color == 1   ? FGB_BLUE
-           : g_log.use_color == 2 ? "{emph1}"
+           : g_log.use_color == 2 ? "{emph0}"
                                   : "";
 }
 static const char*
 emph2_style(void)
 {
     return g_log.use_color == 1   ? FGB_CYAN
-           : g_log.use_color == 2 ? "{emph2}"
+           : g_log.use_color == 2 ? "{emph1}"
                                   : "";
 }
 static const char*
 emph3_style(void)
 {
     return g_log.use_color == 1   ? FGB_YELLOW
-           : g_log.use_color == 2 ? "{emph3}"
+           : g_log.use_color == 2 ? "{emph2}"
                                   : "";
 }
 static const char*

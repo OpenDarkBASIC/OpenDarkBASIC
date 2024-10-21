@@ -142,7 +142,7 @@ report_duplicate_commands(
         source,
         ast_loc(ast, cmd),
         "Command has multiple definitions.\n");
-    gutter = log_excerpt_1(source, ast_loc(ast, cmd), "");
+    gutter = log_excerpt_1(source, ast_loc(ast, cmd), "", 0);
 
     log_excerpt_note(gutter, "Conflicting definitions are:\n");
     vec_for_each(candidates, cmdp)
@@ -272,7 +272,7 @@ report_ambiguous_overloads(
             log_raw(" and ");
         else if (arg_idx > 0)
             log_raw(", ");
-        sprintf(fmt, "{emph%d:%%d}", arg_idx + 1);
+        sprintf(fmt, "{emph%d:%%d}", arg_idx);
         log_raw(fmt, arg_positions[arg_idx]);
     }
     log_raw(" to command signature.\n");
@@ -302,7 +302,7 @@ report_ambiguous_overloads(
             if (arg_idx)
                 log_raw(", ");
             if (arg_is_highlighted(arg_positions, arg_idx, hl_count))
-                sprintf(fmt, "{emph%d:%%s AS %%s}", arg_idx + 1);
+                sprintf(fmt, "{emph%d:%%s AS %%s}", arg_idx);
             else
                 strcpy(fmt, "%s AS %s");
             log_raw(
@@ -363,7 +363,7 @@ report_available_commands(
         "%s",
         msg);
     gutter = log_excerpt_1(
-        source, ast->nodes[arglist].arglist.combined_location, "");
+        source, ast->nodes[arglist].arglist.combined_location, "", 0);
     log_excerpt_note(gutter, "Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
@@ -389,7 +389,7 @@ report_available_commands(
             if (i)
                 log_raw(", ");
             log_raw(
-                "%s {emph1:AS %s}",
+                "%s {emph0:AS %s}",
                 utf8_list_cstr(param_names, i),
                 type_to_db_name(param_types->data[i].type));
         }
@@ -425,7 +425,7 @@ log_cmd_signature(
         if (i)
             log_raw(", ");
         log_raw(
-            "%s {emph2:AS %s}",
+            "%s {emph0:AS %s}",
             utf8_list_cstr(param_names, i),
             type_to_db_name(param_types->data[i].type));
     }
@@ -473,13 +473,13 @@ typecheck_warnings(
                     filename,
                     source,
                     ast_loc(ast, arg),
-                    "Argument %d is truncated in conversion from {emph1:%s} to "
-                    "{emph2:%s} in command call.\n",
+                    "Argument %d is truncated in conversion from {emph0:%s} to "
+                    "{emph1:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source, ast_loc(ast, arg), type_to_db_name(arg_type));
+                    source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
 
@@ -491,13 +491,13 @@ typecheck_warnings(
                     filename,
                     source,
                     ast_loc(ast, arg),
-                    "Implicit conversion of argument %d from {emph1:%s} to "
-                    "{emph2:%s} in command call.\n",
+                    "Implicit conversion of argument %d from {emph0:%s} to "
+                    "{emph1:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
                 gutter = log_excerpt_1(
-                    source, ast_loc(ast, arg), type_to_db_name(arg_type));
+                    source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
                 log_cmd_signature(cmd_id, plugins, cmds, gutter);
                 break;
         }

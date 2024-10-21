@@ -250,10 +250,11 @@ static inline int
 log_excerpt_1(
     const char* source,
     struct utf8_span location,
-    const char* annotation)
+    const char* annotation,
+    char group)
 {
     struct log_highlight inst[] = {
-        {"", annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, 0},
+        {"", annotation, location, LOG_HIGHLIGHT, LOG_MARKERS, group},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, inst);
@@ -263,11 +264,12 @@ static inline int
 log_excerpt_2(
     const char* source,
     struct utf8_span loc1, struct utf8_span loc2,
-    const char* annotation1, const char* annotation2)
+    const char* annotation1, const char* annotation2,
+    char group1, char group2)
 {
     struct log_highlight hl[] = {
-        {"", annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, 0},
-        {"", annotation2, loc2, LOG_INSERT, LOG_MARKERS, 1},
+        {"", annotation1, loc1, LOG_HIGHLIGHT, LOG_MARKERS, group1},
+        {"", annotation2, loc2, LOG_INSERT, LOG_MARKERS, group2},
         LOG_HIGHLIGHT_SENTINAL
     };
     return log_excerpt(source, hl);
