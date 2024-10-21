@@ -251,13 +251,18 @@ err_func_call_incompatible_types(
     const char*       filename,
     const char*       source)
 {
-    int gutter;
+    int              gutter;
+    struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, param) == AST_IDENTIFIER,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
+
+    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
+                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+                         : ast_loc(ast, param);
 
     log_flc_err(
         filename,
@@ -274,9 +279,8 @@ err_func_call_incompatible_types(
         type_to_db_name(ast_type_info(ast, param)));
     gutter = log_excerpt_1(
         source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
-    log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
+    log_excerpt_note(gutter, "Function parameter was declared here:\n");
+    log_excerpt_1(source, param_type_loc, "", 0);
 
     return -1;
 }
@@ -289,8 +293,9 @@ err_func_return_incompatible_types(
     const char*       filename,
     const char*       source)
 {
-    int    gutter;
-    ast_id decl, func_ident;
+    int              gutter;
+    ast_id           decl, func_ident;
+    struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -299,6 +304,9 @@ err_func_return_incompatible_types(
 
     decl = ast->nodes[func].func.decl;
     func_ident = ast->nodes[decl].func_decl.identifier;
+    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
+                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
+                       : ast_loc(ast, func_ident);
 
     log_flc_err(
         filename,
@@ -314,11 +322,7 @@ err_func_return_incompatible_types(
         type_to_db_name(ast_type_info(ast, retval)),
         0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source,
-        ast->nodes[func_ident].identifier.explicit_type_location,
-        "",
-        1);
+    log_excerpt_1(source, ret_type_loc, "", 1);
 
     return -1;
 }
@@ -331,8 +335,9 @@ err_func_missing_return_value(
     const char*       filename,
     const char*       source)
 {
-    int    gutter;
-    ast_id decl, func_ident;
+    int              gutter;
+    ast_id           decl, func_ident;
+    struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, func) == AST_FUNC,
@@ -340,15 +345,14 @@ err_func_missing_return_value(
 
     decl = ast->nodes[func].func.decl;
     func_ident = ast->nodes[decl].func_decl.identifier;
+    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
+                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
+                       : ast_loc(ast, func_ident);
 
     log_flc_err(filename, source, ret_loc, "Missing return value.\n");
     gutter = log_excerpt_1(source, ret_loc, "", 0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source,
-        ast->nodes[func_ident].identifier.explicit_type_location,
-        "",
-        0);
+    log_excerpt_1(source, ret_type_loc, "", 0);
 
     return -1;
 }
@@ -884,63 +888,6 @@ warn_boolean_implicit_evaluation(
 }
 
 void
-warn_cast_implicit_conversion(
-    const struct ast* ast,
-    ast_id            cast,
-    const char*       filename,
-    const char*       source)
-{
-    ast_id    expr = ast->nodes[cast].cast.expr;
-    enum type source_type = ast_type_info(ast, expr);
-    enum type target_type = ast_type_info(ast, cast);
-
-    log_flc_warn(
-        filename,
-        source,
-        ast_loc(ast, cast),
-        "Implicit conversion from {emph0:%s} to {emph1:%s} in expression.\n",
-        type_to_db_name(source_type),
-        type_to_db_name(target_type));
-    log_excerpt_2(
-        source,
-        ast_loc(ast, expr),
-        ast_loc(ast, cast),
-        type_to_db_name(source_type),
-        type_to_db_name(target_type),
-        0,
-        1);
-}
-
-void
-warn_cast_truncation(
-    const struct ast* ast,
-    ast_id            cast,
-    const char*       filename,
-    const char*       source)
-{
-    ast_id    expr = ast->nodes[cast].cast.expr;
-    enum type source_type = ast_type_info(ast, expr);
-    enum type target_type = ast_type_info(ast, cast);
-
-    log_flc_warn(
-        filename,
-        source,
-        ast_loc(ast, cast),
-        "Value is truncated when converting from {emph0:%s} to {emph1:%s} in "
-        "expression.\n",
-        type_to_db_name(source_type),
-        type_to_db_name(target_type));
-    log_excerpt_2(
-        source,
-        ast_loc(ast, expr),
-        ast_loc(ast, cast),
-        type_to_db_name(source_type),
-        type_to_db_name(target_type),
-        0,
-        1);
-}
-
-void
 warn_func_call_implicit_conversion(
     const struct ast* ast,
     ast_id            arg,
@@ -949,13 +896,18 @@ warn_func_call_implicit_conversion(
     const char*       filename,
     const char*       source)
 {
-    int gutter;
+    int              gutter;
+    struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, param) == AST_IDENTIFIER,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
+
+    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
+                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+                         : ast_loc(ast, param);
 
     log_flc_warn(
         filename,
@@ -973,8 +925,7 @@ warn_func_call_implicit_conversion(
     gutter = log_excerpt_1(
         source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
     log_excerpt_note(gutter, "Function parameter type is declared here:\n");
-    log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
+    log_excerpt_1(source, param_type_loc, "", 0);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, arg), ast_type_info(ast, param));
 }
@@ -988,13 +939,18 @@ warn_func_call_truncation(
     const char*       filename,
     const char*       source)
 {
-    int gutter;
+    int              gutter;
+    struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, param) == AST_IDENTIFIER,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
+
+    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
+                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+                         : ast_loc(ast, param);
 
     log_flc_warn(
         filename,
@@ -1012,8 +968,7 @@ warn_func_call_truncation(
     gutter = log_excerpt_1(
         source, ast_loc(ast, arg), type_to_db_name(ast_type_info(ast, arg)), 1);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source, ast->nodes[param].identifier.explicit_type_location, "", 0);
+    log_excerpt_1(source, param_type_loc, "", 0);
 }
 
 void
@@ -1024,8 +979,9 @@ warn_func_return_implicit_conversion(
     const char*       filename,
     const char*       source)
 {
-    int    gutter;
-    ast_id decl, func_ident;
+    int              gutter;
+    ast_id           decl, func_ident;
+    struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1034,6 +990,9 @@ warn_func_return_implicit_conversion(
 
     decl = ast->nodes[func].func.decl;
     func_ident = ast->nodes[decl].func_decl.identifier;
+    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
+                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
+                       : ast_loc(ast, func_ident);
 
     log_flc_warn(
         filename,
@@ -1049,11 +1008,7 @@ warn_func_return_implicit_conversion(
         type_to_db_name(ast_type_info(ast, retval)),
         0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source,
-        ast->nodes[func_ident].identifier.explicit_type_location,
-        "",
-        1);
+    log_excerpt_1(source, ret_type_loc, "", 1);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
 }
@@ -1066,8 +1021,9 @@ warn_func_return_truncation(
     const char*       filename,
     const char*       source)
 {
-    int    gutter;
-    ast_id decl, func_ident;
+    int              gutter;
+    ast_id           decl, func_ident;
+    struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1076,6 +1032,9 @@ warn_func_return_truncation(
 
     decl = ast->nodes[func].func.decl;
     func_ident = ast->nodes[decl].func_decl.identifier;
+    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
+                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
+                       : ast_loc(ast, func_ident);
 
     log_flc_warn(
         filename,
@@ -1091,11 +1050,7 @@ warn_func_return_truncation(
         type_to_db_name(ast_type_info(ast, retval)),
         0);
     log_excerpt_note(gutter, "Function return type was declared here:\n");
-    log_excerpt_1(
-        source,
-        ast->nodes[func_ident].identifier.explicit_type_location,
-        "",
-        1);
+    log_excerpt_1(source, ret_type_loc, "", 1);
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
 }

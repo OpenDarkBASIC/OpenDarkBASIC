@@ -117,7 +117,8 @@ enum ast_type
     /*! String. Should be UTF-8 encoded. */
     AST_STRING_LITERAL,
     AST_CAST,
-    AST_SCOPE,
+    AST_AS_TYPE,
+    AST_TYPE_OF,
 };
 
 /* clang-format off */
@@ -182,16 +183,20 @@ union ast_node
         struct utf8_span op_location;
     } assignment;
 
+    /* TODO: Consider creating a "variable" node that has an identifier. Right
+     * now the identifier IS the variable, but it is also used bu AST_FUNC.
+     * type_check.c currently handles the identifier differently depending on
+     * the context. */
+
     struct 
     {
         struct info info;
-        ast_id _pad1, _pad2;
+        ast_id decl_type_of;
+        ast_id _pad;
         struct utf8_span name;
-        struct utf8_span explicit_type_location;
         struct utf8_span scope_location;
         enum type_annotation annotation : 7;
         enum scope scope : 1;
-        enum type explicit_type : 4;
     } identifier;
 
     struct 
@@ -369,15 +374,20 @@ union ast_node
     struct {
         struct info info;
         ast_id expr;
-        ast_id _pad;
-        enum type explicit_type;
+        ast_id type_of;
     } cast;
 
     struct {
         struct info info;
-        ast_id child;
+        ast_id _pad1, _pad2;
+        enum type target_type;
+    } as_type;
+
+    struct {
+        struct info info;
+        ast_id expr;
         ast_id _pad;
-    } scope;
+    } type_of;
 };
 
 struct ast
@@ -446,7 +456,7 @@ ast_id ast_inc(struct ast** astp, ast_id var, struct utf8_span location);
 ast_id ast_dec_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
 ast_id ast_dec(struct ast** astp, ast_id var, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-void ast_identifier_set_explicit_type(struct ast* ast, ast_id identifier, enum type explicit_type, struct utf8_span location);
+void ast_identifier_set_explicit_type(struct ast* ast, ast_id identifier, ast_id type_of);
 void ast_identifier_set_scope(struct ast* ast, ast_id identifier, enum scope scope, struct utf8_span location);
 ast_id ast_binop(struct ast** astp, enum binop_type op, ast_id left, ast_id right, struct utf8_span op_location, struct utf8_span location);
 ast_id ast_unop(struct ast** astp, enum unop_type op, ast_id expr, struct utf8_span location);
@@ -471,6 +481,9 @@ ast_id ast_integer_like_literal(struct ast** astp, int64_t value, struct utf8_sp
 ast_id ast_float_literal(struct ast** astp, float value, struct utf8_span location);
 ast_id ast_double_literal(struct ast** astp, double value, struct utf8_span location);
 ast_id ast_string_literal(struct ast** astp, struct utf8_span str, struct utf8_span location);
-ast_id ast_cast(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
-ast_id ast_scope(struct ast** astp, ast_id child, struct utf8_span location);
+ast_id ast_cast_to_type(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
+ast_id ast_cast(struct ast** astp, ast_id expr, ast_id type_of, struct utf8_span location);
+ast_id ast_as_type(struct ast** astp, enum type type, struct utf8_span location);
+ast_id ast_type_of(struct ast** astp, ast_id expr, struct utf8_span location);
+ast_id ast_type_of_type(struct ast** astp, enum type target_type, struct utf8_span location);
 /* clang-format on */

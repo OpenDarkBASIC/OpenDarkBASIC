@@ -506,22 +506,32 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"AS %s\"];\n",
+                "label=\"cast\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape);
+            break;
+        case AST_AS_TYPE:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                type_to_db_name(ast_type_info(ast, n)));
+                type_to_db_name(ast->nodes[n].as_type.target_type));
             break;
-        case AST_SCOPE:
+        case AST_TYPE_OF:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"scope\"];\n",
+                "label=\"TYPE OF\"];\n",
                 n,
-                style->scope.color,
-                style->scope.fontcolor,
-                style->scope.shape);
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape);
             break;
     }
 }
@@ -577,7 +587,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_PARAMLIST: NAMES("identifier", "next")
         case AST_COMMAND: NAMES("arglist", "")
         case AST_ASSIGNMENT: NAMES("lvalue", "expr")
-        case AST_IDENTIFIER: break;
+        case AST_IDENTIFIER: NAMES("as_type", "")
         case AST_BINOP: NAMES("left", "right")
         case AST_UNOP: NAMES("expr", "")
         case AST_COND: NAMES("expr", "cond_branches")
@@ -605,8 +615,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_FLOAT_LITERAL: break;
         case AST_DOUBLE_LITERAL: break;
         case AST_STRING_LITERAL: break;
-        case AST_CAST: NAMES("expr", "")
-        case AST_SCOPE: NAMES("child", "")
+        case AST_CAST: NAMES("expr", "type_of")
+        case AST_AS_TYPE: break;
+        case AST_TYPE_OF: NAMES("expr", "")
 #undef NAMES
     }
 

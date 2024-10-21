@@ -110,7 +110,8 @@ process_node(
         case AST_DOUBLE_LITERAL:
         case AST_STRING_LITERAL:
         case AST_CAST:
-        case AST_SCOPE: {
+        case AST_AS_TYPE:
+        case AST_TYPE_OF: {
             ast_id left = ast->nodes[n].base.left;
             ast_id right = ast->nodes[n].base.right;
 

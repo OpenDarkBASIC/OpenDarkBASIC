@@ -35,6 +35,7 @@ dword,              TOK_DWORD
 float,              TOK_FLOAT
 double,             TOK_DOUBLE
 string,             TOK_STRING
+type,               TOK_TYPE
 end,                TOK_END
 inc,                TOK_INC
 dec,                TOK_DEC

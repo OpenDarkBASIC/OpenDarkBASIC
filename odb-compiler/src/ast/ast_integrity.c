@@ -73,7 +73,8 @@ print_subtree(const struct ast* ast, ast_id n, int depth)
         case AST_DOUBLE_LITERAL: print_node("DOUBLE_LITERAL", depth); break;
         case AST_STRING_LITERAL: print_node("STRING_LITERAL", depth); break;
         case AST_CAST: break; print_node("CAST", depth); break;
-        case AST_SCOPE: break; print_node("SCOPE", depth); break;
+        case AST_AS_TYPE: print_node("AS_TYPE", depth); break;
+        case AST_TYPE_OF: print_node("TYPE_OF", depth); break;
             /* clang-format on */
     }
 

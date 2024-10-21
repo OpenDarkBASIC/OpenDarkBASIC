@@ -79,7 +79,8 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 
         case AST_STRING_LITERAL: break;
         case AST_CAST: break;
-        case AST_SCOPE: break;
+        case AST_AS_TYPE: break;
+        case AST_TYPE_OF: break;
     }
 
     return EXPR_TYPE_UNKNOWN;

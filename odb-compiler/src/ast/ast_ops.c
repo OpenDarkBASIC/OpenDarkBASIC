@@ -191,6 +191,12 @@ ast_trees_equal(
                     utf8_span_view(
                         source_text, ast->nodes[n2].identifier.name)))
                 return 0;
+            if (ast->nodes[n1].identifier.annotation
+                != ast->nodes[n2].identifier.annotation)
+                return 0;
+            if (ast->nodes[n1].identifier.scope
+                != ast->nodes[n2].identifier.scope)
+                return 0;
             break;
         case AST_BINOP:
             if (ast->nodes[n1].binop.op != ast->nodes[n2].binop.op)
@@ -286,7 +292,12 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_CAST: break;
-        case AST_SCOPE: break;
+        case AST_TYPE_OF: break;
+        case AST_AS_TYPE:
+            if (ast->nodes[n1].as_type.target_type
+                != ast->nodes[n2].as_type.target_type)
+                return 0;
+            break;
     }
 
     if (ast->nodes[n1].base.left >= 0 && ast->nodes[n2].base.left < 0)
@@ -305,7 +316,9 @@ ast_trees_equal(
                 ast->nodes[n1].base.left,
                 ast->nodes[n2].base.left)
             == 0)
+        {
             return 0;
+        }
     if (ast->nodes[n1].base.right >= 0)
         if (ast_trees_equal(
                 source_text,
@@ -313,7 +326,9 @@ ast_trees_equal(
                 ast->nodes[n1].base.right,
                 ast->nodes[n2].base.right)
             == 0)
+        {
             return 0;
+        }
 
     return 1;
 }

@@ -505,7 +505,7 @@ typecheck_warnings(
         /* Insert cast to correct type if necessary */
         if (arg_type != param_type)
         {
-            ast_id cast = ast_cast(astp, arg, param_type, ast_loc(ast, arg));
+            ast_id cast = ast_cast_to_type(astp, arg, param_type, ast_loc(ast, arg));
             if (cast < -1)
                 return -1;
             ast = *astp;

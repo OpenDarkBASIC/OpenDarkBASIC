@@ -1026,7 +1026,8 @@ gen_expr(
             break;
         }
 
-        case AST_SCOPE: break;
+        case AST_AS_TYPE: break;
+        case AST_TYPE_OF: break;
     }
 
     log_codegen_err(
@@ -1079,7 +1080,7 @@ gen_block(
                     ir->mod);
                 FSDKDeInit->setDoesNotReturn();
                 builder.CreateCall(FSDKDeInit, {});
-                break;
+                continue;
             }
 
             case AST_ARGLIST:
@@ -1100,7 +1101,7 @@ gen_block(
                     db_func_table,
                     loop_stack,
                     allocamap);
-                break;
+                continue;
             }
 
             case AST_ASSIGNMENT: {
@@ -1143,7 +1144,7 @@ gen_block(
                         break;
                 }
                 builder.CreateStore(rhs, *A);
-                break;
+                continue;
             }
 
             case AST_IDENTIFIER:
@@ -1246,7 +1247,7 @@ gen_block(
 
                 F->insert(F->end(), BBMerge);
                 builder.SetInsertPoint(BBMerge);
-                break;
+                continue;
             }
             case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
@@ -1307,7 +1308,7 @@ gen_block(
                 builder.SetInsertPoint(BBExit);
                 loop_stack->pop_back();
 
-                break;
+                continue;
             }
             case AST_LOOP_BODY: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
@@ -1361,7 +1362,7 @@ gen_block(
                         allocamap);
                     builder.CreateBr(it->BBLoop);
                 }
-                break;
+                continue;
             }
 
             case AST_LOOP_EXIT: {
@@ -1385,12 +1386,13 @@ gen_block(
                             source, target_name, loop_implicit_name))
                     {
                         builder.CreateBr(it->BBExit);
-                        goto loop_exit_found;
+                        goto loop_exit_success;
                     }
                 }
                 ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            loop_exit_found:;
-                break;
+                return -1;
+            loop_exit_success:
+                continue;
             }
 
             case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -1486,7 +1488,7 @@ gen_block(
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
                 llvm::verifyFunction(*F);
 #endif
-                break;
+                continue;
             }
             case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -1513,7 +1515,7 @@ gen_block(
                 else
                     builder.CreateRetVoid();
 
-                break;
+                continue;
             }
             case AST_FUNC_OR_CONTAINER_REF:
                 ODBUTIL_DEBUG_ASSERT(
@@ -1564,7 +1566,7 @@ gen_block(
                 llvm::Function* F = result->getValue();
                 builder.CreateCall(F, llvm_args);
 
-                break;
+                continue;
             }
 
             case AST_BOOLEAN_LITERAL:
@@ -1589,10 +1591,18 @@ gen_block(
                                     "block.\n"));
                 return -1;
 
-            case AST_SCOPE:
+            case AST_AS_TYPE:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Scopes should never occur directly in a "
+                    log_codegen_err("AS TYPE should never occur directly in a "
+                                    "block.\n"));
+                return -1;
+
+            case AST_TYPE_OF:
+                return 0;
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_codegen_err("TYPE OF should never occur directly in a "
                                     "block.\n"));
                 return -1;
         }

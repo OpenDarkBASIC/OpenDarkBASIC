@@ -186,18 +186,6 @@ warn_boolean_implicit_evaluation(
     const char*       filename,
     const char*       source);
 void
-warn_cast_implicit_conversion(
-    const struct ast* ast,
-    ast_id            cast,
-    const char*       filename,
-    const char*       source);
-void
-warn_cast_truncation(
-    const struct ast* ast,
-    ast_id            cast,
-    const char*       filename,
-    const char*       source);
-void
 warn_func_call_implicit_conversion(
     const struct ast* ast,
     ast_id            arg,

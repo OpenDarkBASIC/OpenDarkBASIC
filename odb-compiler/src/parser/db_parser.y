@@ -124,12 +124,16 @@
 %token REMSTART "Remark begin"
 %token REMEND "Remark end"
 
-/* Keywords */
+/* preprocessor */
 %token CONSTANT "constant"
+%token LOAD_PLUGIN "load plugin"
+%token LOAD_COMMAND "load command"
+/* Keywords */
 %token END
 %token INC "increment"
 %token DEC "decrement"
 %token GLOBAL LOCAL BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
+%token TYPE
 /* Control flow */
 %token IF "IF"
 %token THEN "THEN"
@@ -248,7 +252,7 @@
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_cont loop_exit
 %type<string_value> loop_name
-%type<type_value> type maybe_as_type
+%type<node_value> as_type maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
 %type<node_value> identifier var_decl var_init_decl
@@ -330,7 +334,7 @@ expr
   | expr BSHL expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_LEFT, $1, $3, @2, @$); }
   | expr BSHR expr                          { $$ = ast_binop(ctx->astp, BINOP_SHIFT_RIGHT, $1, $3, @2, @$); }
   /* Expressions */
-  | expr AS type                            { $$ = ast_cast(ctx->astp, $1, $3, @$); }
+  | expr as_type                            { $$ = ast_cast(ctx->astp, $1, $2, @$); }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
   | identifier                              { $$ = $1; }
@@ -349,11 +353,11 @@ maybe_arglist
   |                                         { $$ = -1; }
   ;
 paramlist
-  : paramlist ',' identifier AS type        { $$ = $1;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $5, utf8_span_union(@4, @5));
+  : paramlist ',' identifier as_type        { $$ = $1;
+                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $4);
                                               ast_paramlist_append(ctx->astp, $$, $3, @$); }
   | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->astp, $$, $3, @$); }
-  | identifier AS type                      { ast_identifier_set_explicit_type(*ctx->astp, $1, $3, utf8_span_union(@2, @3));
+  | identifier as_type                      { ast_identifier_set_explicit_type(*ctx->astp, $1, $2);
                                               $$ = ast_paramlist(ctx->astp, $1, @$); }
   | identifier                              { $$ = ast_paramlist(ctx->astp, $1, @$); }
   ;
@@ -382,11 +386,11 @@ var_init_decl
   | var_decl                                { $$ = $1; }
   ;
 var_decl
-  : scope identifier AS type                { $$ = $2;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $2, $4, utf8_span_union(@3, @4));
+  : scope identifier as_type                { $$ = $2;
+                                              ast_identifier_set_explicit_type(*ctx->astp, $2, $3);
                                               ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
-  | identifier AS type                      { $$ = $1;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $1, $3, utf8_span_union(@2, @3)); }
+  | identifier as_type                      { $$ = $1;
+                                              ast_identifier_set_explicit_type(*ctx->astp, $1, $2); }
   | scope identifier                        { $$ = $2;
                                               ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
   ;
@@ -472,7 +476,7 @@ func
         maybe_block
     ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @9, @$);
                                               ast_identifier_set_scope(*ctx->astp, $3, $1, @1);
-                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $7, @7); }
+                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $7); }
   ;
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
@@ -495,20 +499,21 @@ maybe_scope
   : scope                                   { $$ = $1; }
   |                                         { $$ = SCOPE_LOCAL; }
   ;
-type
-  : BOOLEAN                                 { $$ = TYPE_BOOL; }
-  | BYTE                                    { $$ = TYPE_U8; }
-  | WORD                                    { $$ = TYPE_U16; }
-  | INTEGER                                 { $$ = TYPE_I32; }
-  | DWORD                                   { $$ = TYPE_U32; }
-  | DOUBLE INTEGER                          { $$ = TYPE_I64; }
-  | FLOAT                                   { $$ = TYPE_F32; }
-  | DOUBLE                                  { $$ = TYPE_F64; }
-  | STRING                                  { $$ = TYPE_STRING; }
+as_type
+  : AS BOOLEAN                              { $$ = ast_type_of_type(ctx->astp, TYPE_BOOL, @$); }
+  | AS BYTE                                 { $$ = ast_type_of_type(ctx->astp, TYPE_U8, @$); }
+  | AS WORD                                 { $$ = ast_type_of_type(ctx->astp, TYPE_U16, @$); }
+  | AS INTEGER                              { $$ = ast_type_of_type(ctx->astp, TYPE_I32, @$); }
+  | AS DWORD                                { $$ = ast_type_of_type(ctx->astp, TYPE_U32, @$); }
+  | AS DOUBLE INTEGER                       { $$ = ast_type_of_type(ctx->astp, TYPE_I64, @$); }
+  | AS FLOAT                                { $$ = ast_type_of_type(ctx->astp, TYPE_F32, @$); }
+  | AS DOUBLE                               { $$ = ast_type_of_type(ctx->astp, TYPE_F64, @$); }
+  | AS STRING                               { $$ = ast_type_of_type(ctx->astp, TYPE_STRING, @$); }
+  | AS TYPE '(' expr ')'                    { $$ = ast_type_of(ctx->astp, $4, @$);}
   ;
 maybe_as_type
-  : AS type                                 { $$ = $2; @$ = utf8_span_union(@1, @2); }
-  |                                         { $$ = TYPE_INVALID; }
+  : as_type                                 { $$ = $1; }
+  |                                         { $$ = -1; }
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->astp, $1, TA_NONE, @$); }

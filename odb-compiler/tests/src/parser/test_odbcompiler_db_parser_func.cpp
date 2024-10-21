@@ -24,6 +24,16 @@ struct NAME : DBParserHelper, LogHelper, Test
             decl = ast->nodes[func].func.decl;
             def = ast->nodes[func].func.def;
             identifier = ast->nodes[decl].func_decl.identifier;
+            identifier_decl_type
+                = ast->nodes[identifier].identifier.decl_type_of;
+            identifier_type_expr
+                = identifier_decl_type < 0
+                      ? -1
+                      : ast->nodes[identifier_decl_type].type_of.expr;
+            identifier_type
+                = identifier_type_expr < 0
+                      ? TYPE_INVALID
+                      : ast->nodes[identifier_type_expr].as_type.target_type;
             paramlist = ast->nodes[decl].func_decl.paramlist;
             body = ast->nodes[def].func_def.body;
             retval = ast->nodes[def].func_def.retval;
@@ -36,13 +46,16 @@ struct NAME : DBParserHelper, LogHelper, Test
         return result;
     }
 
-    ast_id func = -42;
-    ast_id decl = -42;
-    ast_id def = -42;
-    ast_id identifier = -42;
-    ast_id paramlist = -42;
-    ast_id body = -42;
-    ast_id retval = -42;
+    ast_id    func = -42;
+    ast_id    decl = -42;
+    ast_id    def = -42;
+    ast_id    identifier = -42;
+    ast_id    identifier_decl_type = -42;
+    ast_id    identifier_type_expr = -42;
+    ast_id    paramlist = -42;
+    ast_id    body = -42;
+    ast_id    retval = -42;
+    enum type identifier_type = TYPE_INVALID;
 };
 
 TEST_F(NAME, empty_body_no_params_no_return)
@@ -137,12 +150,11 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
     EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC_POLY));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
-    EXPECT_THAT(
-        ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_INVALID));
+    EXPECT_THAT(identifier_decl_type, Eq(-1));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(16, 1));
-    EXPECT_THAT(ast->nodes[param1].identifier.explicit_type, Eq(TYPE_INVALID));
-    EXPECT_THAT(ast->nodes[param2].identifier.explicit_type, Eq(TYPE_INVALID));
+    EXPECT_THAT(ast->nodes[param1].identifier.decl_type_of, Eq(-1));
+    EXPECT_THAT(ast->nodes[param2].identifier.decl_type_of, Eq(-1));
     EXPECT_THAT(pl3, Eq(-1));
 
     ast_id block1 = body;
@@ -184,13 +196,17 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id pl3 = ast->nodes[pl2].paramlist.next;
     ast_id param1 = ast->nodes[pl1].paramlist.identifier;
     ast_id param2 = ast->nodes[pl2].paramlist.identifier;
+    ast_id type_of1 = ast->nodes[param1].identifier.decl_type_of;
+    ast_id type_of2 = ast->nodes[param2].identifier.decl_type_of;
+    ast_id as_type1 = ast->nodes[type_of1].type_of.expr;
+    ast_id as_type2 = ast->nodes[type_of2].type_of.expr;
     EXPECT_THAT(ast_node_type(ast, func), Eq(AST_FUNC));
     EXPECT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(9, 3));
-    EXPECT_THAT(ast->nodes[identifier].identifier.explicit_type, Eq(TYPE_F32));
+    EXPECT_THAT(identifier_type, Eq(TYPE_F32));
     EXPECT_THAT(ast->nodes[param1].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast->nodes[param2].identifier.name, Utf8SpanEq(26, 1));
-    EXPECT_THAT(ast->nodes[param1].identifier.explicit_type, Eq(TYPE_STRING));
-    EXPECT_THAT(ast->nodes[param2].identifier.explicit_type, Eq(TYPE_U16));
+    EXPECT_THAT(ast->nodes[as_type1].as_type.target_type, Eq(TYPE_STRING));
+    EXPECT_THAT(ast->nodes[as_type2].as_type.target_type, Eq(TYPE_U16));
     EXPECT_THAT(pl3, Eq(-1));
 
     ast_id block1 = body;
