@@ -9,10 +9,10 @@ void
 ast_swap_node_values(struct ast* ast, int n1, int n2);
 
 /*!
- * @brief Creates a new node of an lvalue, such as an identifier.
+ * @brief Creates a new node of an identifier.
  */
 int
-ast_dup_lvalue(struct ast** ast, int lvalue);
+ast_dup_identifier(struct ast** ast, int lvaluedentifier);
 
 /*! Perform a deep-copy of a subtree and return the node root node of the new
  * tree, or -1 on failure */

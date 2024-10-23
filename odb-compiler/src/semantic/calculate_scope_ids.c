@@ -8,35 +8,40 @@ static void
 process_node(
     struct ast* ast, ast_id n, int32_t current_scope, int32_t* scope_counter)
 {
-
-    /* The only node that creates new scopes (for now) is AST_FUNC. The func
-     * itself belongs to the parent scope, but its parameters, body and return
-     * expression belong to a new scope. Unfortunately, the parameter list is
-     * contained in an adjacent node, so we also have to include the recurse
-     * logic here to get the paramter, body, and return scopes to be identical.
-     */
     switch (ast_node_type(ast, n))
     {
-        case AST_FUNC:
+        /* Functions are comprised of multiple nodes. For scope purposes, we
+         * want to handle all nodes as one thing.
+         *
+         * The funcion declaration (identifier, type) belongs to the current
+         * scope, while the parameter list, body and return value belong to the
+         * child scope. */
+        case AST_FUNC1:
         case AST_FUNC_POLY: {
-            ast_id decl = ast->nodes[n].func.decl;
-            ast_id def = ast->nodes[n].func.def;
-            ast_id identifier = ast->nodes[decl].func_decl.identifier;
-            ast_id decl_type_of
-                = ast->nodes[identifier].identifier.decl_type_of;
-            ast_id paramlist = ast->nodes[decl].func_decl.paramlist;
-            ast_id body = ast->nodes[def].func_def.body;
-            ast_id ret = ast->nodes[def].func_def.retval;
+            ast_id f1 = ast_node_type(ast, n) == AST_FUNC_POLY
+                            ? ast->nodes[n].func_poly.func
+                            : n;
+            ast_id f2 = ast->nodes[f1].func1.func2;
+            ast_id f3 = ast->nodes[f2].func2.func3;
+            ast_id f4 = ast->nodes[f3].func3.func4;
+
+            ast_id identifier = ast->nodes[f1].func1.identifier;
+            ast_id as = ast->nodes[f2].func2.as;
+            ast_id paramlist = ast->nodes[f3].func3.paramlist;
+            ast_id body = ast->nodes[f4].func4.body;
+            ast_id ret = ast->nodes[f4].func4.retval;
 
             ast->nodes[n].info.scope_id = current_scope;
-            ast->nodes[decl].info.scope_id = current_scope;
-            ast->nodes[def].info.scope_id = current_scope;
+            ast->nodes[f1].info.scope_id = current_scope;
+            ast->nodes[f2].info.scope_id = current_scope;
+            ast->nodes[f3].info.scope_id = current_scope;
+            ast->nodes[f4].info.scope_id = current_scope;
             ast->nodes[identifier].info.scope_id = current_scope;
+            if (as > -1)
+                ast->nodes[as].info.scope_id = current_scope;
 
             current_scope = ++(*scope_counter);
 
-            if (decl_type_of > -1)
-                process_node(ast, decl_type_of, current_scope, scope_counter);
             if (paramlist > -1)
                 process_node(ast, paramlist, current_scope, scope_counter);
             if (body > -1)
@@ -45,9 +50,13 @@ process_node(
                 process_node(ast, ret, current_scope, scope_counter);
             break;
         }
+        /* Is handled above */
+        case AST_FUNC2:
+        case AST_FUNC3:
+        case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_BLOCK: {
-            /* Help reduce total depth of recursion */
+            /* Help reduce total recursion depth */
             for (; n > -1; n = ast->nodes[n].block.next)
             {
                 ast->nodes[n].info.scope_id = current_scope;
@@ -73,23 +82,28 @@ process_node(
             break;
         }
         case AST_PARAMLIST: {
-            /* Help reduce total depth of recursion */
+            /* Help reduce total recursion depth */
             for (; n > -1; n = ast->nodes[n].paramlist.next)
             {
                 ast->nodes[n].info.scope_id = current_scope;
                 process_node(
                     ast,
-                    ast->nodes[n].paramlist.identifier,
+                    ast->nodes[n].paramlist.param,
                     current_scope,
                     scope_counter);
             }
             break;
         }
 
-        case AST_GC:
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+
         case AST_END:
         case AST_COMMAND:
         case AST_ASSIGNMENT:
+        case AST_VAR_DECL1:
+        case AST_VAR_DECL2:
+        case AST_VAR_REF:
+        case AST_PARAM:
         case AST_IDENTIFIER:
         case AST_BINOP:
         case AST_UNOP:
@@ -102,8 +116,6 @@ process_node(
         case AST_LOOP_FOR3:
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT:
-        case AST_FUNC_DECL:
-        case AST_FUNC_DEF:
         case AST_FUNC_EXIT:
         case AST_FUNC_OR_CONTAINER_REF:
         case AST_FUNC_CALL:
@@ -117,8 +129,8 @@ process_node(
         case AST_DOUBLE_LITERAL:
         case AST_STRING_LITERAL:
         case AST_CAST:
-        case AST_AS_TYPE:
-        case AST_TYPE_OF: {
+        case AST_AS:
+        case AST_TYPE: {
             ast_id left = ast->nodes[n].base.left;
             ast_id right = ast->nodes[n].base.right;
 
@@ -156,15 +168,13 @@ check_scope_ids(
                 "Node %d of type %d has no scope ID\n",
                 n,
                 ast_node_type(ast, n));
+            ast_export_print_fp(ast, n, stdout, source, cmds);
             error = -1;
         }
     }
 
     if (error)
-    {
-        ast_export_dot_fp(ast, stdout, source, cmds);
         fflush(stdout);
-    }
 
     ODBUTIL_DEBUG_ASSERT(!error, (void)0);
 }

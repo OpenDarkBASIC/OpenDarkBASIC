@@ -330,7 +330,7 @@ func_name_from_paramlist(
     func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
     for (; paramlist > -1; paramlist = ast->nodes[paramlist].paramlist.next)
     {
-        ast_id param = ast->nodes[paramlist].paramlist.identifier;
+        ast_id param = ast->nodes[paramlist].paramlist.param;
         func_name += type_to_char(ast_type_info(ast, param));
     }
 
@@ -373,21 +373,22 @@ create_db_function_table(
     llvm::SmallString<128> func_name;
     for (ast_id n = 0; n != ast_count(ast); ++n)
     {
-        if (ast_node_type(ast, n) != AST_FUNC)
+        if (ast_node_type(ast, n) != AST_FUNC1)
             continue;
 
-        ast_id ast_decl = ast->nodes[n].func.decl;
-        ast_id ast_def = ast->nodes[n].func.def;
-        ast_id ast_identifier = ast->nodes[ast_decl].func_decl.identifier;
-        ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
+        ast_id f2 = ast->nodes[n].func1.func2;
+        ast_id f3 = ast->nodes[f2].func2.func3;
+        ast_id f4 = ast->nodes[f3].func3.func4;
+        ast_id ast_identifier = ast->nodes[n].func1.identifier;
+        ast_id ast_retval = ast->nodes[f4].func4.retval;
 
         /* Create type vector for function signature */
         llvm::SmallVector<llvm::Type*, 8> param_types;
-        for (ast_id ast_paramlist = ast->nodes[ast_decl].func_decl.paramlist;
+        for (ast_id ast_paramlist = ast->nodes[f3].func3.paramlist;
              ast_paramlist > -1;
              ast_paramlist = ast->nodes[ast_paramlist].paramlist.next)
         {
-            ast_id ast_param = ast->nodes[ast_paramlist].paramlist.identifier;
+            ast_id      ast_param = ast->nodes[ast_paramlist].paramlist.param;
             enum type   param_type = ast_type_info(ast, ast_param);
             llvm::Type* Ty = type_to_llvm(param_type, &ir->ctx);
             param_types.push_back(Ty);
@@ -405,11 +406,11 @@ create_db_function_table(
             func_name,
             ast,
             ast_identifier,
-            ast->nodes[ast_decl].func_decl.paramlist,
+            ast->nodes[f3].func3.paramlist,
             source);
 
         llvm::Function::LinkageTypes llvm_linkage
-            = ast->nodes[ast_identifier].identifier.scope == SCOPE_GLOBAL
+            = ast->nodes[n].func1.scope == SCOPE_GLOBAL
                   ? llvm::Function::ExternalLinkage
                   : llvm::Function::InternalLinkage;
 
@@ -573,6 +574,10 @@ gen_expr(
                 loop_stack,
                 allocamap);
 
+        case AST_VAR_DECL1: break;
+        case AST_VAR_DECL2: break;
+        case AST_VAR_REF: break;
+        case AST_PARAM: break;
         case AST_ASSIGNMENT: break;
 
         case AST_IDENTIFIER: {
@@ -868,9 +873,10 @@ gen_expr(
             return builder.CreateCall(F, llvm_args);
         }
         case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
+        case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_EXIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_OR_CONTAINER_REF:
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
@@ -1026,8 +1032,8 @@ gen_expr(
             break;
         }
 
-        case AST_AS_TYPE: break;
-        case AST_TYPE_OF: break;
+        case AST_AS: break;
+        case AST_TYPE: break;
     }
 
     log_codegen_err(
@@ -1083,7 +1089,7 @@ gen_block(
                 continue;
             }
 
-            case AST_ARGLIST:
+            case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_COMMAND: {
@@ -1103,6 +1109,57 @@ gen_block(
                     allocamap);
                 continue;
             }
+
+            case AST_VAR_DECL1: {
+                ast_id ast_decl1 = stmt;
+                ast_id ast_decl2 = ast->nodes[stmt].var_decl1.var_decl2;
+                ast_id ast_init_expr
+                    = ast->nodes[ast_decl1].var_decl1.init_expr;
+                ast_id ast_identifier
+                    = ast->nodes[ast_decl2].var_decl2.identifier;
+
+                ODBUTIL_DEBUG_ASSERT(
+                    ast_node_type(ast, ast_identifier) == AST_IDENTIFIER,
+                    log_codegen_err(
+                        "type: %d\n", ast_node_type(ast, ast_identifier)));
+                enum type        type = ast_type_info(ast, ast_identifier);
+                struct utf8_view name = utf8_span_view(
+                    source, ast->nodes[ast_identifier].identifier.name);
+                struct view_scope name_scope
+                    = {name, ast->nodes[ast_identifier].info.scope_id};
+                llvm::AllocaInst** A;
+                switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+                {
+                    case HM_OOM: return -1;
+                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*A, (void)0); break;
+                    case HM_NEW:
+                        *A = builder.CreateAlloca(
+                            type_to_llvm(type, &ir->ctx),
+                            NULL,
+                            llvm::StringRef(name.data + name.off, name.len));
+                        break;
+                }
+
+                llvm::Value* llvm_init_expr = gen_expr(
+                    ir,
+                    builder,
+                    ast,
+                    ast_init_expr,
+                    sdk_type,
+                    cmds,
+                    filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    db_func_table,
+                    loop_stack,
+                    allocamap);
+                builder.CreateStore(llvm_init_expr, *A);
+                continue;
+            }
+            case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_VAR_REF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_ASSIGNMENT: {
                 ast_id       lhs_node = ast->nodes[stmt].assignment.lvalue;
@@ -1396,16 +1453,16 @@ gen_block(
             }
 
             case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC: {
+            case AST_FUNC1: {
                 llvm::SmallString<128> func_name;
 
-                ast_id ast_decl = ast->nodes[stmt].func.decl;
-                ast_id ast_def = ast->nodes[stmt].func.def;
-                ast_id ast_retval = ast->nodes[ast_def].func_def.retval;
-                ast_id ast_body = ast->nodes[ast_def].func_def.body;
-                ast_id ast_paramlist = ast->nodes[ast_decl].func_decl.paramlist;
-                ast_id ast_identifier
-                    = ast->nodes[ast_decl].func_decl.identifier;
+                ast_id f2 = ast->nodes[stmt].func1.func2;
+                ast_id f3 = ast->nodes[f2].func2.func3;
+                ast_id f4 = ast->nodes[f3].func3.func4;
+                ast_id ast_retval = ast->nodes[f4].func4.retval;
+                ast_id ast_body = ast->nodes[f4].func4.body;
+                ast_id ast_paramlist = ast->nodes[f3].func3.paramlist;
+                ast_id ast_identifier = ast->nodes[stmt].func1.identifier;
 
                 func_name_from_paramlist(
                     func_name, ast, ast_identifier, ast_paramlist, source);
@@ -1422,18 +1479,17 @@ gen_block(
                 llvm::IRBuilder<> func_builder(BB);
 
                 int param_idx = 0;
-                for (ast_id ast_paramlist
-                     = ast->nodes[ast_decl].func_decl.paramlist;
-                     ast_paramlist > -1;
-                     ast_paramlist = ast->nodes[ast_paramlist].arglist.next,
-                     ++param_idx)
+                for (ast_id pl_node = ast_paramlist; ast_paramlist > -1;
+                     ast_paramlist = ast->nodes[ast_paramlist].paramlist.next,
+                            ++param_idx)
                 {
-                    ast_id ast_param = ast->nodes[ast_paramlist].arglist.expr;
+                    ast_id ast_param = ast->nodes[pl_node].paramlist.param;
+                    ast_id identifier = ast->nodes[ast_param].param.identifier;
                     enum type        param_type = ast_type_info(ast, ast_param);
                     struct utf8_view name = utf8_span_view(
-                        source, ast->nodes[ast_param].identifier.name);
+                        source, ast->nodes[identifier].identifier.name);
                     struct view_scope name_scope
-                        = {name, ast->nodes[ast_param].info.scope_id};
+                        = {name, ast->nodes[identifier].info.scope_id};
                     llvm::AllocaInst** A;
                     switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                     {
@@ -1490,8 +1546,9 @@ gen_block(
 #endif
                 continue;
             }
-            case AST_FUNC_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_FUNC_DEF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_FUNC_EXIT: {
                 ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
 
@@ -1591,18 +1648,18 @@ gen_block(
                                     "block.\n"));
                 return -1;
 
-            case AST_AS_TYPE:
+            case AST_AS:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("AS TYPE should never occur directly in a "
+                    log_codegen_err("AS should never occur directly in a "
                                     "block.\n"));
                 return -1;
 
-            case AST_TYPE_OF:
+            case AST_TYPE:
                 return 0;
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("TYPE OF should never occur directly in a "
+                    log_codegen_err("TYPE should never occur directly in a "
                                     "block.\n"));
                 return -1;
         }

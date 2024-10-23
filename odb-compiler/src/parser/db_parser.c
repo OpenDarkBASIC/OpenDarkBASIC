@@ -54,7 +54,7 @@ static struct token*
 get_next_assembled_token(
     struct token_queue**   tokens,
     struct utf8*           cmd_buf,
-    const struct cmd_list* commands,
+    const struct cmd_list* cmds,
     const char*            source_text,
     dbscan_t               scanner,
     DBLTYPE*               scanner_location)
@@ -110,7 +110,7 @@ get_next_assembled_token(
         cmd_id           longest_match_cmd_idx;
         int              i, longest_match_token_idx = -1;
         struct utf8_span candidate = token->pushed_location;
-        for (i = 0; candidate.len <= commands->longest_command; ++i)
+        for (i = 0; candidate.len <= cmds->longest_command; ++i)
         {
             /* Commands are stored in the command list in upper case by
              * convention. For performance reasons we do the conversion to
@@ -119,7 +119,7 @@ get_next_assembled_token(
                 return NULL;
             utf8_toupper(*cmd_buf);
 
-            cmd_id cmd = cmd_list_find(commands, utf8_view(*cmd_buf));
+            cmd_id cmd = cmd_list_find(cmds, utf8_view(*cmd_buf));
             if (cmd > -1)
             {
                 longest_match_cmd_idx = cmd;
@@ -189,7 +189,7 @@ static struct token*
 get_next_token_ignoring_comments(
     struct token_queue**   tokens,
     struct utf8*           cmd_buf,
-    const struct cmd_list* commands,
+    const struct cmd_list* cmds,
     const char*            filename,
     const char*            source,
     dbscan_t               scanner,
@@ -200,14 +200,14 @@ get_next_token_ignoring_comments(
     while (1)
     {
         struct token* token = get_next_assembled_token(
-            tokens, cmd_buf, commands, source, scanner, scanner_location);
+            tokens, cmd_buf, cmds, source, scanner, scanner_location);
         if (token == NULL)
             return NULL;
         if (token->pushed_char != TOK_REMSTART)
             return token;
 
         expect_remend = get_next_assembled_token(
-            tokens, cmd_buf, commands, source, scanner, scanner_location);
+            tokens, cmd_buf, cmds, source, scanner, scanner_location);
         if (expect_remend->pushed_char == TOK_REMEND)
             continue;
 
@@ -222,7 +222,7 @@ db_parse(
     struct ast**           astp,
     const char*            filename,
     struct db_source       source,
-    const struct cmd_list* commands)
+    const struct cmd_list* cmds)
 {
     struct token_queue* tokens;
     YY_BUFFER_STATE     buffer_state;
@@ -263,7 +263,7 @@ db_parse(
         struct token* token = get_next_token_ignoring_comments(
             &tokens,
             &cmd_buf,
-            commands,
+            cmds,
             filename,
             source.text.data,
             parser->scanner,
@@ -287,7 +287,7 @@ parse_failed:
     }
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)
-        ast_verify_connectivity(*astp);
+        ast_verify_connectivity(*astp, source.text.data, cmds);
 #endif
     dbset_extra(NULL, parser->scanner);
     token_queue_deinit(tokens);

@@ -168,25 +168,35 @@ symbol_table_add_declarations_from_ast(
     int                     tu_id,
     const struct db_source* sources)
 {
-    ast_id            n;
-    const struct ast* ast = tus[tu_id];
-    const char*       source = sources[tu_id].text.data;
+    struct symbol_table_entry* entry;
+    ast_id                     n, f1, identifier;
+    struct utf8_span           func_span;
+    struct utf8_view           func_name;
+    const struct ast*          ast = tus[tu_id];
+    const char*                source = sources[tu_id].text.data;
     for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast_node_type(ast, n) != AST_FUNC
+        if (ast_node_type(ast, n) != AST_FUNC1
             && ast_node_type(ast, n) != AST_FUNC_POLY)
         {
             continue;
         }
 
-        ast_id           decl = ast_node_type(ast, n) == AST_FUNC
-                                    ? ast->nodes[n].func.decl
-                                    : ast->nodes[n].func_poly.decl;
-        ast_id           ident = ast->nodes[decl].func_decl.identifier;
-        struct utf8_span span = ast->nodes[ident].identifier.name;
-        struct utf8_view func_name = utf8_span_view(source, span);
+        f1 = ast_node_type(ast, n) == AST_FUNC_POLY
+                 ? ast->nodes[n].func_poly.func
+                 : n;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, f1) == AST_FUNC1,
+            log_err("", "type: %d\n", ast_node_type(ast, f1)));
 
-        struct symbol_table_entry* entry;
+        identifier = ast->nodes[f1].func1.identifier;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, identifier) == AST_IDENTIFIER,
+            log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+        func_span = ast->nodes[identifier].identifier.name;
+        func_name = utf8_span_view(source, func_span);
+
         switch (hm_emplace_or_get((struct hm**)table, func_name, &entry))
         {
             case HM_OOM: return -1;

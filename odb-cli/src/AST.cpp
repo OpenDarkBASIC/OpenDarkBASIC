@@ -558,6 +558,7 @@ dump_ast(const std::vector<std::string>& args)
         {
             ast_export_dot(
                 *vec_get(ctx.tus, i),
+                (*vec_get(ctx.tus, i))->root,
                 cstr_ospathc(args[0].c_str()),
                 vec_get(ctx.sources, i)->text.data,
                 getCommandList());
@@ -570,6 +571,7 @@ dump_ast(const std::vector<std::string>& args)
         {
             ast_export_dot_fp(
                 *vec_get(ctx.tus, i),
+                (*vec_get(ctx.tus, i))->root,
                 stdout,
                 vec_get(ctx.sources, i)->text.data,
                 getCommandList());

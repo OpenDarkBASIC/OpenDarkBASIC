@@ -9,14 +9,18 @@ process_unop(struct ast* ast, ast_id n)
 child_changed:
     switch (ast_node_type(ast, expr))
     {
-        case AST_GC:
-        case AST_BLOCK:
-        case AST_END:
-        case AST_ARGLIST:
-        case AST_PARAMLIST:
-        case AST_COMMAND:
-        case AST_ASSIGNMENT:
-        case AST_IDENTIFIER:
+        case AST_GC: return -1;
+        case AST_BLOCK: return -1;
+        case AST_END: return -1;
+        case AST_ARGLIST: return -1;
+        case AST_PARAMLIST: return -1;
+        case AST_COMMAND: return -1;
+        case AST_ASSIGNMENT: return -1;
+        case AST_VAR_DECL1: return -1;
+        case AST_VAR_DECL2: return -1;
+        case AST_VAR_REF: return -1;
+        case AST_PARAM: return -1;
+        case AST_IDENTIFIER: return -1;
         case AST_BINOP: return -1;
 
         case AST_UNOP:
@@ -34,9 +38,10 @@ child_changed:
         case AST_LOOP_CONT: return -1;
         case AST_LOOP_EXIT: return -1;
         case AST_FUNC_POLY: return -1;
-        case AST_FUNC: return -1;
-        case AST_FUNC_DECL: return -1;
-        case AST_FUNC_DEF: return -1;
+        case AST_FUNC1: return -1;
+        case AST_FUNC2: return -1;
+        case AST_FUNC3: return -1;
+        case AST_FUNC4: return -1;
         case AST_FUNC_EXIT: return -1;
         case AST_FUNC_OR_CONTAINER_REF: return -1;
         case AST_FUNC_CALL: return -1;
@@ -190,8 +195,8 @@ child_changed:
 
         case AST_STRING_LITERAL: return -1;
         case AST_CAST: return -1;
-        case AST_AS_TYPE: return -1;
-        case AST_TYPE_OF: return -1;
+        case AST_AS: return -1;
+        case AST_TYPE: return -1;
     }
 
     ast->nodes[expr].info.location

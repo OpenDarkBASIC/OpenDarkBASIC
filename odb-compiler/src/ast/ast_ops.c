@@ -57,18 +57,19 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
 }
 
 int
-ast_dup_lvalue(struct ast** astp, int lvalue)
+ast_dup_identifier(struct ast** astp, ast_id identifier)
 {
     struct ast* ast = *astp;
 
-    ODBUTIL_DEBUG_ASSERT(lvalue > -1, log_err("", "lvalue: %d\n", lvalue));
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[lvalue].info.node_type == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast->nodes[lvalue].info.node_type));
+        ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast->nodes[identifier].info.node_type));
 
-    struct utf8_span     name = ast->nodes[lvalue].identifier.name;
-    struct utf8_span     location = ast_loc(ast, lvalue);
-    enum type_annotation annotation = ast->nodes[lvalue].identifier.annotation;
+    struct utf8_span     name = ast->nodes[identifier].identifier.name;
+    struct utf8_span     location = ast_loc(ast, identifier);
+    enum type_annotation annotation
+        = ast->nodes[identifier].identifier.annotation;
 
     return ast_identifier(astp, name, annotation, location);
 }
@@ -185,6 +186,14 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_ASSIGNMENT: break;
+        case AST_VAR_DECL1:
+            if (ast->nodes[n1].var_decl1.scope
+                != ast->nodes[n2].var_decl1.scope)
+                return 0;
+            break;
+        case AST_VAR_DECL2: break;
+        case AST_VAR_REF: break;
+        case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
                     utf8_span_view(source_text, ast->nodes[n1].identifier.name),
@@ -193,9 +202,6 @@ ast_trees_equal(
                 return 0;
             if (ast->nodes[n1].identifier.annotation
                 != ast->nodes[n2].identifier.annotation)
-                return 0;
-            if (ast->nodes[n1].identifier.scope
-                != ast->nodes[n2].identifier.scope)
                 return 0;
             break;
         case AST_BINOP:
@@ -237,9 +243,13 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_FUNC_POLY: break;
-        case AST_FUNC: break;
-        case AST_FUNC_DECL: break;
-        case AST_FUNC_DEF: break;
+        case AST_FUNC1:
+            if (ast->nodes[n1].func1.scope != ast->nodes[n2].func1.scope)
+                return 0;
+            break;
+        case AST_FUNC2: break;
+        case AST_FUNC3: break;
+        case AST_FUNC4: break;
         case AST_FUNC_EXIT: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
@@ -292,10 +302,10 @@ ast_trees_equal(
                 return 0;
             break;
         case AST_CAST: break;
-        case AST_TYPE_OF: break;
-        case AST_AS_TYPE:
-            if (ast->nodes[n1].as_type.target_type
-                != ast->nodes[n2].as_type.target_type)
+        case AST_AS: break;
+        case AST_TYPE:
+            if (ast->nodes[n1].type.target_type
+                != ast->nodes[n2].type.target_type)
                 return 0;
             break;
     }

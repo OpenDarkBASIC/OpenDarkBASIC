@@ -31,6 +31,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_PARAMLIST: break;
         case AST_COMMAND: break;
         case AST_ASSIGNMENT: break;
+        case AST_VAR_DECL1: break;
+        case AST_VAR_DECL2: break;
+        case AST_VAR_REF: break;
+        case AST_PARAM: break;
         case AST_IDENTIFIER: break;
         case AST_BINOP: break;
         case AST_UNOP: break;
@@ -44,9 +48,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_LOOP_CONT: break;
         case AST_LOOP_EXIT: break;
         case AST_FUNC_POLY: break;
-        case AST_FUNC: break;
-        case AST_FUNC_DECL: break;
-        case AST_FUNC_DEF: break;
+        case AST_FUNC1: break;
+        case AST_FUNC2: break;
+        case AST_FUNC3: break;
+        case AST_FUNC4: break;
         case AST_FUNC_EXIT: break;
         case AST_FUNC_OR_CONTAINER_REF: break;
         case AST_FUNC_CALL: break;
@@ -79,8 +84,8 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 
         case AST_STRING_LITERAL: break;
         case AST_CAST: break;
-        case AST_AS_TYPE: break;
-        case AST_TYPE_OF: break;
+        case AST_AS: break;
+        case AST_TYPE: break;
     }
 
     return EXPR_TYPE_UNKNOWN;
@@ -171,7 +176,7 @@ create_exit_stmt(
     ast_id exit_cond_block = ast_block(astp, exit, begin_loc);
     ast_id exit_cond_branch
         = ast_cond_branches(astp, exit_cond_block, -1, begin_loc);
-    ast_id exit_var = ast_dup_lvalue(astp, loop_var);
+    ast_id exit_var = ast_dup_identifier(astp, loop_var);
     ast_id exit_expr
         = ast_binop(astp, cmp_op, exit_var, end, begin_loc, end_loc);
     ast_id exit_stmt = ast_cond(astp, exit_expr, exit_cond_branch, begin_loc);
@@ -243,7 +248,7 @@ convert_for_loop_to_primitives(
     /* Create the post-increment statement. This gets inserted into the loop's
      * "post_body" property, which will effectively insert it at the end of the
      * body later on */
-    ast_id inc_var = ast_dup_lvalue(astp, loop_var);
+    ast_id inc_var = ast_dup_identifier(astp, loop_var);
     ast_id inc_stmt
         = step > -1 ? ast_inc_step(astp, inc_var, step, ast_loc(*astp, step))
                     : ast_inc(astp, inc_var, ast_loc(*astp, inc_var));
@@ -318,7 +323,7 @@ loop_for(
 
     ast_gc(ast);
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    ast_verify_connectivity(ast);
+    ast_verify_connectivity(ast, source, cmds);
 #endif
     return 0;
 }

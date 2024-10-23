@@ -250,12 +250,12 @@
 %type<node_value> command_stmt command_expr
 %type<node_value> assignment
 %type<node_value> conditional cond_oneline cond_begin cond_next
-%type<node_value> loop loop_do loop_while loop_until loop_for loop_next loop_cont loop_exit
+%type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
 %type<string_value> loop_name
 %type<node_value> as_type maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
-%type<node_value> identifier var_decl var_init_decl
+%type<node_value> identifier var_decl var_ref param lvalue
 %type<node_value> func func_exit func_or_container_ref
 
 %start program
@@ -286,7 +286,7 @@ stmt
   : conditional                             { $$ = $1; }
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
-  | var_init_decl                           { $$ = $1; }
+  | var_decl                                { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
 // Statements that can appear "inline", e.g. "if x then istmt"
@@ -337,7 +337,7 @@ expr
   | expr as_type                            { $$ = ast_cast(ctx->astp, $1, $2, @$); }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
-  | identifier                              { $$ = $1; }
+  | var_ref                                 { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 maybe_expr
@@ -353,17 +353,16 @@ maybe_arglist
   |                                         { $$ = -1; }
   ;
 paramlist
-  : paramlist ',' identifier as_type        { $$ = $1;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $4);
-                                              ast_paramlist_append(ctx->astp, $$, $3, @$); }
-  | paramlist ',' identifier                { $$ = $1; ast_paramlist_append(ctx->astp, $$, $3, @$); }
-  | identifier as_type                      { ast_identifier_set_explicit_type(*ctx->astp, $1, $2);
-                                              $$ = ast_paramlist(ctx->astp, $1, @$); }
-  | identifier                              { $$ = ast_paramlist(ctx->astp, $1, @$); }
+  : paramlist ',' param                     { $$ = $1; ast_paramlist_append(ctx->astp, $$, $3, @$); }
+  | param                                   { $$ = ast_paramlist(ctx->astp, $1, @$); }
   ;
 maybe_paramlist
   : paramlist                               { $$ = $1; }
   |                                         { $$ = -1; }
+  ;
+param
+  : identifier as_type                      { $$ = ast_param(ctx->astp, $1, $2, @$); }
+  | identifier                              { $$ = ast_param(ctx->astp, $1, -1, @$); }
   ;
 // Commands appearing as statements usually don't have arguments surrounded by
 // brackets, but it is valid to call a command with brackets as a stement.
@@ -376,31 +375,35 @@ command_stmt
 command_expr
   : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
-assignment
-  : identifier '=' expr                     { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
-//| array_ref '=' expr
-//| udt_field_lvalue '=' expr
+lvalue
+  : var_ref                                 { $$ = $1; }
+//| array_ref
+//| udt_field_lvalue
   ;
-var_init_decl
-  : var_decl '=' expr                       { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
-  | var_decl                                { $$ = $1; }
+// Assignments and variable declarations with initializers are syntactically ambiguous,
+// and need to be resolved during type checking. They're held apart here because variable
+// declarations cannot appear as inline expressions, but assignments can.
+assignment
+  : lvalue '=' expr                         { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
   ;
 var_decl
-  : scope identifier as_type                { $$ = $2;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $2, $3);
-                                              ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
-  | identifier as_type                      { $$ = $1;
-                                              ast_identifier_set_explicit_type(*ctx->astp, $1, $2); }
-  | scope identifier                        { $$ = $2;
-                                              ast_identifier_set_scope(*ctx->astp, $2, $1, @1); }
+  : scope identifier as_type                { $$ = ast_var_decl(ctx->astp, $2, $3, -1, $1, @1, @$); }
+  | identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, @$); }
+  | scope identifier                        { $$ = ast_var_decl(ctx->astp, $2, -1, -1, $1, @1, @$); }
+  | scope identifier as_type '=' expr       { $$ = ast_var_decl(ctx->astp, $2, $3, $5, $1, @1, @$); }
+  | identifier as_type '=' expr             { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @$); }
+  | scope identifier '=' expr               { $$ = ast_var_decl(ctx->astp, $2, -1, $4, $1, @1, @$); }
+  ;
+var_ref
+  : identifier                              { $$ = ast_var_ref(ctx->astp, $1, @$); }
   ;
 inc
-  : INC identifier ',' expr                 { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
-  | INC identifier                          { $$ = ast_inc(ctx->astp, $2, @$); }
+  : INC lvalue ',' expr                     { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
+  | INC lvalue                              { $$ = ast_inc(ctx->astp, $2, @$); }
   ;
 dec
-  : DEC identifier ',' expr                 { $$ = ast_dec_step(ctx->astp, $2, $4, @$); }
-  | DEC identifier                          { $$ = ast_dec(ctx->astp, $2, @$); }
+  : DEC lvalue ',' expr                     { $$ = ast_dec_step(ctx->astp, $2, $4, @$); }
+  | DEC lvalue                              { $$ = ast_dec(ctx->astp, $2, @$); }
   ;
 conditional
   : cond_oneline                            { $$ = $1; }
@@ -445,12 +448,16 @@ loop_until
     UNTIL expr                              { $$ = ast_loop_until(ctx->astp, $3, $5, $1, @$); }
   ;
 loop_for
-  : loop_name FOR assignment TO expr STEP expr
+  : loop_name FOR loop_for_init TO expr STEP expr
         maybe_block
     loop_next                               { $$ = ast_loop_for(ctx->astp, $8, $3, $5, $7, $9, $1, @$); }
-  | loop_name FOR assignment TO expr
+  | loop_name FOR loop_for_init TO expr
         maybe_block
     loop_next                               { $$ = ast_loop_for(ctx->astp, $6, $3, $5, -1, $7, $1, @$); }
+  ;
+loop_for_init
+  : assignment                             { $$ = $1; }
+  | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @$); }
   ;
 // TODO: Change to same as assignemnt (lvalue) eventually
 loop_next
@@ -474,9 +481,7 @@ loop_name
 func
   : maybe_scope FUNCTION identifier '(' maybe_paramlist ')' maybe_as_type
         maybe_block
-    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $5, $8, $10, @9, @$);
-                                              ast_identifier_set_scope(*ctx->astp, $3, $1, @1);
-                                              ast_identifier_set_explicit_type(*ctx->astp, $3, $7); }
+    ENDFUNCTION maybe_expr                  { $$ = ast_func(ctx->astp, $3, $7, $5, $8, $10, @9, @$); }
   ;
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
@@ -500,16 +505,16 @@ maybe_scope
   |                                         { $$ = SCOPE_LOCAL; }
   ;
 as_type
-  : AS BOOLEAN                              { $$ = ast_type_of_type(ctx->astp, TYPE_BOOL, @$); }
-  | AS BYTE                                 { $$ = ast_type_of_type(ctx->astp, TYPE_U8, @$); }
-  | AS WORD                                 { $$ = ast_type_of_type(ctx->astp, TYPE_U16, @$); }
-  | AS INTEGER                              { $$ = ast_type_of_type(ctx->astp, TYPE_I32, @$); }
-  | AS DWORD                                { $$ = ast_type_of_type(ctx->astp, TYPE_U32, @$); }
-  | AS DOUBLE INTEGER                       { $$ = ast_type_of_type(ctx->astp, TYPE_I64, @$); }
-  | AS FLOAT                                { $$ = ast_type_of_type(ctx->astp, TYPE_F32, @$); }
-  | AS DOUBLE                               { $$ = ast_type_of_type(ctx->astp, TYPE_F64, @$); }
-  | AS STRING                               { $$ = ast_type_of_type(ctx->astp, TYPE_STRING, @$); }
-  | AS TYPE '(' expr ')'                    { $$ = ast_type_of(ctx->astp, $4, @$);}
+  : AS BOOLEAN                              { $$ = ast_as_type(ctx->astp, TYPE_BOOL, @$); }
+  | AS BYTE                                 { $$ = ast_as_type(ctx->astp, TYPE_U8, @$); }
+  | AS WORD                                 { $$ = ast_as_type(ctx->astp, TYPE_U16, @$); }
+  | AS INTEGER                              { $$ = ast_as_type(ctx->astp, TYPE_I32, @$); }
+  | AS DWORD                                { $$ = ast_as_type(ctx->astp, TYPE_U32, @$); }
+  | AS DOUBLE INTEGER                       { $$ = ast_as_type(ctx->astp, TYPE_I64, @$); }
+  | AS FLOAT                                { $$ = ast_as_type(ctx->astp, TYPE_F32, @$); }
+  | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, TYPE_F64, @$); }
+  | AS STRING                               { $$ = ast_as_type(ctx->astp, TYPE_STRING, @$); }
+  | AS TYPE '(' expr ')'                    { $$ = ast_as_type(ctx->astp, $4, @$);}
   ;
 maybe_as_type
   : as_type                                 { $$ = $1; }

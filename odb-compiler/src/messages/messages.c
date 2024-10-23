@@ -31,17 +31,13 @@ err_assignment_incompatible_types(
     const char*       filename,
     const char*       source)
 {
-    int              gutter;
-    ast_id           lhs = ast->nodes[ass].assignment.lvalue;
-    ast_id           rhs = ast->nodes[ass].assignment.expr;
-    struct utf8_span orig_name = ast->nodes[orig_decl].identifier.name;
+    int    gutter;
+    ast_id lhs = ast->nodes[ass].assignment.lvalue;
+    ast_id rhs = ast->nodes[ass].assignment.expr;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, ass) == AST_ASSIGNMENT,
         log_err("", "type: %d\n", ast_node_type(ast, ass)));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, orig_decl) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(ast, orig_decl)));
 
     log_flc_err(
         filename,
@@ -57,18 +53,28 @@ err_assignment_incompatible_types(
         ast_loc(ast, rhs),
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
-    log_excerpt_note(
-        gutter,
-        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
-        orig_name.len,
-        source + orig_name.off,
-        type_to_db_name(ast_type_info(ast, lhs)));
-    log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
-    log_excerpt_1(
-        source,
-        ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)),
-        0);
+
+    if (orig_decl > -1)
+    {
+        struct utf8_span orig_name;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, orig_decl) == AST_IDENTIFIER,
+            log_err("", "type: %d\n", ast_node_type(ast, orig_decl)));
+        orig_name = ast->nodes[orig_decl].identifier.name;
+
+        log_excerpt_note(
+            gutter,
+            "{emph0:%.*s} was previously declared as {emph0:%s} at ",
+            orig_name.len,
+            source + orig_name.off,
+            type_to_db_name(ast_type_info(ast, lhs)));
+        log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
+        log_excerpt_1(
+            source,
+            ast_loc(ast, orig_decl),
+            type_to_db_name(ast_type_info(ast, lhs)),
+            0);
+    }
 
     return -1;
 }
@@ -252,16 +258,22 @@ err_func_call_incompatible_types(
     const char*       source)
 {
     int              gutter;
+    ast_id           identifier;
     struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, param) == AST_IDENTIFIER,
+        ast_node_type(ast, param) == AST_PARAM,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
 
-    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
-                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+    identifier = ast->nodes[param].param.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    param_type_loc = ast->nodes[param].param.as > -1
+                         ? ast_loc(ast, ast->nodes[param].param.as)
                          : ast_loc(ast, param);
 
     log_flc_err(
@@ -294,19 +306,23 @@ err_func_return_incompatible_types(
     const char*       source)
 {
     int              gutter;
-    ast_id           decl, func_ident;
+    ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, func) == AST_FUNC,
+        ast_node_type(ast, func) == AST_FUNC1,
         log_err("", "type: %d\n", ast_node_type(ast, func)));
 
-    decl = ast->nodes[func].func.decl;
-    func_ident = ast->nodes[decl].func_decl.identifier;
-    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
-                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
-                       : ast_loc(ast, func_ident);
+    identifier = ast->nodes[func].func1.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    f2 = ast->nodes[func].func1.func2;
+    ret_type_loc = ast->nodes[f2].func2.as > -1
+                       ? ast_loc(ast, ast->nodes[f2].func2.as)
+                       : ast_loc(ast, identifier);
 
     log_flc_err(
         filename,
@@ -315,7 +331,7 @@ err_func_return_incompatible_types(
         "Cannot convert {emph0:%s} to {emph1:%s} in function return. Types are "
         "incompatible.\n",
         type_to_db_name(ast_type_info(ast, retval)),
-        type_to_db_name(ast_type_info(ast, func_ident)));
+        type_to_db_name(ast_type_info(ast, identifier)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
@@ -336,18 +352,22 @@ err_func_missing_return_value(
     const char*       source)
 {
     int              gutter;
-    ast_id           decl, func_ident;
+    ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, func) == AST_FUNC,
+        ast_node_type(ast, func) == AST_FUNC1,
         log_err("", "type: %d\n", ast_node_type(ast, func)));
 
-    decl = ast->nodes[func].func.decl;
-    func_ident = ast->nodes[decl].func_decl.identifier;
-    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
-                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
-                       : ast_loc(ast, func_ident);
+    identifier = ast->nodes[func].func1.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    f2 = ast->nodes[func].func1.func2;
+    ret_type_loc = ast->nodes[f2].func2.as > -1
+                       ? ast_loc(ast, ast->nodes[f2].func2.as)
+                       : ast_loc(ast, identifier);
 
     log_flc_err(filename, source, ret_loc, "Missing return value.\n");
     gutter = log_excerpt_1(source, ret_loc, "", 0);
@@ -358,26 +378,37 @@ err_func_missing_return_value(
 }
 
 int
-err_initialization_incompatible_types(
-    const struct ast* ast, ast_id ass, const char* filename, const char* source)
+err_var_decl_init_incompatible_types(
+    const struct ast* ast,
+    ast_id            var_decl,
+    const char*       filename,
+    const char*       source)
 {
-    ast_id lhs = ast->nodes[ass].assignment.lvalue;
-    ast_id rhs = ast->nodes[ass].assignment.expr;
+    ast_id init_expr;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, var_decl),
+        log_err("", "type: %d\n", ast_node_type(ast, var_decl)));
+
+    init_expr = ast->nodes[var_decl].var_decl1.init_expr;
+    ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
 
     log_flc_err(
         filename,
         source,
-        ast_loc(ast, rhs),
-        "Cannot assign {emph1:%s} to {emph0:%s}. Types are incompatible.\n",
-        type_to_db_name(ast_type_info(ast, rhs)),
-        type_to_db_name(ast_type_info(ast, lhs)));
-    log_excerpt_binop(
+        ast_loc(ast, init_expr),
+        "Cannot initialize {emph0:%s} with a {emph1:%s}. Types are "
+        "incompatible.\n",
+        type_to_db_name(ast_type_info(ast, var_decl)),
+        type_to_db_name(ast_type_info(ast, init_expr)));
+    log_excerpt_2(
         source,
-        ast_loc(ast, lhs),
-        ast->nodes[ass].assignment.op_location,
-        ast_loc(ast, rhs),
-        type_to_db_name(ast_type_info(ast, lhs)),
-        type_to_db_name(ast_type_info(ast, rhs)));
+        ast_loc(ast, var_decl),
+        ast_loc(ast, init_expr),
+        type_to_db_name(ast_type_info(ast, var_decl)),
+        type_to_db_name(ast_type_info(ast, init_expr)),
+        0,
+        1);
 
     return -1;
 }
@@ -526,10 +557,9 @@ warn_assignment_implicit_conversion(
     const char*       filename,
     const char*       source)
 {
-    int              gutter;
-    ast_id           lhs = ast->nodes[ass].assignment.lvalue;
-    ast_id           rhs = ast->nodes[ass].assignment.expr;
-    struct utf8_span orig_name = ast->nodes[orig_decl].identifier.name;
+    int    gutter;
+    ast_id lhs = ast->nodes[ass].assignment.lvalue;
+    ast_id rhs = ast->nodes[ass].assignment.expr;
 
     log_flc_warn(
         filename,
@@ -545,18 +575,29 @@ warn_assignment_implicit_conversion(
         ast_loc(ast, rhs),
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
-    log_excerpt_note(
-        gutter,
-        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
-        orig_name.len,
-        source + orig_name.off,
-        type_to_db_name(ast_type_info(ast, lhs)));
-    log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
-    log_excerpt_1(
-        source,
-        ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)),
-        0);
+
+    if (orig_decl > -1)
+    {
+        struct utf8_span orig_name;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, orig_decl) == AST_IDENTIFIER,
+            log_err("", "type: %d\n", ast_node_type(ast, orig_decl)));
+        orig_name = ast->nodes[orig_decl].identifier.name;
+
+        log_excerpt_note(
+            gutter,
+            "{emph0:%.*s} was previously declared as {emph0:%s} at ",
+            orig_name.len,
+            source + orig_name.off,
+            type_to_db_name(ast_type_info(ast, lhs)));
+        log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
+        log_excerpt_1(
+            source,
+            ast_loc(ast, orig_decl),
+            type_to_db_name(ast_type_info(ast, lhs)),
+            0);
+    }
+
     help_insert_explicit_cast(
         source, gutter, ast_loc(ast, rhs), ast_type_info(ast, rhs));
 }
@@ -569,10 +610,9 @@ warn_assignment_truncation(
     const char*       filename,
     const char*       source)
 {
-    int              gutter;
-    ast_id           lhs = ast->nodes[ass].assignment.lvalue;
-    ast_id           rhs = ast->nodes[ass].assignment.expr;
-    struct utf8_span orig_name = ast->nodes[orig_decl].identifier.name;
+    int    gutter;
+    ast_id lhs = ast->nodes[ass].assignment.lvalue;
+    ast_id rhs = ast->nodes[ass].assignment.expr;
 
     log_flc_warn(
         filename,
@@ -589,18 +629,28 @@ warn_assignment_truncation(
         ast_loc(ast, rhs),
         type_to_db_name(ast_type_info(ast, lhs)),
         type_to_db_name(ast_type_info(ast, rhs)));
-    log_excerpt_note(
-        gutter,
-        "{emph0:%.*s} was previously declared as {emph0:%s} at ",
-        orig_name.len,
-        source + orig_name.off,
-        type_to_db_name(ast_type_info(ast, lhs)));
-    log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
-    log_excerpt_1(
-        source,
-        ast_loc(ast, orig_decl),
-        type_to_db_name(ast_type_info(ast, lhs)),
-        0);
+
+    if (orig_decl > -1)
+    {
+        struct utf8_span orig_name;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, orig_decl) == AST_IDENTIFIER,
+            log_err("", "type: %d\n", ast_node_type(ast, orig_decl)));
+        orig_name = ast->nodes[orig_decl].identifier.name;
+
+        log_excerpt_note(
+            gutter,
+            "{emph0:%.*s} was previously declared as {emph0:%s} at ",
+            orig_name.len,
+            source + orig_name.off,
+            type_to_db_name(ast_type_info(ast, lhs)));
+        log_flc("", filename, source, ast_loc(ast, orig_decl), "\n");
+        log_excerpt_1(
+            source,
+            ast_loc(ast, orig_decl),
+            type_to_db_name(ast_type_info(ast, lhs)),
+            0);
+    }
 }
 
 void
@@ -897,16 +947,22 @@ warn_func_call_implicit_conversion(
     const char*       source)
 {
     int              gutter;
+    ast_id           identifier;
     struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, param) == AST_IDENTIFIER,
+        ast_node_type(ast, param) == AST_PARAM,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
 
-    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
-                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+    identifier = ast->nodes[param].param.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    param_type_loc = ast->nodes[param].param.as > -1
+                         ? ast_loc(ast, ast->nodes[param].param.as)
                          : ast_loc(ast, param);
 
     log_flc_warn(
@@ -940,16 +996,22 @@ warn_func_call_truncation(
     const char*       source)
 {
     int              gutter;
+    ast_id           identifier;
     struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, param) == AST_IDENTIFIER,
+        ast_node_type(ast, param) == AST_PARAM,
         log_err("", "type: %d\n", ast_node_type(ast, param)));
 
-    param_type_loc = ast->nodes[param].identifier.decl_type_of > -1
-                         ? ast_loc(ast, ast->nodes[param].identifier.decl_type_of)
+    identifier = ast->nodes[param].param.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    param_type_loc = ast->nodes[param].param.as > -1
+                         ? ast_loc(ast, ast->nodes[param].param.as)
                          : ast_loc(ast, param);
 
     log_flc_warn(
@@ -980,19 +1042,23 @@ warn_func_return_implicit_conversion(
     const char*       source)
 {
     int              gutter;
-    ast_id           decl, func_ident;
+    ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, func) == AST_FUNC,
+        ast_node_type(ast, func) == AST_FUNC1,
         log_err("", "type: %d\n", ast_node_type(ast, func)));
 
-    decl = ast->nodes[func].func.decl;
-    func_ident = ast->nodes[decl].func_decl.identifier;
-    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
-                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
-                       : ast_loc(ast, func_ident);
+    identifier = ast->nodes[func].func1.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    f2 = ast->nodes[func].func1.func2;
+    ret_type_loc = ast->nodes[f2].func2.as > -1
+                       ? ast_loc(ast, ast->nodes[f2].func2.as)
+                       : ast_loc(ast, identifier);
 
     log_flc_warn(
         filename,
@@ -1001,7 +1067,7 @@ warn_func_return_implicit_conversion(
         "Implicit conversion from {emph0:%s} to {emph1:%s} in function "
         "return.\n",
         type_to_db_name(ast_type_info(ast, retval)),
-        type_to_db_name(ast_type_info(ast, func_ident)));
+        type_to_db_name(ast_type_info(ast, identifier)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
@@ -1010,7 +1076,7 @@ warn_func_return_implicit_conversion(
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(source, ret_type_loc, "", 1);
     help_insert_explicit_cast(
-        source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
+        source, gutter, ast_loc(ast, retval), ast_type_info(ast, identifier));
 }
 
 void
@@ -1022,19 +1088,23 @@ warn_func_return_truncation(
     const char*       source)
 {
     int              gutter;
-    ast_id           decl, func_ident;
+    ast_id           f2, identifier;
     struct utf8_span ret_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(retval > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, func) == AST_FUNC,
+        ast_node_type(ast, func) == AST_FUNC1,
         log_err("", "type: %d\n", ast_node_type(ast, func)));
 
-    decl = ast->nodes[func].func.decl;
-    func_ident = ast->nodes[decl].func_decl.identifier;
-    ret_type_loc = ast->nodes[func_ident].identifier.decl_type_of > -1
-                       ? ast_loc(ast, ast->nodes[func_ident].identifier.decl_type_of)
-                       : ast_loc(ast, func_ident);
+    identifier = ast->nodes[func].func1.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+
+    f2 = ast->nodes[func].func1.func2;
+    ret_type_loc = ast->nodes[f2].func2.as > -1
+                       ? ast_loc(ast, ast->nodes[f2].func2.as)
+                       : ast_loc(ast, identifier);
 
     log_flc_warn(
         filename,
@@ -1043,7 +1113,7 @@ warn_func_return_truncation(
         "Value is truncated when converting from {emph1:%s} to {emph0:%s} in "
         "function return.\n",
         type_to_db_name(ast_type_info(ast, retval)),
-        type_to_db_name(ast_type_info(ast, func_ident)));
+        type_to_db_name(ast_type_info(ast, identifier)));
     gutter = log_excerpt_1(
         source,
         ast_loc(ast, retval),
@@ -1052,7 +1122,7 @@ warn_func_return_truncation(
     log_excerpt_note(gutter, "Function return type was declared here:\n");
     log_excerpt_1(source, ret_type_loc, "", 1);
     help_insert_explicit_cast(
-        source, gutter, ast_loc(ast, retval), ast_type_info(ast, func_ident));
+        source, gutter, ast_loc(ast, retval), ast_type_info(ast, identifier));
 }
 
 void

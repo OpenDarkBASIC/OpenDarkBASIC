@@ -187,21 +187,40 @@ ast_arglist_append(
 }
 
 ast_id
-ast_paramlist(struct ast** astp, ast_id identifier, struct utf8_span location)
+ast_paramlist(struct ast** astp, ast_id param, struct utf8_span location)
 {
     ast_id      n = new_node(astp, AST_PARAMLIST, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
 
+    ODBUTIL_DEBUG_ASSERT(param > -1, log_err("", "expr: %d\n", param));
     ODBUTIL_DEBUG_ASSERT(
-        identifier > -1, log_err("", "expr: %d\n", identifier));
+        ast_node_type(ast, param) == AST_PARAM,
+        log_err("", "type: %d\n", ast_node_type(ast, param)));
+
+    ast->nodes[n].paramlist.param = param;
+    ast->nodes[n].paramlist.combined_location = location;
+
+    return n;
+}
+
+ast_id
+ast_param(
+    struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_PARAM, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        identifier > -1, log_err("", "identifier: %d\n", identifier));
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("", "type: %d\n", ast_node_type(ast, identifier)));
-
-    ast->nodes[n].paramlist.identifier = identifier;
-    ast->nodes[n].paramlist.combined_location = location;
+    ast->nodes[n].param.identifier = identifier;
+    ast->nodes[n].param.as = as;
 
     return n;
 }
@@ -210,7 +229,7 @@ ast_id
 ast_paramlist_append(
     struct ast**     astp,
     ast_id           paramlist,
-    ast_id           identifier,
+    ast_id           param,
     struct utf8_span location)
 {
     struct utf8_span combined_location;
@@ -219,17 +238,14 @@ ast_paramlist_append(
     if (n < 0)
         return -1;
 
+    ODBUTIL_DEBUG_ASSERT(paramlist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        paramlist > -1, log_err("", "paramlist: %d\n", paramlist));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, paramlist) == AST_PARAMLIST,
-        log_err("", "type: %d\n", ast_node_type(ast, paramlist)));
+        ast_node_type(ast, paramlist) == AST_PARAMLIST, (void)0);
 
+    ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        identifier > -1, log_err("", "expr: %d\n", identifier));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+        ast_node_type(ast, param) == AST_PARAM,
+        log_err("", "type: %d\n", ast_node_type(ast, param)));
 
     combined_location
         = utf8_span_union(ast->nodes[paramlist].info.location, location);
@@ -241,7 +257,7 @@ ast_paramlist_append(
 
     ast->nodes[paramlist].paramlist.combined_location = combined_location;
     ast->nodes[paramlist].paramlist.next = n;
-    ast->nodes[n].paramlist.identifier = identifier;
+    ast->nodes[n].paramlist.param = param;
     ast->nodes[n].paramlist.combined_location = combined_location;
 
     return n;
@@ -270,7 +286,7 @@ ast_command(
 ast_id
 ast_assign(
     struct ast**     astp,
-    ast_id           identifier,
+    ast_id           lvalue,
     ast_id           expr,
     struct utf8_span op_location,
     struct utf8_span location)
@@ -280,16 +296,69 @@ ast_assign(
     if (n < 0)
         return -1;
 
+    ODBUTIL_DEBUG_ASSERT(lvalue > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        identifier > -1, log_err("", "identifier: %d\n", identifier));
-    ODBUTIL_DEBUG_ASSERT(expr > -1, log_err("", "expr: %d\n", expr));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+        ast_node_type(ast, lvalue) == AST_VAR_DECL1
+            || ast_node_type(ast, lvalue) == AST_VAR_REF
+            || ast_node_type(ast, lvalue) == AST_FUNC_OR_CONTAINER_REF,
+        log_err("", "type: %d\n", ast_node_type(ast, lvalue)));
 
-    ast->nodes[n].assignment.lvalue = identifier;
+    ast->nodes[n].assignment.lvalue = lvalue;
     ast->nodes[n].assignment.expr = expr;
     ast->nodes[n].assignment.op_location = op_location;
+
+    return n;
+}
+
+ast_id
+ast_var_decl(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           as,
+    ast_id           init_expr,
+    enum scope       scope,
+    struct utf8_span scope_location,
+    struct utf8_span location)
+{
+    ast_id decl1 = new_node(astp, AST_VAR_DECL1, location);
+    ast_id decl2 = new_node(astp, AST_VAR_DECL2, location);
+    if (decl1 < 0 || decl2 < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        as == -1 || ast_node_type(*astp, as) == AST_AS,
+        log_err("", "type: %d\n", ast_node_type(*astp, as)));
+
+    (*astp)->nodes[decl1].var_decl1.init_expr = init_expr;
+    (*astp)->nodes[decl1].var_decl1.scope = scope;
+    (*astp)->nodes[decl1].var_decl1.scope_location = scope_location;
+    (*astp)->nodes[decl1].var_decl1.var_decl2 = decl2;
+
+    (*astp)->nodes[decl2].var_decl2.identifier = identifier;
+    (*astp)->nodes[decl2].var_decl2.as = as;
+
+    return decl1;
+}
+
+ast_id
+ast_var_ref(struct ast** astp, ast_id identifier, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_VAR_REF, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        identifier > -1, log_err("", "identifier: %d\n", identifier));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(*astp, identifier)));
+
+    (*astp)->nodes[n].var_ref.identifier = identifier;
 
     return n;
 }
@@ -308,42 +377,8 @@ ast_identifier(
 
     ast->nodes[n].identifier.name = name;
     ast->nodes[n].identifier.annotation = annotation;
-    ast->nodes[n].identifier.scope = SCOPE_LOCAL;
-    ast->nodes[n].identifier.scope_location = empty_utf8_span();
 
     return n;
-}
-
-void
-ast_identifier_set_explicit_type(
-    struct ast* ast, ast_id identifier, ast_id type_of)
-{
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
-
-    ODBUTIL_DEBUG_ASSERT(
-        type_of == -1 || ast_node_type(ast, type_of) == AST_TYPE_OF,
-        log_err("", "type: %d\n", ast_node_type(ast, type_of)));
-
-    ast->nodes[identifier].identifier.decl_type_of = type_of;
-}
-
-void
-ast_identifier_set_scope(
-    struct ast*      ast,
-    ast_id           identifier,
-    enum scope       scope,
-    struct utf8_span location)
-{
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(ast, identifier)));
-
-    ast->nodes[identifier].identifier.scope = scope;
-    ast->nodes[identifier].identifier.scope_location = location;
 }
 
 ast_id
@@ -396,7 +431,7 @@ ast_inc_step(
     struct ast** astp, ast_id var, ast_id expr, struct utf8_span location)
 {
     ast_id add = ast_binop(astp, BINOP_ADD, var, expr, location, location);
-    var = ast_dup_lvalue(astp, var);
+    var = ast_dup_identifier(astp, var);
     return ast_assign(astp, var, add, location, location);
 }
 
@@ -412,7 +447,7 @@ ast_dec_step(
     struct ast** astp, ast_id var, ast_id expr, struct utf8_span location)
 {
     ast_id add = ast_binop(astp, BINOP_SUB, var, expr, location, location);
-    var = ast_dup_lvalue(astp, var);
+    var = ast_dup_identifier(astp, var);
     return ast_assign(astp, var, add, location, location);
 }
 
@@ -614,22 +649,17 @@ ast_loop_exit(
 }
 
 static int
-ast_func_is_polymorphic(const struct ast* ast, int func)
+ast_func_is_polymorphic(const struct ast* ast, ast_id paramlist)
 {
-    ast_id paramlist;
-    ast_id decl;
-
-    ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(paramlist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, func) == AST_FUNC,
-        log_err("", "type: %d\n", ast_node_type(ast, func)));
+        ast_node_type(ast, paramlist) == AST_PARAMLIST,
+        log_err("", "type: %d\n", ast_node_type(ast, paramlist)));
 
-    decl = ast->nodes[func].func.decl;
-    for (paramlist = ast->nodes[decl].func_decl.paramlist; paramlist > -1;
-         paramlist = ast->nodes[paramlist].paramlist.next)
+    for (; paramlist > -1; paramlist = ast->nodes[paramlist].paramlist.next)
     {
-        ast_id identifier = ast->nodes[paramlist].paramlist.identifier;
-        if (ast->nodes[identifier].identifier.decl_type_of == -1)
+        ast_id param = ast->nodes[paramlist].paramlist.param;
+        if (ast->nodes[param].param.as == -1)
             return 1;
     }
 
@@ -640,6 +670,7 @@ ast_id
 ast_func(
     struct ast**     astp,
     ast_id           identifier,
+    ast_id           as,
     ast_id           paramlist,
     ast_id           body,
     ast_id           retval,
@@ -647,12 +678,13 @@ ast_func(
     struct utf8_span location)
 {
     struct ast* ast;
-    ast_id      func, decl, def;
-    func = new_node(astp, AST_FUNC, location);
-    decl = new_node(astp, AST_FUNC_DECL, location);
-    def = new_node(astp, AST_FUNC_DEF, location);
+    ast_id      f1, f2, f3, f4;
+    f1 = new_node(astp, AST_FUNC1, location);
+    f2 = new_node(astp, AST_FUNC2, location);
+    f3 = new_node(astp, AST_FUNC3, location);
+    f4 = new_node(astp, AST_FUNC4, location);
     ast = *astp;
-    if (func < 0 || decl < 0 || def < 0)
+    if (f1 < 0 || f2 < 0 || f3 < 0 || f4 < 0)
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -660,34 +692,38 @@ ast_func(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("", "type: %d\n", ast_node_type(ast, identifier)));
-    ast->nodes[decl].func_decl.identifier = identifier;
+    ast->nodes[f1].func1.identifier = identifier;
+    ast->nodes[f1].func1.func2 = f2;
+    ast->nodes[f1].func1.endfunction_location = endfunction_location;
+
+    ODBUTIL_DEBUG_ASSERT(
+        as == -1 || ast_node_type(ast, as) == AST_AS,
+        log_err("", "type: %d\n", ast_node_type(ast, as)));
+    ast->nodes[f2].func2.as = as;
+    ast->nodes[f2].func2.func3 = f3;
 
     ODBUTIL_DEBUG_ASSERT(
         paramlist == -1 || ast_node_type(ast, paramlist) == AST_PARAMLIST,
         log_err("", "type: %d\n", ast_node_type(ast, paramlist)));
-    ast->nodes[decl].func_decl.paramlist = paramlist;
-
-    ast->nodes[decl].func_decl.info.location
-        = paramlist > -1
-              ? utf8_span_union(
-                    ast->nodes[identifier].info.location,
-                    ast->nodes[paramlist].paramlist.combined_location)
-              : ast->nodes[identifier].info.location;
+    ast->nodes[f3].func3.paramlist = paramlist;
+    ast->nodes[f3].func3.func4 = f4;
 
     ODBUTIL_DEBUG_ASSERT(
         body == -1 || ast_node_type(ast, body) == AST_BLOCK,
         log_err("", "type: %d\n", ast_node_type(ast, body)));
-    ast->nodes[def].func_def.body = body;
-    ast->nodes[def].func_def.retval = retval;
+    ast->nodes[f4].func4.body = body;
+    ast->nodes[f4].func4.retval = retval;
 
-    ast->nodes[func].func.decl = decl;
-    ast->nodes[func].func.def = def;
-    ast->nodes[func].func.endfunction_location = endfunction_location;
+    if (ast_func_is_polymorphic(ast, paramlist))
+    {
+        ast_id poly = new_node(astp, AST_FUNC_POLY, location);
+        if (poly < 0)
+            return -1;
+        ast->nodes[poly].func_poly.func = f1;
+        return poly;
+    }
 
-    if (ast_func_is_polymorphic(ast, func))
-        ast->nodes[func].info.node_type = AST_FUNC_POLY;
-
-    return func;
+    return f1;
 }
 
 ast_id
@@ -866,21 +902,20 @@ ast_string_literal(
 }
 
 ast_id
-ast_cast(
-    struct ast** astp, ast_id expr, ast_id type_of, struct utf8_span location)
+ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_CAST, location);
     if (n < 0)
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(type_of > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, type_of) == AST_TYPE_OF,
-        log_err("", "type: %d\n", ast_node_type(*astp, type_of)));
+        ast_node_type(*astp, as) == AST_AS,
+        log_err("", "type: %d\n", ast_node_type(*astp, as)));
 
     (*astp)->nodes[n].cast.expr = expr;
-    (*astp)->nodes[n].cast.type_of = type_of;
+    (*astp)->nodes[n].cast.as = as;
 
     return n;
 }
@@ -892,47 +927,47 @@ ast_cast_to_type(
     enum type        target_type,
     struct utf8_span location)
 {
-    ast_id as_type = ast_type_of_type(astp, target_type, location);
-    if (as_type < 0)
+    ast_id as = ast_as_type(astp, target_type, location);
+    if (as < 0)
         return -1;
 
-    return ast_cast(astp, expr, as_type, location);
+    return ast_cast(astp, expr, as, location);
 }
 
 ast_id
-ast_as_type(struct ast** astp, enum type type, struct utf8_span location)
+ast_type(struct ast** astp, enum type type, struct utf8_span location)
 {
-    ast_id n = new_node(astp, AST_AS_TYPE, location);
+    ast_id n = new_node(astp, AST_TYPE, location);
     if (n < 0)
         return -1;
 
-    (*astp)->nodes[n].as_type.target_type = type;
+    (*astp)->nodes[n].type.target_type = type;
 
     return n;
 }
 
 ast_id
-ast_type_of(struct ast** astp, ast_id expr, struct utf8_span location)
+ast_as(struct ast** astp, ast_id expr, struct utf8_span location)
 {
-    ast_id n = new_node(astp, AST_TYPE_OF, location);
+    ast_id n = new_node(astp, AST_AS, location);
     if (n < 0)
         return -1;
 
-    (*astp)->nodes[n].type_of.expr = expr;
+    (*astp)->nodes[n].as.expr = expr;
 
     return n;
 }
 
 ast_id
-ast_type_of_type(
+ast_as_type(
     struct ast** astp, enum type target_type, struct utf8_span location)
 {
-    ast_id as_type = ast_as_type(astp, target_type, location);
-    ast_id n = new_node(astp, AST_TYPE_OF, location);
-    if (n < 0 || as_type < 0)
+    ast_id as = ast_as(astp, target_type, location);
+    ast_id n = new_node(astp, AST_AS, location);
+    if (n < 0 || as < 0)
         return -1;
 
-    (*astp)->nodes[n].type_of.expr = as_type;
+    (*astp)->nodes[n].as.expr = as;
 
     return n;
 }

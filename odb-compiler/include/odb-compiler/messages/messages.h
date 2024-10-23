@@ -80,9 +80,9 @@ err_func_missing_return_value(
     const char*       filename,
     const char*       source);
 int
-err_initialization_incompatible_types(
+err_var_decl_init_incompatible_types(
     const struct ast* ast,
-    ast_id            ass,
+    ast_id            var_decl,
     const char*       filename,
     const char*       source);
 int

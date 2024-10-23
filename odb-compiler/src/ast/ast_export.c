@@ -91,12 +91,89 @@ static const struct style dark_nightfly = {
 };
 
 static void
-write_node(
+print_node(const struct ast* ast, FILE* fp, ast_id n, int depth)
+{
+    int i;
+    for (i = 0; i != depth; ++i)
+        fprintf(fp, "  ");
+
+    switch (ast_node_type(ast, n))
+    {
+        case AST_GC: fprintf(fp, "GC"); break;
+        case AST_BLOCK: fprintf(fp, "BLOCK"); break;
+        case AST_END: fprintf(fp, "END"); break;
+        case AST_ARGLIST: fprintf(fp, "ARGLIST"); break;
+        case AST_PARAMLIST: fprintf(fp, "PARAMLIST"); break;
+        case AST_COMMAND: fprintf(fp, "COMMAND"); break;
+        case AST_ASSIGNMENT: fprintf(fp, "ASSIGNMENT"); break;
+        case AST_VAR_DECL1: fprintf(fp, "VAR_DECL1"); break;
+        case AST_VAR_DECL2: fprintf(fp, "VAR_DECL2"); break;
+        case AST_VAR_REF: fprintf(fp, "VAR_REF"); break;
+        case AST_PARAM: fprintf(fp, "PARAM"); break;
+        case AST_IDENTIFIER: fprintf(fp, "IDENTIFIER"); break;
+        case AST_BINOP: fprintf(fp, "BINOP"); break;
+        case AST_UNOP: fprintf(fp, "UNOP"); break;
+        case AST_COND: fprintf(fp, "COND"); break;
+        case AST_COND_BRANCHES: fprintf(fp, "COND_BRANCHES"); break;
+        case AST_LOOP: fprintf(fp, "LOOP"); break;
+        case AST_LOOP_BODY: fprintf(fp, "LOOP_BODY"); break;
+        case AST_LOOP_FOR1: fprintf(fp, "LOOP_FOR1"); break;
+        case AST_LOOP_FOR2: fprintf(fp, "LOOP_FOR2"); break;
+        case AST_LOOP_FOR3: fprintf(fp, "LOOP_FOR3"); break;
+        case AST_LOOP_CONT: fprintf(fp, "LOOP_CONT"); break;
+        case AST_LOOP_EXIT: fprintf(fp, "LOOP_EXIT"); break;
+        case AST_FUNC_POLY: fprintf(fp, "FUNC POLY"); break;
+        case AST_FUNC1: fprintf(fp, "FUNC1"); break;
+        case AST_FUNC2: fprintf(fp, "FUNC2"); break;
+        case AST_FUNC3: fprintf(fp, "FUNC3"); break;
+        case AST_FUNC4: fprintf(fp, "FUNC4"); break;
+        case AST_FUNC_EXIT: fprintf(fp, "FUNC_EXIT"); break;
+        case AST_FUNC_OR_CONTAINER_REF:
+            fprintf(fp, "FUNC_OR_CONTAINER_REF");
+            break;
+        case AST_FUNC_CALL: fprintf(fp, "FUNC_CALL"); break;
+        case AST_BOOLEAN_LITERAL: fprintf(fp, "BOOLEAN_LITERAL"); break;
+        case AST_BYTE_LITERAL: fprintf(fp, "BYTE_LITERAL"); break;
+        case AST_WORD_LITERAL: fprintf(fp, "WORD_LITERAL"); break;
+        case AST_DWORD_LITERAL: fprintf(fp, "DWORD_LITERAL"); break;
+        case AST_INTEGER_LITERAL: fprintf(fp, "INTEGER_LITERAL"); break;
+        case AST_DOUBLE_INTEGER_LITERAL:
+            fprintf(fp, "DOUBLE_INTEGER_LITERAL");
+            break;
+        case AST_FLOAT_LITERAL: fprintf(fp, "FLOAT_LITERAL"); break;
+        case AST_DOUBLE_LITERAL: fprintf(fp, "DOUBLE_LITERAL"); break;
+        case AST_STRING_LITERAL: fprintf(fp, "STRING_LITERAL"); break;
+        case AST_CAST: fprintf(fp, "CAST"); break;
+        case AST_AS: fprintf(fp, "AS"); break;
+        case AST_TYPE: fprintf(fp, "TYPE"); break;
+    }
+}
+
+static void
+print_subtree(const struct ast* ast, ast_id n, FILE* fp, int depth)
+{
+    print_node(ast, fp, n, depth);
+
+    if (ast->nodes[n].base.left > -1)
+        print_subtree(ast, ast->nodes[n].base.left, fp, depth + 1);
+    if (ast->nodes[n].base.right > -1)
+        print_subtree(ast, ast->nodes[n].base.right, fp, depth + 1);
+}
+static void
+print_ast_nonrecursive(const struct ast* ast, FILE* fp, int depth)
+{
+    ast_id n;
+    for (n = 0; n != ast_count(ast); ++n)
+        print_node(ast, fp, n, depth);
+}
+
+static void
+dot_write_node(
     const struct ast*      ast,
     ast_id                 n,
     FILE*                  fp,
     const char*            source,
-    const struct cmd_list* commands,
+    const struct cmd_list* cmds,
     const struct style*    style)
 {
     switch (ast_node_type(ast, n))
@@ -151,9 +228,8 @@ write_node(
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
-                = utf8_list_view(commands->db_cmd_names, ast->nodes[n].cmd.id);
-            enum type ret_type
-                = commands->return_types->data[ast->nodes[n].cmd.id];
+                = utf8_list_view(cmds->db_cmd_names, ast->nodes[n].cmd.id);
+            enum type ret_type = cmds->return_types->data[ast->nodes[n].cmd.id];
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
@@ -178,21 +254,63 @@ write_node(
                 style->operator.fontcolor,
                 style->operator.shape);
             break;
+        case AST_VAR_DECL1:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=<<font color=\"%s\">%s</font>var_decl1>];\n",
+                n,
+                style->type.color,
+                ast->nodes[n].var_decl1.scope == SCOPE_GLOBAL ? "GLOBAL"
+                                                              : "LOCAL",
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape);
+            break;
+        case AST_VAR_DECL2:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"var_decl1\"];\n",
+                n,
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape);
+            break;
+        case AST_VAR_REF:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"var_ref\"];\n",
+                n,
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape);
+            break;
+        case AST_PARAM:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"param\"];\n",
+                n,
+                style->list.color,
+                style->list.fontcolor,
+                style->list.shape);
+            break;
         case AST_IDENTIFIER:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<%s <font color=\"%s\">%.*s</font> AS %s>];\n",
+                "label=\"%.*s%c\"];\n",
                 n,
                 style->identifier.color,
-                style->type.fontcolor,
-                style->identifier.shape,
-                ast->nodes[n].identifier.scope == SCOPE_LOCAL ? "LOCAL"
-                                                              : "GLOBAL",
                 style->identifier.fontcolor,
+                style->identifier.shape,
                 ast->nodes[n].identifier.name.len,
                 source + ast->nodes[n].identifier.name.off,
-                type_to_db_name(ast_type_info(ast, n)));
+                ast->nodes[n].identifier.annotation != TA_NONE
+                    ? ast->nodes[n].identifier.annotation
+                    : ' ');
             break;
         case AST_BINOP:
             switch (ast->nodes[n].binop.op)
@@ -326,38 +444,18 @@ write_node(
                 style->keyword.color,
                 style->keyword.fontcolor);
             break;
-        case AST_FUNC:
+        case AST_FUNC1:
+        case AST_FUNC2:
+        case AST_FUNC3:
+        case AST_FUNC4:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=<func <font color=\"%s\">AS %s</font>>];\n",
+                "label=\"func%d\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                style->type.fontcolor,
-                type_to_db_name(ast_type_info(ast, n)));
-            break;
-        case AST_FUNC_DECL:
-            fprintf(
-                fp,
-                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=<decl <font color=\"%s\">AS %s</font>>];\n",
-                n,
-                style->keyword.color,
-                style->keyword.fontcolor,
-                style->type.fontcolor,
-                type_to_db_name(ast_type_info(ast, n)));
-            break;
-        case AST_FUNC_DEF:
-            fprintf(
-                fp,
-                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=<def <font color=\"%s\">AS %s</font>>];\n",
-                n,
-                style->keyword.color,
-                style->keyword.fontcolor,
-                style->type.fontcolor,
-                type_to_db_name(ast_type_info(ast, n)));
+                ast_node_type(ast, n) - AST_FUNC1 + 1);
             break;
         case AST_FUNC_EXIT:
             fprintf(
@@ -512,7 +610,17 @@ write_node(
                 style->type.fontcolor,
                 style->type.shape);
             break;
-        case AST_AS_TYPE:
+        case AST_AS:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"AS\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape);
+            break;
+        case AST_TYPE:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
@@ -521,55 +629,45 @@ write_node(
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                type_to_db_name(ast->nodes[n].as_type.target_type));
-            break;
-        case AST_TYPE_OF:
-            fprintf(
-                fp,
-                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"TYPE OF\"];\n",
-                n,
-                style->type.color,
-                style->type.fontcolor,
-                style->type.shape);
+                type_to_db_name(ast->nodes[n].type.target_type));
             break;
     }
 }
 
 static void
-write_nodes(
+dot_write_nodes(
     const struct ast*      ast,
     ast_id                 n,
     FILE*                  fp,
     const char*            source,
-    const struct cmd_list* commands,
+    const struct cmd_list* cmds,
     const struct style*    style)
 {
     ast_id left = ast->nodes[n].base.left;
     ast_id right = ast->nodes[n].base.right;
     if (left > -1)
-        write_nodes(ast, left, fp, source, commands, style);
+        dot_write_nodes(ast, left, fp, source, cmds, style);
     if (right > -1)
-        write_nodes(ast, right, fp, source, commands, style);
+        dot_write_nodes(ast, right, fp, source, cmds, style);
 
-    write_node(ast, n, fp, source, commands, style);
+    dot_write_node(ast, n, fp, source, cmds, style);
 }
 
 static void
-write_nodes_nonrecursive(
+dot_write_nodes_nonrecursive(
     const struct ast*      ast,
     FILE*                  fp,
     const char*            source,
-    const struct cmd_list* commands,
+    const struct cmd_list* cmds,
     const struct style*    style)
 {
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
-        write_node(ast, n, fp, source, commands, style);
+        dot_write_node(ast, n, fp, source, cmds, style);
 }
 
 static const char*
-get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
+dot_get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
 {
     switch (ast_node_type(ast, parent))
     {
@@ -587,7 +685,11 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_PARAMLIST: NAMES("identifier", "next")
         case AST_COMMAND: NAMES("arglist", "")
         case AST_ASSIGNMENT: NAMES("lvalue", "expr")
-        case AST_IDENTIFIER: NAMES("as_type", "")
+        case AST_VAR_DECL1: NAMES("var_decl2", "init")
+        case AST_VAR_DECL2: NAMES("identifier", "as")
+        case AST_VAR_REF: NAMES("identifier", "")
+        case AST_PARAM: NAMES("identifier", "as")
+        case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")
         case AST_UNOP: NAMES("expr", "")
         case AST_COND: NAMES("expr", "cond_branches")
@@ -600,9 +702,10 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_LOOP_CONT: NAMES("step", "")
         case AST_LOOP_EXIT: break;
         case AST_FUNC_POLY: NAMES("decl", "def")
-        case AST_FUNC: NAMES("decl", "def")
-        case AST_FUNC_DECL: NAMES("identifier", "paramlist")
-        case AST_FUNC_DEF: NAMES("body", "retval")
+        case AST_FUNC1: NAMES("func2", "identifier")
+        case AST_FUNC2: NAMES("func3", "as")
+        case AST_FUNC3: NAMES("func4", "paramlist")
+        case AST_FUNC4: NAMES("body", "retval")
         case AST_FUNC_EXIT: NAMES("retval", "")
         case AST_FUNC_OR_CONTAINER_REF: NAMES("identifier", "arglist")
         case AST_FUNC_CALL: NAMES("identifier", "arglist")
@@ -615,9 +718,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_FLOAT_LITERAL: break;
         case AST_DOUBLE_LITERAL: break;
         case AST_STRING_LITERAL: break;
-        case AST_CAST: NAMES("expr", "type_of")
-        case AST_AS_TYPE: break;
-        case AST_TYPE_OF: NAMES("expr", "")
+        case AST_CAST: NAMES("expr", "as")
+        case AST_AS: NAMES("expr", "")
+        case AST_TYPE: break;
 #undef NAMES
     }
 
@@ -625,7 +728,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
 }
 
 static void
-write_edges(const struct ast* ast, FILE* fp, const struct style* style)
+dot_write_edges(const struct ast* ast, FILE* fp, const struct style* style)
 {
     ast_id n;
     for (n = 0; n != ast_count(ast); ++n)
@@ -641,7 +744,7 @@ write_edges(const struct ast* ast, FILE* fp, const struct style* style)
                 ast->nodes[n].base.left,
                 style->edgecolor,
                 style->edgecolor,
-                get_edge_label(ast, n, left));
+                dot_get_edge_label(ast, n, left));
         if (right > -1)
             fprintf(
                 fp,
@@ -651,7 +754,7 @@ write_edges(const struct ast* ast, FILE* fp, const struct style* style)
                 ast->nodes[n].base.right,
                 style->edgecolor,
                 style->edgecolor,
-                get_edge_label(ast, n, right));
+                dot_get_edge_label(ast, n, right));
     }
 }
 
@@ -674,39 +777,57 @@ max_depth_is_unreasonable(const struct ast* ast, ast_id n, ast_id depth)
     return 0;
 }
 
-ast_id
+int
+ast_export_print_fp(
+    const struct ast*      ast,
+    ast_id                 root,
+    FILE*                  fp,
+    const char*            source,
+    const struct cmd_list* cmds)
+{
+    if (max_depth_is_unreasonable(ast, root, 0))
+        print_ast_nonrecursive(ast, fp, 0);
+    else
+        print_subtree(ast, root, fp, 0);
+
+    return 0;
+}
+
+int
 ast_export_dot(
     const struct ast*      ast,
+    ast_id                 root,
     struct ospathc         filepath,
     const char*            source,
-    const struct cmd_list* commands)
+    const struct cmd_list* cmds)
 {
     FILE* fp = fopen(ospathc_cstr(filepath), "w");
     if (fp == NULL)
         return -1;
-    ast_export_dot_fp(ast, fp, source, commands);
+    ast_export_dot_fp(ast, root, fp, source, cmds);
     fclose(fp);
 
     return 0;
 }
 
-ast_id
+int
 ast_export_dot_fp(
     const struct ast*      ast,
+    ast_id                 root,
     FILE*                  fp,
     const char*            source,
-    const struct cmd_list* commands)
+    const struct cmd_list* cmds)
 {
     const struct style* style = &dark_nightfly;
     fprintf(fp, "digraph ast {\n");
     fprintf(fp, "  bgcolor=\"%s\";\n", style->bgcolor);
     if (ast)
     {
-        if (max_depth_is_unreasonable(ast, ast->root, 0))
-            write_nodes_nonrecursive(ast, fp, source, commands, style);
+        if (max_depth_is_unreasonable(ast, root, 0))
+            dot_write_nodes_nonrecursive(ast, fp, source, cmds, style);
         else
-            write_nodes(ast, ast->root, fp, source, commands, style);
-        write_edges(ast, fp, style);
+            dot_write_nodes(ast, root, fp, source, cmds, style);
+        dot_write_edges(ast, fp, style);
     }
     fprintf(fp, "}\n");
 

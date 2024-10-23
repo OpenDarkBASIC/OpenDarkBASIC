@@ -32,7 +32,7 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
     {
         ast_id step_expr = (*astp)->nodes[cont].cont.step;
         ast_id loop_var = get_loop_var(*astp, loop);
-        ast_id inc_var = ast_dup_lvalue(astp, loop_var);
+        ast_id inc_var = ast_dup_identifier(astp, loop_var);
         ast_id inc_stmt
             = ast_inc_step(astp, inc_var, step_expr, ast_loc(*astp, step_expr));
         (*astp)->nodes[cont].cont.step

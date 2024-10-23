@@ -69,7 +69,13 @@ DBParserHelper::parse(const char* code)
     std::string filename = std::string("ast/") + info->test_suite_name() + "__"
                            + info->name() + "1.dot";
     std::filesystem::create_directory("ast");
-    ast_export_dot(ast, cstr_ospathc(filename.c_str()), src.text.data, &cmds);
+    if (ast != nullptr)
+        ast_export_dot(
+            ast,
+            ast->root,
+            cstr_ospathc(filename.c_str()),
+            src.text.data,
+            &cmds);
 #endif
     return result;
 }
@@ -99,7 +105,13 @@ DBParserHelper::semantic(const struct semantic_check* check)
     std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
                           + info->name() + "2.dot";
     std::filesystem::create_directory("ast");
-    ast_export_dot(ast, cstr_ospathc(astfile.c_str()), src.text.data, &cmds);
+    if (ast != nullptr)
+        ast_export_dot(
+            ast,
+            ast->root,
+            cstr_ospathc(astfile.c_str()),
+            src.text.data,
+            &cmds);
 #endif
     return result;
 }

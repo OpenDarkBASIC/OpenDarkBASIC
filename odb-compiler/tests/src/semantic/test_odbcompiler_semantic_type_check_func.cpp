@@ -30,7 +30,7 @@ TEST_F(NAME, explicit_parameter)
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
+    ASSERT_THAT(ast_verify_connectivity(ast, src.text.data, &cmds), Eq(0));
 
     ASSERT_THAT(ast_count(ast), Eq(11));
     ast_id func = ast->nodes[ast->root].block.stmt;
