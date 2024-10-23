@@ -486,14 +486,17 @@ process_assignment(
     if (ast_type_info(*astp, rhs) == TYPE_INVALID)
         stack_push_entry(stack, ass, rhs);
 
-    if (stack_count(*stack) != top)
-        return DEP_ADDED;
-
-    if (ast_node_type((*astp), lhs) == AST_IDENTIFIER)
+    /* The LHS type is determined completely independently of the RHS. We need
+     * to add it to the typemap now, because otherwise it might be incorrectly
+     * processed as an identifier later, which will add an initializer. This is
+     * an assignment so it doesn't need an initializer. */
+    if (ast_node_type(*astp, lhs) == AST_IDENTIFIER)
     {
         enum type           rhs_type;
         struct type_origin* lhs_type;
-        struct utf8_view    lhs_name
+
+        ast_id lhs_type_of = (*astp)->nodes[lhs].identifier.decl_type_of;
+        struct utf8_view lhs_name
             = utf8_span_view(source, (*astp)->nodes[lhs].identifier.name);
         struct view_scope lhs_name_scope
             = {lhs_name, (*astp)->nodes[lhs].info.scope_id};
@@ -502,26 +505,36 @@ process_assignment(
         switch (lhs_insertion)
         {
             case HM_OOM: return DEP_ERROR;
-            case HM_EXISTS: break;
-            case HM_NEW: {
-                ast_id type_of = (*astp)->nodes[lhs].identifier.decl_type_of;
+            case HM_NEW:
                 lhs_type->original_declaration = lhs;
+                lhs_type->type = TYPE_INVALID;
+
+            /* fallthrough */
+            case HM_EXISTS:
+                if (lhs_type_of > -1
+                    && ast_type_info(*astp, lhs_type_of) == TYPE_INVALID)
+                {
+                    stack_push_entry(stack, ass, lhs_type_of);
+                    break;
+                }
+                if (lhs_type->type != TYPE_INVALID)
+                    break;
 
                 /* Prefer the explicit type ("AS TYPE"). This is set by
-                 * the parser */
-                lhs_type->type = type_of > -1 ? ast_type_info(*astp, type_of)
-                                              : TYPE_INVALID;
-
-                /* Otherwise use annotated type */
-                if (lhs_type->type == TYPE_INVALID)
+                 * the parser -- otherwise use annotated type */
+                if (lhs_type_of > -1)
+                    lhs_type->type = ast_type_info(*astp, lhs_type_of);
+                else
                     lhs_type->type = annotation_to_type(
                         (*astp)->nodes[lhs].identifier.annotation);
 
                 break;
-            }
         }
         /* This needs to be set before printing errors */
         (*astp)->nodes[lhs].info.type_info = lhs_type->type;
+
+        if (top != stack_count(*stack))
+            return DEP_ADDED;
 
         /* May need to insert a cast from rhs to lhs */
         rhs_type = ast_type_info(*astp, rhs);
@@ -540,7 +553,7 @@ process_assignment(
             {
                 case TC_ALLOW: break;
                 case TC_DISALLOW:
-                    if (lhs_insertion == HM_NEW)
+                    if (lhs_type->original_declaration == lhs)
                         err_initialization_incompatible_types(
                             *astp, ass, filename, source);
                     else
@@ -552,7 +565,7 @@ process_assignment(
                 case TC_TRUENESS:
                 case TC_INT_TO_FLOAT:
                 case TC_BOOL_PROMOTION:
-                    if (lhs_insertion == HM_NEW)
+                    if (lhs_type->original_declaration == lhs)
                         warn_initialization_implicit_conversion(
                             *astp, ass, filename, source);
                     else
@@ -561,7 +574,7 @@ process_assignment(
                     break;
 
                 case TC_TRUNCATE:
-                    if (lhs_insertion == HM_NEW)
+                    if (lhs_type->original_declaration == lhs)
                         warn_initialization_truncation(
                             *astp, ass, filename, source);
                     else
@@ -575,6 +588,14 @@ process_assignment(
                 return DEP_ERROR;
             (*astp)->nodes[ass].assignment.expr = cast;
         }
+    }
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            0,
+            log_semantic_err(
+                "LHS of assignment has unexpected node type %d\n",
+                ast_node_type(*astp, lhs)));
     }
 
     /* Assignments are not expressions, thus they do not evaluate to a
@@ -1306,8 +1327,6 @@ process_func_return(
         else
             (*astp)->nodes[func_or_exit].func_exit.retval = cast;
 
-        (*astp)->nodes[cast].info.type_info = current_ret_type;
-
         switch (type_convert(target_ret_type, current_ret_type))
         {
             case TC_ALLOW: break;
@@ -1352,7 +1371,7 @@ process_func_exit(
     const char*    filename,
     const char*    source)
 {
-    ast_id func, ret;
+    ast_id ret;
 
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1366,13 +1385,7 @@ process_func_exit(
         return DEP_ADDED;
     }
 
-    /* The type returned by the exitfunction expression also sets the return
-     * type of the entire function */
-    for (func = exit; func > -1; func = ast_find_parent(*astp, func))
-        if (ast_node_type(*astp, func) == AST_FUNC)
-            break;
-    ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
-    if (process_func_return(astp, func, ret, filename, source) != 0)
+    if (process_func_return(astp, exit, ret, filename, source) != 0)
         return DEP_ERROR;
 
     /* The exitfunction statement itself is not an expression, so it "returns"

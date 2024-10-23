@@ -1,5 +1,8 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_export.h"
+#include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
+#include <stdio.h>
 
 static void
 process_node(
@@ -19,6 +22,8 @@ process_node(
             ast_id decl = ast->nodes[n].func.decl;
             ast_id def = ast->nodes[n].func.def;
             ast_id identifier = ast->nodes[decl].func_decl.identifier;
+            ast_id decl_type_of
+                = ast->nodes[identifier].identifier.decl_type_of;
             ast_id paramlist = ast->nodes[decl].func_decl.paramlist;
             ast_id body = ast->nodes[def].func_def.body;
             ast_id ret = ast->nodes[def].func_def.retval;
@@ -30,6 +35,8 @@ process_node(
 
             current_scope = ++(*scope_counter);
 
+            if (decl_type_of > -1)
+                process_node(ast, decl_type_of, current_scope, scope_counter);
             if (paramlist > -1)
                 process_node(ast, paramlist, current_scope, scope_counter);
             if (body > -1)
@@ -136,18 +143,30 @@ reset_scope_ids(struct ast* ast)
 }
 
 static void
-check_scope_ids(struct ast* ast)
+check_scope_ids(
+    struct ast* ast, const char* source, const struct cmd_list* cmds)
 {
     ast_id n;
+    int    error = 0;
     for (n = 0; n != ast_count(ast); ++n)
     {
-        ODBUTIL_DEBUG_ASSERT(
-            ast->nodes[n].info.scope_id > -1,
+        if (ast->nodes[n].info.scope_id == -1)
+        {
             log_semantic_err(
                 "Node %d of type %d has no scope ID\n",
                 n,
-                ast_node_type(ast, n)));
+                ast_node_type(ast, n));
+            error = -1;
+        }
     }
+
+    if (error)
+    {
+        ast_export_dot_fp(ast, stdout, source, cmds);
+        fflush(stdout);
+    }
+
+    ODBUTIL_DEBUG_ASSERT(!error, (void)0);
 }
 #endif
 
@@ -173,7 +192,7 @@ calculate_scope_ids(
     process_node(ast, ast->root, 0, &scope_counter);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    check_scope_ids(ast);
+    check_scope_ids(ast, sources[tu_id].text.data, cmds);
 #endif
 
     return 0;
