@@ -436,30 +436,70 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
 }
 
 static enum process_result
-process_param(struct stack** stack, struct ast* ast, ast_id param)
+process_param(
+    struct stack**   stack,
+    struct ast**     astp,
+    ast_id           param,
+    const char*      source,
+    struct typemap** typemap)
 {
-    ast_id  identifier, as;
-    int32_t top = stack_count(*stack);
+    ast_id              identifier, as;
+    struct type_origin* type_origin;
+    struct view_scope   view_scope;
+    int32_t             top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, param) == AST_PARAM,
-        log_semantic_err("type: %d\n", ast_node_type(ast, param)));
+        ast_node_type(*astp, param) == AST_PARAM,
+        log_semantic_err("type: %d\n", ast_node_type(*astp, param)));
 
-    as = ast->nodes[param].param.as;
-    if (as > -1 && ast_type_info(ast, as) == TYPE_INVALID)
+    identifier = (*astp)->nodes[param].param.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("", "type: %d\n", ast_node_type(*astp, identifier)));
+
+    /* "Touch" the variable so others can depend on it. The type info is set
+     * later */
+    view_scope.view
+        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
+    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
+    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    {
+        case HM_NEW:
+            type_origin->initial_identifier = identifier;
+            type_origin->type = TYPE_INVALID;
+            break;
+
+        case HM_EXISTS:
+            // TODO
+            // err_param_redeclaration(
+            //    *astp, identifier, type_origin->original_declaration, source);
+            return DEP_ERROR;
+        case HM_OOM: return DEP_ERROR;
+    }
+
+    as = (*astp)->nodes[param].param.as;
+    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
         stack_push_entry(stack, param, as);
-
-    /* XXX: This is wrong */
-    identifier = ast->nodes[param].param.identifier;
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
-    if (ast_type_info(ast, identifier) == TYPE_INVALID)
-        stack_push_entry(stack, param, identifier);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
 
-    ast->nodes[param].info.type_info = ast_type_info(ast, as);
+    /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
+     * to the identifier's type annotation */
+    if (type_origin->type == TYPE_INVALID)
+    {
+        if (as > -1)
+            type_origin->type = ast_type_info(*astp, as);
+        else
+            type_origin->type = annotation_to_type(
+                (*astp)->nodes[identifier].identifier.annotation);
+    }
+
+    /* TODO: Global variables are not yet supported */
+
+    (*astp)->nodes[param].info.type_info = type_origin->type;
+    (*astp)->nodes[identifier].info.type_info = type_origin->type;
 
     stack_pop(*stack);
     return DEP_OK;
@@ -492,45 +532,6 @@ process_command(
     ast->nodes[cmd].info.type_info = cmds->return_types->data[cmd_id];
     stack_pop(*stack);
     return DEP_OK;
-}
-
-static enum type
-get_identifier_type(
-    struct ast*      ast,
-    ast_id           identifier,
-    enum type        as_type,
-    const char*      source,
-    struct typemap** typemap)
-{
-    struct type_origin* type_origin;
-    struct view_scope   view_scope;
-
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_semantic_err("type: %d\n", ast_node_type(ast, identifier)));
-
-    view_scope.view
-        = utf8_span_view(source, ast->nodes[identifier].identifier.name);
-    view_scope.scope = ast->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
-    {
-        case HM_NEW:
-            type_origin->initial_identifier = identifier;
-
-            /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
-             * to the identifier's type annotation */
-            if (as_type != TYPE_INVALID)
-                type_origin->type = as_type;
-            else
-                type_origin->type = annotation_to_type(
-                    ast->nodes[identifier].identifier.annotation);
-
-        case HM_EXISTS: break;
-        case HM_OOM: return TYPE_INVALID;
-    }
-
-    return type_origin->type;
 }
 
 static ast_id
@@ -749,20 +750,17 @@ process_var_decl(
         as == -1 || ast_node_type(*astp, as) == AST_AS,
         log_semantic_err("type: %d\n", ast_node_type(*astp, as)));
 
-    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
-        stack_push_entry(stack, decl1, as);
-    if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
-        stack_push_entry(stack, decl1, init_expr);
-
-    if (stack_count(*stack) != top)
-        return DEP_ADDED;
-
+    /* "Touch" the variable so others can depend on it. The type info is set
+     * later */
     view_scope.view
         = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
     view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
     switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
     {
-        case HM_NEW: break;
+        case HM_NEW:
+            type_origin->initial_identifier = identifier;
+            type_origin->type = TYPE_INVALID;
+            break;
 
         case HM_EXISTS:
             // TODO
@@ -772,15 +770,24 @@ process_var_decl(
         case HM_OOM: return DEP_ERROR;
     }
 
-    type_origin->initial_identifier = identifier;
+    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
+        stack_push_entry(stack, decl1, as);
+    if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
+        stack_push_entry(stack, decl1, init_expr);
+
+    if (stack_count(*stack) != top)
+        return DEP_ADDED;
 
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
-    if (as > -1)
-        type_origin->type = ast_type_info(*astp, as);
-    else
-        type_origin->type = annotation_to_type(
-            (*astp)->nodes[identifier].identifier.annotation);
+    if (type_origin->type == TYPE_INVALID)
+    {
+        if (as > -1)
+            type_origin->type = ast_type_info(*astp, as);
+        else
+            type_origin->type = annotation_to_type(
+                (*astp)->nodes[identifier].identifier.annotation);
+    }
 
     /* TODO: Global variables are not yet supported */
 
@@ -873,33 +880,37 @@ process_var_ref(
     switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
     {
         case HM_NEW: {
-            ast_id init_var, init_ass, init_block, init_lit, scope_start,
-                parent;
+            ast_id           init_ident, init_expr, init_var_decl, init_block;
+            ast_id           decl2, scope_start, parent;
             struct utf8_span loc = ast_loc(*astp, identifier);
 
+            /* Type always defaults to the annotation if a variable is created
+             * by referencing it */
             type_origin->initial_identifier = identifier;
             type_origin->type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
 
             /* TODO: Global variables are not yet supported */
 
-            init_lit = create_initializer_literal(astp, type_origin->type, loc);
-            if (init_lit < 0)
+            init_expr
+                = create_initializer_literal(astp, type_origin->type, loc);
+            if (init_expr < 0)
                 return DEP_ERROR;
-            init_var = ast_dup_identifier(astp, identifier);
-            if (init_var < 0)
+            init_ident = ast_dup_identifier(astp, identifier);
+            if (init_ident < 0)
                 return DEP_ERROR;
-            init_ass = ast_assign(astp, init_var, init_lit, loc, loc);
-            if (init_ass < 0)
-                return DEP_ERROR;
-            init_block = ast_block(astp, init_ass, loc);
+            init_var_decl = ast_var_decl(
+                astp, init_ident, -1, init_expr, SCOPE_LOCAL, loc, loc);
+            init_block = ast_block(astp, init_var_decl, loc);
             if (init_block < 0)
                 return DEP_ERROR;
 
             /* Fill in type info */
-            (*astp)->nodes[init_lit].info.type_info = type_origin->type;
-            (*astp)->nodes[init_var].info.type_info = type_origin->type;
-            (*astp)->nodes[init_ass].info.type_info = TYPE_VOID;
+            decl2 = (*astp)->nodes[init_var_decl].var_decl1.var_decl2;
+            (*astp)->nodes[init_expr].info.type_info = type_origin->type;
+            (*astp)->nodes[init_ident].info.type_info = type_origin->type;
+            (*astp)->nodes[init_var_decl].info.type_info = type_origin->type;
+            (*astp)->nodes[decl2].info.type_info = type_origin->type;
             (*astp)->nodes[init_block].info.type_info = TYPE_VOID;
 
             /* Insert into beginning of current scope's block list */
@@ -1324,20 +1335,20 @@ process_loop(
 
     ODBUTIL_DEBUG_ASSERT(loop > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, loop) == AST_LOOP,
+        ast_node_type(*astp, loop) == AST_LOOP1,
         log_semantic_err("type: %d\n", ast_node_type(*astp, loop)));
     ODBUTIL_DEBUG_ASSERT(
-        (*astp)->nodes[loop].loop.loop_for1 == -1,
+        (*astp)->nodes[loop].loop1.loop_for1 == -1,
         log_semantic_err(
-            "loop_for1: %d\n", (*astp)->nodes[loop].loop.loop_for1));
+            "loop_for1: %d\n", (*astp)->nodes[loop].loop1.loop_for1));
 
-    loop_body = (*astp)->nodes[loop].loop.loop_body;
+    loop_body = (*astp)->nodes[loop].loop1.loop2;
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, loop_body) == AST_LOOP_BODY,
+        ast_node_type(*astp, loop_body) == AST_LOOP2,
         log_semantic_err("type: %d\n", ast_node_type(*astp, loop_body)));
 
-    body = (*astp)->nodes[loop_body].loop_body.body;
-    post_body = (*astp)->nodes[loop_body].loop_body.post_body;
+    body = (*astp)->nodes[loop_body].loop2.body;
+    post_body = (*astp)->nodes[loop_body].loop2.post_body;
 
     if (post_body > -1 && ast_type_info(*astp, post_body) == TYPE_INVALID)
         stack_push_entry(stack, loop, post_body);
@@ -2156,7 +2167,7 @@ process_node(
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_VAR_REF:
             return process_var_ref(stack, astp, n, filename, source, typemap);
-        case AST_PARAM: return process_param(stack, *astp, n);
+        case AST_PARAM: return process_param(stack, astp, n, source, typemap);
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BINOP: return process_binop(stack, astp, n, filename, source);
         case AST_UNOP: return process_unop(stack, astp, n, filename, source);
@@ -2165,8 +2176,8 @@ process_node(
             /* Is handled by AST_COND */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
-        case AST_LOOP: return process_loop(stack, astp, n, filename, source);
-        case AST_LOOP_BODY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_LOOP1: return process_loop(stack, astp, n, filename, source);
+        case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
@@ -2291,7 +2302,7 @@ sanity_check(
 
     if (error)
     {
-        ast_export_dot_fp(ast, ast->root, stdout, source, cmds);
+        ast_export_print_fp(ast, ast->root, stdout, source, cmds);
         fflush(stdout);
     }
 

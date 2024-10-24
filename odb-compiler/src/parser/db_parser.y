@@ -459,9 +459,8 @@ loop_for_init
   : assignment                             { $$ = $1; }
   | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @$); }
   ;
-// TODO: Change to same as assignemnt (lvalue) eventually
 loop_next
-  : NEXT identifier                         { $$ = $2; }
+  : NEXT lvalue                             { $$ = $2; }
   | NEXT                                    { $$ = -1; }
   ;
 loop_cont

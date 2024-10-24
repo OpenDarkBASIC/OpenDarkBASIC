@@ -824,8 +824,8 @@ gen_expr(
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
 
-        case AST_LOOP: break;
-        case AST_LOOP_BODY: break;
+        case AST_LOOP1: break;
+        case AST_LOOP2: break;
         case AST_LOOP_FOR1: break;
         case AST_LOOP_FOR2: break;
         case AST_LOOP_FOR3: break;
@@ -1308,11 +1308,11 @@ gen_block(
             }
             case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
-            case AST_LOOP: {
-                ast_id ast_loop_body = ast->nodes[stmt].loop.loop_body;
-                ast_id ast_body = ast->nodes[ast_loop_body].loop_body.body;
+            case AST_LOOP1: {
+                ast_id ast_loop_body = ast->nodes[stmt].loop1.loop2;
+                ast_id ast_body = ast->nodes[ast_loop_body].loop2.body;
                 ast_id ast_post_body
-                    = ast->nodes[ast_loop_body].loop_body.post_body;
+                    = ast->nodes[ast_loop_body].loop2.post_body;
 
                 llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
@@ -1367,7 +1367,7 @@ gen_block(
 
                 continue;
             }
-            case AST_LOOP_BODY: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+            case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
             case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
             case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -1380,9 +1380,9 @@ gen_block(
                     for (; it != loop_stack->rend(); ++it)
                     {
                         struct utf8_span loop_name
-                            = ast->nodes[it->loop].loop.name;
+                            = ast->nodes[it->loop].loop1.name;
                         struct utf8_span loop_implicit_name
-                            = ast->nodes[it->loop].loop.implicit_name;
+                            = ast->nodes[it->loop].loop1.implicit_name;
 
                         if (utf8_equal_span(source, target_name, loop_name)
                             || utf8_equal_span(
@@ -1434,9 +1434,9 @@ gen_block(
                 for (auto it = loop_stack->rbegin(); it != loop_stack->rend();
                      ++it)
                 {
-                    struct utf8_span loop_name = ast->nodes[it->loop].loop.name;
+                    struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
                     struct utf8_span loop_implicit_name
-                        = ast->nodes[it->loop].loop.implicit_name;
+                        = ast->nodes[it->loop].loop1.implicit_name;
 
                     if (utf8_equal_span(source, target_name, loop_name)
                         || utf8_equal_span(

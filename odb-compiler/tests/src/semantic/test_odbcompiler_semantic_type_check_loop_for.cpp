@@ -32,9 +32,9 @@ TEST_F(NAME, implicit_step_1)
     ASSERT_THAT(ast_node_type(ast, begin), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, begin), Eq(TYPE_I32));
     ast_id loop_block = ast->nodes[ast->root].block.next;
-    ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id loop_body = ast->nodes[loop].loop.loop_body;
-    ast_id post = ast->nodes[loop_body].loop_body.post_body;
+    ast_id loop1 = ast->nodes[loop_block].block.stmt;
+    ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+    ast_id post = ast->nodes[loop2].loop2.post_body;
     ASSERT_THAT(post, Gt(0));
     ast_id step_stmt = ast->nodes[post].block.stmt;
     ASSERT_THAT(ast_node_type(ast, step_stmt), Eq(AST_ASSIGNMENT));

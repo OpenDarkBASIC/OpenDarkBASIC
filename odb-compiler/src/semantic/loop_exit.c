@@ -31,17 +31,17 @@ check_exit(
             return err_loop_exit_unknown_name(ast, exit, first_loop, filename, source);
         }
 
-        if (ast_node_type(ast, loop) == AST_LOOP)
+        if (ast_node_type(ast, loop) == AST_LOOP1)
         {
             if (ast->nodes[exit].loop_exit.name.len == 0
                 || utf8_equal_span(
                     source,
                     ast->nodes[exit].loop_exit.name,
-                    ast->nodes[loop].loop.name)
+                    ast->nodes[loop].loop1.name)
                 || utf8_equal_span(
                     source,
                     ast->nodes[exit].loop_exit.name,
-                    ast->nodes[loop].loop.implicit_name))
+                    ast->nodes[loop].loop1.implicit_name))
             {
                 return 0;
             }

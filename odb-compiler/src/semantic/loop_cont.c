@@ -12,10 +12,10 @@ get_loop_var(const struct ast* ast, ast_id loop)
 {
     ast_id loop_body, post_body, step_stmt;
 
-    loop_body = ast->nodes[loop].loop.loop_body;
+    loop_body = ast->nodes[loop].loop1.loop2;
     ODBUTIL_DEBUG_ASSERT(loop_body > -1, (void)0);
 
-    post_body = ast->nodes[loop_body].loop_body.post_body;
+    post_body = ast->nodes[loop_body].loop2.post_body;
     ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
 
     ODBUTIL_DEBUG_ASSERT(
@@ -40,8 +40,8 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
     }
     else
     {
-        ast_id loop_body = (*astp)->nodes[loop].loop.loop_body;
-        ast_id post_body = (*astp)->nodes[loop_body].loop_body.post_body;
+        ast_id loop_body = (*astp)->nodes[loop].loop1.loop2;
+        ast_id post_body = (*astp)->nodes[loop_body].loop2.post_body;
         ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
         (*astp)->nodes[cont].cont.step = post_body;
     }
@@ -68,17 +68,17 @@ check_cont(
             return err_loop_cont(
                 ast, cont, first_loop, source_filename, source_text);
 
-        if (ast_node_type(ast, loop) == AST_LOOP)
+        if (ast_node_type(ast, loop) == AST_LOOP1)
         {
             if (ast->nodes[cont].cont.name.len == 0
                 || utf8_equal_span(
                     source_text,
                     ast->nodes[cont].cont.name,
-                    ast->nodes[loop].loop.name)
+                    ast->nodes[loop].loop1.name)
                 || utf8_equal_span(
                     source_text,
                     ast->nodes[cont].cont.name,
-                    ast->nodes[loop].loop.implicit_name))
+                    ast->nodes[loop].loop1.implicit_name))
             {
                 return loop;
             }

@@ -44,9 +44,9 @@ TEST_F(NAME, continue_no_name)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
-    ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id loop_body = ast->nodes[loop].loop.loop_body;
-    ast_id body = ast->nodes[loop_body].loop_body.body;
+    ast_id loop1 = ast->nodes[loop_block].block.stmt;
+    ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+    ast_id body = ast->nodes[loop2].loop2.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cont_stmt), Eq(AST_LOOP_CONT));
@@ -65,9 +65,9 @@ TEST_F(NAME, continue_implicitly_named_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
-    ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id loop_body = ast->nodes[loop].loop.loop_body;
-    ast_id body = ast->nodes[loop_body].loop_body.body;
+    ast_id loop1 = ast->nodes[loop_block].block.stmt;
+    ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+    ast_id body = ast->nodes[loop2].loop2.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cont_stmt), Eq(AST_LOOP_CONT));
@@ -86,9 +86,9 @@ TEST_F(NAME, continue_named_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(0)) << log().text;
 
     ast_id loop_block = ast->nodes[ast->root].block.next;
-    ast_id loop = ast->nodes[loop_block].block.stmt;
-    ast_id loop_body = ast->nodes[loop].loop.loop_body;
-    ast_id body = ast->nodes[loop_body].loop_body.body;
+    ast_id loop1 = ast->nodes[loop_block].block.stmt;
+    ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+    ast_id body = ast->nodes[loop2].loop2.body;
     ast_id cont_block = ast->nodes[body].block.next;
     ast_id cont_stmt = ast->nodes[cont_block].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cont_stmt), Eq(AST_LOOP_CONT));

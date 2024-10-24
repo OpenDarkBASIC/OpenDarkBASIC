@@ -112,8 +112,8 @@ process_node(
         case AST_UNOP:
         case AST_COND:
         case AST_COND_BRANCHES:
-        case AST_LOOP:
-        case AST_LOOP_BODY:
+        case AST_LOOP1:
+        case AST_LOOP2:
         case AST_LOOP_FOR1:
         case AST_LOOP_FOR2:
         case AST_LOOP_FOR3:

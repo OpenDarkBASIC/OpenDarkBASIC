@@ -81,8 +81,8 @@ enum ast_type
     AST_UNOP,
     AST_COND,
     AST_COND_BRANCHES,
-    AST_LOOP,
-    AST_LOOP_BODY,
+    AST_LOOP1,
+    AST_LOOP2,
     AST_LOOP_FOR1,
     AST_LOOP_FOR2,
     AST_LOOP_FOR3,
@@ -233,14 +233,14 @@ union ast_node
 
     struct {
         struct info info;
-        ast_id loop_body;
+        ast_id loop2;
         /* Before semantic, this points to a list of nodes containing details of
          * the for-loop. After semantic, these nodes are removed and the property
          * is set to -1 */
         ast_id loop_for1;
         struct utf8_span name;
         struct utf8_span implicit_name;
-    } loop;
+    } loop1;
     /* The body is split up into the "body" (block of statements) and a piece
      * of code that is executed at the very end of the loop. The info needs to
      * be kept separate because the "continue" keyword is able to override this
@@ -249,7 +249,7 @@ union ast_node
         struct info info;
         ast_id body;
         ast_id post_body;
-    } loop_body;
+    } loop2;
     /* Holds info necessary for semantic to generate error messages.
      * Instances of these nodes are removed from the tree during
      * semantic analysis. It's necessary to split them up like this because all

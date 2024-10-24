@@ -214,19 +214,19 @@ ast_trees_equal(
             break;
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
-        case AST_LOOP:
+        case AST_LOOP1:
             if (!utf8_equal(
-                    utf8_span_view(source_text, ast->nodes[n1].loop.name),
-                    utf8_span_view(source_text, ast->nodes[n2].loop.name)))
+                    utf8_span_view(source_text, ast->nodes[n1].loop1.name),
+                    utf8_span_view(source_text, ast->nodes[n2].loop1.name)))
                 return 0;
             if (!utf8_equal(
                     utf8_span_view(
-                        source_text, ast->nodes[n1].loop.implicit_name),
+                        source_text, ast->nodes[n1].loop1.implicit_name),
                     utf8_span_view(
-                        source_text, ast->nodes[n2].loop.implicit_name)))
+                        source_text, ast->nodes[n2].loop1.implicit_name)))
                 return 0;
             break;
-        case AST_LOOP_BODY: break;
+        case AST_LOOP2: break;
         case AST_LOOP_FOR1: break;
         case AST_LOOP_FOR2: break;
         case AST_LOOP_FOR3: break;

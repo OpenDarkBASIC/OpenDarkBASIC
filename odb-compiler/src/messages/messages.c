@@ -433,10 +433,10 @@ err_loop_cont(
     }
     else
     {
-        struct utf8_span name = ast->nodes[first_loop].loop.name.len
-                                    ? ast->nodes[first_loop].loop.name
-                                : ast->nodes[first_loop].loop.implicit_name.len
-                                    ? ast->nodes[first_loop].loop.implicit_name
+        struct utf8_span name = ast->nodes[first_loop].loop1.name.len
+                                    ? ast->nodes[first_loop].loop1.name
+                                : ast->nodes[first_loop].loop1.implicit_name.len
+                                    ? ast->nodes[first_loop].loop1.implicit_name
                                     : empty_utf8_span();
         log_flc_err(
             filename,
@@ -485,10 +485,10 @@ err_loop_exit_unknown_name(
     int              gutter;
     struct utf8_span name;
 
-    if (ast->nodes[first_loop].loop.name.len > 0)
-        name = ast->nodes[first_loop].loop.name;
-    else if (ast->nodes[first_loop].loop.implicit_name.len > 0)
-        name = ast->nodes[first_loop].loop.implicit_name;
+    if (ast->nodes[first_loop].loop1.name.len > 0)
+        name = ast->nodes[first_loop].loop1.name;
+    else if (ast->nodes[first_loop].loop1.implicit_name.len > 0)
+        name = ast->nodes[first_loop].loop1.implicit_name;
     else
         name = empty_utf8_span();
 

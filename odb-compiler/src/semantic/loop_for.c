@@ -40,8 +40,8 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_UNOP: break;
         case AST_COND: break;
         case AST_COND_BRANCHES: break;
-        case AST_LOOP: break;
-        case AST_LOOP_BODY: break;
+        case AST_LOOP1: break;
+        case AST_LOOP2: break;
         case AST_LOOP_FOR1: break;
         case AST_LOOP_FOR2: break;
         case AST_LOOP_FOR3: break;
@@ -176,7 +176,8 @@ create_exit_stmt(
     ast_id exit_cond_block = ast_block(astp, exit, begin_loc);
     ast_id exit_cond_branch
         = ast_cond_branches(astp, exit_cond_block, -1, begin_loc);
-    ast_id exit_var = ast_dup_identifier(astp, loop_var);
+    ast_id exit_ident = ast_dup_identifier(astp, loop_var);
+    ast_id exit_var = ast_var_ref(astp, exit_ident, begin_loc);
     ast_id exit_expr
         = ast_binop(astp, cmp_op, exit_var, end, begin_loc, end_loc);
     ast_id exit_stmt = ast_cond(astp, exit_expr, exit_cond_branch, begin_loc);
@@ -194,7 +195,7 @@ convert_for_loop_to_primitives(
 
     loop_loc = ast_loc(*astp, loop);
 
-    for1 = (*astp)->nodes[loop].loop.loop_for1;
+    for1 = (*astp)->nodes[loop].loop1.loop_for1;
     ODBUTIL_DEBUG_ASSERT(for1 > -1, log_semantic_err("loop_for1: %d\n", for1));
     for2 = (*astp)->nodes[for1].loop_for1.loop_for2;
     ODBUTIL_DEBUG_ASSERT(for2 > -1, log_semantic_err("loop_for2: %d\n", for2));
@@ -207,17 +208,35 @@ convert_for_loop_to_primitives(
     next = (*astp)->nodes[for3].loop_for3.next;
     ODBUTIL_DEBUG_ASSERT(init > -1, log_semantic_err("init: %d\n", init));
     ODBUTIL_DEBUG_ASSERT(end > -1, log_semantic_err("end: %d\n", end));
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type((*astp), init) == AST_ASSIGNMENT,
-        log_semantic_err("type: %d\n", ast_node_type((*astp), init)));
-    loop_var = (*astp)->nodes[init].assignment.lvalue;
-    begin = (*astp)->nodes[init].assignment.expr;
 
-    loop_body = (*astp)->nodes[loop].loop.loop_body;
+    /* Init expression can be an assignment (includes array/udt refs), but it
+     * also makes an exception to allow for variable declarations with AS TYPE
+     */
+    switch (ast_node_type(*astp, init))
+    {
+        case AST_ASSIGNMENT: {
+            ast_id lvalue = (*astp)->nodes[init].assignment.lvalue;
+            loop_var = (*astp)->nodes[lvalue].var_ref.identifier;
+            begin = (*astp)->nodes[init].assignment.expr;
+            break;
+        }
+        case AST_VAR_DECL1: {
+            ast_id decl2 = (*astp)->nodes[init].var_decl1.var_decl2;
+            loop_var = (*astp)->nodes[decl2].var_decl2.identifier;
+            begin = (*astp)->nodes[init].var_decl1.init_expr;
+            break;
+        }
+        default:
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("", "type: %d\n", ast_node_type(*astp, init)));
+            return -1;
+    }
+
+    loop_body = (*astp)->nodes[loop].loop1.loop2;
     ODBUTIL_DEBUG_ASSERT(
         loop_body > -1, log_semantic_err("loop_body: %d\n", loop_body));
-    body = (*astp)->nodes[loop_body].loop_body.body;
-    post_body = (*astp)->nodes[loop_body].loop_body.post_body;
+    body = (*astp)->nodes[loop_body].loop2.body;
+    post_body = (*astp)->nodes[loop_body].loop2.post_body;
     ODBUTIL_DEBUG_ASSERT(
         post_body == -1, log_semantic_err("post_body: %d\n", post_body));
 
@@ -226,10 +245,16 @@ convert_for_loop_to_primitives(
      * "next" belongs to. */
     if (next > -1)
     {
-        if (!ast_trees_equal(source, *astp, loop_var, next))
+        ast_id next_var;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(*astp, next) == AST_VAR_REF,
+            log_err("", "type: %d\n", ast_node_type(*astp, next)));
+        next_var = (*astp)->nodes[next].var_ref.identifier;
+
+        if (!ast_trees_equal(source, *astp, loop_var, next_var))
         {
             warn_loop_for_incorrect_next(
-                *astp, next, loop_var, filename, source);
+                *astp, next_var, loop_var, filename, source);
         }
 
         (*astp)->nodes[for3].loop_for3.next = -1;
@@ -248,7 +273,8 @@ convert_for_loop_to_primitives(
     /* Create the post-increment statement. This gets inserted into the loop's
      * "post_body" property, which will effectively insert it at the end of the
      * body later on */
-    ast_id inc_var = ast_dup_identifier(astp, loop_var);
+    ast_id inc_ident = ast_dup_identifier(astp, loop_var);
+    ast_id inc_var = ast_var_ref(astp, inc_ident, loop_loc);
     ast_id inc_stmt
         = step > -1 ? ast_inc_step(astp, inc_var, step, ast_loc(*astp, step))
                     : ast_inc(astp, inc_var, ast_loc(*astp, inc_var));
@@ -256,14 +282,14 @@ convert_for_loop_to_primitives(
     /* Insert the exit condition into the beginning of the loop body */
     ast_id exit_block = ast_block(astp, exit_stmt, loop_loc);
     (*astp)->nodes[exit_block].block.next = body;
-    (*astp)->nodes[loop_body].loop_body.body = exit_block;
+    (*astp)->nodes[loop_body].loop2.body = exit_block;
 
     /* Insert post-increment into the end, and make sure to remove it as a child
      * from the loop_for nodes */
     ODBUTIL_DEBUG_ASSERT(
         post_body == -1, log_semantic_err("post_body: %d\n", post_body));
     ast_id inc_block = ast_block(astp, inc_stmt, loop_loc);
-    (*astp)->nodes[loop_body].loop_body.post_body = inc_block;
+    (*astp)->nodes[loop_body].loop2.post_body = inc_block;
     (*astp)->nodes[for3].loop_for3.step = -1;
 
     /* Loop variable initialization statement is inserted outside of the loop */
@@ -285,7 +311,7 @@ convert_for_loop_to_primitives(
     (*astp)->nodes[loop_block].block.stmt = tmp;
 
     /* Clean up dangling nodes */
-    (*astp)->nodes[loop].loop.loop_for1 = -1;
+    (*astp)->nodes[loop].loop1.loop_for1 = -1;
     ast_delete_tree((*astp), for1);
 
     return 0;
@@ -311,9 +337,9 @@ loop_for(
 
     for (n = 0; n != ast_count(ast); ++n)
     {
-        if (ast_node_type(ast, n) != AST_LOOP)
+        if (ast_node_type(ast, n) != AST_LOOP1)
             continue;
-        if (ast->nodes[n].loop.loop_for1 == -1)
+        if (ast->nodes[n].loop1.loop_for1 == -1)
             continue;
 
         if (convert_for_loop_to_primitives(astp, n, filename, source) != 0)

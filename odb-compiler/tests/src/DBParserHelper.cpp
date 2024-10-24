@@ -31,11 +31,8 @@ DBParserHelper::DBParserHelper()
 
 DBParserHelper::~DBParserHelper()
 {
-    if (ast)
-    {
-    }
-
     mutex_destroy(ast_mutex);
+    ast_deinit(ast);
 
     struct plugin_info* plugin;
     vec_for_each(plugins, plugin)
@@ -44,7 +41,6 @@ DBParserHelper::~DBParserHelper()
         utf8_deinit(plugin->name);
     }
 
-    ast_deinit(ast);
     db_parser_deinit(&p);
     if (src.text.data)
         db_source_close(&src);
@@ -61,6 +57,12 @@ DBParserHelper::parse(const char* code)
         db_source_close(&src);
     if (db_source_open_string(&src, cstr_utf8_view(code)) != 0)
         return -1;
+
+    if (ast)
+    {
+        ast_deinit(ast);
+        ast_init(&ast);
+    }
 
     result = db_parse(&p, &ast, "test", src, &cmds);
 #if defined(ODBCOMPILER_DOT_EXPORT)

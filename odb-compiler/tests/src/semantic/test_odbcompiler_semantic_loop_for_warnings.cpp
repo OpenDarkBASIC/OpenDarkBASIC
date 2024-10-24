@@ -18,9 +18,9 @@ struct NAME : DBParserHelper, LogHelper, Test
     getExitOp()
     {
         ast_id loop_block = ast->nodes[ast->root].block.next;
-        ast_id loop = ast->nodes[loop_block].block.stmt;
-        ast_id loop_body = ast->nodes[loop].loop.loop_body;
-        ast_id body = ast->nodes[loop_body].loop_body.body;
+        ast_id loop1 = ast->nodes[loop_block].block.stmt;
+        ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+        ast_id body = ast->nodes[loop2].loop2.body;
         ast_id exit_cond = ast->nodes[body].block.stmt;
         ast_id exit_expr = ast->nodes[exit_cond].cond.expr;
         return ast->nodes[exit_expr].binop.op;
