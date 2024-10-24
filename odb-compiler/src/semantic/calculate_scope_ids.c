@@ -34,13 +34,16 @@ process_node(
             ast->nodes[n].info.scope_id = current_scope;
             ast->nodes[f1].info.scope_id = current_scope;
             ast->nodes[f2].info.scope_id = current_scope;
-            ast->nodes[f3].info.scope_id = current_scope;
-            ast->nodes[f4].info.scope_id = current_scope;
             ast->nodes[identifier].info.scope_id = current_scope;
             if (as > -1)
                 ast->nodes[as].info.scope_id = current_scope;
 
             current_scope = ++(*scope_counter);
+
+            /* f3 and f4 contain the paramlist, body and return value, which
+             * belong to the new scope */
+            ast->nodes[f3].info.scope_id = current_scope;
+            ast->nodes[f4].info.scope_id = current_scope;
 
             if (paramlist > -1)
                 process_node(ast, paramlist, current_scope, scope_counter);

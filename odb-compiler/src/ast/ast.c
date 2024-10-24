@@ -651,9 +651,8 @@ ast_loop_exit(
 static int
 ast_func_is_polymorphic(const struct ast* ast, ast_id paramlist)
 {
-    ODBUTIL_DEBUG_ASSERT(paramlist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, paramlist) == AST_PARAMLIST,
+        paramlist == -1 || ast_node_type(ast, paramlist) == AST_PARAMLIST,
         log_err("", "type: %d\n", ast_node_type(ast, paramlist)));
 
     for (; paramlist > -1; paramlist = ast->nodes[paramlist].paramlist.next)
@@ -959,8 +958,7 @@ ast_as(struct ast** astp, ast_id expr, struct utf8_span location)
 }
 
 ast_id
-ast_as_type(
-    struct ast** astp, enum type target_type, struct utf8_span location)
+ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location)
 {
     ast_id as = ast_as(astp, target_type, location);
     ast_id n = new_node(astp, AST_AS, location);

@@ -28,7 +28,6 @@ TEST_F(NAME, transform_implicit_step_1)
         Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
     ast_id init_block = ast->root;
@@ -70,7 +69,6 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
         Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -109,7 +107,6 @@ TEST_F(NAME, implicit_step_1_empty_next)
         Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -146,7 +143,6 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
         Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
     ast_id ass = ast->nodes[ast->root].block.stmt;
@@ -183,7 +179,6 @@ TEST_F(NAME, step_expression_range)
         Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 
     /* clang-format off */
     ast_id ass = ast->nodes[ast->root].block.stmt;

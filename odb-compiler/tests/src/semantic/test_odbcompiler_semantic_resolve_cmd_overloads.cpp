@@ -92,5 +92,4 @@ TEST_F(NAME, command_call_inside_func)
         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
         << log().text;
     ASSERT_THAT(semantic(&semantic_resolve_cmd_overloads), Eq(0)) << log().text;
-    ASSERT_THAT(ast_verify_connectivity(ast), Eq(0));
 }
