@@ -11,7 +11,9 @@
 #endif
 
 #include <ctype.h>
+#include <inttypes.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,7 +75,7 @@ reset_style(void)
 }
 
 static void
-log_vflc(
+print_vflc(
     const char*     filename,
     const char*     source,
     struct str_view loc,
@@ -113,7 +115,7 @@ print_flc(
 {
     va_list ap;
     va_start(ap, fmt);
-    log_vflc(filename, source, loc, fmt, ap);
+    print_vflc(filename, source, loc, fmt, ap);
     va_end(ap);
 }
 
@@ -265,6 +267,22 @@ print_error(const char* fmt, ...)
     vfprintf(stderr, fmt, ap);
     va_end(ap);
 
+    return -1;
+}
+
+static int
+print_loc_error(
+    const char*     filename,
+    const char*     source,
+    struct str_view loc,
+    const char*     fmt,
+    ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    print_vflc(filename, source, loc, fmt, ap);
+    va_end(ap);
+    print_excerpt(filename, source, loc);
     return -1;
 }
 
@@ -853,7 +871,19 @@ struct cfg
 {
     const char* input_fname;
     const char* output_fname;
+    unsigned    export_ast : 1;
+    unsigned    export_depgraph : 1;
 };
+
+static int
+print_help(const char* prog_name)
+{
+    fprintf(
+        stderr,
+        "Usage: %s -i <specification filename> -o <output filename>\n",
+        prog_name);
+    return 1;
+}
 
 static int
 parse_cmdline(int argc, char** argv, struct cfg* cfg)
@@ -862,13 +892,7 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
     for (i = 1; i < argc; ++i)
     {
         if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
-        {
-            fprintf(
-                stderr,
-                "Usage: %s -i <specification filename> -o <output filename>\n",
-                argv[0]);
-            return 1;
-        }
+            return print_help(argv[0]);
         else if (strcmp(argv[i], "-i") == 0)
         {
             if (i + 1 >= argc)
@@ -882,6 +906,15 @@ parse_cmdline(int argc, char** argv, struct cfg* cfg)
                 return print_error("Missing output filename to option -o\n");
 
             cfg->output_fname = argv[++i];
+        }
+        else if (strcmp(argv[i], "--ast") == 0)
+            cfg->export_ast = 1;
+        else if (strcmp(argv[i], "--depgraph") == 0)
+            cfg->export_depgraph = 1;
+        else
+        {
+            print_error("Unknown option \"%s\"\n", argv[i]);
+            return print_help(argv[0]);
         }
     }
 
@@ -950,13 +983,13 @@ parser_init(struct parser* p, struct mfile* mf, const char* filename)
 }
 
 static int
-print_loc_error(struct parser* p, const char* fmt, ...)
+print_parser_error(struct parser* p, const char* fmt, ...)
 {
     va_list         ap;
     struct str_view loc = {p->tail, p->head - p->tail};
 
     va_start(ap, fmt);
-    log_vflc(p->filename, p->data, loc, fmt, ap);
+    print_vflc(p->filename, p->data, loc, fmt, ap);
     va_end(ap);
     print_excerpt(p->filename, p->data, loc);
 
@@ -1043,7 +1076,7 @@ peek_next(struct parser* p)
                 if (p->data[p->head] == '"' && p->data[p->head - 1] != '\\')
                     break;
             if (p->head == p->end)
-                return p->token = print_loc_error(
+                return p->token = print_parser_error(
                            p, "Missing closing quote on string\n");
             p->value.str.len = p->head++ - p->value.str.off;
             return p->token = TOK_STRING;
@@ -1053,12 +1086,12 @@ peek_next(struct parser* p)
         {
             ++p->head;
             if (p->head == p->end || p->data[p->head] == '\'')
-                return p->token = print_loc_error(
+                return p->token = print_parser_error(
                            p, "Missing character in character literal\n");
             p->value.chr = p->data[p->head];
             ++p->head;
             if (p->head == p->end || p->data[p->head] != '\'')
-                return p->token = print_loc_error(
+                return p->token = print_parser_error(
                            p, "Missing closing quote on character literal\n");
             ++p->head;
             return p->token = TOK_CHAR;
@@ -1235,23 +1268,25 @@ parse_runafter(struct parser* p, struct strlist** runafter)
     {
         consume(p);
         if (scan_next(p) != TOK_IDENTIFIER)
-            return print_loc_error(p, "Expected identifier after 'runafter'\n");
+            return print_parser_error(
+                p, "Expected identifier after 'runafter'\n");
+        strlist_add(runafter, p->value.str);
         while (peek_next(p) == ',')
         {
             consume(p);
             if (scan_next(p) != TOK_IDENTIFIER)
-                return print_loc_error(p, "Expected identifier after ','\n");
+                return print_parser_error(p, "Expected identifier after ','\n");
             strlist_add(runafter, p->value.str);
         }
         if (scan_next(p) != '}')
-            return print_loc_error(
+            return print_parser_error(
                 p, "Missing closing '}' for 'runafter' block\n");
 
         return 0;
     }
 
     if (scan_next(p) != TOK_IDENTIFIER)
-        return print_loc_error(p, "Expected identifier after 'runafter'\n");
+        return print_parser_error(p, "Expected identifier after 'runafter'\n");
     strlist_add(runafter, p->value.str);
 
     return 0;
@@ -1264,24 +1299,26 @@ parse_requires(struct parser* p, struct strlist** requires)
     {
         consume(p);
         if (scan_next(p) != TOK_IDENTIFIER)
-            return print_loc_error(p, "Expected identifier after 'requires'\n");
+            return print_parser_error(
+                p, "Expected identifier after 'requires'\n");
+        strlist_add(requires, p->value.str);
         while (peek_next(p) == ',' || peek_next(p) == '|')
         {
             consume(p);
             if (scan_next(p) != TOK_IDENTIFIER)
-                return print_loc_error(
+                return print_parser_error(
                     p, "Expected identifier after ',' or '|'\n");
             strlist_add(requires, p->value.str);
         }
         if (scan_next(p) != '}')
-            return print_loc_error(
+            return print_parser_error(
                 p, "Missing closing '}' for 'requires' block\n");
 
         return 0;
     }
 
     if (scan_next(p) != TOK_IDENTIFIER)
-        return print_loc_error(p, "Expected identifier after 'requires'\n");
+        return print_parser_error(p, "Expected identifier after 'requires'\n");
     strlist_add(requires, p->value.str);
 
     return 0;
@@ -1301,7 +1338,7 @@ parse_option(struct parser* p, struct option* option)
                 struct help_lang* help_lang = option->help;
                 for (; help_lang; help_lang = help_lang->next)
                     if (str_equal(help_lang->lang, p->value.str, p->data))
-                        return print_loc_error(
+                        return print_parser_error(
                             p, "Duplicate 'help' entry for language\n");
                 help_lang = new_help_lang(p->value.str);
                 help_lang->next = option->help;
@@ -1309,10 +1346,10 @@ parse_option(struct parser* p, struct option* option)
                 consume(p);
 
                 if (scan_next(p) != ':')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected ':' after 'language'\n");
                 if (peek_next(p) != TOK_STRING)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected help string after 'language'\n");
                 while (peek_next(p) == TOK_STRING)
                 {
@@ -1328,14 +1365,15 @@ parse_option(struct parser* p, struct option* option)
 
             case TOK_SHORT: {
                 if (option->short_name)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Duplicate 'short' in option block\n");
 
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'short'\n");
+                    return print_parser_error(
+                        p, "Expected ':' after 'short'\n");
                 if (scan_next(p) != TOK_CHAR)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected character after 'short'\n");
                 option->short_name = p->value.chr;
 
@@ -1345,7 +1383,7 @@ parse_option(struct parser* p, struct option* option)
             case TOK_ARGS: {
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'args'\n");
+                    return print_parser_error(p, "Expected ':' after 'args'\n");
                 while (peek_next(p) == '[' || peek_next(p) == ']'
                        || peek_next(p) == '<' || peek_next(p) == '>'
                        || peek_next(p) == '|' || peek_next(p) == TOK_IDENTIFIER
@@ -1356,14 +1394,14 @@ parse_option(struct parser* p, struct option* option)
 
             case TOK_FUNC: {
                 if (option->func.len)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Duplicate 'func' in option block\n");
 
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'func'\n");
+                    return print_parser_error(p, "Expected ':' after 'func'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected identifier after 'func'\n");
                 option->func = p->value.str;
 
@@ -1373,7 +1411,7 @@ parse_option(struct parser* p, struct option* option)
             case TOK_RUNAFTER: {
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected ':' after 'runafter'\n");
                 if (parse_runafter(p, &option->runafter) != 0)
                     return -1;
@@ -1383,7 +1421,7 @@ parse_option(struct parser* p, struct option* option)
             case TOK_REQUIRES: {
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected ':' after 'requires'\n");
                 if (parse_requires(p, &option->require) != 0)
                     return -1;
@@ -1393,7 +1431,8 @@ parse_option(struct parser* p, struct option* option)
             case '}': return 0;
 
             default:
-                return print_loc_error(p, "Unexpected token in option block\n");
+                return print_parser_error(
+                    p, "Unexpected token in option block\n");
         }
     }
 }
@@ -1410,15 +1449,16 @@ parse_task(struct parser* p, struct task* task)
 
             case TOK_FUNC: {
                 if (task->func.len)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Duplicate 'func' in task block\n");
 
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'func'\n");
+                    return print_parser_error(p, "Expected ':' after 'func'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected identifier after 'func'\n");
+                task->func = p->value.str;
 
                 break;
             }
@@ -1426,7 +1466,7 @@ parse_task(struct parser* p, struct task* task)
             case TOK_RUNAFTER: {
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected ':' after 'runafter'\n");
                 if (parse_runafter(p, &task->runafter) != 0)
                     return -1;
@@ -1436,7 +1476,8 @@ parse_task(struct parser* p, struct task* task)
             case '}': return 0;
 
             default:
-                return print_loc_error(p, "Unexpected token in task block\n");
+                return print_parser_error(
+                    p, "Unexpected token in task block\n");
         }
     }
 }
@@ -1456,19 +1497,20 @@ parse_section(struct parser* p, struct section* section)
 
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'option'\n");
+                    return print_parser_error(
+                        p, "Expected ':' after 'option'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected option name after 'option'\n");
 
                 option = new_option(p->value.str);
                 if (scan_next(p) != '{')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected opening '{' for option block\n");
                 if (parse_option(p, option) != 0)
                     return -1;
                 if (scan_next(p) != '}')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Missing closing '}' for previous option block\n");
 
                 option->next = section->options;
@@ -1481,19 +1523,19 @@ parse_section(struct parser* p, struct section* section)
 
                 consume(p);
                 if (scan_next(p) != ':')
-                    return print_loc_error(p, "Expected ':' after 'task'\n");
+                    return print_parser_error(p, "Expected ':' after 'task'\n");
                 if (scan_next(p) != TOK_IDENTIFIER)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected identifier after 'task'\n");
 
                 task = new_task(p->value.str);
                 if (scan_next(p) != '{')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected opening '{' for option block\n");
                 if (parse_task(p, task) != 0)
                     return -1;
                 if (scan_next(p) != '}')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Missing closing '}' for previous option block\n");
 
                 task->next = section->tasks;
@@ -1505,7 +1547,7 @@ parse_section(struct parser* p, struct section* section)
                 struct help_lang* help_lang = section->help;
                 for (; help_lang; help_lang = help_lang->next)
                     if (str_equal(help_lang->lang, p->value.str, p->data))
-                        return print_loc_error(
+                        return print_parser_error(
                             p, "Duplicate 'help' entry for language\n");
                 help_lang = new_help_lang(p->value.str);
                 help_lang->next = section->help;
@@ -1513,10 +1555,10 @@ parse_section(struct parser* p, struct section* section)
                 consume(p);
 
                 if (scan_next(p) != ':')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected ':' after 'language'\n");
                 if (peek_next(p) != TOK_STRING)
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected help string after 'language'\n");
                 while (peek_next(p) == TOK_STRING)
                 {
@@ -1533,7 +1575,7 @@ parse_section(struct parser* p, struct section* section)
             case '}': return 0;
 
             default:
-                return print_loc_error(
+                return print_parser_error(
                     p, "Unexpected token in section block\n");
         }
     }
@@ -1554,7 +1596,7 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
                 if (scan_next(p) == ':')
                 {
                     if (scan_next(p) != TOK_IDENTIFIER)
-                        return print_loc_error(
+                        return print_parser_error(
                             p, "Expected section name after ':'\n");
                     section = new_section(p->value.str);
                 }
@@ -1562,12 +1604,12 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
                     section = new_section(empty_str_view());
 
                 if (scan_next(p) != '{')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Expected opening '{' for section block\n");
                 if (parse_section(p, section) != 0)
                     return -1;
                 if (scan_next(p) != '}')
-                    return print_loc_error(
+                    return print_parser_error(
                         p, "Missing closing '}' for previous section block\n");
 
                 section->next = root->sections;
@@ -1575,9 +1617,118 @@ parse(struct parser* p, struct root* root, const struct cfg* cfg)
                 break;
             }
 
-            default: return print_loc_error(p, "Unexpected token\n");
+            default: return print_parser_error(p, "Unexpected token\n");
         }
     }
+}
+
+/* ----------------------------------------------------------------------------
+ * Export AST
+ * ------------------------------------------------------------------------- */
+
+static void
+export_ast_strlist(
+    FILE*                 fp,
+    const void*           parent,
+    const struct strlist* strlist,
+    const char*           data,
+    const char*           edge_label)
+{
+    for (; strlist; strlist = strlist->next)
+    {
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " [shape=\"record\", label=\"%.*s\"];\n",
+            (intptr_t)strlist,
+            strlist->string.len,
+            data + strlist->string.off);
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " -> n%" PRIxPTR " [label=\"%s\"];\n",
+            (intptr_t)parent,
+            (intptr_t)strlist,
+            edge_label);
+    }
+}
+
+static void
+export_ast_option(
+    FILE* fp, const void* parent, const struct option* option, const char* data)
+{
+    for (; option; option = option->next)
+    {
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " [shape=\"record\", label=\"--%.*s\"];\n",
+            (intptr_t)option,
+            option->name.len,
+            data + option->name.off);
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " -> n%" PRIxPTR " [label=\"option\"];\n",
+            (intptr_t)parent,
+            (intptr_t)option);
+        export_ast_strlist(fp, option, option->runafter, data, "runafter");
+        export_ast_strlist(fp, option, option->require, data, "require");
+    }
+}
+
+static void
+export_ast_task(
+    FILE* fp, const void* parent, const struct task* task, const char* data)
+{
+    for (; task; task = task->next)
+    {
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " [shape=\"record\", label=\"%.*s\"];\n",
+            (intptr_t)task,
+            task->name.len,
+            data + task->name.off);
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " -> n%" PRIxPTR " [label=\"task\"];\n",
+            (intptr_t)parent,
+            (intptr_t)task);
+
+        export_ast_strlist(fp, task, task->runafter, data, "runafter");
+    }
+}
+
+static void
+export_ast_section(
+    FILE*                 fp,
+    const void*           parent,
+    const struct section* section,
+    const char*           data)
+{
+    for (; section; section = section->next)
+    {
+        fprintf(
+            fp,
+            "  n%" PRIxPTR " [label=\"%.*s\"];\n",
+            (intptr_t)section,
+            section->name.len,
+            data + section->name.off);
+        fprintf(
+            fp,
+            "  n0 -> n%" PRIxPTR " [label=\"section\"];\n",
+            (intptr_t)section);
+
+        export_ast_option(fp, section, section->options, data);
+        export_ast_task(fp, section, section->tasks, data);
+    }
+}
+
+static int
+export_ast(FILE* fp, const struct root* root, const char* data)
+{
+    fprintf(fp, "digraph ast {\n");
+    fprintf(fp, "  n0 [label=\"root\"];\n");
+    export_ast_section(fp, NULL, root->sections, data);
+    fprintf(fp, "}\n");
+
+    return 0;
 }
 
 /* ----------------------------------------------------------------------------
@@ -1590,6 +1741,18 @@ enum node_type
     NODE_TASK,
 };
 
+struct intlist
+{
+    int count;
+    int data[1];
+};
+
+static int
+intlist_count(const struct intlist* list)
+{
+    return list ? list->count : 0;
+}
+
 struct node
 {
     union
@@ -1598,15 +1761,16 @@ struct node
         const struct task*   task;
     } ref;
 
-    int*           children;
-    int            priority;
-    enum node_type type;
+    struct intlist* runafter;
+    struct intlist* require;
+    int             priority;
+    enum node_type  type;
 };
 
 struct graph
 {
-    int         node_count;
-    struct node table[1];
+    int         count;
+    struct node nodes[1];
 };
 
 static int
@@ -1622,40 +1786,255 @@ count_tasks_and_options(const struct root* root)
     return count;
 }
 
-static struct node*
-create_dependency_graph_from_ast(const struct root* root)
+static struct str_view
+node_name(const struct node* node)
 {
-    const struct section* section;
-    int                   node;
-    int                   node_count = count_tasks_and_options(root);
-    struct node*          table = malloc(sizeof(*table) * node_count);
+    switch (node->type)
+    {
+        case NODE_OPTION: return node->ref.option->name;
+        case NODE_TASK: return node->ref.task->name;
+    }
 
-    node = 0;
+    return empty_str_view();
+}
+
+static struct str_view
+node_func(const struct node* node)
+{
+    switch (node->type)
+    {
+        case NODE_OPTION: return node->ref.option->func;
+        case NODE_TASK: return node->ref.task->func;
+    }
+
+    return empty_str_view();
+}
+
+static int
+find_node_with_name(
+    const struct graph* graph,
+    struct str_view     name,
+    const char*         filename,
+    const char*         source)
+{
+    int node;
+    for (node = 0; node != graph->count; node++)
+    {
+        switch (graph->nodes[node].type)
+        {
+            case NODE_OPTION:
+                if (str_equal(
+                        graph->nodes[node].ref.option->name, name, source))
+                    return node;
+                break;
+
+            case NODE_TASK:
+                if (str_equal(graph->nodes[node].ref.task->name, name, source))
+                    return node;
+                break;
+        }
+    }
+
+    return print_loc_error(
+        filename,
+        source,
+        name,
+        "No task or option with name \"%.*s\" found.\n",
+        name.len,
+        source + name.off);
+}
+
+static int
+add_dependencies_node(
+    struct graph*         graph,
+    struct intlist**      deplist,
+    const struct strlist* dep_names,
+    const char*           filename,
+    const char*           source)
+{
+    int child;
+    int dep_count = ll_count((const struct ll*)dep_names);
+
+    if (dep_count == 0)
+        return 0;
+
+    *deplist = realloc(*deplist, sizeof((*deplist)->data[0]) * dep_count);
+    for (; dep_names; dep_names = dep_names->next)
+    {
+        child = find_node_with_name(graph, dep_names->string, filename, source);
+        if (child < 0)
+            return -1;
+        (*deplist)->data[(*deplist)->count++] = child;
+    }
+
+    return 0;
+}
+
+static int
+add_dependencies(struct graph* graph, const char* filename, const char* source)
+{
+    int node;
+    for (node = 0; node != graph->count; node++)
+    {
+        switch (graph->nodes[node].type)
+        {
+            case NODE_OPTION:
+                if (add_dependencies_node(
+                        graph,
+                        &graph->nodes[node].runafter,
+                        graph->nodes[node].ref.option->runafter,
+                        filename,
+                        source)
+                    != 0)
+                {
+                    return -1;
+                }
+                if (add_dependencies_node(
+                        graph,
+                        &graph->nodes[node].require,
+                        graph->nodes[node].ref.option->require,
+                        filename,
+                        source)
+                    != 0)
+                {
+                    return -1;
+                }
+                break;
+
+            case NODE_TASK:
+                if (add_dependencies_node(
+                        graph,
+                        &graph->nodes[node].runafter,
+                        graph->nodes[node].ref.task->runafter,
+                        filename,
+                        source)
+                    != 0)
+                {
+                    return -1;
+                }
+                break;
+        }
+    }
+
+    return 0;
+}
+
+static int
+find_duplicate_names(
+    const struct graph* graph, const char* filename, const char* source)
+{
+    int n1, n2;
+    for (n1 = 0; n1 != graph->count; ++n1)
+        for (n2 = n1 + 1; n2 < graph->count; ++n2)
+        {
+            struct str_view name1 = node_name(&graph->nodes[n1]);
+            struct str_view name2 = node_name(&graph->nodes[n2]);
+            if (str_equal(name1, name2, source))
+            {
+                print_loc_error(
+                    filename,
+                    source,
+                    name1,
+                    "Duplicate task or option name \"%.*s\".\n",
+                    name1.len,
+                    source + name1.off);
+                return print_loc_error(
+                    filename, source, name2, "Previously defined here.\n");
+            }
+        }
+
+    return 0;
+}
+
+static struct graph*
+create_dependency_graph_from_ast(
+    const struct root* root, const char* filename, const char* source)
+{
+    struct graph*         graph;
+    const struct section* section;
+    int                   node_count = count_tasks_and_options(root);
+
+    if (node_count == 0)
+        return NULL;
+
+    graph = malloc(
+        offsetof(struct graph, nodes) + sizeof(struct node) * node_count);
+    graph->count = 0;
+
     for (section = root->sections; section; section = section->next)
     {
         const struct option* option;
         for (option = section->options; option; option = option->next)
         {
-            table[node].type = NODE_OPTION;
-            table[node].ref.option = option;
-            table[node].children = NULL;
-            table[node].priority = 0;
-            node++;
+            graph->nodes[graph->count].type = NODE_OPTION;
+            graph->nodes[graph->count].ref.option = option;
+            graph->nodes[graph->count].runafter = NULL;
+            graph->nodes[graph->count].require = NULL;
+            graph->nodes[graph->count].priority = 0;
+            graph->count++;
         }
 
         const struct task* task;
         for (task = section->tasks; task; task = task->next)
         {
-            table[node].type = NODE_TASK;
-            table[node].ref.task = task;
-            table[node].children = NULL;
-            table[node].priority = 0;
-            node++;
+            graph->nodes[graph->count].type = NODE_TASK;
+            graph->nodes[graph->count].ref.task = task;
+            graph->nodes[graph->count].runafter = NULL;
+            graph->nodes[graph->count].require = NULL;
+            graph->nodes[graph->count].priority = 0;
+            graph->count++;
         }
     }
 
-    return table;
+    if (find_duplicate_names(graph, filename, source) != 0)
+        return NULL;
+
+    if (add_dependencies(graph, filename, source) != 0)
+        return NULL;
+
+    return graph;
 }
+
+static int
+export_depgraph(FILE* fp, const struct graph* graph, const char* source)
+{
+    int node;
+    fprintf(fp, "digraph depgraph {\n");
+    for (node = 0; node != graph->count; ++node)
+    {
+        struct str_view name = node_name(&graph->nodes[node]);
+        fprintf(
+            fp, "  n%d [label=\"%.*s\"];\n", node, name.len, source + name.off);
+    }
+
+    for (node = 0; node != graph->count; ++node)
+    {
+        int                   child;
+        const struct intlist* runafter = graph->nodes[node].runafter;
+        for (child = 0; child != intlist_count(runafter); ++child)
+            fprintf(fp, "  n%d -> n%d;\n", node, runafter->data[child]);
+    }
+
+    for (node = 0; node != graph->count; ++node)
+    {
+        int                   child;
+        const struct intlist* require = graph->nodes[node].require;
+        for (child = 0; child != intlist_count(require); ++child)
+            fprintf(
+                fp,
+                "  n%d -> n%d [color=\"red\"];\n",
+                node,
+                require->data[child]);
+    }
+
+    fprintf(fp, "}\n");
+    return 0;
+}
+
+/* ----------------------------------------------------------------------------
+ * Generate header in-memory
+ * -------------------------------------------------------------------------
+ */
 
 static void
 gen_table(struct mstream* ms, const struct root* root, const char* data)
@@ -1723,6 +2102,7 @@ main(int argc, char** argv)
     struct parser  parser;
     struct cfg     cfg = {0};
     struct root    root = {0};
+    struct graph*  graph;
 
     if (!stream_is_terminal(stderr))
         disable_colors = 1;
@@ -1744,6 +2124,25 @@ main(int argc, char** argv)
     parser_init(&parser, &mf, cfg.input_fname);
     if (parse(&parser, &root, &cfg) != 0)
         return -1;
+
+    if (cfg.export_ast)
+    {
+        if (export_ast(stdout, &root, mf.address) != 0)
+            return -1;
+        return 0;
+    }
+
+    graph = create_dependency_graph_from_ast(
+        &root, cfg.input_fname ? cfg.input_fname : "<stdin>", mf.address);
+    if (graph == NULL)
+        return -1;
+
+    if (cfg.export_depgraph)
+    {
+        if (export_depgraph(stdout, graph, mf.address) != 0)
+            return -1;
+        return 0;
+    }
 
     ms = mstream_init_writeable();
     gen_table(&ms, &root, mf.address);
