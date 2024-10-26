@@ -47,7 +47,7 @@ link_windows(
     for (int i = 0; i != count; ++i)
         args.push_back(objs[i]);
 
-    log_dbg("[link] ", "%s\n", [&args] {
+    log_dbg("%s\n", [&args] {
         std::string s;
         for (const auto& arg : args)
             s += std::string(" ") + arg;
@@ -102,7 +102,7 @@ link_linux(
     args.push_back("-lc");
     args.push_back("-lm");
     
-    log_dbg("[link] ", "%s\n", [&args] {
+    log_dbg("%s\n", [&args] {
         std::string s;
         for (const auto& arg : args)
             s += std::string(" ") + arg;

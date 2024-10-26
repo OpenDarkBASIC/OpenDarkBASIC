@@ -26,7 +26,8 @@ TEST_F(NAME, different_start_end_tokens_1)
         Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:1:1: error: Unterminated remark.\n"
+        LogEq("test:1:1\n"
+              "error: Unterminated remark.\n"
               " 1 | remstart this is a comment\n"
               "   | ^~~~~~~< Remark starts here.\n"));
 }
@@ -41,7 +42,8 @@ TEST_F(NAME, different_start_end_tokens_2)
         Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:1:1: error: Unterminated remark.\n"
+        LogEq("test:1:1\n"
+              "error: Unterminated remark.\n"
               " 1 | /* this is a comment\n"
               "   | ^< Remark starts here.\n"));
 }

@@ -25,7 +25,8 @@ TEST_F(NAME, exit_outside_of_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:3:1: error: CONTINUE statement must be inside a loop.\n"
+        LogEq("test:3:1\n"
+              "error: CONTINUE statement must be inside a loop.\n"
               " 3 | continue\n"
               "   | ^~~~~~~<\n"));
 }
@@ -41,11 +42,12 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:2:14: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:2:14\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 2 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `n'?\n"
+              "test:1:5\n"
+              "help: Did you mean `n'?\n"
               " 1 | for n=1 to 10\n"
               "   |     ^\n"));
 }
@@ -61,11 +63,12 @@ TEST_F(NAME, continue_nonexisting_named_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:2:14: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:2:14\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 2 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `name'?\n"
+              "test:1:1\n"
+              "help: Did you mean `name'?\n"
               " 1 | name: for n=1 to 10\n"
               "   | ^~~<\n"));
 }
@@ -83,11 +86,12 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:3:18: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:3:18\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 3 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `y'?\n"
+              "test:2:9\n"
+              "help: Did you mean `y'?\n"
               " 2 | for y=1 to 10\n"
               "   |     ^\n"));
 }
@@ -105,11 +109,12 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:3:18: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:3:18\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 3 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `inner'?\n"
+              "test:2:5\n"
+              "help: Did you mean `inner'?\n"
               " 2 | inner: for y=1 to 10\n"
               "   | ^~~~<\n"));
 }
@@ -127,11 +132,12 @@ TEST_F(NAME, continue_nonexisting_implicitly_named_nested_loop_outer)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:4:14: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:4:14\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 4 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `x'?\n"
+              "test:1:5\n"
+              "help: Did you mean `x'?\n"
               " 1 | for x=1 to 10\n"
               "   |     ^\n"));
 }
@@ -149,11 +155,12 @@ TEST_F(NAME, continue_nonexisting_named_nested_loop_outer)
     ASSERT_THAT(semantic(&semantic_loop_cont), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:4:14: error: Unknown loop name referenced in CONTINUE "
-              "statement.\n"
+        LogEq("test:4:14\n"
+              "error: Unknown loop name referenced in CONTINUE statement.\n"
               " 4 | continue a\n"
               "   |          ^\n"
-              "   = help: Did you mean `outer'?\n"
+              "test:1:1\n"
+              "help: Did you mean `outer'?\n"
               " 1 | outer: for x=1 to 10\n"
               "   | ^~~~<\n"));
 }

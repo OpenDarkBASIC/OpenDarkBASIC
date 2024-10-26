@@ -59,7 +59,7 @@ ir_compile(
         /* https://discourse.llvm.org/t/llvm-emitting-wrong-machine-code-for-x64-msvc/81226/1 */
         platform == TARGET_WINDOWS ? llvm::Reloc::PIC_ : llvm::Reloc::Static);
 
-    log_dbg("[codegen] ", "triple: %s, CPU: %s, features: %s\n", target_triples[platform][arch], CPU, Features);
+    log_dbg("triple: %s, CPU: %s, features: %s\n", target_triples[platform][arch], CPU, Features);
 
     ir->mod.setDataLayout(TargetMachine->createDataLayout());
     ir->mod.setTargetTriple(TargetTriple);

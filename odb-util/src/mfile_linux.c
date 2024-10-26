@@ -21,7 +21,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (fd < 0)
     {
         if (log_error)
-            log_util_err(
+            log_err(
                 "Failed to open() file {quote:%s}: %s\n",
                 c_file_name,
                 strerror(errno));
@@ -31,7 +31,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (fstat(fd, &stbuf) != 0)
     {
         if (log_error)
-            log_util_err(
+            log_err(
                 "Failed to fstat() file {quote:%s}: %s\n",
                 c_file_name,
                 strerror(errno));
@@ -41,7 +41,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (!S_ISREG(stbuf.st_mode))
     {
         if (log_error)
-            log_util_err(
+            log_err(
                 "Cannot map file {quote:%s}: File is not a regular file\n",
                 c_file_name);
         goto fstat_failed;
@@ -60,7 +60,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (mf->address == MAP_FAILED)
     {
         if (log_error)
-            log_util_err(
+            log_err(
                 "Failed to mmap() file {quote:%s}: %s\n",
                 c_file_name,
                 strerror(errno));
@@ -94,7 +94,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (fd < 0)
     {
-        log_util_err(
+        log_err(
             "Failed to open() file {quote:%s}: %s\n",
             c_file_name,
             strerror(errno));
@@ -106,7 +106,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
      * NOTE: If this ever gets ported to non-Linux, see posix_fallocate() */
     if (fallocate(fd, 0, 0, size) != 0)
     {
-        log_util_err(
+        log_err(
             "Failed to resize file {quote:%s} to {quote:%d}: %s\n",
             c_file_name,
             size,
@@ -118,7 +118,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         = mmap(NULL, (size_t)size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (mf->address == MAP_FAILED)
     {
-        log_util_err(
+        log_err(
             "Failed to mmap() file {quote:%s} for writing: %s\n",
             c_file_name,
             strerror(errno));
@@ -145,7 +145,7 @@ mfile_map_mem(struct mfile* mf, int size)
         NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     if (mf->address == MAP_FAILED)
     {
-        log_util_err(
+        log_err(
             "Failed to mmap() {emph:%d} bytes: %s\n", size, strerror(errno));
         return -1;
     }

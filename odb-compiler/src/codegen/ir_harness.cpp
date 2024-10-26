@@ -148,7 +148,7 @@ process_dependency_list(
     {
         plugin_id plugin_id = official_to_plugin_id[*dep];
         if (plugin_id < 0)
-            return log_codegen_err(
+            return log_err(
                 "{quote:%s} was not found (rerquired by {quote:%s}\n",
                 official_plugin_name[(int)*dep],
                 official_plugin_name[official_plugin]);
@@ -218,7 +218,7 @@ handle_plugin_dependencies_dbpro(
             (*plugin_is_used)[plugin_id] = true;
             goto core_found;
         }
-    return log_codegen_err("DBProCore.dll was not found\n");
+    return log_err("DBProCore.dll was not found\n");
 core_found:;
 
     /* DBProSetup is a dependency of Core */
@@ -231,7 +231,7 @@ core_found:;
             (*plugin_is_used)[plugin_id] = true;
             goto text_found;
         }
-    return log_codegen_err(
+    return log_err(
         "{quote:DBProSetupDebug.dll} was not found (required by "
         "{quote:DBProCore.dll})\n");
 text_found:;
@@ -246,7 +246,7 @@ text_found:;
             (*plugin_is_used)[plugin_id] = true;
             goto setup_found;
         }
-    return log_codegen_err(
+    return log_err(
         "{quote:DBProTextDebug.dll} was not found (required by "
         "{quote:DBProCore.dll})\n");
 setup_found:;
@@ -287,7 +287,7 @@ gen_cmd_loader(
         plugin_id plugin_id = cmds->plugin_ids->data[*pcmd];
         ODBUTIL_DEBUG_ASSERT(
             plugin_id < plugin_list_count(plugins),
-            log_codegen_err("plugin_id: %d\n", plugin_id));
+            log_err("plugin_id: %d\n", plugin_id));
         plugin_is_used[plugin_id] = true;
     }
 

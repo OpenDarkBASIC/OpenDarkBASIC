@@ -265,7 +265,7 @@
     }                                                                          \
     int prefix##_reserve(struct prefix** v, int##bits##_t elems)               \
     {                                                                          \
-        ODBUTIL_DEBUG_ASSERT((elems) > 0, log_util_err("elems: %d\n", elems)); \
+        ODBUTIL_DEBUG_ASSERT((elems) > 0, log_err("elems: %d\n", elems)); \
         if (prefix##_realloc(v, elems) != 0)                                   \
             return -1;                                                         \
         (*v)->count = 0;                                                       \
@@ -335,7 +335,7 @@
     {                                                                          \
         ODBUTIL_DEBUG_ASSERT(                                                  \
             i >= 0 && i <= (*v ? (*v)->count : 0),                             \
-            log_util_err("i: %d, count: %d\n", i, (*v)->count));               \
+            log_err("i: %d, count: %d\n", i, (*v)->count));               \
                                                                                \
         if (prefix##_emplace(v) == NULL)                                       \
             return NULL;                                                       \

@@ -471,6 +471,9 @@ if (ODBCOMPILER_TESTS)
 
         "tests/src/util/test_odbcompiler_cmd_list.cpp"
 
+        "tests/src/ast/test_odbcompiler_ast_ops_find_parent.cpp"
+        "tests/src/ast/test_odbcompiler_ast_ops_delete.cpp"
+
         "tests/src/parser/test_odbcompiler_db_parser_boolean_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_integer_literal.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_conditionals.cpp"
@@ -490,13 +493,14 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_loop_cont_do_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_exit_do_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_exit_for.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_exit_for_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_exit_for_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_exit_repeat_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_exit_while_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_for_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_for_errors.cpp"
-        "tests/src/semantic/test_odbcompiler_semantic_loop_name_errors.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_loop_name_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_negative_integer_literal.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment_warnings.cpp"

@@ -22,13 +22,13 @@ fs_get_path_to_self(struct ospath* path)
         len = GetModuleFileNameW(NULL, utf16.data, alloc_len);
         if (len == 0)
         {
-            log_util_err("Failed to GetModuleFileNameW(): {win32error}\n");
+            log_err("Failed to GetModuleFileNameW(): {win32error}\n");
             goto failed;
         }
 
         if (len == alloc_len && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
         {
-            log_util_err("Failed to GetModuleFileNameW(): {win32error}\n");
+            log_err("Failed to GetModuleFileNameW(): {win32error}\n");
             goto failed;
         }
 
@@ -119,7 +119,7 @@ fs_make_dir(struct ospathc path)
     if (GetLastError() == ERROR_ALREADY_EXISTS)
         return 1;
 
-    log_util_err(
+    log_err(
         "Failed to create directory {quote:%s}: {win32error}\n",
         ospathc_cstr(path));
     return -1;
@@ -146,7 +146,7 @@ try_again:
                 goto try_again;
         }
 
-        log_util_err(
+        log_err(
             "Failed to create directory {quote:%s}: {win32error}\n",
             ospath_cstr(path));
 
@@ -161,7 +161,7 @@ fs_copy_file(struct ospathc src, struct ospathc dst)
 {
     if (CopyFileA(ospathc_cstr(src), ospathc_cstr(dst), 0) == 0)
     {
-        log_util_err(
+        log_err(
             "Failed to copy file {quote:%s} -> {quote:%s}: {win32error}\n",
             ospathc_cstr(src),
             ospathc_cstr(dst));
@@ -192,7 +192,7 @@ fs_remove_file(struct ospathc path)
 {
     if (DeleteFileA(ospathc_cstr(path)) == 0)
     {
-        log_util_err(
+        log_err(
             "Failed to remove file {quote:%s}: {win32error}\n",
             ospathc_cstr(path));
         return -1;
@@ -238,7 +238,7 @@ fs_mtime_ms(struct ospathc path)
         NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        log_util_err(
+        log_err(
             "Failed to open file {quote:%s}: {win32error}\n",
             ospathc_cstr(path));
         goto open_file_failed;
@@ -246,7 +246,7 @@ fs_mtime_ms(struct ospathc path)
 
     if (GetFileTime(hFile, NULL, NULL, &mtime) == 0)
     {
-        log_util_err(
+        log_err(
             "Failed to open file {quote:%s}: {win32error}\n",
             ospathc_cstr(path));
         goto stat_file_failed;

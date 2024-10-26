@@ -22,9 +22,10 @@ TEST_F(NAME, exponent_invalid_type)
     EXPECT_THAT(semantic(&semantic_type_check), Eq(-1));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: error: Incompatible exponent type STRING can't be "
-              "converted to INTEGER.\n"
+        LogEq("test:1:13\n"
+              "error: Incompatible exponent type STRING can't be converted to "
+              "INTEGER.\n"
               " 1 | print 2.0 ^ \"oops\"\n"
               "   |       >~~ ^ ~~~~~< STRING\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+              "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
 }

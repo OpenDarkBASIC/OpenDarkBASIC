@@ -21,13 +21,14 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | if a then a = 1\n"
-              "   |    ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if a <> 0 then a = 1\n"
-              "   |     ^~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | if a then a = 1\n"
+            "   |    ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if a <> 0 then a = 1\n"
+            "   |     ^~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_integer_expression)
@@ -37,13 +38,14 @@ TEST_F(NAME, implicit_evaluation_of_integer_expression)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | if a+b then a = 1\n"
-              "   |    ^~< INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if a+b <> 0 then a = 1\n"
-              "   |       ^~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | if a+b then a = 1\n"
+            "   |    ^~< INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if a+b <> 0 then a = 1\n"
+            "   |       ^~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_float_literal)
@@ -53,11 +55,11 @@ TEST_F(NAME, implicit_evaluation_of_float_literal)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+        LogEq("test:1:4\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | if 3.3f then a = 1\n"
               "   |    ^~~< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | if 3.3f <> 0.0f then a = 1\n"
               "   |        ^~~~~~~<\n"));
 }
@@ -69,11 +71,11 @@ TEST_F(NAME, implicit_evaluation_of_float_expression)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+        LogEq("test:1:4\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | if 3.3f+5.5f then a = 1\n"
               "   |    ^~~~~~~~< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | if 3.3f+5.5f <> 0.0f then a = 1\n"
               "   |             ^~~~~~~<\n"));
 }
@@ -85,13 +87,14 @@ TEST_F(NAME, implicit_evaluation_of_double_literal)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | if 3.3 then a = 1\n"
-              "   |    ^~< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if 3.3 <> 0.0 then a = 1\n"
-              "   |       ^~~~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | if 3.3 then a = 1\n"
+            "   |    ^~< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if 3.3 <> 0.0 then a = 1\n"
+            "   |       ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_double_expression)
@@ -101,13 +104,14 @@ TEST_F(NAME, implicit_evaluation_of_double_expression)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | if 3.3+5.5 then a = 1\n"
-              "   |    ^~~~~~< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if 3.3+5.5 <> 0.0 then a = 1\n"
-              "   |           ^~~~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | if 3.3+5.5 then a = 1\n"
+            "   |    ^~~~~~< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if 3.3+5.5 <> 0.0 then a = 1\n"
+            "   |           ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_string_literal)
@@ -117,13 +121,14 @@ TEST_F(NAME, implicit_evaluation_of_string_literal)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of STRING as a boolean "
-              "expression.\n"
-              " 1 | if a$ then a = 1\n"
-              "   |    ^< STRING\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if a$ <> \"\" then a = 1\n"
-              "   |      ^~~~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of STRING as a boolean expression.\n"
+            " 1 | if a$ then a = 1\n"
+            "   |    ^< STRING\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if a$ <> \"\" then a = 1\n"
+            "   |      ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_string_expression)
@@ -133,13 +138,14 @@ TEST_F(NAME, implicit_evaluation_of_string_expression)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of STRING as a boolean "
-              "expression.\n"
-              " 1 | if a$+b$ then a = 1\n"
-              "   |    ^~~~< STRING\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if a$+b$ <> \"\" then a = 1\n"
-              "   |         ^~~~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of STRING as a boolean expression.\n"
+            " 1 | if a$+b$ then a = 1\n"
+            "   |    ^~~~< STRING\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if a$+b$ <> \"\" then a = 1\n"
+            "   |         ^~~~~~<\n"));
 }
 
 TEST_F(NAME, implicit_evaluation_of_integer_literal_multiline)
@@ -152,11 +158,12 @@ TEST_F(NAME, implicit_evaluation_of_integer_literal_multiline)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:4: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | if a\n"
-              "   |    ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | if a <> 0\n"
-              "   |     ^~~~<\n"));
+        LogEq(
+            "test:1:4\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | if a\n"
+            "   |    ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | if a <> 0\n"
+            "   |     ^~~~<\n"));
 }

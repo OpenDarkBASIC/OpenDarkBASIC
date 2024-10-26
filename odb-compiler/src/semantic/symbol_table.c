@@ -1,4 +1,6 @@
 #include "odb-compiler/ast/ast.h"
+#include "odb-compiler/ast/ast_ops.h"
+#include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/symbol_table.h"
@@ -166,33 +168,24 @@ symbol_table_add_declarations_from_ast(
     struct symbol_table**   table,
     struct ast**            tus,
     int                     tu_id,
+    const struct utf8*      filenames,
     const struct db_source* sources)
 {
     struct symbol_table_entry* entry;
-    ast_id                     n, f1, identifier;
+    ast_id                     f1, identifier;
     struct utf8_span           func_span;
     struct utf8_view           func_name;
     const struct ast*          ast = tus[tu_id];
     const char*                source = sources[tu_id].text.data;
-    for (n = 0; n != ast_count(ast); ++n)
+    for (f1 = 0; f1 != ast_count(ast); ++f1)
     {
-        if (ast_node_type(ast, n) != AST_FUNC1
-            && ast_node_type(ast, n) != AST_FUNC_POLY)
-        {
+        if (ast_node_type(ast, f1) != AST_FUNC1)
             continue;
-        }
-
-        f1 = ast_node_type(ast, n) == AST_FUNC_POLY
-                 ? ast->nodes[n].func_poly.func
-                 : n;
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, f1) == AST_FUNC1,
-            log_err("", "type: %d\n", ast_node_type(ast, f1)));
 
         identifier = ast->nodes[f1].func1.identifier;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, identifier) == AST_IDENTIFIER,
-            log_err("", "type: %d\n", ast_node_type(ast, identifier)));
+            log_err("type: %d\n", ast_node_type(ast, identifier)));
 
         func_span = ast->nodes[identifier].identifier.name;
         func_name = utf8_span_view(source, func_span);
@@ -200,12 +193,37 @@ symbol_table_add_declarations_from_ast(
         switch (hm_emplace_or_get((struct hm**)table, func_name, &entry))
         {
             case HM_OOM: return -1;
-            case HM_EXISTS: return -1;
-
             case HM_NEW: {
+                /* If the function is polymorphic, we want to store the
+                 * polymorphic function node. It's easier to instantiate the
+                 * functions in type_check.c this way */
+                ast_id parent = ast_find_parent(ast, f1);
+                if (parent > -1 && ast_node_type(ast, parent) == AST_FUNC_POLY)
+                    f1 = parent;
+
                 entry->tu_id = tu_id;
-                entry->ast_node = n;
+                entry->ast_node = f1;
                 break;
+            }
+
+            case HM_EXISTS: {
+                const struct ast* prev_ast = tus[entry->tu_id];
+                ast_id            prev_f1
+                    = ast_node_type(prev_ast, entry->ast_node) == AST_FUNC_POLY
+                          ? prev_ast->nodes[entry->ast_node].func_poly.func
+                          : entry->ast_node;
+                const char* prev_filename = utf8_cstr(filenames[entry->tu_id]);
+                const char* prev_source = sources[entry->tu_id].text.data;
+                const char* filename = utf8_cstr(filenames[tu_id]);
+                return err_func_redefinition(
+                    ast,
+                    f1,
+                    filename,
+                    source,
+                    prev_ast,
+                    prev_f1,
+                    prev_filename,
+                    prev_source);
             }
         }
     }

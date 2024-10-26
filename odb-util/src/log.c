@@ -429,12 +429,7 @@ log_vraw(const char* fmt, va_list ap)
 
 /* -------------------------------------------------------------------------- */
 void
-log_vimpl(
-    char        is_progress,
-    const char* severity,
-    const char* group,
-    const char* fmt,
-    va_list     ap)
+log_vimpl(char is_progress, const char* severity, const char* fmt, va_list ap)
 {
     struct varef args;
     va_copy(args.ap, ap);
@@ -452,7 +447,6 @@ log_vimpl(
     if (is_progress)
         progress_active = 1;
 
-    fprintf_with_color(group);
     fprintf_with_color(severity);
     vfprintf_with_color(fmt, &args);
 
@@ -461,8 +455,7 @@ log_vimpl(
 
 /* -------------------------------------------------------------------------- */
 void
-log_vprogress(
-    const char* group, int current, int total, const char* fmt, va_list ap)
+log_vprogress(int current, int total, const char* fmt, va_list ap)
 {
     char buf[31];
     if (total > 0)
@@ -470,24 +463,15 @@ log_vprogress(
     else
         buf[0] = '\0';
 
-    log_vimpl(1, buf, group, fmt, ap);
+    log_vimpl(1, buf, fmt, ap);
 }
 
 /* -------------------------------------------------------------------------- */
 void
-log_vflc(
-    const char*      severity,
-    const char*      filename,
-    const char*      source,
-    struct utf8_span location,
-    const char*      fmt,
-    va_list          ap)
+log_flc(const char* filename, const char* source, struct utf8_span location)
 {
-    utf8_idx     i;
-    utf8_idx     l1, c1;
-    struct varef args;
-
-    mutex_lock(g_mutex);
+    utf8_idx i;
+    utf8_idx l1, c1;
 
     l1 = 1, c1 = 1;
     for (i = 0; i != location.off; i++)
@@ -497,16 +481,8 @@ log_vflc(
             l1++, c1 = 1;
     }
 
-    fprintf_with_color("{emph:%s:%d:%d:}", filename, l1, c1);
-    if (*severity)
-    {
-        log_putc(' ');
-        fprintf_with_color(severity);
-    }
-
-    va_copy(args.ap, ap);
-    vfprintf_with_color(fmt, &args);
-
+    mutex_lock(g_mutex);
+    fprintf_with_color("{emph:%s:%d:%d}\n", filename, l1, c1);
     mutex_unlock(g_mutex);
 }
 
@@ -882,18 +858,4 @@ log_excerpt(const char* source, const struct log_highlight* highlights)
     mutex_unlock(g_mutex);
 
     return gutter_indent;
-}
-
-void
-log_excerpt_vimpl(
-    int gutter_indent, const char* severity, const char* fmt, va_list ap)
-{
-    struct varef args;
-    va_copy(args.ap, ap);
-
-    mutex_lock(g_mutex);
-    log_printf("%*s = ", gutter_indent - 1, "");
-    fprintf_with_color(severity);
-    vfprintf_with_color(fmt, &args);
-    mutex_unlock(g_mutex);
 }

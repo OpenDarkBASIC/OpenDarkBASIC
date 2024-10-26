@@ -87,17 +87,15 @@ process_run(
     {
         if (timeout_ms)
             log_warn(
-                "",
                 "Process did not exit after %dms, calling terminate()\n",
                 timeout_ms);
         else
-            log_warn("", "Process did not exit cleanly, calling terminate()\n");
+            log_warn("Process did not exit cleanly, calling terminate()\n");
 
         process_terminate(p);
         if (process_wait(p, 500) != 0)
         {
-            log_warn(
-                "", "Process did not terminate after 500ms, calling kill()\n");
+            log_warn("Process did not terminate after 500ms, calling kill()\n");
             process_kill(p);
             process_wait(p, 0);
         }

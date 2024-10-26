@@ -143,6 +143,7 @@ print_node(const struct ast* ast, FILE* fp, ast_id n, int depth)
         case AST_STRING_LITERAL: fprintf(fp, "STRING_LITERAL, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_CAST: fprintf(fp, "CAST, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_AS: fprintf(fp, "AS, scope=%d\n", ast->nodes[n].info.scope_id); break;
+        case AST_AS_AUTO: fprintf(fp, "AS, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_TYPE: fprintf(fp, "TYPE, scope=%d\n", ast->nodes[n].info.scope_id); break;
             /* clang-format on */
     }
@@ -193,7 +194,6 @@ dot_write_node(
                 "  n%d [color=\"red\", fontcolor=\"red\", "
                 "shape=\"tripleoctagon\", label=\"GARBAGE!\"];\n",
                 n);
-            // ODBUTIL_DEBUG_ASSERT(0, (void)0);
             break;
         case AST_BLOCK:
             fprintf(
@@ -626,6 +626,16 @@ dot_write_node(
                 style->type.fontcolor,
                 style->type.shape);
             break;
+        case AST_AS_AUTO:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"AS\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape);
+            break;
         case AST_TYPE:
             fprintf(
                 fp,
@@ -726,6 +736,7 @@ dot_get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_STRING_LITERAL: break;
         case AST_CAST: NAMES("expr", "as")
         case AST_AS: NAMES("expr", "")
+        case AST_AS_AUTO: break;
         case AST_TYPE: break;
 #undef NAMES
     }

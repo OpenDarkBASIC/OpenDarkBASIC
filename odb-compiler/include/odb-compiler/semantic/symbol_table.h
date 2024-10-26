@@ -32,6 +32,7 @@ symbol_table_add_declarations_from_ast(
     struct symbol_table**   table,
     struct ast**            tus,
     int                     tu_id,
+    const struct utf8*      filenames,
     const struct db_source* sources);
 
 ODBCOMPILER_PUBLIC_API const struct symbol_table_entry*

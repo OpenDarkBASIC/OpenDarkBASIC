@@ -16,7 +16,7 @@ thread_start(void* (*func)(const void*), const void* args)
         NULL); /* tid */
     if (hThread == NULL)
     {
-        log_util_err("Failed to create thread: {win32error}\n");
+        log_err("Failed to create thread: {win32error}\n");
         return NULL;
     }
 
@@ -30,7 +30,7 @@ thread_join(struct thread* t)
     HANDLE hThread = (HANDLE)t;
     if (WaitForSingleObject(hThread, INFINITE) != 0)
     {
-        log_util_err("WaitForSingleObject failed in thread_join(): {win32error}\n");
+        log_err("WaitForSingleObject failed in thread_join(): {win32error}\n");
         return (void*)-1;
     }
 
@@ -44,7 +44,7 @@ thread_kill(struct thread* t)
 {
     HANDLE hThread = (HANDLE)t;
     if (TerminateThread(hThread, (DWORD)-1) == FALSE)
-        log_util_err("Failed to TerminateThread: {win32error}\n");
+        log_err("Failed to TerminateThread: {win32error}\n");
     CloseHandle(hThread);
 }
 

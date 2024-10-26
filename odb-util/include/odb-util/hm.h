@@ -234,7 +234,7 @@ enum hm_status
         /* Must be power of 2 */                                               \
         ODBUTIL_DEBUG_ASSERT(                                                  \
             (new_cap & (new_cap - 1)) == 0,                                    \
-            log_util_err("new_cap: %d\n", new_cap));                           \
+            log_err("new_cap: %d\n", new_cap));                           \
                                                                                \
         mem_size       header = offsetof(struct prefix, hashes);               \
         mem_size       data = sizeof((*hm)->hashes[0]) * new_cap;              \
@@ -265,7 +265,7 @@ enum hm_status
                 h = 2;                                                         \
             slot                                                               \
                 = prefix##_find_slot(new_hm, get_key_func(&(*hm)->kvs, i), h); \
-            ODBUTIL_DEBUG_ASSERT(slot >= 0, log_util_err("slot: %d\n", slot)); \
+            ODBUTIL_DEBUG_ASSERT(slot >= 0, log_err("slot: %d\n", slot)); \
             new_hm->hashes[slot] = h;                                          \
             if (set_key_func(&new_hm->kvs, slot, get_key_func(&(*hm)->kvs, i)) \
                 != 0)                                                          \
@@ -301,8 +301,8 @@ enum hm_status
     {                                                                          \
         ODBUTIL_DEBUG_ASSERT(                                                  \
             hm && hm->capacity > 0,                                            \
-            log_util_err("capacity: %d\n", hm->capacity));                     \
-        ODBUTIL_DEBUG_ASSERT(h > 1, log_util_err("h: %d\n", h));               \
+            log_err("capacity: %d\n", hm->capacity));                     \
+        ODBUTIL_DEBUG_ASSERT(h > 1, log_err("h: %d\n", h));               \
                                                                                \
         int##bits##_t slot = (int##bits##_t)(h & (hm->capacity - 1));          \
         int##bits##_t i = 0;                                                   \

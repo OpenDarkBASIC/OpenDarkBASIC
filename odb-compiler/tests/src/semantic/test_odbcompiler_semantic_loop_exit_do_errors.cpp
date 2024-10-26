@@ -25,7 +25,8 @@ TEST_F(NAME, exit_outside_of_do_loop)
     ASSERT_THAT(semantic(&semantic_loop_exit), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:3:1: error: EXIT statement must be inside a loop.\n"
+        LogEq("test:3:1\n"
+              "error: EXIT statement must be inside a loop.\n"
               " 3 | exit\n"
               "   | ^~~<\n"));
 }

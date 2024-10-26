@@ -137,14 +137,11 @@ report_duplicate_commands(
     const cmd_id* cmdp;
     int           gutter, arg_idx;
 
-    log_flc_err(
-        filename,
-        source,
-        ast_loc(ast, cmd),
-        "Command has multiple definitions.\n");
+    log_flc(filename, source, ast_loc(ast, cmd));
+    log_err("Command has multiple definitions.\n");
     gutter = log_excerpt_1(source, ast_loc(ast, cmd), "", 0);
 
-    log_excerpt_note(gutter, "Conflicting definitions are:\n");
+    log_note("Conflicting definitions are:\n");
     vec_for_each(candidates, cmdp)
     {
         struct utf8_view name = utf8_list_view(cmds->db_cmd_names, *cmdp);
@@ -174,8 +171,7 @@ report_duplicate_commands(
         log_raw("[%s]\n", utf8_cstr(plugin->name));
     }
 
-    log_excerpt_help(
-        gutter,
+    log_help(
         "You need to uninstall one of the conflicting plugins to fix this "
         "issue.\n");
 }
@@ -207,11 +203,8 @@ report_ambiguous_overloads(
     hl = mem_alloc(sizeof(*hl) * (param_count + 1));
     arg_positions = mem_alloc(sizeof(*arg_positions) * param_count);
 
-    log_flc_err(
-        filename,
-        source,
-        ast_loc(ast, arglist),
-        "Command has ambiguous overloads. ");
+    log_flc(filename, source, ast_loc(ast, arglist));
+    log_err("Command has ambiguous overloads. ");
 
     hl_count = 0;
     memset(hl, 0, sizeof(*hl) * (param_count + 1));
@@ -278,7 +271,7 @@ report_ambiguous_overloads(
     log_raw(" to command signature.\n");
 
     gutter = log_excerpt(source, hl);
-    log_excerpt_note(gutter, "Conflicting overloads are:\n");
+    log_note("Conflicting overloads are:\n");
 
     vec_for_each(candidates, cmdp)
     {
@@ -314,8 +307,7 @@ report_ambiguous_overloads(
         log_raw("[%s]\n", utf8_cstr(plugin->name));
     }
 
-    log_excerpt_help(
-        gutter,
+    log_help(
         "This is usually an issue with conflicting plugins, or poorly designed "
         "plugins. You can try to fix it by explicitly casting the argument%s "
         "to the types required:\n",
@@ -356,15 +348,11 @@ report_available_commands(
     int              gutter;
     struct utf8_view cmd_name;
 
-    log_flc_err(
-        filename,
-        source,
-        ast->nodes[arglist].arglist.combined_location,
-        "%s",
-        msg);
+    log_flc(filename, source, ast->nodes[arglist].arglist.combined_location);
+    log_err("%s", msg);
     gutter = log_excerpt_1(
         source, ast->nodes[arglist].arglist.combined_location, "", 0);
-    log_excerpt_note(gutter, "Available candidates:\n");
+    log_note("Available candidates:\n");
     cmd_name = utf8_list_view(cmds->db_cmd_names, cmd);
     for (; cmd < cmd_list_count(cmds)
            && utf8_equal(cmd_name, utf8_list_view(cmds->db_cmd_names, cmd));
@@ -399,11 +387,10 @@ report_available_commands(
 }
 
 static void
-log_cmd_signature(
+log_signature(
     cmd_id                    cmd_id,
     const struct plugin_list* plugins,
-    const struct cmd_list*    cmds,
-    int                       gutter)
+    const struct cmd_list*    cmds)
 {
     int              i;
     struct utf8_view name = utf8_list_view(cmds->db_cmd_names, cmd_id);
@@ -414,8 +401,7 @@ log_cmd_signature(
     plugin_id                 plugin_id = cmds->plugin_ids->data[cmd_id];
     const struct plugin_info* plugin = &plugins->data[plugin_id];
 
-    log_excerpt_note(
-        gutter,
+    log_note(
         "Calling command: {emph:%.*s}%s",
         name.len,
         name.data + name.off,
@@ -450,15 +436,14 @@ typecheck_warnings(
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd_node) == AST_COMMAND,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cmd_node)));
+        log_err("type: %d\n", ast_node_type(ast, cmd_node)));
 
     for (i = 0; i != cmd_param_types_list_count(params);
          ++i, arglist = ast->nodes[arglist].arglist.next)
     {
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(ast, arglist) == AST_ARGLIST,
-            log_semantic_err("type: %d\n", ast_node_type(ast, arglist)));
-        int       gutter;
+            log_err("type: %d\n", ast_node_type(ast, arglist)));
         ast_id    arg = ast->nodes[arglist].arglist.expr;
         enum type arg_type = ast_type_info(ast, arg);
         enum type param_type = params->data[i].type;
@@ -469,43 +454,40 @@ typecheck_warnings(
             case TC_ALLOW: break;
 
             case TC_TRUNCATE:
-                log_flc_warn(
-                    filename,
-                    source,
-                    ast_loc(ast, arg),
+                log_flc(filename, source, ast_loc(ast, arg));
+                log_warn(
                     "Argument %d is truncated in conversion from {emph0:%s} to "
                     "{emph1:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                gutter = log_excerpt_1(
+                log_excerpt_1(
                     source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
-                log_cmd_signature(cmd_id, plugins, cmds, gutter);
+                log_signature(cmd_id, plugins, cmds);
                 break;
 
             case TC_SIGN_CHANGE:
             case TC_TRUENESS:
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
-                log_flc_warn(
-                    filename,
-                    source,
-                    ast_loc(ast, arg),
+                log_flc(filename, source, ast_loc(ast, arg));
+                log_warn(
                     "Implicit conversion of argument %d from {emph0:%s} to "
                     "{emph1:%s} in command call.\n",
                     i + 1,
                     type_to_db_name(arg_type),
                     type_to_db_name(param_type));
-                gutter = log_excerpt_1(
+                log_excerpt_1(
                     source, ast_loc(ast, arg), type_to_db_name(arg_type), 0);
-                log_cmd_signature(cmd_id, plugins, cmds, gutter);
+                log_signature(cmd_id, plugins, cmds);
                 break;
         }
 
         /* Insert cast to correct type if necessary */
         if (arg_type != param_type)
         {
-            ast_id cast = ast_cast_to_type(astp, arg, param_type, ast_loc(ast, arg));
+            ast_id cast
+                = ast_cast_to_type(astp, arg, param_type, ast_loc(ast, arg));
             if (cast < -1)
                 return -1;
             ast = *astp;

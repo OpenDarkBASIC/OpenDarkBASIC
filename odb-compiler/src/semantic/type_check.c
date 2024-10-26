@@ -343,7 +343,7 @@ process_block(struct stack** stack, struct ast* ast, ast_id block)
     ODBUTIL_DEBUG_ASSERT(block > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, block) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type(ast, block)));
+        log_err("type: %d\n", ast_node_type(ast, block)));
 
     next = ast->nodes[block].block.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
@@ -381,7 +381,7 @@ process_arglist(struct stack** stack, struct ast* ast, ast_id arglist)
     ODBUTIL_DEBUG_ASSERT(arglist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, arglist) == AST_ARGLIST,
-        log_semantic_err("type: %d\n", ast_node_type(ast, arglist)));
+        log_err("type: %d\n", ast_node_type(ast, arglist)));
 
     next = ast->nodes[arglist].arglist.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
@@ -411,7 +411,7 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
     ODBUTIL_DEBUG_ASSERT(paramlist > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, paramlist) == AST_PARAMLIST,
-        log_semantic_err("type: %d\n", ast_node_type(ast, paramlist)));
+        log_err("type: %d\n", ast_node_type(ast, paramlist)));
 
     next = ast->nodes[paramlist].paramlist.next;
     if (next > -1 && ast_type_info(ast, next) == TYPE_INVALID)
@@ -421,7 +421,7 @@ process_paramlist(struct stack** stack, struct ast* ast, ast_id paramlist)
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, param) == AST_PARAM,
-        log_err("", "type: %d\n", ast_node_type(ast, param)));
+        log_err("type: %d\n", ast_node_type(ast, param)));
     if (ast_type_info(ast, param) == TYPE_INVALID)
         stack_push_entry(stack, paramlist, param);
 
@@ -451,12 +451,12 @@ process_param(
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, param) == AST_PARAM,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, param)));
+        log_err("type: %d\n", ast_node_type(*astp, param)));
 
     identifier = (*astp)->nodes[param].param.identifier;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast_node_type(*astp, identifier)));
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
@@ -471,10 +471,13 @@ process_param(
             break;
 
         case HM_EXISTS:
+            if (type_origin->type == TYPE_INVALID)
+                break;
             // TODO
             // err_param_redeclaration(
             //    *astp, identifier, type_origin->original_declaration, source);
             return DEP_ERROR;
+
         case HM_OOM: return DEP_ERROR;
     }
 
@@ -518,7 +521,7 @@ process_command(
     ODBUTIL_DEBUG_ASSERT(cmd > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cmd)));
+        log_err("type: %d\n", ast_node_type(ast, cmd)));
 
     arglist = ast->nodes[cmd].cmd.arglist;
     cmd_id = ast->nodes[cmd].cmd.id;
@@ -547,7 +550,7 @@ get_identifier_original_declaration(
     ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_semantic_err("type: %d\n", ast_node_type(ast, identifier)));
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
 
     view_scope.view
         = utf8_span_view(source, ast->nodes[identifier].identifier.name);
@@ -575,7 +578,7 @@ find_first_block_in_scope(struct ast* ast, ast_id n)
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, scope_start) == AST_BLOCK,
-        log_semantic_err("type: %d\n", scope_start));
+        log_err("type: %d\n", scope_start));
     return scope_start;
 }
 
@@ -605,7 +608,7 @@ create_initializer_literal(
         case TYPE_USER_DEFINED_VAR_PTR:
             ODBUTIL_DEBUG_ASSERT(
                 0,
-                log_semantic_err(
+                log_err(
                     "Creating default initializers for type %d is not "
                     "yet implemented.\n",
                     type));
@@ -613,6 +616,43 @@ create_initializer_literal(
     }
 
     return -1;
+}
+
+static ast_id
+convert_var_ass_to_var_decl(struct ast** astp, ast_id ass)
+{
+    struct utf8_span loc, op_loc, scope_loc;
+    ast_id           var_ref, identifier, expr, decl1, block;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, ass) == AST_ASSIGNMENT,
+        log_err("type: %d\n", ast_node_type(*astp, ass)));
+    var_ref = (*astp)->nodes[ass].assignment.lvalue;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, var_ref) == AST_VAR_REF,
+        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
+    identifier = (*astp)->nodes[var_ref].var_ref.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+
+    loc = ast_loc(*astp, ass);
+    op_loc = (*astp)->nodes[ass].assignment.op_location;
+    scope_loc = ast_loc(*astp, identifier);
+    expr = (*astp)->nodes[ass].assignment.expr;
+    decl1 = ast_var_decl(
+        astp, identifier, -1, expr, SCOPE_LOCAL, scope_loc, op_loc, loc);
+    if (decl1 < 0)
+        return -1;
+
+    block = ast_find_parent(*astp, ass);
+    ODBUTIL_DEBUG_ASSERT(block > -1, (void)0);
+    (*astp)->nodes[block].block.stmt = decl1;
+
+    (*astp)->nodes[ass].assignment.lvalue = -1;
+    ast_delete_node(*astp, var_ref);
+    ast_delete_node(*astp, ass);
+
+    return decl1;
 }
 
 static enum process_result
@@ -631,36 +671,40 @@ process_assignment(
     ODBUTIL_DEBUG_ASSERT(ass > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type((*astp), ass) == AST_ASSIGNMENT,
-        log_semantic_err("type: %d\n", ast_node_type((*astp), ass)));
+        log_err("type: %d\n", ast_node_type((*astp), ass)));
 
     lvalue = (*astp)->nodes[ass].assignment.lvalue;
     expr = (*astp)->nodes[ass].assignment.expr;
     ODBUTIL_DEBUG_ASSERT(lvalue > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
 
-    if (ast_type_info(*astp, expr) == TYPE_INVALID)
-        stack_push_entry(stack, ass, expr);
-
     /* Variable declarations and assignments are syntactically ambiguous. We
      * disambiguate here by looking up the lvalue in the typemap. If this is
      * the first time it was referenced, and the node did NOT appear in an
      * inline statement, then this is a declaration (with initializer), not an
-     * assignment. *
-    if (ast_node_type(*astp, lvalue) == AST_VAR_REF)
-    {
-        struct type_origin* type_origin;
-        ast_id           identifier = (*astp)->nodes[lvalue].var_ref.identifier;
-        struct utf8_view name = utf8_span_view(
-            source, (*astp)->nodes[identifier].identifier.name);
-        struct view_scope name_scope
-            = {name, (*astp)->nodes[identifier].info.scope_id};
-        switch (typemap_emplace_or_get(typemap, name_scope, &type_origin))
+     * assignment.
+     * NOTE: Currently we don't check if it is an istmt. Mabye it's fine.
+     */
+    if (ast_type_info(*astp, lvalue) == TYPE_INVALID)
+        if (ast_node_type(*astp, lvalue) == AST_VAR_REF)
         {
-            case HM_OOM: return DEP_ERROR;
-            case HM_EXISTS: break;
-            case HM_NEW: break;
+            ast_id identifier = (*astp)->nodes[lvalue].var_ref.identifier;
+            struct utf8_view name = utf8_span_view(
+                source, (*astp)->nodes[identifier].identifier.name);
+            struct view_scope name_scope
+                = {name, (*astp)->nodes[identifier].info.scope_id};
+            if (typemap_find(*typemap, name_scope) == NULL)
+            {
+                ast_id decl1 = convert_var_ass_to_var_decl(astp, ass);
+                if (decl1 < 0)
+                    return DEP_ERROR;
+                vec_last(*stack)->node = decl1;
+                return DEP_ADDED;
+            }
         }
-    }*/
+
+    if (ast_type_info(*astp, expr) == TYPE_INVALID)
+        stack_push_entry(stack, ass, expr);
     if (ast_type_info(*astp, lvalue) == TYPE_INVALID)
         stack_push_entry(stack, ass, lvalue);
 
@@ -676,7 +720,7 @@ process_assignment(
         identifier = (*astp)->nodes[lvalue].var_ref.identifier;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-            log_semantic_err("type: %d\n", ast_node_type(*astp, identifier)));
+            log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
         switch (type_convert(expr_type, lvalue_type))
         {
@@ -734,7 +778,7 @@ process_var_decl(
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, var_decl) == AST_VAR_DECL1,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, var_decl)));
+        log_err("type: %d\n", ast_node_type(*astp, var_decl)));
 
     decl1 = var_decl;
     decl2 = (*astp)->nodes[decl1].var_decl1.var_decl2;
@@ -745,10 +789,11 @@ process_var_decl(
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, identifier)));
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(*astp, as) == AST_AS,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, as)));
+        as == -1 || ast_node_type(*astp, as) == AST_AS
+            || ast_node_type(*astp, as) == AST_AS_AUTO,
+        log_err("type: %d\n", ast_node_type(*astp, as)));
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
@@ -763,14 +808,26 @@ process_var_decl(
             break;
 
         case HM_EXISTS:
-            // TODO
-            // err_var_decl_redeclaration(
-            //    *astp, identifier, type_origin->original_declaration, source);
+            if (type_origin->type == TYPE_INVALID)
+                break;
+            err_var_decl_redeclaration(
+                *astp,
+                identifier,
+                filename,
+                source,
+                *astp,
+                type_origin->initial_identifier,
+                filename,
+                source);
             return DEP_ERROR;
+
         case HM_OOM: return DEP_ERROR;
     }
 
-    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID)
+    /* Variable declarations have a special "as auto" node that can be used to
+     * inherit the type of initializer expression. */
+    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID
+        && ast_node_type(*astp, as) != AST_AS_AUTO)
         stack_push_entry(stack, decl1, as);
     if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
         stack_push_entry(stack, decl1, init_expr);
@@ -782,8 +839,20 @@ process_var_decl(
      * to the identifier's type annotation */
     if (type_origin->type == TYPE_INVALID)
     {
-        if (as > -1)
+        if (as > -1 && ast_node_type(*astp, as) == AST_AS_AUTO)
+        {
+            ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
+            ODBUTIL_DEBUG_ASSERT(
+                ast_type_info(*astp, init_expr) != TYPE_INVALID, (void)0);
+            type_origin->type = ast_type_info(*astp, init_expr);
+            (*astp)->nodes[as].info.type_info = type_origin->type;
+        }
+        else if (as > -1)
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                ast_type_info(*astp, as) != TYPE_INVALID, (void)0);
             type_origin->type = ast_type_info(*astp, as);
+        }
         else
             type_origin->type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
@@ -814,7 +883,7 @@ process_var_decl(
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type((*astp), type_origin->initial_identifier)
                 == AST_IDENTIFIER,
-            log_semantic_err(
+            log_err(
                 "type: %d\n",
                 ast_node_type((*astp), type_origin->initial_identifier)));
 
@@ -831,20 +900,19 @@ process_var_decl(
             case TC_TRUENESS:
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
-                warn_initialization_implicit_conversion(
+                warn_var_decl_implicit_conversion(
                     *astp, var_decl, filename, source);
                 break;
 
             case TC_TRUNCATE:
-                warn_initialization_truncation(
-                    *astp, var_decl, filename, source);
+                warn_var_decl_truncation(*astp, var_decl, filename, source);
                 break;
         }
 
         cast = cast_to_type_copy_type_info(astp, init_expr, type_origin->type);
         if (cast < -1)
             return DEP_ERROR;
-        (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
+        (*astp)->nodes[var_decl].var_decl1.init_expr = cast;
     }
 
     stack_pop(*stack);
@@ -867,12 +935,12 @@ process_var_ref(
     ODBUTIL_DEBUG_ASSERT(var_ref > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, var_ref) == AST_VAR_REF,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, var_ref)));
+        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
 
     identifier = (*astp)->nodes[var_ref].var_ref.identifier;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, identifier)));
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
     view_scope.view
         = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
@@ -884,14 +952,15 @@ process_var_ref(
             ast_id           decl2, scope_start, parent;
             struct utf8_span loc = ast_loc(*astp, identifier);
 
-            /* Type always defaults to the annotation if a variable is created
-             * by referencing it */
+            /* Type always defaults to the annotation if a variable is
+             * created by referencing it */
             type_origin->initial_identifier = identifier;
             type_origin->type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
 
             /* TODO: Global variables are not yet supported */
 
+            /* Create a declaration of the variable with a default value */
             init_expr
                 = create_initializer_literal(astp, type_origin->type, loc);
             if (init_expr < 0)
@@ -900,7 +969,7 @@ process_var_ref(
             if (init_ident < 0)
                 return DEP_ERROR;
             init_var_decl = ast_var_decl(
-                astp, init_ident, -1, init_expr, SCOPE_LOCAL, loc, loc);
+                astp, init_ident, -1, init_expr, SCOPE_LOCAL, loc, loc, loc);
             init_block = ast_block(astp, init_var_decl, loc);
             if (init_block < 0)
                 return DEP_ERROR;
@@ -942,7 +1011,17 @@ process_var_ref(
             break;
         }
 
-        case HM_EXISTS: break;
+        case HM_EXISTS: {
+            ast_id n;
+            if (type_origin->type != TYPE_INVALID)
+                break;
+
+            n = var_ref;
+            while (n > -1)
+                n = stack_erase_node_and_get_parent(*stack, n);
+
+            return DEP_ADDED;
+        }
         case HM_OOM: return DEP_ERROR;
     }
 
@@ -967,15 +1046,15 @@ process_binop(
     ODBUTIL_DEBUG_ASSERT(binop > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, binop) == AST_BINOP,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, binop)));
+        log_err("type: %d\n", ast_node_type(*astp, binop)));
 
     lhs = (*astp)->nodes[binop].binop.left;
     rhs = (*astp)->nodes[binop].binop.right;
 
-    if (ast_type_info(*astp, lhs) == TYPE_INVALID)
-        stack_push_entry(stack, binop, lhs);
     if (ast_type_info(*astp, rhs) == TYPE_INVALID)
         stack_push_entry(stack, binop, rhs);
+    if (ast_type_info(*astp, lhs) == TYPE_INVALID)
+        stack_push_entry(stack, binop, lhs);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED;
@@ -1172,7 +1251,7 @@ process_binop(
         case BINOP_BITWISE_AND:
         case BINOP_BITWISE_XOR:
         case BINOP_BITWISE_NOT:
-            log_semantic_err("Bitwise operators not yet implemented\n");
+            log_err("Bitwise operators not yet implemented\n");
             return DEP_ERROR;
 
         case BINOP_LESS_THAN:
@@ -1263,7 +1342,7 @@ process_unop(
     ODBUTIL_DEBUG_ASSERT(unop > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, unop) == AST_UNOP,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, unop)));
+        log_err("type: %d\n", ast_node_type(*astp, unop)));
 
     if (ast_type_info(*astp, expr) == TYPE_INVALID)
     {
@@ -1271,7 +1350,7 @@ process_unop(
         return DEP_ADDED;
     }
 
-    ODBUTIL_DEBUG_ASSERT(0, log_semantic_err("Not yet implemented\n"));
+    ODBUTIL_DEBUG_ASSERT(0, log_err("Not yet implemented\n"));
     return DEP_ERROR;
 }
 
@@ -1289,13 +1368,13 @@ process_cond(
     ODBUTIL_DEBUG_ASSERT(cond > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, cond) == AST_COND,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, cond)));
+        log_err("type: %d\n", ast_node_type(*astp, cond)));
 
     expr = (*astp)->nodes[cond].cond.expr;
     branches = (*astp)->nodes[cond].cond.cond_branches;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, branches) == AST_COND_BRANCHES,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, branches)));
+        log_err("type: %d\n", ast_node_type(*astp, branches)));
 
     yes = (*astp)->nodes[branches].cond_branches.yes;
     no = (*astp)->nodes[branches].cond_branches.no;
@@ -1336,16 +1415,15 @@ process_loop(
     ODBUTIL_DEBUG_ASSERT(loop > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, loop) == AST_LOOP1,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, loop)));
+        log_err("type: %d\n", ast_node_type(*astp, loop)));
     ODBUTIL_DEBUG_ASSERT(
         (*astp)->nodes[loop].loop1.loop_for1 == -1,
-        log_semantic_err(
-            "loop_for1: %d\n", (*astp)->nodes[loop].loop1.loop_for1));
+        log_err("loop_for1: %d\n", (*astp)->nodes[loop].loop1.loop_for1));
 
     loop_body = (*astp)->nodes[loop].loop1.loop2;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, loop_body) == AST_LOOP2,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, loop_body)));
+        log_err("type: %d\n", ast_node_type(*astp, loop_body)));
 
     body = (*astp)->nodes[loop_body].loop2.body;
     post_body = (*astp)->nodes[loop_body].loop2.post_body;
@@ -1373,7 +1451,7 @@ process_loop_cont(struct stack** stack, struct ast* ast, ast_id cont)
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cont) == AST_LOOP_CONT,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cont)));
+        log_err("type: %d\n", ast_node_type(ast, cont)));
 
     step = ast->nodes[cont].cont.step;
     if (step > -1 && ast_type_info(ast, step) == TYPE_INVALID)
@@ -1394,7 +1472,7 @@ set_or_get_return_type(struct ast* ast, ast_id func, enum type type)
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, func) == AST_FUNC1,
-        log_semantic_err("type: %d\n", ast_node_type(ast, func)));
+        log_err("type: %d\n", ast_node_type(ast, func)));
 
     if (ast_type_info(ast, func) == TYPE_INVALID)
     {
@@ -1434,7 +1512,7 @@ process_func_return(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, func_or_exit) == AST_FUNC_EXIT
             || ast_node_type(*astp, func_or_exit) == AST_FUNC1,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, func_or_exit)));
+        log_err("type: %d\n", ast_node_type(*astp, func_or_exit)));
 
     if (ast_node_type(*astp, func_or_exit) == AST_FUNC1)
         func = func_or_exit;
@@ -1517,7 +1595,7 @@ process_func_exit(
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, exit) == AST_FUNC_EXIT,
-        log_semantic_err("type: %d\n", ast_node_type(*astp, exit)));
+        log_err("type: %d\n", ast_node_type(*astp, exit)));
 
     ret = (*astp)->nodes[exit].func_exit.retval;
     if (ret > -1 && ast_type_info(*astp, ret) == TYPE_INVALID)
@@ -1529,8 +1607,8 @@ process_func_exit(
     if (process_func_return(astp, exit, ret, filename, source) != 0)
         return DEP_ERROR;
 
-    /* The exitfunction statement itself is not an expression, so it "returns"
-     * VOID */
+    /* The exitfunction statement itself is not an expression, so it
+     * "returns" VOID */
     (*astp)->nodes[exit].info.type_info = TYPE_VOID;
     stack_pop(*stack);
     return DEP_OK;
@@ -1551,7 +1629,7 @@ process_func(
     ODBUTIL_DEBUG_ASSERT(func > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, func) == AST_FUNC1,
-        log_semantic_err("type: %d\n", ast_node_type(ast, func)));
+        log_err("type: %d\n", ast_node_type(ast, func)));
 
     f2 = ast->nodes[func].func1.func2;
     f3 = ast->nodes[f2].func2.func3;
@@ -1571,15 +1649,15 @@ process_func(
     if (as > -1 && ast_type_info(ast, as) == TYPE_INVALID)
         stack_push_entry(stack, func, as);
 
-    /* If the function has been declared with an explicit return type, set that
-     * here now. Child nodes will attempt to set the return type and need this
-     * to generate warnings. */
+    /* If the function has been declared with an explicit return type, set
+     * that here now. Child nodes will attempt to set the return type and
+     * need this to generate warnings. */
     if (as > -1 && ast_type_info(ast, as) != TYPE_INVALID)
         set_or_get_return_type(ast, func, ast_type_info(ast, as));
 
-    /* If the function's return expression has been evaluated, try to set the
-     * return type of the function. Recursive function calls depend on this to
-     * be set now. */
+    /* If the function's return expression has been evaluated, try to set
+     * the return type of the function. Recursive function calls depend on
+     * this to be set now. */
     if (retval > -1 && ast_type_info(ast, retval) != TYPE_INVALID)
         if (process_func_return(&ast, func, retval, filename, source) != 0)
             return DEP_ERROR;
@@ -1587,10 +1665,9 @@ process_func(
     if (stack_count(*stack) != top)
         return DEP_ADDED;
 
-    /* If no exitfunction statement existed, and no return value exists, and no
-     * explicit type was used, then we default to VOID */
-    if (ast_type_info(ast, func) == TYPE_INVALID)
-        set_or_get_return_type(ast, func, TYPE_VOID);
+    /* If no exitfunction statement existed, and no return value exists, and
+     * no explicit type was used, then we default to VOID */
+    set_or_get_return_type(ast, func, TYPE_VOID);
 
     /* TODO: Type check identifier's return type with explicit_type */
 
@@ -1649,18 +1726,17 @@ instantiate_func(
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type((*func_astp), func_poly) == AST_FUNC_POLY,
-        log_semantic_err("type: %d\n", ast_node_type((*func_astp), func_poly)));
+        log_err("type: %d\n", ast_node_type((*func_astp), func_poly)));
 
     poly_block = ast_find_parent(*func_astp, func_poly);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type((*func_astp), poly_block) == AST_BLOCK,
-        log_semantic_err(
-            "type: %d\n", ast_node_type((*func_astp), poly_block)));
+        log_err("type: %d\n", ast_node_type((*func_astp), poly_block)));
 
     f1 = (*func_astp)->nodes[func_poly].func_poly.func;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*func_astp, f1) == AST_FUNC1,
-        log_semantic_err("type: %d\n", ast_node_type(*func_astp, f1)));
+        log_err("type: %d\n", ast_node_type(*func_astp, f1)));
 
     f1 = ast_dup_subtree(func_astp, f1);
     if (f1 < 0)
@@ -1680,15 +1756,14 @@ instantiate_func(
         = (*func_astp)->nodes[poly_block].block.next;
     (*func_astp)->nodes[poly_block].block.next = func_block;
 
-    /* The arguments passed to the function determine the parameter types. We
-     * copy them over here. Some polymorphic functions are "partial", i.e. one
-     * parameter carries type information but another does not. In these cases
-     * we must insert casts to the correct type. */
+    /* The arguments passed to the function determine the parameter types.
+     * We copy them over here. Some polymorphic functions are "partial",
+     * i.e. one parameter carries type information but another does not. In
+     * these cases we must insert casts to the correct type. */
     ODBUTIL_DEBUG_ASSERT(
         call_arglist == -1
             || ast_node_type((*call_astp), call_arglist) == AST_ARGLIST,
-        log_semantic_err(
-            "type: %d\n", ast_node_type((*call_astp), call_arglist)));
+        log_err("type: %d\n", ast_node_type((*call_astp), call_arglist)));
     for (pl_node = paramlist, al_node = call_arglist;
          pl_node > -1 && al_node > -1;
          pl_node = (*func_astp)->nodes[pl_node].paramlist.next,
@@ -1701,7 +1776,8 @@ instantiate_func(
         if ((*func_astp)->nodes[param].param.as < 0)
         {
             /* This parameter has not been declared with an explicit type,
-             * therefore it takes the type of the argument being passed in */
+             * therefore it takes the type of the argument being passed in
+             */
             ast_id as
                 = ast_as_type(func_astp, arg_type, ast_loc(*func_astp, arg));
             if (as < 0)
@@ -1711,15 +1787,13 @@ instantiate_func(
     }
     if (al_node > -1 || pl_node > -1)
     {
-        int gutter;
-        log_flc_err(
-            call_filename,
-            call_source,
-            call_location,
+        log_flc(call_filename, call_source, call_location);
+        log_err(
             al_node > -1 ? "Too many arguments to function call.\n"
                          : "Too few arguments to function call.\n");
-        gutter = log_excerpt_1(call_source, call_location, "", 0);
-        log_excerpt_note(gutter, "Function has the following signature:\n");
+        log_excerpt_1(call_source, call_location, "", 0);
+
+        log_note("Function has the following signature:\n");
         log_excerpt_1(call_source, ast_loc(*func_astp, f1), "", 0);
         return -1;
     }
@@ -1756,17 +1830,17 @@ find_func_instantiation(
     ODBUTIL_DEBUG_ASSERT(func_block > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(func_ast, func_block) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type(func_ast, func_block)));
+        log_err("type: %d\n", ast_node_type(func_ast, func_block)));
 
     ODBUTIL_DEBUG_ASSERT(
         call_arglist == -1
             || ast_node_type(call_ast, call_arglist) == AST_ARGLIST,
-        log_semantic_err("type: %d\n", ast_node_type(call_ast, call_arglist)));
+        log_err("type: %d\n", ast_node_type(call_ast, call_arglist)));
 
     poly_func = func_ast->nodes[func_block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(func_ast, poly_func) == AST_FUNC_POLY,
-        log_semantic_err("type: %d\n", ast_node_type(func_ast, poly_func)));
+        log_err("type: %d\n", ast_node_type(func_ast, poly_func)));
     f1 = func_ast->nodes[poly_func].func_poly.func;
     f2 = func_ast->nodes[f1].func1.func2;
     f3 = func_ast->nodes[f2].func2.func3;
@@ -1774,9 +1848,9 @@ find_func_instantiation(
     func_name = func_ast->nodes[identifier].identifier.name;
     paramlist_poly = func_ast->nodes[f3].func3.paramlist;
 
-    /* Function instantiations are always linked into the block list immediately
-     * *AFTER* the polymorphic function. This is done on purpose so the search
-     * here is easier. */
+    /* Function instantiations are always linked into the block list
+     * immediately *AFTER* the polymorphic function. This is done on purpose
+     * so the search here is easier. */
 
     while (1)
     {
@@ -1791,8 +1865,8 @@ find_func_instantiation(
         f2 = func_ast->nodes[f1].func1.func2;
         f3 = func_ast->nodes[f2].func2.func3;
 
-        /* Stop checking if the next function doesn't share the same name as the
-         * first function */
+        /* Stop checking if the next function doesn't share the same name as
+         * the first function */
         identifier = func_ast->nodes[f1].func1.identifier;
         if (func_name.off != func_ast->nodes[identifier].identifier.name.off
             || func_name.len != func_ast->nodes[identifier].identifier.name.len)
@@ -1821,8 +1895,9 @@ find_func_instantiation(
             arg_type = ast_type_info(call_ast, arg);
 
             if (param_type != arg_type
-                /* Casts are inserted later. This function only tries to find a
-                   matching instantiation on parameters that are polymorphic. */
+                /* Casts are inserted later. This function only tries to
+                   find a matching instantiation on parameters that are
+                   polymorphic. */
                 && func_ast->nodes[param_poly].param.as < 0)
             {
                 goto no_match;
@@ -1831,13 +1906,13 @@ find_func_instantiation(
 
         ODBUTIL_DEBUG_ASSERT(
             al_arg == -1,
-            log_semantic_err(
+            log_err(
                 "node: %d, type: %d\n",
                 al_arg,
                 ast_node_type(call_ast, al_arg)));
         ODBUTIL_DEBUG_ASSERT(
             pl_param == -1,
-            log_semantic_err(
+            log_err(
                 "node: %d, type: %d\n",
                 pl_param,
                 ast_node_type(func_ast, pl_param)));
@@ -1868,8 +1943,8 @@ process_func_or_container_ref(
     struct utf8_view                 key;
     const struct symbol_table_entry* entry;
 
-    /* NOTE: The function has an identifier, but the type of it is set when the
-     * return type is known. */
+    /* NOTE: The function has an identifier, but the type of it is set when
+     * the return type is known. */
     arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
     if (arglist > -1 && ast_type_info(*astp, arglist) == TYPE_INVALID)
     {
@@ -1882,11 +1957,8 @@ process_func_or_container_ref(
     entry = symbol_table_find(symbols, key);
     if (entry == NULL)
     {
-        log_flc_err(
-            filename,
-            source,
-            ast_loc(*astp, identifier),
-            "Command or function not found.\n");
+        log_flc(filename, source, ast_loc(*astp, identifier));
+        log_err("Command or function not found.\n");
         log_excerpt_1(source, ast_loc(*astp, n), "", 0);
         return -1;
     }
@@ -1927,8 +1999,7 @@ process_func_or_container_ref(
         {
             ODBUTIL_DEBUG_ASSERT(
                 ast_node_type(*astp, entry->ast_node) == AST_FUNC1,
-                log_semantic_err(
-                    "type: %d\n", ast_node_type(*astp, entry->ast_node)));
+                log_err("type: %d\n", ast_node_type(*astp, entry->ast_node)));
             f1 = entry->ast_node;
         }
 
@@ -1953,8 +2024,9 @@ process_func_or_container_ref(
                 al_node = (*astp)->nodes[al_node].arglist.next)
             {
                 ast_id    param = (*astp)->nodes[pl_node].paramlist.param;
-                enum type param_type = ast_type_info(*astp, pl_node);
-                enum type arg_type = ast_type_info(*astp, al_node);
+                ast_id    arg = (*astp)->nodes[al_node].arglist.expr;
+                enum type param_type = ast_type_info(*astp, param);
+                enum type arg_type = ast_type_info(*astp, arg);
                 ODBUTIL_DEBUG_ASSERT(param_type != TYPE_INVALID, (void)0);
                 ODBUTIL_DEBUG_ASSERT(arg_type != TYPE_INVALID, (void)0);
 
@@ -1966,7 +2038,7 @@ process_func_or_container_ref(
                     case TC_ALLOW: break;
                     case TC_DISALLOW:
                         err_func_call_incompatible_types(
-                            *astp, al_node, param, arg_num, filename, source);
+                            *astp, arg, param, arg_num, filename, source);
                         return DEP_ERROR;
 
                     case TC_SIGN_CHANGE:
@@ -1974,12 +2046,12 @@ process_func_or_container_ref(
                     case TC_INT_TO_FLOAT:
                     case TC_BOOL_PROMOTION:
                         warn_func_call_implicit_conversion(
-                            *astp, al_node, param, arg_num, filename, source);
+                            *astp, arg, param, arg_num, filename, source);
                         break;
 
                     case TC_TRUNCATE:
                         warn_func_call_truncation(
-                            *astp, al_node, param, arg_num, filename, source);
+                            *astp, arg, param, arg_num, filename, source);
                         break;
                 }
 
@@ -1990,8 +2062,8 @@ process_func_or_container_ref(
             }
             stack_pop(*stack);
 
-            /* Make sure we are re-exploring the function being called, because
-             * it may have been popped off the stack previously */
+            /* Make sure we are re-exploring the function being called,
+             * because it may have been popped off the stack previously */
             struct stack_entry* entry;
             vec_for_each(*stack, entry)
             {
@@ -2004,16 +2076,16 @@ process_func_or_container_ref(
         }
 
         /* If the function is recursive, it will already be on the stack. We
-         * want to pop all direct nodes from the stack up until this function.
-         * Sibling nodes are preserved, because we want to explore the breadth
-         * of the tree more in this situation to see if there are any other
-         * exitfunction/return statements that might help define the return type
-         * of the function.
+         * want to pop all direct nodes from the stack up until this
+         * function. Sibling nodes are preserved, because we want to explore
+         * the breadth of the tree more in this situation to see if there
+         * are any other exitfunction/return statements that might help
+         * define the return type of the function.
          *
-         * ast_find_parent() does not work in this situation, because the parent
-         * node is not guaranteed to be the next node we have to pop, since we
-         * jump around between AST_FUNC_CALL and AST_FUNC. This is the reason
-         * why the stack stores the parent node. */
+         * ast_find_parent() does not work in this situation, because the
+         * parent node is not guaranteed to be the next node we have to pop,
+         * since we jump around between AST_FUNC_CALL and AST_FUNC. This is
+         * the reason why the stack stores the parent node. */
         struct stack_entry* entry;
         vec_for_each(*stack, entry)
         {
@@ -2064,7 +2136,7 @@ process_cast(
     ODBUTIL_DEBUG_ASSERT(cast > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cast) == AST_CAST,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cast)));
+        log_err("type: %d\n", ast_node_type(ast, cast)));
 
     expr = ast->nodes[cast].cast.expr;
     as = ast->nodes[cast].cast.as;
@@ -2073,7 +2145,7 @@ process_cast(
     ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, as) == AST_AS,
-        log_semantic_err("type: %d\n", ast_node_type(ast, as)));
+        log_err("type: %d\n", ast_node_type(ast, as)));
 
     if (ast_type_info(ast, expr) == TYPE_INVALID)
         stack_push_entry(stack, cast, expr);
@@ -2113,7 +2185,7 @@ process_as(struct stack** stack, struct ast* ast, ast_id as)
     ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, as) == AST_AS,
-        log_semantic_err("type: %d\n", ast_node_type(ast, as)));
+        log_err("type: %d\n", ast_node_type(ast, as)));
 
     expr = ast->nodes[as].as.expr;
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
@@ -2199,8 +2271,8 @@ process_node(
 
         case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_CALL:
-            /* This value is already set by AST_FUNC_OR_CONTAINER_REF -- nothing
-             * to do here */
+            /* This value is already set by AST_FUNC_OR_CONTAINER_REF --
+             * nothing to do here */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
 
@@ -2242,6 +2314,7 @@ process_node(
             return DEP_OK;
         case AST_CAST: return process_cast(stack, *astp, n, filename, source);
         case AST_AS: return process_as(stack, *astp, n);
+        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_TYPE:
             (*astp)->nodes[n].info.type_info
                 = (*astp)->nodes[n].type.target_type;
@@ -2263,7 +2336,6 @@ sanity_check(
 {
     ast_id n;
     int    error = 0;
-    int    gutter;
     for (n = 0; n != ast_count(ast); ++n)
     {
         if (ast_type_info(ast, n) == TYPE_INVALID)
@@ -2271,10 +2343,10 @@ sanity_check(
             ast_id parent;
 
             /* Polymorphic functions are a special case and are allowed to
-             * remain in the tree. The reason is because semantic analysis runs
-             * in multiple threads, so we have to wait for all checks to
-             * complete before we can be sure that the polymorphic functions
-             * are no longer required.
+             * remain in the tree. The reason is because semantic analysis
+             * runs in multiple threads, so we have to wait for all checks
+             * to complete before we can be sure that the polymorphic
+             * functions are no longer required.
              */
             for (parent = n; parent > -1; parent = ast_find_parent(ast, parent))
                 if (ast_node_type(ast, parent) == AST_FUNC_POLY)
@@ -2282,36 +2354,34 @@ sanity_check(
             if (parent > -1)
                 continue;
 
-            log_flc_err(
-                filename,
-                source,
-                ast_loc(ast, n),
-                "Failed to determine type of AST node id:%d, node_type: %d.\n",
+            log_flc(filename, source, ast_loc(ast, n));
+            log_err(
+                "Failed to determine type of AST node id:%d, node_type: "
+                "%d.\n",
                 n,
                 ast_node_type(ast, n));
-            gutter = log_excerpt_1(source, ast_loc(ast, n), "", 0);
+            log_excerpt_1(source, ast_loc(ast, n), "", 0);
             error = -1;
         }
 
         if (ast_node_type(ast, n) == AST_GC)
         {
-            log_semantic_err("AST_GC nodes still exist in tree.\n");
+            log_err("AST_GC nodes still exist in tree.\n");
             error = -1;
         }
     }
 
     if (error)
     {
-        ast_export_print_fp(ast, ast->root, stdout, source, cmds);
-        fflush(stdout);
+        ast_export_print_fp(ast, ast->root, stderr, source, cmds);
+        fflush(stderr);
     }
 
     ODBUTIL_DEBUG_ASSERT(
         !error,
-        log_excerpt_note(
-            gutter,
-            "This should not happen, and means there is a bug in the semantic "
-            "analysis of the compiler.\n"));
+        log_note("This should not happen, and means there is a bug in the "
+                 "semantic "
+                 "analysis of the compiler.\n"));
 }
 #endif
 
@@ -2337,7 +2407,7 @@ type_check(
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type((*astp), (*astp)->root) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type((*astp), (*astp)->root)));
+        log_err("type: %d\n", ast_node_type((*astp), (*astp)->root)));
 
     /*
      * It's necessary to traverse the AST in a way where statements are
@@ -2372,6 +2442,15 @@ type_check(
                 stack_clear(stack);
                 break;
         }
+
+#if defined(ODBCOMPILER_AST_SANITY_CHECK)
+        ast_export_dot(
+            *astp,
+            (*astp)->root,
+            cstr_ospathc("work.dot"),
+            sources[tu_id].text.data,
+            cmds);
+#endif
     }
     mutex_unlock(tu_mutexes[tu_id]);
 
@@ -2383,6 +2462,12 @@ type_check(
     if (return_code == 0)
         sanity_check(
             *astp, cmds, utf8_cstr(filenames[tu_id]), sources[tu_id].text.data);
+    ast_export_dot(
+        *astp,
+        (*astp)->root,
+        cstr_ospathc("work.dot"),
+        sources[tu_id].text.data,
+        cmds);
 #endif
 
     return return_code;

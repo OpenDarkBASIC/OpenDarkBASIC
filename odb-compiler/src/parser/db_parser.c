@@ -68,7 +68,7 @@ get_next_assembled_token(
         /* Impossible to run out of memory here */
         ODBUTIL_DEBUG_ASSERT(
             token != NULL,
-            log_parser_err("token->pushed_char: %d\n", token->pushed_char));
+            log_err("token->pushed_char: %d\n", token->pushed_char));
         token->pushed_char
             = dblex(&token->pushed_value, scanner_location, scanner);
         token->pushed_location = *scanner_location;
@@ -233,7 +233,7 @@ db_parse(
 
     if (source.text.len == 0)
     {
-        log_parser_warn("Source is empty: {quote:%s}\n", filename);
+        log_warn("Source is empty: {quote:%s}\n", filename);
         return 0;
     }
 
@@ -241,7 +241,7 @@ db_parse(
         source.text.data, source.text.len + 2, parser->scanner);
     if (buffer_state == NULL)
     {
-        log_parser_err(
+        log_err(
             "Failed to set up scan buffer. Either we ran out of memory, or the "
             "source file was not memory mapped correctly. Did you use "
             "db_parser_open_file()?\n");

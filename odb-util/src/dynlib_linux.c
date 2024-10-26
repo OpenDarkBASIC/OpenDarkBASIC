@@ -19,7 +19,7 @@ dynlib_open(struct ospathc filepath)
 {
     void* handle = dlopen(ospathc_cstr(filepath), RTLD_LAZY);
     if (handle == NULL)
-        log_util_err(
+        log_err(
             "Failed to dlopen() file {quote:%s}: %s\n",
             ospathc_cstr(filepath),
             strerror(errno));

@@ -66,6 +66,16 @@ err_func_call_incompatible_types(
     const char*       filename,
     const char*       source);
 int
+err_func_redefinition(
+    const struct ast* func_ast,
+    ast_id            func,
+    const char*       filename,
+    const char*       source,
+    const struct ast* prev_ast,
+    ast_id            prev_func,
+    const char*       prev_filename,
+    const char*       prev_source);
+int
 err_func_return_incompatible_types(
     const struct ast* ast,
     ast_id            exit,
@@ -80,9 +90,10 @@ err_func_missing_return_value(
     const char*       filename,
     const char*       source);
 int
-err_var_decl_init_incompatible_types(
+err_loop_duplicate_name(
     const struct ast* ast,
-    ast_id            var_decl,
+    struct utf8_span  inner_name,
+    struct utf8_span  outer_name,
     const char*       filename,
     const char*       source);
 int
@@ -116,6 +127,22 @@ err_loop_for_unknown_direction(
 int
 err_unterminated_remark(
     struct utf8_span location, const char* filename, const char* source);
+int
+err_var_decl_init_incompatible_types(
+    const struct ast* ast,
+    ast_id            var_decl,
+    const char*       filename,
+    const char*       source);
+int
+err_var_decl_redeclaration(
+    const struct ast* ast,
+    ast_id            identifier,
+    const char*       filename,
+    const char*       source,
+    const struct ast* prev_ast,
+    ast_id            prev_identifier,
+    const char*       prev_filename,
+    const char*       prev_source);
 
 void
 warn_assignment_implicit_conversion(
@@ -216,6 +243,14 @@ warn_func_return_truncation(
     const char*       filename,
     const char*       source);
 void
+warn_loop_exit_ambiguous_name(
+    const struct ast* ast,
+    ast_id            exit,
+    struct utf8_span  name,
+    struct utf8_span  outer_name,
+    const char*       filename,
+    const char*       source);
+void
 warn_loop_for_default_step_may_be_incorrect(
     const struct ast* ast,
     ast_id            begin,
@@ -245,14 +280,14 @@ warn_loop_for_incorrect_next(
     const char* filename,
     const char* source);
 void
-warn_initialization_implicit_conversion(
+warn_var_decl_implicit_conversion(
     const struct ast* ast,
-    ast_id            ass,
+    ast_id            var_decl,
     const char*       filename,
     const char*       source);
 void
-warn_initialization_truncation(
+warn_var_decl_truncation(
     const struct ast* ast,
-    ast_id            ass,
+    ast_id            var_decl,
     const char*       filename,
     const char*       source);

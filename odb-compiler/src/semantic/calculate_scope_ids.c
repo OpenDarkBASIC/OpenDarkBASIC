@@ -36,7 +36,7 @@ process_node(
             ast->nodes[f2].info.scope_id = current_scope;
             ast->nodes[identifier].info.scope_id = current_scope;
             if (as > -1)
-                ast->nodes[as].info.scope_id = current_scope;
+                process_node(ast, as, current_scope, scope_counter);
 
             current_scope = ++(*scope_counter);
 
@@ -133,6 +133,7 @@ process_node(
         case AST_STRING_LITERAL:
         case AST_CAST:
         case AST_AS:
+        case AST_AS_AUTO:
         case AST_TYPE: {
             ast_id left = ast->nodes[n].base.left;
             ast_id right = ast->nodes[n].base.right;
@@ -167,17 +168,17 @@ check_scope_ids(
     {
         if (ast->nodes[n].info.scope_id == -1)
         {
-            log_semantic_err(
+            log_err(
                 "Node %d of type %d has no scope ID\n",
                 n,
                 ast_node_type(ast, n));
-            ast_export_print_fp(ast, n, stdout, source, cmds);
+            ast_export_print_fp(ast, n, stderr, source, cmds);
             error = -1;
         }
     }
 
     if (error)
-        fflush(stdout);
+        fflush(stderr);
 
     ODBUTIL_DEBUG_ASSERT(!error, (void)0);
 }

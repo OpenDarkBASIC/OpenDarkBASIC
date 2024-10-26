@@ -32,7 +32,7 @@ report_unconnected_nodes(
     {
         ast_id parent = ast_find_parent(ast, n);
         if (parent == -1 && n != ast->root)
-            ast_export_print_fp(ast, n, stdout, source, cmds);
+            ast_export_print_fp(ast, n, stderr, source, cmds);
     }
 }
 
@@ -43,13 +43,12 @@ ast_verify_connectivity(
     ast_id count = count_nodes_recurse(ast, ast->root, 0);
     if (count < 0)
     {
-        log_err("[ast] ", "AST recursion depth exceeds node count\n");
+        log_err("AST recursion depth exceeds node count\n");
         return -1;
     }
     else if (count != ast_count(ast))
     {
         log_err(
-            "[ast] ",
             "%d out of %d nodes reachable from root. Did you forget to call "
             "ast_gc()?\n",
             count,

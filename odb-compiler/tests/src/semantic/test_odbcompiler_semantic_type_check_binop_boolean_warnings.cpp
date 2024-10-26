@@ -22,20 +22,21 @@ TEST_F(NAME, and_implicit_evaluation_of_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a and b\n"
-              "   |       ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a <> 0 and b\n"
-              "   |        ^~~~<\n"
-              "test:1:13: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a and b\n"
-              "   |             ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a and b <> 0\n"
-              "   |              ^~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a and b\n"
+            "   |       ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a <> 0 and b\n"
+            "   |        ^~~~<\n"
+            "test:1:13\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a and b\n"
+            "   |             ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a and b <> 0\n"
+            "   |              ^~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
@@ -57,18 +58,18 @@ TEST_F(NAME, and_implicit_evaluation_of_float)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+        LogEq("test:1:7\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# and b#\n"
               "   |       ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# <> 0.0f and b#\n"
               "   |         ^~~~~~~<\n"
-              "test:1:14: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+              "test:1:14\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# and b#\n"
               "   |              ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# and b# <> 0.0f\n"
               "   |                ^~~~~~~<\n"));
 
@@ -92,20 +93,21 @@ TEST_F(NAME, and_implicit_evaluation_of_double)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! and b!\n"
-              "   |       ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! <> 0.0 and b!\n"
-              "   |         ^~~~~~<\n"
-              "test:1:14: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! and b!\n"
-              "   |              ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! and b! <> 0.0\n"
-              "   |                ^~~~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! and b!\n"
+            "   |       ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! <> 0.0 and b!\n"
+            "   |         ^~~~~~<\n"
+            "test:1:14\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! and b!\n"
+            "   |              ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! and b! <> 0.0\n"
+            "   |                ^~~~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
@@ -127,20 +129,21 @@ TEST_F(NAME, or_implicit_evaluation_of_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a or b\n"
-              "   |       ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a <> 0 or b\n"
-              "   |        ^~~~<\n"
-              "test:1:12: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a or b\n"
-              "   |            ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a or b <> 0\n"
-              "   |             ^~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a or b\n"
+            "   |       ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a <> 0 or b\n"
+            "   |        ^~~~<\n"
+            "test:1:12\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a or b\n"
+            "   |            ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a or b <> 0\n"
+            "   |             ^~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
@@ -162,18 +165,18 @@ TEST_F(NAME, or_implicit_evaluation_of_float)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+        LogEq("test:1:7\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# or b#\n"
               "   |       ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# <> 0.0f or b#\n"
               "   |         ^~~~~~~<\n"
-              "test:1:13: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+              "test:1:13\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# or b#\n"
               "   |             ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# or b# <> 0.0f\n"
               "   |               ^~~~~~~<\n"));
 
@@ -197,20 +200,21 @@ TEST_F(NAME, or_implicit_evaluation_of_double)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! or b!\n"
-              "   |       ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! <> 0.0 or b!\n"
-              "   |         ^~~~~~<\n"
-              "test:1:13: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! or b!\n"
-              "   |             ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! or b! <> 0.0\n"
-              "   |               ^~~~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! or b!\n"
+            "   |       ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! <> 0.0 or b!\n"
+            "   |         ^~~~~~<\n"
+            "test:1:13\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! or b!\n"
+            "   |             ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! or b! <> 0.0\n"
+            "   |               ^~~~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
@@ -232,20 +236,21 @@ TEST_F(NAME, xor_implicit_evaluation_of_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a xor b\n"
-              "   |       ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a <> 0 xor b\n"
-              "   |        ^~~~<\n"
-              "test:1:13: warning: Implicit evaluation of INTEGER as a boolean "
-              "expression.\n"
-              " 1 | print a xor b\n"
-              "   |             ^ INTEGER\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a xor b <> 0\n"
-              "   |              ^~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a xor b\n"
+            "   |       ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a <> 0 xor b\n"
+            "   |        ^~~~<\n"
+            "test:1:13\n"
+            "warning: Implicit evaluation of INTEGER as a boolean expression.\n"
+            " 1 | print a xor b\n"
+            "   |             ^ INTEGER\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a xor b <> 0\n"
+            "   |              ^~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;
@@ -267,18 +272,18 @@ TEST_F(NAME, xor_implicit_evaluation_of_float)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+        LogEq("test:1:7\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# xor b#\n"
               "   |       ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# <> 0.0f xor b#\n"
               "   |         ^~~~~~~<\n"
-              "test:1:14: warning: Implicit evaluation of FLOAT as a boolean "
-              "expression.\n"
+              "test:1:14\n"
+              "warning: Implicit evaluation of FLOAT as a boolean expression.\n"
               " 1 | print a# xor b#\n"
               "   |              ^< FLOAT\n"
-              "   = help: You can make it explicit by changing it to:\n"
+              "help: You can make it explicit by changing it to:\n"
               " 1 | print a# xor b# <> 0.0f\n"
               "   |                ^~~~~~~<\n"));
 
@@ -302,20 +307,21 @@ TEST_F(NAME, xor_implicit_evaluation_of_double)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! xor b!\n"
-              "   |       ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! <> 0.0 xor b!\n"
-              "   |         ^~~~~~<\n"
-              "test:1:14: warning: Implicit evaluation of DOUBLE as a boolean "
-              "expression.\n"
-              " 1 | print a! xor b!\n"
-              "   |              ^< DOUBLE\n"
-              "   = help: You can make it explicit by changing it to:\n"
-              " 1 | print a! xor b! <> 0.0\n"
-              "   |                ^~~~~~<\n"));
+        LogEq(
+            "test:1:7\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! xor b!\n"
+            "   |       ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! <> 0.0 xor b!\n"
+            "   |         ^~~~~~<\n"
+            "test:1:14\n"
+            "warning: Implicit evaluation of DOUBLE as a boolean expression.\n"
+            " 1 | print a! xor b!\n"
+            "   |              ^< DOUBLE\n"
+            "help: You can make it explicit by changing it to:\n"
+            " 1 | print a! xor b! <> 0.0\n"
+            "   |                ^~~~~~<\n"));
 
     ast_id initb = ast->nodes[ast->root].block.next;
     ast_id cmd_block = ast->nodes[initb].block.next;

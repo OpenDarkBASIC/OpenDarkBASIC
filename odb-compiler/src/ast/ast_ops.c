@@ -56,22 +56,42 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2)
     ast->nodes[n2].base.right = n2_right;
 }
 
-int
+ast_id
 ast_dup_identifier(struct ast** astp, ast_id identifier)
 {
-    struct ast* ast = *astp;
+    struct utf8_span     name, location;
+    enum type_annotation annotation;
+    struct ast*          ast = *astp;
 
     ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast->nodes[identifier].info.node_type == AST_IDENTIFIER,
-        log_err("", "type: %d\n", ast->nodes[identifier].info.node_type));
+        log_err("type: %d\n", ast->nodes[identifier].info.node_type));
 
-    struct utf8_span     name = ast->nodes[identifier].identifier.name;
-    struct utf8_span     location = ast_loc(ast, identifier);
-    enum type_annotation annotation
-        = ast->nodes[identifier].identifier.annotation;
+    name = ast->nodes[identifier].identifier.name;
+    location = ast_loc(ast, identifier);
+    annotation = ast->nodes[identifier].identifier.annotation;
 
     return ast_identifier(astp, name, annotation, location);
+}
+
+ast_id
+ast_dup_lvalue(struct ast** astp, ast_id lvalue)
+{
+    ast_id      identifier;
+    struct ast* ast = *astp;
+
+    ODBUTIL_DEBUG_ASSERT(lvalue > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast->nodes[lvalue].info.node_type == AST_VAR_REF,
+        log_err("type: %d\n", ast->nodes[lvalue].info.node_type));
+
+    identifier
+        = ast_dup_identifier(astp, ast->nodes[lvalue].var_ref.identifier);
+    if (identifier < 0)
+        return -1;
+
+    return ast_var_ref(astp, identifier, ast_loc(*astp, identifier));
 }
 
 int
@@ -108,8 +128,12 @@ ast_delete_node(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, n) == -1,
-        log_err("", "parent: %d\n", ast_find_parent(ast, n)));
+        log_err("parent: %d\n", ast_find_parent(ast, n)));
     ast->nodes[n].info.node_type = AST_GC;
+    /* This prevents functions such as ast_find_parent() from finding the node
+     * again */
+    ast->nodes[n].base.left = -1;
+    ast->nodes[n].base.right = -1;
 }
 
 static void
@@ -123,6 +147,10 @@ delete_tree_recurse(struct ast* ast, ast_id n)
         delete_tree_recurse(ast, right);
 
     ast->nodes[n].info.node_type = AST_GC;
+    /* This prevents functions such as ast_find_parent() from finding the node
+     * again */
+    ast->nodes[n].base.left = -1;
+    ast->nodes[n].base.right = -1;
 }
 
 void
@@ -130,7 +158,7 @@ ast_delete_tree(struct ast* ast, ast_id n)
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_find_parent(ast, n) == -1,
-        log_err("", "parent: %d\n", ast_find_parent(ast, n)));
+        log_err("parent: %d\n", ast_find_parent(ast, n)));
     delete_tree_recurse(ast, n);
 }
 
@@ -150,6 +178,8 @@ ast_gc(struct ast* ast)
                     ast->nodes[p].base.right = n;
             }
             ast->nodes[n] = ast->nodes[last];
+            if (ast->root == last)
+                ast->root = n;
         }
 }
 
@@ -303,6 +333,7 @@ ast_trees_equal(
             break;
         case AST_CAST: break;
         case AST_AS: break;
+        case AST_AS_AUTO: break;
         case AST_TYPE:
             if (ast->nodes[n1].type.target_type
                 != ast->nodes[n2].type.target_type)

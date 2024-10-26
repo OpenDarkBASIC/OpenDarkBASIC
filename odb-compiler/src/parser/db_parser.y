@@ -252,7 +252,7 @@
 %type<node_value> conditional cond_oneline cond_begin cond_next
 %type<node_value> loop loop_do loop_while loop_until loop_for loop_for_init loop_next loop_cont loop_exit
 %type<string_value> loop_name
-%type<node_value> as_type maybe_as_type
+%type<node_value> as_type as_type_auto maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
 %type<node_value> identifier var_decl var_ref param lvalue
@@ -387,12 +387,12 @@ assignment
   : lvalue '=' expr                         { $$ = ast_assign(ctx->astp, $1, $3, @2, @$); }
   ;
 var_decl
-  : scope identifier as_type                { $$ = ast_var_decl(ctx->astp, $2, $3, -1, $1, @1, @$); }
-  | identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, @$); }
-  | scope identifier                        { $$ = ast_var_decl(ctx->astp, $2, -1, -1, $1, @1, @$); }
-  | scope identifier as_type '=' expr       { $$ = ast_var_decl(ctx->astp, $2, $3, $5, $1, @1, @$); }
-  | identifier as_type '=' expr             { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @$); }
-  | scope identifier '=' expr               { $$ = ast_var_decl(ctx->astp, $2, -1, $4, $1, @1, @$); }
+  : scope identifier as_type                { $$ = ast_var_decl(ctx->astp, $2, $3, -1, $1, @1, empty_utf8_span(), @$); }
+  | identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
+  | scope identifier                        { $$ = ast_var_decl(ctx->astp, $2, -1, -1, $1, @1, empty_utf8_span(), @$); }
+  | scope identifier as_type_auto '=' expr  { $$ = ast_var_decl(ctx->astp, $2, $3, $5, $1, @1, @4, @$); }
+  | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
+  | scope identifier '=' expr               { $$ = ast_var_decl(ctx->astp, $2, -1, $4, $1, @1, @3, @$); }
   ;
 var_ref
   : identifier                              { $$ = ast_var_ref(ctx->astp, $1, @$); }
@@ -457,7 +457,7 @@ loop_for
   ;
 loop_for_init
   : assignment                             { $$ = $1; }
-  | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @$); }
+  | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   ;
 loop_next
   : NEXT lvalue                             { $$ = $2; }
@@ -513,11 +513,15 @@ as_type
   | AS FLOAT                                { $$ = ast_as_type(ctx->astp, TYPE_F32, @$); }
   | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, TYPE_F64, @$); }
   | AS STRING                               { $$ = ast_as_type(ctx->astp, TYPE_STRING, @$); }
-  | AS TYPE '(' expr ')'                    { $$ = ast_as_type(ctx->astp, $4, @$);}
+  | AS TYPE '(' expr ')'                    { $$ = ast_as(ctx->astp, $4, @$);}
   ;
 maybe_as_type
   : as_type                                 { $$ = $1; }
   |                                         { $$ = -1; }
+  ;
+as_type_auto
+  : as_type                                 { $$ = $1; }
+  | AS                                      { $$ = ast_as_auto(ctx->astp, @$); }
   ;
 identifier
   : IDENTIFIER                              { $$ = ast_identifier(ctx->astp, $1, TA_NONE, @$); }
@@ -535,7 +539,7 @@ static void dberror(DBLTYPE *locp, dbscan_t scanner, const char* fmt, ...)
 {
     va_list args;
     va_start(args, fmt);
-    log_parser_verr(fmt, args);
+    log_verr(fmt, args);
     log_raw("\n");
     //odb::Log::vdbParserFatalError(location->getFileLineColumn().c_str(), fmt, args);
     va_end(args);
@@ -553,12 +557,11 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     
     if (lookahead != YYSYMBOL_YYEMPTY)
     {
-        log_flc_err(
+        log_flc(
             parse_param->filename,
             parse_param->source,
-            *yypcontext_location(ctx),
-            "Unexpected %s\n",
-            yysymbol_name(lookahead));
+            *yypcontext_location(ctx));
+        log_err("Unexpected %s\n", yysymbol_name(lookahead));
         log_excerpt_1(parse_param->source, *yypcontext_location(ctx), "", 0);
     }
 
@@ -568,11 +571,11 @@ static int yyreport_syntax_error(const yypcontext_t *ctx, struct parse_param* pa
     else
     {
         int i;
-        log_flc_err(
+        log_flc(
             parse_param->filename,
             parse_param->source,
-            *yypcontext_location(ctx),
-            "Expected ");
+            *yypcontext_location(ctx));
+        log_err("Expected ");
         for (i = 0; i < n; ++i)
             log_raw("%s%s", i ? " or " : "", yysymbol_name(expected[i]));
         log_raw("\n");

@@ -25,7 +25,6 @@ TEST_F(NAME, implicit_step_1)
               "next n\n"),
         Eq(0));
 
-    /* clang-format off */
     ast_id loop1 = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, loop1), Eq(AST_LOOP1));
     ast_id for1 = ast->nodes[loop1].loop1.loop_for1;
@@ -45,14 +44,14 @@ TEST_F(NAME, implicit_step_1)
     ASSERT_THAT(ast->nodes[end].byte_literal.value, Eq(5));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(step, Eq(-1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(ast->nodes[next].identifier.name, Utf8SpanEq(30, 1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ast_id next_ident = ast->nodes[next_var].var_ref.identifier;
+    ASSERT_THAT(ast->nodes[next_ident].identifier.name, Utf8SpanEq(30, 1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ASSERT_THAT(ast_node_type(ast, body), Eq(AST_BLOCK));
     ast_id post_body = ast->nodes[loop2].loop2.post_body;
     ASSERT_THAT(post_body, Eq(-1));
-    /* clang-format on */
 }
 
 TEST_F(NAME, implicit_step_1_empty_loop)
@@ -81,8 +80,9 @@ TEST_F(NAME, implicit_step_1_empty_loop)
     ASSERT_THAT(ast->nodes[end].byte_literal.value, Eq(5));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(step, Eq(-1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(ast->nodes[next].identifier.name, Utf8SpanEq(18, 1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ast_id next_ident = ast->nodes[next_var].var_ref.identifier;
+    ASSERT_THAT(ast->nodes[next_ident].identifier.name, Utf8SpanEq(18, 1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ASSERT_THAT(body, Eq(-1));
@@ -118,8 +118,8 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ASSERT_THAT(ast->nodes[end].byte_literal.value, Eq(5));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(step, Eq(-1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(next, Eq(-1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ASSERT_THAT(next_var, Eq(-1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ASSERT_THAT(ast_node_type(ast, body), Eq(AST_BLOCK));
@@ -153,8 +153,8 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
     ASSERT_THAT(ast->nodes[end].byte_literal.value, Eq(5));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(step, Eq(-1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(next, Eq(-1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ASSERT_THAT(next_var, Eq(-1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ast_id post_body = ast->nodes[loop2].loop2.post_body;
@@ -191,8 +191,8 @@ TEST_F(NAME, step_expression_range)
     ASSERT_THAT(ast->nodes[end_identifier].identifier.name, Utf8SpanEq(11, 1));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(ast->nodes[step].byte_literal.value, Eq(1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(next, Eq(-1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ASSERT_THAT(next_var, Eq(-1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ASSERT_THAT(body, Eq(-1));
@@ -232,8 +232,8 @@ TEST_F(NAME, var_decl)
     ASSERT_THAT(ast->nodes[end_identifier].identifier.name, Utf8SpanEq(20, 1));
     ast_id step = ast->nodes[for3].loop_for3.step;
     ASSERT_THAT(ast->nodes[step].byte_literal.value, Eq(1));
-    ast_id next = ast->nodes[for3].loop_for3.next;
-    ASSERT_THAT(next, Eq(-1));
+    ast_id next_var = ast->nodes[for3].loop_for3.next;
+    ASSERT_THAT(next_var, Eq(-1));
     ast_id loop2 = ast->nodes[loop1].loop1.loop2;
     ast_id body = ast->nodes[loop2].loop2.body;
     ASSERT_THAT(body, Eq(-1));

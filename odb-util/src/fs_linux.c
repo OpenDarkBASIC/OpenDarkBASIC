@@ -34,7 +34,7 @@ fs_get_path_to_self(struct ospath* path)
         path->str.len = readlink(
             "/proc/self/exe", path->str.data, capacity - UTF8_APPEND_PADDING);
         if (path->str.len < 0)
-            return log_util_err(
+            return log_err(
                 "readlink() failed in fs_get_path_to_self(): %s",
                 strerror(errno));
 
@@ -107,7 +107,7 @@ fs_make_dir(struct ospathc path)
     if (errno == EEXIST)
         return 1;
 
-    log_util_err(
+    log_err(
         "Failed to create directory {quote:%s}: %s\n",
         ospathc_cstr(path),
         strerror(errno));
@@ -135,7 +135,7 @@ try_again:
                 goto try_again;
         }
 
-        log_util_err(
+        log_err(
             "Failed to create directory {quote:%s}: %s\n",
             ospath_cstr(path),
             strerror(errno));

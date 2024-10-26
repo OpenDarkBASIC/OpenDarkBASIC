@@ -25,7 +25,7 @@ hash32_jenkins_oaat(const void* key, int len)
 hash32
 hash32_ptr(const void* ptr, int len)
 {
-    ODBUTIL_DEBUG_ASSERT(len == sizeof(void*), log_util_err("len: %d\n", len));
+    ODBUTIL_DEBUG_ASSERT(len == sizeof(void*), log_err("len: %d\n", len));
     ODBUTIL_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return hash32_combine(
@@ -36,7 +36,7 @@ hash32_ptr(const void* ptr, int len)
 hash32
 hash32_ptr(const void* ptr, int len)
 {
-    ODBUTIL_DEBUG_ASSERT(len == sizeof(void*), log_util_err("len: %d\n", len));
+    ODBUTIL_DEBUG_ASSERT(len == sizeof(void*), log_err("len: %d\n", len));
     ODBUTIL_STATIC_ASSERT(sizeof(uintptr_t) == sizeof(void*));
 
     return (hash32) * (uintptr_t*)ptr;

@@ -169,7 +169,7 @@
     static inline T* prefix##_take(struct prefix* rb)                          \
     {                                                                          \
         ODBUTIL_DEBUG_ASSERT(                                                  \
-            !prefix##_is_empty(rb), log_util_err("rb is empty\n"));            \
+            !prefix##_is_empty(rb), log_err("rb is empty\n"));            \
         int##bits##_t read = rb->read;                                         \
         T*            data = &rb->data[read];                                  \
         rb->read = (read + 1) & ((int##bits##_t)rb->capacity - 1);             \
@@ -215,7 +215,7 @@
         mem_size       data = sizeof((*rb)->data[0]) * elems;                  \
                                                                                \
         ODBUTIL_DEBUG_ASSERT(                                                  \
-            IS_POWER_OF_2(elems), log_util_err("elems: %d\n", elems));         \
+            IS_POWER_OF_2(elems), log_err("elems: %d\n", elems));         \
         new_rb = (struct prefix*)mem_realloc(*rb, header + data);              \
         if (new_rb == NULL)                                                    \
             return log_oom(header + data, "rb_resize()");                      \

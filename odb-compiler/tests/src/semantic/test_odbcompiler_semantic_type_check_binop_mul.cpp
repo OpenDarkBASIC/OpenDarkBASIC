@@ -28,15 +28,15 @@ TEST_F(NAME, two_bytes)
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
-    ast_id ass = ast->nodes[block3].block.stmt;
-    ast_id op = ast->nodes[ass].assignment.expr;
+    ast_id decl1 = ast->nodes[block3].block.stmt;
+    ast_id op = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, op), Eq(AST_BINOP));
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U8));
-    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_REF));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U8));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_REF));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U8));
 }
 
@@ -53,15 +53,15 @@ TEST_F(NAME, byte_and_word)
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
-    ast_id ass = ast->nodes[block3].block.stmt;
-    ast_id op = ast->nodes[ass].assignment.expr;
+    ast_id decl1 = ast->nodes[block3].block.stmt;
+    ast_id op = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, op), Eq(AST_BINOP));
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U16));
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U16));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_REF));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U16));
 }
 
@@ -78,13 +78,13 @@ TEST_F(NAME, word_and_byte)
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
-    ast_id ass = ast->nodes[block3].block.stmt;
-    ast_id op = ast->nodes[ass].assignment.expr;
+    ast_id decl1 = ast->nodes[block3].block.stmt;
+    ast_id op = ast->nodes[decl1].var_decl1.init_expr;
     ast_id lhs = ast->nodes[op].binop.left;
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, op), Eq(AST_BINOP));
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U16));
-    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_IDENTIFIER));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_REF));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U16));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U16));

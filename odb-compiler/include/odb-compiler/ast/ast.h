@@ -113,6 +113,7 @@ enum ast_type
     AST_STRING_LITERAL,
     AST_CAST,
     AST_AS,
+    AST_AS_AUTO,
     AST_TYPE,
 };
 
@@ -183,6 +184,7 @@ union ast_node
         struct info info;
         ast_id identifier;
         ast_id as;
+        struct utf8_span op_location;
     } var_decl2;
 
     struct {
@@ -394,6 +396,11 @@ union ast_node
     struct {
         struct info info;
         ast_id _pad1, _pad2;
+    } as_auto;
+
+    struct {
+        struct info info;
+        ast_id _pad1, _pad2;
         enum type target_type;
     } type;
 };
@@ -449,7 +456,7 @@ ast_loc(const struct ast* ast, ast_id n)
 
 ast_id ast_dup_node(struct ast** astp, ast_id n);
 
-ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);
+ODBCOMPILER_PUBLIC_API ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
 ast_id ast_block_append_stmt(struct ast** astp, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_end(struct ast** astp, struct utf8_span location);
@@ -467,13 +474,14 @@ ast_id ast_var_decl(
     ast_id init_expr,
     enum scope scope,
     struct utf8_span scope_location,
+    struct utf8_span op_location,
     struct utf8_span location);
 ast_id ast_var_ref(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-ast_id ast_inc_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
-ast_id ast_inc(struct ast** astp, ast_id var, struct utf8_span location);
-ast_id ast_dec_step(struct ast** astp, ast_id var, ast_id expr, struct utf8_span location);
-ast_id ast_dec(struct ast** astp, ast_id var, struct utf8_span location);
+ast_id ast_inc_step(struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location);
+ast_id ast_inc(struct ast** astp, ast_id var_ref, struct utf8_span location);
+ast_id ast_dec_step(struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location);
+ast_id ast_dec(struct ast** astp, ast_id var_ref, struct utf8_span location);
 ast_id ast_binop(
     struct ast** astp,
     enum binop_type op,
@@ -515,7 +523,7 @@ ast_id ast_func(
 ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
 ast_id ast_func_or_container_ref(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);
-ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);
+ODBCOMPILER_PUBLIC_API ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);
 ast_id ast_word_literal(struct ast** astp, uint16_t value, struct utf8_span location);
 ast_id ast_integer_literal(struct ast** astp, int32_t value, struct utf8_span location);
 ast_id ast_dword_literal(struct ast** astp, uint32_t value, struct utf8_span location);
@@ -529,4 +537,5 @@ ast_id ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span loca
 ast_id ast_type(struct ast** astp, enum type type, struct utf8_span location);
 ast_id ast_as(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location);
+ast_id ast_as_auto(struct ast** astp, struct utf8_span location);
 /* clang-format on */

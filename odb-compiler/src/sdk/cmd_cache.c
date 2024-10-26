@@ -117,7 +117,7 @@ cmd_cache_load(
         ODBUTIL_DEBUG_ASSERT(
             cached_plugin_id >= 0
                 && cached_plugin_id < plugin_ids_count(cached_plugin_map),
-            log_cmd_err("plugin_id: %d\n", cached_plugin_id));
+            log_err("plugin_id: %d\n", cached_plugin_id));
         cmd = cmd_list_add(
             cmds,
             cached_plugin_map->data[cached_plugin_id],

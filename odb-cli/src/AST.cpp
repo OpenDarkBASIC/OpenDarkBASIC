@@ -104,7 +104,7 @@ open_stdin_as_tu(struct ctx* ctx)
     }
     if (!feof(stdin))
     {
-        log_parser_err(
+        log_err(
             "Failed to read from stdin: {emph:%s}\n", strerror(errno));
         goto read_failed;
     }
@@ -231,7 +231,7 @@ parse_worker(void* arg)
         if (tu_id % sources_count(worker->ctx->sources) != worker->id)
             continue;
 
-        log_parser_info(
+        log_info(
             "Parsing source file: {emph:%s}\n",
             filename->len ? utf8_cstr(*filename) : "<stdin>");
         mem_acquire_ast(*astp);
@@ -251,6 +251,7 @@ parse_worker(void* arg)
             &worker->ctx->symbol_table,
             worker->ctx->tus->data,
             tu_id,
+            worker->ctx->filenames->data,
             worker->ctx->sources->data);
         mem_release_symbol_table(worker->ctx->symbol_table);
         mutex_unlock(worker->mutex);
@@ -287,7 +288,7 @@ semantic_worker(void* arg)
         if (tu_id % sources_count(worker->ctx->sources) != worker->id)
             continue;
 
-        log_parser_info(
+        log_info(
             "Running semantic checks: {emph:%s}\n",
             filename->len ? utf8_cstr(*filename) : "<stdin>");
         mem_acquire_ast(*astp);
@@ -550,7 +551,7 @@ dump_ast(const std::vector<std::string>& args)
     int i;
     if (!args.empty())
     {
-        log_parser_info(
+        log_info(
             "Dumping AST to Graphviz DOT format: {quote:%s}\n",
             args[0].c_str());
 
@@ -566,7 +567,7 @@ dump_ast(const std::vector<std::string>& args)
     }
     else
     {
-        log_parser_info("Dumping AST to Graphviz DOT format\n");
+        log_info("Dumping AST to Graphviz DOT format\n");
         for (i = 0; i != tus_count(ctx.tus); i++)
         {
             ast_export_dot_fp(

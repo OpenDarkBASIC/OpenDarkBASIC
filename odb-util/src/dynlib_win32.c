@@ -11,7 +11,7 @@ dynlib_add_path(struct ospathc path)
     /* This function does not appear to add duplicates so it's safe to call it
      * multiple times */
     if (!SetDllDirectoryA(ospathc_cstr(path)))
-        return log_util_err(
+        return log_err(
             "Failed to add DLL path {quote:%s}: {win32error}\n",
             ospathc_cstr(path));
 
@@ -23,7 +23,7 @@ dynlib_open(struct ospathc file_path)
 {
     HANDLE hModule = LoadLibraryA(ospathc_cstr(file_path));
     if (hModule == NULL)
-        log_util_err("Failed to load library {quote:%s}: {win32error}\n", ospathc_cstr(file_path));
+        log_err("Failed to load library {quote:%s}: {win32error}\n", ospathc_cstr(file_path));
 
     return (struct dynlib*)hModule;
 }

@@ -16,7 +16,8 @@ TEST_F(NAME, empty_then_doesnt_work_alone)
     ASSERT_THAT(parse("if a then\n"), Eq(-1));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:6: error: Missing statement after THEN keyword.\n"
+        LogEq("test:1:6\n"
+              "error: Missing statement after THEN keyword.\n"
               " 1 | if a then ...\n"
               "   |           ^~~\n"));
 }
@@ -30,7 +31,8 @@ TEST_F(NAME, using_then_in_multiline_if_is_incorrect)
         Eq(-1));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:6: error: THEN keyword not required.\n"
+        LogEq("test:1:6\n"
+              "error: THEN keyword not required.\n"
               " 1 | if a then\n"
               "   |      ^~~~\n"
               "   = note: THEN is only used in single-line IF statements.\n"));

@@ -22,14 +22,15 @@ TEST_F(NAME, exponent_truncated_from_double)
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:14: warning: Exponent value is truncated when converting "
-              "from DOUBLE to FLOAT.\n"
+        LogEq("test:1:14\n"
+              "warning: Exponent value is truncated when converting from "
+              "DOUBLE to FLOAT.\n"
               " 1 | print 2.0f ^ 2.0\n"
               "   |       >~~~ ^ ~~< DOUBLE\n"
               "   |       FLOAT\n"
-              "   = note: The exponent is always converted to the same type as "
-              "the base when using floating point exponents.\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+              "help: The exponent is always converted to the same type as the "
+              "base when using floating point exponents.\n"
+              "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
     ast_id args = ast->nodes[cmd].cmd.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
@@ -48,11 +49,12 @@ TEST_F(NAME, exponent_strange_conversion)
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: warning: Implicit conversion of exponent from "
-              "BOOLEAN to INTEGER.\n"
+        LogEq("test:1:13\n"
+              "warning: Implicit conversion of exponent from BOOLEAN to "
+              "INTEGER.\n"
               " 1 | print 2.0 ^ true\n"
               "   |       >~~ ^ ~~~< BOOLEAN\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+              "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
     ast_id args = ast->nodes[cmd].cmd.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
@@ -73,12 +75,14 @@ TEST_F(NAME, exponent_implicit_conversion_from_dword)
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: warning: Implicit conversion of exponent from DWORD to INTEGER.\n"
-              " 1 | print 2.0 ^ 4294967295\n"
-              "   |       >~~ ^ ~~~~~~~~~< DWORD\n"
-              "   = note: INTEGER is the largest possible integral type for "
-              "exponents.\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+        LogEq(
+            "test:1:13\n"
+            "warning: Implicit conversion of exponent from DWORD to INTEGER.\n"
+            " 1 | print 2.0 ^ 4294967295\n"
+            "   |       >~~ ^ ~~~~~~~~~< DWORD\n"
+            "help: INTEGER is the largest possible integral type for "
+            "exponents.\n"
+            "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
     ast_id args = ast->nodes[cmd].cmd.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
@@ -99,13 +103,14 @@ TEST_F(NAME, exponent_truncated_from_long_integer)
     EXPECT_THAT(semantic(&semantic_type_check), Eq(0));
     EXPECT_THAT(
         log(),
-        LogEq("test:1:13: warning: Exponent value is truncated when converting "
-              "from DOUBLE INTEGER to INTEGER.\n"
+        LogEq("test:1:13\n"
+              "warning: Exponent value is truncated when converting from "
+              "DOUBLE INTEGER to INTEGER.\n"
               " 1 | print 2.0 ^ 99999999999999\n"
               "   |       >~~ ^ ~~~~~~~~~~~~~< DOUBLE INTEGER\n"
-              "   = note: INTEGER is the largest possible integral type for "
+              "help: INTEGER is the largest possible integral type for "
               "exponents.\n"
-              "   = note: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
+              "help: The exponent can be an INTEGER, FLOAT or DOUBLE.\n"));
     ast_id cmd = ast->nodes[ast->root].block.stmt;
     ast_id args = ast->nodes[cmd].cmd.arglist;
     ast_id op = ast->nodes[args].arglist.expr;

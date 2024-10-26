@@ -6,6 +6,34 @@
 #include "odb-util/log.h"
 #include "odb-util/utf8.h"
 
+static void
+find_parent_loop_with_same_implicit_name(
+    const struct ast* ast,
+    ast_id            exit,
+    ast_id            loop,
+    const char*       filename,
+    const char*       source)
+{
+    struct utf8_span name = ast->nodes[loop].loop1.implicit_name;
+    while ((loop = ast_find_parent(ast, loop)) > -1)
+    {
+        /* Can't cross function boundaries */
+        if (ast_node_type(ast, loop) == AST_FUNC1)
+            break;
+
+        if (ast_node_type(ast, loop) == AST_LOOP1)
+        {
+            struct utf8_span outer_name = ast->nodes[loop].loop1.implicit_name;
+            if (outer_name.len && utf8_equal_span(source, name, outer_name))
+            {
+                warn_loop_exit_ambiguous_name(
+                    ast, exit, name, outer_name, filename, source);
+                return;
+            }
+        }
+    }
+}
+
 static int
 check_exit(
     const struct ast* ast,
@@ -16,7 +44,7 @@ check_exit(
     ODBUTIL_DEBUG_ASSERT(exit > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, exit) == AST_LOOP_EXIT,
-        log_semantic_err("type: %d\n", ast_node_type(ast, exit)));
+        log_err("type: %d\n", ast_node_type(ast, exit)));
 
     ast_id first_loop = -1;
     ast_id loop = exit;
@@ -28,21 +56,23 @@ check_exit(
             if (first_loop == -1)
                 return err_loop_exit_not_inside_loop(
                     ast, exit, filename, source);
-            return err_loop_exit_unknown_name(ast, exit, first_loop, filename, source);
+            return err_loop_exit_unknown_name(
+                ast, exit, first_loop, filename, source);
         }
 
         if (ast_node_type(ast, loop) == AST_LOOP1)
         {
-            if (ast->nodes[exit].loop_exit.name.len == 0
-                || utf8_equal_span(
-                    source,
-                    ast->nodes[exit].loop_exit.name,
-                    ast->nodes[loop].loop1.name)
-                || utf8_equal_span(
-                    source,
-                    ast->nodes[exit].loop_exit.name,
-                    ast->nodes[loop].loop1.implicit_name))
+            struct utf8_span exit_name = ast->nodes[exit].loop_exit.name;
+            struct utf8_span loop_name = ast->nodes[loop].loop1.name;
+            struct utf8_span loop_implicit_name
+                = ast->nodes[loop].loop1.implicit_name;
+            if (exit_name.len == 0
+                || utf8_equal_span(source, exit_name, loop_name)
+                || utf8_equal_span(source, exit_name, loop_implicit_name))
             {
+                if (exit_name.len > 0 && loop_implicit_name.len > 0)
+                    find_parent_loop_with_same_implicit_name(
+                        ast, exit, loop, filename, source);
                 return 0;
             }
 
@@ -70,13 +100,9 @@ check_loop_exit(
     const char*       source = sources[tu_id].text.data;
 
     for (n = 0; n != ast_count(ast); ++n)
-    {
-        if (ast_node_type(ast, n) != AST_LOOP_EXIT)
-            continue;
-
-        if (check_exit(ast, n, filename, source) != 0)
-            return -1;
-    }
+        if (ast_node_type(ast, n) == AST_LOOP_EXIT)
+            if (check_exit(ast, n, filename, source) != 0)
+                return -1;
 
     return 0;
 }

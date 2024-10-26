@@ -77,7 +77,7 @@ plugin_list_populate(
 
     if (!fs_dir_exists(sdk_root))
     {
-        log_cmd_err(
+        log_err(
             "SDK root directory {quote:%s} does not exist\n",
             ospathc_cstr(sdk_root));
         return -1;
@@ -110,7 +110,7 @@ plugin_list_populate(
 
     ospath_for_each(extra_plugins, pathc)
     {
-        log_dbg("[sdk] ", "Extra plugin: %s\n", ospathc_cstr(pathc));
+        log_dbg("Extra plugin: %s\n", ospathc_cstr(pathc));
 
         ctx.dir = pathc;
         if (fs_list(pathc, on_plugin_entry, &ctx) < 0)

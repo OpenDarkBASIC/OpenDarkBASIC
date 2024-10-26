@@ -23,7 +23,7 @@ TEST_F(NAME, undeclared_integer_initializes_to_0)
     const char* source = "print a";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -42,7 +42,7 @@ TEST_F(NAME, undeclared_bool_initializes_to_false)
     const char* source = "print a?";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -61,7 +61,7 @@ TEST_F(NAME, undeclared_word_initializes_to_0)
     const char* source = "print a%";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -80,7 +80,7 @@ TEST_F(NAME, undeclared_double_integer_initializes_to_0)
     const char* source = "print a&";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -99,7 +99,7 @@ TEST_F(NAME, undeclared_float_initializes_to_0)
     const char* source = "print a#";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -118,7 +118,7 @@ TEST_F(NAME, undeclared_double_initializes_to_0)
     const char* source = "print a!";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -137,7 +137,7 @@ TEST_F(NAME, undeclared_string_initializes_to_empty)
     const char* source = "print a$";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(8));
+    ASSERT_THAT(ast_count(ast), Eq(10));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -155,7 +155,7 @@ TEST_F(NAME, declared_integer_initializes_to_0)
     const char* source = "a AS INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -173,7 +173,7 @@ TEST_F(NAME, declared_bool_initializes_to_false)
     const char* source = "a? AS BOOLEAN";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -191,7 +191,7 @@ TEST_F(NAME, declared_word_initializes_to_0)
     const char* source = "a% AS WORD";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -209,7 +209,7 @@ TEST_F(NAME, declared_double_integer_initializes_to_0)
     const char* source = "a& AS DOUBLE INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -227,7 +227,7 @@ TEST_F(NAME, declared_float_initializes_to_0)
     const char* source = "a# AS FLOAT";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -245,7 +245,7 @@ TEST_F(NAME, declared_double_initializes_to_0)
     const char* source = "a! AS DOUBLE";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -263,7 +263,7 @@ TEST_F(NAME, declared_string_initializes_to_empty)
     const char* source = "a$ AS STRING";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -281,7 +281,7 @@ TEST_F(NAME, unannotated_integer_initializes_to_0)
     const char* source = "a AS INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -299,7 +299,7 @@ TEST_F(NAME, unannotated_bool_initializes_to_false)
     const char* source = "a AS BOOLEAN";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -317,7 +317,7 @@ TEST_F(NAME, unannotated_word_initializes_to_0)
     const char* source = "a AS WORD";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -335,7 +335,7 @@ TEST_F(NAME, unannotated_double_integer_initializes_to_0)
     const char* source = "a AS DOUBLE INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -353,7 +353,7 @@ TEST_F(NAME, unannotated_float_initializes_to_0)
     const char* source = "a AS FLOAT";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -371,7 +371,7 @@ TEST_F(NAME, unannotated_double_initializes_to_0)
     const char* source = "a AS DOUBLE";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -389,7 +389,7 @@ TEST_F(NAME, unannotated_string_initializes_to_empty)
     const char* source = "a AS STRING";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
@@ -407,7 +407,7 @@ TEST_F(NAME, unannotated_integer_assigned_integer)
     const char* source = "a AS INTEGER = 65536";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));

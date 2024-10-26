@@ -7,7 +7,7 @@ extern "C" {
 #include "odb-compiler/semantic/semantic.h"
 }
 
-#define NAME odbcompiler_semantic_loop_for_error
+#define NAME odbcompiler_semantic_loop_for_errors
 
 using namespace testing;
 
@@ -25,10 +25,11 @@ TEST_F(NAME, unknown_direction_1)
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"
+        LogEq("test:1:7\n"
+              "error: Unable to determine direction of for-loop.\n"
               " 1 | for n=1 to b step c\n"
               "   |       ^~~~~<      ^\n"
-              "   = note: The direction a for-loop counts must be known at "
+              "note: The direction a for-loop counts must be known at "
               "compile-time, because the exit condition depends on it. You can "
               "either make the STEP value a constant, or make both the start "
               "and end values constants.\n"));
@@ -44,10 +45,11 @@ TEST_F(NAME, unknown_direction_2)
     ASSERT_THAT(semantic(&semantic_loop_for), Eq(-1));
     ASSERT_THAT(
         log(),
-        LogEq("test:1:7: error: Unable to determine direction of for-loop.\n"
+        LogEq("test:1:7\n"
+              "error: Unable to determine direction of for-loop.\n"
               " 1 | for n=a to 5 step c\n"
               "   |       ^~~~~<      ^\n"
-              "   = note: The direction a for-loop counts must be known at "
+              "note: The direction a for-loop counts must be known at "
               "compile-time, because the exit condition depends on it. You can "
               "either make the STEP value a constant, or make both the start "
               "and end values constants.\n"));

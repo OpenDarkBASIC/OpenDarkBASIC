@@ -35,7 +35,7 @@ deinitCommands(void)
 bool
 loadCommands(const std::vector<std::string>& args)
 {
-    log_cmd_progress(0, 0, "Searching for plugins...\n");
+    log_progress(0, 0, "Searching for plugins...\n");
     if (plugin_list_populate(
             &plugins,
             getSDKType(),
@@ -45,7 +45,7 @@ loadCommands(const std::vector<std::string>& args)
         != 0)
         return false;
 
-    log_cmd_progress(0, 0, "Loading commands...\n");
+    log_progress(0, 0, "Loading commands...\n");
     if (cmd_list_load_from_plugins(
             &commands,
             plugins,
@@ -54,7 +54,7 @@ loadCommands(const std::vector<std::string>& args)
             getTargetPlatform())
         != 0)
         return false;
-    log_cmd_info(
+    log_info(
         "Loaded %d commands from %d plugins\n",
         cmd_list_count(&commands),
         plugins->count);
@@ -189,7 +189,7 @@ dumpCommandNames(const std::vector<std::string>& args)
             "  [%s]\n",
             utf8_cstr(plugins->data[commands.plugin_ids->data[i]].name));
     }
-    log_cmd_info(
+    log_info(
         "Wrote %d commands to stdout [--dump-commands]\n",
         cmd_list_count(&commands));
 

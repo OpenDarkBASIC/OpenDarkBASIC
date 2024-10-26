@@ -229,8 +229,7 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
             return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
     }
 
-    log_codegen_err(
-        "Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
+    log_err("Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
     return nullptr;
 }
 
@@ -244,7 +243,7 @@ get_command_function_signature(
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
-        log_codegen_err("type: %d\n", ast_node_type(ast, cmd)));
+        log_err("type: %d\n", ast_node_type(ast, cmd)));
     cmd_id cmd_id = ast->nodes[cmd].cmd.id;
 
     /* Get command arguments from command list and convert each one to LLVM */
@@ -321,10 +320,10 @@ func_name_from_paramlist(
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_codegen_err("type: %d\n", ast_node_type(ast, identifier)));
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, paramlist) == AST_PARAMLIST,
-        log_codegen_err("type: %d\n", ast_node_type(ast, paramlist)));
+        paramlist == -1 || ast_node_type(ast, paramlist) == AST_PARAMLIST,
+        log_err("type: %d\n", ast_node_type(ast, paramlist)));
 
     struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
     func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
@@ -347,10 +346,10 @@ func_name_from_arglist(
 {
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_codegen_err("type: %d\n", ast_node_type(ast, identifier)));
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, arglist) == AST_ARGLIST,
-        log_codegen_err("type: %d\n", ast_node_type(ast, arglist)));
+        arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(ast, arglist)));
 
     struct utf8_span ident_name = ast->nodes[identifier].identifier.name;
     func_name.assign(llvm::StringRef(source + ident_name.off, ident_name.len));
@@ -425,7 +424,7 @@ create_db_function_table(
         bool result = db_func_table->insert({func_name, F}).second;
         ODBUTIL_DEBUG_ASSERT(
             result,
-            log_codegen_err(
+            log_err(
                 "Function {quote:%s} already exists!\n", func_name.c_str()));
         (void)result;
     }
@@ -574,15 +573,11 @@ gen_expr(
                 loop_stack,
                 allocamap);
 
-        case AST_VAR_DECL1: break;
-        case AST_VAR_DECL2: break;
-        case AST_VAR_REF: break;
-        case AST_PARAM: break;
-        case AST_ASSIGNMENT: break;
-
-        case AST_IDENTIFIER: {
+        case AST_VAR_DECL1: {
+            ast_id           decl2 = ast->nodes[expr].var_decl1.var_decl2;
+            ast_id           ast_ident = ast->nodes[decl2].var_decl2.identifier;
             struct utf8_view name
-                = utf8_span_view(source, ast->nodes[expr].identifier.name);
+                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
             struct view_scope name_scope
                 = {name, ast->nodes[expr].info.scope_id};
             llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
@@ -596,6 +591,46 @@ gen_expr(
                 *A,
                 llvm::StringRef(name.data + name.off, name.len));
         }
+        case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+
+        case AST_VAR_REF: {
+            ast_id           ast_ident = ast->nodes[expr].var_ref.identifier;
+            struct utf8_view name
+                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
+            struct view_scope name_scope
+                = {name, ast->nodes[expr].info.scope_id};
+            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
+            /* The AST should be constructed in a way where we do not have to
+             * create a default value for variables that have not yet been
+             * declared */
+            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
+
+            return builder.CreateLoad(
+                (*A)->getAllocatedType(),
+                *A,
+                llvm::StringRef(name.data + name.off, name.len));
+        }
+
+        case AST_PARAM: {
+            ast_id           ast_ident = ast->nodes[expr].param.identifier;
+            struct utf8_view name
+                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
+            struct view_scope name_scope
+                = {name, ast->nodes[expr].info.scope_id};
+            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
+            /* The AST should be constructed in a way where we do not have to
+             * create a default value for variables that have not yet been
+             * declared */
+            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
+
+            return builder.CreateLoad(
+                (*A)->getAllocatedType(),
+                *A,
+                llvm::StringRef(name.data + name.off, name.len));
+        }
+        case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+
+        case AST_ASSIGNMENT: break;
 
         case AST_BINOP: {
             ast_id       lhs_node = ast->nodes[expr].binop.left;
@@ -649,7 +684,7 @@ gen_expr(
                 = INT;
             ODBUTIL_DEBUG_ASSERT(
                 lhs_type == rhs_type,
-                log_codegen_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
+                log_err("lhs: %d, rhs: %d\n", lhs_type, rhs_type));
             switch (lhs_type)
             {
                 case TYPE_INVALID:
@@ -865,7 +900,7 @@ gen_expr(
             const auto result = db_func_table->find(func_name);
             ODBUTIL_DEBUG_ASSERT(
                 result != db_func_table->end(),
-                log_codegen_err(
+                log_err(
                     "Function {quote:%s} not found in function table\n",
                     func_name.c_str()));
 
@@ -1032,12 +1067,12 @@ gen_expr(
             break;
         }
 
-        case AST_AS: break;
-        case AST_TYPE: break;
+        case AST_AS: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
     }
 
-    log_codegen_err(
-        "Expression type %d not implemeneted\n", ast_node_type(ast, expr));
+    log_err("Expression type %d not implemeneted\n", ast_node_type(ast, expr));
     return nullptr;
 }
 
@@ -1057,24 +1092,22 @@ gen_block(
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
     struct allocamap**                            allocamap)
 {
-    ODBUTIL_DEBUG_ASSERT(block > -1, log_codegen_err("block: %d\n", block));
+    ODBUTIL_DEBUG_ASSERT(block > -1, log_err("block: %d\n", block));
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, block) == AST_BLOCK,
-        log_codegen_err("type: %d\n", ast_node_type(ast, block)));
+        log_err("type: %d\n", ast_node_type(ast, block)));
 
     for (; block != -1; block = ast->nodes[block].block.next)
     {
         ast_id stmt = ast->nodes[block].block.stmt;
-        ODBUTIL_DEBUG_ASSERT(stmt > -1, log_codegen_err("stmt: %d\n", stmt));
+        ODBUTIL_DEBUG_ASSERT(stmt > -1, log_err("stmt: %d\n", stmt));
         switch (ast_node_type(ast, stmt))
         {
             case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_BLOCK:
                 ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_codegen_err(
-                        "Block within block should never occur.\n"));
+                    0, log_err("Block within block should never occur.\n"));
                 return -1;
 
             case AST_END: {
@@ -1120,8 +1153,7 @@ gen_block(
 
                 ODBUTIL_DEBUG_ASSERT(
                     ast_node_type(ast, ast_identifier) == AST_IDENTIFIER,
-                    log_codegen_err(
-                        "type: %d\n", ast_node_type(ast, ast_identifier)));
+                    log_err("type: %d\n", ast_node_type(ast, ast_identifier)));
                 enum type        type = ast_type_info(ast, ast_identifier);
                 struct utf8_view name = utf8_span_view(
                     source, ast->nodes[ast_identifier].identifier.name);
@@ -1181,8 +1213,7 @@ gen_block(
 
                 ODBUTIL_DEBUG_ASSERT(
                     ast_node_type(ast, lhs_node) == AST_IDENTIFIER,
-                    log_codegen_err(
-                        "type: %d\n", ast_node_type(ast, lhs_node)));
+                    log_err("type: %d\n", ast_node_type(ast, lhs_node)));
                 enum type        type = ast_type_info(ast, lhs_node);
                 struct utf8_view name = utf8_span_view(
                     source, ast->nodes[lhs_node].identifier.name);
@@ -1207,20 +1238,20 @@ gen_block(
             case AST_IDENTIFIER:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Identifiers should never occur directly "
-                                    "in a block.\n"));
+                    log_err("Identifiers should never occur directly "
+                            "in a block.\n"));
                 return -1;
             case AST_BINOP:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Binary operators should never occur "
-                                    "directly in a block"));
+                    log_err("Binary operators should never occur "
+                            "directly in a block"));
                 return -1;
             case AST_UNOP:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Unary operators should never occur "
-                                    "directly in a block"));
+                    log_err("Unary operators should never occur "
+                            "directly in a block"));
                 return -1;
 
             case AST_COND: {
@@ -1402,7 +1433,7 @@ gen_block(
                 {
                     ODBUTIL_DEBUG_ASSERT(
                         ast_node_type(ast, step) == AST_BLOCK,
-                        log_codegen_err("step: %d\n", step));
+                        log_err("step: %d\n", step));
                     gen_block(
                         ir,
                         builder,
@@ -1434,7 +1465,8 @@ gen_block(
                 for (auto it = loop_stack->rbegin(); it != loop_stack->rend();
                      ++it)
                 {
-                    struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
+                    struct utf8_span loop_name
+                        = ast->nodes[it->loop].loop1.name;
                     struct utf8_span loop_implicit_name
                         = ast->nodes[it->loop].loop1.implicit_name;
 
@@ -1469,7 +1501,7 @@ gen_block(
                 const auto result = db_func_table->find(func_name);
                 ODBUTIL_DEBUG_ASSERT(
                     result != db_func_table->end(),
-                    log_codegen_err(
+                    log_err(
                         "Function {quote:%s} not found in function table\n",
                         func_name.data()));
 
@@ -1479,17 +1511,17 @@ gen_block(
                 llvm::IRBuilder<> func_builder(BB);
 
                 int param_idx = 0;
-                for (ast_id pl_node = ast_paramlist; ast_paramlist > -1;
-                     ast_paramlist = ast->nodes[ast_paramlist].paramlist.next,
-                            ++param_idx)
+                for (ast_id pl_node = ast_paramlist; pl_node > -1;
+                     pl_node = ast->nodes[pl_node].paramlist.next, ++param_idx)
                 {
                     ast_id ast_param = ast->nodes[pl_node].paramlist.param;
-                    ast_id identifier = ast->nodes[ast_param].param.identifier;
+                    ast_id ast_identifier
+                        = ast->nodes[ast_param].param.identifier;
                     enum type        param_type = ast_type_info(ast, ast_param);
                     struct utf8_view name = utf8_span_view(
-                        source, ast->nodes[identifier].identifier.name);
+                        source, ast->nodes[ast_identifier].identifier.name);
                     struct view_scope name_scope
-                        = {name, ast->nodes[identifier].info.scope_id};
+                        = {name, ast->nodes[ast_identifier].info.scope_id};
                     llvm::AllocaInst** A;
                     switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                     {
@@ -1577,7 +1609,7 @@ gen_block(
             case AST_FUNC_OR_CONTAINER_REF:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err(
+                    log_err(
                         "This node should never exist when translating to LLVM "
                         "IR! Semantic analysis should have resolved everything "
                         "at this point.\n"));
@@ -1616,7 +1648,7 @@ gen_block(
                 const auto result = db_func_table->find(func_name);
                 ODBUTIL_DEBUG_ASSERT(
                     result != db_func_table->end(),
-                    log_codegen_err(
+                    log_err(
                         "Function {quote:%s} not found in function table\n",
                         func_name.data()));
 
@@ -1637,30 +1669,31 @@ gen_block(
             case AST_STRING_LITERAL:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Literals should never occur directly in a "
-                                    "block.\n"));
+                    log_err(
+                        "Literals should never occur directly in a block.\n"));
                 return -1;
 
             case AST_CAST:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("Casts should never occur directly in a "
-                                    "block.\n"));
+                    log_err("Casts should never occur directly in a block.\n"));
                 return -1;
 
             case AST_AS:
                 ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_codegen_err("AS should never occur directly in a "
-                                    "block.\n"));
+                    0, log_err("AS should never occur directly in a block.\n"));
+                return -1;
+
+            case AST_AS_AUTO:
+                ODBUTIL_DEBUG_ASSERT(
+                    0, log_err("AS should never occur directly in a block.\n"));
                 return -1;
 
             case AST_TYPE:
                 return 0;
                 ODBUTIL_DEBUG_ASSERT(
                     0,
-                    log_codegen_err("TYPE should never occur directly in a "
-                                    "block.\n"));
+                    log_err("TYPE should never occur directly in a block.\n"));
                 return -1;
         }
     }
@@ -1710,7 +1743,7 @@ ir_translate_ast(
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
     if (ast_count(ast) == 0)
-        log_codegen_warn("AST is empty for source file {quote:%s}\n", filename);
+        log_warn("AST is empty for source file {quote:%s}\n", filename);
     else
         gen_block(
             ir,

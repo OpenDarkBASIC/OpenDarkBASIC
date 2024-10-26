@@ -35,7 +35,7 @@ setArch(const std::vector<std::string>& args)
     else if (args[0] == "aarch64")
         arch_ = TARGET_AArch64;
     else
-        log_codegen_err("Unknown architecture {quote:%s}\n", args[0].c_str());
+        log_err("Unknown architecture {quote:%s}\n", args[0].c_str());
 
     return true;
 }
@@ -51,7 +51,7 @@ setPlatform(const std::vector<std::string>& args)
     else if (args[0] == "linux")
         platform_ = TARGET_LINUX;
     else
-        log_codegen_err("Unknown platform {quote:%s}\n", args[0].c_str());
+        log_err("Unknown platform {quote:%s}\n", args[0].c_str());
 
     return true;
 }
@@ -87,14 +87,14 @@ output(const std::vector<std::string>& args)
         arch_ = TARGET_i386;
     }
 
-    log_info("[codegen] ", "Compiling {emph:%s}\n", getSourceFilepath());
+    log_info("Compiling {emph:%s}\n", getSourceFilepath());
     outputExe_ = args[0];
 
     /* Path to the compiler's architecture/platform directory, e.g.
      * i386/windows/ */
     struct ospath apdir = empty_ospath();
     set_path_to_arch_platform_dir(&apdir);
-    log_dbg("[codegen] ", "apdir: {quote:%s}\n", ospath_cstr(apdir));
+    log_dbg("apdir: {quote:%s}\n", ospath_cstr(apdir));
 
     /* Location for intermediate files such as object files */
     struct ospath tmpdir = empty_ospath();
@@ -105,13 +105,13 @@ output(const std::vector<std::string>& args)
     // if (fs_dir_exists(ospathc(tmpdir)))
     //    fs_remove_directory(ospathc(tmpdir));
     fs_make_dir(ospathc(tmpdir));
-    log_dbg("[codegen] ", "tmpdir: {quote:%s}\n", ospath_cstr(tmpdir));
+    log_dbg("tmpdir: {quote:%s}\n", ospath_cstr(tmpdir));
 
     /* Directory where the compiled executable is written to */
     struct ospath outdir = empty_ospath();
     ospath_set_cstr(&outdir, outputExe_.c_str());
     ospath_dirname(&outdir);
-    log_dbg("[codegen] ", "outdir: {quote:%s}\n", ospath_cstr(outdir));
+    log_dbg("outdir: {quote:%s}\n", ospath_cstr(outdir));
 
     /* Create paths if they don't exist */
     if (fs_make_path(outdir) != 0)
@@ -130,10 +130,9 @@ output(const std::vector<std::string>& args)
     ospath_set_cstr(&maindbaname, getSourceFilepath());
     ospath_filename(&maindbaname);
     ospath_remove_ext(&maindbaname);
-    log_dbg(
-        "[codegen] ", "maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
+    log_dbg("maindbaname: {quote:%s}\n", ospath_cstr(maindbaname));
 
-    log_info("[codegen] ", "Generating harness\n");
+    log_info("Generating harness\n");
     struct ospath harnessobj = empty_ospath();
     ospath_set(&harnessobj, ospathc(tmpdir));
     ospath_join_cstr(&harnessobj, "odbharness.o");
@@ -224,7 +223,7 @@ output(const std::vector<std::string>& args)
         ospath_join_cstr(&kernel32, "lib/kernel32.lib");
     }
 
-    log_info("[link] ", "Linking {emph:%s}\n", outputExe_.c_str());
+    log_info("Linking {emph:%s}\n", outputExe_.c_str());
     const char* objfiles[] = {
         ospath_cstr(objfilepath),
         ospath_cstr(harnessobj),
@@ -349,7 +348,7 @@ exec_output(const std::vector<std::string>& args)
         goto set_working_dir_failed;
     ospath_dirname(&working_dir);
 
-    log_info("[exec] ", "Executing {quote:%s}\n", outputExe_.c_str());
+    log_info("Executing {quote:%s}\n", outputExe_.c_str());
     process = process_start(
         cstr_ospathc(outputExe_.c_str()),
         ospathc(working_dir),
@@ -371,7 +370,6 @@ exec_output(const std::vector<std::string>& args)
         thread = thread_start(read_process_until_done, &read_stderr_ctx);
         if (thread == NULL)
             log_warn(
-                "[exec] ",
                 "Failed to start stderr read thread -- There will be no stderr "
                 "output\n");
         read_process_until_done(&read_stdout_ctx);
@@ -379,14 +377,11 @@ exec_output(const std::vector<std::string>& args)
 
     if (process_wait(process, 0) != 0)
     {
-        log_warn(
-            "[exec] ", "Process did not exit cleanly, calling terminate()\n");
+        log_warn("Process did not exit cleanly, calling terminate()\n");
         process_terminate(process);
         if (process_wait(process, 500) != 0)
         {
-            log_warn(
-                "[exec] ",
-                "Process did not terminate after 500ms, calling kill()\n");
+            log_warn("Process did not terminate after 500ms, calling kill()\n");
             process_kill(process);
             process_wait(process, 0);
         }
@@ -397,9 +392,9 @@ exec_output(const std::vector<std::string>& args)
 
     exit_code = process_join(process);
     if (exit_code == 0)
-        log_info("[exec] ", "Process exited with %d\n", exit_code);
+        log_info("Process exited with %d\n", exit_code);
     else
-        log_err("[exec] ", "Process exited with %d\n", exit_code);
+        log_err("Process exited with %d\n", exit_code);
 
     ospath_deinit(working_dir);
     return exit_code == 0;

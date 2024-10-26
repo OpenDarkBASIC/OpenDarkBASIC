@@ -26,18 +26,9 @@ TEST_F(NAME, file_line_column)
           "next a\n";
 
     struct utf8_span loc = {23, 5}; /* a = 5 */
-    log_flc_err(
-        "some/file.dba",
-        source,
-        loc,
-        "Assignment is bad %s\n",
-        "for some reason");
+    log_flc("some/file.dba", source, loc);
 
-    EXPECT_THAT(
-        log(),
-        LogEq("{emph}some/file.dba:2:8:{reset} "
-              "{err}error:{reset} Assignment is bad for some "
-              "reason\n"));
+    EXPECT_THAT(log(), LogEq("{emph}some/file.dba:2:8{reset}\n"));
 }
 
 TEST_F(NAME, excerpt_1_one_sized_location)

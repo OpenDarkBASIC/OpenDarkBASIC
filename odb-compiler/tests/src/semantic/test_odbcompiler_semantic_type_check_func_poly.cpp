@@ -7,7 +7,6 @@ extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
 }
 
 #define NAME odbcompiler_semantic_type_check_func_poly
@@ -24,13 +23,11 @@ TEST_F(NAME, unused_polymorphic_function_is_not_instantiated)
         = "FUNCTION test(a)\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(7));
-    ast_id f1 = ast->nodes[ast->root].block.stmt;
+    ASSERT_THAT(ast_count(ast), Eq(10));
+    ast_id poly = ast->nodes[ast->root].block.stmt;
+    ast_id f1 = ast->nodes[poly].func_poly.func;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
     ast_id f4 = ast->nodes[f3].func3.func4;
@@ -44,62 +41,6 @@ TEST_F(NAME, unused_polymorphic_function_is_not_instantiated)
     ASSERT_THAT(ret, Eq(-1));
 }
 
-TEST_F(NAME, function_with_no_args_is_typechecked)
-{
-    const char* source
-        = "FUNCTION test()\n"
-          "ENDFUNCTION\n";
-    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
-    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-
-    ASSERT_THAT(ast_count(ast), Eq(5));
-    ast_id f1 = ast->nodes[ast->root].block.stmt;
-    ast_id f2 = ast->nodes[f1].func1.func2;
-    ast_id f3 = ast->nodes[f2].func2.func3;
-    ast_id f4 = ast->nodes[f3].func3.func4;
-    ast_id ident = ast->nodes[f1].func1.identifier;
-    ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
-    ASSERT_THAT(ret, Eq(-1));
-}
-
-TEST_F(NAME, function_with_no_args_called)
-{
-    const char* source
-        = "test()\n"
-          "FUNCTION test()\n"
-          "ENDFUNCTION\n";
-    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
-    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-
-    ASSERT_THAT(ast_count(ast), Eq(8));
-    ast_id block1 = ast->root;
-    ast_id block2 = ast->nodes[block1].block.next;
-    ast_id call = ast->nodes[block1].block.stmt;
-    ast_id f1 = ast->nodes[ast->root].block.stmt;
-    ast_id f2 = ast->nodes[f1].func1.func2;
-    ast_id f3 = ast->nodes[f2].func2.func3;
-    ast_id f4 = ast->nodes[f3].func3.func4;
-    ast_id ident = ast->nodes[f1].func1.identifier;
-    ast_id ret = ast->nodes[f4].func4.retval;
-    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
-    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
-    ASSERT_THAT(ret, Eq(-1));
-}
-
 TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_U8});
@@ -108,23 +49,17 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
           "FUNCTION sum(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(33));
+    ASSERT_THAT(ast_count(ast), Eq(48));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
 
-    ast_id call = ast->nodes[block1].block.stmt;
-    ast_id func_poly = ast->nodes[block2].block.stmt;
     ast_id f1 = ast->nodes[block3].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
     ast_id f4 = ast->nodes[f3].func3.func4;
-
     ASSERT_THAT(ast_node_type(ast, f1), Eq(AST_FUNC1));
     ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_U8));
     ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_U8));
@@ -162,12 +97,9 @@ TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
           "FUNCTION sum(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(34));
+    ASSERT_THAT(ast_count(ast), Eq(54));
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
@@ -183,18 +115,14 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
           "FUNCTION sum(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(54));
+    ASSERT_THAT(ast_count(ast), Eq(78));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
     ast_id block4 = ast->nodes[block3].block.next;
     ast_id block5 = ast->nodes[block4].block.next;
-
 
     // Byte function ---------------------------------------------------------
     ast_id f1 = ast->nodes[block5].block.stmt;
@@ -272,12 +200,9 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
           "FUNCTION sum(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(42));
+    ASSERT_THAT(ast_count(ast), Eq(57));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -308,9 +233,6 @@ TEST_F(NAME, func_returns_result_of_another_func)
           "FUNCTION sum(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -326,9 +248,6 @@ TEST_F(NAME, func_result_as_arg_to_call)
           "FUNCTION add(a, b)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -343,9 +262,6 @@ TEST_F(NAME, recursion_1)
           "  IF n < 2 THEN EXITFUNCTION n\n"
           "ENDFUNCTION fib(n-1) + fib(n-2)\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -360,9 +276,6 @@ TEST_F(NAME, recursion_2)
           "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -380,9 +293,6 @@ TEST_F(NAME, nested_recursion_1)
           "  IF n < 2 THEN EXITFUNCTION n\n"
           "ENDFUNCTION fib(n-1) + fib(n-2)\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -400,9 +310,6 @@ TEST_F(NAME, nested_recursion_2)
           "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
@@ -420,12 +327,23 @@ TEST_F(NAME, nested_recursion_3)
           "  IF n >= 2 THEN EXITFUNCTION fib(fib2(n-1)-1) + fib2(fib(n-2)-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     // TODO: Check
+}
+
+TEST_F(NAME, recursion_with_local_variable)
+{
+    const char* source
+        = "foo(6)\n"
+          "function foo(n)\n"
+          "    if n >= 2\n"
+          "        a = foo(n-1)\n"
+          "        exitfunction a\n"
+          "    endif\n"
+          "endfunction n\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
 // TEST_F(NAME, infinite_recursion)

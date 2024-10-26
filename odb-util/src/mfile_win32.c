@@ -29,7 +29,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
     if (hFile == INVALID_HANDLE_VALUE)
     {
         if (log_error)
-            log_util_err(
+            log_err(
                 "Failed to open file {quote:%s}: {win32error}\n",
                 ospathc_cstr(filepath));
         goto open_failed;
@@ -40,7 +40,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
         goto get_file_size_failed;
     if (liFileSize.QuadPart > (1ULL << 31) - 1)  /* mf->size is an int */
     {
-        log_util_err(
+        log_err(
             "Failed to map file {quote:%s}: Mapping files >4GiB is not implemented\n",
             ospathc_cstr(filepath));
         goto get_file_size_failed;
@@ -55,7 +55,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
         NULL);                 /* Don't name the mapping */
     if (hMapping == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to create file mapping for file {quote:%s}: {win32error}\n",
             ospathc_cstr(filepath));
         goto create_file_mapping_failed;
@@ -68,7 +68,7 @@ mfile_map_read(struct mfile* mf, struct ospathc filepath, int log_error)
         0);                     /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to map view of file {quote:%s}: {win32error}\n",
             ospathc_cstr(filepath));
         goto map_view_failed;
@@ -112,7 +112,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         NULL);                        /* No attribute template */
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        log_util_err(
+        log_err(
             "Failed to open file {quote:%s}: {win32error}\n",
             ospathc_cstr(filepath));
         goto open_failed;
@@ -126,7 +126,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         NULL);           /* Don't name the mapping */
     if (hMapping == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to create file mapping for file {quote:%s}: {win32error}\n",
             ospathc_cstr(filepath));
         goto create_file_mapping_failed;
@@ -139,7 +139,7 @@ mfile_map_overwrite(struct mfile* mf, int size, struct ospathc filepath)
         0);                             /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to map view of file {quote:%s}: {win32error}\n",
             ospathc_cstr(filepath));
         goto map_view_failed;
@@ -171,7 +171,7 @@ mfile_map_mem(struct mfile* mf, int size)
         NULL);                 /* Don't name the mapping */
     if (mapping == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to create file mapping of size {emph:%d}: {win32error}\n",
             size);
         goto create_file_mapping_failed;
@@ -184,7 +184,7 @@ mfile_map_mem(struct mfile* mf, int size)
         size);                 /* Length of mapping. Zero means entire file */
     if (mf->address == NULL)
     {
-        log_util_err(
+        log_err(
             "Failed to map memory of size {emph:%d}: {win32error}\n",
             size);
         goto map_view_failed;

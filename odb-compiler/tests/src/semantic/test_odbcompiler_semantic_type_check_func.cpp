@@ -7,7 +7,6 @@ extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
 }
 
 #define NAME odbcompiler_semantic_type_check_func
@@ -18,6 +17,55 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
+TEST_F(NAME, function_with_no_args_is_not_polymorphic)
+{
+    const char* source
+        = "FUNCTION test()\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    ASSERT_THAT(ast_count(ast), Eq(6));
+    ast_id f1 = ast->nodes[ast->root].block.stmt;
+    ast_id f2 = ast->nodes[f1].func1.func2;
+    ast_id f3 = ast->nodes[f2].func2.func3;
+    ast_id f4 = ast->nodes[f3].func3.func4;
+    ast_id ident = ast->nodes[f1].func1.identifier;
+    ast_id ret = ast->nodes[f4].func4.retval;
+    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
+    ASSERT_THAT(ret, Eq(-1));
+}
+
+TEST_F(NAME, function_with_no_args_called)
+{
+    const char* source
+        = "test()\n"
+          "FUNCTION test()\n"
+          "ENDFUNCTION\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    ASSERT_THAT(ast_count(ast), Eq(9));
+    ast_id block1 = ast->root;
+    ast_id block2 = ast->nodes[block1].block.next;
+    ast_id f1 = ast->nodes[block2].block.stmt;
+    ast_id f2 = ast->nodes[f1].func1.func2;
+    ast_id f3 = ast->nodes[f2].func2.func3;
+    ast_id f4 = ast->nodes[f3].func3.func4;
+    ast_id ident = ast->nodes[f1].func1.identifier;
+    ast_id ret = ast->nodes[f4].func4.retval;
+    ASSERT_THAT(ast_type_info(ast, f1), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f2), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f3), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, f4), Eq(TYPE_VOID));
+    ASSERT_THAT(ast_type_info(ast, ident), Eq(TYPE_VOID));
+    ASSERT_THAT(ret, Eq(-1));
+}
+
 TEST_F(NAME, explicit_parameter)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_F32});
@@ -26,12 +74,9 @@ TEST_F(NAME, explicit_parameter)
           "    PRINT a\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(11));
+    ASSERT_THAT(ast_count(ast), Eq(16));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -56,25 +101,24 @@ TEST_F(NAME, explicit_return_type_implicit_conversion)
         = "FUNCTION test(a AS BOOLEAN) AS INTEGER\n"
           "ENDFUNCTION a\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     EXPECT_THAT(
         log(),
-        LogEq("test:2:13: warning: Implicit conversion from BOOLEAN to INTEGER "
-              "in function return.\n"
+        LogEq("test:2:13\n"
+              "warning: Implicit conversion from BOOLEAN to INTEGER in "
+              "function return.\n"
               " 2 | ENDFUNCTION a\n"
               "   |             ^ BOOLEAN\n"
-              "   = note: Function return type was declared here:\n"
+              "test:1:29\n"
+              "note: Function return type was declared here:\n"
               " 1 | FUNCTION test(a AS BOOLEAN) AS INTEGER\n"
               "   |                             ^~~~~~~~~<\n"
-              "   = help: Insert an explicit cast to silence this warning:\n"
+              "help: Insert an explicit cast to silence this warning:\n"
               " 2 | ENDFUNCTION a AS INTEGER\n"
               "   |              ^~~~~~~~~~<\n"));
 
-    ASSERT_THAT(ast_count(ast), Eq(9));
+    ASSERT_THAT(ast_count(ast), Eq(18));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -100,25 +144,24 @@ TEST_F(NAME, explicit_return_type_truncation)
         = "FUNCTION test(a AS INTEGER) AS WORD\n"
           "ENDFUNCTION a\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
     EXPECT_THAT(
         log(),
-        LogEq("test:2:13: warning: Value is truncated when converting from "
-              "INTEGER to WORD in function return.\n"
+        LogEq("test:2:13\n"
+              "warning: Value is truncated when converting from INTEGER to "
+              "WORD in function return.\n"
               " 2 | ENDFUNCTION a\n"
               "   |             ^ INTEGER\n"
-              "   = note: Function return type was declared here:\n"
+              "test:1:29\n"
+              "note: Function return type was declared here:\n"
               " 1 | FUNCTION test(a AS INTEGER) AS WORD\n"
               "   |                             ^~~~~~<\n"
-              "   = help: Insert an explicit cast to silence this warning:\n"
+              "help: Insert an explicit cast to silence this warning:\n"
               " 2 | ENDFUNCTION a AS WORD\n"
               "   |              ^~~~~~~<\n"));
 
-    ASSERT_THAT(ast_count(ast), Eq(9));
+    ASSERT_THAT(ast_count(ast), Eq(18));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -144,17 +187,16 @@ TEST_F(NAME, explicit_return_type_invalid_conversion)
         = "FUNCTION test(a AS INTEGER) AS STRING\n"
           "ENDFUNCTION a\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(-1));
     EXPECT_THAT(
         log(),
-        LogEq("test:2:13: error: Cannot convert INTEGER to STRING in function "
-              "return. Types are incompatible.\n"
+        LogEq("test:2:13\n"
+              "error: Cannot convert INTEGER to STRING in function return. "
+              "Types are incompatible.\n"
               " 2 | ENDFUNCTION a\n"
               "   |             ^ INTEGER\n"
-              "   = note: Function return type was declared here:\n"
+              "test:1:29\n"
+              "note: Function return type was declared here:\n"
               " 1 | FUNCTION test(a AS INTEGER) AS STRING\n"
               "   |                             ^~~~~~~~<\n"));
 }
@@ -166,12 +208,9 @@ TEST_F(NAME, pass_byte_to_func_with_different_arguments_inserts_casts)
           "FUNCTION sum(a AS INTEGER, b AS FLOAT)\n"
           "ENDFUNCTION\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(18));
+    ASSERT_THAT(ast_count(ast), Eq(29));
     ast_id call = ast->nodes[ast->root].block.stmt;
     ast_id arglist1 = ast->nodes[call].func_call.arglist;
     ast_id arglist2 = ast->nodes[arglist1].arglist.next;
@@ -190,12 +229,9 @@ TEST_F(NAME, func_call_is_cast_to_correct_type)
           "FUNCTION sum(a AS WORD, b AS WORD)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(24));
+    ASSERT_THAT(ast_count(ast), Eq(42));
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
@@ -211,12 +247,9 @@ TEST_F(NAME, func_is_not_instantiated_given_different_arg_types)
           "FUNCTION sum(a AS FLOAT, b AS FLOAT)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(32));
+    ASSERT_THAT(ast_count(ast), Eq(45));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -265,12 +298,9 @@ TEST_F(NAME, func_returns_result_of_another_func)
           "FUNCTION sum(a AS INTEGER, b AS INTEGER)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(45));
+    ASSERT_THAT(ast_count(ast), Eq(73));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -325,12 +355,9 @@ TEST_F(NAME, func_result_as_arg_to_call)
           "FUNCTION add(a AS INTEGER, b AS INTEGER)\n"
           "ENDFUNCTION a + b\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(41));
+    ASSERT_THAT(ast_count(ast), Eq(65));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -389,12 +416,9 @@ TEST_F(NAME, recursion_1)
           "  IF n < 2 THEN EXITFUNCTION n\n"
           "ENDFUNCTION fib(n-1) + fib(n-2)\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(40));
+    ASSERT_THAT(ast_count(ast), Eq(56));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -438,12 +462,9 @@ TEST_F(NAME, recursion_2)
           "  IF n >= 2 THEN EXITFUNCTION fib2(n-1) + fib2(n-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(40));
+    ASSERT_THAT(ast_count(ast), Eq(56));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -490,12 +511,9 @@ TEST_F(NAME, nested_recursion_1)
           "  IF n >= 2 THEN EXITFUNCTION fib(n-1) + fib(n-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(72));
+    ASSERT_THAT(ast_count(ast), Eq(102));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -552,12 +570,9 @@ TEST_F(NAME, nested_recursion_2)
           "  IF n >= 2 THEN EXITFUNCTION fib(fib2(n-1)-1) + fib2(fib(n-2)-2)\n"
           "ENDFUNCTION n\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(
-        symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src), Eq(0))
-        << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(96));
+    ASSERT_THAT(ast_count(ast), Eq(134));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;

@@ -66,7 +66,7 @@ load_binary(const struct plugin_info* plugin, enum target_platform platform)
                     .release());
 
         case TARGET_MACOS:
-            log_cmd_err("Loading MachO not implemented\n");
+            log_err("Loading MachO not implemented\n");
             return nullptr;
             /*
                 binary.reset(static_cast<LIEF::Binary*>(
@@ -91,12 +91,11 @@ cmd_list_load_from_plugins(
 
     plugin_ids_init(&cached_plugins);
 
-    log_cmd_progress(0, plugin_list_count(plugins), "Loading command cache");
+    log_progress(0, plugin_list_count(plugins), "Loading command cache");
     if (cmd_cache_load(&cached_plugins, plugins, cmds, sdk_type, arch, platform)
         != 0)
     {
-        log_cmd_warn(
-            "Failed to load command cache. All plugins will be parsed.\n");
+        log_warn("Failed to load command cache. All plugins will be parsed.\n");
     }
 
     vec_enumerate(plugins, plugin_id, plugin)
@@ -107,13 +106,13 @@ cmd_list_load_from_plugins(
         std::unique_ptr<LIEF::Binary> binary(load_binary(plugin, platform));
         if (binary.get() == nullptr)
         {
-            log_cmd_warn(
+            log_warn(
                 "Failed to load plugin {quote:%s}. Plugin will be ignored...\n",
                 ospath_cstr(plugin->filepath));
             continue;
         }
 
-        log_cmd_progress(
+        log_progress(
             plugin_id,
             plugin_list_count(plugins),
             "Parsing plugin %s\n",
@@ -124,7 +123,7 @@ cmd_list_load_from_plugins(
             case SDK_DBPRO:
                 if (binary->format() != LIEF::Binary::FORMATS::PE)
                 {
-                    log_cmd_warn(
+                    log_warn(
                         "{quote:%s} is not a valid PE file. Plugin will be "
                         "ignored...\n",
                         ospath_cstr(plugin->filepath));
@@ -156,7 +155,7 @@ cmd_list_load_from_plugins(
     }
 
     if (cmd_cache_save(plugins, cmds, sdk_type, arch, platform) != 0)
-        log_cmd_warn(
+        log_warn(
             "Failed to save command cache. All plugins will be parsed next "
             "time.\n");
 

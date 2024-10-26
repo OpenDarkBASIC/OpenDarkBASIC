@@ -8,20 +8,23 @@
  * possible with no error checking */
 
 static int
-get_loop_var(const struct ast* ast, ast_id loop)
+get_loop_var_lvalue(const struct ast* ast, ast_id loop)
 {
-    ast_id loop_body, post_body, step_stmt;
+    ast_id loop2, post_body, step_stmt;
 
-    loop_body = ast->nodes[loop].loop1.loop2;
-    ODBUTIL_DEBUG_ASSERT(loop_body > -1, (void)0);
+    loop2 = ast->nodes[loop].loop1.loop2;
+    ODBUTIL_DEBUG_ASSERT(loop2 > -1, (void)0);
 
-    post_body = ast->nodes[loop_body].loop2.post_body;
+    post_body = ast->nodes[loop2].loop2.post_body;
     ODBUTIL_DEBUG_ASSERT(post_body > -1, (void)0);
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, post_body) == AST_BLOCK,
-        log_semantic_err("type: %d\n", ast_node_type(ast, post_body)));
+        log_err("type: %d\n", ast_node_type(ast, post_body)));
     step_stmt = ast->nodes[post_body].block.stmt;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, step_stmt) == AST_ASSIGNMENT,
+        log_err("type: %d\n", ast_node_type(ast, step_stmt)));
     return ast->nodes[step_stmt].assignment.lvalue;
 }
 
@@ -31,8 +34,8 @@ create_step_block(struct ast** astp, ast_id loop, ast_id cont)
     if ((*astp)->nodes[cont].cont.step > -1)
     {
         ast_id step_expr = (*astp)->nodes[cont].cont.step;
-        ast_id loop_var = get_loop_var(*astp, loop);
-        ast_id inc_var = ast_dup_identifier(astp, loop_var);
+        ast_id loop_lvalue = get_loop_var_lvalue(*astp, loop);
+        ast_id inc_var = ast_dup_lvalue(astp, loop_lvalue);
         ast_id inc_stmt
             = ast_inc_step(astp, inc_var, step_expr, ast_loc(*astp, step_expr));
         (*astp)->nodes[cont].cont.step
@@ -51,13 +54,13 @@ static int
 check_cont(
     const struct ast* ast,
     ast_id            cont,
-    const char*       source_filename,
-    const char*       source_text)
+    const char*       filename,
+    const char*       source)
 {
     ODBUTIL_DEBUG_ASSERT(cont > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cont) == AST_LOOP_CONT,
-        log_semantic_err("type: %d\n", ast_node_type(ast, cont)));
+        log_err("type: %d\n", ast_node_type(ast, cont)));
 
     ast_id first_loop = -1;
     ast_id loop = cont;
@@ -65,18 +68,17 @@ check_cont(
     {
         loop = ast_find_parent(ast, loop);
         if (loop == -1)
-            return err_loop_cont(
-                ast, cont, first_loop, source_filename, source_text);
+            return err_loop_cont(ast, cont, first_loop, filename, source);
 
         if (ast_node_type(ast, loop) == AST_LOOP1)
         {
             if (ast->nodes[cont].cont.name.len == 0
                 || utf8_equal_span(
-                    source_text,
+                    source,
                     ast->nodes[cont].cont.name,
                     ast->nodes[loop].loop1.name)
                 || utf8_equal_span(
-                    source_text,
+                    source,
                     ast->nodes[cont].cont.name,
                     ast->nodes[loop].loop1.implicit_name))
             {
@@ -103,21 +105,19 @@ check_loop_cont(
 {
     ast_id       n, loop;
     struct ast** astp = &tus[tu_id];
-    struct ast*  ast = *astp;
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
 
-    for (n = 0; n != ast_count(ast); ++n)
+    for (n = 0; n != ast_count(*astp); ++n)
     {
-        if (ast_node_type(ast, n) != AST_LOOP_CONT)
+        if (ast_node_type(*astp, n) != AST_LOOP_CONT)
             continue;
 
-        loop = check_cont(ast, n, filename, source);
+        loop = check_cont(*astp, n, filename, source);
         if (loop == -1)
             return -1;
 
         create_step_block(astp, loop, n);
-        ast = *astp;
     }
 
     return 0;

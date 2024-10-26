@@ -72,39 +72,39 @@ process_start(
 
     if ((flags & PROCESS_STDIN) && !CreatePipe(&hInRead, &process->hIn, &sa, 0))
     {
-        log_util_err("Failed to create stdin pipe: {win32error}\n");
+        log_err("Failed to create stdin pipe: {win32error}\n");
         goto in_pipe_failed;
     }
     if ((flags & PROCESS_STDIN)
         && !SetHandleInformation(process->hIn, HANDLE_FLAG_INHERIT, 0))
     {
-        log_util_err("Failed to set stdin handle info: {win32error}\n");
+        log_err("Failed to set stdin handle info: {win32error}\n");
         goto in_pipe_handle_failed;
     }
 
     if ((flags & PROCESS_STDOUT)
         && !CreatePipe(&process->hOut, &hOutWrite, &sa, 0))
     {
-        log_util_err("Failed to create stdout pipe: {win32error}\n");
+        log_err("Failed to create stdout pipe: {win32error}\n");
         goto out_pipe_failed;
     }
     if ((flags & PROCESS_STDOUT)
         && !SetHandleInformation(process->hOut, HANDLE_FLAG_INHERIT, 0))
     {
-        log_util_err("Failed to set stdout handle info: {win32error}\n");
+        log_err("Failed to set stdout handle info: {win32error}\n");
         goto out_pipe_handle_failed;
     }
 
     if ((flags & PROCESS_STDERR)
         && !CreatePipe(&process->hErr, &hErrWrite, &sa, 0))
     {
-        log_util_err("Failed to create stderr pipe: {win32error}\n");
+        log_err("Failed to create stderr pipe: {win32error}\n");
         goto err_pipe_failed;
     }
     if ((flags & PROCESS_STDERR)
         && !SetHandleInformation(process->hErr, HANDLE_FLAG_INHERIT, 0))
     {
-        log_util_err("Failed to set stderr handle info: {win32error}\n");
+        log_err("Failed to set stderr handle info: {win32error}\n");
         goto err_pipe_handle_failed;
     }
 
@@ -136,7 +136,7 @@ process_start(
         &pi);
     if (!ret)
     {
-        log_util_err(
+        log_err(
             "Failed to create process {quote:%s}: {win32error}\n", cmdline);
         goto create_process_failed;
     }
@@ -190,7 +190,7 @@ process_write_stdin(struct process* process, struct utf8_view str)
     if (WriteFile(process->hIn, str.data + str.off, str.len, &dwWritten, NULL)
         == FALSE)
     {
-        log_util_err("Failed to write to process stdin: {win32error}\n");
+        log_err("Failed to write to process stdin: {win32error}\n");
         return -1;
     }
     return dwWritten;
@@ -204,7 +204,7 @@ process_read_stdout(struct process* process, char* byte)
     {
         if (GetLastError() == ERROR_BROKEN_PIPE)
             return 0; /* EOF */
-        return log_util_err(
+        return log_err(
             "Failed to read from process stdout: {win32error}\n");
     }
     return dwBytesRead;
@@ -218,7 +218,7 @@ process_read_stderr(struct process* process, char* byte)
     {
         if (GetLastError() == ERROR_BROKEN_PIPE)
             return 0; /* EOF */
-        return log_util_err(
+        return log_err(
             "Failed to read from process stderr: {win32error}\n");
     }
     return dwBytesRead;
@@ -247,7 +247,7 @@ process_wait(struct process* process, int timeout_ms)
             process->hProcess, timeout_ms > 0 ? timeout_ms : INFINITE)
         != WAIT_OBJECT_0)
     {
-        log_util_err("Process did not exit after %dms\n", timeout_ms);
+        log_err("Process did not exit after %dms\n", timeout_ms);
         return -1;
     }
 
@@ -260,7 +260,7 @@ process_join(struct process* process)
     DWORD dwExitCode;
     if (!GetExitCodeProcess(process->hProcess, &dwExitCode))
     {
-        log_util_err("Failed to get exit code from process: {win32error}\n");
+        log_err("Failed to get exit code from process: {win32error}\n");
         dwExitCode = -1;
     }
 

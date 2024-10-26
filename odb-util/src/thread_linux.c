@@ -18,7 +18,7 @@ thread_start(void* (*func)(void*), void* args)
     pthread_attr_destroy(&attr);
     if (rc != 0)
     {
-        log_util_err("Failed to create thread: %s\n", strerror(rc));
+        log_err("Failed to create thread: %s\n", strerror(rc));
         return NULL;
     }
 
@@ -35,7 +35,7 @@ thread_join(struct thread* t)
     if (rc == 0)
         return ret;
 
-    log_util_err("Failed to join thread: %s\n", strerror(rc));
+    log_err("Failed to join thread: %s\n", strerror(rc));
     return (void*)-1;
 }
 

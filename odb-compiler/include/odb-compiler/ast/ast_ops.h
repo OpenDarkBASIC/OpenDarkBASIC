@@ -1,5 +1,7 @@
 #pragma once
 
+#include "odb-compiler/config.h"
+
 struct ast;
 struct cmd_list;
 
@@ -12,14 +14,16 @@ ast_swap_node_values(struct ast* ast, int n1, int n2);
  * @brief Creates a new node of an identifier.
  */
 int
-ast_dup_identifier(struct ast** ast, int lvaluedentifier);
+ast_dup_identifier(struct ast** astp, int identifier);
+int
+ast_dup_lvalue(struct ast** ast, int lvalue);
 
 /*! Perform a deep-copy of a subtree and return the node root node of the new
  * tree, or -1 on failure */
 int
 ast_dup_subtree(struct ast** ast, int node);
 
-void
+ODBCOMPILER_PUBLIC_API void
 ast_delete_node(struct ast* ast, int node);
 void
 ast_delete_tree(struct ast* ast, int node);
@@ -32,7 +36,7 @@ ast_delete_tree(struct ast* ast, int node);
  * @see ast_delete_node() is called, the node is marked with a special value
  * AST_ID (@see ast_type) and must be cleaned up later with this function.
  */
-void
+ODBCOMPILER_PUBLIC_API void
 ast_gc(struct ast* ast);
 
 int

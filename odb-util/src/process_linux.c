@@ -39,24 +39,24 @@ process_start(
 
     if ((flags & PROCESS_STDIN) && pipe(infd) != 0)
     {
-        log_util_err("Failed to create stdin pipe: %s\n", strerror(errno));
+        log_err("Failed to create stdin pipe: %s\n", strerror(errno));
         goto in_pipe_failed;
     }
     if ((flags & PROCESS_STDOUT) && pipe(outfd) != 0)
     {
-        log_util_err("Failed to create stdout pipe: %s\n", strerror(errno));
+        log_err("Failed to create stdout pipe: %s\n", strerror(errno));
         goto out_pipe_failed;
     }
     if ((flags & PROCESS_STDERR) && pipe(errfd) != 0)
     {
-        log_util_err("Failed to create stderr pipe: %s\n", strerror(errno));
+        log_err("Failed to create stderr pipe: %s\n", strerror(errno));
         goto err_pipe_failed;
     }
 
     cpid = fork();
     if (cpid == -1)
     {
-        log_util_err("fork() failed: %s\n", strerror(errno));
+        log_err("fork() failed: %s\n", strerror(errno));
         goto fork_failed;
     }
 
@@ -65,7 +65,7 @@ process_start(
         char* abs_filepath = realpath(ospathc_cstr(filepath), NULL);
         if (abs_filepath == NULL)
         {
-            log_util_err(
+            log_err(
                 "Failed to resolve absolute path for %s: %s\n",
                 ospathc_cstr(filepath),
                 strerror(errno));
@@ -93,7 +93,7 @@ process_start(
 
         if (working_dir.len > 0 && chdir(ospathc_cstr(working_dir)) != 0)
         {
-            log_util_err(
+            log_err(
                 "Failed to change working directory to {quote:%s}: %s\n",
                 ospathc_cstr(working_dir),
                 strerror(errno));
@@ -101,7 +101,7 @@ process_start(
         }
 
         execvp(abs_filepath, (char* const*)argv);
-        log_util_err(
+        log_err(
             "Failed to exec %s: %s\n", ospathc_cstr(filepath), strerror(errno));
         _exit(-1);
     }
@@ -154,7 +154,7 @@ process_write_stdin(struct process* process, struct utf8_view str)
 {
     int rc = write(process->stdin_fd, str.data + str.off, str.len);
     if (rc == -1)
-        log_util_err("Failed to write to process stdin: %s\n", strerror(errno));
+        log_err("Failed to write to process stdin: %s\n", strerror(errno));
     return rc;
 }
 
@@ -163,7 +163,7 @@ process_read_stdout(struct process* process, char* byte)
 {
     int rc = read(process->stdout_fd, byte, 1);
     if (rc < 0)
-        return log_util_err(
+        return log_err(
             "Failed to read from process stdout: %s\n", strerror(errno));
     return rc;
 }
@@ -173,7 +173,7 @@ process_read_stderr(struct process* process, char* byte)
 {
     int rc = read(process->stderr_fd, byte, 1);
     if (rc < 0)
-        return log_util_err(
+        return log_err(
             "Failed to read from process stderr: %s\n", strerror(errno));
     return rc;
 }
@@ -203,12 +203,12 @@ process_wait(struct process* process, int timeout_ms)
     {
         timeout_pid = fork();
         if (timeout_pid == -1)
-            return log_util_err(
+            return log_err(
                 "fork() failed for timeout process: %s\n", strerror(errno));
         if (timeout_pid == 0)
         {
             usleep(timeout_ms * 1000);
-            log_util_err("Process timed out\n");
+            log_err("Process timed out\n");
             _exit(0);
         }
     }

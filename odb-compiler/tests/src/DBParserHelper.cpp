@@ -1,6 +1,7 @@
 #include "odb-compiler/tests/DBParserHelper.hpp"
 #include <filesystem>
 
+#include "gmock/gmock.h"
 #include <gtest/gtest.h>
 
 extern "C" {
@@ -12,6 +13,8 @@ extern "C" {
 #include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
 }
+
+using namespace testing;
 
 DBParserHelper::DBParserHelper()
 {
@@ -79,6 +82,14 @@ DBParserHelper::parse(const char* code)
             src.text.data,
             &cmds);
 #endif
+    if (result != 0)
+        return result;
+
+    struct utf8 fname = empty_utf8();
+    utf8_set_cstr(&fname, "test");
+    result = symbol_table_add_declarations_from_ast(
+        &symbols, &ast, 0, &fname, &src);
+    utf8_deinit(fname);
     return result;
 }
 
