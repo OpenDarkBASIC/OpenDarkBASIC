@@ -237,6 +237,7 @@ symbol_table_find(const struct symbol_table* table, struct utf8_view key)
     return hm_find(&table->hm, key);
 }
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
 void
 mem_acquire_symbol_table(struct symbol_table* table)
 {
@@ -263,7 +264,6 @@ mem_acquire_symbol_table(struct symbol_table* table)
         table->hm.kvs.values,
         sizeof(table->hm.kvs.values[0]) * table->hm.capacity);
 }
-
 void
 mem_release_symbol_table(struct symbol_table* table)
 {
@@ -275,3 +275,4 @@ mem_release_symbol_table(struct symbol_table* table)
     mem_release(table->hm.kvs.key_data);
     mem_release(table);
 }
+#endif

@@ -37,8 +37,8 @@ TEST_F(NAME, ambiguous_overloads_1)
               "help: This is usually an issue with conflicting plugins, "
               "or poorly designed plugins. You can try to fix it by explicitly "
               "casting the argument to the types required:\n"
-              " 1 | print 5, 6 AS ...\n"
-              "   |           ^~~~~~<\n"));
+              " 1 | print 5, 6 AS <TYPE>\n"
+              "   |           ^~~~~~~~~<\n"));
 }
 
 TEST_F(NAME, ambiguous_overloads_2)
@@ -61,8 +61,8 @@ TEST_F(NAME, ambiguous_overloads_2)
               "help: This is usually an issue with conflicting plugins, "
               "or poorly designed plugins. You can try to fix it by explicitly "
               "casting the arguments to the types required:\n"
-              " 1 | print 5 AS ..., 6 AS ...\n"
-              "   |        ^~~~~~<   ^~~~~~<\n"));
+              " 1 | print 5 AS <TYPE>, 6 AS <TYPE>\n"
+              "   |        ^~~~~~~~~<   ^~~~~~~~~<\n"));
 }
 
 TEST_F(NAME, ambiguous_overloads_no_params)
@@ -110,8 +110,8 @@ TEST_F(NAME, multi_arg_ambiguous_overloads)
               "help: This is usually an issue with conflicting plugins, or "
               "poorly designed plugins. You can try to fix it by explicitly "
               "casting the arguments to the types required:\n"
-              " 1 | print 5, 6 AS ..., 7 AS ..., 8 AS ..., 9\n"
-              "   |           ^~~~~~<   ^~~~~~<   ^~~~~~<\n"));
+              " 1 | print 5, 6 AS <TYPE>, 7 AS <TYPE>, 8 AS <TYPE>, 9\n"
+              "   |           ^~~~~~~~~<   ^~~~~~~~~<   ^~~~~~~~~<\n"));
     /* clang-format on */
 }
 

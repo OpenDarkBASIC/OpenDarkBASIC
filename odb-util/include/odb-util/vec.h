@@ -10,8 +10,6 @@
 #pragma once
 
 #include "odb-util/config.h"
-#include "odb-util/log.h"
-#include "odb-util/mem.h"
 #include <assert.h>
 #include <inttypes.h>
 #include <stddef.h>
@@ -265,7 +263,7 @@
     }                                                                          \
     int prefix##_reserve(struct prefix** v, int##bits##_t elems)               \
     {                                                                          \
-        ODBUTIL_DEBUG_ASSERT((elems) > 0, log_err("elems: %d\n", elems)); \
+        ODBUTIL_DEBUG_ASSERT((elems) > 0, log_err("elems: %d\n", elems));      \
         if (prefix##_realloc(v, elems) != 0)                                   \
             return -1;                                                         \
         (*v)->count = 0;                                                       \
@@ -335,7 +333,7 @@
     {                                                                          \
         ODBUTIL_DEBUG_ASSERT(                                                  \
             i >= 0 && i <= (*v ? (*v)->count : 0),                             \
-            log_err("i: %d, count: %d\n", i, (*v)->count));               \
+            log_err("i: %d, count: %d\n", i, (*v)->count));                    \
                                                                                \
         if (prefix##_emplace(v) == NULL)                                       \
             return NULL;                                                       \
@@ -434,3 +432,19 @@
 
 #define vec_enumerate(v, i, var)                                               \
     for (i = 0; (v) && i != (v)->count && ((var = &(v)->data[i]), 1); ++i)
+
+#if defined(ODBUTIL_MEM_DEBUGGING)
+#define mem_acquire_vec(prefix, v)                                             \
+    do                                                                         \
+    {                                                                          \
+        if (v)                                                                 \
+            mem_acquire(                                                       \
+                (v),                                                           \
+                offsetof(struct prefix, data)                                  \
+                    + sizeof((v)->data[0]) * (v)->capacity);                   \
+    } while (0)
+#define mem_release_vec(v) mem_release(v)
+#else
+#define mem_acquire_vec(v)
+#define mem_release_vec(v)
+#endif

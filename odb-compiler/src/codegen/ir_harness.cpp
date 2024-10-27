@@ -12,6 +12,7 @@ extern "C" {
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/sdk/sdk_type.h"
 #include "odb-compiler/sdk/used_cmds.h"
+#include "odb-util/log.h"
 #include "odb-util/utf8.h"
 #include "odb-util/vec.h"
 }

@@ -38,8 +38,12 @@ symbol_table_add_declarations_from_ast(
 ODBCOMPILER_PUBLIC_API const struct symbol_table_entry*
 symbol_table_find(const struct symbol_table* table, struct utf8_view key);
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
 ODBCOMPILER_PUBLIC_API void
 mem_acquire_symbol_table(struct symbol_table* table);
-
 ODBCOMPILER_PUBLIC_API void
 mem_release_symbol_table(struct symbol_table* table);
+#else
+define mem_acquire_symbol_table(table)
+define mem_release_symbol_table(table)
+#endif

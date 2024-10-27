@@ -72,12 +72,14 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
 %x MULTI_COMMENT
 %x MULTI_COMMENT_C
 %x SINGLE_COMMENT
+%x PREPROCESSOR
 
 %%
 <INITIAL>{
     (?i:remstart)       { BEGIN(MULTI_COMMENT); RETURN_TOKEN(TOK_REMSTART); }
     "/*"                { BEGIN(MULTI_COMMENT_C); RETURN_TOKEN(TOK_REMSTART); }
     ((?i:rem)|"`"|"//") { BEGIN(SINGLE_COMMENT); RETURN_TOKEN(TOK_REMSTART); }
+    (?i:#load)          { BEGIN(PREPROCESSOR); }
 }
 <SINGLE_COMMENT>{
     .
@@ -93,53 +95,70 @@ IDENTIFIER      [a-zA-Z_][a-zA-Z0-9_]+?
     .
     \n
 }
+<PREPROCESSOR>{
+    \n                  { BEGIN(INITIAL); }
+    .
+}
 <INITIAL>{
     "#constant"         { RETURN_TOKEN(TOK_CONSTANT); }
-    "#load plugin"      { RETURN_TOKEN(TOK_LOAD_PLUGIN); }
-    "#load command"     { RETURN_TOKEN(TOK_LOAD_COMMAND); }
 
-    {BOOL_TRUE}         { yylval->boolean_value = 1; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {BOOL_FALSE}        { yylval->boolean_value = 0; RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
-    {STRING_LITERAL}    { yylval->string_value = token_to_ref_strip_quotes(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_STRING_LITERAL); }
-    {FLOAT}             { yylval->float_value = (float)atof(yytext); RETURN_TOKEN(TOK_FLOAT_LITERAL); }
-    {DOUBLE}            { yylval->double_value = atof(yytext); RETURN_TOKEN(TOK_DOUBLE_LITERAL); }
-    {INTEGER_BASE2}     { yylval->integer_value = strtoll(&yytext[1], NULL, 2); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
-    {INTEGER_BASE16}    { yylval->integer_value = strtoll(&yytext[2], NULL, 16); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
-    {INTEGER}           { yylval->integer_value = strtoll(yytext, NULL, 10); RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {BOOL_TRUE}         { yylval->boolean_value = 1;
+                          RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {BOOL_FALSE}        { yylval->boolean_value = 0;
+                          RETURN_TOKEN(TOK_BOOLEAN_LITERAL); }
+    {STRING_LITERAL}    { yylval->string_value = token_to_ref_strip_quotes(yytext, yyget_extra(yyg));
+                          RETURN_TOKEN(TOK_STRING_LITERAL); }
+    {FLOAT}             { yylval->float_value = (float)atof(yytext);
+                          RETURN_TOKEN(TOK_FLOAT_LITERAL); }
+    {DOUBLE}            { yylval->double_value = atof(yytext);
+                          RETURN_TOKEN(TOK_DOUBLE_LITERAL); }
+    {INTEGER_BASE2}     { yylval->integer_value = strtoll(&yytext[1], NULL, 2);
+                          RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER_BASE16}    { yylval->integer_value = strtoll(&yytext[2], NULL, 16);
+                          RETURN_TOKEN(TOK_INTEGER_LITERAL); }
+    {INTEGER}           { yylval->integer_value = strtoll(yytext, NULL, 10);
+                          RETURN_TOKEN(TOK_INTEGER_LITERAL); }
 
-    "("                   { RETURN_TOKEN('('); }
-    ")"                   { RETURN_TOKEN(')'); }
-    ","                   { RETURN_TOKEN(','); }
+    "("                 { RETURN_TOKEN('('); }
+    ")"                 { RETURN_TOKEN(')'); }
+    ","                 { RETURN_TOKEN(','); }
 
     /* Arithmetic operators */
-    "+"                   { RETURN_TOKEN('+'); }
-    "-"                   { RETURN_TOKEN('-'); }
-    "*"                   { RETURN_TOKEN('*'); }
-    "/"                   { RETURN_TOKEN('/'); }
-    "^"                   { RETURN_TOKEN('^'); }
+    "+"                 { RETURN_TOKEN('+'); }
+    "-"                 { RETURN_TOKEN('-'); }
+    "*"                 { RETURN_TOKEN('*'); }
+    "/"                 { RETURN_TOKEN('/'); }
+    "^"                 { RETURN_TOKEN('^'); }
     /* Logical binops */
-    "<>"                  { RETURN_TOKEN(TOK_NE); }
-    "<="                  { RETURN_TOKEN(TOK_LE); }
-    ">="                  { RETURN_TOKEN(TOK_GE); }
-    "="                   { RETURN_TOKEN('='); }
-    "<"                   { RETURN_TOKEN('<'); }
-    ">"                   { RETURN_TOKEN('>'); }
+    "<>"                { RETURN_TOKEN(TOK_NE); }
+    "<="                { RETURN_TOKEN(TOK_LE); }
+    ">="                { RETURN_TOKEN(TOK_GE); }
+    "="                 { RETURN_TOKEN('='); }
+    "<"                 { RETURN_TOKEN('<'); }
+    ">"                 { RETURN_TOKEN('>'); }
     /* NOTE: Logical boolean binops are keywords and are parsed as identifiers */
     /* Bitwise binops */
-    "<<"                  { RETURN_TOKEN(TOK_BSHL); }
-    ">>"                  { RETURN_TOKEN(TOK_BSHR); }
-    "||"                  { RETURN_TOKEN(TOK_BOR); }
-    "&&"                  { RETURN_TOKEN(TOK_BAND); }
-    "~~"                  { RETURN_TOKEN(TOK_BXOR); }
-    ".."                  { RETURN_TOKEN(TOK_BNOT); }
+    "<<"                { RETURN_TOKEN(TOK_BSHL); }
+    ">>"                { RETURN_TOKEN(TOK_BSHR); }
+    "||"                { RETURN_TOKEN(TOK_BOR); }
+    "&&"                { RETURN_TOKEN(TOK_BAND); }
+    "~~"                { RETURN_TOKEN(TOK_BXOR); }
+    ".."                { RETURN_TOKEN(TOK_BNOT); }
 
-    {IDENTIFIER}"?"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_BOOLEAN); }
-    {IDENTIFIER}"%"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
-    {IDENTIFIER}"&"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
-    {IDENTIFIER}"#"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
-    {IDENTIFIER}"!"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
-    {IDENTIFIER}"$"       { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
-    {IDENTIFIER}          { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); RETURN_TOKEN(TOK_IDENTIFIER); }
+    {IDENTIFIER}"?"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+                          RETURN_TOKEN(TOK_IDENTIFIER_BOOLEAN); }
+    {IDENTIFIER}"%"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+                          RETURN_TOKEN(TOK_IDENTIFIER_WORD); }
+    {IDENTIFIER}"&"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg));
+                          RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE_INTEGER); }
+    {IDENTIFIER}"#"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+                          RETURN_TOKEN(TOK_IDENTIFIER_FLOAT); }
+    {IDENTIFIER}"!"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+                          RETURN_TOKEN(TOK_IDENTIFIER_DOUBLE); }
+    {IDENTIFIER}"$"     { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+                          RETURN_TOKEN(TOK_IDENTIFIER_STRING); }
+    {IDENTIFIER}        { yylval->string_value = token_to_ref(yytext, yyget_extra(yyg)); 
+                          RETURN_TOKEN(TOK_IDENTIFIER); }
 
     "#"                 { RETURN_TOKEN('#'); }
     "$"                 { RETURN_TOKEN('$'); }

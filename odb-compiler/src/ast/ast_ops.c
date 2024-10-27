@@ -194,8 +194,7 @@ ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root)
 }
 
 ast_id
-ast_trees_equal(
-    const char* source_text, const struct ast* ast, ast_id n1, ast_id n2)
+ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
 {
     if (ast_node_type(ast, n1) != ast_node_type(ast, n1))
         return 0;
@@ -226,9 +225,8 @@ ast_trees_equal(
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
-                    utf8_span_view(source_text, ast->nodes[n1].identifier.name),
-                    utf8_span_view(
-                        source_text, ast->nodes[n2].identifier.name)))
+                    utf8_span_view(source, ast->nodes[n1].identifier.name),
+                    utf8_span_view(source, ast->nodes[n2].identifier.name)))
                 return 0;
             if (ast->nodes[n1].identifier.annotation
                 != ast->nodes[n2].identifier.annotation)
@@ -246,14 +244,12 @@ ast_trees_equal(
         case AST_COND_BRANCHES: break;
         case AST_LOOP1:
             if (!utf8_equal(
-                    utf8_span_view(source_text, ast->nodes[n1].loop1.name),
-                    utf8_span_view(source_text, ast->nodes[n2].loop1.name)))
+                    utf8_span_view(source, ast->nodes[n1].loop1.name),
+                    utf8_span_view(source, ast->nodes[n2].loop1.name)))
                 return 0;
             if (!utf8_equal(
-                    utf8_span_view(
-                        source_text, ast->nodes[n1].loop1.implicit_name),
-                    utf8_span_view(
-                        source_text, ast->nodes[n2].loop1.implicit_name)))
+                    utf8_span_view(source, ast->nodes[n1].loop1.implicit_name),
+                    utf8_span_view(source, ast->nodes[n2].loop1.implicit_name)))
                 return 0;
             break;
         case AST_LOOP2: break;
@@ -262,14 +258,14 @@ ast_trees_equal(
         case AST_LOOP_FOR3: break;
         case AST_LOOP_CONT:
             if (!utf8_equal(
-                    utf8_span_view(source_text, ast->nodes[n1].cont.name),
-                    utf8_span_view(source_text, ast->nodes[n2].cont.name)))
+                    utf8_span_view(source, ast->nodes[n1].cont.name),
+                    utf8_span_view(source, ast->nodes[n2].cont.name)))
                 return 0;
             break;
         case AST_LOOP_EXIT:
             if (!utf8_equal(
-                    utf8_span_view(source_text, ast->nodes[n1].loop_exit.name),
-                    utf8_span_view(source_text, ast->nodes[n2].loop_exit.name)))
+                    utf8_span_view(source, ast->nodes[n1].loop_exit.name),
+                    utf8_span_view(source, ast->nodes[n2].loop_exit.name)))
                 return 0;
             break;
         case AST_FUNC_POLY: break;
@@ -325,10 +321,8 @@ ast_trees_equal(
             break;
         case AST_STRING_LITERAL:
             if (!utf8_equal(
-                    utf8_span_view(
-                        source_text, ast->nodes[n1].string_literal.str),
-                    utf8_span_view(
-                        source_text, ast->nodes[n2].string_literal.str)))
+                    utf8_span_view(source, ast->nodes[n1].string_literal.str),
+                    utf8_span_view(source, ast->nodes[n2].string_literal.str)))
                 return 0;
             break;
         case AST_CAST: break;
@@ -352,17 +346,14 @@ ast_trees_equal(
 
     if (ast->nodes[n1].base.left >= 0)
         if (ast_trees_equal(
-                source_text,
-                ast,
-                ast->nodes[n1].base.left,
-                ast->nodes[n2].base.left)
+                source, ast, ast->nodes[n1].base.left, ast->nodes[n2].base.left)
             == 0)
         {
             return 0;
         }
     if (ast->nodes[n1].base.right >= 0)
         if (ast_trees_equal(
-                source_text,
+                source,
                 ast,
                 ast->nodes[n1].base.right,
                 ast->nodes[n2].base.right)

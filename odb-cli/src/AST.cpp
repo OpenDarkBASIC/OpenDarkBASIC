@@ -4,6 +4,7 @@
 extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_export.h"
+#include "odb-compiler/parser/db_cmd_loader.h"
 #include "odb-compiler/parser/db_parser.h"
 #include "odb-compiler/semantic/post.h"
 #include "odb-compiler/semantic/semantic.h"
@@ -104,8 +105,7 @@ open_stdin_as_tu(struct ctx* ctx)
     }
     if (!feof(stdin))
     {
-        log_err(
-            "Failed to read from stdin: {emph:%s}\n", strerror(errno));
+        log_err("Failed to read from stdin: {emph:%s}\n", strerror(errno));
         goto read_failed;
     }
     if (db_source_ref_string(source, &contents) != 0)
@@ -299,7 +299,7 @@ semantic_worker(void* arg)
             worker->ctx->ast_mutexes->data,
             worker->ctx->filenames->data,
             worker->ctx->sources->data,
-            getPluginList(),
+            *getPluginList(),
             getCommandList(),
             worker->ctx->symbol_table);
         mem_release_ast(*astp);
@@ -346,11 +346,11 @@ execute_parse_workers(std::vector<worker>* workers)
     int          worker_id;
     struct ast** astp;
 
+    mem_release_symbol_table(ctx.symbol_table);
     vec_for_each(ctx.tus, astp)
     {
         mem_release_ast(*astp);
     }
-    mem_release_symbol_table(ctx.symbol_table);
 
     for (worker_id = 0; worker_id != (int)workers->size(); ++worker_id)
     {
@@ -440,6 +440,7 @@ start_semantic_thread_failed:
 bool
 parse_dba(const std::vector<std::string>& args)
 {
+    int                 i;
     const int           max_workers = 32;
     std::vector<worker> workers;
     int                 worker_id;
@@ -468,6 +469,21 @@ parse_dba(const std::vector<std::string>& args)
         worker.id = i;
         worker.ctx = &ctx;
         worker.mutex = mutex;
+    }
+
+    for (i = 0; i != sources_count(ctx.sources); ++i)
+    {
+        struct utf8*      filename = vec_get(ctx.filenames, i);
+        struct db_source* source = vec_get(ctx.sources, i);
+        if (cmd_list_from_source(
+                getPluginList(),
+                getCommandList(),
+                utf8_cstr(*filename),
+                *source)
+            != 0)
+        {
+            goto parse_failed;
+        }
     }
 
     if (execute_parse_workers(&workers) != 0)

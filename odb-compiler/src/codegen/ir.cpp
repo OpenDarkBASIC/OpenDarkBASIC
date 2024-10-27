@@ -552,10 +552,10 @@ gen_expr(
     switch (ast_node_type(ast, expr))
     {
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_BLOCK: break;
-        case AST_END: break;
-        case AST_ARGLIST: break;
-        case AST_PARAMLIST: break;
+        case AST_BLOCK: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_END: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_COMMAND:
             return gen_cmd_call(
@@ -1194,13 +1194,13 @@ gen_block(
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_ASSIGNMENT: {
-                ast_id       lhs_node = ast->nodes[stmt].assignment.lvalue;
-                ast_id       rhs_node = ast->nodes[stmt].assignment.expr;
-                llvm::Value* rhs = gen_expr(
+                ast_id       ast_lvalue = ast->nodes[stmt].assignment.lvalue;
+                ast_id       ast_expr = ast->nodes[stmt].assignment.expr;
+                llvm::Value* llvm_expr = gen_expr(
                     ir,
                     builder,
                     ast,
-                    rhs_node,
+                    ast_expr,
                     sdk_type,
                     cmds,
                     filename,
@@ -1212,13 +1212,14 @@ gen_block(
                     allocamap);
 
                 ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, lhs_node) == AST_IDENTIFIER,
-                    log_err("type: %d\n", ast_node_type(ast, lhs_node)));
-                enum type        type = ast_type_info(ast, lhs_node);
+                    ast_node_type(ast, ast_lvalue) == AST_VAR_REF,
+                    log_err("type: %d\n", ast_node_type(ast, ast_lvalue)));
+                enum type        type = ast_type_info(ast, ast_lvalue);
+                ast_id ast_ident = ast->nodes[ast_lvalue].var_ref.identifier;
                 struct utf8_view name = utf8_span_view(
-                    source, ast->nodes[lhs_node].identifier.name);
+                    source, ast->nodes[ast_ident].identifier.name);
                 struct view_scope name_scope
-                    = {name, ast->nodes[lhs_node].info.scope_id};
+                    = {name, ast->nodes[ast_ident].info.scope_id};
                 llvm::AllocaInst** A;
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
                 {
@@ -1231,7 +1232,7 @@ gen_block(
                             llvm::StringRef(name.data + name.off, name.len));
                         break;
                 }
-                builder.CreateStore(rhs, *A);
+                builder.CreateStore(llvm_expr, *A);
                 continue;
             }
 

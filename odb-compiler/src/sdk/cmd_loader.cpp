@@ -13,6 +13,7 @@ extern "C" {
 #include "odb-compiler/sdk/cmd_cache.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/sdk/plugin_list.h"
+#include "odb-util/log.h"
 }
 
 int

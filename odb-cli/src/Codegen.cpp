@@ -139,7 +139,7 @@ output(const std::vector<std::string>& args)
     struct ir_module* ir = ir_alloc("odbharness");
     ir_create_harness(
         ir,
-        getPluginList(),
+        *getPluginList(),
         getCommandList(),
         used_cmds_list,
         ospath_cstr(maindbaname),

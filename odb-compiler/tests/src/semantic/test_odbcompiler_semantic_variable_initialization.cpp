@@ -25,13 +25,14 @@ TEST_F(NAME, undeclared_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].integer_literal.value, Eq(0));
 }
@@ -44,13 +45,14 @@ TEST_F(NAME, undeclared_bool_initializes_to_false)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_BOOLEAN_LITERAL));
     EXPECT_THAT(ast->nodes[init].boolean_literal.is_true, IsFalse());
 }
@@ -63,13 +65,14 @@ TEST_F(NAME, undeclared_word_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast->nodes[init].word_literal.value, Eq(0));
 }
@@ -82,13 +85,14 @@ TEST_F(NAME, undeclared_double_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_integer_literal.value, Eq(0));
 }
@@ -101,13 +105,14 @@ TEST_F(NAME, undeclared_float_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_FLOAT_LITERAL));
     EXPECT_THAT(ast->nodes[init].float_literal.value, Eq(0));
 }
@@ -120,13 +125,14 @@ TEST_F(NAME, undeclared_double_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_literal.value, Eq(0.0));
 }
@@ -139,13 +145,14 @@ TEST_F(NAME, undeclared_string_initializes_to_empty)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(10));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(6, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_STRING_LITERAL));
     EXPECT_THAT(ast->nodes[init].string_literal.str, Utf8SpanEq(0, 0));
 }
@@ -157,13 +164,14 @@ TEST_F(NAME, declared_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].integer_literal.value, Eq(0));
 }
@@ -175,13 +183,14 @@ TEST_F(NAME, declared_bool_initializes_to_false)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_BOOLEAN_LITERAL));
     EXPECT_THAT(ast->nodes[init].boolean_literal.is_true, IsFalse());
 }
@@ -193,13 +202,14 @@ TEST_F(NAME, declared_word_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast->nodes[init].word_literal.value, Eq(0));
 }
@@ -211,13 +221,14 @@ TEST_F(NAME, declared_double_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_integer_literal.value, Eq(0));
 }
@@ -229,13 +240,14 @@ TEST_F(NAME, declared_float_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_FLOAT_LITERAL));
     EXPECT_THAT(ast->nodes[init].float_literal.value, Eq(0));
 }
@@ -247,13 +259,14 @@ TEST_F(NAME, declared_double_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_literal.value, Eq(0.0));
 }
@@ -265,13 +278,14 @@ TEST_F(NAME, declared_string_initializes_to_empty)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 2));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 2));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_STRING_LITERAL));
     EXPECT_THAT(ast->nodes[init].string_literal.str, Utf8SpanEq(0, 0));
 }
@@ -283,13 +297,14 @@ TEST_F(NAME, unannotated_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].integer_literal.value, Eq(0));
 }
@@ -301,13 +316,14 @@ TEST_F(NAME, unannotated_bool_initializes_to_false)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_BOOLEAN_LITERAL));
     EXPECT_THAT(ast->nodes[init].boolean_literal.is_true, IsFalse());
 }
@@ -319,13 +335,14 @@ TEST_F(NAME, unannotated_word_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast->nodes[init].word_literal.value, Eq(0));
 }
@@ -337,13 +354,14 @@ TEST_F(NAME, unannotated_double_integer_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_integer_literal.value, Eq(0));
 }
@@ -355,13 +373,14 @@ TEST_F(NAME, unannotated_float_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_FLOAT_LITERAL));
     EXPECT_THAT(ast->nodes[init].float_literal.value, Eq(0));
 }
@@ -373,13 +392,14 @@ TEST_F(NAME, unannotated_double_initializes_to_0)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_literal.value, Eq(0.0));
 }
@@ -391,13 +411,14 @@ TEST_F(NAME, unannotated_string_initializes_to_empty)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_STRING_LITERAL));
     EXPECT_THAT(ast->nodes[init].string_literal.str, Utf8SpanEq(0, 0));
 }
@@ -409,13 +430,14 @@ TEST_F(NAME, unannotated_integer_assigned_integer)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
     ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].integer_literal.value, Eq(65536));
 }
@@ -425,15 +447,16 @@ TEST_F(NAME, unannotated_bool_assigned_true)
     const char* source = "a AS BOOLEAN = true";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_BOOLEAN_LITERAL));
     EXPECT_THAT(ast->nodes[init].boolean_literal.is_true, IsTrue());
 }
@@ -443,15 +466,16 @@ TEST_F(NAME, unannotated_word_assigned_word)
     const char* source = "a AS WORD = 256";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_WORD_LITERAL));
     EXPECT_THAT(ast->nodes[init].word_literal.value, Eq(256));
 }
@@ -461,15 +485,16 @@ TEST_F(NAME, unannotated_double_integer_assigned_double_integer)
     const char* source = "a AS DOUBLE INTEGER = 4294967296";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_integer_literal.value, Eq(4294967296));
 }
@@ -479,15 +504,16 @@ TEST_F(NAME, unannotated_float_assigned_float)
     const char* source = "a AS FLOAT = 4.2f";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_FLOAT_LITERAL));
     EXPECT_THAT(ast->nodes[init].float_literal.value, Eq(4.2f));
 }
@@ -497,15 +523,16 @@ TEST_F(NAME, unannotated_double_assigned_double)
     const char* source = "a AS DOUBLE = 4.2";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_DOUBLE_LITERAL));
     EXPECT_THAT(ast->nodes[init].double_literal.value, Eq(4.2));
 }
@@ -515,15 +542,16 @@ TEST_F(NAME, unannotated_string_assigned_string)
     const char* source = "a AS STRING = \"hello\"";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(4));
+    ASSERT_THAT(ast_count(ast), Eq(7));
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
 
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(0, 1));
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_STRING_LITERAL));
     EXPECT_THAT(ast->nodes[init].string_literal.str, Utf8SpanEq(15, 5));
 }
@@ -538,16 +566,19 @@ TEST_F(NAME, variable_in_loop_is_initialized_outside_of_loop)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ast_id ass = ast->nodes[ast->root].block.stmt;
-    ast_id var = ast->nodes[ass].assignment.lvalue;
-    ast_id init = ast->nodes[ass].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, var), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[var].identifier.name, Utf8SpanEq(13, 1));
+    ast_id decl1 = ast->nodes[ast->root].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
+
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(13, 1));
     EXPECT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
     EXPECT_THAT(ast->nodes[init].integer_literal.value, Eq(0));
 }
 
-TEST_F(NAME, variable_in_while_statement_is_initialized_outside_of_loop)
+TEST_F(NAME, variable_in_while_is_initialized_outside_of_loop)
 {
     addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
     const char* source
@@ -557,19 +588,59 @@ TEST_F(NAME, variable_in_while_statement_is_initialized_outside_of_loop)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ast_id assa = ast->nodes[ast->root].block.stmt;
-    ast_id vara = ast->nodes[assa].assignment.lvalue;
-    ast_id inita = ast->nodes[assa].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, vara), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[vara].identifier.name, Utf8SpanEq(22, 1));
-    EXPECT_THAT(ast_node_type(ast, inita), Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[inita].integer_literal.value, Eq(0));
+    ast_id block1 = ast->root;
+    ast_id block2 = ast->nodes[block1].block.next;
 
-    ast_id assn = ast->nodes[ast->nodes[ast->root].block.next].block.stmt;
-    ast_id varn = ast->nodes[assn].assignment.lvalue;
-    ast_id initn = ast->nodes[assn].assignment.expr;
-    EXPECT_THAT(ast_node_type(ast, varn), Eq(AST_IDENTIFIER));
-    EXPECT_THAT(ast->nodes[varn].identifier.name, Utf8SpanEq(6, 1));
-    EXPECT_THAT(ast_node_type(ast, initn), Eq(AST_INTEGER_LITERAL));
-    EXPECT_THAT(ast->nodes[initn].integer_literal.value, Eq(0));
+    ast_id decl1 = ast->nodes[block1].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
+
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(22, 1));
+
+    decl1 = ast->nodes[block2].block.stmt;
+    decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
+
+    ident = ast->nodes[decl2].var_decl2.identifier;
+    init = ast->nodes[decl1].var_decl1.init_expr;
+    EXPECT_THAT(ast_node_type(ast, ident), Eq(AST_IDENTIFIER));
+    EXPECT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(6, 1));
+}
+
+TEST_F(NAME, self_assignment_creates_initializer_for_rvalue)
+{
+    addCommand(TYPE_VOID, "PRINT", {TYPE_I32});
+    const char* source
+        = "a = a + 1\n"
+          "print a\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+
+    ast_id block1 = ast->root;
+    ast_id block2 = ast->nodes[block1].block.next;
+    ast_id block3 = ast->nodes[block2].block.next;
+    ast_id block4 = ast->nodes[block3].block.next;
+    ASSERT_THAT(block4, Eq(-1));
+    
+    ast_id decl1 = ast->nodes[block1].block.stmt;
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ASSERT_THAT(ast_node_type(ast, decl1), Eq(AST_VAR_DECL1));
+
+    ast_id ident = ast->nodes[decl2].var_decl2.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(4, 1));
+
+    ast_id init = ast->nodes[decl1].var_decl1.init_expr;
+    ASSERT_THAT(ast_node_type(ast, init), Eq(AST_INTEGER_LITERAL));
+    ASSERT_THAT(ast->nodes[init].integer_literal.value, Eq(0));
+
+    ast_id ass = ast->nodes[block2].block.stmt;
+    ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
+    ast_id var_ref = ast->nodes[ass].assignment.lvalue;
+    ident = ast->nodes[var_ref].var_ref.identifier;
+    ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
+    ast_id expr = ast->nodes[ass].assignment.expr;
+    ASSERT_THAT(ast_node_type(ast, expr), Eq(AST_BINOP));
 }

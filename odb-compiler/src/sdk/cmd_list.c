@@ -1,6 +1,9 @@
 #include "odb-compiler/sdk/cmd_list.h"
+#include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/utf8.h"
 #include "odb-util/utf8_list.h"
+#include "odb-util/vec.h"
 
 VEC_DEFINE_API(plugin_ids, int16_t, 16)
 VEC_DEFINE_API(return_types_list, enum type, 32)
@@ -69,6 +72,17 @@ cmd_list_insert(
                 return -1;
     }*/
 
+#if defined(ODBUTIL_DEBUG_ASSERT)
+    utf8_idx i;
+    for (i = 0; i != db_cmd_name.len; ++i)
+        ODBUTIL_DEBUG_ASSERT(
+            toupper(db_cmd_name.data[i]) == db_cmd_name.data[i],
+            log_err(
+                "cmd_list_insert(): Command names must be uppercase: %.*s\n",
+                db_cmd_name.len,
+                db_cmd_name.data + db_cmd_name.off));
+#endif
+
     if (utf8_list_insert(&cmds->db_cmd_names, insert, db_cmd_name) < 0)
         goto db_cmd_name_failed;
     if (utf8_list_insert(&cmds->c_symbols, insert, c_symbol) < 0)
@@ -106,6 +120,54 @@ c_identifier_failed:
 db_cmd_name_failed:
     return -1;
 }
+
+#if defined(ODBUTIL_MEM_DEBUGGING)
+void
+mem_acquire_cmd_list(struct cmd_list* cmds)
+{
+    struct cmd_param_types_list** param_types;
+    struct utf8_list**            db_param_names;
+    if (cmds == NULL)
+        return;
+    mem_acquire_utf8_list(cmds->db_cmd_names);
+    mem_acquire_utf8_list(cmds->c_symbols);
+    mem_acquire_vec(plugin_ids, cmds->plugin_ids);
+    mem_acquire_vec(return_types_list, cmds->return_types);
+    mem_acquire_vec(cmd_param_types_lists, cmds->param_types);
+    vec_for_each(cmds->param_types, param_types)
+    {
+        mem_acquire_vec(cmd_param_types_list, *param_types);
+    }
+    mem_acquire_vec(db_param_names, cmds->db_param_names);
+    vec_for_each(cmds->db_param_names, db_param_names)
+    {
+        mem_acquire_utf8_list(*db_param_names);
+    }
+}
+void
+mem_release_cmd_list(struct cmd_list* cmds)
+{
+    struct utf8_list**            db_param_names;
+    struct cmd_param_types_list** param_types;
+    if (cmds == NULL)
+        return;
+
+    vec_for_each(cmds->db_param_names, db_param_names)
+    {
+        mem_release_utf8_list(*db_param_names);
+    }
+    mem_release_vec(cmds->db_param_names);
+    vec_for_each(cmds->param_types, param_types)
+    {
+        mem_release_vec(*param_types);
+    }
+    mem_release_vec(cmds->param_types);
+    mem_release_vec(cmds->return_types);
+    mem_release_vec(cmds->plugin_ids);
+    mem_release_utf8_list(cmds->c_symbols);
+    mem_release_utf8_list(cmds->db_cmd_names);
+}
+#endif
 
 cmd_id
 cmd_list_add(

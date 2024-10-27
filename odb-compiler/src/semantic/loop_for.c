@@ -5,6 +5,7 @@
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-util/log.h"
 
 enum expr_type
 {

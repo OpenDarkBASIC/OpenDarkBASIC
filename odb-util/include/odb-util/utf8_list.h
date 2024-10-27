@@ -24,6 +24,16 @@ utf8_list_init(struct utf8_list** l)
 ODBUTIL_PUBLIC_API void
 utf8_list_deinit(struct utf8_list* l);
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
+ODBUTIL_PUBLIC_API void
+mem_acquire_utf8_list(struct utf8_list* l);
+ODBUTIL_PUBLIC_API void
+mem_release_utf8_list(struct utf8_list* l);
+#else
+#define mem_acquire_utf8_list(l)
+#define mem_release_utf8_list(l)
+#endif
+
 ODBUTIL_PUBLIC_API int
 utf8_list_add(struct utf8_list** l, struct utf8_view str);
 

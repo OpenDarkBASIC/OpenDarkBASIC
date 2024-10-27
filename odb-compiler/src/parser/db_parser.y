@@ -8,7 +8,6 @@
     #define YYLTYPE DBLTYPE
 
     #include "odb-util/utf8.h"  /* %union contains struct utf8_span */
-    #include "odb-compiler/sdk/cmd_list.h"  /* %union contains cmd_id */
     #include "odb-compiler/ast/ast.h"  /* %union contains ast_id */
     #include "odb-compiler/parser/db_source.h"
 
@@ -30,7 +29,7 @@
     #include "odb-compiler/parser/db_parser.y.h"
     #include "odb-compiler/parser/db_scanner.lex.h"
     #include "odb-compiler/ast/ast.h"
-    #include "odb-compiler/ast/ast_ops.h"
+    #include "odb-util/log.h"
 
     static void dberror(DBLTYPE* loc, dbscan_t scanner, const char* msg, ...);
 
@@ -113,7 +112,6 @@
     ast_id node_value;  /* Index into the ast->nodes[] array */
     cmd_id cmd_value;  /* Index into the command_list */
     enum scope scope_value;
-    enum type type_value;
 }
 
 /* Add a description to some of the tokens */
@@ -126,8 +124,6 @@
 
 /* preprocessor */
 %token CONSTANT "constant"
-%token LOAD_PLUGIN "load plugin"
-%token LOAD_COMMAND "load command"
 /* Keywords */
 %token END
 %token INC "increment"
@@ -165,6 +161,7 @@
 %token<float_value> FLOAT_LITERAL "float literal"
 %token<double_value> DOUBLE_LITERAL "double literal"
 %token<string_value> STRING_LITERAL "string literal"
+%token VOID "void"
 
 /* Operators */
 %token '(' "open bracket"

@@ -1,8 +1,8 @@
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include "odb-util/utf8_list.h"
-#include <stddef.h>
 #include <assert.h>
+#include <stddef.h>
 
 /*
  *                capacity
@@ -21,13 +21,14 @@ grow(struct utf8_list** l, utf8_idx str_len)
     utf8_idx old_table_size = sizeof(struct utf8_span) * count;
     utf8_idx new_table_size = sizeof(struct utf8_span) * (count + 1);
 
-    while ((*l ? (*l)->capacity : 0) <
-        new_table_size + (*l ? (*l)->str_used : 0) + str_len + UTF8_APPEND_PADDING)
+    while ((*l ? (*l)->capacity : 0) < new_table_size
+                                           + (*l ? (*l)->str_used : 0) + str_len
+                                           + UTF8_APPEND_PADDING)
     {
         mem_size cap = *l ? (*l)->capacity : 0;
         mem_size grow_size = cap ? cap : 128;
         mem_size struct_header = offsetof(struct utf8_list, data);
-        void*    new_mem  = mem_realloc(*l, cap + grow_size + struct_header);
+        void*    new_mem = mem_realloc(*l, cap + grow_size + struct_header);
         if (new_mem == NULL)
             return log_oom(cap + grow_size + struct_header, "utf8_list_grow()");
         *l = new_mem;
@@ -54,6 +55,21 @@ utf8_list_deinit(struct utf8_list* l)
     if (l)
         mem_free(l);
 }
+
+#if defined(ODBUTIL_MEM_DEBUGGING)
+void
+mem_acquire_utf8_list(struct utf8_list* l)
+{
+    if (l == NULL)
+        return;
+    mem_acquire(l, offsetof(struct utf8_list, data) + l->capacity);
+}
+void
+mem_release_utf8_list(struct utf8_list* l)
+{
+    mem_release(l);
+}
+#endif
 
 int
 utf8_list_add(struct utf8_list** l, struct utf8_view str)

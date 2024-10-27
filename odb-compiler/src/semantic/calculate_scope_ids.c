@@ -2,6 +2,7 @@
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-util/log.h"
 #include <stdio.h>
 
 static void

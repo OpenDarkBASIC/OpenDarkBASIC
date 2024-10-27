@@ -34,4 +34,5 @@ struct DBParserHelper
     struct db_source     src;
     struct ast*          ast;
     struct mutex*        ast_mutex;
+    struct mutex*        cmd_list_mutex;
 };

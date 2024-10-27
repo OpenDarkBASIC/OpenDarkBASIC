@@ -1,4 +1,5 @@
 #include "odb-compiler/ast/ast_integrity.h"
+#include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_keyword.h"
 #include "odb-compiler/parser/db_parser.h"
@@ -7,6 +8,7 @@
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-util/config.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/rb.h"
 #include "odb-util/utf8.h"
 #include <assert.h>
@@ -285,6 +287,8 @@ parse_failed:
         ast_deinit(*astp);
         *astp = NULL;
     }
+    if (*astp != NULL)
+        ast_gc(*astp);
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)
         ast_verify_connectivity(*astp, source.text.data, cmds);

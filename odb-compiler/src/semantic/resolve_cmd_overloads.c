@@ -4,6 +4,7 @@
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/vec.h"
 #include <assert.h>
 #include <limits.h>
@@ -321,7 +322,7 @@ report_ambiguous_overloads(
         struct utf8_span     loc = ast_loc(ast, expr);
         utf8_idx             loc_end = loc.off + loc.len;
         struct log_highlight item
-            = {" AS <TYPE>", "", {loc_end, 7}, LOG_INSERT, LOG_MARKERS, 0};
+            = {" AS <TYPE>", "", {loc_end, 10}, LOG_INSERT, LOG_MARKERS, 0};
 
         if (arg_positions[hl_count] != arg_idx + 1)
             continue;

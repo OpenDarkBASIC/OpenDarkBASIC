@@ -3,6 +3,7 @@
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
+#include "odb-util/log.h"
 
 /* TODO: This code sucks. It was written to get for loops working as fast as
  * possible with no error checking */

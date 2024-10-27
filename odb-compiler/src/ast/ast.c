@@ -113,7 +113,7 @@ ast_block_append(struct ast* ast, ast_id block, ast_id append_block)
         ast_node_type(ast, append_block) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(ast, append_block)));
 
-    while (ast->nodes[block].block.next != -1)
+    while (ast->nodes[block].block.next > -1)
         block = ast->nodes[block].block.next;
 
     ast->nodes[block].block.next = append_block;
@@ -126,6 +126,11 @@ ast_block_append_stmt(
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
+
+    ODBUTIL_DEBUG_ASSERT(block > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, block) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(ast, block)));
 
     ast_block_append(ast, block, n);
     ast->nodes[n].block.stmt = stmt;

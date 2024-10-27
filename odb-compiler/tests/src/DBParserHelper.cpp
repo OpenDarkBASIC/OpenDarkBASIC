@@ -25,6 +25,7 @@ DBParserHelper::DBParserHelper()
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
     ast_mutex = mutex_create();
+    cmd_list_mutex = mutex_create();
 
     struct plugin_info* plugin = plugin_list_emplace(&plugins);
     plugin_info_init(plugin);
@@ -34,6 +35,7 @@ DBParserHelper::DBParserHelper()
 
 DBParserHelper::~DBParserHelper()
 {
+    mutex_destroy(cmd_list_mutex);
     mutex_destroy(ast_mutex);
     ast_deinit(ast);
 

@@ -5,7 +5,8 @@
 using namespace ::testing;
 
 extern "C" {
-#include "odb-util/config.h"
+#include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/vec.h"
 
 struct obj

@@ -51,6 +51,16 @@ cmd_list_init(struct cmd_list* cmds);
 ODBCOMPILER_PUBLIC_API void
 cmd_list_deinit(struct cmd_list* cmds);
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
+ODBCOMPILER_PUBLIC_API void
+mem_acquire_cmd_list(struct cmd_list* cmds);
+ODBCOMPILER_PUBLIC_API void
+mem_release_cmd_list(struct cmd_list* cmds);
+#else
+#define mem_acquire_cmd_list(cmds)
+#define mem_release_cmd_list(cmds)
+#endif
+
 ODBCOMPILER_PUBLIC_API cmd_id
 cmd_list_add(
     struct cmd_list* cmds,

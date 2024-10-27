@@ -62,8 +62,8 @@ parse_command_string(
         if (toupper(data[cmd_name.off + c]) != data[cmd_name.off + c])
         {
             log_warn(
-                "Command names must be stored as lower case. Command string "
-                "contains upper case characters {quote:%.*s} in plugin "
+                "Command names must be stored as upper case. Command string "
+                "contains lower case characters {quote:%.*s} in plugin "
                 "{emph:%s}\n",
                 str.len,
                 data + str.off,

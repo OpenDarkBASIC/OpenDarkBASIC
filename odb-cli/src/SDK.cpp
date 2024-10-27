@@ -35,7 +35,6 @@ setSDKRootDir(const std::vector<std::string>& args)
     if (ospath_len(sdk_root_dir) > 0)
     {
         log_err(
-            "[sdk] ",
             "SDK root directory is already set to {quote:%s}'\n",
             ospath_cstr(sdk_root_dir));
         return false;
@@ -60,7 +59,7 @@ setSDKType(const std::vector<std::string>& args)
     }
     else
     {
-        log_err("[sdk] ", "Unknown SDK type {quote:%s}\n", args[0].c_str());
+        log_err("Unknown SDK type {quote:%s}\n", args[0].c_str());
         return false;
     }
 
@@ -81,8 +80,7 @@ setAdditionalPluginsDir(const std::vector<std::string>& args)
 bool
 printSDKRootDir(const std::vector<std::string>& args)
 {
-    log_note("[sdk] ",
-        "SDK root directory: {quote:%s}\n", ospath_cstr(sdk_root_dir));
+    log_note("SDK root directory: {quote:%s}\n", ospath_cstr(sdk_root_dir));
     return true;
 }
 
@@ -103,9 +101,14 @@ setupSDK(const std::vector<std::string>& args)
                 ospath_dirname(&sdk_root_dir);
                 ospath_dirname(&sdk_root_dir);
                 ospath_dirname(&sdk_root_dir);
-                if (ospath_join_cstr(&sdk_root_dir, target_arch_to_name(getTargetArch())) != 0)
+                if (ospath_join_cstr(
+                        &sdk_root_dir, target_arch_to_name(getTargetArch()))
+                    != 0)
                     return false;
-                if (ospath_join_cstr(&sdk_root_dir, target_platform_to_name(getTargetPlatform())) != 0)
+                if (ospath_join_cstr(
+                        &sdk_root_dir,
+                        target_platform_to_name(getTargetPlatform()))
+                    != 0)
                     return false;
                 if (ospath_join_cstr(&sdk_root_dir, "odb-sdk") != 0)
                     return false;
@@ -113,7 +116,7 @@ setupSDK(const std::vector<std::string>& args)
             break;
 
             case SDK_DBPRO: {
-                log_err("[sdk] ",
+                log_err(
                     "There is no default path configured for the DarkBASIC Pro "
                     "SDK "
                     "root directory. Please specify it with {emph:--sdk-root} "
@@ -135,7 +138,7 @@ setupSDK(const std::vector<std::string>& args)
         case SDK_ODB: type = "OpenDarkBASIC"; break;
         case SDK_DBPRO: type = "DarkBASIC Pro"; break;
     }
-    log_info("[sdk] ",
+    log_info(
         "Using {emph:%s SDK} with root directory {quote:%s}\n",
         type,
         ospath_cstr(sdk_root_dir));
@@ -158,7 +161,8 @@ getSDKRootDir()
 }
 
 // ----------------------------------------------------------------------------
-struct ospath_list* getSDKPluginDirs()
+struct ospath_list*
+getSDKPluginDirs()
 {
     return plugin_dirs;
 }

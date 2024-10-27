@@ -3,6 +3,7 @@ extern "C" {
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/utf8.h"
+#include "odb-util/log.h"
 }
 
 #include "LIEF/PE.hpp"

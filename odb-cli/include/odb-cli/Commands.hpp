@@ -13,6 +13,6 @@ bool loadCommands(const std::vector<std::string>& args);
 bool dumpCommandsJSON(const std::vector<std::string>& args);
 bool dumpCommandsINI(const std::vector<std::string> &args);
 bool dumpCommandNames(const std::vector<std::string>& args);
-const struct plugin_list* getPluginList(void);
-const struct cmd_list* getCommandList();
+struct plugin_list** getPluginList(void);
+struct cmd_list* getCommandList();
 

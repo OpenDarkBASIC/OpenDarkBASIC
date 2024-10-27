@@ -1,6 +1,7 @@
 #include "odb-compiler/sdk/plugin_list.h"
 #include "odb-util/fs.h"
 #include "odb-util/log.h"
+#include "odb-util/mem.h"
 #include "odb-util/ospath.h"
 #include "odb-util/ospath_list.h"
 #include "odb-util/utf8_list.h"
@@ -42,6 +43,7 @@ on_plugin_entry(const char* cname, void* user)
     for (ext = ctx->extensions; *ext; ++ext)
         if (ospath_ends_with_i_cstr(name, *ext))
         {
+            struct plugin_info* plugin2;
             struct plugin_info* plugin = plugin_list_emplace(ctx->plugins);
             if (plugin == NULL)
                 return -1;
@@ -55,10 +57,105 @@ on_plugin_entry(const char* cname, void* user)
             if (utf8_set(&plugin->name, ospathc_view(name)) != 0)
                 return -1;
             utf8_remove_ext(&plugin->name);
+
+            vec_for_each(*ctx->plugins, plugin2)
+            {
+                if (utf8_equal(
+                        utf8_view(plugin2->name), utf8_view(plugin->name))
+                    && !utf8_equal(
+                        ospath_view(plugin2->filepath),
+                        ospath_view(plugin->filepath)))
+                {
+                    return log_err(
+                        "Same plugin added with different path.\n"
+                        "  Existing: {quote:%s}\n"
+                        "  New     : {quote:%s}\n",
+                        ospath_cstr(plugin2->filepath),
+                        ospath_cstr(plugin->filepath));
+                }
+            }
             break;
         }
 
     return 0;
+}
+
+void
+mem_acquire_plugin_list(struct plugin_list* plugins)
+{
+    struct plugin_info* plugin;
+    if (plugins == NULL)
+        return;
+
+    mem_acquire(
+        plugins,
+        offsetof(struct plugin_list, data)
+            + sizeof(struct plugin_info) * plugins->capacity);
+    vec_for_each(plugins, plugin)
+    {
+        mem_acquire(plugin->name.data, sizeof(plugin->name.len));
+        mem_acquire(
+            plugin->filepath.str.data, sizeof(plugin->filepath.str.len));
+    }
+}
+void
+mem_release_plugin_list(struct plugin_list* plugins)
+{
+    struct plugin_info* plugin;
+    if (plugins == NULL)
+        return;
+
+    vec_for_each(plugins, plugin)
+    {
+        mem_release(plugin->name.data);
+        mem_release(plugin->filepath.str.data);
+    }
+    mem_release(plugins);
+}
+
+plugin_id
+plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath)
+{
+    plugin_id           plugin_id;
+    struct plugin_info* plugin;
+    struct ospath       name = empty_ospath();
+
+    if (ospath_set(&name, filepath) != 0)
+        return -1;
+    ospath_filename(&name);
+    ospath_remove_ext(&name);
+    vec_enumerate(*plugins, plugin_id, plugin)
+    {
+        if (utf8_equal(utf8_view(plugin->name), ospath_view(name)))
+        {
+            if (!utf8_equal(
+                    ospath_view(plugin->filepath), ospathc_view(filepath)))
+            {
+                return log_err(
+                    "Same plugin added with different path.\n"
+                    "  Existing: {quote:%s}\n"
+                    "  New     : {quote:%s}\n",
+                    ospath_cstr(plugin->filepath),
+                    ospathc_cstr(filepath));
+            }
+
+            ospath_deinit(name);
+            return plugin_id;
+        }
+    }
+
+    plugin = plugin_list_emplace(plugins);
+    if (plugin == NULL)
+        return -1;
+    plugin_info_init(plugin);
+
+    if (ospath_set(&plugin->filepath, filepath) != 0)
+        return -1;
+    plugin->name = name.str;
+
+    log_dbg("Added plugin: %s\n", ospathc_cstr(filepath));
+
+    return plugin_list_count(*plugins) - 1;
 }
 
 int

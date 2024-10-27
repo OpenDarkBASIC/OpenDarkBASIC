@@ -27,7 +27,7 @@ TEST_F(NAME, float_accepts_byte)
               "in command call.\n"
               " 1 | print 5\n"
               "   |       ^ BYTE\n"
-              "   = note: Calling command: PRINT FLOAT AS FLOAT  [test]\n"));
+              "note: Calling command: PRINT FLOAT AS FLOAT  [test]\n"));
 }
 
 TEST_F(NAME, float_accepts_byte_2)
@@ -42,7 +42,7 @@ TEST_F(NAME, float_accepts_byte_2)
               "in command call.\n"
               " 1 | print 5, 6, 7\n"
               "   |          ^ BYTE\n"
-              "   = note: Calling command: PRINT BYTE AS BYTE, FLOAT AS FLOAT, "
+              "note: Calling command: PRINT BYTE AS BYTE, FLOAT AS FLOAT, "
               "BYTE AS BYTE  [test]\n"));
 }
 
@@ -59,7 +59,7 @@ TEST_F(NAME, integer_accepts_float_with_warning)
             "INTEGER in command call.\n"
             " 1 | print 5.5f\n"
             "   |       ^~~< FLOAT\n"
-            "   = note: Calling command: PRINT INTEGER AS INTEGER  [test]\n"));
+            "note: Calling command: PRINT INTEGER AS INTEGER  [test]\n"));
 }
 
 TEST_F(NAME, dword_accepts_integer_with_warning)
@@ -76,5 +76,5 @@ TEST_F(NAME, dword_accepts_integer_with_warning)
               "DWORD in command call.\n"
               " 1 | print n\n"
               "   |       ^ INTEGER\n"
-              "   = note: Calling command: PRINT DWORD AS DWORD  [test]\n"));
+              "note: Calling command: PRINT DWORD AS DWORD  [test]\n"));
 }

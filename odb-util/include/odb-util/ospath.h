@@ -83,6 +83,12 @@ ospath_cstr(struct ospath path)
     return utf8_cstr(path.str);
 }
 
+static inline struct utf8_view
+ospath_view(struct ospath path)
+{
+    return ospathc_view(ospathc(path));
+}
+
 static inline int
 ospath_len(struct ospath path)
 {

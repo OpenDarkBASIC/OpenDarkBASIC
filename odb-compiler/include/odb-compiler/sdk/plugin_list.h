@@ -12,7 +12,7 @@ typedef int16_t plugin_id;
 struct plugin_info
 {
     /*!
-     * @brief Absolute path to the shared library or DLL.
+     * @brief Path to the shared library or DLL, relative to the SDK root.
      */
     struct ospath filepath;
 
@@ -39,10 +39,23 @@ plugin_info_deinit(struct plugin_info* plugin)
     ospath_deinit(plugin->filepath);
 }
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
+ODBCOMPILER_PUBLIC_API void
+mem_acquire_plugin_list(struct plugin_list* plugins);
+ODBCOMPILER_PUBLIC_API void
+mem_release_plugin_list(struct plugin_list* plugins);
+#else
+#define mem_acquire_plugin_list(plugins)
+#define mem_release_plugin_list(plugins)
+#endif
+
+ODBCOMPILER_PUBLIC_API plugin_id
+plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath);
+
 ODBCOMPILER_PUBLIC_API int
 plugin_list_populate(
-    struct plugin_list**      plugins,
-    enum sdk_type             sdk_type,
-    enum target_platform      target_platform,
-    struct ospathc            sdk_root,
-    struct ospath_list*       extra_plugins);
+    struct plugin_list** plugins,
+    enum sdk_type        sdk_type,
+    enum target_platform target_platform,
+    struct ospathc       sdk_root,
+    struct ospath_list*  extra_plugins);

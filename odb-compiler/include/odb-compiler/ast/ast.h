@@ -158,7 +158,7 @@ union ast_node
         ast_id next;
         struct utf8_span combined_location;
     } paramlist;
-    
+
     struct {
         struct info info;
         ast_id arglist;
