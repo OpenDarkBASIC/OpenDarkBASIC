@@ -80,6 +80,7 @@ on_plugin_entry(const char* cname, void* user)
     return 0;
 }
 
+#if defined(ODBUTIL_MEM_DEBUGGING)
 void
 mem_acquire_plugin_list(struct plugin_list* plugins)
 {
@@ -112,6 +113,7 @@ mem_release_plugin_list(struct plugin_list* plugins)
     }
     mem_release(plugins);
 }
+#endif
 
 plugin_id
 plugin_list_add_or_get(struct plugin_list** plugins, struct ospathc filepath)

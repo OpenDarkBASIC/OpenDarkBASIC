@@ -44,6 +44,6 @@ mem_acquire_symbol_table(struct symbol_table* table);
 ODBCOMPILER_PUBLIC_API void
 mem_release_symbol_table(struct symbol_table* table);
 #else
-define mem_acquire_symbol_table(table)
-define mem_release_symbol_table(table)
+#define mem_acquire_symbol_table(table)
+#define mem_release_symbol_table(table)
 #endif

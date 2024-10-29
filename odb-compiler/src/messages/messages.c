@@ -235,7 +235,6 @@ err_func_call_incompatible_types(
     const char*       filename,
     const char*       source)
 {
-    ast_id           identifier;
     struct utf8_span param_type_loc;
 
     ODBUTIL_DEBUG_ASSERT(arg > -1, (void)0);
@@ -244,10 +243,12 @@ err_func_call_incompatible_types(
         ast_node_type(ast, param) == AST_PARAM,
         log_err("type: %d\n", ast_node_type(ast, param)));
 
-    identifier = ast->nodes[param].param.identifier;
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(ast, identifier)));
+        ast_node_type(ast, ast->nodes[param].param.identifier)
+            == AST_IDENTIFIER,
+        log_err(
+            "type: %d\n",
+            ast_node_type(ast, ast->nodes[param].param.identifier)));
 
     param_type_loc = ast->nodes[param].param.as > -1
                          ? ast_loc(ast, ast->nodes[param].param.as)

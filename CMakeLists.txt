@@ -19,6 +19,7 @@ option (ODB_CLI "Build the commandline interface program for the compiler" ON)
 option (ODB_SDK "Build the OpenDarkBASIC SDK" ON)
 option (DBP_SDK "Build the DarkBASIC Pro bindings. This is necessary to compile DBP executables, but the DBPro game engine still has to be supplied externally." ON)
 option (ODB_EDITOR "Build the code editor" OFF)
+option (ODB_PROFILING "Enable/disable unit tests in all subprojects" ON)
 option (ODB_TESTS "Enable/disable unit tests in all subprojects" ON)
 
 project ("OpenDarkBASIC"

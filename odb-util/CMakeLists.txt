@@ -3,7 +3,6 @@ project ("odb-util"
     VERSION ${ODB_VERSION})
 
 include (CheckCSourceCompiles)
-include (CMakeDependentOption)
 
 ###############################################################################
 # Configuration
@@ -20,15 +19,14 @@ set (ODBUTIL_BTREE_MIN_CAPACITY "32" CACHE STRING "The smallest number of elemen
 option (ODBUTIL_DEBUG_ASSERT "Enable the ODBUTIL_DEBUG_ASSERT macro" ${DEBUG_FEATURE})
 option (ODBUTIL_BTREE_64BIT_KEYS "Enable 64-bit keys for btrees instead of 32-bit keys" OFF)
 option (ODBUTIL_BTREE_64BIT_CAPACITY "Enable btrees to allow up to 2^64 entries instead of 2^32" OFF)
-option (ODBUTIL_HM_STATS "Track hashmap usage statistics. This will increase
-sizeof(struct hm)!" OFF)
+option (ODBUTIL_HM_STATS "Track hashmap usage statistics. This will increase sizeof(struct hm)!" OFF)
 option (ODBUTIL_MEM_DEBUGGING "Enable tracking malloc/realloc/free calls to detect memory leaks" ${DEBUG_FEATURE})
-cmake_dependent_option (ODBUTIL_MEM_BACKTRACE "Enable generating backtraces to every malloc/realloc call, making it easy to find where memory leaks occur" ON "${ODBUTIL_MEM_DEBUGGING}" OFF)
-cmake_dependent_option (ODBUTIL_MEM_HEX_DUMP "Enable printing out hex dumps of the unfreed memory regions" ON "${ODBUTIL_MEM_DEBUGGING}" OFF)
+option (ODBUTIL_MEM_BACKTRACE "Enable generating backtraces to every malloc/realloc call, making it easy to find where memory leaks occur" ${DEBUG_FEATURE})
+option (ODBUTIL_MEM_HEX_DUMP "Enable printing out hex dumps of the unfreed memory regions" ${DEBUG_FEATURE})
 set (ODBUTIL_MEM_BACKTRACE_SIZE "64" CACHE STRING "Sets the maximum stack size (depth) when generating backtraces")
 set (ODBUTIL_MEM_HEX_DUMP_SIZE "1024" CACHE STRING "Memory blocks larger than this size will not be dumped")
-cmake_dependent_option (ODBUTIL_PROFILING "Enable -pg and -fno-omit-frame-pointer" ON "${ODB_PROFILING}" OFF)
-cmake_dependent_option (ODBUTIL_TESTS "Build unit tests for the OpenDarkBASIC SDK" ON "${ODB_TESTS}" OFF)
+option (ODBUTIL_PROFILING "Enable -pg and -fno-omit-frame-pointer" ${ODB_PROFILING})
+option (ODBUTIL_TESTS "Build unit tests for the OpenDarkBASIC SDK" ${ODB_TESTS})
 
 # Memory debugging uses thread-local storage for its state because we don't want to deal with locks
 check_c_source_compiles ("__declspec(thread) int value; int main(void) { return 0; }" MSVC_THREADLOCAL)
@@ -134,6 +132,16 @@ target_compile_options (odb-util
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
+if (ODBUTIL_PROFILING)
+    target_compile_options (odb-util
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-pg -fno-omit-frame-pointer>
+            $<$<C_COMPILER_ID:Clang>:-pg -fno-omit-frame-pointer>
+            $<$<C_COMPILER_ID:AppleClang>:-pg -fno-omit-frame-pointer>
+            $<$<CXX_COMPILER_ID:GNU>:-pg -fno-omit-frame-pointer>
+            $<$<CXX_COMPILER_ID:Clang>:-pg -fno-omit-frame-pointer>
+            $<$<CXX_COMPILER_ID:AppleClang>:-pg -fno-omit-frame-pointer>)
+endif ()
 include (ODBTargetProperties)
 odb_target_properties (odb-util
     PROPERTIES

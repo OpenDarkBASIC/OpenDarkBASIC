@@ -192,7 +192,7 @@ convert_for_loop_to_primitives(
     struct ast** astp, ast_id loop, const char* filename, const char* source)
 {
     struct utf8_span loop_loc;
-    ast_id           for1, for2, for3, loop_body, body, post_body;
+    ast_id           for1, for2, for3, loop_body, body;
     ast_id           init, loop_var_ident, begin, end, step, next;
 
     loop_loc = ast_loc(*astp, loop);
@@ -237,9 +237,9 @@ convert_for_loop_to_primitives(
     loop_body = (*astp)->nodes[loop].loop1.loop2;
     ODBUTIL_DEBUG_ASSERT(loop_body > -1, log_err("loop_body: %d\n", loop_body));
     body = (*astp)->nodes[loop_body].loop2.body;
-    post_body = (*astp)->nodes[loop_body].loop2.post_body;
     ODBUTIL_DEBUG_ASSERT(
-        post_body == -1, log_err("post_body: %d\n", post_body));
+        (*astp)->nodes[loop_body].loop2.post_body == -1,
+        log_err("post_body: %d\n", (*astp)->nodes[loop_body].loop2.post_body));
 
     /* Check next expr if one exists, then delete it as it has no meaning.
      * Historyically, this was used to be more explicit about which loop the
@@ -289,7 +289,8 @@ convert_for_loop_to_primitives(
     /* Insert post-increment into the end, and make sure to remove it as a child
      * from the loop_for nodes */
     ODBUTIL_DEBUG_ASSERT(
-        post_body == -1, log_err("post_body: %d\n", post_body));
+        (*astp)->nodes[loop_body].loop2.post_body == -1,
+        log_err("post_body: %d\n", (*astp)->nodes[loop_body].loop2.post_body));
     ast_id inc_block = ast_block(astp, inc_stmt, loop_loc);
     (*astp)->nodes[loop_body].loop2.post_body = inc_block;
     (*astp)->nodes[for3].loop_for3.step = -1;
