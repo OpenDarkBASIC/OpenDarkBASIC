@@ -306,8 +306,7 @@ ast_assign(
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, lvalue) == AST_VAR_DECL1
-            || ast_node_type(ast, lvalue) == AST_VAR_REF
-            || ast_node_type(ast, lvalue) == AST_FUNC_OR_CONTAINER_REF,
+            || ast_node_type(ast, lvalue) == AST_VAR_WRITE,
         log_err("type: %d\n", ast_node_type(ast, lvalue)));
 
     ast->nodes[n].assignment.lvalue = lvalue;
@@ -355,9 +354,9 @@ ast_var_decl(
 }
 
 ast_id
-ast_var_ref(struct ast** astp, ast_id identifier, struct utf8_span location)
+ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location)
 {
-    ast_id n = new_node(astp, AST_VAR_REF, location);
+    ast_id n = new_node(astp, AST_VAR_READ, location);
     if (n < 0)
         return -1;
 
@@ -366,7 +365,24 @@ ast_var_ref(struct ast** astp, ast_id identifier, struct utf8_span location)
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
-    (*astp)->nodes[n].var_ref.identifier = identifier;
+    (*astp)->nodes[n].var_read.identifier = identifier;
+
+    return n;
+}
+
+ast_id
+ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_VAR_WRITE, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+
+    (*astp)->nodes[n].var_write.identifier = identifier;
 
     return n;
 }
@@ -436,78 +452,88 @@ ast_unop(
 
 ast_id
 ast_inc_step(
-    struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location)
+    struct ast** astp, ast_id var_write, ast_id expr, struct utf8_span location)
 {
-    ast_id add;
+    ast_id add, identifier, var_read;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, var_ref) == AST_VAR_REF,
-        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
+        ast_node_type(*astp, var_write) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, var_write)));
 
-    add = ast_binop(astp, BINOP_ADD, var_ref, expr, location, location);
+    identifier = ast_dup_identifier(
+        astp, (*astp)->nodes[var_write].var_write.identifier);
+    if (identifier < 0)
+        return -1;
+
+    var_read = ast_var_read(astp, identifier, ast_loc(*astp, identifier));
+    if (var_read < 0)
+        return -1;
+
+    add = ast_binop(astp, BINOP_ADD, var_read, expr, location, location);
     if (add < 0)
         return -1;
 
-    var_ref = ast_dup_lvalue(astp, var_ref);
-    if (var_ref < 0)
-        return -1;
-
-    return ast_assign(astp, var_ref, add, location, location);
+    return ast_assign(astp, var_write, add, location, location);
 }
 
 ast_id
-ast_inc(struct ast** astp, ast_id var_ref, struct utf8_span location)
+ast_inc(struct ast** astp, ast_id var_write, struct utf8_span location)
 {
     ast_id expr;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, var_ref) == AST_VAR_REF,
-        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
+        ast_node_type(*astp, var_write) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, var_write)));
 
     expr = ast_byte_literal(astp, 1, location);
     if (expr < 0)
         return -1;
 
-    return ast_inc_step(astp, var_ref, expr, location);
+    return ast_inc_step(astp, var_write, expr, location);
 }
 
 ast_id
 ast_dec_step(
-    struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location)
+    struct ast** astp, ast_id var_write, ast_id expr, struct utf8_span location)
 {
-    ast_id sub;
+    ast_id sub, identifier, var_read;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, var_ref) == AST_VAR_REF,
-        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
+        ast_node_type(*astp, var_write) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, var_write)));
 
-    sub = ast_binop(astp, BINOP_SUB, var_ref, expr, location, location);
+    identifier = ast_dup_identifier(
+        astp, (*astp)->nodes[var_write].var_write.identifier);
+    if (identifier < 0)
+        return -1;
+
+    var_read = ast_var_read(astp, identifier, ast_loc(*astp, identifier));
+    if (var_read < 0)
+        return -1;
+
+    sub = ast_binop(astp, BINOP_SUB, var_read, expr, location, location);
     if (sub < 0)
         return -1;
 
-    var_ref = ast_dup_lvalue(astp, var_ref);
-    if (var_ref < 0)
-        return -1;
-
-    return ast_assign(astp, var_ref, sub, location, location);
+    return ast_assign(astp, var_write, sub, location, location);
 }
 
 ast_id
-ast_dec(struct ast** astp, ast_id var_ref, struct utf8_span location)
+ast_dec(struct ast** astp, ast_id var_write, struct utf8_span location)
 {
     ast_id expr;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, var_ref) == AST_VAR_REF,
-        log_err("type: %d\n", ast_node_type(*astp, var_ref)));
+        ast_node_type(*astp, var_write) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, var_write)));
 
     expr = ast_byte_literal(astp, 1, location);
     if (expr < 0)
         return -1;
 
-    return ast_dec_step(astp, var_ref, expr, location);
+    return ast_dec_step(astp, var_write, expr, location);
 }
 
 ast_id
@@ -644,7 +670,7 @@ ast_loop_for(
     {
         case AST_ASSIGNMENT: {
             ast_id lvalue = ast->nodes[init].assignment.lvalue;
-            ast_id identifier = ast->nodes[lvalue].var_ref.identifier;
+            ast_id identifier = ast->nodes[lvalue].var_write.identifier;
             implicit_name = ast->nodes[identifier].identifier.name;
             break;
         }

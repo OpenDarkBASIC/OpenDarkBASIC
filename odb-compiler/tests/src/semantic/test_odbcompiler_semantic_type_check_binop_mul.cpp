@@ -34,9 +34,9 @@ TEST_F(NAME, two_bytes)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, op), Eq(AST_BINOP));
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U8));
-    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U8));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U8));
 }
 
@@ -61,7 +61,7 @@ TEST_F(NAME, byte_and_word)
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U16));
     ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U16));
-    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U16));
 }
 
@@ -84,7 +84,7 @@ TEST_F(NAME, word_and_byte)
     ast_id rhs = ast->nodes[op].binop.right;
     ASSERT_THAT(ast_node_type(ast, op), Eq(AST_BINOP));
     ASSERT_THAT(ast_type_info(ast, op), Eq(TYPE_U16));
-    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, lhs), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_type_info(ast, lhs), Eq(TYPE_U16));
     ASSERT_THAT(ast_node_type(ast, rhs), Eq(AST_CAST));
     ASSERT_THAT(ast_type_info(ast, rhs), Eq(TYPE_U16));

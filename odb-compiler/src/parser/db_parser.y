@@ -252,7 +252,7 @@
 %type<node_value> as_type as_type_auto maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
-%type<node_value> identifier var_decl var_ref param lvalue
+%type<node_value> identifier var_decl var_read var_write param lvalue
 %type<node_value> func func_exit func_or_container_ref
 
 %start program
@@ -334,7 +334,7 @@ expr
   | expr as_type                            { $$ = ast_cast(ctx->astp, $1, $2, @$); }
   | command_expr                            { $$ = $1; }
   | func_or_container_ref                   { $$ = $1; }
-  | var_ref                                 { $$ = $1; }
+  | var_read                                { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 maybe_expr
@@ -373,7 +373,7 @@ command_expr
   : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
 lvalue
-  : var_ref                                 { $$ = $1; }
+  : var_write                               { $$ = $1; }
 //| array_ref
 //| udt_field_lvalue
   ;
@@ -391,8 +391,11 @@ var_decl
   | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   | scope identifier '=' expr               { $$ = ast_var_decl(ctx->astp, $2, -1, $4, $1, @1, @3, @$); }
   ;
-var_ref
-  : identifier                              { $$ = ast_var_ref(ctx->astp, $1, @$); }
+var_read
+  : identifier                              { $$ = ast_var_read(ctx->astp, $1, @$); }
+  ;
+var_write
+  : identifier                              { $$ = ast_var_write(ctx->astp, $1, @$); }
   ;
 inc
   : INC lvalue ',' expr                     { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
@@ -457,7 +460,7 @@ loop_for_init
   | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   ;
 loop_next
-  : NEXT lvalue                             { $$ = $2; }
+  : NEXT var_read                           { $$ = $2; }
   | NEXT                                    { $$ = -1; }
   ;
 loop_cont

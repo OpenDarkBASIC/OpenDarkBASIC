@@ -74,7 +74,8 @@ enum ast_type
     AST_ASSIGNMENT,
     AST_VAR_DECL1,
     AST_VAR_DECL2,
-    AST_VAR_REF,
+    AST_VAR_READ,
+    AST_VAR_WRITE,
     AST_PARAM,
     AST_IDENTIFIER,
     AST_BINOP,
@@ -191,7 +192,13 @@ union ast_node
         struct info info;
         ast_id identifier;
         ast_id _pad;
-    } var_ref;
+    } var_read;
+
+    struct {
+        struct info info;
+        ast_id _pad;
+        ast_id identifier;
+    } var_write;
     
     struct {
         struct info info;
@@ -476,12 +483,13 @@ ast_id ast_var_decl(
     struct utf8_span scope_location,
     struct utf8_span op_location,
     struct utf8_span location);
-ast_id ast_var_ref(struct ast** astp, ast_id identifier, struct utf8_span location);
+ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
+ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
-ast_id ast_inc_step(struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location);
-ast_id ast_inc(struct ast** astp, ast_id var_ref, struct utf8_span location);
-ast_id ast_dec_step(struct ast** astp, ast_id var_ref, ast_id expr, struct utf8_span location);
-ast_id ast_dec(struct ast** astp, ast_id var_ref, struct utf8_span location);
+ast_id ast_inc_step(struct ast** astp, ast_id var_read, ast_id expr, struct utf8_span location);
+ast_id ast_inc(struct ast** astp, ast_id var_read, struct utf8_span location);
+ast_id ast_dec_step(struct ast** astp, ast_id var_read, ast_id expr, struct utf8_span location);
+ast_id ast_dec(struct ast** astp, ast_id var_read, struct utf8_span location);
 ast_id ast_binop(
     struct ast** astp,
     enum binop_type op,

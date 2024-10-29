@@ -83,15 +83,15 @@ ast_dup_lvalue(struct ast** astp, ast_id lvalue)
 
     ODBUTIL_DEBUG_ASSERT(lvalue > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast->nodes[lvalue].info.node_type == AST_VAR_REF,
+        ast->nodes[lvalue].info.node_type == AST_VAR_WRITE,
         log_err("type: %d\n", ast->nodes[lvalue].info.node_type));
 
     identifier
-        = ast_dup_identifier(astp, ast->nodes[lvalue].var_ref.identifier);
+        = ast_dup_identifier(astp, ast->nodes[lvalue].var_write.identifier);
     if (identifier < 0)
         return -1;
 
-    return ast_var_ref(astp, identifier, ast_loc(*astp, identifier));
+    return ast_var_write(astp, identifier, ast_loc(*astp, identifier));
 }
 
 int
@@ -221,7 +221,8 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                 return 0;
             break;
         case AST_VAR_DECL2: break;
-        case AST_VAR_REF: break;
+        case AST_VAR_READ: break;
+        case AST_VAR_WRITE: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(

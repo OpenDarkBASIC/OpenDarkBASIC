@@ -35,15 +35,15 @@ TEST_F(NAME, and_boolean_doesnt_insert_casts)
     ast_id cmd = ast->nodes[block3].block.stmt;
     ast_id args = ast->nodes[cmd].cmd.arglist;
     ast_id op = ast->nodes[args].arglist.expr;
-    ast_id a_var_ref = ast->nodes[op].binop.left;
-    ast_id b_var_ref = ast->nodes[op].binop.right;
-    ast_id a_ident = ast->nodes[a_var_ref].var_ref.identifier;
-    ast_id b_ident = ast->nodes[b_var_ref].var_ref.identifier;
+    ast_id a_var_read = ast->nodes[op].binop.left;
+    ast_id b_var_read = ast->nodes[op].binop.right;
+    ast_id a_ident = ast->nodes[a_var_read].var_read.identifier;
+    ast_id b_ident = ast->nodes[b_var_read].var_read.identifier;
     ASSERT_THAT(ast->nodes[op].binop.op, Eq(BINOP_LOGICAL_AND));
-    ASSERT_THAT(ast_node_type(ast, a_var_ref), Eq(AST_VAR_REF));
-    ASSERT_THAT(ast_node_type(ast, b_var_ref), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a_var_read), Eq(AST_VAR_READ));
+    ASSERT_THAT(ast_node_type(ast, b_var_read), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, a_ident), Eq(AST_IDENTIFIER));
     ASSERT_THAT(ast_node_type(ast, b_ident), Eq(AST_IDENTIFIER));
-    ASSERT_THAT(ast_type_info(ast, a_var_ref), Eq(TYPE_BOOL));
-    ASSERT_THAT(ast_type_info(ast, b_var_ref), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, a_var_read), Eq(TYPE_BOOL));
+    ASSERT_THAT(ast_type_info(ast, b_var_read), Eq(TYPE_BOOL));
 }

@@ -638,8 +638,8 @@ TEST_F(NAME, self_assignment_creates_initializer_for_rvalue)
 
     ast_id ass = ast->nodes[block2].block.stmt;
     ASSERT_THAT(ast_node_type(ast, ass), Eq(AST_ASSIGNMENT));
-    ast_id var_ref = ast->nodes[ass].assignment.lvalue;
-    ident = ast->nodes[var_ref].var_ref.identifier;
+    ast_id var_write = ast->nodes[ass].assignment.lvalue;
+    ident = ast->nodes[var_write].var_write.identifier;
     ASSERT_THAT(ast->nodes[ident].identifier.name, Utf8SpanEq(0, 1));
     ast_id expr = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, expr), Eq(AST_BINOP));

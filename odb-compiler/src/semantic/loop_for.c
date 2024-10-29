@@ -34,7 +34,8 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_ASSIGNMENT: break;
         case AST_VAR_DECL1: break;
         case AST_VAR_DECL2: break;
-        case AST_VAR_REF: break;
+        case AST_VAR_READ: break;
+        case AST_VAR_WRITE: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER: break;
         case AST_BINOP: break;
@@ -179,9 +180,9 @@ create_exit_stmt(
     ast_id exit_cond_branch
         = ast_cond_branches(astp, exit_cond_block, -1, begin_loc);
     ast_id exit_var_ident = ast_dup_identifier(astp, loop_var_ident);
-    ast_id exit_var_ref = ast_var_ref(astp, exit_var_ident, begin_loc);
+    ast_id exit_var_read = ast_var_read(astp, exit_var_ident, begin_loc);
     ast_id exit_expr
-        = ast_binop(astp, cmp_op, exit_var_ref, end, begin_loc, end_loc);
+        = ast_binop(astp, cmp_op, exit_var_read, end, begin_loc, end_loc);
     ast_id exit_stmt = ast_cond(astp, exit_expr, exit_cond_branch, begin_loc);
 
     return exit_stmt;
@@ -217,8 +218,8 @@ convert_for_loop_to_primitives(
     switch (ast_node_type(*astp, init))
     {
         case AST_ASSIGNMENT: {
-            ast_id lvalue = (*astp)->nodes[init].assignment.lvalue;
-            loop_var_ident = (*astp)->nodes[lvalue].var_ref.identifier;
+            ast_id var_write = (*astp)->nodes[init].assignment.lvalue;
+            loop_var_ident = (*astp)->nodes[var_write].var_write.identifier;
             begin = (*astp)->nodes[init].assignment.expr;
             break;
         }
@@ -248,9 +249,9 @@ convert_for_loop_to_primitives(
     {
         ast_id next_var;
         ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(*astp, next) == AST_VAR_REF,
+            ast_node_type(*astp, next) == AST_VAR_READ,
             log_err("type: %d\n", ast_node_type(*astp, next)));
-        next_var = (*astp)->nodes[next].var_ref.identifier;
+        next_var = (*astp)->nodes[next].var_read.identifier;
 
         if (!ast_trees_equal(source, *astp, loop_var_ident, next_var))
         {
@@ -275,11 +276,11 @@ convert_for_loop_to_primitives(
      * "post_body" property, which will effectively insert it at the end of the
      * body later on */
     ast_id inc_var_ident = ast_dup_identifier(astp, loop_var_ident);
-    ast_id inc_var_ref = ast_var_ref(astp, inc_var_ident, loop_loc);
+    ast_id inc_var_write = ast_var_write(astp, inc_var_ident, loop_loc);
     ast_id inc_stmt
         = step > -1
-              ? ast_inc_step(astp, inc_var_ref, step, ast_loc(*astp, step))
-              : ast_inc(astp, inc_var_ref, ast_loc(*astp, inc_var_ref));
+              ? ast_inc_step(astp, inc_var_write, step, ast_loc(*astp, step))
+              : ast_inc(astp, inc_var_write, ast_loc(*astp, inc_var_write));
 
     /* Insert the exit condition into the beginning of the loop body */
     ast_id exit_block = ast_block(astp, exit_stmt, loop_loc);
