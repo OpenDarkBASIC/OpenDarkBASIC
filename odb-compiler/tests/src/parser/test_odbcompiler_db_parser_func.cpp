@@ -194,8 +194,8 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
     ast_id var1 = ast->nodes[arglist1].arglist.expr;
     ast_id var2 = ast->nodes[arglist2].arglist.expr;
-    ident1 = ast->nodes[var1].var_ref.identifier;
-    ident2 = ast->nodes[var2].var_ref.identifier;
+    ident1 = ast->nodes[var1].var_read.identifier;
+    ident2 = ast->nodes[var2].var_read.identifier;
     EXPECT_THAT(ast_node_type(ast, cmd1), Eq(AST_COMMAND));
     EXPECT_THAT(ast_node_type(ast, cmd2), Eq(AST_COMMAND));
     EXPECT_THAT(ast->nodes[ident1].identifier.name, Utf8SpanEq(29, 1));
@@ -204,8 +204,8 @@ TEST_F(NAME, function_with_multiple_statements)
     ast_id binop = retval;
     ast_id lhs = ast->nodes[binop].binop.left;
     ast_id rhs = ast->nodes[binop].binop.right;
-    ident1 = ast->nodes[lhs].var_ref.identifier;
-    ident2 = ast->nodes[rhs].var_ref.identifier;
+    ident1 = ast->nodes[lhs].var_read.identifier;
+    ident2 = ast->nodes[rhs].var_read.identifier;
     EXPECT_THAT(ast_node_type(ast, binop), Eq(AST_BINOP));
     EXPECT_THAT(ast->nodes[binop].binop.op, Eq(BINOP_ADD));
     EXPECT_THAT(ast->nodes[ident1].identifier.name, Utf8SpanEq(55, 1));
@@ -252,8 +252,8 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id arglist2 = ast->nodes[cmd2].cmd.arglist;
     ast_id var1 = ast->nodes[arglist1].arglist.expr;
     ast_id var2 = ast->nodes[arglist2].arglist.expr;
-    ident1 = ast->nodes[var1].var_ref.identifier;
-    ident2 = ast->nodes[var2].var_ref.identifier;
+    ident1 = ast->nodes[var1].var_read.identifier;
+    ident2 = ast->nodes[var2].var_read.identifier;
     EXPECT_THAT(ast_node_type(ast, cmd1), Eq(AST_COMMAND));
     EXPECT_THAT(ast_node_type(ast, cmd2), Eq(AST_COMMAND));
     EXPECT_THAT(ast->nodes[ident1].identifier.name, Utf8SpanEq(56, 1));
@@ -262,8 +262,8 @@ TEST_F(NAME, function_with_explicit_types)
     ast_id binop = retval;
     ast_id lhs = ast->nodes[binop].binop.left;
     ast_id rhs = ast->nodes[binop].binop.right;
-    ident1 = ast->nodes[lhs].var_ref.identifier;
-    ident2 = ast->nodes[rhs].var_ref.identifier;
+    ident1 = ast->nodes[lhs].var_read.identifier;
+    ident2 = ast->nodes[rhs].var_read.identifier;
     EXPECT_THAT(ast_node_type(ast, binop), Eq(AST_BINOP));
     EXPECT_THAT(ast->nodes[binop].binop.op, Eq(BINOP_ADD));
     EXPECT_THAT(ast->nodes[ident1].identifier.name, Utf8SpanEq(82, 1));

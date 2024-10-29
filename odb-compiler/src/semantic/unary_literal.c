@@ -18,7 +18,8 @@ child_changed:
         case AST_ASSIGNMENT: return -1;
         case AST_VAR_DECL1: return -1;
         case AST_VAR_DECL2: return -1;
-        case AST_VAR_REF: return -1;
+        case AST_VAR_READ: return -1;
+        case AST_VAR_WRITE: return -1;
         case AST_PARAM: return -1;
         case AST_IDENTIFIER: return -1;
         case AST_BINOP: return -1;

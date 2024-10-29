@@ -573,28 +573,11 @@ gen_expr(
                 loop_stack,
                 allocamap);
 
-        case AST_VAR_DECL1: {
-            ast_id           decl2 = ast->nodes[expr].var_decl1.var_decl2;
-            ast_id           ast_ident = ast->nodes[decl2].var_decl2.identifier;
-            struct utf8_view name
-                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
-            struct view_scope name_scope
-                = {name, ast->nodes[expr].info.scope_id};
-            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
-            /* The AST should be constructed in a way where we do not have to
-             * create a default value for variables that have not yet been
-             * declared */
-            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
-
-            return builder.CreateLoad(
-                (*A)->getAllocatedType(),
-                *A,
-                llvm::StringRef(name.data + name.off, name.len));
-        }
+        case AST_VAR_DECL1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
-        case AST_VAR_REF: {
-            ast_id           ast_ident = ast->nodes[expr].var_ref.identifier;
+        case AST_VAR_READ: {
+            ast_id           ast_ident = ast->nodes[expr].var_read.identifier;
             struct utf8_view name
                 = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
             struct view_scope name_scope
@@ -611,26 +594,10 @@ gen_expr(
                 llvm::StringRef(name.data + name.off, name.len));
         }
 
-        case AST_PARAM: {
-            ast_id           ast_ident = ast->nodes[expr].param.identifier;
-            struct utf8_view name
-                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
-            struct view_scope name_scope
-                = {name, ast->nodes[expr].info.scope_id};
-            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
-            /* The AST should be constructed in a way where we do not have to
-             * create a default value for variables that have not yet been
-             * declared */
-            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
-
-            return builder.CreateLoad(
-                (*A)->getAllocatedType(),
-                *A,
-                llvm::StringRef(name.data + name.off, name.len));
-        }
+        case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-        case AST_ASSIGNMENT: break;
+        case AST_ASSIGNMENT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_BINOP: {
             ast_id       lhs_node = ast->nodes[expr].binop.left;
@@ -1159,18 +1126,21 @@ gen_block(
                     source, ast->nodes[ast_identifier].identifier.name);
                 struct view_scope name_scope
                     = {name, ast->nodes[ast_identifier].info.scope_id};
-                llvm::AllocaInst** A;
-                switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
+                llvm::AllocaInst** Ap;
+                switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
                 {
                     case HM_OOM: return -1;
-                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*A, (void)0); break;
+                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); break;
                     case HM_NEW:
-                        *A = builder.CreateAlloca(
+                        *Ap = builder.CreateAlloca(
                             type_to_llvm(type, &ir->ctx),
                             NULL,
                             llvm::StringRef(name.data + name.off, name.len));
                         break;
                 }
+
+                // gen_expr() might reallocate the allocamap
+                llvm::AllocaInst* A = *Ap;
 
                 llvm::Value* llvm_init_expr = gen_expr(
                     ir,
@@ -1186,16 +1156,43 @@ gen_block(
                     db_func_table,
                     loop_stack,
                     allocamap);
-                builder.CreateStore(llvm_init_expr, *A);
+                builder.CreateStore(llvm_init_expr, A);
                 continue;
             }
             case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_VAR_REF: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_ASSIGNMENT: {
-                ast_id       ast_lvalue = ast->nodes[stmt].assignment.lvalue;
-                ast_id       ast_expr = ast->nodes[stmt].assignment.expr;
+                ast_id ast_lvalue = ast->nodes[stmt].assignment.lvalue;
+                ast_id ast_expr = ast->nodes[stmt].assignment.expr;
+
+                ODBUTIL_DEBUG_ASSERT(
+                    ast_node_type(ast, ast_lvalue) == AST_VAR_WRITE,
+                    log_err("type: %d\n", ast_node_type(ast, ast_lvalue)));
+                enum type type = ast_type_info(ast, ast_lvalue);
+                ast_id ast_ident = ast->nodes[ast_lvalue].var_write.identifier;
+                struct utf8_view name = utf8_span_view(
+                    source, ast->nodes[ast_ident].identifier.name);
+                struct view_scope name_scope
+                    = {name, ast->nodes[ast_ident].info.scope_id};
+                llvm::AllocaInst** Ap;
+                switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
+                {
+                    case HM_OOM: return -1;
+                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); break;
+                    case HM_NEW:
+                        *Ap = builder.CreateAlloca(
+                            type_to_llvm(type, &ir->ctx),
+                            NULL,
+                            llvm::StringRef(name.data + name.off, name.len));
+                        break;
+                }
+
+                // gen_expr() might reallocate the allocamap
+                llvm::AllocaInst* A = *Ap;
+
                 llvm::Value* llvm_expr = gen_expr(
                     ir,
                     builder,
@@ -1211,28 +1208,7 @@ gen_block(
                     loop_stack,
                     allocamap);
 
-                ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, ast_lvalue) == AST_VAR_REF,
-                    log_err("type: %d\n", ast_node_type(ast, ast_lvalue)));
-                enum type        type = ast_type_info(ast, ast_lvalue);
-                ast_id ast_ident = ast->nodes[ast_lvalue].var_ref.identifier;
-                struct utf8_view name = utf8_span_view(
-                    source, ast->nodes[ast_ident].identifier.name);
-                struct view_scope name_scope
-                    = {name, ast->nodes[ast_ident].info.scope_id};
-                llvm::AllocaInst** A;
-                switch (allocamap_emplace_or_get(allocamap, name_scope, &A))
-                {
-                    case HM_OOM: return -1;
-                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*A, (void)0); break;
-                    case HM_NEW:
-                        *A = builder.CreateAlloca(
-                            type_to_llvm(type, &ir->ctx),
-                            NULL,
-                            llvm::StringRef(name.data + name.off, name.len));
-                        break;
-                }
-                builder.CreateStore(llvm_expr, *A);
+                builder.CreateStore(llvm_expr, A);
                 continue;
             }
 

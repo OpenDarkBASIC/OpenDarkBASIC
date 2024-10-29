@@ -48,7 +48,7 @@ TEST_F(NAME, transform_implicit_step_1)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(5));
 
@@ -60,13 +60,13 @@ TEST_F(NAME, transform_implicit_step_1)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(1));
 }
@@ -99,7 +99,7 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(5));
 
@@ -111,13 +111,13 @@ TEST_F(NAME, transform_implicit_step_1_empty_loop)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(1));
 }
@@ -152,7 +152,7 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(5));
 
@@ -164,13 +164,13 @@ TEST_F(NAME, implicit_step_1_empty_next)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(1));
 }
@@ -203,7 +203,7 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(5));
 
@@ -215,13 +215,13 @@ TEST_F(NAME, implicit_step_1_empty_loop_empty_next)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(1));
 }
@@ -254,9 +254,9 @@ TEST_F(NAME, step_expression_range)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
-    identifier = ast->nodes[rhs].var_ref.identifier;
+    identifier = ast->nodes[rhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(11, 1));
 
     ast_id cond_branches = ast->nodes[exit_cond].cond.cond_branches;
@@ -267,13 +267,13 @@ TEST_F(NAME, step_expression_range)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(2));
 }
@@ -306,9 +306,9 @@ TEST_F(NAME, var_decl_as_initializer)
     ASSERT_THAT(ast->nodes[gt].binop.op, Eq(BINOP_GREATER_THAN));
     ast_id lhs = ast->nodes[gt].binop.left;
     ast_id rhs = ast->nodes[gt].binop.right;
-    ast_id identifier = ast->nodes[lhs].var_ref.identifier;
+    ast_id identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(4, 1));
-    identifier = ast->nodes[rhs].var_ref.identifier;
+    identifier = ast->nodes[rhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name, Utf8SpanEq(19, 1));
 
     ast_id cond_branches = ast->nodes[exit_cond].cond.cond_branches;
@@ -319,13 +319,13 @@ TEST_F(NAME, var_decl_as_initializer)
     ast_id post_block = ast->nodes[loop2].loop2.post_body;
     ast_id step_ass = ast->nodes[post_block].block.stmt;
     ast_id step_var = ast->nodes[step_ass].assignment.lvalue;
-    ast_id step_ident = ast->nodes[step_var].var_ref.identifier;
+    ast_id step_ident = ast->nodes[step_var].var_write.identifier;
     ASSERT_THAT(ast->nodes[step_ident].identifier.name,Utf8SpanEq(4, 1));
     ast_id inc_op = ast->nodes[step_ass].assignment.expr;
     ASSERT_THAT(ast->nodes[inc_op].binop.op, Eq(BINOP_ADD));
     lhs = ast->nodes[inc_op].binop.left;
     rhs = ast->nodes[inc_op].binop.right;
-    identifier = ast->nodes[lhs].var_ref.identifier;
+    identifier = ast->nodes[lhs].var_read.identifier;
     ASSERT_THAT(ast->nodes[identifier].identifier.name,Utf8SpanEq(4, 1));
     ASSERT_THAT(ast->nodes[rhs].byte_literal.value, Eq(2));
 }

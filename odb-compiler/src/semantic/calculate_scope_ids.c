@@ -106,7 +106,8 @@ process_node(
         case AST_ASSIGNMENT:
         case AST_VAR_DECL1:
         case AST_VAR_DECL2:
-        case AST_VAR_REF:
+        case AST_VAR_READ:
+        case AST_VAR_WRITE:
         case AST_PARAM:
         case AST_IDENTIFIER:
         case AST_BINOP:

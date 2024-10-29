@@ -110,7 +110,8 @@ print_node(const struct ast* ast, FILE* fp, ast_id n, int depth)
         case AST_ASSIGNMENT: fprintf(fp, "ASSIGNMENT, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_VAR_DECL1: fprintf(fp, "VAR_DECL1, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_VAR_DECL2: fprintf(fp, "VAR_DECL2, scope=%d\n", ast->nodes[n].info.scope_id); break;
-        case AST_VAR_REF: fprintf(fp, "VAR_REF, scope=%d\n", ast->nodes[n].info.scope_id); break;
+        case AST_VAR_READ: fprintf(fp, "VAR_READ, scope=%d\n", ast->nodes[n].info.scope_id); break;
+        case AST_VAR_WRITE: fprintf(fp, "VAR_WRITE, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_PARAM: fprintf(fp, "PARAM, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_IDENTIFIER: fprintf(fp, "IDENTIFIER, scope=%d\n", ast->nodes[n].info.scope_id); break;
         case AST_BINOP: fprintf(fp, "BINOP, scope=%d\n", ast->nodes[n].info.scope_id); break;
@@ -199,41 +200,49 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"block\"];\n",
+                "label=\"block\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->list.color,
                 style->list.fontcolor,
-                style->list.shape);
+                style->list.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_END:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"end\"];\n",
+                "label=\"end\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->end.color,
                 style->end.fontcolor,
-                style->end.shape);
+                style->end.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_ARGLIST:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"arglist\"];\n",
+                "label=\"arglist\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->list.color,
                 style->list.fontcolor,
-                style->list.shape);
+                style->list.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_PARAMLIST:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"paramlist\"];\n",
+                "label=\"paramlist\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->list.color,
                 style->list.fontcolor,
-                style->list.shape);
+                style->list.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_COMMAND: {
             struct utf8_view cmd_name
@@ -242,7 +251,7 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"%d %.*s%s\"];\n",
+                "label=\"%d %.*s%s\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->cmd.color,
                 style->cmd.fontcolor,
@@ -250,73 +259,100 @@ dot_write_node(
                 ast->nodes[n].cmd.id,
                 cmd_name.len,
                 cmd_name.data + cmd_name.off,
-                ret_type == TYPE_VOID ? "" : "()");
+                ret_type == TYPE_VOID ? "" : "()",
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         }
         case AST_ASSIGNMENT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"=\"];\n",
+                "label=\"=\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->operator.color,
                 style->operator.fontcolor,
-                style->operator.shape);
+                style->operator.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_VAR_DECL1:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<<font color=\"%s\">%s</font> var_decl1>];\n",
+                "label=<<font color=\"%s\">%s</font> var_decl1>, "
+                "xlabel=\"%d, %s\"];\n",
                 n,
                 style->identifier.color,
                 style->identifier.fontcolor,
                 style->identifier.shape,
                 style->type.color,
                 ast->nodes[n].var_decl1.scope == SCOPE_GLOBAL ? "GLOBAL"
-                                                              : "LOCAL");
+                                                              : "LOCAL",
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_VAR_DECL2:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"var_decl2\"];\n",
+                "label=\"var_decl2\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->identifier.color,
                 style->identifier.fontcolor,
-                style->identifier.shape);
+                style->identifier.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
-        case AST_VAR_REF:
+        case AST_VAR_READ:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"var_ref\"];\n",
+                "label=\"var_read\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->identifier.color,
                 style->identifier.fontcolor,
-                style->identifier.shape);
+                style->identifier.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
+            break;
+        case AST_VAR_WRITE:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"var_write\", xlabel=\"%d, %s\"];\n",
+                n,
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_PARAM:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"param\"];\n",
+                "label=\"param\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->list.color,
                 style->list.fontcolor,
-                style->list.shape);
+                style->list.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_IDENTIFIER:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"%.*s\"];\n",
+                "label=\"%.*s\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->identifier.color,
                 style->identifier.fontcolor,
                 style->identifier.shape,
                 ast->nodes[n].identifier.name.len,
-                source + ast->nodes[n].identifier.name.off);
+                source + ast->nodes[n].identifier.name.off,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_BINOP:
             switch (ast->nodes[n].binop.op)
@@ -326,12 +362,14 @@ dot_write_node(
         fprintf(                                                               \
             fp,                                                                \
             "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "            \
-            "label=\"%s\"];\n",                                                \
+            "label=\"%s\", xlabel=\"%d, %s\"];\n",                             \
             n,                                                                 \
             style->operator.color,                                             \
             style->operator.fontcolor,                                         \
             style->operator.shape,                                             \
-            tok);                                                              \
+            tok,                                                               \
+            ast->nodes[n].info.scope_id,                                       \
+            type_to_db_name(ast_type_info(ast, n)));                           \
         break;
                 BINOP_LIST
 #undef X
@@ -345,12 +383,14 @@ dot_write_node(
         fprintf(                                                               \
             fp,                                                                \
             "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "            \
-            "label=\"%s\"];\n",                                                \
+            "label=\"%s\", xlabel=\"%d, %s\"];\n",                             \
             n,                                                                 \
             style->operator.color,                                             \
             style->operator.fontcolor,                                         \
             style->operator.shape,                                             \
-            tok);                                                              \
+            tok,                                                               \
+            ast->nodes[n].info.scope_id,                                       \
+            type_to_db_name(ast_type_info(ast, n)));                           \
         break;
                 UNOP_LIST
 #undef X
@@ -360,52 +400,62 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"if\"];\n",
+                "label=\"if\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_COND_BRANCHES:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"branches\"];\n",
+                "label=\"branches\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_LOOP1:
             if (ast->nodes[n].loop1.name.len)
                 fprintf(
                     fp,
                     "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                    "label=\"%.*s: loop1 \\\"%.*s\\\"\"];\n",
+                    "label=\"%.*s: loop1 \\\"%.*s\\\"\", xlabel=\"%d, %s\"];\n",
                     n,
                     style->keyword.color,
                     style->keyword.fontcolor,
                     ast->nodes[n].loop1.name.len,
                     source + ast->nodes[n].loop1.name.off,
                     ast->nodes[n].loop1.implicit_name.len,
-                    source + ast->nodes[n].loop1.implicit_name.off);
+                    source + ast->nodes[n].loop1.implicit_name.off,
+                ast->nodes[n].info.scope_id,
+                    type_to_db_name(ast_type_info(ast, n)));
             else
                 fprintf(
                     fp,
                     "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                    "label=\"loop1 \\\"%.*s\\\"\"];\n",
+                    "label=\"loop1 \\\"%.*s\\\"\", xlabel=\"%d, %s\"];\n",
                     n,
                     style->keyword.color,
                     style->keyword.fontcolor,
                     ast->nodes[n].loop1.implicit_name.len,
-                    source + ast->nodes[n].loop1.implicit_name.off);
+                    source + ast->nodes[n].loop1.implicit_name.off,
+                ast->nodes[n].info.scope_id,
+                    type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_LOOP2:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"loop2\"];\n",
+                "label=\"loop2\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_LOOP_FOR1:
         case AST_LOOP_FOR2:
@@ -413,42 +463,50 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"loop_for%d\"];\n",
+                "label=\"loop_for%d\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                ast_node_type(ast, n) - AST_LOOP_FOR1 + 1);
+                ast_node_type(ast, n) - AST_LOOP_FOR1 + 1,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_LOOP_CONT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"diamond\", "
-                "label=\"continue %.*s\"];\n",
+                "label=\"continue %.*s\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
                 ast->nodes[n].cont.name.len,
-                source + ast->nodes[n].cont.name.off);
+                source + ast->nodes[n].cont.name.off,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_LOOP_EXIT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"exit %.*s\"];\n",
+                "label=\"exit %.*s\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
                 ast->nodes[n].loop_exit.name.len,
-                source + ast->nodes[n].loop_exit.name.off);
+                source + ast->nodes[n].loop_exit.name.off,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_POLY:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"func poly\"];\n",
+                "label=\"func poly\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC1:
         case AST_FUNC2:
@@ -457,38 +515,46 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"func%d\"];\n",
+                "label=\"func%d\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
                 style->keyword.fontcolor,
-                ast_node_type(ast, n) - AST_FUNC1 + 1);
+                ast_node_type(ast, n) - AST_FUNC1 + 1,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_EXIT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"exitfunction\"];\n",
+                "label=\"exitfunction\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_OR_CONTAINER_REF:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"call (unresolved)\"];\n",
+                "label=\"call (unresolved)\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->keyword.color,
-                style->keyword.fontcolor);
+                style->keyword.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_FUNC_CALL:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"call\"];\n",
+                "label=\"call\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->func.color,
-                style->func.fontcolor);
+                style->func.fontcolor,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_BOOLEAN_LITERAL:
             fprintf(
@@ -610,42 +676,50 @@ dot_write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"cast\"];\n",
+                "label=\"cast\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
-                style->type.shape);
+                style->type.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_AS:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"AS\"];\n",
+                "label=\"AS\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
-                style->type.shape);
+                style->type.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_AS_AUTO:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"AS\"];\n",
+                "label=\"AS\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
-                style->type.shape);
+                style->type.shape,
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
         case AST_TYPE:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"%s\"];\n",
+                "label=\"%s\", xlabel=\"%d, %s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                type_to_db_name(ast->nodes[n].type.target_type));
+                type_to_db_name(ast->nodes[n].type.target_type),
+                ast->nodes[n].info.scope_id,
+                type_to_db_name(ast_type_info(ast, n)));
             break;
     }
 }
@@ -703,7 +777,8 @@ dot_get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_ASSIGNMENT: NAMES("lvalue", "expr")
         case AST_VAR_DECL1: NAMES("var_decl2", "init")
         case AST_VAR_DECL2: NAMES("identifier", "as")
-        case AST_VAR_REF: NAMES("identifier", "")
+        case AST_VAR_READ: NAMES("identifier", "")
+        case AST_VAR_WRITE: NAMES("identifier", "")
         case AST_PARAM: NAMES("identifier", "as")
         case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")

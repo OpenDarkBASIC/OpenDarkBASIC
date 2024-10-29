@@ -346,31 +346,24 @@ TEST_F(NAME, recursion_with_local_variable)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
-//TEST_F(NAME, recursion_with_self_referencing_variable)
-//{
-//    const char* source
-//        = "foo(6)\n"
-//          "function foo(n)\n"
-//          "    if n >= 2\n"
-//          "        a = a + 1\n"
-//          "        a = foo(n-1)\n"
-//          "        exitfunction a\n"
-//          "    endif\n"
-//          "endfunction n\n";
-//    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-//    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-//}
+TEST_F(NAME, recursion_with_self_referencing_variable)
+{
+    const char* source
+        = "foo(6)\n"
+          "function foo(n)\n"
+          "    a = a + foo(n)\n"
+          "    exitfunction a\n"
+          "endfunction n\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}
 
-// TEST_F(NAME, infinite_recursion)
-//{
-//     const char* source
-//         = "foo()\n"
-//           "FUNCTION foo()\n"
-//           "ENDFUNCTION foo()\n";
-//     ASSERT_THAT(parse(source), Eq(0)) << log().text;
-//     ASSERT_THAT(
-//         symbol_table_add_declarations_from_ast(&symbols, &ast, 0, &src),
-//         Eq(0))
-//         << log().text;
-//     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-// }
+TEST_F(NAME, infinite_recursion)
+{
+    const char* source
+        = "foo()\n"
+          "FUNCTION foo()\n"
+          "ENDFUNCTION foo()\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}

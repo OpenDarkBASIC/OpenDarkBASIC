@@ -504,6 +504,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_loop_for_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_loop_name_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_negative_integer_literal.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_as_type.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_assignment_errors.cpp"

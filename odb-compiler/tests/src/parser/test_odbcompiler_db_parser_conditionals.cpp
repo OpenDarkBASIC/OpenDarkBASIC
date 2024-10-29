@@ -28,7 +28,7 @@ TEST_F(NAME, simple_if_then)
     ast_id a = ast->nodes[cond].cond.expr;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes), Eq(AST_COMMAND));
     ASSERT_THAT(nob, Eq(-1));
@@ -49,7 +49,7 @@ TEST_F(NAME, simple_if_then_else)
     ast_id no = ast->nodes[nob].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, nob), Eq(AST_BLOCK));
@@ -69,7 +69,7 @@ TEST_F(NAME, empty_then_works_when_theres_an_else)
     ast_id no = ast->nodes[nob].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(yesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, nob), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, no), Eq(AST_COMMAND));
@@ -96,7 +96,7 @@ TEST_F(NAME, multi_line_if)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, yesb2), Eq(AST_BLOCK));
@@ -131,7 +131,7 @@ TEST_F(NAME, multi_line_if_spaced)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, yesb2), Eq(AST_BLOCK));
@@ -153,7 +153,7 @@ TEST_F(NAME, empty_multi_line_if)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(yesb, Eq(-1));
     ASSERT_THAT(nob, Eq(-1));
 }
@@ -174,7 +174,7 @@ TEST_F(NAME, empty_multi_line_if_spaced)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(yesb, Eq(-1));
     ASSERT_THAT(nob, Eq(-1));
 }
@@ -208,7 +208,7 @@ TEST_F(NAME, multi_line_if_else)
     ast_id no2 = ast->nodes[nob2].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, yesb2), Eq(AST_BLOCK));
@@ -260,7 +260,7 @@ TEST_F(NAME, multi_line_if_else_spaced)
     ast_id no2 = ast->nodes[nob2].block.stmt;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, yesb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, yes1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, yesb2), Eq(AST_BLOCK));
@@ -286,7 +286,7 @@ TEST_F(NAME, empty_multi_line_if_else)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(yesb, Eq(-1));
     ASSERT_THAT(nob, Eq(-1));
 }
@@ -310,7 +310,7 @@ TEST_F(NAME, empty_multi_line_if_else_spaced)
     ast_id nob = ast->nodes[branch].cond_branches.no;
     ASSERT_THAT(ast_node_type(ast, cond), Eq(AST_COND));
     ASSERT_THAT(ast_node_type(ast, branch), Eq(AST_COND_BRANCHES));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(yesb, Eq(-1));
     ASSERT_THAT(nob, Eq(-1));
 }
@@ -346,7 +346,7 @@ TEST_F(NAME, multi_line_if_elseif)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, foob1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, foo1), Eq(AST_COMMAND));
@@ -365,7 +365,7 @@ TEST_F(NAME, multi_line_if_elseif)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, barb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, bar1), Eq(AST_COMMAND));
@@ -384,7 +384,7 @@ TEST_F(NAME, multi_line_if_elseif)
     ast_id cnob = ast->nodes[cbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, bazb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, baz1), Eq(AST_COMMAND));
@@ -443,7 +443,7 @@ TEST_F(NAME, multi_line_if_elseif_spaced)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, foob1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, foo1), Eq(AST_COMMAND));
@@ -462,7 +462,7 @@ TEST_F(NAME, multi_line_if_elseif_spaced)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, barb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, bar1), Eq(AST_COMMAND));
@@ -481,7 +481,7 @@ TEST_F(NAME, multi_line_if_elseif_spaced)
     ast_id cnob = ast->nodes[cbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, bazb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, baz1), Eq(AST_COMMAND));
@@ -506,7 +506,7 @@ TEST_F(NAME, empty_multi_line_if_elseif)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ayesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, anob), Eq(AST_BLOCK));
@@ -518,7 +518,7 @@ TEST_F(NAME, empty_multi_line_if_elseif)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(byesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, bnob), Eq(AST_BLOCK));
@@ -530,7 +530,7 @@ TEST_F(NAME, empty_multi_line_if_elseif)
     ast_id cnob = ast->nodes[cbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(cyesb, Eq(-1));
     ASSERT_THAT(cnob, Eq(-1));
@@ -558,7 +558,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_spaced)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ayesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, anob), Eq(AST_BLOCK));
@@ -570,7 +570,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_spaced)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(byesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, bnob), Eq(AST_BLOCK));
@@ -582,7 +582,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_spaced)
     ast_id cnob = ast->nodes[cbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(cyesb, Eq(-1));
     ASSERT_THAT(cnob, Eq(-1));
@@ -620,7 +620,7 @@ TEST_F(NAME, multi_line_if_elseif_else)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, foob1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, foo1), Eq(AST_COMMAND));
@@ -639,7 +639,7 @@ TEST_F(NAME, multi_line_if_elseif_else)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, barb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, bar1), Eq(AST_COMMAND));
@@ -652,7 +652,7 @@ TEST_F(NAME, multi_line_if_elseif_else)
     ast_id baz2 = ast->nodes[bazb2].block.stmt;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, baz1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, bazb2), Eq(AST_BLOCK));
@@ -709,7 +709,7 @@ TEST_F(NAME, multi_line_if_elseif_else_spaced)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, foob1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, foo1), Eq(AST_COMMAND));
@@ -728,7 +728,7 @@ TEST_F(NAME, multi_line_if_elseif_else_spaced)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, barb1), Eq(AST_BLOCK));
     ASSERT_THAT(ast_node_type(ast, bar1), Eq(AST_COMMAND));
@@ -741,7 +741,7 @@ TEST_F(NAME, multi_line_if_elseif_else_spaced)
     ast_id baz2 = ast->nodes[bazb2].block.stmt;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ast_node_type(ast, baz1), Eq(AST_COMMAND));
     ASSERT_THAT(ast_node_type(ast, bazb2), Eq(AST_BLOCK));
@@ -764,7 +764,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_else)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ayesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, anob), Eq(AST_BLOCK));
@@ -776,7 +776,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_else)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(byesb, Eq(-1));
     ASSERT_THAT(bnob, Eq(-1));
@@ -804,7 +804,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_else_spaced)
     ast_id anob = ast->nodes[abranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, acond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, a), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, abranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(ayesb, Eq(-1));
     ASSERT_THAT(ast_node_type(ast, anob), Eq(AST_BLOCK));
@@ -816,7 +816,7 @@ TEST_F(NAME, empty_multi_line_if_elseif_else_spaced)
     ast_id bnob = ast->nodes[bbranch].cond_branches.no;
 
     ASSERT_THAT(ast_node_type(ast, bcond), Eq(AST_COND));
-    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_REF));
+    ASSERT_THAT(ast_node_type(ast, b), Eq(AST_VAR_READ));
     ASSERT_THAT(ast_node_type(ast, bbranch), Eq(AST_COND_BRANCHES));
     ASSERT_THAT(byesb, Eq(-1));
     ASSERT_THAT(bnob, Eq(-1));
