@@ -965,7 +965,7 @@ warn_boolean_implicit_evaluation(
         case TYPE_LABEL:
         case TYPE_DABEL:
         case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case TYPE_UDT_PTR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
     }
 }
 

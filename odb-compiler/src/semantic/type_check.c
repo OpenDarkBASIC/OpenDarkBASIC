@@ -801,7 +801,7 @@ create_initializer_literal(
         case TYPE_LABEL:
         case TYPE_DABEL:
         case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR:
+        case TYPE_UDT_PTR:
             ODBUTIL_DEBUG_ASSERT(
                 0,
                 log_err(
@@ -886,26 +886,24 @@ process_var_decl(
 
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
-    if (type_origin->type == TYPE_INVALID)
+    ODBUTIL_DEBUG_ASSERT(type_origin->type == TYPE_INVALID, (void)0);
+    if (as_expr > -1 && ast_node_type(*astp, as_expr) == AST_AS_AUTO)
     {
-        if (as_expr > -1 && ast_node_type(*astp, as_expr) == AST_AS_AUTO)
-        {
-            ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
-            ODBUTIL_DEBUG_ASSERT(
-                ast_type_info(*astp, init_expr) != TYPE_INVALID, (void)0);
-            type_origin->type = ast_type_info(*astp, init_expr);
-            (*astp)->nodes[as_expr].info.type_info = type_origin->type;
-        }
-        else if (as_expr > -1)
-        {
-            ODBUTIL_DEBUG_ASSERT(
-                ast_type_info(*astp, as_expr) != TYPE_INVALID, (void)0);
-            type_origin->type = ast_type_info(*astp, as_expr);
-        }
-        else
-            type_origin->type = annotation_to_type(
-                (*astp)->nodes[identifier].identifier.annotation);
+        ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
+        ODBUTIL_DEBUG_ASSERT(
+            ast_type_info(*astp, init_expr) != TYPE_INVALID, (void)0);
+        type_origin->type = ast_type_info(*astp, init_expr);
+        (*astp)->nodes[as_expr].info.type_info = type_origin->type;
     }
+    else if (as_expr > -1)
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            ast_type_info(*astp, as_expr) != TYPE_INVALID, (void)0);
+        type_origin->type = ast_type_info(*astp, as_expr);
+    }
+    else
+        type_origin->type = annotation_to_type(
+            (*astp)->nodes[identifier].identifier.annotation);
 
     /* TODO: Global variables are not yet supported */
 
@@ -1025,6 +1023,78 @@ process_var_write(
 
     (*astp)->nodes[identifier].info.type_info = type_origin->type;
     (*astp)->nodes[var_write].info.type_info = type_origin->type;
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_udt_decl(
+    struct stack**   stack,
+    struct ast**     astp,
+    ast_id           udt_decl,
+    const char*      filename,
+    const char*      source,
+    struct typemap** typemap)
+{
+    ast_id              identifier, members;
+    struct type_origin* type_origin;
+    struct view_scope   view_scope;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
+
+    identifier = (*astp)->nodes[udt_decl].udt_decl.identifier;
+    members = (*astp)->nodes[udt_decl].udt_decl.members_block;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, members) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(*astp, members)));
+
+    /* Ensure the UDT has not been declared yet */
+    view_scope.view
+        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
+    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
+    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    {
+        case HM_NEW:
+            type_origin->initial_identifier = identifier;
+            type_origin->type = TYPE_INVALID;
+            type_origin->dependent = udt_decl;
+            break;
+
+        case HM_EXISTS:
+            if (type_origin->type == TYPE_INVALID)
+                break;
+            /* TODO: This is the wrong error message */
+            err_var_decl_redeclaration(
+                *astp,
+                identifier,
+                filename,
+                source,
+                *astp,
+                type_origin->initial_identifier,
+                filename,
+                source);
+            return DEP_ERROR;
+
+        case HM_OOM: return DEP_ERROR;
+    }
+
+    if (ast_type_info(*astp, members) == TYPE_INVALID)
+    {
+        stack_push_entry(stack, udt_decl, members);
+        return DEP_ADDED_CHILDREN;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(type_origin->type == TYPE_INVALID, (void)0);
+    type_origin->type = TYPE_UDT_PTR;
+    (*astp)->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
+    (*astp)->nodes[identifier].info.type_info = TYPE_UDT_PTR;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2348,9 +2418,8 @@ process_node(
             return process_var_read(stack, astp, n, filename, source, typemap);
         case AST_VAR_WRITE:
             return process_var_write(stack, astp, n, filename, source, typemap);
-        case AST_UDT_DECL: /*process_udt_decl(stack, astp, n, filename, source,
-                              typemap);*/
-            return DEP_ERROR;
+        case AST_UDT_DECL:
+            return process_udt_decl(stack, astp, n, filename, source, typemap);
         case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_PARAM: return process_param(stack, astp, n, source, typemap);
@@ -2379,7 +2448,9 @@ process_node(
         case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
-        case AST_CONTAINER_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_CONTAINER_WRITE:
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+            return DEP_ERROR;
         case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_CALL:
             /* This value is already set by AST_FUNC_OR_CONTAINER_REF --

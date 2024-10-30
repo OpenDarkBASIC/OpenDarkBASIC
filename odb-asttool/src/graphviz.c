@@ -105,11 +105,12 @@ type_to_db_name(enum type type)
         case TYPE_F32: return "FLOAT";
         case TYPE_F64: return "DOUBLE";
         case TYPE_STRING: return "STRING";
-        case TYPE_ARRAY: return "ARRAY";
+
+        case TYPE_ARRAY: return "(array)";
         case TYPE_LABEL: break;
-        case TYPE_DABEL:
-        case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR: break;
+        case TYPE_DABEL: break;
+        case TYPE_ANY: break;
+        case TYPE_UDT_PTR: return "(udt)";
     }
 
     return "(unknown type)";

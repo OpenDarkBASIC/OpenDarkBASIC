@@ -26,7 +26,7 @@
     X(LABEL,          'P') /* 4 bytes -- ? */                                  \
     X(DABEL,          'Q') /* 4 bytes -- ? */                                  \
     X(ANY,            'X') /* 4 bytes -- (think reinterpret_cast) */           \
-    X(USER_DEFINED_VAR_PTR, 'E') /* 4 bytes */
+    X(UDT_PTR,        'E') /* 4 bytes */
 /* clang-format on */
 
 enum type

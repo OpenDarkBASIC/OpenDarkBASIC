@@ -225,8 +225,9 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_DABEL: break;
 
         case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR:
             return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
+
+        case TYPE_UDT_PTR: break;
     }
 
     log_err("Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
@@ -664,7 +665,7 @@ gen_expr(
                 case TYPE_LABEL:
                 case TYPE_DABEL:
                 case TYPE_ANY:
-                case TYPE_USER_DEFINED_VAR_PTR:
+                case TYPE_UDT_PTR:
                     ODBUTIL_DEBUG_ASSERT(false, (void)0);
                     return nullptr;
 
@@ -1024,7 +1025,7 @@ gen_expr(
                         case TYPE_LABEL:
                         case TYPE_DABEL:
                         case TYPE_ANY:
-                        case TYPE_USER_DEFINED_VAR_PTR: break;
+                        case TYPE_UDT_PTR: break;
                     }
                     break;
 
@@ -1033,7 +1034,7 @@ gen_expr(
                 case TYPE_LABEL:
                 case TYPE_DABEL:
                 case TYPE_ANY:
-                case TYPE_USER_DEFINED_VAR_PTR: break;
+                case TYPE_UDT_PTR: break;
             }
             break;
         }

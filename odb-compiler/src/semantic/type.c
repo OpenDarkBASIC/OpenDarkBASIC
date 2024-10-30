@@ -38,16 +38,16 @@ type_to_annotation(enum type type)
         case TYPE_F64: return TA_F64;
         case TYPE_STRING: return TA_STRING;
 
-        case TYPE_INVALID:
-        case TYPE_VOID:
-        case TYPE_U32:
-        case TYPE_I32:
-        case TYPE_U8:
-        case TYPE_ARRAY:
-        case TYPE_LABEL:
-        case TYPE_DABEL:
-        case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR: break;
+        case TYPE_INVALID: break;
+        case TYPE_VOID: break;
+        case TYPE_U32: break;
+        case TYPE_I32: break;
+        case TYPE_U8: break;
+        case TYPE_ARRAY: break;
+        case TYPE_LABEL: break;
+        case TYPE_DABEL: break;
+        case TYPE_ANY: break;
+        case TYPE_UDT_PTR: break;
     }
 
     return TA_NONE;
@@ -85,11 +85,12 @@ type_to_db_name(enum type type)
         case TYPE_F32: return "FLOAT";
         case TYPE_F64: return "DOUBLE";
         case TYPE_STRING: return "STRING";
-        case TYPE_ARRAY: return "ARRAY";
+
+        case TYPE_ARRAY: break;
         case TYPE_LABEL: break;
-        case TYPE_DABEL:
-        case TYPE_ANY:
-        case TYPE_USER_DEFINED_VAR_PTR: break;
+        case TYPE_DABEL: break;
+        case TYPE_ANY: break;
+        case TYPE_UDT_PTR: break;
     }
 
     return "(unknown type)";

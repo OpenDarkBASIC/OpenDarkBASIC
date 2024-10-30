@@ -107,3 +107,37 @@ TEST_F(NAME, nested_functions)
     ast_id block6 = ast->nodes[block5].block.next;
     ASSERT_THAT(subtreeHasScope(block6, 1), Eq(1));
 }
+
+TEST_F(NAME, udt)
+{
+    const char* source
+        = "TYPE Vec2\n"
+          "    x# AS FLOAT\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "TYPE Vec3\n"
+          "    x# AS FLOAT\n"
+          "    y# AS FLOAT\n"
+          "    z# AS FLOAT\n"
+          "ENDTYPE\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_calculate_scope_ids), Eq(0)) << log().text;
+
+    ASSERT_THAT(ast_count(ast), Eq(31));
+
+    ast_id decl = ast->root;
+    ast_id identifier = ast->nodes[decl].udt_decl.identifier;
+    ast_id members = ast->nodes[decl].udt_decl.members_block;
+
+    ASSERT_THAT(ast->nodes[decl].info.scope_id, Eq(0));
+    ASSERT_THAT(ast->nodes[identifier].info.scope_id, Eq(0));
+    ASSERT_THAT(subtreeHasScope(members, 1), IsTrue());
+
+    decl = ast->nodes[decl].block.next;
+    identifier = ast->nodes[decl].udt_decl.identifier;
+    members = ast->nodes[decl].udt_decl.members_block;
+
+    ASSERT_THAT(ast->nodes[decl].info.scope_id, Eq(0));
+    ASSERT_THAT(ast->nodes[identifier].info.scope_id, Eq(0));
+    ASSERT_THAT(subtreeHasScope(members, 2), IsTrue());
+}
