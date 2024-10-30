@@ -308,7 +308,9 @@ ast_assign(
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, lvalue) == AST_VAR_DECL1
-            || ast_node_type(ast, lvalue) == AST_VAR_WRITE,
+            || ast_node_type(ast, lvalue) == AST_VAR_WRITE
+            || ast_node_type(ast, lvalue) == AST_CONTAINER_WRITE
+            || ast_node_type(ast, lvalue) == AST_UDT_WRITE,
         log_err("type: %d\n", ast_node_type(ast, lvalue)));
 
     ast->nodes[n].assignment.lvalue = lvalue;
@@ -322,7 +324,7 @@ ast_id
 ast_var_decl(
     struct ast**     astp,
     ast_id           identifier,
-    ast_id           as,
+    ast_id           as_expr,
     ast_id           init_expr,
     enum scope       scope,
     struct utf8_span scope_location,
@@ -338,11 +340,6 @@ ast_var_decl(
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
-    ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(*astp, as) == AST_AS_TYPE
-            || ast_node_type(*astp, as) == AST_AS_AUTO
-            || ast_node_type(*astp, as) == AST_AS_UDT,
-        log_err("type: %d\n", ast_node_type(*astp, as)));
 
     (*astp)->nodes[decl1].var_decl1.init_expr = init_expr;
     (*astp)->nodes[decl1].var_decl1.scope = scope;
@@ -350,7 +347,7 @@ ast_var_decl(
     (*astp)->nodes[decl1].var_decl1.var_decl2 = decl2;
 
     (*astp)->nodes[decl2].var_decl2.identifier = identifier;
-    (*astp)->nodes[decl2].var_decl2.as = as;
+    (*astp)->nodes[decl2].var_decl2.as = as_expr;
     (*astp)->nodes[decl2].var_decl2.op_location = op_location;
 
     return decl1;
@@ -403,6 +400,58 @@ ast_udt_decl(
 
     (*astp)->nodes[n].udt_decl.identifier = identifier;
     (*astp)->nodes[n].udt_decl.members_block = members_block;
+
+    return n;
+}
+
+ast_id
+ast_udt_read(
+    struct ast** astp, ast_id left, ast_id right, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_UDT_READ, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(left > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(right > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, left) == AST_VAR_READ
+            || ast_node_type(*astp, left) == AST_FUNC_CALL_OR_CONTAINER_READ,
+        log_err("type: %d\n", ast_node_type(*astp, left)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, left) == AST_UDT_READ
+            || ast_node_type(*astp, left) == AST_VAR_READ
+            || ast_node_type(*astp, left) == AST_FUNC_CALL_OR_CONTAINER_READ,
+        log_err("type: %d\n", ast_node_type(*astp, right)));
+
+    (*astp)->nodes[n].udt_read.left = left;
+    (*astp)->nodes[n].udt_read.right = right;
+
+    return n;
+}
+
+ast_id
+ast_udt_write(
+    struct ast** astp, ast_id left, ast_id right, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_UDT_WRITE, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(left > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(right > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, left) == AST_VAR_WRITE
+            || ast_node_type(*astp, left) == AST_CONTAINER_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, left)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, left) == AST_UDT_WRITE
+            || ast_node_type(*astp, left) == AST_VAR_WRITE
+            || ast_node_type(*astp, left) == AST_CONTAINER_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, right)));
+
+    (*astp)->nodes[n].udt_read.left = left;
+    (*astp)->nodes[n].udt_read.right = right;
 
     return n;
 }
@@ -781,7 +830,7 @@ ast_id
 ast_func(
     struct ast**     astp,
     ast_id           identifier,
-    ast_id           as,
+    ast_id           as_expr,
     ast_id           paramlist,
     ast_id           body,
     ast_id           retval,
@@ -806,12 +855,7 @@ ast_func(
     ast->nodes[f1].func1.func2 = f2;
     ast->nodes[f1].func1.endfunction_location = endfunction_location;
 
-    ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(ast, as) == AST_AS_TYPE
-            || ast_node_type(ast, as) == AST_AS_AUTO
-            || ast_node_type(ast, as) == AST_AS_UDT,
-        log_err("type: %d\n", ast_node_type(ast, as)));
-    ast->nodes[f2].func2.as = as;
+    ast->nodes[f2].func2.as = as_expr;
     ast->nodes[f2].func2.func3 = f3;
 
     ODBUTIL_DEBUG_ASSERT(
@@ -852,13 +896,13 @@ ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location)
 }
 
 ast_id
-ast_func_or_container_ref(
+ast_func_call_or_container_read(
     struct ast**     astp,
     ast_id           identifier,
     ast_id           arglist,
     struct utf8_span location)
 {
-    ast_id      n = new_node(astp, AST_FUNC_OR_CONTAINER_REF, location);
+    ast_id      n = new_node(astp, AST_FUNC_CALL_OR_CONTAINER_READ, location);
     struct ast* ast = *astp;
     if (n < 0)
         return -1;
@@ -871,8 +915,34 @@ ast_func_or_container_ref(
         arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
         log_err("type: %d\n", ast_node_type(ast, arglist)));
 
-    ast->nodes[n].func_or_container_ref.identifier = identifier;
-    ast->nodes[n].func_or_container_ref.arglist = arglist;
+    ast->nodes[n].func_call_or_container_read.identifier = identifier;
+    ast->nodes[n].func_call_or_container_read.arglist = arglist;
+
+    return n;
+}
+
+ast_id
+ast_container_write(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           arglist,
+    struct utf8_span location)
+{
+    ast_id      n = new_node(astp, AST_CONTAINER_WRITE, location);
+    struct ast* ast = *astp;
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        arglist == -1 || ast_node_type(ast, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(ast, arglist)));
+
+    ast->nodes[n].container_write.identifier = identifier;
+    ast->nodes[n].container_write.arglist = arglist;
 
     return n;
 }

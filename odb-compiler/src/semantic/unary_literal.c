@@ -21,6 +21,8 @@ child_changed:
         case AST_VAR_READ: return -1;
         case AST_VAR_WRITE: return -1;
         case AST_UDT_DECL: return -1;
+        case AST_UDT_READ: return -1;
+        case AST_UDT_WRITE: return -1;
         case AST_PARAM: return -1;
         case AST_IDENTIFIER: return -1;
         case AST_BINOP: return -1;
@@ -45,8 +47,9 @@ child_changed:
         case AST_FUNC3: return -1;
         case AST_FUNC4: return -1;
         case AST_FUNC_EXIT: return -1;
-        case AST_FUNC_OR_CONTAINER_REF: return -1;
         case AST_FUNC_CALL: return -1;
+        case AST_FUNC_CALL_OR_CONTAINER_READ: return -1;
+        case AST_CONTAINER_WRITE: return -1;
 
         case AST_BOOLEAN_LITERAL:
             switch (ast->nodes[n].unop.op)

@@ -596,6 +596,8 @@ gen_expr(
 
         case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_ASSIGNMENT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -881,9 +883,10 @@ gen_expr(
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
         case AST_FUNC_EXIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
-        case AST_FUNC_OR_CONTAINER_REF:
+        case AST_FUNC_CALL_OR_CONTAINER_READ:
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return NULL;
+        case AST_CONTAINER_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return NULL;
 
         case AST_BOOLEAN_LITERAL:
             return llvm::ConstantInt::get(
@@ -1164,6 +1167,8 @@ gen_block(
             case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_ASSIGNMENT: {
@@ -1464,6 +1469,48 @@ gen_block(
             }
 
             case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_FUNC_CALL: {
+                llvm::SmallString<128>             func_name;
+                llvm::SmallVector<llvm::Value*, 8> llvm_args;
+                for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
+                     ast_arglist > -1;
+                     ast_arglist = ast->nodes[ast_arglist].arglist.next)
+                {
+                    llvm::Value* llvm_arg = gen_expr(
+                        ir,
+                        builder,
+                        ast,
+                        ast->nodes[ast_arglist].arglist.expr,
+                        sdk_type,
+                        cmds,
+                        filename,
+                        source,
+                        string_table,
+                        cmd_func_table,
+                        db_func_table,
+                        loop_stack,
+                        allocamap);
+                    llvm_args.push_back(llvm_arg);
+                }
+
+                func_name_from_arglist(
+                    func_name,
+                    ast,
+                    ast->nodes[stmt].func_call.identifier,
+                    ast->nodes[stmt].func_call.arglist,
+                    source);
+                const auto result = db_func_table->find(func_name);
+                ODBUTIL_DEBUG_ASSERT(
+                    result != db_func_table->end(),
+                    log_err(
+                        "Function {quote:%s} not found in function table\n",
+                        func_name.data()));
+
+                llvm::Function* F = result->getValue();
+                builder.CreateCall(F, llvm_args);
+
+                continue;
+            }
             case AST_FUNC1: {
                 llvm::SmallString<128> func_name;
 
@@ -1585,7 +1632,7 @@ gen_block(
 
                 continue;
             }
-            case AST_FUNC_OR_CONTAINER_REF:
+            case AST_FUNC_CALL_OR_CONTAINER_READ:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
                     log_err(
@@ -1594,48 +1641,9 @@ gen_block(
                         "at this point.\n"));
                 return -1;
 
-            case AST_FUNC_CALL: {
-                llvm::SmallString<128>             func_name;
-                llvm::SmallVector<llvm::Value*, 8> llvm_args;
-                for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
-                     ast_arglist > -1;
-                     ast_arglist = ast->nodes[ast_arglist].arglist.next)
-                {
-                    llvm::Value* llvm_arg = gen_expr(
-                        ir,
-                        builder,
-                        ast,
-                        ast->nodes[ast_arglist].arglist.expr,
-                        sdk_type,
-                        cmds,
-                        filename,
-                        source,
-                        string_table,
-                        cmd_func_table,
-                        db_func_table,
-                        loop_stack,
-                        allocamap);
-                    llvm_args.push_back(llvm_arg);
-                }
-
-                func_name_from_arglist(
-                    func_name,
-                    ast,
-                    ast->nodes[stmt].func_call.identifier,
-                    ast->nodes[stmt].func_call.arglist,
-                    source);
-                const auto result = db_func_table->find(func_name);
-                ODBUTIL_DEBUG_ASSERT(
-                    result != db_func_table->end(),
-                    log_err(
-                        "Function {quote:%s} not found in function table\n",
-                        func_name.data()));
-
-                llvm::Function* F = result->getValue();
-                builder.CreateCall(F, llvm_args);
-
-                continue;
-            }
+            case AST_CONTAINER_WRITE:
+                ODBUTIL_DEBUG_ASSERT(0, (void)0);
+                return -1;
 
             case AST_BOOLEAN_LITERAL:
             case AST_BYTE_LITERAL:

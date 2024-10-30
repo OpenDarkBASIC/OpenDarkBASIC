@@ -2080,14 +2080,14 @@ process_func_or_container_ref(
 
     /* NOTE: The function has an identifier, but the type of it is set when
      * the return type is known. */
-    arglist = (*astp)->nodes[n].func_or_container_ref.arglist;
+    arglist = (*astp)->nodes[n].func_call_or_container_read.arglist;
     if (arglist > -1 && ast_type_info(*astp, arglist) == TYPE_INVALID)
     {
         stack_push_entry(stack, n, arglist);
         return DEP_ADDED_CHILDREN;
     }
 
-    identifier = (*astp)->nodes[n].func_or_container_ref.identifier;
+    identifier = (*astp)->nodes[n].func_call_or_container_read.identifier;
     key = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
     entry = symbol_table_find(symbols, key);
     if (entry == NULL)
@@ -2110,7 +2110,7 @@ process_func_or_container_ref(
                 *astp,
                 poly_block,
                 *astp,
-                (*astp)->nodes[n].func_or_container_ref.arglist);
+                (*astp)->nodes[n].func_call_or_container_read.arglist);
             if (f1 < 0)
             {
                 f1 = instantiate_func(
@@ -2119,7 +2119,7 @@ process_func_or_container_ref(
                     filename,
                     source,
                     astp,
-                    (*astp)->nodes[n].func_or_container_ref.arglist,
+                    (*astp)->nodes[n].func_call_or_container_read.arglist,
                     ast_loc(*astp, n),
                     filename,
                     source);
@@ -2351,6 +2351,8 @@ process_node(
         case AST_UDT_DECL: /*process_udt_decl(stack, astp, n, filename, source,
                               typemap);*/
             return DEP_ERROR;
+        case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_PARAM: return process_param(stack, astp, n, source, typemap);
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BINOP: return process_binop(stack, astp, n, filename, source);
@@ -2377,16 +2379,16 @@ process_node(
         case AST_FUNC2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
-        case AST_FUNC_OR_CONTAINER_REF:
-            return process_func_or_container_ref(
-                stack, tus, tu_id, tu_mutexes, n, filenames, sources, symbols);
-
+        case AST_CONTAINER_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_POLY: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_FUNC_CALL:
             /* This value is already set by AST_FUNC_OR_CONTAINER_REF --
              * nothing to do here */
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
             return DEP_ERROR;
+        case AST_FUNC_CALL_OR_CONTAINER_READ:
+            return process_func_or_container_ref(
+                stack, tus, tu_id, tu_mutexes, n, filenames, sources, symbols);
 
         case AST_BOOLEAN_LITERAL:
             (*astp)->nodes[n].info.type_info = TYPE_BOOL;

@@ -226,6 +226,7 @@
 %right UMINUS
 %right UNOT
 %right AS
+%right '.'
 
 /* Identifiers */
 %token<string_value> IDENTIFIER "identifier"
@@ -377,11 +378,13 @@ command_expr
   : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
 lvalue
-  : var_write                               { $$ = $1; }
+  : lvalue '.' lvalue                       { $$ = ast_udt_write(ctx->astp, $1, $3, @$); }
+  | var_write                               { $$ = $1; }
   | container_write                         { $$ = $1; }
   ;
 rvalue
-  : var_read                                { $$ = $1; }
+  : rvalue '.' rvalue                       { $$ = ast_udt_read(ctx->astp, $1, $3, @$); }
+  | var_read                                { $$ = $1; }
   | func_call_or_container_read             { $$ = $1; }
   ;
 // Assignments and variable declarations with initializers are syntactically ambiguous,
@@ -508,6 +511,9 @@ func_exit
   ;
 func_call_or_container_read
   : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, @$); }
+  ;
+container_write
+  : identifier '(' maybe_arglist ')'        { $$ = ast_container_write(ctx->astp, $1, $3, @$); }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->astp, $1, @$); }

@@ -47,6 +47,7 @@ else:
     suite = find_suite_name()
     test = find_test_name(line_num)
     dotfile = f"{os.path.join(odb_path, 'ast', f'{suite}__{test}')}{ast_type}.ast"
+    print(dotfile)
 
     subprocess.run([f"{odb_path}/odb-asttool -i {dotfile} | dot -Tx11"], shell=True)
 

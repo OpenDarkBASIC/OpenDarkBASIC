@@ -110,7 +110,7 @@ static int
 process_file(const struct cfg* cfg, const char* filename, FILE* fp)
 {
     struct mfile mf;
-    if (mfile_map_read(&mf, cstr_ospathc(filename), 0) != 0)
+    if (mfile_map_read(&mf, cstr_ospathc(filename), 1) != 0)
         return -1;
 
     if (process_blob(cfg, mstream_from_memory(mf.address, mf.size), fp) != 0)

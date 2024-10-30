@@ -52,7 +52,24 @@ TEST_F(NAME, as_udt)
 
 TEST_F(NAME, read_udt_field)
 {
-    const char* source=
-          "a = var.x.z.y\n";
+    const char* source = "a = var.x.z.y\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, read_udt_field_with_array)
+{
+    const char* source = "a = var.arr(2).x\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, write_udt_field)
+{
+    const char* source = "var.x.z.y = a\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, write_udt_field_with_array)
+{
+    const char* source = "var.arr(2).x = a\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
 }

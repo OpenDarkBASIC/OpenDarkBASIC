@@ -108,6 +108,8 @@ process_node(
         case AST_VAR_READ:
         case AST_VAR_WRITE:
         case AST_UDT_DECL:
+        case AST_UDT_READ:
+        case AST_UDT_WRITE:
         case AST_PARAM:
         case AST_IDENTIFIER:
         case AST_BINOP:
@@ -122,8 +124,9 @@ process_node(
         case AST_LOOP_CONT:
         case AST_LOOP_EXIT:
         case AST_FUNC_EXIT:
-        case AST_FUNC_OR_CONTAINER_REF:
         case AST_FUNC_CALL:
+        case AST_FUNC_CALL_OR_CONTAINER_READ:
+        case AST_CONTAINER_WRITE:
         case AST_BOOLEAN_LITERAL:
         case AST_BYTE_LITERAL:
         case AST_WORD_LITERAL:

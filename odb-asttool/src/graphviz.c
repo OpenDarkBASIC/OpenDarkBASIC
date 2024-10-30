@@ -279,6 +279,28 @@ write_node(
                 style->type.shape,
                 xlabel);
             break;
+        case AST_UDT_READ:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"udt_read\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
+        case AST_UDT_WRITE:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"udt_write\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
         case AST_PARAM:
             fprintf(
                 fp,
@@ -470,7 +492,17 @@ write_node(
                 style->keyword.fontcolor,
                 xlabel);
             break;
-        case AST_FUNC_OR_CONTAINER_REF:
+        case AST_FUNC_CALL:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
+                "label=\"call\", xlabel=\"%s\"];\n",
+                n,
+                style->func.color,
+                style->func.fontcolor,
+                xlabel);
+            break;
+        case AST_FUNC_CALL_OR_CONTAINER_READ:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
@@ -480,14 +512,14 @@ write_node(
                 style->keyword.fontcolor,
                 xlabel);
             break;
-        case AST_FUNC_CALL:
+        case AST_CONTAINER_WRITE:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"record\", "
-                "label=\"call\", xlabel=\"%s\"];\n",
+                "label=\"container_write\", xlabel=\"%s\"];\n",
                 n,
-                style->func.color,
-                style->func.fontcolor,
+                style->identifier.color,
+                style->identifier.fontcolor,
                 xlabel);
             break;
         case AST_BOOLEAN_LITERAL:
@@ -723,6 +755,8 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_VAR_READ: NAMES("identifier", "")
         case AST_VAR_WRITE: NAMES("identifier", "")
         case AST_UDT_DECL: NAMES("identifier", "members")
+        case AST_UDT_READ: NAMES("left", "right")
+        case AST_UDT_WRITE: NAMES("left", "right")
         case AST_PARAM: NAMES("identifier", "as")
         case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")
@@ -742,8 +776,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_FUNC3: NAMES("func4", "paramlist")
         case AST_FUNC4: NAMES("body", "retval")
         case AST_FUNC_EXIT: NAMES("retval", "")
-        case AST_FUNC_OR_CONTAINER_REF: NAMES("identifier", "arglist")
         case AST_FUNC_CALL: NAMES("identifier", "arglist")
+        case AST_FUNC_CALL_OR_CONTAINER_READ: NAMES("identifier", "arglist")
+        case AST_CONTAINER_WRITE: NAMES("identifier", "arglist")
         case AST_BOOLEAN_LITERAL: break;
         case AST_BYTE_LITERAL: break;
         case AST_WORD_LITERAL: break;

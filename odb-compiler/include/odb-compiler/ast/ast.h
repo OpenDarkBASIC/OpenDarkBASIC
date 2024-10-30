@@ -77,6 +77,8 @@ enum ast_type
     AST_VAR_READ,
     AST_VAR_WRITE,
     AST_UDT_DECL,
+    AST_UDT_READ,
+    AST_UDT_WRITE,
     AST_PARAM,
     AST_IDENTIFIER,
     AST_BINOP,
@@ -96,8 +98,9 @@ enum ast_type
     AST_FUNC3,
     AST_FUNC4,
     AST_FUNC_EXIT,
-    AST_FUNC_OR_CONTAINER_REF,
     AST_FUNC_CALL,
+    AST_FUNC_CALL_OR_CONTAINER_READ,
+    AST_CONTAINER_WRITE,
     /*! Boolean literal, either "true" or "false" */
     AST_BOOLEAN_LITERAL,
     /*! A literal between 0 and 255. Maps to uint8_t. */
@@ -206,6 +209,18 @@ union ast_node
         ast_id identifier;
         ast_id members_block;
     } udt_decl;
+    
+    struct {
+        struct info info;
+        ast_id left;
+        ast_id right;
+    } udt_read;
+
+    struct {
+        struct info info;
+        ast_id left;
+        ast_id right;
+    } udt_write;
 
     struct {
         struct info info;
@@ -333,18 +348,24 @@ union ast_node
         ast_id retval;
         ast_id _pad;
     } func_exit;
-
-    struct {
-        struct info info;
-        ast_id identifier;
-        ast_id arglist;
-    } func_or_container_ref;
-
+    
     struct {
         struct info info;
         ast_id identifier;
         ast_id arglist;
     } func_call;
+
+    struct {
+        struct info info;
+        ast_id identifier;
+        ast_id arglist;
+    } func_call_or_container_read;
+
+    struct {
+        struct info info;
+        ast_id identifier;
+        ast_id arglist;
+    } container_write;
 
     struct {
         struct info info;
@@ -493,6 +514,8 @@ ast_id ast_var_decl(
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_udt_decl(struct ast** astp, ast_id identifier, ast_id members_block, struct utf8_span location);
+ast_id ast_udt_read(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
+ast_id ast_udt_write(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_inc_step(struct ast** astp, ast_id var_read, ast_id expr, struct utf8_span location);
 ast_id ast_inc(struct ast** astp, ast_id var_read, struct utf8_span location);
@@ -537,7 +560,8 @@ ast_id ast_func(
     struct utf8_span endfunction_location,
     struct utf8_span location);
 ast_id ast_func_exit(struct ast** astp, ast_id retval, struct utf8_span location);
-ast_id ast_func_or_container_ref(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
+ast_id ast_func_call_or_container_read(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
+ast_id ast_container_write(struct ast** astp, ast_id identifier, ast_id arglist, struct utf8_span location);
 ast_id ast_boolean_literal(struct ast** astp, char is_true, struct utf8_span location);
 ODBCOMPILER_PUBLIC_API ast_id ast_byte_literal(struct ast** astp, uint8_t value, struct utf8_span location);
 ast_id ast_word_literal(struct ast** astp, uint16_t value, struct utf8_span location);
