@@ -56,6 +56,7 @@ close_tus(struct ctx* ctx)
         struct utf8*      filename = filenames_pop(ctx->filenames);
 
         utf8_deinit(*filename);
+        mutex_unlock(mutex);
         mutex_destroy(mutex);
         ast_deinit(*astp);
         if (filename != NULL)
@@ -116,6 +117,7 @@ open_stdin_as_tu(struct ctx* ctx)
     *ast_mutex = mutex_create();
     if (*ast_mutex == NULL)
         goto create_mutex_failed;
+    mutex_lock(*ast_mutex);
 
     return true;
 
@@ -172,6 +174,7 @@ open_tus(struct ctx* ctx, const std::vector<std::string>& args)
         *ast_mutex = mutex_create();
         if (*ast_mutex == NULL)
             goto create_mutex_failed;
+        mutex_lock(*ast_mutex);
 
         continue;
 
@@ -573,11 +576,10 @@ dump_ast(const std::vector<std::string>& args)
 
         for (i = 0; i != tus_count(ctx.tus); i++)
         {
-            ast_export_dot(
+            ast_export(
                 *vec_get(ctx.tus, i),
-                (*vec_get(ctx.tus, i))->root,
                 cstr_ospathc(args[0].c_str()),
-                vec_get(ctx.sources, i)->text.data,
+                *vec_get(ctx.sources, i),
                 getCommandList());
         }
     }
@@ -586,11 +588,10 @@ dump_ast(const std::vector<std::string>& args)
         log_info("Dumping AST to Graphviz DOT format\n");
         for (i = 0; i != tus_count(ctx.tus); i++)
         {
-            ast_export_dot_fp(
+            ast_export_fp(
                 *vec_get(ctx.tus, i),
-                (*vec_get(ctx.tus, i))->root,
                 stdout,
-                vec_get(ctx.sources, i)->text.data,
+                *vec_get(ctx.sources, i),
                 getCommandList());
         }
     }

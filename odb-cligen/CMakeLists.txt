@@ -4,7 +4,7 @@ project ("odb-cligen"
 
 add_executable (odb-cligen
     "src/cligen.c")
-target_compile_options(odb-cligen
+target_compile_options (odb-cligen
     PRIVATE
         $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>

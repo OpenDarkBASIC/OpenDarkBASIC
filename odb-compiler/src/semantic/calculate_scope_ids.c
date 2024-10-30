@@ -3,7 +3,6 @@
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
 #include "odb-util/log.h"
-#include <stdio.h>
 
 static void
 process_node(
@@ -162,7 +161,7 @@ reset_scope_ids(struct ast* ast)
 
 static void
 check_scope_ids(
-    struct ast* ast, const char* source, const struct cmd_list* cmds)
+    struct ast* ast, struct db_source source, const struct cmd_list* cmds)
 {
     ast_id n;
     int    error = 0;
@@ -174,13 +173,11 @@ check_scope_ids(
                 "Node %d of type %d has no scope ID\n",
                 n,
                 ast_node_type(ast, n));
-            ast_export_print_fp(ast, n, stderr, source, cmds);
+            ast_export(
+                ast, cstr_ospathc("calculate_scope_ids.ast"), source, cmds);
             error = -1;
         }
     }
-
-    if (error)
-        fflush(stderr);
 
     ODBUTIL_DEBUG_ASSERT(!error, (void)0);
 }
@@ -208,7 +205,7 @@ calculate_scope_ids(
     process_node(ast, ast->root, 0, &scope_counter);
 
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
-    check_scope_ids(ast, sources[tu_id].text.data, cmds);
+    check_scope_ids(ast, sources[tu_id], cmds);
 #endif
 
     return 0;

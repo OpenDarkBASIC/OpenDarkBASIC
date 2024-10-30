@@ -126,6 +126,7 @@ if (ODB_UTIL)
     if (ODB_COMPILER)
         add_subdirectory ("thirdparty/gperf-3.1")
         add_subdirectory ("odb-compiler")
+        add_subdirectory ("odb-asttool")
 
         if (ODB_CLI)
             add_subdirectory ("odb-cligen")

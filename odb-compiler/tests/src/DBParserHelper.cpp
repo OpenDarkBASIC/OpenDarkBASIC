@@ -74,15 +74,10 @@ DBParserHelper::parse(const char* code)
     const testing::TestInfo* info
         = testing::UnitTest::GetInstance()->current_test_info();
     std::string filename = std::string("ast/") + info->test_suite_name() + "__"
-                           + info->name() + "1.dot";
+                           + info->name() + "1.ast";
     std::filesystem::create_directory("ast");
     if (ast != nullptr)
-        ast_export_dot(
-            ast,
-            ast->root,
-            cstr_ospathc(filename.c_str()),
-            src.text.data,
-            &cmds);
+        ast_export(ast, cstr_ospathc(filename.c_str()), src, &cmds);
 #endif
     if (result != 0)
         return result;
@@ -118,15 +113,10 @@ DBParserHelper::semantic(const struct semantic_check* check)
     const testing::TestInfo* info
         = testing::UnitTest::GetInstance()->current_test_info();
     std::string astfile = std::string("ast/") + info->test_suite_name() + "__"
-                          + info->name() + "2.dot";
+                          + info->name() + "2.ast";
     std::filesystem::create_directory("ast");
     if (ast != nullptr)
-        ast_export_dot(
-            ast,
-            ast->root,
-            cstr_ospathc(astfile.c_str()),
-            src.text.data,
-            &cmds);
+        ast_export(ast, cstr_ospathc(astfile.c_str()), src, &cmds);
 #endif
     return result;
 }

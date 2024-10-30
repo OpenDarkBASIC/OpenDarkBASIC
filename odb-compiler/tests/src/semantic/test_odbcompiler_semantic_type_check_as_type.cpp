@@ -15,7 +15,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 {
 };
 
-TEST_F(NAME, self_referential)
+TEST_F(NAME, self_referential_1)
 {
     const char* source =
         "a AS = a\n";
@@ -23,3 +23,10 @@ TEST_F(NAME, self_referential)
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
+TEST_F(NAME, self_referential_2)
+{
+    const char* source =
+        "a AS = a + 2\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}

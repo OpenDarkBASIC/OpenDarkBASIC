@@ -1,0 +1,218 @@
+#include "odb-asttool/asttool.h"
+#include "odb-asttool/export.h"
+#include "odb-compiler/ast/ast.h"
+#include "odb-util/init.h"
+#include "odb-util/log.h"
+#include "odb-util/mem.h"
+#include "odb-util/mfile.h"
+#include "odb-util/mstream.h"
+#include "odb-util/vec.h"
+#include <errno.h>
+#include <stdio.h>
+
+VEC_DECLARE_API(static, buffer, char, 32)
+VEC_DEFINE_API(buffer, char, 32)
+
+static int
+print_help(const char* prog_name)
+{
+    log_raw(
+        "Usage: %s [{emph1:-i} <{emph2:ast file}>] [{emph1:-o} <{emph2:output "
+        "file}>] [{emph1:--type} <{emph2:graphviz}>]\n",
+        prog_name);
+    return 1;
+}
+
+ODBUTIL_PRINTF_FORMAT(1, 2) static int print_error(const char* fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
+    return 1;
+}
+
+static int
+parse_cmdline(int argc, char** argv, struct cfg* cfg)
+{
+    int i;
+    for (i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0)
+            return print_help(argv[0]);
+        else if (strcmp(argv[i], "-i") == 0)
+        {
+            if (i + 1 >= argc)
+                return print_error("Missing input filename to option -i\n");
+
+            cfg->input_fname = argv[++i];
+        }
+        else if (strcmp(argv[i], "-o") == 0)
+        {
+            if (i + 1 >= argc)
+                return print_error("Missing output filename to option -o\n");
+
+            cfg->output_fname = argv[++i];
+        }
+        else if (strcmp(argv[i], "--scopes") == 0)
+            cfg->with_scopes = 1;
+        else if (strcmp(argv[i], "--types") == 0)
+            cfg->with_types = 1;
+        else
+        {
+            print_error("Unknown option \"%s\"\n", argv[i]);
+            return print_help(argv[0]);
+        }
+    }
+
+    return 0;
+}
+
+static int
+process_blob(const struct cfg* cfg, struct mstream ms, FILE* fp)
+{
+    utf8_idx          cmds_bytes, source_len;
+    struct ast*       ast;
+    const char*       source;
+    struct utf8_list* cmd_names = NULL;
+
+    if (mstream_bytes_left(&ms) < 4)
+        return -1;
+    if (memcmp(mstream_read(&ms, 4), "AST0", 4) != 0)
+        return log_err("Invalid magic\n");
+
+    if (mstream_bytes_left(&ms) < (int)offsetof(struct ast, nodes))
+        return -1;
+    ast = mstream_read(&ms, offsetof(struct ast, nodes));
+    mstream_read(&ms, ast->count * sizeof(union ast_node));
+
+    if (mstream_bytes_left(&ms) < (int)sizeof(utf8_idx))
+        return -1;
+    cmds_bytes = *(utf8_idx*)mstream_read(&ms, sizeof(utf8_idx));
+    if (cmds_bytes > 0)
+    {
+        if (mstream_bytes_left(&ms) < (int)cmds_bytes)
+            return -1;
+        cmd_names = mstream_read(&ms, cmds_bytes);
+    }
+
+    if (mstream_bytes_left(&ms) < (int)sizeof(source_len))
+        return -1;
+    source_len = *(utf8_idx*)mstream_read(&ms, sizeof(utf8_idx));
+    source = mstream_read(&ms, source_len);
+
+    mstream_read(&ms, 4);
+
+    return export_graphviz(fp, ast, source, cmd_names, cfg);
+}
+
+static int
+process_file(const struct cfg* cfg, const char* filename, FILE* fp)
+{
+    struct mfile mf;
+    if (mfile_map_read(&mf, cstr_ospathc(filename), 0) != 0)
+        return -1;
+
+    if (process_blob(cfg, mstream_from_memory(mf.address, mf.size), fp) != 0)
+    {
+        mfile_unmap(&mf);
+        return -1;
+    }
+
+    mfile_unmap(&mf);
+    return 0;
+}
+
+static int
+process_stdin(const struct cfg* cfg, FILE* fp)
+{
+    int            c;
+    struct buffer* buf;
+    buffer_init(&buf);
+
+    while ((c = fgetc(stdin)) != EOF)
+    {
+        if (c == 'A' && fgetc(stdin) == 'S' && fgetc(stdin) == 'T'
+            && fgetc(stdin) == '0')
+        {
+            int counter;
+            /* clang-format off */
+            if (buffer_push(&buf, 'A') != 0) goto error;
+            if (buffer_push(&buf, 'S') != 0) goto error;
+            if (buffer_push(&buf, 'T') != 0) goto error;
+            if (buffer_push(&buf, '0') != 0) goto error;
+            /* clang-format on */
+
+            counter = 0;
+            while ((c = fgetc(stdin)) != EOF)
+            {
+                buffer_push(&buf, c);
+                switch (counter)
+                {
+                        /* clang-format off */
+                    case 0: if (c == '0') counter = 1; break;
+                    case 1: if (c == 'T') counter = 2; break;
+                    case 2: if (c == 'S') counter = 3; break;
+                    case 3: if (c == 'A')
+                        /* clang-format on */
+                        {
+                            if (process_blob(
+                                    cfg,
+                                    mstream_from_memory(
+                                        buf->data, buffer_count(buf)),
+                                    fp)
+                                != 0)
+                            {
+                                goto error;
+                            }
+                            buffer_clear(buf);
+                        }
+                        /* fallthrough */
+                    default: counter = 0; break;
+                }
+            }
+        }
+    }
+
+    buffer_deinit(buf);
+    return 0;
+
+error:
+    buffer_deinit(buf);
+    return -1;
+}
+
+int
+main(int argc, char** argv)
+{
+    FILE*      out_file;
+    struct cfg cfg = {0};
+    odbutil_init();
+
+    if (parse_cmdline(argc, argv, &cfg) != 0)
+        goto out;
+
+    if (cfg.output_fname == NULL)
+        out_file = stdout;
+    else
+    {
+        out_file = fopen(cfg.output_fname, "w");
+        if (out_file == NULL)
+            return log_err("Failed to open output file: %s\n", strerror(errno));
+    }
+
+    if (cfg.input_fname != NULL)
+        if (process_file(&cfg, cfg.input_fname, out_file) != 0)
+            goto out;
+
+    if (cfg.input_fname == NULL)
+        if (process_stdin(&cfg, out_file) != 0)
+            goto out;
+
+    odbutil_deinit();
+    return 0;
+
+out:
+    odbutil_deinit();
+    return 1;
+}

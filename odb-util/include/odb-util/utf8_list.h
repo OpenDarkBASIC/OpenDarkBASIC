@@ -99,6 +99,10 @@ utf8_lower_bound(const struct utf8_list* l, struct utf8_view str);
                                && ((var = utf8_list_view((l), var##_i)), 1);   \
          ++var##_i)
 
+#define utf8_enumerate(l, i, var)                                              \
+    for (i = 0; (l) && i != (l)->count && ((var = utf8_list_view((l), i)), 1); \
+         ++i)
+
 #define utf8_for_each_cstr(l, var)                                             \
     for (utf8_idx var##_i = 0; (l) && var##_i != (l)->count                    \
                                && ((var = utf8_list_cstr((l), var##_i)), 1);   \

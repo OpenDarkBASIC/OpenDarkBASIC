@@ -3,7 +3,6 @@
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-util/log.h"
-#include <stdio.h>
 
 static int
 count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
@@ -23,22 +22,9 @@ count_nodes_recurse(const struct ast* ast, ast_id n, int depth)
     return count;
 }
 
-static void
-report_unconnected_nodes(
-    const struct ast* ast, const char* source, const struct cmd_list* cmds)
-{
-    ast_id n;
-    for (n = 0; n != ast_count(ast); ++n)
-    {
-        ast_id parent = ast_find_parent(ast, n);
-        if (parent == -1 && n != ast->root)
-            ast_export_print_fp(ast, n, stderr, source, cmds);
-    }
-}
-
 int
 ast_verify_connectivity(
-    const struct ast* ast, const char* source, const struct cmd_list* cmds)
+    const struct ast* ast, struct db_source source, const struct cmd_list* cmds)
 {
     ast_id count = count_nodes_recurse(ast, ast->root, 0);
     if (count < 0)
@@ -53,7 +39,7 @@ ast_verify_connectivity(
             "ast_gc()?\n",
             count,
             ast_count(ast));
-        report_unconnected_nodes(ast, source, cmds);
+        ast_export(ast, cstr_ospathc("verify_connectivity.ast"), source, cmds);
         return -1;
     }
 

@@ -291,7 +291,7 @@ parse_failed:
         ast_gc(*astp);
 #if defined(ODBCOMPILER_AST_SANITY_CHECK)
     if (*astp != NULL)
-        ast_verify_connectivity(*astp, source.text.data, cmds);
+        ast_verify_connectivity(*astp, source, cmds);
 #endif
     dbset_extra(NULL, parser->scanner);
     token_queue_deinit(tokens);

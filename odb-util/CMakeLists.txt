@@ -63,6 +63,7 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "${PROJECT_BINARY_DIR}/include/odb-util/config.h"
 
     "include/odb-util/backtrace.h"
+    "include/odb-util/bm.h"
     "include/odb-util/btree.h"
     "include/odb-util/cli_colors.h"
     "include/odb-util/dynlib.h"
@@ -83,14 +84,13 @@ add_library (odb-util ${ODBUTIL_LIB_TYPE}
     "include/odb-util/utf8.h"
     "include/odb-util/vec.h"
 
+    "src/bm.c"
     "src/btree.c"
-    "src/fs_common.c"
     "src/hash.c"
     "src/init.c"
     "src/log.c"
     "src/mstream.c"
     "src/process_common.c"
-    "src/rb.c"
     "src/utf8.c"
     "src/utf8_list.c"
 
@@ -169,6 +169,7 @@ if (ODBUTIL_TESTS)
     target_sources (odb-tests PRIVATE
         "tests/src/LogHelper.cpp"
         "tests/src/Utf8Helper.cpp"
+        "tests/src/test_odbutil_bm.cpp"
         "tests/src/test_odbutil_btree.cpp"
         "tests/src/test_odbutil_btree_as_set.cpp"
         "tests/src/test_odbutil_log.cpp"
