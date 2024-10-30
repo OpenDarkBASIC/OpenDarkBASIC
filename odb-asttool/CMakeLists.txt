@@ -2,6 +2,8 @@ project ("odb-asttool"
     LANGUAGES C
     VERSION 0.0.1)
 
+option (ODBASTTOOL_WERROR "Treat compiler warnings as errors" ${ODB_WERROR})
+
 add_executable (odb-asttool
     "include/odb-asttool/asttool.h"
     "include/odb-asttool/export.h"
@@ -21,6 +23,16 @@ target_compile_options (odb-asttool
         $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter>
         $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive>)
+if (ODBASTOOL_WERROR)
+    target_compile_options (odb-asttool
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Werror>
+            $<$<C_COMPILER_ID:Clang>:-Werror>
+            $<$<C_COMPILER_ID:AppleClang>:-Werror>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror>
+            $<$<CXX_COMPILER_ID:AppleClang>:-Werror>)
+endif ()
 include (ODBTargetProperties)
 odb_target_properties (odb-asttool
     PROPERTIES

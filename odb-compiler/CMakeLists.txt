@@ -10,12 +10,6 @@ include (CheckIncludeFile)
 # Configuration
 ###############################################################################
 
-if (${CMAKE_BUILD_TYPE} MATCHES Debug)
-    set (DEBUG_FEATURE ON)
-else ()
-    set (RELEASE_FEATURE ON)
-endif ()
-
 set (ODBCOMPILER_LIB_TYPE "SHARED" CACHE STRING "Build as either SHARED or STATIC library")
 option (ODBCOMPILER_BISON_COUNTER_EXAMPLES "Tell bison to provide counter examples when grammar contains conflicts" OFF)
 option (ODBCOMPILER_UPDATE_BUILDINFO "If true the updated build number is written to a header, which causes the library to recompile build_info.c. This can get annoying for developers, so disable this if you are annoyed." ${RELEASE_FEATURE})
@@ -27,7 +21,7 @@ option (ODBCOMPILER_PIC "Enable building with -fPIC (position independent code)"
 option (ODBCOMPILER_VERBOSE_BISON "Compile with YYDEBUG and enable verbose bison output" OFF)
 option (ODBCOMPILER_VERBOSE_FLEX "Have the scanner output each token" OFF)
 option (ODBCOMPILER_TESTS "Build unit tests" ON)
-option (ODBCOMPILER_WERROR "Treat compiler warnings as errors" OFF)
+option (ODBCOMPILER_WERROR "Treat compiler warnings as errors" ${ODB_WERROR})
 
 check_include_file ("unistd.h" HAVE_UNISTD_H)
 
@@ -248,12 +242,22 @@ target_compile_definitions (odb-compiler
         $<$<CXX_COMPILER_ID:MSVC>:_HAS_EXCEPTIONS=0>)
 target_compile_options (odb-compiler
     PRIVATE
-        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
-        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
-        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden $<$<BOOL:${ODBCOMPILER_WERROR}>:-Werror>>
+        $<$<C_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
+        $<$<C_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
+if (ODBCOMPILER_WERROR)
+    target_compile_options (odb-compiler
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Werror>
+            $<$<C_COMPILER_ID:Clang>:-Werror>
+            $<$<C_COMPILER_ID:AppleClang>:-Werror>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror>
+            $<$<CXX_COMPILER_ID:AppleClang>:-Werror>)
+endif ()
 target_link_libraries (odb-compiler
     PUBLIC
         odb-util)
@@ -519,6 +523,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_func.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_cont.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_udt.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp"

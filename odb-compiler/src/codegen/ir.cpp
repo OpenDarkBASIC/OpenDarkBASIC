@@ -595,6 +595,7 @@ gen_expr(
         }
 
         case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_ASSIGNMENT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -1034,9 +1035,9 @@ gen_expr(
             break;
         }
 
-        case AST_AS: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
     }
 
     log_err("Expression type %d not implemeneted\n", ast_node_type(ast, expr));
@@ -1162,6 +1163,7 @@ gen_block(
             case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_ASSIGNMENT: {
@@ -1656,18 +1658,17 @@ gen_block(
                     log_err("Casts should never occur directly in a block.\n"));
                 return -1;
 
-            case AST_AS:
-                ODBUTIL_DEBUG_ASSERT(
-                    0, log_err("AS should never occur directly in a block.\n"));
-                return -1;
-
             case AST_AS_AUTO:
                 ODBUTIL_DEBUG_ASSERT(
                     0, log_err("AS should never occur directly in a block.\n"));
                 return -1;
 
-            case AST_TYPE:
-                return 0;
+            case AST_AS_TYPE:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_err("TYPE should never occur directly in a block.\n"));
+                return -1;
+            case AST_AS_UDT:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
                     log_err("TYPE should never occur directly in a block.\n"));

@@ -268,6 +268,17 @@ write_node(
                 style->identifier.shape,
                 xlabel);
             break;
+        case AST_UDT_DECL:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"udt_decl\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
         case AST_PARAM:
             fprintf(
                 fp,
@@ -617,17 +628,6 @@ write_node(
                 style->type.shape,
                 xlabel);
             break;
-        case AST_AS:
-            fprintf(
-                fp,
-                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"AS\", xlabel=\"%s\"];\n",
-                n,
-                style->type.color,
-                style->type.fontcolor,
-                style->type.shape,
-                xlabel);
-            break;
         case AST_AS_AUTO:
             fprintf(
                 fp,
@@ -639,7 +639,7 @@ write_node(
                 style->type.shape,
                 xlabel);
             break;
-        case AST_TYPE:
+        case AST_AS_TYPE:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
@@ -648,7 +648,18 @@ write_node(
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
-                type_to_db_name(ast->nodes[n].type.target_type),
+                type_to_db_name(ast->nodes[n].as_type.type),
+                xlabel);
+            break;
+        case AST_AS_UDT:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"udt\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
                 xlabel);
             break;
     }
@@ -711,6 +722,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_VAR_DECL2: NAMES("identifier", "as")
         case AST_VAR_READ: NAMES("identifier", "")
         case AST_VAR_WRITE: NAMES("identifier", "")
+        case AST_UDT_DECL: NAMES("identifier", "members")
         case AST_PARAM: NAMES("identifier", "as")
         case AST_IDENTIFIER: break;
         case AST_BINOP: NAMES("left", "right")
@@ -742,9 +754,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_DOUBLE_LITERAL: break;
         case AST_STRING_LITERAL: break;
         case AST_CAST: NAMES("expr", "as")
-        case AST_AS: NAMES("expr", "")
         case AST_AS_AUTO: break;
-        case AST_TYPE: break;
+        case AST_AS_TYPE: break;
+        case AST_AS_UDT: NAMES("identifier", "")
 #undef NAMES
     }
 

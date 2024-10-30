@@ -260,7 +260,9 @@ ast_param(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(ast, as) == AST_AS,
+        as == -1 || ast_node_type(ast, as) == AST_AS_TYPE
+            || ast_node_type(ast, as) == AST_AS_AUTO
+            || ast_node_type(ast, as) == AST_AS_UDT,
         log_err("type: %d\n", ast_node_type(ast, as)));
 
     ast->nodes[n].param.identifier = identifier;
@@ -337,8 +339,9 @@ ast_var_decl(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(*astp, as) == AST_AS
-            || ast_node_type(*astp, as) == AST_AS_AUTO,
+        as == -1 || ast_node_type(*astp, as) == AST_AS_TYPE
+            || ast_node_type(*astp, as) == AST_AS_AUTO
+            || ast_node_type(*astp, as) == AST_AS_UDT,
         log_err("type: %d\n", ast_node_type(*astp, as)));
 
     (*astp)->nodes[decl1].var_decl1.init_expr = init_expr;
@@ -383,6 +386,23 @@ ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
     (*astp)->nodes[n].var_write.identifier = identifier;
+
+    return n;
+}
+
+ast_id
+ast_udt_decl(
+    struct ast**     astp,
+    ast_id           identifier,
+    ast_id           members_block,
+    struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_UDT_DECL, location);
+    if (n < 0)
+        return -1;
+
+    (*astp)->nodes[n].udt_decl.identifier = identifier;
+    (*astp)->nodes[n].udt_decl.members_block = members_block;
 
     return n;
 }
@@ -787,7 +807,9 @@ ast_func(
     ast->nodes[f1].func1.endfunction_location = endfunction_location;
 
     ODBUTIL_DEBUG_ASSERT(
-        as == -1 || ast_node_type(ast, as) == AST_AS,
+        as == -1 || ast_node_type(ast, as) == AST_AS_TYPE
+            || ast_node_type(ast, as) == AST_AS_AUTO
+            || ast_node_type(ast, as) == AST_AS_UDT,
         log_err("type: %d\n", ast_node_type(ast, as)));
     ast->nodes[f2].func2.as = as;
     ast->nodes[f2].func2.func3 = f3;
@@ -991,20 +1013,18 @@ ast_string_literal(
 }
 
 ast_id
-ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location)
+ast_cast(
+    struct ast** astp, ast_id expr, ast_id as_expr, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_CAST, location);
     if (n < 0)
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, as) == AST_AS,
-        log_err("type: %d\n", ast_node_type(*astp, as)));
+    ODBUTIL_DEBUG_ASSERT(as_expr > -1, (void)0);
 
     (*astp)->nodes[n].cast.expr = expr;
-    (*astp)->nodes[n].cast.as = as;
+    (*astp)->nodes[n].cast.as = as_expr;
 
     return n;
 }
@@ -1024,38 +1044,13 @@ ast_cast_to_type(
 }
 
 ast_id
-ast_type(struct ast** astp, enum type type, struct utf8_span location)
-{
-    ast_id n = new_node(astp, AST_TYPE, location);
-    if (n < 0)
-        return -1;
-
-    (*astp)->nodes[n].type.target_type = type;
-
-    return n;
-}
-
-ast_id
-ast_as(struct ast** astp, ast_id expr, struct utf8_span location)
-{
-    ast_id n = new_node(astp, AST_AS, location);
-    if (n < 0)
-        return -1;
-
-    (*astp)->nodes[n].as.expr = expr;
-
-    return n;
-}
-
-ast_id
 ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location)
 {
-    ast_id type = ast_type(astp, target_type, location);
-    ast_id n = new_node(astp, AST_AS, location);
-    if (n < 0 || type < 0)
+    ast_id n = new_node(astp, AST_AS_TYPE, location);
+    if (n < 0)
         return -1;
 
-    (*astp)->nodes[n].as.expr = type;
+    (*astp)->nodes[n].as_type.type = target_type;
 
     return n;
 }
@@ -1064,4 +1059,16 @@ ast_id
 ast_as_auto(struct ast** astp, struct utf8_span location)
 {
     return new_node(astp, AST_AS_AUTO, location);
+}
+
+ast_id
+ast_as_udt(struct ast** astp, ast_id identifier, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_AS_UDT, location);
+    if (n < 0)
+        return -1;
+
+    (*astp)->nodes[n].as_udt.identifier = identifier;
+
+    return n;
 }

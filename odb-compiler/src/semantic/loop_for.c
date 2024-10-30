@@ -36,6 +36,7 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
         case AST_VAR_DECL2: break;
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
+        case AST_UDT_DECL: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER: break;
         case AST_BINOP: break;
@@ -86,9 +87,9 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 
         case AST_STRING_LITERAL: break;
         case AST_CAST: break;
-        case AST_AS: break;
         case AST_AS_AUTO: break;
-        case AST_TYPE: break;
+        case AST_AS_TYPE: break;
+        case AST_AS_UDT: break;
     }
 
     return EXPR_TYPE_UNKNOWN;

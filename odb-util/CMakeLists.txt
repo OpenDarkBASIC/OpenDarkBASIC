@@ -8,10 +8,6 @@ include (CheckCSourceCompiles)
 # Configuration
 ###############################################################################
 
-if (CMAKE_BUILD_TYPE MATCHES Debug)
-    set (DEBUG_FEATURE ON)
-endif ()
-
 set (ODBUTIL_LIB_TYPE "SHARED" CACHE STRING "Build either as SHARED or STATIC library")
 
 set (ODBUTIL_BTREE_EXPAND_FACTOR "2" CACHE STRING "When reallocating btree memory, this is the factor with which the buffer grows")
@@ -27,6 +23,7 @@ set (ODBUTIL_MEM_BACKTRACE_SIZE "64" CACHE STRING "Sets the maximum stack size (
 set (ODBUTIL_MEM_HEX_DUMP_SIZE "1024" CACHE STRING "Memory blocks larger than this size will not be dumped")
 option (ODBUTIL_PROFILING "Enable -pg and -fno-omit-frame-pointer" ${ODB_PROFILING})
 option (ODBUTIL_TESTS "Build unit tests for the OpenDarkBASIC SDK" ${ODB_TESTS})
+option (ODBUTIL_WERROR "Build unit tests for the OpenDarkBASIC SDK" ${ODB_WERROR})
 
 # Memory debugging uses thread-local storage for its state because we don't want to deal with locks
 check_c_source_compiles ("__declspec(thread) int value; int main(void) { return 0; }" MSVC_THREADLOCAL)
@@ -132,6 +129,16 @@ target_compile_options (odb-util
         $<$<CXX_COMPILER_ID:GNU>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:Clang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fvisibility=hidden>
         $<$<CXX_COMPILER_ID:AppleClang>:-Wall -Wextra -pedantic -Wno-unused-function -Wno-unused-parameter -fpermissive -fvisibility=hidden>)
+if (ODBUTIL_WERROR)
+    target_compile_options (odb-util
+        PRIVATE
+            $<$<C_COMPILER_ID:GNU>:-Werror>
+            $<$<C_COMPILER_ID:Clang>:-Werror>
+            $<$<C_COMPILER_ID:AppleClang>:-Werror>
+            $<$<CXX_COMPILER_ID:GNU>:-Werror>
+            $<$<CXX_COMPILER_ID:Clang>:-Werror>
+            $<$<CXX_COMPILER_ID:AppleClang>:-Werror>)
+endif ()
 if (ODBUTIL_PROFILING)
     target_compile_options (odb-util
         PRIVATE

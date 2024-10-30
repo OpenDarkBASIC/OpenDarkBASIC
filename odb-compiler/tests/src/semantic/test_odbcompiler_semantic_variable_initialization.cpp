@@ -162,7 +162,7 @@ TEST_F(NAME, declared_integer_initializes_to_0)
     const char* source = "a AS INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -181,7 +181,7 @@ TEST_F(NAME, declared_bool_initializes_to_false)
     const char* source = "a? AS BOOLEAN";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -200,7 +200,7 @@ TEST_F(NAME, declared_word_initializes_to_0)
     const char* source = "a% AS WORD";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -219,7 +219,7 @@ TEST_F(NAME, declared_double_integer_initializes_to_0)
     const char* source = "a& AS DOUBLE INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -238,7 +238,7 @@ TEST_F(NAME, declared_float_initializes_to_0)
     const char* source = "a# AS FLOAT";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -257,7 +257,7 @@ TEST_F(NAME, declared_double_initializes_to_0)
     const char* source = "a! AS DOUBLE";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -276,7 +276,7 @@ TEST_F(NAME, declared_string_initializes_to_empty)
     const char* source = "a$ AS STRING";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -295,7 +295,7 @@ TEST_F(NAME, unannotated_integer_initializes_to_0)
     const char* source = "a AS INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -314,7 +314,7 @@ TEST_F(NAME, unannotated_bool_initializes_to_false)
     const char* source = "a AS BOOLEAN";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -333,7 +333,7 @@ TEST_F(NAME, unannotated_word_initializes_to_0)
     const char* source = "a AS WORD";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -352,7 +352,7 @@ TEST_F(NAME, unannotated_double_integer_initializes_to_0)
     const char* source = "a AS DOUBLE INTEGER";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -371,7 +371,7 @@ TEST_F(NAME, unannotated_float_initializes_to_0)
     const char* source = "a AS FLOAT";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -390,7 +390,7 @@ TEST_F(NAME, unannotated_double_initializes_to_0)
     const char* source = "a AS DOUBLE";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -409,7 +409,7 @@ TEST_F(NAME, unannotated_string_initializes_to_empty)
     const char* source = "a AS STRING";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -428,7 +428,7 @@ TEST_F(NAME, unannotated_integer_assigned_integer)
     const char* source = "a AS INTEGER = 65536";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -447,7 +447,7 @@ TEST_F(NAME, unannotated_bool_assigned_true)
     const char* source = "a AS BOOLEAN = true";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -466,7 +466,7 @@ TEST_F(NAME, unannotated_word_assigned_word)
     const char* source = "a AS WORD = 256";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -485,7 +485,7 @@ TEST_F(NAME, unannotated_double_integer_assigned_double_integer)
     const char* source = "a AS DOUBLE INTEGER = 4294967296";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -504,7 +504,7 @@ TEST_F(NAME, unannotated_float_assigned_float)
     const char* source = "a AS FLOAT = 4.2f";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -523,7 +523,7 @@ TEST_F(NAME, unannotated_double_assigned_double)
     const char* source = "a AS DOUBLE = 4.2";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
@@ -542,7 +542,7 @@ TEST_F(NAME, unannotated_string_assigned_string)
     const char* source = "a AS STRING = \"hello\"";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-    ASSERT_THAT(ast_count(ast), Eq(7));
+    ASSERT_THAT(ast_count(ast), Eq(6));
 
     ast_id decl1 = ast->nodes[ast->root].block.stmt;
     ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;

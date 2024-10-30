@@ -223,6 +223,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_VAR_DECL2: break;
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
+        case AST_UDT_DECL: break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(
@@ -327,13 +328,12 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                 return 0;
             break;
         case AST_CAST: break;
-        case AST_AS: break;
         case AST_AS_AUTO: break;
-        case AST_TYPE:
-            if (ast->nodes[n1].type.target_type
-                != ast->nodes[n2].type.target_type)
+        case AST_AS_TYPE:
+            if (ast->nodes[n1].as_type.type != ast->nodes[n2].as_type.type)
                 return 0;
             break;
+        case AST_AS_UDT: break;
     }
 
     if (ast->nodes[n1].base.left >= 0 && ast->nodes[n2].base.left < 0)

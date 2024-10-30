@@ -76,6 +76,7 @@ enum ast_type
     AST_VAR_DECL2,
     AST_VAR_READ,
     AST_VAR_WRITE,
+    AST_UDT_DECL,
     AST_PARAM,
     AST_IDENTIFIER,
     AST_BINOP,
@@ -113,9 +114,9 @@ enum ast_type
     AST_DOUBLE_LITERAL,
     AST_STRING_LITERAL,
     AST_CAST,
-    AST_AS,
     AST_AS_AUTO,
-    AST_TYPE,
+    AST_AS_TYPE,
+    AST_AS_UDT,
 };
 
 /* clang-format off */
@@ -200,6 +201,12 @@ union ast_node
         ast_id identifier;
     } var_write;
     
+    struct {
+        struct info info;
+        ast_id identifier;
+        ast_id members_block;
+    } udt_decl;
+
     struct {
         struct info info;
         ast_id identifier;
@@ -396,20 +403,20 @@ union ast_node
 
     struct {
         struct info info;
-        ast_id expr;
-        ast_id _pad;
-    } as;
-
-    struct {
-        struct info info;
         ast_id _pad1, _pad2;
     } as_auto;
 
     struct {
         struct info info;
         ast_id _pad1, _pad2;
-        enum type target_type;
-    } type;
+        enum type type;
+    } as_type;
+
+    struct {
+        struct info info;
+        ast_id identifier;
+        ast_id _pad;
+    } as_udt;
 };
 
 struct ast
@@ -485,6 +492,7 @@ ast_id ast_var_decl(
     struct utf8_span location);
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
+ast_id ast_udt_decl(struct ast** astp, ast_id identifier, ast_id members_block, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_inc_step(struct ast** astp, ast_id var_read, ast_id expr, struct utf8_span location);
 ast_id ast_inc(struct ast** astp, ast_id var_read, struct utf8_span location);
@@ -542,8 +550,7 @@ ast_id ast_double_literal(struct ast** astp, double value, struct utf8_span loca
 ast_id ast_string_literal(struct ast** astp, struct utf8_span str, struct utf8_span location);
 ast_id ast_cast_to_type(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
 ast_id ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location);
-ast_id ast_type(struct ast** astp, enum type type, struct utf8_span location);
-ast_id ast_as(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location);
 ast_id ast_as_auto(struct ast** astp, struct utf8_span location);
+ast_id ast_as_udt(struct ast** astp, ast_id identifier, struct utf8_span location);
 /* clang-format on */

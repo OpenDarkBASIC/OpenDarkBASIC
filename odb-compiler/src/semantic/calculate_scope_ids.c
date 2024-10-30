@@ -107,6 +107,7 @@ process_node(
         case AST_VAR_DECL2:
         case AST_VAR_READ:
         case AST_VAR_WRITE:
+        case AST_UDT_DECL:
         case AST_PARAM:
         case AST_IDENTIFIER:
         case AST_BINOP:
@@ -133,9 +134,9 @@ process_node(
         case AST_DOUBLE_LITERAL:
         case AST_STRING_LITERAL:
         case AST_CAST:
-        case AST_AS:
         case AST_AS_AUTO:
-        case AST_TYPE: {
+        case AST_AS_TYPE:
+        case AST_AS_UDT: {
             ast_id left = ast->nodes[n].base.left;
             ast_id right = ast->nodes[n].base.right;
 

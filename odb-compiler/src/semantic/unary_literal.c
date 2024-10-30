@@ -20,6 +20,7 @@ child_changed:
         case AST_VAR_DECL2: return -1;
         case AST_VAR_READ: return -1;
         case AST_VAR_WRITE: return -1;
+        case AST_UDT_DECL: return -1;
         case AST_PARAM: return -1;
         case AST_IDENTIFIER: return -1;
         case AST_BINOP: return -1;
@@ -196,9 +197,9 @@ child_changed:
 
         case AST_STRING_LITERAL: return -1;
         case AST_CAST: return -1;
-        case AST_AS: return -1;
         case AST_AS_AUTO: return -1;
-        case AST_TYPE: return -1;
+        case AST_AS_TYPE: return -1;
+        case AST_AS_UDT: return -1;
     }
 
     ast->nodes[expr].info.location

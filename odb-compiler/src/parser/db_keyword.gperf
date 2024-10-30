@@ -36,6 +36,7 @@ float,              TOK_FLOAT
 double,             TOK_DOUBLE
 string,             TOK_STRING
 type,               TOK_TYPE
+endtype,            TOK_ENDTYPE
 end,                TOK_END
 inc,                TOK_INC
 dec,                TOK_DEC
@@ -75,7 +76,6 @@ endfunction,        TOK_ENDFUNCTION
 //default,          TOK_DEFAULT
 //endcase,          TOK_ENDCASE
 //endselect,        TOK_ENDSELECT
-//endtype,          TOK_ENDTYPE
 //gosub,            TOK_GOSUB
 //goto,             TOK_GOTO
 //mat2x2,           TOK_MAT2X2

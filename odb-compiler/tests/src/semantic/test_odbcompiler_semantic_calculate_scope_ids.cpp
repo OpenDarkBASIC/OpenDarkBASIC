@@ -58,7 +58,7 @@ TEST_F(NAME, nested_functions)
     ASSERT_THAT(parse(source), Eq(0));
     ASSERT_THAT(semantic(&semantic_calculate_scope_ids), Eq(0));
 
-    ASSERT_THAT(ast_count(ast), Eq(96));
+    ASSERT_THAT(ast_count(ast), Eq(95));
 
     ast_id block1 = ast->root;
     ast_id x = ast->nodes[block1].block.stmt;

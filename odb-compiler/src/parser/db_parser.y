@@ -129,7 +129,7 @@
 %token INC "increment"
 %token DEC "decrement"
 %token GLOBAL LOCAL BOOLEAN BYTE WORD INTEGER DWORD FLOAT DOUBLE STRING
-%token TYPE
+%token TYPE ENDTYPE
 /* Control flow */
 %token IF "IF"
 %token THEN "THEN"
@@ -252,8 +252,12 @@
 %type<node_value> as_type as_type_auto maybe_as_type
 %type<scope_value> scope maybe_scope
 %type<node_value> literal
-%type<node_value> identifier var_decl var_read var_write param lvalue
-%type<node_value> func func_exit func_or_container_ref
+%type<node_value> identifier
+%type<node_value> param
+%type<node_value> lvalue rvalue
+%type<node_value> var_decl var_read var_write
+%type<node_value> udt_decl udt_members udt_member_decl
+%type<node_value> func func_exit func_call_or_container_read container_write
 
 %start program
 
@@ -284,6 +288,7 @@ stmt
   | loop                                    { $$ = $1; }
   | func                                    { $$ = $1; }
   | var_decl                                { $$ = $1; }
+  | udt_decl                                { $$ = $1; }
   | istmt                                   { $$ = $1; }
   ;
 // Statements that can appear "inline", e.g. "if x then istmt"
@@ -296,7 +301,7 @@ istmt
   | loop_cont                               { $$ = $1; }
   | loop_exit                               { $$ = $1; }
   | func_exit                               { $$ = $1; }
-  | func_or_container_ref                   { $$ = $1; }
+  | func_call_or_container_read             { $$ = $1; }
   ;
 expr
   : '(' expr ')'                            { $$ = $2; @$ = @2; }
@@ -333,8 +338,7 @@ expr
   /* Expressions */
   | expr as_type                            { $$ = ast_cast(ctx->astp, $1, $2, @$); }
   | command_expr                            { $$ = $1; }
-  | func_or_container_ref                   { $$ = $1; }
-  | var_read                                { $$ = $1; }
+  | rvalue                                  { $$ = $1; }
   | literal                                 { $$ = $1; }
   ;
 maybe_expr
@@ -368,14 +372,17 @@ command_stmt
   | COMMAND '(' ')'                         { $$ = ast_command(ctx->astp, $1, -1, @$); }
 //| COMMAND '(' arglist ')'                 { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
-// Commands appearing as expressions must be csalled with arguments in brackets
+// Commands appearing as expressions must be called with arguments in brackets
 command_expr
   : COMMAND '(' maybe_arglist ')'           { $$ = ast_command(ctx->astp, $1, $3, @$); }
   ;
 lvalue
   : var_write                               { $$ = $1; }
-//| array_ref
-//| udt_field_lvalue
+  | container_write                         { $$ = $1; }
+  ;
+rvalue
+  : var_read                                { $$ = $1; }
+  | func_call_or_container_read             { $$ = $1; }
   ;
 // Assignments and variable declarations with initializers are syntactically ambiguous,
 // and need to be resolved during type checking. They're held apart here because variable
@@ -396,6 +403,20 @@ var_read
   ;
 var_write
   : identifier                              { $$ = ast_var_write(ctx->astp, $1, @$); }
+  ;
+udt_decl
+  : TYPE identifier
+        seps udt_members seps
+    ENDTYPE                                 { $$ = ast_udt_decl(ctx->astp, $2, $4, @$); }
+  ;
+udt_members
+  : udt_members seps udt_member_decl        { $$ = $1; ast_block_append_stmt(ctx->astp, $$, $3, @$); }
+  | udt_member_decl                         { $$ = ast_block(ctx->astp, $1, @$); }
+  ;
+udt_member_decl
+  : identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
+  | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
+  | udt_decl                                { $$ = $1; }
   ;
 inc
   : INC lvalue ',' expr                     { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
@@ -460,7 +481,7 @@ loop_for_init
   | identifier as_type '=' expr            { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
   ;
 loop_next
-  : NEXT var_read                           { $$ = $2; }
+  : NEXT rvalue                             { $$ = $2; }
   | NEXT                                    { $$ = -1; }
   ;
 loop_cont
@@ -485,8 +506,8 @@ func
 func_exit
   : EXITFUNCTION maybe_expr                 { $$ = ast_func_exit(ctx->astp, $2, @$); }
   ;
-func_or_container_ref
-  : identifier '(' maybe_arglist ')'        { $$ = ast_func_or_container_ref(ctx->astp, $1, $3, @$); }
+func_call_or_container_read
+  : identifier '(' maybe_arglist ')'        { $$ = ast_func_call_or_container_read(ctx->astp, $1, $3, @$); }
   ;
 literal
   : BOOLEAN_LITERAL                         { $$ = ast_boolean_literal(ctx->astp, $1, @$); }
@@ -494,6 +515,15 @@ literal
   | FLOAT_LITERAL                           { $$ = ast_float_literal(ctx->astp, $1, @$); }
   | DOUBLE_LITERAL                          { $$ = ast_double_literal(ctx->astp, $1, @$); }
   | STRING_LITERAL                          { $$ = ast_string_literal(ctx->astp, $1, @$); }
+  ;
+identifier
+  : IDENTIFIER                              { $$ = ast_identifier(ctx->astp, $1, TA_NONE, @$); }
+  | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->astp, $1, TA_BOOL, @$); }
+  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->astp, $1, TA_U16, @$); }
+  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->astp, $1, TA_I64, @$); }
+  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->astp, $1, TA_F32, @$); }
+  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->astp, $1, TA_F64, @$); }
+  | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->astp, $1, TA_STRING, @$); }
   ;
 scope
   : GLOBAL                                  { $$ = SCOPE_GLOBAL; }
@@ -513,7 +543,8 @@ as_type
   | AS FLOAT                                { $$ = ast_as_type(ctx->astp, TYPE_F32, @$); }
   | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, TYPE_F64, @$); }
   | AS STRING                               { $$ = ast_as_type(ctx->astp, TYPE_STRING, @$); }
-  | AS TYPE '(' expr ')'                    { $$ = ast_as(ctx->astp, $4, @$);}
+  | AS TYPE '(' expr ')'                    { $$ = $4; }
+  | AS identifier                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
   ;
 maybe_as_type
   : as_type                                 { $$ = $1; }
@@ -522,15 +553,6 @@ maybe_as_type
 as_type_auto
   : as_type                                 { $$ = $1; }
   | AS                                      { $$ = ast_as_auto(ctx->astp, @$); }
-  ;
-identifier
-  : IDENTIFIER                              { $$ = ast_identifier(ctx->astp, $1, TA_NONE, @$); }
-  | IDENTIFIER_BOOLEAN                      { $$ = ast_identifier(ctx->astp, $1, TA_BOOL, @$); }
-  | IDENTIFIER_WORD                         { $$ = ast_identifier(ctx->astp, $1, TA_U16, @$); }
-  | IDENTIFIER_DOUBLE_INTEGER               { $$ = ast_identifier(ctx->astp, $1, TA_I64, @$); }
-  | IDENTIFIER_FLOAT                        { $$ = ast_identifier(ctx->astp, $1, TA_F32, @$); }
-  | IDENTIFIER_DOUBLE                       { $$ = ast_identifier(ctx->astp, $1, TA_F64, @$); }
-  | IDENTIFIER_STRING                       { $$ = ast_identifier(ctx->astp, $1, TA_STRING, @$); }
   ;
 %%
 

@@ -10,6 +10,12 @@ if (NOT DEFINED CMAKE_BUILD_TYPE)
     set (CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
 endif ()
 
+if (${CMAKE_BUILD_TYPE} MATCHES Debug)
+    set (DEBUG_FEATURE ON)
+else ()
+    set (RELEASE_FEATURE ON)
+endif ()
+
 # Global options that affect subprojects
 set (ODB_VERSION "0.0.1" CACHE STRING "OpenDarkBASIC version")
 option (ODB_UTIL "Build utility library. This is required by all other subprojects" ON)
@@ -21,6 +27,7 @@ option (DBP_SDK "Build the DarkBASIC Pro bindings. This is necessary to compile 
 option (ODB_EDITOR "Build the code editor" OFF)
 option (ODB_PROFILING "Enable/disable unit tests in all subprojects" ON)
 option (ODB_TESTS "Enable/disable unit tests in all subprojects" ON)
+option (ODB_WERROR "Treat compiler warnings as errors" ${DEBUG_FEATURE})
 
 project ("OpenDarkBASIC"
     LANGUAGES C

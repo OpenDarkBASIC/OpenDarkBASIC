@@ -76,7 +76,7 @@ TEST_F(NAME, explicit_parameter)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(16));
+    ASSERT_THAT(ast_count(ast), Eq(15));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -118,7 +118,7 @@ TEST_F(NAME, explicit_return_type_implicit_conversion)
               " 2 | ENDFUNCTION a AS INTEGER\n"
               "   |              ^~~~~~~~~~<\n"));
 
-    ASSERT_THAT(ast_count(ast), Eq(18));
+    ASSERT_THAT(ast_count(ast), Eq(15));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -161,7 +161,7 @@ TEST_F(NAME, explicit_return_type_truncation)
               " 2 | ENDFUNCTION a AS WORD\n"
               "   |              ^~~~~~~<\n"));
 
-    ASSERT_THAT(ast_count(ast), Eq(18));
+    ASSERT_THAT(ast_count(ast), Eq(15));
     ast_id f1 = ast->nodes[ast->root].block.stmt;
     ast_id f2 = ast->nodes[f1].func1.func2;
     ast_id f3 = ast->nodes[f2].func2.func3;
@@ -210,7 +210,7 @@ TEST_F(NAME, pass_byte_to_func_with_different_arguments_inserts_casts)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(29));
+    ASSERT_THAT(ast_count(ast), Eq(25));
     ast_id call = ast->nodes[ast->root].block.stmt;
     ast_id arglist1 = ast->nodes[call].func_call.arglist;
     ast_id arglist2 = ast->nodes[arglist1].arglist.next;
@@ -231,7 +231,7 @@ TEST_F(NAME, func_call_is_cast_to_correct_type)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(42));
+    ASSERT_THAT(ast_count(ast), Eq(36));
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
@@ -249,7 +249,7 @@ TEST_F(NAME, func_is_not_instantiated_given_different_arg_types)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(45));
+    ASSERT_THAT(ast_count(ast), Eq(41));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -300,7 +300,7 @@ TEST_F(NAME, func_returns_result_of_another_func)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(73));
+    ASSERT_THAT(ast_count(ast), Eq(65));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -357,7 +357,7 @@ TEST_F(NAME, func_result_as_arg_to_call)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(65));
+    ASSERT_THAT(ast_count(ast), Eq(58));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -418,7 +418,7 @@ TEST_F(NAME, recursion_1)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(56));
+    ASSERT_THAT(ast_count(ast), Eq(51));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -464,7 +464,7 @@ TEST_F(NAME, recursion_2)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(56));
+    ASSERT_THAT(ast_count(ast), Eq(51));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -513,7 +513,7 @@ TEST_F(NAME, nested_recursion_1)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(102));
+    ASSERT_THAT(ast_count(ast), Eq(93));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
@@ -572,7 +572,7 @@ TEST_F(NAME, nested_recursion_2)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(134));
+    ASSERT_THAT(ast_count(ast), Eq(121));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;

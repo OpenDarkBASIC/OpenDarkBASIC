@@ -51,7 +51,7 @@ TEST_F(NAME, sum_with_byte_arguments_instantiates_function_with_byte_params)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(48));
+    ASSERT_THAT(ast_count(ast), Eq(46));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -99,7 +99,7 @@ TEST_F(NAME, func_call_is_cast_to_correct_type_after_func_instantiation)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(54));
+    ASSERT_THAT(ast_count(ast), Eq(50));
     ast_id ass = ast->nodes[ast->root].block.stmt;
     ast_id cast = ast->nodes[ass].assignment.expr;
     ASSERT_THAT(ast_node_type(ast, cast), Eq(AST_CAST));
@@ -117,7 +117,7 @@ TEST_F(NAME, instantiate_function_with_byte_and_float_arguments)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(78));
+    ASSERT_THAT(ast_count(ast), Eq(74));
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
     ast_id block3 = ast->nodes[block2].block.next;
@@ -202,7 +202,7 @@ TEST_F(NAME, call_same_function_multiple_times_only_instantiates_function_once)
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 
-    ASSERT_THAT(ast_count(ast), Eq(57));
+    ASSERT_THAT(ast_count(ast), Eq(55));
 
     ast_id block1 = ast->root;
     ast_id block2 = ast->nodes[block1].block.next;
