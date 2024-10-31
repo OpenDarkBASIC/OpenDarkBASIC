@@ -331,12 +331,13 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                 return 0;
             break;
         case AST_CAST: break;
-        case AST_AS_AUTO: break;
         case AST_AS_TYPE:
             if (ast->nodes[n1].as_type.type != ast->nodes[n2].as_type.type)
                 return 0;
             break;
+        case AST_AS_EXPR: break;
         case AST_AS_UDT: break;
+        case AST_AS_AUTO: break;
     }
 
     if (ast->nodes[n1].base.left >= 0 && ast->nodes[n2].base.left < 0)

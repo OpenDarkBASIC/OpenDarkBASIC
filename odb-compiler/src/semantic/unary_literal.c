@@ -200,9 +200,10 @@ child_changed:
 
         case AST_STRING_LITERAL: return -1;
         case AST_CAST: return -1;
-        case AST_AS_AUTO: return -1;
         case AST_AS_TYPE: return -1;
+        case AST_AS_EXPR: return -1;
         case AST_AS_UDT: return -1;
+        case AST_AS_AUTO: return -1;
     }
 
     ast->nodes[expr].info.location

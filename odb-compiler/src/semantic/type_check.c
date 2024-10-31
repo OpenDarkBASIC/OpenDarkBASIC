@@ -1021,6 +1021,7 @@ process_var_write(
         case HM_OOM: return DEP_ERROR;
     }
 
+    ODBUTIL_DEBUG_ASSERT(type_origin->type != TYPE_INVALID, (void)0);
     (*astp)->nodes[identifier].info.type_info = type_origin->type;
     (*astp)->nodes[var_write].info.type_info = type_origin->type;
 
@@ -2334,7 +2335,7 @@ process_cast(
     const char*    filename,
     const char*    source)
 {
-    ast_id    expr, as_expr;
+    ast_id    expr, as;
     enum type source_type, target_type;
     int32_t   top = stack_count(*stack);
 
@@ -2344,21 +2345,21 @@ process_cast(
         log_err("type: %d\n", ast_node_type(ast, cast)));
 
     expr = ast->nodes[cast].cast.expr;
-    as_expr = ast->nodes[cast].cast.as;
+    as = ast->nodes[cast].cast.as;
 
     ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(as_expr > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(as > -1, (void)0);
 
     if (ast_type_info(ast, expr) == TYPE_INVALID)
         stack_push_entry(stack, cast, expr);
-    if (ast_type_info(ast, as_expr) == TYPE_INVALID)
-        stack_push_entry(stack, cast, as_expr);
+    if (ast_type_info(ast, as) == TYPE_INVALID)
+        stack_push_entry(stack, cast, as);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
 
     source_type = ast_type_info(ast, expr);
-    target_type = ast_type_info(ast, as_expr);
+    target_type = ast_type_info(ast, as);
     ast->nodes[cast].info.type_info = target_type;
 
     switch (type_convert(source_type, target_type))
@@ -2374,6 +2375,90 @@ process_cast(
         case TC_INT_TO_FLOAT:
         case TC_BOOL_PROMOTION: break;
     }
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_as_expr(struct stack** stack, struct ast* ast, ast_id as_expr)
+{
+    ast_id expr;
+
+    ODBUTIL_DEBUG_ASSERT(as_expr > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, as_expr) == AST_AS_EXPR,
+        log_err("type: %d\n", ast_node_type(ast, as_expr)));
+
+    expr = ast->nodes[as_expr].cast.expr;
+    ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
+
+    if (ast_type_info(ast, expr) == TYPE_INVALID)
+    {
+        stack_push_entry(stack, as_expr, expr);
+        return DEP_ADDED_CHILDREN;
+    }
+
+    ast->nodes[as_expr].info.type_info = ast_type_info(ast, expr);
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum process_result
+process_as_udt(
+    struct stack**   stack,
+    struct ast*      ast,
+    ast_id           as_udt,
+    const char*      filename,
+    const char*      source,
+    struct typemap** typemap)
+{
+    struct type_origin* type_origin;
+    struct view_scope   view_scope;
+    ast_id              identifier;
+
+    ODBUTIL_DEBUG_ASSERT(as_udt > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, as_udt) == AST_AS_UDT,
+        log_err("type: %d\n", ast_node_type(ast, as_udt)));
+
+    identifier = ast->nodes[as_udt].as_udt.identifier;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
+
+    view_scope.view
+        = utf8_span_view(source, ast->nodes[identifier].identifier.name);
+    view_scope.scope = ast->nodes[identifier].info.scope_id;
+    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    {
+        case HM_NEW: {
+            /* Type always defaults to the annotation if a variable is
+             * created by referencing it */
+            type_origin->initial_identifier = identifier;
+            type_origin->type = annotation_to_type(
+                ast->nodes[identifier].identifier.annotation);
+            type_origin->dependent = as_udt;
+
+            break;
+        }
+
+        case HM_EXISTS:
+            if (type_origin->type == TYPE_INVALID)
+            {
+                ast_id n = as_udt;
+                while (n > -1 && n != type_origin->dependent)
+                    n = stack_erase_node_and_get_parent(*stack, n);
+
+                return DEP_REQUIRE_ADJACENT;
+            }
+            break;
+
+        case HM_OOM: return DEP_ERROR;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(type_origin->type != TYPE_INVALID, (void)0);
+    ast->nodes[as_udt].info.type_info = type_origin->type;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2498,12 +2583,14 @@ process_node(
             stack_pop(*stack);
             return DEP_SOLVED;
         case AST_CAST: return process_cast(stack, *astp, n, filename, source);
-        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_AS_TYPE:
             (*astp)->nodes[n].info.type_info = (*astp)->nodes[n].as_type.type;
             stack_pop(*stack);
             return DEP_SOLVED;
-        case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_AS_EXPR: return process_as_expr(stack, *astp, n);
+        case AST_AS_UDT:
+            return process_as_udt(stack, *astp, n, filename, source, typemap);
+        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
     }
 
     return DEP_SOLVED;

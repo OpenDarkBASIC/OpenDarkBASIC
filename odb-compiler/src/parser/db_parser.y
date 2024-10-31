@@ -549,7 +549,7 @@ as_type
   | AS FLOAT                                { $$ = ast_as_type(ctx->astp, TYPE_F32, @$); }
   | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, TYPE_F64, @$); }
   | AS STRING                               { $$ = ast_as_type(ctx->astp, TYPE_STRING, @$); }
-  | AS TYPE '(' expr ')'                    { $$ = $4; }
+  | AS TYPE '(' expr ')'                    { $$ = ast_as_expr(ctx->astp, $4, @$); }
   | AS identifier                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
   ;
 maybe_as_type

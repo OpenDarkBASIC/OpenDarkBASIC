@@ -117,9 +117,10 @@ enum ast_type
     AST_DOUBLE_LITERAL,
     AST_STRING_LITERAL,
     AST_CAST,
-    AST_AS_AUTO,
     AST_AS_TYPE,
+    AST_AS_EXPR,
     AST_AS_UDT,
+    AST_AS_AUTO,
 };
 
 /* clang-format off */
@@ -425,19 +426,25 @@ union ast_node
     struct {
         struct info info;
         ast_id _pad1, _pad2;
-    } as_auto;
+        enum type type;
+    } as_type;
 
     struct {
         struct info info;
-        ast_id _pad1, _pad2;
-        enum type type;
-    } as_type;
+        ast_id expr;
+        ast_id _pad;
+    } as_expr;
 
     struct {
         struct info info;
         ast_id identifier;
         ast_id _pad;
     } as_udt;
+
+    struct {
+        struct info info;
+        ast_id _pad1, _pad2;
+    } as_auto;
 };
 
 struct ast
@@ -575,6 +582,7 @@ ast_id ast_string_literal(struct ast** astp, struct utf8_span str, struct utf8_s
 ast_id ast_cast_to_type(struct ast** astp, ast_id expr, enum type target_type, struct utf8_span location);
 ast_id ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span location);
 ast_id ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location);
+ast_id ast_as_expr(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_as_auto(struct ast** astp, struct utf8_span location);
 ast_id ast_as_udt(struct ast** astp, ast_id identifier, struct utf8_span location);
 /* clang-format on */

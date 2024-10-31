@@ -491,6 +491,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/parser/test_odbcompiler_db_parser_loop_for_errors.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_remarks.cpp"
         "tests/src/parser/test_odbcompiler_db_parser_remarks_errors.cpp"
+        "tests/src/parser/test_odbcompiler_db_parser_udt.cpp"
 
         "tests/src/semantic/test_odbcompiler_semantic_calculate_scope_ids.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_conditionals_warnings.cpp"

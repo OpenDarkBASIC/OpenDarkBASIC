@@ -42,12 +42,12 @@ def find_parser_source(current_line):
 
 if ast_type > 2:
     source = find_parser_source(line_num)
-    subprocess.run([f"./odb-cli -b --dba --ast{ast_type - 2} | ./odb-asttool --scopes --types | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
+    subprocess.run([f"./odb-cli -b --dba --ast{ast_type - 2} | ./odb-asttool --scopes | dot -Tx11"], shell=True, input=source.encode("utf8"), cwd=odb_path)
 else:
     suite = find_suite_name()
     test = find_test_name(line_num)
     dotfile = f"{os.path.join(odb_path, 'ast', f'{suite}__{test}')}{ast_type}.ast"
     print(dotfile)
 
-    subprocess.run([f"{odb_path}/odb-asttool -i {dotfile} --scopes --types | dot -Tx11"], shell=True)
+    subprocess.run([f"{odb_path}/odb-asttool -i {dotfile} --scopes | dot -Tx11"], shell=True)
 

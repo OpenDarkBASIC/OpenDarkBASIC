@@ -90,9 +90,10 @@ eval_constant_expr(const struct ast* ast, ast_id n, union expr_value* value)
 
         case AST_STRING_LITERAL: break;
         case AST_CAST: break;
-        case AST_AS_AUTO: break;
         case AST_AS_TYPE: break;
+        case AST_AS_EXPR: break;
         case AST_AS_UDT: break;
+        case AST_AS_AUTO: break;
     }
 
     return EXPR_TYPE_UNKNOWN;

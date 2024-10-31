@@ -20,24 +20,10 @@ TEST_F(NAME, decl)
     const char* source
         = "TYPE Test\n"
           "    x AS INTEGER\n"
-          "    y AS INTEGER\n"
+          "    y# AS FLOAT\n"
           "ENDTYPE\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-}
-
-TEST_F(NAME, nested_decl_invalid)
-{
-    const char* source
-        = "TYPE Test\n"
-          "    x AS INTEGER\n"
-          "    TYPE Bar\n"
-          "        a AS FLOAT\n"
-          "        b AS FLOAT\n"
-          "    ENDTYPE\n"
-          "    y AS INTEGER\n"
-          "ENDTYPE\n";
-    ASSERT_THAT(parse(source), Eq(-1)) << log().text;
 }
 
 TEST_F(NAME, as_udt)

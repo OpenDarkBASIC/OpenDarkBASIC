@@ -1039,9 +1039,10 @@ gen_expr(
             break;
         }
 
-        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
     }
 
     log_err("Expression type %d not implemeneted\n", ast_node_type(ast, expr));
@@ -1666,13 +1667,12 @@ gen_block(
                     0,
                     log_err("Casts should never occur directly in a block.\n"));
                 return -1;
-
-            case AST_AS_AUTO:
-                ODBUTIL_DEBUG_ASSERT(
-                    0, log_err("AS should never occur directly in a block.\n"));
-                return -1;
-
             case AST_AS_TYPE:
+                ODBUTIL_DEBUG_ASSERT(
+                    0,
+                    log_err("TYPE should never occur directly in a block.\n"));
+                return -1;
+            case AST_AS_EXPR:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
                     log_err("TYPE should never occur directly in a block.\n"));
@@ -1681,6 +1681,10 @@ gen_block(
                 ODBUTIL_DEBUG_ASSERT(
                     0,
                     log_err("TYPE should never occur directly in a block.\n"));
+                return -1;
+            case AST_AS_AUTO:
+                ODBUTIL_DEBUG_ASSERT(
+                    0, log_err("AS should never occur directly in a block.\n"));
                 return -1;
         }
     }

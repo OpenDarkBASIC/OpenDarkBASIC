@@ -661,17 +661,6 @@ write_node(
                 style->type.shape,
                 xlabel);
             break;
-        case AST_AS_AUTO:
-            fprintf(
-                fp,
-                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"AS\", xlabel=\"%s\"];\n",
-                n,
-                style->type.color,
-                style->type.fontcolor,
-                style->type.shape,
-                xlabel);
-            break;
         case AST_AS_TYPE:
             fprintf(
                 fp,
@@ -684,11 +673,33 @@ write_node(
                 type_to_db_name(ast->nodes[n].as_type.type),
                 xlabel);
             break;
+        case AST_AS_EXPR:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"AS\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
         case AST_AS_UDT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
                 "label=\"udt\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
+        case AST_AS_AUTO:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"AS\", xlabel=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
@@ -790,9 +801,10 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_DOUBLE_LITERAL: break;
         case AST_STRING_LITERAL: break;
         case AST_CAST: NAMES("expr", "as")
-        case AST_AS_AUTO: break;
         case AST_AS_TYPE: break;
+        case AST_AS_EXPR: NAMES("expr", "as")
         case AST_AS_UDT: NAMES("identifier", "")
+        case AST_AS_AUTO: break;
 #undef NAMES
     }
 
