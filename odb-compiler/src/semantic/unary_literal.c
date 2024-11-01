@@ -21,6 +21,7 @@ child_changed:
         case AST_VAR_READ: return -1;
         case AST_VAR_WRITE: return -1;
         case AST_UDT_DECL: return -1;
+        case AST_UDT_INIT: return -1;
         case AST_UDT_READ: return -1;
         case AST_UDT_WRITE: return -1;
         case AST_PARAM: return -1;

@@ -224,6 +224,7 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
         case AST_UDT_DECL: break;
+        case AST_UDT_INIT: break;
         case AST_UDT_READ: break;
         case AST_UDT_WRITE: break;
         case AST_PARAM: break;

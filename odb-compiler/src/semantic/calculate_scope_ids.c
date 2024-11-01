@@ -120,6 +120,7 @@ process_node(
         case AST_VAR_DECL2:
         case AST_VAR_READ:
         case AST_VAR_WRITE:
+        case AST_UDT_INIT:
         case AST_UDT_READ:
         case AST_UDT_WRITE:
         case AST_PARAM:

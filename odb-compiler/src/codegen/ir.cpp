@@ -597,6 +597,7 @@ gen_expr(
 
         case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -1169,6 +1170,7 @@ gen_block(
             case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;

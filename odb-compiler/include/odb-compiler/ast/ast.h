@@ -77,6 +77,7 @@ enum ast_type
     AST_VAR_READ,
     AST_VAR_WRITE,
     AST_UDT_DECL,
+    AST_UDT_INIT,
     AST_UDT_READ,
     AST_UDT_WRITE,
     AST_PARAM,
@@ -210,6 +211,12 @@ union ast_node
         ast_id identifier;
         ast_id members_block;
     } udt_decl;
+
+    struct {
+        struct info info;
+        ast_id udt_decl;
+        ast_id _pad;
+    } udt_init;
     
     struct {
         struct info info;
@@ -521,6 +528,7 @@ ast_id ast_var_decl(
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_udt_decl(struct ast** astp, ast_id identifier, ast_id members_block, struct utf8_span location);
+ast_id ast_udt_init(struct ast** astp, ast_id udt_decl,  struct utf8_span location);
 ast_id ast_udt_read(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
 ast_id ast_udt_write(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);

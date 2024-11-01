@@ -795,13 +795,19 @@ create_initializer_literal(
         case TYPE_STRING:
             return ast_string_literal(astp, empty_utf8_span(), loc);
 
+        case TYPE_UDT_PTR:
+            ODBUTIL_DEBUG_ASSERT(
+                0,
+                log_err("UDT initializers must be created with "
+                        "create_udt_initializer().\n"));
+            return -1;
+
         case TYPE_INVALID:
         case TYPE_VOID:
         case TYPE_ARRAY:
         case TYPE_LABEL:
         case TYPE_DABEL:
         case TYPE_ANY:
-        case TYPE_UDT_PTR:
             ODBUTIL_DEBUG_ASSERT(
                 0,
                 log_err(
@@ -814,14 +820,39 @@ create_initializer_literal(
     return -1;
 }
 
+static ast_id
+create_initializer_from_udt_identifier(
+    struct ast**               astp,
+    ast_id                     identifier,
+    const char*                filename,
+    const char*                source,
+    const struct symbol_table* symbols)
+{
+    struct utf8_view                 key;
+    const struct symbol_table_entry* entry;
+
+    key = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
+    entry = symbol_table_find(symbols, key);
+    if (entry == NULL)
+    {
+        log_flc(filename, source, ast_loc(*astp, identifier));
+        log_err("User-Defined Type not found.\n");
+        log_excerpt_1(source, ast_loc(*astp, identifier), "", 0);
+        return -1;
+    }
+
+    return ast_udt_init(astp, entry->ast_node, ast_loc(*astp, identifier));
+}
+
 static enum process_result
 process_var_decl(
-    struct stack**   stack,
-    struct ast**     astp,
-    ast_id           var_decl,
-    const char*      filename,
-    const char*      source,
-    struct typemap** typemap)
+    struct stack**             stack,
+    struct ast**               astp,
+    ast_id                     var_decl,
+    const char*                filename,
+    const char*                source,
+    struct typemap**           typemap,
+    const struct symbol_table* symbols)
 {
     ast_id              decl1, decl2, identifier, as_expr, init_expr;
     struct type_origin* type_origin;
@@ -857,29 +888,35 @@ process_var_decl(
             break;
 
         case HM_EXISTS:
-            if (type_origin->type == TYPE_INVALID)
-                break;
-            err_var_decl_redeclaration(
-                *astp,
-                identifier,
-                filename,
-                source,
-                *astp,
-                type_origin->initial_identifier,
-                filename,
-                source);
-            return DEP_ERROR;
+            if (type_origin->type != TYPE_INVALID)
+            {
+                err_var_decl_redeclaration(
+                    *astp,
+                    identifier,
+                    filename,
+                    source,
+                    *astp,
+                    type_origin->initial_identifier,
+                    filename,
+                    source);
+                return DEP_ERROR;
+            }
+            break;
 
         case HM_OOM: return DEP_ERROR;
     }
 
     /* Variable declarations have a special "as auto" node that can be used to
-     * inherit the type of initializer expression. */
+     * inherit the type of initializer expression. AST_AS_AUTO has no children.
+     * Since we already did the hashmap lookup here, and we have access to the
+     * initializer expression, we set the type of as_auto here instead of doing
+     * it in its own process_as_auto() function */
     if (as_expr > -1 && ast_type_info(*astp, as_expr) == TYPE_INVALID
         && ast_node_type(*astp, as_expr) != AST_AS_AUTO)
-        stack_push_entry(stack, decl1, as_expr);
+        stack_push_entry(stack, var_decl, as_expr);
+
     if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
-        stack_push_entry(stack, decl1, init_expr);
+        stack_push_entry(stack, var_decl, init_expr);
 
     if (stack_count(*stack) != top)
         return DEP_ADDED_CHILDREN;
@@ -908,14 +945,29 @@ process_var_decl(
     /* TODO: Global variables are not yet supported */
 
     /* All variables must have an initial value */
-    if (init_expr < 0)
+    if (init_expr < 0 && type_origin->type == TYPE_UDT_PTR)
+    {
+        ast_id udt_identifier = (*astp)->nodes[as_expr].as_udt.identifier;
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(*astp, as_expr) == AST_AS_UDT,
+            log_err("type: %d\n", ast_node_type(*astp, as_expr)));
+        init_expr = create_initializer_from_udt_identifier(
+            astp, udt_identifier, filename, source, symbols);
+        if (init_expr < 0)
+            return DEP_ERROR;
+
+        (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
+        (*astp)->nodes[init_expr].info.type_info = TYPE_UDT_PTR;
+    }
+    else if (init_expr < 0)
     {
         struct utf8_span loc = ast_loc(*astp, var_decl);
         init_expr = create_initializer_literal(astp, type_origin->type, loc);
         if (init_expr < 0)
             return DEP_ERROR;
-        (*astp)->nodes[init_expr].info.type_info = type_origin->type;
+
         (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
+        (*astp)->nodes[init_expr].info.type_info = type_origin->type;
     }
 
     /* Type info is required for printing error messages correctly */
@@ -1031,71 +1083,37 @@ process_var_write(
 
 static enum process_result
 process_udt_decl(
-    struct stack**   stack,
-    struct ast**     astp,
-    ast_id           udt_decl,
-    const char*      filename,
-    const char*      source,
-    struct typemap** typemap)
+    struct stack**             stack,
+    struct ast*                ast,
+    ast_id                     udt_decl,
+    const char*                filename,
+    const char*                source,
+    const struct symbol_table* symbols)
 {
-    ast_id              identifier, members;
-    struct type_origin* type_origin;
-    struct view_scope   view_scope;
+    ast_id identifier, members;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    identifier = (*astp)->nodes[udt_decl].udt_decl.identifier;
-    members = (*astp)->nodes[udt_decl].udt_decl.members_block;
+    identifier = ast->nodes[udt_decl].udt_decl.identifier;
+    members = ast->nodes[udt_decl].udt_decl.members_block;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, members) == AST_BLOCK,
-        log_err("type: %d\n", ast_node_type(*astp, members)));
+        ast_node_type(ast, members) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(ast, members)));
 
-    /* Ensure the UDT has not been declared yet */
-    view_scope.view
-        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
-    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
-    {
-        case HM_NEW:
-            type_origin->initial_identifier = identifier;
-            type_origin->type = TYPE_INVALID;
-            type_origin->dependent = udt_decl;
-            break;
-
-        case HM_EXISTS:
-            if (type_origin->type == TYPE_INVALID)
-                break;
-            /* TODO: This is the wrong error message */
-            err_var_decl_redeclaration(
-                *astp,
-                identifier,
-                filename,
-                source,
-                *astp,
-                type_origin->initial_identifier,
-                filename,
-                source);
-            return DEP_ERROR;
-
-        case HM_OOM: return DEP_ERROR;
-    }
-
-    if (ast_type_info(*astp, members) == TYPE_INVALID)
+    if (ast_type_info(ast, members) == TYPE_INVALID)
     {
         stack_push_entry(stack, udt_decl, members);
         return DEP_ADDED_CHILDREN;
     }
 
-    ODBUTIL_DEBUG_ASSERT(type_origin->type == TYPE_INVALID, (void)0);
-    type_origin->type = TYPE_UDT_PTR;
-    (*astp)->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
-    (*astp)->nodes[identifier].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[identifier].info.type_info = TYPE_UDT_PTR;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2142,12 +2160,12 @@ process_func_or_container_ref(
 {
     ast_id identifier, arglist;
 
+    struct utf8_view                 key;
+    const struct symbol_table_entry* entry;
+
     struct ast** astp = &tus[tu_id];
     const char*  filename = utf8_cstr(filenames[tu_id]);
     const char*  source = sources[tu_id].text.data;
-
-    struct utf8_view                 key;
-    const struct symbol_table_entry* entry;
 
     /* NOTE: The function has an identifier, but the type of it is set when
      * the return type is known. */
@@ -2436,8 +2454,7 @@ process_as_udt(
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
             type_origin->initial_identifier = identifier;
-            type_origin->type = annotation_to_type(
-                ast->nodes[identifier].identifier.annotation);
+            type_origin->type = TYPE_UDT_PTR;
             type_origin->dependent = as_udt;
 
             break;
@@ -2459,6 +2476,7 @@ process_as_udt(
 
     ODBUTIL_DEBUG_ASSERT(type_origin->type != TYPE_INVALID, (void)0);
     ast->nodes[as_udt].info.type_info = type_origin->type;
+    ast->nodes[identifier].info.type_info = type_origin->type;
 
     stack_pop(*stack);
     return DEP_SOLVED;
@@ -2497,14 +2515,16 @@ process_node(
             return process_assignment(
                 stack, astp, n, filename, source, typemap);
         case AST_VAR_DECL1:
-            return process_var_decl(stack, astp, n, filename, source, typemap);
+            return process_var_decl(
+                stack, astp, n, filename, source, typemap, symbols);
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_VAR_READ:
             return process_var_read(stack, astp, n, filename, source, typemap);
         case AST_VAR_WRITE:
             return process_var_write(stack, astp, n, filename, source, typemap);
         case AST_UDT_DECL:
-            return process_udt_decl(stack, astp, n, filename, source, typemap);
+            return process_udt_decl(stack, *astp, n, filename, source, symbols);
+        case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_PARAM: return process_param(stack, astp, n, source, typemap);

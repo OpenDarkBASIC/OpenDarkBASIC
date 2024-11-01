@@ -609,6 +609,45 @@ err_var_decl_redeclaration(
     return -1;
 }
 
+int
+err_udt_decl_redefinition(
+    const struct ast* ast,
+    ast_id            identifier,
+    const char*       filename,
+    const char*       source,
+    const struct ast* prev_ast,
+    ast_id            prev_identifier,
+    const char*       prev_filename,
+    const char*       prev_source)
+{
+    struct utf8_span name;
+    struct utf8_span loc, prev_loc;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(prev_ast, prev_identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(prev_ast, prev_identifier)));
+
+    name = ast->nodes[identifier].identifier.name;
+    loc = ast_loc(ast, identifier);
+    prev_loc = ast_loc(prev_ast, prev_identifier);
+
+    log_flc(filename, source, loc);
+    log_err(
+        "User-Defined Type {quote:%.*s} already exists.\n",
+        name.len,
+        source + name.off);
+    log_excerpt_1(source, loc, "", 0);
+
+    log_flc(prev_filename, prev_source, prev_loc);
+    log_note("Previously defined here:\n");
+    log_excerpt_1(prev_source, prev_loc, "", 0);
+
+    return -1;
+}
+
 void
 warn_assignment_implicit_conversion(
     const struct ast* ast,

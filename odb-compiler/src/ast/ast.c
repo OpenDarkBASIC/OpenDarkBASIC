@@ -406,8 +406,31 @@ ast_udt_decl(
     if (n < 0)
         return -1;
 
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(*astp, identifier)));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, members_block) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(*astp, members_block)));
+
     (*astp)->nodes[n].udt_decl.identifier = identifier;
     (*astp)->nodes[n].udt_decl.members_block = members_block;
+
+    return n;
+}
+
+ast_id
+ast_udt_init(struct ast** astp, ast_id udt_decl, struct utf8_span location)
+{
+    ast_id n = new_node(astp, AST_UDT_INIT, location);
+    if (n < 0)
+        return -1;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
+
+    (*astp)->nodes[n].udt_init.udt_decl = udt_decl;
 
     return n;
 }

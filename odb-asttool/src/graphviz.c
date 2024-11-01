@@ -280,6 +280,17 @@ write_node(
                 style->type.shape,
                 xlabel);
             break;
+        case AST_UDT_INIT:
+            fprintf(
+                fp,
+                "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
+                "label=\"udt_init\", xlabel=\"%s\"];\n",
+                n,
+                style->type.color,
+                style->type.fontcolor,
+                style->type.shape,
+                xlabel);
+            break;
         case AST_UDT_READ:
             fprintf(
                 fp,
@@ -765,8 +776,9 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_VAR_DECL1: NAMES("var_decl2", "init")
         case AST_VAR_DECL2: NAMES("identifier", "as")
         case AST_VAR_READ: NAMES("identifier", "")
-        case AST_VAR_WRITE: NAMES("identifier", "")
+        case AST_VAR_WRITE: NAMES("", "identifier")
         case AST_UDT_DECL: NAMES("identifier", "members")
+        case AST_UDT_INIT: NAMES("udt_decl", "")
         case AST_UDT_READ: NAMES("left", "right")
         case AST_UDT_WRITE: NAMES("left", "right")
         case AST_PARAM: NAMES("identifier", "as")

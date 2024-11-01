@@ -143,6 +143,16 @@ err_var_decl_redeclaration(
     ast_id            prev_identifier,
     const char*       prev_filename,
     const char*       prev_source);
+int
+err_udt_decl_redefinition(
+    const struct ast* ast,
+    ast_id            identifier,
+    const char*       filename,
+    const char*       source,
+    const struct ast* prev_ast,
+    ast_id            prev_identifier,
+    const char*       prev_filename,
+    const char*       prev_source);
 
 void
 warn_assignment_implicit_conversion(
