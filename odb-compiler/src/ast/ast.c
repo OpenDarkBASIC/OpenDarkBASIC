@@ -160,7 +160,7 @@ ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location)
 }
 
 ast_id
-ast_arglist_append(
+ast_arglist_append_expr(
     struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location)
 {
     struct utf8_span combined_location;
@@ -398,7 +398,7 @@ ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location)
 ast_id
 ast_udt_decl(
     struct ast**     astp,
-    ast_id           identifier,
+    struct utf8_span type_name,
     ast_id           members_block,
     struct utf8_span location)
 {
@@ -407,82 +407,86 @@ ast_udt_decl(
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(*astp, identifier)));
-    ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, members_block) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(*astp, members_block)));
 
-    (*astp)->nodes[n].udt_decl.identifier = identifier;
-    (*astp)->nodes[n].udt_decl.members_block = members_block;
+    (*astp)->nodes[n].udt_decl.type_name = type_name;
+    (*astp)->nodes[n].udt_decl.members = members_block;
 
     return n;
 }
 
 ast_id
-ast_udt_init(struct ast** astp, ast_id udt_decl, struct utf8_span location)
+ast_udt_init(
+    struct ast**     astp,
+    struct utf8_span type_name,
+    ast_id           arglist,
+    struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_UDT_INIT, location);
     if (n < 0)
         return -1;
 
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
-        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
+        ast_node_type(*astp, arglist) == AST_ARGLIST,
+        log_err("type: %d\n", ast_node_type(*astp, arglist)));
 
-    (*astp)->nodes[n].udt_init.udt_decl = udt_decl;
+    (*astp)->nodes[n].udt_init.type_name = type_name;
+    (*astp)->nodes[n].udt_init.arglist = arglist;
 
     return n;
 }
 
 ast_id
 ast_udt_read(
-    struct ast** astp, ast_id left, ast_id right, struct utf8_span location)
+    struct ast** astp, ast_id member, ast_id next, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_UDT_READ, location);
     if (n < 0)
         return -1;
 
-    ODBUTIL_DEBUG_ASSERT(left > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(right > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(member > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(next > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, left) == AST_VAR_READ
-            || ast_node_type(*astp, left) == AST_FUNC_CALL_OR_CONTAINER_READ,
-        log_err("type: %d\n", ast_node_type(*astp, left)));
+        ast_node_type(*astp, member) == AST_VAR_READ
+            || ast_node_type(*astp, member) == AST_FUNC_CALL_OR_CONTAINER_READ,
+        log_err("type: %d\n", ast_node_type(*astp, member)));
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, left) == AST_UDT_READ
-            || ast_node_type(*astp, left) == AST_VAR_READ
-            || ast_node_type(*astp, left) == AST_FUNC_CALL_OR_CONTAINER_READ,
-        log_err("type: %d\n", ast_node_type(*astp, right)));
+        ast_node_type(*astp, member) == AST_UDT_READ
+            || ast_node_type(*astp, member) == AST_VAR_READ
+            || ast_node_type(*astp, member) == AST_FUNC_CALL_OR_CONTAINER_READ,
+        log_err("type: %d\n", ast_node_type(*astp, next)));
 
-    (*astp)->nodes[n].udt_read.left = left;
-    (*astp)->nodes[n].udt_read.right = right;
+    (*astp)->nodes[n].udt_read.member = member;
+    (*astp)->nodes[n].udt_read.next = next;
+    (*astp)->nodes[n].udt_read.type_name = empty_utf8_span();
 
     return n;
 }
 
 ast_id
 ast_udt_write(
-    struct ast** astp, ast_id left, ast_id right, struct utf8_span location)
+    struct ast** astp, ast_id member, ast_id next, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_UDT_WRITE, location);
     if (n < 0)
         return -1;
 
-    ODBUTIL_DEBUG_ASSERT(left > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(right > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(member > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(next > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, left) == AST_VAR_WRITE
-            || ast_node_type(*astp, left) == AST_CONTAINER_WRITE,
-        log_err("type: %d\n", ast_node_type(*astp, left)));
+        ast_node_type(*astp, member) == AST_VAR_WRITE
+            || ast_node_type(*astp, member) == AST_CONTAINER_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, member)));
     ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(*astp, left) == AST_UDT_WRITE
-            || ast_node_type(*astp, left) == AST_VAR_WRITE
-            || ast_node_type(*astp, left) == AST_CONTAINER_WRITE,
-        log_err("type: %d\n", ast_node_type(*astp, right)));
+        ast_node_type(*astp, member) == AST_UDT_WRITE
+            || ast_node_type(*astp, member) == AST_VAR_WRITE
+            || ast_node_type(*astp, member) == AST_CONTAINER_WRITE,
+        log_err("type: %d\n", ast_node_type(*astp, next)));
 
-    (*astp)->nodes[n].udt_read.left = left;
-    (*astp)->nodes[n].udt_read.right = right;
+    (*astp)->nodes[n].udt_write.member = member;
+    (*astp)->nodes[n].udt_write.next = next;
+    (*astp)->nodes[n].udt_write.type_name = empty_utf8_span();
 
     return n;
 }
@@ -1190,13 +1194,14 @@ ast_as_auto(struct ast** astp, struct utf8_span location)
 }
 
 ast_id
-ast_as_udt(struct ast** astp, ast_id identifier, struct utf8_span location)
+ast_as_udt(
+    struct ast** astp, struct utf8_span type_name, struct utf8_span location)
 {
     ast_id n = new_node(astp, AST_AS_UDT, location);
     if (n < 0)
         return -1;
 
-    (*astp)->nodes[n].as_udt.identifier = identifier;
+    (*astp)->nodes[n].as_udt.type_name = type_name;
 
     return n;
 }

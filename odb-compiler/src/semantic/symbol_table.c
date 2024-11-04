@@ -237,7 +237,6 @@ add_udt_decl(
     const struct db_source* sources)
 {
     struct symbol_table_entry* entry;
-    ast_id                     identifier;
     struct utf8_span           udt_span;
     struct utf8_view           udt_name;
     const struct ast*          ast = tus[tu_id];
@@ -247,14 +246,8 @@ add_udt_decl(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    identifier = ast->nodes[udt_decl].udt_decl.identifier;
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(ast, identifier)));
-
-    udt_span = ast->nodes[identifier].identifier.name;
+    udt_span = ast->nodes[udt_decl].udt_decl.type_name;
     udt_name = utf8_span_view(source, udt_span);
-
     switch (hm_emplace_or_get((struct hm**)symbols, udt_name, &entry))
     {
         case HM_OOM: return -1;
@@ -270,13 +263,13 @@ add_udt_decl(
             const char* prev_filename = utf8_cstr(filenames[entry->tu_id]);
             const char* prev_source = sources[entry->tu_id].text.data;
             const char* filename = utf8_cstr(filenames[tu_id]);
-            return err_udt_decl_redefinition(
+            return err_udt_decl_redeclaration(
                 ast,
-                udt_decl,
+                udt_span,
                 filename,
                 source,
                 prev_ast,
-                prev_udt_decl,
+                ast->nodes[prev_udt_decl].udt_decl.type_name,
                 prev_filename,
                 prev_source);
         }

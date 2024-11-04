@@ -42,9 +42,16 @@ struct loop_stack_entry
 VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
+struct stack_entry
+{
+    ast_id node;
+};
+VEC_DECLARE_API(static, stack, struct stack_entry, 32)
+VEC_DEFINE_API(stack, struct stack_entry, 32)
+
 struct allocamap_kvs
 {
-    const char*        text;
+    const char*        source;
     struct spanlist*   keys;
     llvm::AllocaInst** values;
 };
@@ -59,7 +66,7 @@ static int
 allocamap_kvs_alloc(
     struct allocamap_kvs* kvs, struct allocamap_kvs* old_kvs, int32_t capacity)
 {
-    kvs->text = NULL;
+    kvs->source = NULL;
     spanlist_init(&kvs->keys);
     if (spanlist_resize(&kvs->keys, capacity) != 0)
         return -1;
@@ -89,9 +96,9 @@ allocamap_kvs_free(struct allocamap_kvs* kvs)
 static struct view_scope
 allocamap_kvs_get_key(const struct allocamap_kvs* kvs, int32_t slot)
 {
-    ODBUTIL_DEBUG_ASSERT(kvs->text != NULL, (void)0);
+    ODBUTIL_DEBUG_ASSERT(kvs->source != NULL, (void)0);
     struct span_scope span_scope = kvs->keys->data[slot];
-    struct utf8_view  view = utf8_span_view(kvs->text, span_scope.span);
+    struct utf8_view  view = utf8_span_view(kvs->source, span_scope.span);
     struct view_scope view_scope = {view, span_scope.scope};
     return view_scope;
 }
@@ -100,10 +107,10 @@ allocamap_kvs_set_key(
     struct allocamap_kvs* kvs, int32_t slot, struct view_scope key)
 {
     ODBUTIL_DEBUG_ASSERT(
-        kvs->text == NULL || kvs->text == key.view.data, (void)0);
+        kvs->source == NULL || kvs->source == key.view.data, (void)0);
 
-    kvs->text = key.view.data;
-    struct utf8_span  span = utf8_view_span(kvs->text, key.view);
+    kvs->source = key.view.data;
+    struct utf8_span  span = utf8_view_span(kvs->source, key.view);
     struct span_scope span_scope = {span, key.scope};
     kvs->keys->data[slot] = span_scope;
 
@@ -152,6 +159,116 @@ HM_DEFINE_API_FULL(
     128,
     70)
 
+struct typemap_kvs
+{
+    const char*        source;
+    struct spanlist*   keys;
+    llvm::StructType** values;
+};
+
+static hash32
+typemap_kvs_hash(struct view_scope key)
+{
+    return hash32_jenkins_oaat(key.view.data + key.view.off, key.view.len)
+           + key.scope;
+}
+static int
+typemap_kvs_alloc(
+    struct typemap_kvs* kvs, struct typemap_kvs* old_kvs, int32_t capacity)
+{
+    kvs->source = NULL;
+    spanlist_init(&kvs->keys);
+    if (spanlist_resize(&kvs->keys, capacity) != 0)
+        return -1;
+
+    kvs->values
+        = (llvm::StructType**)mem_alloc(sizeof(llvm::StructType*) * capacity);
+    if (kvs->values == NULL)
+    {
+        spanlist_deinit(kvs->keys);
+        return log_oom(sizeof(enum type) * capacity, "typemap_kvs_alloc()");
+    }
+
+    return 0;
+}
+static void
+typemap_kvs_free_old(struct typemap_kvs* kvs)
+{
+    mem_free(kvs->values);
+    spanlist_deinit(kvs->keys);
+}
+static void
+typemap_kvs_free(struct typemap_kvs* kvs)
+{
+    mem_free(kvs->values);
+    spanlist_deinit(kvs->keys);
+}
+static struct view_scope
+typemap_kvs_get_key(const struct typemap_kvs* kvs, int32_t slot)
+{
+    ODBUTIL_DEBUG_ASSERT(kvs->source != NULL, (void)0);
+    struct span_scope span_scope = kvs->keys->data[slot];
+    struct utf8_view  view = utf8_span_view(kvs->source, span_scope.span);
+    struct view_scope view_scope = {view, span_scope.scope};
+    return view_scope;
+}
+static int
+typemap_kvs_set_key(
+    struct typemap_kvs* kvs, int32_t slot, struct view_scope key)
+{
+    ODBUTIL_DEBUG_ASSERT(
+        kvs->source == NULL || kvs->source == key.view.data, (void)0);
+
+    kvs->source = key.view.data;
+    struct utf8_span  span = utf8_view_span(kvs->source, key.view);
+    struct span_scope span_scope = {span, key.scope};
+    kvs->keys->data[slot] = span_scope;
+
+    return 0;
+}
+static int
+typemap_kvs_keys_equal(struct view_scope k1, struct view_scope k2)
+{
+    return k1.scope == k2.scope && utf8_equal(k1.view, k2.view);
+}
+static llvm::StructType**
+typemap_kvs_get_value(const struct typemap_kvs* kvs, int32_t slot)
+{
+    return &kvs->values[slot];
+}
+static void
+typemap_kvs_set_value(
+    struct typemap_kvs* kvs, int32_t slot, llvm::StructType** value)
+{
+    kvs->values[slot] = *value;
+}
+
+HM_DECLARE_API_FULL(
+    static,
+    typemap,
+    hash32,
+    struct view_scope,
+    llvm::StructType*,
+    32,
+    struct typemap_kvs)
+HM_DEFINE_API_FULL(
+    typemap,
+    hash32,
+    struct view_scope,
+    llvm::StructType*,
+    32,
+    typemap_kvs_hash,
+    typemap_kvs_alloc,
+    typemap_kvs_free_old,
+    typemap_kvs_free,
+    typemap_kvs_get_key,
+    typemap_kvs_set_key,
+    typemap_kvs_keys_equal,
+    typemap_kvs_get_value,
+    typemap_kvs_set_value,
+    128,
+    70)
+
 static std::string
 to_string(const llvm::Type* ty)
 {
@@ -159,42 +276,6 @@ to_string(const llvm::Type* ty)
     llvm::raw_string_ostream rso(str);
     ty->print(rso);
     return rso.str();
-}
-
-static int
-create_global_string_table(
-    struct ir_module*                       ir,
-    llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const struct ast*                       ast,
-    const char*                             source_text)
-{
-    for (ast_id n = 0; n != ast_count(ast); ++n)
-    {
-        if (ast_node_type(ast, n) != AST_STRING_LITERAL)
-            continue;
-
-        struct utf8_span str = ast->nodes[n].string_literal.str;
-        llvm::StringRef  str_ref(source_text + str.off, str.len);
-
-        auto result = string_table->try_emplace(str_ref, nullptr);
-        if (result.second == false)
-            continue; // String already exists
-
-        llvm::Constant* S = llvm::ConstantDataArray::getString(
-            ir->ctx,
-            str_ref,
-            /* Add NULL */ true);
-        result.first->setValue(new llvm::GlobalVariable(
-            ir->mod,
-            S->getType(),
-            /*isConstant*/ true,
-            llvm::GlobalValue::PrivateLinkage,
-            S,
-            llvm::Twine(".str") + llvm::Twine(string_table->size() - 1)));
-        result.first->getValue()->setAlignment(llvm::Align::Constant<1>());
-    }
-
-    return 0;
 }
 
 static llvm::Type*
@@ -227,11 +308,47 @@ type_to_llvm(enum type type, llvm::LLVMContext* ctx)
         case TYPE_ANY:
             return llvm::PointerType::getUnqual(llvm::Type::getVoidTy(*ctx));
 
-        case TYPE_UDT_PTR: break;
+        case TYPE_UDT_PTR:
+            return llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(*ctx));
     }
 
     log_err("Don't know how to convert DBPro type {quote:%c} to LLVM\n", type);
     return nullptr;
+}
+
+static llvm::StructType*
+udt_to_llvm(
+    const struct ast*  ast,
+    ast_id             udt_decl,
+    const char*        source,
+    llvm::LLVMContext* ctx)
+{
+    llvm::SmallVector<llvm::Type*, 8> llvm_members;
+    for (ast_id ast_members = ast->nodes[udt_decl].udt_decl.members;
+         ast_members > -1;
+         ast_members = ast->nodes[ast_members].block.next)
+    {
+        ast_id ast_member = ast->nodes[ast_members].block.stmt;
+        if (ast_node_type(ast, ast_member) == AST_VAR_DECL1)
+            llvm_members.push_back(
+                type_to_llvm(ast_type_info(ast, ast_member), ctx));
+        else if (ast_node_type(ast, ast_member) == AST_UDT_DECL)
+        {
+            llvm::StructType* Ty = udt_to_llvm(ast, ast_member, source, ctx);
+            llvm_members.push_back(Ty);
+        }
+        else
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(ast, ast_member)));
+    }
+
+    struct utf8_span name_span = ast->nodes[udt_decl].udt_decl.type_name;
+    struct utf8_view name = utf8_span_view(source, name_span);
+    return llvm::StructType::create(
+        *ctx,
+        llvm::ArrayRef<llvm::Type*>(llvm_members),
+        llvm::StringRef(name.data + name.off, name.len),
+        /*isPacked=*/false);
 }
 
 static llvm::FunctionType*
@@ -306,6 +423,74 @@ create_global_command_function_table(
             llvm::GlobalVariable::ExternalLinkage,
             /*Initializer=*/nullptr,
             c_sym_ref));
+    }
+
+    return 0;
+}
+
+static int
+create_global_string_table(
+    struct ir_module*                       ir,
+    llvm::StringMap<llvm::GlobalVariable*>* string_table,
+    const struct ast*                       ast,
+    const char*                             source)
+{
+    for (ast_id n = 0; n != ast_count(ast); ++n)
+    {
+        if (ast_node_type(ast, n) != AST_STRING_LITERAL)
+            continue;
+
+        struct utf8_span str = ast->nodes[n].string_literal.str;
+        llvm::StringRef  str_ref(source + str.off, str.len);
+
+        auto result = string_table->try_emplace(str_ref, nullptr);
+        if (result.second == false)
+            continue; // String already exists
+
+        llvm::Constant* S = llvm::ConstantDataArray::getString(
+            ir->ctx,
+            str_ref,
+            /* Add NULL */ true);
+        result.first->setValue(new llvm::GlobalVariable(
+            ir->mod,
+            S->getType(),
+            /*isConstant*/ true,
+            llvm::GlobalValue::PrivateLinkage,
+            S,
+            llvm::Twine(".str") + llvm::Twine(string_table->size() - 1)));
+        result.first->getValue()->setAlignment(llvm::Align::Constant<1>());
+    }
+
+    return 0;
+}
+
+static int
+create_udt_table(
+    llvm::LLVMContext* ctx,
+    struct typemap**   typemap,
+    const struct ast*  ast,
+    const char*        source)
+{
+    for (ast_id n = 0; n != ast_count(ast); ++n)
+    {
+        if (ast_node_type(ast, n) != AST_UDT_DECL)
+            continue;
+
+        struct utf8_span   name_span = ast->nodes[n].udt_decl.type_name;
+        struct utf8_view   name = utf8_span_view(source, name_span);
+        struct view_scope  name_scope = {name, ast_scope(ast, n)};
+        llvm::StructType** Typ;
+        switch (typemap_emplace_or_get(typemap, name_scope, &Typ))
+        {
+            case HM_OOM: return -1;
+            case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Typ, (void)0); return -1;
+            case HM_NEW: {
+                *Typ = udt_to_llvm(ast, n, source, ctx);
+                if (*Typ == nullptr)
+                    return -1;
+                break;
+            }
+        }
     }
 
     return 0;
@@ -447,6 +632,7 @@ gen_expr(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
+    const struct typemap*                         udt_table,
     struct allocamap**                            allocamap);
 
 int
@@ -463,6 +649,7 @@ gen_block(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
+    const struct typemap*                         udt_table,
     struct allocamap**                            allocamap);
 
 static llvm::Value*
@@ -479,6 +666,7 @@ gen_cmd_call(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
+    const struct typemap*                         udt_table,
     struct allocamap**                            allocamap)
 {
     // Function table for commands should be generated at this
@@ -512,6 +700,7 @@ gen_cmd_call(
             cmd_func_table,
             db_func_table,
             loop_stack,
+            udt_table,
             allocamap);
         if (sdk_type == SDK_DBPRO)
             if (ast_type_info(ast, ast_expr) == TYPE_F32)
@@ -548,6 +737,7 @@ gen_expr(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
+    const struct typemap*                         udt_table,
     struct allocamap**                            allocamap)
 {
     switch (ast_node_type(ast, expr))
@@ -572,6 +762,7 @@ gen_expr(
                 cmd_func_table,
                 db_func_table,
                 loop_stack,
+                udt_table,
                 allocamap);
 
         case AST_VAR_DECL1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -597,8 +788,51 @@ gen_expr(
 
         case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
+        case AST_UDT_INIT: {
+            struct utf8_span   udt_span = ast->nodes[expr].udt_init.type_name;
+            struct utf8_view   udt_name = utf8_span_view(source, udt_span);
+            struct view_scope  udt_scope = {udt_name, ast_scope(ast, expr)};
+            llvm::StructType** Ty = typemap_find(udt_table, udt_scope);
+            ODBUTIL_DEBUG_ASSERT(Ty != nullptr, (void)0);
+
+            llvm::AllocaInst* udt_inst = builder.CreateAlloca(
+                *Ty,
+                nullptr,
+                llvm::StringRef(udt_name.data + udt_name.off, udt_name.len));
+
+            int index = 0;
+            for (ast_id ast_members = ast->nodes[expr].udt_init.arglist;
+                 ast_members > -1;
+                 ast_members = ast->nodes[ast_members].block.next, index++)
+            {
+                ast_id       ast_member = ast->nodes[ast_members].arglist.expr;
+                llvm::Value* llvm_member = gen_expr(
+                    ir,
+                    builder,
+                    ast,
+                    ast_member,
+                    sdk_type,
+                    cmds,
+                    filename,
+                    source,
+                    string_table,
+                    cmd_func_table,
+                    db_func_table,
+                    loop_stack,
+                    udt_table,
+                    allocamap);
+                llvm::Value* llvm_struct_field
+                    = builder.CreateStructGEP(*Ty, udt_inst, index);
+                builder.CreateStore(llvm_member, llvm_struct_field);
+            }
+
+            return udt_inst;
+        }
+        case AST_UDT_READ: {
+            ODBUTIL_DEBUG_ASSERT(0, (void)0);
+
+            break;
+        }
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -623,6 +857,7 @@ gen_expr(
                 cmd_func_table,
                 db_func_table,
                 loop_stack,
+                udt_table,
                 allocamap);
             llvm::Value* rhs = gen_expr(
                 ir,
@@ -637,6 +872,7 @@ gen_expr(
                 cmd_func_table,
                 db_func_table,
                 loop_stack,
+                udt_table,
                 allocamap);
 
             /* Handle string operations seperately from arithmetic, since there
@@ -859,6 +1095,7 @@ gen_expr(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
                 llvm_args.push_back(llvm_arg);
             }
@@ -953,6 +1190,7 @@ gen_expr(
                 cmd_func_table,
                 db_func_table,
                 loop_stack,
+                udt_table,
                 allocamap);
 
             switch (to)
@@ -1064,6 +1302,7 @@ gen_block(
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const llvm::StringMap<llvm::Function*>*       db_func_table,
     llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
+    struct typemap*                               udt_table,
     struct allocamap**                            allocamap)
 {
     ODBUTIL_DEBUG_ASSERT(block > -1, log_err("block: %d\n", block));
@@ -1113,6 +1352,7 @@ gen_block(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
                 continue;
             }
@@ -1132,16 +1372,18 @@ gen_block(
                 struct utf8_view name = utf8_span_view(
                     source, ast->nodes[ast_identifier].identifier.name);
                 struct view_scope name_scope
-                    = {name, ast->nodes[ast_identifier].info.scope_id};
+                    = {name, ast_scope(ast, ast_identifier)};
                 llvm::AllocaInst** Ap;
                 switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
                 {
                     case HM_OOM: return -1;
-                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); break;
+                    case HM_EXISTS:
+                        ODBUTIL_DEBUG_ASSERT(*Ap, (void)0);
+                        return -1;
                     case HM_NEW:
                         *Ap = builder.CreateAlloca(
                             type_to_llvm(type, &ir->ctx),
-                            NULL,
+                            nullptr,
                             llvm::StringRef(name.data + name.off, name.len));
                         break;
                 }
@@ -1162,6 +1404,7 @@ gen_block(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
                 builder.CreateStore(llvm_init_expr, A);
                 continue;
@@ -1169,7 +1412,8 @@ gen_block(
             case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-            case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+            case AST_UDT_DECL:
+                continue; // Skip over declarations, they do nothing
             case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -1217,6 +1461,7 @@ gen_block(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
 
                 builder.CreateStore(llvm_expr, A);
@@ -1261,6 +1506,7 @@ gen_block(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
                 llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
                     ir->ctx, llvm::Twine("block") + llvm::Twine(yes_node));
@@ -1288,6 +1534,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
                 }
                 if (builder.GetInsertBlock()->getTerminator() == nullptr)
@@ -1313,6 +1560,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
                 }
                 if (builder.GetInsertBlock()->getTerminator() == nullptr)
@@ -1357,6 +1605,7 @@ gen_block(
                     cmd_func_table,
                     db_func_table,
                     loop_stack,
+                    udt_table,
                     allocamap);
                 // For-loops keep the code for stepping separate from the rest
                 // of the body, because it can be overriden in "continue"
@@ -1375,6 +1624,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
                 // Codegen can change the current block. Update
                 // BBYes for the PHI.
@@ -1435,6 +1685,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
                     builder.CreateBr(it->BBLoop);
                 }
@@ -1493,6 +1744,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
                     llvm_args.push_back(llvm_arg);
                 }
@@ -1584,6 +1836,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap);
 
                 if (ast_retval > -1)
@@ -1600,6 +1853,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap));
                 else
                     func_builder.CreateRetVoid();
@@ -1629,6 +1883,7 @@ gen_block(
                         cmd_func_table,
                         db_func_table,
                         loop_stack,
+                        udt_table,
                         allocamap));
                 }
                 else
@@ -1694,6 +1949,13 @@ gen_block(
     return 0;
 }
 
+static int
+process_node(struct stack** stack)
+{
+
+    return -1;
+}
+
 int
 ir_translate_ast(
     struct ir_module*      ir,
@@ -1715,6 +1977,13 @@ ir_translate_ast(
     llvm::StringMap<llvm::Function*> db_func_table;
     create_db_function_table(ir, &db_func_table, ast, source);
 
+    struct typemap* udt_table;
+    typemap_init(&udt_table);
+    create_udt_table(&ir->ctx, &udt_table, ast, source);
+
+    struct allocamap* allocamap;
+    allocamap_init(&allocamap);
+
     llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
 
     llvm::Function* F = llvm::Function::Create(
@@ -1726,18 +1995,17 @@ ir_translate_ast(
         llvm::Twine("dba_") + ir->mod.getName(),
         &ir->mod);
 
-    struct allocamap* allocamap;
-    allocamap_init(&allocamap);
-
     /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
      * statements from the current node. We name it according to the node's
      * index in the AST. Makes it easier to track down issues later on. */
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
+
     if (ast_count(ast) == 0)
         log_warn("AST is empty for source file {quote:%s}\n", filename);
     else
+    {
         gen_block(
             ir,
             builder,
@@ -1751,7 +2019,11 @@ ir_translate_ast(
             &cmd_func_table,
             &db_func_table,
             &loop_exit_stack,
+            udt_table,
             &allocamap);
+    }
+
+    typemap_deinit(udt_table);
     allocamap_deinit(allocamap);
 
     // Finish off block

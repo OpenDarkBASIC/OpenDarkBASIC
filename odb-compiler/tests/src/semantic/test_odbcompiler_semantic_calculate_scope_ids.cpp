@@ -126,18 +126,14 @@ TEST_F(NAME, udt)
     ASSERT_THAT(ast_count(ast), Eq(31));
 
     ast_id decl = ast->root;
-    ast_id identifier = ast->nodes[decl].udt_decl.identifier;
-    ast_id members = ast->nodes[decl].udt_decl.members_block;
+    ast_id members = ast->nodes[decl].udt_decl.members;
 
     ASSERT_THAT(ast->nodes[decl].info.scope_id, Eq(0));
-    ASSERT_THAT(ast->nodes[identifier].info.scope_id, Eq(0));
     ASSERT_THAT(subtreeHasScope(members, 1), IsTrue());
 
     decl = ast->nodes[decl].block.next;
-    identifier = ast->nodes[decl].udt_decl.identifier;
-    members = ast->nodes[decl].udt_decl.members_block;
+    members = ast->nodes[decl].udt_decl.members;
 
     ASSERT_THAT(ast->nodes[decl].info.scope_id, Eq(0));
-    ASSERT_THAT(ast->nodes[identifier].info.scope_id, Eq(0));
     ASSERT_THAT(subtreeHasScope(members, 2), IsTrue());
 }

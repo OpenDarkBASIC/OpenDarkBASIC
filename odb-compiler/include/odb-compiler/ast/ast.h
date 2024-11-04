@@ -208,26 +208,30 @@ union ast_node
     
     struct {
         struct info info;
-        ast_id identifier;
-        ast_id members_block;
+        ast_id members;
+        ast_id _pad;
+        struct utf8_span type_name;
     } udt_decl;
 
     struct {
         struct info info;
-        ast_id udt_decl;
+        ast_id arglist;
         ast_id _pad;
+        struct utf8_span type_name;
     } udt_init;
     
     struct {
         struct info info;
-        ast_id left;
-        ast_id right;
+        ast_id member;
+        ast_id next;
+        struct utf8_span type_name;
     } udt_read;
 
     struct {
         struct info info;
-        ast_id left;
-        ast_id right;
+        ast_id member;
+        ast_id next;
+        struct utf8_span type_name;
     } udt_write;
 
     struct {
@@ -444,8 +448,8 @@ union ast_node
 
     struct {
         struct info info;
-        ast_id identifier;
-        ast_id _pad;
+        ast_id _pad1, _pad2;
+        struct utf8_span type_name;
     } as_udt;
 
     struct {
@@ -502,6 +506,9 @@ ast_type_info(const struct ast* ast, ast_id n)
 static inline struct utf8_span
 ast_loc(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.location; }
+static inline int32_t
+ast_scope(const struct ast* ast, ast_id n)
+    { return ast->nodes[n].info.scope_id; }
 
 ast_id ast_dup_node(struct ast** astp, ast_id n);
 
@@ -510,7 +517,7 @@ void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
 ast_id ast_block_append_stmt(struct ast** astp, ast_id block, ast_id stmt, struct utf8_span location);
 ast_id ast_end(struct ast** astp, struct utf8_span location);
 ast_id ast_arglist(struct ast** astp, ast_id expr, struct utf8_span location);
-ast_id ast_arglist_append(struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location);
+ast_id ast_arglist_append_expr(struct ast** astp, ast_id arglist, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_paramlist_append(struct ast** astp, ast_id paramlist, ast_id param, struct utf8_span location);
 ast_id ast_param(struct ast** astp, ast_id identifier, ast_id as, struct utf8_span location);
@@ -527,10 +534,10 @@ ast_id ast_var_decl(
     struct utf8_span location);
 ast_id ast_var_read(struct ast** astp, ast_id identifier, struct utf8_span location);
 ast_id ast_var_write(struct ast** astp, ast_id identifier, struct utf8_span location);
-ast_id ast_udt_decl(struct ast** astp, ast_id identifier, ast_id members_block, struct utf8_span location);
-ast_id ast_udt_init(struct ast** astp, ast_id udt_decl,  struct utf8_span location);
-ast_id ast_udt_read(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
-ast_id ast_udt_write(struct ast** astp, ast_id left, ast_id right, struct utf8_span location);
+ast_id ast_udt_decl(struct ast** astp, struct utf8_span type_name, ast_id members_block, struct utf8_span location);
+ast_id ast_udt_init(struct ast** astp, struct utf8_span type_name, ast_id arglist, struct utf8_span location);
+ast_id ast_udt_read(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
+ast_id ast_udt_write(struct ast** astp, ast_id member, ast_id next, struct utf8_span location);
 ast_id ast_identifier(struct ast** astp, struct utf8_span name, enum type_annotation annotation, struct utf8_span location);
 ast_id ast_inc_step(struct ast** astp, ast_id var_read, ast_id expr, struct utf8_span location);
 ast_id ast_inc(struct ast** astp, ast_id var_read, struct utf8_span location);
@@ -592,5 +599,5 @@ ast_id ast_cast(struct ast** astp, ast_id expr, ast_id as, struct utf8_span loca
 ast_id ast_as_type(struct ast** astp, enum type target_type, struct utf8_span location);
 ast_id ast_as_expr(struct ast** astp, ast_id expr, struct utf8_span location);
 ast_id ast_as_auto(struct ast** astp, struct utf8_span location);
-ast_id ast_as_udt(struct ast** astp, ast_id identifier, struct utf8_span location);
+ast_id ast_as_udt(struct ast** astp, struct utf8_span type_name, struct utf8_span location);
 /* clang-format on */

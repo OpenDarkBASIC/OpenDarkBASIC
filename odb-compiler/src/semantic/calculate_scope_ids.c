@@ -59,11 +59,8 @@ process_node(
         case AST_FUNC4: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
 
         case AST_UDT_DECL: {
-            ast_id identifier = ast->nodes[n].udt_decl.identifier;
-            ast_id members = ast->nodes[n].udt_decl.members_block;
-
+            ast_id members = ast->nodes[n].udt_decl.members;
             ast->nodes[n].info.scope_id = current_scope;
-            ast->nodes[identifier].info.scope_id = current_scope;
 
             ++(*scope_counter);
             process_node(ast, members, *scope_counter, scope_counter);

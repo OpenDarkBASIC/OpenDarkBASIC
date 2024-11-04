@@ -27,11 +27,22 @@ struct view_scope
     struct utf8_view view;
     int16_t          scope;
 };
+
 struct type_origin
 {
+    /* Usually points to the identifier name that first created the entry. Used
+     * for messages. */
+    struct utf8_span first_occurrence;
+
+    /* If type == TYPE_UDT_PTR, then this is the name of the User-Defined type.
+    type is TYPE_UDT_PTR */
+    struct utf8_span udt_name;
+
+    /* The parent node that created the entry. When a type is not resolvable,
+     * the stack is popped up until this node. */
+    ast_id dependent;
+
     enum type type;
-    ast_id    initial_identifier;
-    ast_id    dependent;
 };
 
 VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
@@ -212,24 +223,42 @@ HM_DEFINE_API_FULL(
     32,
     70)
 
-static void
-typemap_clear_all_with_scope(struct typemap* hm, int16_t scope)
+/* This is the main function used for tracking when and where variables are
+ * declared.
+ *
+ * Variables are tracked by name and scope. The first time a variable is
+ * encountered, this function creates an entry in the typemap and records that
+ * variable's type, location, dependency and scope. If a variable is later
+ * referenced with the same name, this function will search for the variable in
+ * the typemap and see if it can find one with the same name and compatible
+ * scope.
+ */
+static enum hm_status
+lookup_type_origin(
+    struct typemap**     typemap,
+    const char*          source,
+    struct utf8_span     identifier_name,
+    int32_t              scope_id,
+    struct type_origin** value)
 {
-    int slot;
-    for (slot = 0; slot != typemap_capacity(hm); ++slot)
-    {
-        if (hm->hashes[slot] == HM_SLOT_UNUSED
-            || hm->hashes[slot] == HM_SLOT_RIP)
-        {
-            continue;
-        }
+    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    /* TODO: scope_id needs to also contain the parent scope so we can access
+     * global variables and outer scopes */
+    return typemap_emplace_or_get(typemap, key, value);
+}
 
-        if (vec_get(hm->kvs.keys, slot)->scope == scope)
-        {
-            hm->hashes[slot] = HM_SLOT_RIP;
-            hm->count--;
-        }
-    }
+static void
+type_origin_init(
+    struct type_origin* origin,
+    struct utf8_span    first_occurrence,
+    ast_id              dependent,
+    enum type           type)
+{
+    ODBUTIL_DEBUG_ASSERT(type != TYPE_UDT_PTR, (void)0);
+    origin->first_occurrence = first_occurrence;
+    origin->udt_name = empty_utf8_span();
+    origin->dependent = dependent;
+    origin->type = type;
 }
 
 static ast_id
@@ -468,12 +497,14 @@ process_param(
     struct stack**   stack,
     struct ast**     astp,
     ast_id           param,
+    const char*      filename,
     const char*      source,
     struct typemap** typemap)
 {
     ast_id              identifier, as;
     struct type_origin* type_origin;
-    struct view_scope   view_scope;
+    struct utf8_span    name;
+    int32_t             scope_id;
     int32_t             top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(param > -1, (void)0);
@@ -488,24 +519,23 @@ process_param(
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
-    view_scope.view
-        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
-    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    name = (*astp)->nodes[identifier].identifier.name;
+    scope_id = (*astp)->nodes[identifier].info.scope_id;
+    switch (lookup_type_origin(typemap, source, name, scope_id, &type_origin))
     {
         case HM_NEW:
-            type_origin->initial_identifier = identifier;
-            type_origin->type = TYPE_INVALID;
-            type_origin->dependent = param;
+            type_origin_init(type_origin, name, param, TYPE_INVALID);
             break;
 
         case HM_EXISTS:
             if (type_origin->type != TYPE_INVALID)
             {
-                // TODO
-                // err_param_redeclaration(
-                //    *astp, identifier, type_origin->original_declaration,
-                //    source);
+                err_param_redeclaration(
+                    *astp,
+                    name,
+                    type_origin->first_occurrence,
+                    filename,
+                    source);
                 return DEP_ERROR;
             }
             break;
@@ -522,6 +552,7 @@ process_param(
 
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
+    ODBUTIL_DEBUG_ASSERT(type_origin->type == TYPE_INVALID, (void)0);
     if (type_origin->type == TYPE_INVALID)
     {
         if (as > -1)
@@ -569,8 +600,8 @@ process_command(
     return DEP_SOLVED;
 }
 
-static ast_id
-get_identifier_original_declaration(
+static struct utf8_span
+find_identifier_first_occurrence(
     struct ast*           ast,
     ast_id                identifier,
     const struct typemap* typemap,
@@ -590,8 +621,8 @@ get_identifier_original_declaration(
     type_origin = typemap_find(typemap, view_scope);
 
     if (type_origin != NULL)
-        return type_origin->initial_identifier;
-    return -1;
+        return type_origin->first_occurrence;
+    return empty_utf8_span();
 }
 
 static int
@@ -711,13 +742,13 @@ process_assignment(
     if (ast_node_type(*astp, lvalue) == AST_VAR_WRITE)
     {
         ast_id identifier = (*astp)->nodes[lvalue].var_write.identifier;
-        struct utf8_view name = utf8_span_view(
-            source, (*astp)->nodes[identifier].identifier.name);
+        struct utf8_span  span = (*astp)->nodes[identifier].identifier.name;
+        struct utf8_view  name = utf8_span_view(source, span);
         struct view_scope name_scope
             = {name, (*astp)->nodes[identifier].info.scope_id};
         struct type_origin* type_origin = typemap_find(*typemap, name_scope);
-        if (type_origin != NULL
-            && type_origin->initial_identifier == identifier)
+        if (type_origin != NULL && span.off == type_origin->first_occurrence.off
+            && span.len == type_origin->first_occurrence.len)
         {
             if (convert_to_var_decl_with_cast(astp, ass, filename, source) != 0)
                 return DEP_ERROR;
@@ -732,7 +763,8 @@ process_assignment(
     expr_type = ast_type_info(*astp, expr);
     if (lvalue_type != expr_type)
     {
-        ast_id orig, identifier, cast;
+        ast_id           identifier, cast;
+        struct utf8_span first_occurrence;
         ODBUTIL_DEBUG_ASSERT(
             ast_node_type(*astp, lvalue) == AST_VAR_WRITE,
             log_err("type: %d\n", ast_node_type(*astp, lvalue)));
@@ -742,26 +774,27 @@ process_assignment(
         {
             case TC_ALLOW: break;
             case TC_DISALLOW:
-                orig = get_identifier_original_declaration(
+                first_occurrence = find_identifier_first_occurrence(
                     *astp, identifier, *typemap, source);
                 err_assignment_incompatible_types(
-                    *astp, ass, orig, filename, source);
+                    *astp, ass, first_occurrence, filename, source);
                 return DEP_ERROR;
 
             case TC_SIGN_CHANGE:
             case TC_TRUENESS:
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
-                orig = get_identifier_original_declaration(
+                first_occurrence = find_identifier_first_occurrence(
                     *astp, identifier, *typemap, source);
                 warn_assignment_implicit_conversion(
-                    *astp, ass, orig, filename, source);
+                    *astp, ass, first_occurrence, filename, source);
                 break;
 
             case TC_TRUNCATE:
-                orig = get_identifier_original_declaration(
+                first_occurrence = find_identifier_first_occurrence(
                     *astp, identifier, *typemap, source);
-                warn_assignment_truncation(*astp, ass, orig, filename, source);
+                warn_assignment_truncation(
+                    *astp, ass, first_occurrence, filename, source);
                 break;
         }
 
@@ -823,25 +856,72 @@ create_initializer_literal(
 static ast_id
 create_initializer_from_udt_identifier(
     struct ast**               astp,
-    ast_id                     identifier,
+    struct utf8_span           udt_name,
     const char*                filename,
     const char*                source,
     const struct symbol_table* symbols)
 {
     struct utf8_view                 key;
     const struct symbol_table_entry* entry;
+    ast_id                           udt_decl, members, arglist;
 
-    key = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
+    key = utf8_span_view(source, udt_name);
     entry = symbol_table_find(symbols, key);
     if (entry == NULL)
     {
-        log_flc(filename, source, ast_loc(*astp, identifier));
+        log_flc(filename, source, udt_name);
         log_err("User-Defined Type not found.\n");
-        log_excerpt_1(source, ast_loc(*astp, identifier), "", 0);
+        log_excerpt_1(source, udt_name, "", 0);
         return -1;
     }
+    udt_decl = entry->ast_node;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(*astp, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(*astp, udt_decl)));
 
-    return ast_udt_init(astp, entry->ast_node, ast_loc(*astp, identifier));
+    arglist = -1;
+    for (members = (*astp)->nodes[udt_decl].udt_decl.members; members > -1;
+         members = (*astp)->nodes[members].block.next)
+    {
+        ast_id member = (*astp)->nodes[members].block.stmt;
+
+        if (ast_node_type(*astp, member) == AST_VAR_DECL1)
+        {
+            ast_id expr, arglist_entry;
+            ast_id init_expr = (*astp)->nodes[member].var_decl1.init_expr;
+            ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
+
+            expr = ast_dup_subtree(astp, init_expr);
+            if (expr < 0)
+                return -1;
+
+            if (arglist < 0)
+            {
+                arglist = ast_arglist(astp, expr, ast_loc(*astp, expr));
+                arglist_entry = arglist;
+            }
+            else
+            {
+                arglist_entry = ast_arglist_append_expr(
+                    astp, arglist, expr, ast_loc(*astp, expr));
+            }
+            if (arglist_entry < 0)
+                return -1;
+            (*astp)->nodes[arglist_entry].info.type_info = TYPE_VOID;
+        }
+        else if (ast_node_type(*astp, member) == AST_UDT_DECL)
+        {
+            /* TODO */
+        }
+        else
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(*astp, members)));
+        }
+    }
+
+    return ast_udt_init(
+        astp, (*astp)->nodes[udt_decl].udt_decl.type_name, arglist, udt_name);
 }
 
 static enum process_result
@@ -854,9 +934,10 @@ process_var_decl(
     struct typemap**           typemap,
     const struct symbol_table* symbols)
 {
-    ast_id              decl1, decl2, identifier, as_expr, init_expr;
+    ast_id              decl1, decl2, identifier, as, init_expr;
     struct type_origin* type_origin;
-    struct view_scope   view_scope;
+    struct utf8_span    name;
+    int32_t             scope_id;
     int32_t             top = stack_count(*stack);
 
     ODBUTIL_DEBUG_ASSERT(
@@ -868,7 +949,7 @@ process_var_decl(
 
     init_expr = (*astp)->nodes[decl1].var_decl1.init_expr;
     identifier = (*astp)->nodes[decl2].var_decl2.identifier;
-    as_expr = (*astp)->nodes[decl2].var_decl2.as;
+    as = (*astp)->nodes[decl2].var_decl2.as;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
@@ -876,15 +957,12 @@ process_var_decl(
 
     /* "Touch" the variable so others can depend on it. The type info is set
      * later */
-    view_scope.view
-        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
-    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    name = (*astp)->nodes[identifier].identifier.name;
+    scope_id = (*astp)->nodes[identifier].info.scope_id;
+    switch (lookup_type_origin(typemap, source, name, scope_id, &type_origin))
     {
         case HM_NEW:
-            type_origin->initial_identifier = identifier;
-            type_origin->type = TYPE_INVALID;
-            type_origin->dependent = var_decl;
+            type_origin_init(type_origin, name, var_decl, TYPE_INVALID);
             break;
 
         case HM_EXISTS:
@@ -892,11 +970,11 @@ process_var_decl(
             {
                 err_var_decl_redeclaration(
                     *astp,
-                    identifier,
+                    name,
                     filename,
                     source,
                     *astp,
-                    type_origin->initial_identifier,
+                    type_origin->first_occurrence,
                     filename,
                     source);
                 return DEP_ERROR;
@@ -911,9 +989,9 @@ process_var_decl(
      * Since we already did the hashmap lookup here, and we have access to the
      * initializer expression, we set the type of as_auto here instead of doing
      * it in its own process_as_auto() function */
-    if (as_expr > -1 && ast_type_info(*astp, as_expr) == TYPE_INVALID
-        && ast_node_type(*astp, as_expr) != AST_AS_AUTO)
-        stack_push_entry(stack, var_decl, as_expr);
+    if (as > -1 && ast_type_info(*astp, as) == TYPE_INVALID
+        && ast_node_type(*astp, as) != AST_AS_AUTO)
+        stack_push_entry(stack, var_decl, as);
 
     if (init_expr > -1 && ast_type_info(*astp, init_expr) == TYPE_INVALID)
         stack_push_entry(stack, var_decl, init_expr);
@@ -924,19 +1002,26 @@ process_var_decl(
     /* If "AS TYPE(T)" was used, prefer that type. Otherwise fall back
      * to the identifier's type annotation */
     ODBUTIL_DEBUG_ASSERT(type_origin->type == TYPE_INVALID, (void)0);
-    if (as_expr > -1 && ast_node_type(*astp, as_expr) == AST_AS_AUTO)
+    if (as > -1 && ast_node_type(*astp, as) == AST_AS_AUTO)
     {
         ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
         ODBUTIL_DEBUG_ASSERT(
             ast_type_info(*astp, init_expr) != TYPE_INVALID, (void)0);
         type_origin->type = ast_type_info(*astp, init_expr);
-        (*astp)->nodes[as_expr].info.type_info = type_origin->type;
+        (*astp)->nodes[as].info.type_info = type_origin->type;
     }
-    else if (as_expr > -1)
+    else if (as > -1 && ast_node_type(*astp, as) == AST_AS_UDT)
     {
         ODBUTIL_DEBUG_ASSERT(
-            ast_type_info(*astp, as_expr) != TYPE_INVALID, (void)0);
-        type_origin->type = ast_type_info(*astp, as_expr);
+            ast_type_info(*astp, as) == TYPE_UDT_PTR,
+            log_err("type: %d\n", ast_type_info(*astp, as)));
+        type_origin->type = ast_type_info(*astp, as);
+        type_origin->udt_name = (*astp)->nodes[as].as_udt.type_name;
+    }
+    else if (as > -1)
+    {
+        ODBUTIL_DEBUG_ASSERT(ast_type_info(*astp, as) != TYPE_INVALID, (void)0);
+        type_origin->type = ast_type_info(*astp, as);
     }
     else
         type_origin->type = annotation_to_type(
@@ -947,17 +1032,19 @@ process_var_decl(
     /* All variables must have an initial value */
     if (init_expr < 0 && type_origin->type == TYPE_UDT_PTR)
     {
-        ast_id udt_identifier = (*astp)->nodes[as_expr].as_udt.identifier;
+        struct utf8_span udt_name;
         ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(*astp, as_expr) == AST_AS_UDT,
-            log_err("type: %d\n", ast_node_type(*astp, as_expr)));
+            ast_node_type(*astp, as) == AST_AS_UDT,
+            log_err("type: %d\n", ast_node_type(*astp, as)));
+        udt_name = (*astp)->nodes[as].as_udt.type_name;
         init_expr = create_initializer_from_udt_identifier(
-            astp, udt_identifier, filename, source, symbols);
+            astp, udt_name, filename, source, symbols);
         if (init_expr < 0)
             return DEP_ERROR;
 
         (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
         (*astp)->nodes[init_expr].info.type_info = TYPE_UDT_PTR;
+        ast_set_subtree_scope(*astp, init_expr, ast_scope(*astp, var_decl));
     }
     else if (init_expr < 0)
     {
@@ -968,6 +1055,7 @@ process_var_decl(
 
         (*astp)->nodes[var_decl].var_decl1.init_expr = init_expr;
         (*astp)->nodes[init_expr].info.type_info = type_origin->type;
+        ast_set_subtree_scope(*astp, init_expr, ast_scope(*astp, var_decl));
     }
 
     /* Type info is required for printing error messages correctly */
@@ -979,13 +1067,6 @@ process_var_decl(
     if (ast_type_info(*astp, init_expr) != type_origin->type)
     {
         ast_id cast;
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type((*astp), type_origin->initial_identifier)
-                == AST_IDENTIFIER,
-            log_err(
-                "type: %d\n",
-                ast_node_type((*astp), type_origin->initial_identifier)));
-
         switch (
             type_convert(ast_type_info(*astp, init_expr), type_origin->type))
         {
@@ -1028,7 +1109,8 @@ process_var_write(
     struct typemap** typemap)
 {
     struct type_origin* type_origin;
-    struct view_scope   view_scope;
+    struct utf8_span    name;
+    int32_t             scope_id;
     ast_id              identifier;
 
     ODBUTIL_DEBUG_ASSERT(var_write > -1, (void)0);
@@ -1041,18 +1123,16 @@ process_var_write(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
-    view_scope.view
-        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
-    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    name = (*astp)->nodes[identifier].identifier.name;
+    scope_id = (*astp)->nodes[identifier].info.scope_id;
+    switch (lookup_type_origin(typemap, source, name, scope_id, &type_origin))
     {
         case HM_NEW: {
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
-            type_origin->initial_identifier = identifier;
-            type_origin->type = annotation_to_type(
+            enum type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            type_origin->dependent = var_write;
+            type_origin_init(type_origin, name, var_write, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -1090,18 +1170,14 @@ process_udt_decl(
     const char*                source,
     const struct symbol_table* symbols)
 {
-    ast_id identifier, members;
+    ast_id members;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
 
-    identifier = ast->nodes[udt_decl].udt_decl.identifier;
-    members = ast->nodes[udt_decl].udt_decl.members_block;
+    members = ast->nodes[udt_decl].udt_decl.members;
 
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(ast, identifier)));
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, members) == AST_BLOCK,
         log_err("type: %d\n", ast_node_type(ast, members)));
@@ -1113,10 +1189,68 @@ process_udt_decl(
     }
 
     ast->nodes[udt_decl].info.type_info = TYPE_UDT_PTR;
-    ast->nodes[identifier].info.type_info = TYPE_UDT_PTR;
 
     stack_pop(*stack);
     return DEP_SOLVED;
+}
+
+static enum process_result
+process_udt_read(
+    struct stack**   stack,
+    struct ast*      ast,
+    ast_id           udt_read,
+    const char*      filename,
+    const char*      source,
+    struct typemap** typemap)
+{
+    ast_id              member, next, identifier;
+    int32_t             scope_id;
+    struct utf8_span    member_name;
+    struct type_origin* type_origin;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_read) == AST_UDT_READ,
+        log_err("type: %d\n", ast_node_type(ast, udt_read)));
+
+    member = ast->nodes[udt_read].udt_read.member;
+    next = ast->nodes[udt_read].udt_read.next;
+
+    if (ast_node_type(ast, member) == AST_VAR_READ)
+        identifier = ast->nodes[member].var_read.identifier;
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, member) == AST_VAR_READ
+                || ast_node_type(ast, member)
+                       == AST_FUNC_CALL_OR_CONTAINER_READ,
+            log_err("type: %d\n", ast_node_type(ast, member)));
+        return DEP_ERROR;
+    }
+
+    member_name = ast->nodes[identifier].identifier.name;
+    scope_id = ast->nodes[identifier].info.scope_id;
+    switch (lookup_type_origin(
+        typemap, source, member_name, scope_id, &type_origin))
+    {
+        case HM_OOM: return DEP_ERROR;
+
+        case HM_NEW:
+            err_udt_not_declared(ast, member_name, filename, source);
+            return DEP_ERROR;
+
+        case HM_EXISTS:
+            if (type_origin->type != TYPE_UDT_PTR)
+            {
+                err_udt_member_not_declared(ast, member_name, filename, source);
+                return DEP_ERROR;
+            }
+            break;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(type_origin->udt_name.len > 0, (void)0);
+
+    log_err("TODO:\n");
+    return DEP_ERROR;
 }
 
 static enum process_result
@@ -1129,8 +1263,9 @@ process_var_read(
     struct typemap** typemap)
 {
     struct type_origin* type_origin;
-    struct view_scope   view_scope;
+    struct utf8_span    name;
     ast_id              identifier;
+    int32_t             scope_id;
 
     ODBUTIL_DEBUG_ASSERT(var_read > -1, (void)0);
     ODBUTIL_DEBUG_ASSERT(
@@ -1142,23 +1277,20 @@ process_var_read(
         ast_node_type(*astp, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(*astp, identifier)));
 
-    view_scope.view
-        = utf8_span_view(source, (*astp)->nodes[identifier].identifier.name);
-    view_scope.scope = (*astp)->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
+    name = (*astp)->nodes[identifier].identifier.name;
+    scope_id = (*astp)->nodes[identifier].info.scope_id;
+    switch (lookup_type_origin(typemap, source, name, scope_id, &type_origin))
     {
         case HM_NEW: {
             ast_id           init_ident, init_expr, init_var_decl, init_block;
-            ast_id           decl2, scope_start, parent;
+            ast_id           scope_start, parent;
             struct utf8_span loc = ast_loc(*astp, identifier);
-            int32_t scope_id = (*astp)->nodes[identifier].info.scope_id;
 
             /* Type always defaults to the annotation if a variable is
              * created by referencing it */
-            type_origin->initial_identifier = identifier;
-            type_origin->type = annotation_to_type(
+            enum type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            type_origin->dependent = var_read;
+            type_origin_init(type_origin, name, var_read, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -1176,24 +1308,12 @@ process_var_read(
             if (init_block < 0)
                 return DEP_ERROR;
 
-            /* Fill in type info of subtree */
-            decl2 = (*astp)->nodes[init_var_decl].var_decl1.var_decl2;
-            (*astp)->nodes[init_expr].info.type_info = type_origin->type;
-            (*astp)->nodes[init_ident].info.type_info = type_origin->type;
-            (*astp)->nodes[init_var_decl].info.type_info = type_origin->type;
-            (*astp)->nodes[decl2].info.type_info = type_origin->type;
+            ast_set_subtree_type(*astp, init_block, type_origin->type);
+            ast_set_subtree_scope(*astp, init_block, scope_id);
             /* NOTE: We do NOT set the block's type, because it is linked as a
              * parent into the block list, and it's possible that adjacent nodes
              * are still unexplored. */
-            /*(*astp)->nodes[init_block].info.type_info = TYPE_VOID;*/
-
-            /* Set scope of new subtree */
-            /* TODO: Add unit tests for this, or make it harder to forget */
-            (*astp)->nodes[init_expr].info.scope_id = scope_id;
-            (*astp)->nodes[init_ident].info.scope_id = scope_id;
-            (*astp)->nodes[init_var_decl].info.scope_id = scope_id;
-            (*astp)->nodes[decl2].info.scope_id = scope_id;
-            (*astp)->nodes[init_block].info.scope_id = scope_id;
+            (*astp)->nodes[init_block].info.type_info = TYPE_INVALID;
 
             /* Insert into beginning of current scope's block list */
             for (scope_start = var_read,
@@ -2423,66 +2543,6 @@ process_as_expr(struct stack** stack, struct ast* ast, ast_id as_expr)
 }
 
 static enum process_result
-process_as_udt(
-    struct stack**   stack,
-    struct ast*      ast,
-    ast_id           as_udt,
-    const char*      filename,
-    const char*      source,
-    struct typemap** typemap)
-{
-    struct type_origin* type_origin;
-    struct view_scope   view_scope;
-    ast_id              identifier;
-
-    ODBUTIL_DEBUG_ASSERT(as_udt > -1, (void)0);
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, as_udt) == AST_AS_UDT,
-        log_err("type: %d\n", ast_node_type(ast, as_udt)));
-
-    identifier = ast->nodes[as_udt].as_udt.identifier;
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, identifier) == AST_IDENTIFIER,
-        log_err("type: %d\n", ast_node_type(ast, identifier)));
-
-    view_scope.view
-        = utf8_span_view(source, ast->nodes[identifier].identifier.name);
-    view_scope.scope = ast->nodes[identifier].info.scope_id;
-    switch (typemap_emplace_or_get(typemap, view_scope, &type_origin))
-    {
-        case HM_NEW: {
-            /* Type always defaults to the annotation if a variable is
-             * created by referencing it */
-            type_origin->initial_identifier = identifier;
-            type_origin->type = TYPE_UDT_PTR;
-            type_origin->dependent = as_udt;
-
-            break;
-        }
-
-        case HM_EXISTS:
-            if (type_origin->type == TYPE_INVALID)
-            {
-                ast_id n = as_udt;
-                while (n > -1 && n != type_origin->dependent)
-                    n = stack_erase_node_and_get_parent(*stack, n);
-
-                return DEP_REQUIRE_ADJACENT;
-            }
-            break;
-
-        case HM_OOM: return DEP_ERROR;
-    }
-
-    ODBUTIL_DEBUG_ASSERT(type_origin->type != TYPE_INVALID, (void)0);
-    ast->nodes[as_udt].info.type_info = type_origin->type;
-    ast->nodes[identifier].info.type_info = type_origin->type;
-
-    stack_pop(*stack);
-    return DEP_SOLVED;
-}
-
-static enum process_result
 process_node(
     struct stack**             stack,
     struct typemap**           typemap,
@@ -2525,9 +2585,11 @@ process_node(
         case AST_UDT_DECL:
             return process_udt_decl(stack, *astp, n, filename, source, symbols);
         case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
-        case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_UDT_READ:
+            return process_udt_read(stack, *astp, n, filename, source);
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
-        case AST_PARAM: return process_param(stack, astp, n, source, typemap);
+        case AST_PARAM:
+            return process_param(stack, astp, n, filename, source, typemap);
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_BINOP: return process_binop(stack, astp, n, filename, source);
         case AST_UNOP: return process_unop(stack, astp, n, filename, source);
@@ -2609,7 +2671,9 @@ process_node(
             return DEP_SOLVED;
         case AST_AS_EXPR: return process_as_expr(stack, *astp, n);
         case AST_AS_UDT:
-            return process_as_udt(stack, *astp, n, filename, source, typemap);
+            (*astp)->nodes[n].info.type_info = TYPE_UDT_PTR;
+            stack_pop(*stack);
+            return DEP_SOLVED;
         case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
     }
 

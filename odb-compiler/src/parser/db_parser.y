@@ -347,7 +347,7 @@ maybe_expr
   |                                         { $$ = -1; }
   ;
 arglist
-  : arglist ',' expr                        { $$ = $1; ast_arglist_append(ctx->astp, $$, $3, @$); }
+  : arglist ',' expr                        { $$ = $1; ast_arglist_append_expr(ctx->astp, $$, $3, @$); }
   | expr                                    { $$ = ast_arglist(ctx->astp, $1, @$); }
   ;
 maybe_arglist
@@ -408,7 +408,7 @@ var_write
   : identifier                              { $$ = ast_var_write(ctx->astp, $1, @$); }
   ;
 udt_decl
-  : TYPE identifier
+  : TYPE IDENTIFIER
         seps udt_members seps
     ENDTYPE                                 { $$ = ast_udt_decl(ctx->astp, $2, $4, @$); }
   ;
@@ -419,7 +419,6 @@ udt_members
 udt_member_decl
   : identifier as_type                      { $$ = ast_var_decl(ctx->astp, $1, $2, -1, SCOPE_LOCAL, @1, empty_utf8_span(), @$); }
   | identifier as_type_auto '=' expr        { $$ = ast_var_decl(ctx->astp, $1, $2, $4, SCOPE_LOCAL, @1, @3, @$); }
-  | udt_decl                                { $$ = $1; }
   ;
 inc
   : INC lvalue ',' expr                     { $$ = ast_inc_step(ctx->astp, $2, $4, @$); }
@@ -550,7 +549,7 @@ as_type
   | AS DOUBLE                               { $$ = ast_as_type(ctx->astp, TYPE_F64, @$); }
   | AS STRING                               { $$ = ast_as_type(ctx->astp, TYPE_STRING, @$); }
   | AS TYPE '(' expr ')'                    { $$ = ast_as_expr(ctx->astp, $4, @$); }
-  | AS identifier                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
+  | AS IDENTIFIER                           { $$ = ast_as_udt(ctx->astp, $2, @$); }
   ;
 maybe_as_type
   : as_type                                 { $$ = $1; }

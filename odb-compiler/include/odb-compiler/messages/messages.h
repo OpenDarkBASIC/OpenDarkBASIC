@@ -19,7 +19,7 @@ int
 err_assignment_incompatible_types(
     const struct ast* ast,
     ast_id            ass,
-    ast_id            orig_decl,
+    struct utf8_span  first_occurrence,
     const char*       filename,
     const char*       source);
 int
@@ -71,10 +71,10 @@ err_func_redefinition(
     ast_id            func,
     const char*       filename,
     const char*       source,
-    const struct ast* prev_ast,
-    ast_id            prev_func,
-    const char*       prev_filename,
-    const char*       prev_source);
+    const struct ast* first_ast,
+    ast_id            first_func,
+    const char*       first_filename,
+    const char*       first_source);
 int
 err_func_return_incompatible_types(
     const struct ast* ast,
@@ -125,6 +125,13 @@ err_loop_for_unknown_direction(
     const char*       filename,
     const char*       source);
 int
+err_param_redeclaration(
+    const struct ast* ast,
+    struct utf8_span  name,
+    struct utf8_span  first_occurrence,
+    const char*       filename,
+    const char*       source);
+int
 err_unterminated_remark(
     struct utf8_span location, const char* filename, const char* source);
 int
@@ -136,36 +143,36 @@ err_var_decl_init_incompatible_types(
 int
 err_var_decl_redeclaration(
     const struct ast* ast,
-    ast_id            identifier,
+    struct utf8_span  name,
     const char*       filename,
     const char*       source,
-    const struct ast* prev_ast,
-    ast_id            prev_identifier,
-    const char*       prev_filename,
-    const char*       prev_source);
+    const struct ast* first_ast,
+    struct utf8_span  first_occurrence,
+    const char*       first_filename,
+    const char*       first_source);
 int
-err_udt_decl_redefinition(
+err_udt_decl_redeclaration(
     const struct ast* ast,
-    ast_id            identifier,
+    struct utf8_span  name,
     const char*       filename,
     const char*       source,
-    const struct ast* prev_ast,
-    ast_id            prev_identifier,
-    const char*       prev_filename,
-    const char*       prev_source);
+    const struct ast* first_ast,
+    struct utf8_span  first_occurrence,
+    const char*       first_filename,
+    const char*       first_source);
 
 void
 warn_assignment_implicit_conversion(
     const struct ast* ast,
     ast_id            ass,
-    ast_id            orig_decl,
+    struct utf8_span  first_occurrence,
     const char*       filename,
     const char*       source);
 void
 warn_assignment_truncation(
     const struct ast* ast,
     ast_id            ass,
-    ast_id            orig_decl,
+    struct utf8_span  first_occurrence,
     const char*       filename,
     const char*       source);
 void

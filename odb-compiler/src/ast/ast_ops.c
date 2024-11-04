@@ -223,8 +223,18 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         case AST_VAR_DECL2: break;
         case AST_VAR_READ: break;
         case AST_VAR_WRITE: break;
-        case AST_UDT_DECL: break;
-        case AST_UDT_INIT: break;
+        case AST_UDT_DECL:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].udt_decl.type_name),
+                    utf8_span_view(source, ast->nodes[n2].udt_decl.type_name)))
+                return 0;
+            break;
+        case AST_UDT_INIT:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].udt_init.type_name),
+                    utf8_span_view(source, ast->nodes[n2].udt_init.type_name)))
+                return 0;
+            break;
         case AST_UDT_READ: break;
         case AST_UDT_WRITE: break;
         case AST_PARAM: break;
@@ -369,4 +379,32 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
         }
 
     return 1;
+}
+
+void
+ast_set_subtree_type(struct ast* ast, ast_id node, enum type type)
+{
+    ast_id left = ast->nodes[node].base.left;
+    ast_id right = ast->nodes[node].base.right;
+
+    if (left > -1)
+        ast_set_subtree_type(ast, left, type);
+    if (right > -1)
+        ast_set_subtree_type(ast, right, type);
+
+    ast->nodes[node].info.type_info = type;
+}
+
+void
+ast_set_subtree_scope(struct ast* ast, ast_id node, enum scope scope)
+{
+    ast_id left = ast->nodes[node].base.left;
+    ast_id right = ast->nodes[node].base.right;
+
+    if (left > -1)
+        ast_set_subtree_scope(ast, left, scope);
+    if (right > -1)
+        ast_set_subtree_scope(ast, right, scope);
+
+    ast->nodes[node].info.scope_id = scope;
 }

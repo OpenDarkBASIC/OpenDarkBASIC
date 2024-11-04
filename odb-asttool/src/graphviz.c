@@ -273,22 +273,30 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"udt_decl\", xlabel=\"%s\"];\n",
+                "label=<TYPE <font color=\"%s\">%.*s</font>>, "
+                "xlabel=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
+                style->identifier.color,
+                ast->nodes[n].udt_decl.type_name.len,
+                source + ast->nodes[n].udt_decl.type_name.off,
                 xlabel);
             break;
         case AST_UDT_INIT:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"udt_init\", xlabel=\"%s\"];\n",
+                "label=<TYPE <font color=\"%s\">%.*s</font>()>, "
+                "xlabel=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
+                style->identifier.color,
+                ast->nodes[n].udt_init.type_name.len,
+                source + ast->nodes[n].udt_init.type_name.off,
                 xlabel);
             break;
         case AST_UDT_READ:
@@ -297,9 +305,9 @@ write_node(
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
                 "label=\"udt_read\", xlabel=\"%s\"];\n",
                 n,
-                style->type.color,
-                style->type.fontcolor,
-                style->type.shape,
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape,
                 xlabel);
             break;
         case AST_UDT_WRITE:
@@ -308,9 +316,9 @@ write_node(
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
                 "label=\"udt_write\", xlabel=\"%s\"];\n",
                 n,
-                style->type.color,
-                style->type.fontcolor,
-                style->type.shape,
+                style->identifier.color,
+                style->identifier.fontcolor,
+                style->identifier.shape,
                 xlabel);
             break;
         case AST_PARAM:
@@ -699,11 +707,14 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=\"udt\", xlabel=\"%s\"];\n",
+                "label=<AS <font color=\"%s\">%.*s</font>>, xlabel=\"%s\"];\n",
                 n,
                 style->type.color,
                 style->type.fontcolor,
                 style->type.shape,
+                style->identifier.color,
+                ast->nodes[n].as_udt.type_name.len,
+                source + ast->nodes[n].as_udt.type_name.off,
                 xlabel);
             break;
         case AST_AS_AUTO:
@@ -777,8 +788,8 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_VAR_DECL2: NAMES("identifier", "as")
         case AST_VAR_READ: NAMES("identifier", "")
         case AST_VAR_WRITE: NAMES("", "identifier")
-        case AST_UDT_DECL: NAMES("identifier", "members")
-        case AST_UDT_INIT: NAMES("udt_decl", "")
+        case AST_UDT_DECL: NAMES("members", "")
+        case AST_UDT_INIT: NAMES("arglist", "")
         case AST_UDT_READ: NAMES("left", "right")
         case AST_UDT_WRITE: NAMES("left", "right")
         case AST_PARAM: NAMES("identifier", "as")
@@ -815,7 +826,7 @@ get_edge_label(const struct ast* ast, ast_id parent, ast_id child)
         case AST_CAST: NAMES("expr", "as")
         case AST_AS_TYPE: break;
         case AST_AS_EXPR: NAMES("expr", "as")
-        case AST_AS_UDT: NAMES("identifier", "")
+        case AST_AS_UDT: break;
         case AST_AS_AUTO: break;
 #undef NAMES
     }

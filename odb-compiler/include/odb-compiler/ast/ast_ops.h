@@ -1,32 +1,33 @@
 #pragma once
 
-#include "odb-compiler/config.h"
+#include "odb-compiler/ast/ast.h"
+#include "odb-compiler/semantic/type.h"
 
 struct ast;
 struct cmd_list;
 
 void
-ast_swap_node_idxs(struct ast* ast, int n1, int n2);
+ast_swap_node_idxs(struct ast* ast, ast_id n1, ast_id n2);
 void
-ast_swap_node_values(struct ast* ast, int n1, int n2);
+ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2);
 
 /*!
  * @brief Creates a new node of an identifier.
  */
 int
-ast_dup_identifier(struct ast** astp, int identifier);
+ast_dup_identifier(struct ast** astp, ast_id identifier);
 int
-ast_dup_lvalue(struct ast** ast, int lvalue);
+ast_dup_lvalue(struct ast** ast, ast_id lvalue);
 
 /*! Perform a deep-copy of a subtree and return the node root node of the new
  * tree, or -1 on failure */
 int
-ast_dup_subtree(struct ast** ast, int node);
+ast_dup_subtree(struct ast** ast, ast_id node);
 
 ODBCOMPILER_PUBLIC_API void
-ast_delete_node(struct ast* ast, int node);
+ast_delete_node(struct ast* ast, ast_id node);
 void
-ast_delete_tree(struct ast* ast, int node);
+ast_delete_tree(struct ast* ast, ast_id node);
 
 /*!
  * @brief Removes all nodes that have been deleted with @see ast_delete_node()
@@ -40,14 +41,21 @@ ODBCOMPILER_PUBLIC_API void
 ast_gc(struct ast* ast);
 
 int
-ast_find_parent(const struct ast* ast, int node);
+ast_find_parent(const struct ast* ast, ast_id node);
 
 /*!
  * Returns true if "node" is found in the subtree starting (and including) node
  * "root"
  */
 int
-ast_is_in_subtree_of(const struct ast* ast, int node, int root);
+ast_is_in_subtree_of(const struct ast* ast, ast_id node, ast_id root);
 
 int
-ast_trees_equal(const char* source, const struct ast* ast, int n1, int n2);
+ast_trees_equal(
+    const char* source, const struct ast* ast, ast_id n1, ast_id n2);
+
+void
+ast_set_subtree_type(struct ast* ast, ast_id node, enum type type);
+
+void
+ast_set_subtree_scope(struct ast* ast, ast_id node, enum scope scope);

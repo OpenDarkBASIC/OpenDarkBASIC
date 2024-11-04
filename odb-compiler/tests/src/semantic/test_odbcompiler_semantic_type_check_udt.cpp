@@ -18,7 +18,7 @@ struct NAME : DBParserHelper, LogHelper, Test
 TEST_F(NAME, decl)
 {
     const char* source
-        = "TYPE Test\n"
+        = "TYPE Foo\n"
           "    x AS INTEGER\n"
           "    y# AS FLOAT\n"
           "ENDTYPE\n";
@@ -29,39 +29,106 @@ TEST_F(NAME, decl)
 TEST_F(NAME, as_udt)
 {
     const char* source
-        = "TYPE Test\n"
+        = "TYPE Foo\n"
           "    x AS INTEGER\n"
-          "    y AS INTEGER\n"
+          "    y# AS FLOAT\n"
           "ENDTYPE\n"
-          "var AS Test\n";
+          "foo AS Foo\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
 TEST_F(NAME, read_udt_field)
 {
-    const char* source = "a = var.x.z.y\n";
-    ASSERT_THAT(parse(source), Eq(0)) << log().text;
-    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
-}
-
-TEST_F(NAME, read_udt_field_with_array)
-{
-    const char* source = "a = var.arr(2).x\n";
+    const char* source
+        = "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "foo AS Foo\n"
+          "a = foo.x\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
 TEST_F(NAME, write_udt_field)
 {
-    const char* source = "var.x.z.y = a\n";
+    const char* source
+        = "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "foo AS Foo\n"
+          "foo.x = 5\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
 
-TEST_F(NAME, write_udt_field_with_array)
+TEST_F(NAME, nested_decl)
 {
-    const char* source = "var.arr(2).x = a\n";
+    const char* source
+        = "TYPE Bar\n"
+          "    a AS WORD\n"
+          "    b AS DWORD\n"
+          "ENDTYPE\n"
+          "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    bar AS Bar\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, nested_as_udt)
+{
+    const char* source
+        = "TYPE Bar\n"
+          "    a AS WORD\n"
+          "    b AS DWORD\n"
+          "ENDTYPE\n"
+          "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    bar AS Bar\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "foo AS Foo\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, nested_read_udt_field)
+{
+    const char* source
+        = "TYPE Bar\n"
+          "    a AS WORD\n"
+          "    b AS DWORD\n"
+          "ENDTYPE\n"
+          "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    bar AS Bar\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "foo AS Foo\n"
+          "a = foo.bar.b\n";
+    ASSERT_THAT(parse(source), Eq(0)) << log().text;
+    ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
+}
+
+TEST_F(NAME, nested_write_udt_field)
+{
+    const char* source
+        = "TYPE Bar\n"
+          "    a AS WORD\n"
+          "    b AS DWORD\n"
+          "ENDTYPE\n"
+          "TYPE Foo\n"
+          "    x AS INTEGER\n"
+          "    bar AS Bar\n"
+          "    y# AS FLOAT\n"
+          "ENDTYPE\n"
+          "foo AS Foo\n"
+          "foo.bar.b = 5\n";
     ASSERT_THAT(parse(source), Eq(0)) << log().text;
     ASSERT_THAT(semantic(&semantic_type_check), Eq(0)) << log().text;
 }
