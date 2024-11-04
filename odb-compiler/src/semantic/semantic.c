@@ -94,7 +94,7 @@ struct ctx
     const struct db_source*    sources;
     const struct plugin_list*  plugins;
     const struct cmd_list*     cmds;
-    const struct symbol_table* symbols;
+    const struct globals* symbols;
 };
 
 static int
@@ -156,7 +156,7 @@ semantic_check_run(
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
-    const struct symbol_table*   symbols)
+    const struct globals*   symbols)
 {
     struct ptr_set* check_visited;
     struct ast**    astp = &tus[tu_id];
@@ -201,7 +201,7 @@ dummy_check(
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols)
+    const struct globals* symbols)
 {
     return 0;
 }
@@ -216,7 +216,7 @@ semantic_run_essential_checks(
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols)
+    const struct globals* symbols)
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_type_check,

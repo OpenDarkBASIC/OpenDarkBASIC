@@ -88,6 +88,18 @@ ast_dup_node(struct ast** astp, ast_id n)
 }
 
 ast_id
+ast_dup_node_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n)
+{
+    ast_id dup = ast_grow(dst_astp);
+    if (dup < 0)
+        return -1;
+
+    memcpy(
+        &(*dst_astp)->nodes[dup], &src_ast->nodes[n], sizeof(union ast_node));
+    return dup;
+}
+
+ast_id
 ast_block(struct ast** astp, ast_id stmt, struct utf8_span location)
 {
     ast_id      n = new_node(astp, AST_BLOCK, location);

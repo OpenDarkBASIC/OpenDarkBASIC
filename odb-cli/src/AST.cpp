@@ -32,7 +32,7 @@ struct ctx
     struct sources*      sources;
     struct tus*          tus;
     struct ast_mutexes*  ast_mutexes;
-    struct symbol_table* symbol_table;
+    struct globals* symbol_table;
 };
 
 struct worker
@@ -249,14 +249,14 @@ parse_worker(void* arg)
             goto parse_failed;
 
         mutex_lock(worker->mutex);
-        mem_acquire_symbol_table(worker->ctx->symbol_table);
-        symbol_table_add_declarations_from_ast(
+        mem_acquire_globals(worker->ctx->symbol_table);
+        globals_add_declarations_from_ast(
             &worker->ctx->symbol_table,
             worker->ctx->tus->data,
             tu_id,
             worker->ctx->filenames->data,
             worker->ctx->sources->data);
-        mem_release_symbol_table(worker->ctx->symbol_table);
+        mem_release_globals(worker->ctx->symbol_table);
         mutex_unlock(worker->mutex);
     }
 
@@ -335,7 +335,7 @@ initAST(void)
 void
 deinitAST(void)
 {
-    symbol_table_deinit(ctx.symbol_table);
+    globals_deinit(ctx.symbol_table);
     close_tus(&ctx);
     ast_mutexes_deinit(ctx.ast_mutexes);
     tus_deinit(ctx.tus);
@@ -349,7 +349,7 @@ execute_parse_workers(std::vector<worker>* workers)
     int          worker_id;
     struct ast** astp;
 
-    mem_release_symbol_table(ctx.symbol_table);
+    mem_release_globals(ctx.symbol_table);
     vec_for_each(ctx.tus, astp)
     {
         mem_release_ast(*astp);
@@ -373,7 +373,7 @@ execute_parse_workers(std::vector<worker>* workers)
     {
         mem_acquire_ast(*astp);
     }
-    mem_acquire_symbol_table(ctx.symbol_table);
+    mem_acquire_globals(ctx.symbol_table);
 
     return 0;
 
@@ -389,7 +389,7 @@ start_parse_thread_failed:
     {
         mem_acquire_ast(*astp);
     }
-    mem_acquire_symbol_table(ctx.symbol_table);
+    mem_acquire_globals(ctx.symbol_table);
     return -1;
 }
 

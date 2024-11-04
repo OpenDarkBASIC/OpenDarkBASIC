@@ -102,7 +102,7 @@ check_loop_cont(
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols)
+    const struct globals* symbols)
 {
     ast_id       n, loop;
     struct ast** astp = &tus[tu_id];

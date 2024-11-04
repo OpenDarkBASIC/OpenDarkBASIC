@@ -3,7 +3,7 @@
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
 #include "odb-util/mem.h"
@@ -18,7 +18,7 @@ struct hm_kvs
 {
     struct utf8_span*          key_spans;
     struct kvs_key_data*       key_data;
-    struct symbol_table_entry* values;
+    struct global* values;
 };
 
 static hash32
@@ -114,7 +114,7 @@ kvs_keys_equal(struct utf8_view a, struct utf8_view b)
     return utf8_equal(a, b);
 }
 
-static struct symbol_table_entry*
+static struct global*
 kvs_get_value(const struct hm_kvs* kvs, utf8_idx idx)
 {
     return &kvs->values[idx];
@@ -122,7 +122,7 @@ kvs_get_value(const struct hm_kvs* kvs, utf8_idx idx)
 
 static void
 kvs_set_value(
-    struct hm_kvs* kvs, utf8_idx idx, struct symbol_table_entry* value)
+    struct hm_kvs* kvs, utf8_idx idx, struct global* value)
 {
     kvs->values[idx] = *value;
 }
@@ -132,14 +132,14 @@ HM_DECLARE_API_FULL(
     hm,
     hash32,
     struct utf8_view,
-    struct symbol_table_entry,
+    struct global,
     32,
     struct hm_kvs)
 HM_DEFINE_API_FULL(
     hm,
     hash32,
     struct utf8_view,
-    struct symbol_table_entry,
+    struct global,
     32,
     kvs_hash,
     kvs_alloc,
@@ -152,27 +152,27 @@ HM_DEFINE_API_FULL(
     kvs_set_value,
     128,
     70)
-struct symbol_table
+struct globals
 {
     struct hm hm;
 };
 
 void
-symbol_table_deinit(struct symbol_table* table)
+globals_deinit(struct globals* table)
 {
     hm_deinit(&table->hm);
 }
 
 static int
 add_function(
-    struct symbol_table**   symbols,
+    struct globals**   symbols,
     struct ast**            tus,
     int                     tu_id,
     ast_id                  f1,
     const struct utf8*      filenames,
     const struct db_source* sources)
 {
-    struct symbol_table_entry* entry;
+    struct global* entry;
     ast_id                     identifier;
     struct utf8_span           func_span;
     struct utf8_view           func_name;
@@ -229,14 +229,14 @@ add_function(
 
 static int
 add_udt_decl(
-    struct symbol_table**   symbols,
+    struct globals**   symbols,
     struct ast**            tus,
     int                     tu_id,
     ast_id                  udt_decl,
     const struct utf8*      filenames,
     const struct db_source* sources)
 {
-    struct symbol_table_entry* entry;
+    struct global* entry;
     struct utf8_span           udt_span;
     struct utf8_view           udt_name;
     const struct ast*          ast = tus[tu_id];
@@ -279,8 +279,8 @@ add_udt_decl(
 }
 
 int
-symbol_table_add_declarations_from_ast(
-    struct symbol_table**   table,
+globals_add_declarations_from_ast(
+    struct globals**   table,
     struct ast**            tus,
     int                     tu_id,
     const struct utf8*      filenames,
@@ -301,15 +301,15 @@ symbol_table_add_declarations_from_ast(
     return 0;
 }
 
-const struct symbol_table_entry*
-symbol_table_find(const struct symbol_table* table, struct utf8_view key)
+const struct global*
+globals_find(const struct globals* table, struct utf8_view key)
 {
     return hm_find(&table->hm, key);
 }
 
 #if defined(ODBUTIL_MEM_DEBUGGING)
 void
-mem_acquire_symbol_table(struct symbol_table* table)
+mem_acquire_globals(struct globals* table)
 {
     if (table == NULL)
         return;
@@ -335,7 +335,7 @@ mem_acquire_symbol_table(struct symbol_table* table)
         sizeof(table->hm.kvs.values[0]) * table->hm.capacity);
 }
 void
-mem_release_symbol_table(struct symbol_table* table)
+mem_release_globals(struct globals* table)
 {
     if (table == NULL)
         return;

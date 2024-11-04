@@ -123,6 +123,25 @@ ast_dup_subtree(struct ast** astp, int n)
     return dup;
 }
 
+ast_id
+ast_dup_subtree_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n)
+{
+    ast_id dup, lhs = -1, rhs = -1;
+    if (src_ast->nodes[n].base.left > -1)
+        lhs = ast_dup_subtree(dst_astp, src_ast->nodes[n].base.left);
+    if (src_ast->nodes[n].base.right > -1)
+        rhs = ast_dup_subtree(dst_astp, src_ast->nodes[n].base.right);
+
+    dup = ast_dup_node_into(dst_astp, src_ast, n);
+    if (dup < 0)
+        return -1;
+
+    (*dst_astp)->nodes[dup].base.left = lhs;
+    (*dst_astp)->nodes[dup].base.right = rhs;
+
+    return dup;
+}
+
 void
 ast_delete_node(struct ast* ast, ast_id n)
 {

@@ -8,7 +8,7 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/sdk/cmd_list.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/type.h"
 #include "odb-util/mutex.h"
 #include "odb-util/utf8.h"
@@ -20,7 +20,7 @@ DBParserHelper::DBParserHelper()
 {
     plugin_list_init(&plugins);
     cmd_list_init(&cmds);
-    symbol_table_init(&symbols);
+    globals_init(&globals);
     db_parser_init(&p);
     memset(&src, 0, sizeof(src));
     ast_init(&ast);
@@ -49,7 +49,7 @@ DBParserHelper::~DBParserHelper()
     db_parser_deinit(&p);
     if (src.text.data)
         db_source_close(&src);
-    symbol_table_deinit(symbols);
+    globals_deinit(globals);
     cmd_list_deinit(&cmds);
     plugin_list_deinit(plugins);
 }
@@ -84,8 +84,8 @@ DBParserHelper::parse(const char* code)
 
     struct utf8 fname = empty_utf8();
     utf8_set_cstr(&fname, "test");
-    result = symbol_table_add_declarations_from_ast(
-        &symbols, &ast, 0, &fname, &src);
+    result = globals_add_declarations_from_ast(
+        &globals, &ast, 0, &fname, &src);
     utf8_deinit(fname);
     return result;
 }
@@ -107,7 +107,7 @@ DBParserHelper::semantic(const struct semantic_check* check)
         &src,
         plugins,
         &cmds,
-        symbols);
+        globals);
     utf8_deinit(filename);
 #if defined(ODBCOMPILER_DOT_EXPORT)
     const testing::TestInfo* info

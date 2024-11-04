@@ -160,6 +160,18 @@ err_udt_decl_redeclaration(
     struct utf8_span  first_occurrence,
     const char*       first_filename,
     const char*       first_source);
+int
+err_udt_not_found(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source);
+int
+err_udt_member_not_found(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source);
 
 void
 warn_assignment_implicit_conversion(

@@ -636,6 +636,40 @@ err_udt_decl_redeclaration(
     return -1;
 }
 
+int
+err_udt_not_found(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source)
+{
+    log_flc(filename, source, name);
+    log_err(
+        "User-Defined Type {quote:%.*s} not found.\n",
+        name.len,
+        source + name.off);
+    log_excerpt_1(source, name, "", 0);
+
+    return -1;
+}
+
+int
+err_udt_member_not_found(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source)
+{
+    log_flc(filename, source, name);
+    log_err(
+        "Member {quote:%.*s} not found in User-Defined Type.\n",
+        name.len,
+        source + name.off);
+    log_excerpt_1(source, name, "", 0);
+
+    return -1;
+}
+
 void
 warn_assignment_implicit_conversion(
     const struct ast* ast,

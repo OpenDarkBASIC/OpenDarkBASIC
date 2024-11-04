@@ -52,7 +52,7 @@ check_loop_names(
     const struct db_source*    sources,
     const struct plugin_list*  plugins,
     const struct cmd_list*     cmds,
-    const struct symbol_table* symbols)
+    const struct globals* symbols)
 {
     ast_id      n;
     struct ast* ast = tus[tu_id];

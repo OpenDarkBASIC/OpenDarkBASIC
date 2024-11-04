@@ -7,7 +7,6 @@ extern "C" {
 #include "odb-compiler/ast/ast.h"
 #include "odb-compiler/ast/ast_integrity.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
 }
 
 #define NAME odbcompiler_semantic_resolve_cmd_overloads

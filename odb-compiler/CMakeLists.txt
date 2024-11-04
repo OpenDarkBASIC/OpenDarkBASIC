@@ -193,7 +193,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/ast/ast_integrity.c"
    
     "include/odb-compiler/semantic/semantic.h"
-    "include/odb-compiler/semantic/symbol_table.h"
+    "include/odb-compiler/semantic/globals.h"
     "include/odb-compiler/semantic/type.h"
     "src/semantic/calculate_scope_ids.c"
     "src/semantic/loop_cont.c"
@@ -203,7 +203,7 @@ add_library (odb-compiler ${ODBCOMPILER_LIB_TYPE}
     "src/semantic/post.c"
     "src/semantic/resolve_cmd_overloads.c"
     "src/semantic/semantic.c"
-    "src/semantic/symbol_table.c"
+    "src/semantic/globals.c"
     "src/semantic/type.c"
     "src/semantic/type_check.c"
     "src/semantic/unary_literal.c"

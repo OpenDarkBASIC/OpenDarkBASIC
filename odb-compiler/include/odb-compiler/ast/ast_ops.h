@@ -14,15 +14,18 @@ ast_swap_node_values(struct ast* ast, ast_id n1, ast_id n2);
 /*!
  * @brief Creates a new node of an identifier.
  */
-int
+ast_id
 ast_dup_identifier(struct ast** astp, ast_id identifier);
-int
+ast_id
 ast_dup_lvalue(struct ast** ast, ast_id lvalue);
 
 /*! Perform a deep-copy of a subtree and return the node root node of the new
  * tree, or -1 on failure */
-int
+ast_id
 ast_dup_subtree(struct ast** ast, ast_id node);
+ast_id
+ast_dup_subtree_into(
+    struct ast** dst_astp, const struct ast* src_ast, ast_id node);
 
 ODBCOMPILER_PUBLIC_API void
 ast_delete_node(struct ast* ast, ast_id node);
@@ -40,7 +43,7 @@ ast_delete_tree(struct ast* ast, ast_id node);
 ODBCOMPILER_PUBLIC_API void
 ast_gc(struct ast* ast);
 
-int
+ast_id
 ast_find_parent(const struct ast* ast, ast_id node);
 
 /*!

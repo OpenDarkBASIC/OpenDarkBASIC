@@ -511,6 +511,7 @@ ast_scope(const struct ast* ast, ast_id n)
     { return ast->nodes[n].info.scope_id; }
 
 ast_id ast_dup_node(struct ast** astp, ast_id n);
+ast_id ast_dup_node_into(struct ast** dst_astp, const struct ast* src_ast, ast_id n);
 
 ODBCOMPILER_PUBLIC_API ast_id ast_block(struct ast** astp, ast_id stmt, struct utf8_span location);
 void ast_block_append(struct ast* ast, ast_id block, ast_id append_block);
