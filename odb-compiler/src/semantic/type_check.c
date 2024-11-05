@@ -1323,14 +1323,15 @@ process_udt_decl(
 static enum type
 find_udt_read_type(
     struct ast*     ast,
+    ast_id          parent,
     ast_id          udt_decl,
     ast_id          member,
     const char*     filename,
     const char*     source,
     struct locals** locals)
 {
-    ast_id           block;
-    ast_id           left, left_identifier, udt_member_decl;
+    int              index;
+    ast_id           block, left, left_identifier, udt_member_decl;
     struct utf8_span left_name;
 
     left = ast_node_type(ast, member) == AST_UDT_READ
@@ -1349,8 +1350,8 @@ find_udt_read_type(
     left_name = ast->nodes[left_identifier].identifier.name;
 
     /* Match member name with the UDT declaration */
-    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
-         block = ast->nodes[block].block.next)
+    for (index = 0, block = ast->nodes[udt_decl].udt_decl.members; block > -1;
+         index++, block = ast->nodes[block].block.next)
     {
         ast_id           udt_member_identifier;
         struct utf8_span udt_member_name;
@@ -1400,10 +1401,11 @@ find_udt_read_type(
         ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
 
         type = find_udt_read_type(
-            ast, local->udt_decl, right, filename, source, locals);
+            ast, member, local->udt_decl, right, filename, source, locals);
         if (type == TYPE_INVALID)
             return TYPE_INVALID;
 
+        ast->nodes[parent].udt_read.index = index;
         ast->nodes[member].udt_read.type_name = nested_type_name;
         ast->nodes[member].info.type_info = type;
         ast->nodes[left].info.type_info = TYPE_UDT_PTR;
@@ -1413,6 +1415,7 @@ find_udt_read_type(
     else
     {
         enum type type = ast_type_info(ast, udt_member_decl);
+        ast->nodes[parent].udt_read.index = index;
         ast->nodes[left].info.type_info = type;
         ast->nodes[left_identifier].info.type_info = type;
         return type;
@@ -1471,7 +1474,8 @@ process_udt_read(
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
     udt_name = ast->nodes[udt_decl].udt_decl.type_name;
 
-    type = find_udt_read_type(ast, udt_decl, right, filename, source, locals);
+    type = find_udt_read_type(
+        ast, udt_read, udt_decl, right, filename, source, locals);
     if (type == TYPE_INVALID)
         return DEP_ERROR;
 
@@ -1487,14 +1491,15 @@ process_udt_read(
 static enum type
 find_udt_write_type(
     struct ast*     ast,
+    ast_id          parent,
     ast_id          udt_decl,
     ast_id          member,
     const char*     filename,
     const char*     source,
     struct locals** locals)
 {
-    ast_id           block;
-    ast_id           left, left_identifier, udt_member_decl;
+    int              index;
+    ast_id           block, left, left_identifier, udt_member_decl;
     struct utf8_span left_name;
 
     left = ast_node_type(ast, member) == AST_UDT_WRITE
@@ -1513,8 +1518,8 @@ find_udt_write_type(
     left_name = ast->nodes[left_identifier].identifier.name;
 
     /* Match member name with the UDT declaration */
-    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
-         block = ast->nodes[block].block.next)
+    for (index = 0, block = ast->nodes[udt_decl].udt_decl.members; block > -1;
+         index++, block = ast->nodes[block].block.next)
     {
         ast_id           udt_member_identifier;
         struct utf8_span udt_member_name;
@@ -1564,10 +1569,11 @@ find_udt_write_type(
         ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
 
         type = find_udt_write_type(
-            ast, local->udt_decl, right, filename, source, locals);
+            ast, member, local->udt_decl, right, filename, source, locals);
         if (type == TYPE_INVALID)
             return TYPE_INVALID;
 
+        ast->nodes[parent].udt_write.index = index;
         ast->nodes[member].udt_write.type_name = nested_type_name;
         ast->nodes[member].info.type_info = type;
         ast->nodes[left].info.type_info = TYPE_UDT_PTR;
@@ -1577,6 +1583,7 @@ find_udt_write_type(
     else
     {
         enum type type = ast_type_info(ast, udt_member_decl);
+        ast->nodes[parent].udt_write.index = index;
         ast->nodes[left].info.type_info = type;
         ast->nodes[left_identifier].info.type_info = type;
         return type;
@@ -1635,10 +1642,12 @@ process_udt_write(
         log_err("type: %d\n", ast_node_type(ast, udt_decl)));
     udt_name = ast->nodes[udt_decl].udt_decl.type_name;
 
-    type = find_udt_write_type(ast, udt_decl, right, filename, source, locals);
+    type = find_udt_write_type(
+        ast, udt_write, udt_decl, right, filename, source, locals);
     if (type == TYPE_INVALID)
         return DEP_ERROR;
 
+    ast->nodes[udt_write].udt_write.index = 0;
     ast->nodes[udt_write].udt_write.type_name = udt_name;
     ast->nodes[udt_write].info.type_info = type;
     ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;

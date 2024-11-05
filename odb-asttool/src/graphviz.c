@@ -303,7 +303,7 @@ write_node(
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<udt_read <font color=\"%s\">%.*s</font>>, "
+                "label=<udt_read <font color=\"%s\">%.*s</font>(%d)>, "
                 "xlabel=\"%s\"];\n",
                 n,
                 style->identifier.color,
@@ -312,13 +312,14 @@ write_node(
                 style->type.color,
                 ast->nodes[n].udt_read.type_name.len,
                 source + ast->nodes[n].udt_read.type_name.off,
+                ast->nodes[n].udt_read.index,
                 xlabel);
             break;
         case AST_UDT_WRITE:
             fprintf(
                 fp,
                 "  n%d [color=\"%s\", fontcolor=\"%s\", shape=\"%s\", "
-                "label=<udt_write <font color=\"%s\">%.*s</font>>, "
+                "label=<udt_write <font color=\"%s\">%.*s</font>(%d)>, "
                 "xlabel=\"%s\"];\n",
                 n,
                 style->identifier.color,
@@ -327,6 +328,7 @@ write_node(
                 style->type.color,
                 ast->nodes[n].udt_read.type_name.len,
                 source + ast->nodes[n].udt_read.type_name.off,
+                ast->nodes[n].udt_write.index,
                 xlabel);
             break;
         case AST_PARAM:

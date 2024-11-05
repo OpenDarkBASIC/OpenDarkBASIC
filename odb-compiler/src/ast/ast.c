@@ -471,6 +471,7 @@ ast_udt_read(
 
     (*astp)->nodes[n].udt_read.member = member;
     (*astp)->nodes[n].udt_read.next = next;
+    (*astp)->nodes[n].udt_read.index = -1;
     (*astp)->nodes[n].udt_read.type_name = empty_utf8_span();
 
     return n;
@@ -498,6 +499,7 @@ ast_udt_write(
 
     (*astp)->nodes[n].udt_write.member = member;
     (*astp)->nodes[n].udt_write.next = next;
+    (*astp)->nodes[n].udt_write.index = -1;
     (*astp)->nodes[n].udt_write.type_name = empty_utf8_span();
 
     return n;

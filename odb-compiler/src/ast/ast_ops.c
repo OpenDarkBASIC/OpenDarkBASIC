@@ -254,8 +254,23 @@ ast_trees_equal(const char* source, const struct ast* ast, ast_id n1, ast_id n2)
                     utf8_span_view(source, ast->nodes[n2].udt_init.type_name)))
                 return 0;
             break;
-        case AST_UDT_READ: break;
-        case AST_UDT_WRITE: break;
+        case AST_UDT_READ:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].udt_read.type_name),
+                    utf8_span_view(source, ast->nodes[n2].udt_read.type_name)))
+                return 0;
+            if (ast->nodes[n1].udt_read.index != ast->nodes[n2].udt_read.index)
+                return 0;
+            break;
+        case AST_UDT_WRITE:
+            if (!utf8_equal(
+                    utf8_span_view(source, ast->nodes[n1].udt_write.type_name),
+                    utf8_span_view(source, ast->nodes[n2].udt_write.type_name)))
+                return 0;
+            if (ast->nodes[n1].udt_write.index
+                != ast->nodes[n2].udt_write.index)
+                return 0;
+            break;
         case AST_PARAM: break;
         case AST_IDENTIFIER:
             if (!utf8_equal(

@@ -195,6 +195,11 @@
         return &v->data[--(v->count)];                                         \
     }                                                                          \
                                                                                \
+    static inline T* prefix##_pop_by(struct prefix* v, int##bits##_t count)    \
+    {                                                                          \
+        return &v->data[v->count -= count];                                    \
+    }                                                                          \
+                                                                               \
     /*!                                                                        \
      * @brief Erases an element at the specified index from the vector.        \
      * @note This causes all elements with indices greater than **i** to be    \
@@ -369,6 +374,8 @@
         }                                                                      \
         return 0;                                                              \
     }
+
+#define vec_data(v) ((v)->data)
 
 /*!
  * @brief Returns the first element of the vector.

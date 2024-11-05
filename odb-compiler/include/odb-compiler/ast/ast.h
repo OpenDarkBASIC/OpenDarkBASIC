@@ -224,6 +224,7 @@ union ast_node
         struct info info;
         ast_id member;
         ast_id next;
+        int index;
         struct utf8_span type_name;
     } udt_read;
 
@@ -231,6 +232,7 @@ union ast_node
         struct info info;
         ast_id member;
         ast_id next;
+        int index;
         struct utf8_span type_name;
     } udt_write;
 

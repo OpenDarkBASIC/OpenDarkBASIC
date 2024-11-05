@@ -44,50 +44,26 @@ VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct stack_entry
 {
-    union
-    {
-        llvm::Value* result;
-        int          value_count;
-    };
     ast_id node;
+    int    num_results;
 };
 
 VEC_DECLARE_API(static, stack, struct stack_entry, 32)
 VEC_DEFINE_API(stack, struct stack_entry, 32)
 
 static int
-stack_push_dep(struct stack** stack, ast_id node)
+stack_push_node(struct stack** stack, ast_id node)
 {
     struct stack_entry* entry = stack_emplace(stack);
     if (entry == NULL)
         return -1;
     entry->node = node;
-    entry->result = NULL;
+    entry->num_results = 0;
     return 0;
 }
 
-static int
-stack_push_result(struct stack** stack, llvm::Value* result)
-{
-    struct stack_entry* entry = stack_emplace(stack);
-    if (entry == NULL)
-        return -1;
-    entry->node = -1;
-    entry->result = result;
-    return 0;
-}
-
-static void
-stack_pop_return(struct stack* stack, llvm::Value** result)
-{
-    stack_pop(stack);
-}
-
-static llvm::Value**
-stack_values(struct stack* stack)
-{
-    return reinterpret_cast<llvm::Value**>(stack->data + stack->count);
-}
+VEC_DECLARE_API(static, results, llvm::Value*, 32)
+VEC_DEFINE_API(results, llvm::Value*, 32)
 
 struct allocamap_kvs
 {
@@ -391,52 +367,8 @@ udt_to_llvm(
         /*isPacked=*/false);
 }
 
-static llvm::FunctionType*
-get_command_function_signature(
-    struct ir_module*      ir,
-    const struct ast*      ast,
-    ast_id                 cmd,
-    enum sdk_type          sdk_type,
-    const struct cmd_list* cmds)
-{
-    ODBUTIL_DEBUG_ASSERT(
-        ast_node_type(ast, cmd) == AST_COMMAND,
-        log_err("type: %d\n", ast_node_type(ast, cmd)));
-    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
-
-    /* Get command arguments from command list and convert each one to LLVM */
-    const struct cmd_param_types_list* odb_param_types
-        = cmds->param_types->data[cmd_id];
-    llvm::SmallVector<llvm::Type*, 8> llvm_param_types;
-    const struct cmd_param*           odb_param;
-    vec_for_each(odb_param_types, odb_param)
-    {
-        if (sdk_type == SDK_DBPRO && odb_param->type == TYPE_F32)
-            llvm_param_types.push_back(llvm::Type::getInt32Ty(ir->ctx));
-        else
-        {
-            llvm::Type* Ty = type_to_llvm(odb_param->type, &ir->ctx);
-            llvm_param_types.push_back(Ty);
-        }
-    }
-
-    /* Convert return type from command list as well, and create LLVM FT */
-    enum type odb_return_type = cmds->return_types->data[cmd_id];
-    if (sdk_type == SDK_DBPRO)
-        if (odb_return_type == TYPE_F32)
-            return llvm::FunctionType::get(
-                llvm::Type::getInt32Ty(ir->ctx),
-                llvm_param_types,
-                /* isVarArg */ false);
-
-    return llvm::FunctionType::get(
-        type_to_llvm(odb_return_type, &ir->ctx),
-        llvm_param_types,
-        /* isVarArg */ false);
-}
-
 static int
-create_global_command_function_table(
+create_cmd_func_table(
     struct ir_module*                       ir,
     llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
     const struct ast*                       ast,
@@ -469,7 +401,7 @@ create_global_command_function_table(
 }
 
 static int
-create_global_string_table(
+create_string_table(
     struct ir_module*                       ir,
     llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const struct ast*                       ast,
@@ -589,7 +521,7 @@ func_name_from_arglist(
 }
 
 static int
-create_db_function_table(
+create_db_func_table(
     struct ir_module*                 ir,
     llvm::StringMap<llvm::Function*>* db_func_table,
     const struct ast*                 ast,
@@ -693,77 +625,6 @@ gen_block(
     struct allocamap**                            allocamap);
 
 static llvm::Value*
-gen_cmd_call(
-    struct ir_module*                             ir,
-    llvm::IRBuilder<>&                            builder,
-    const struct ast*                             ast,
-    ast_id                                        cmd,
-    enum sdk_type                                 sdk_type,
-    const struct cmd_list*                        cmds,
-    const char*                                   source_filename,
-    const char*                                   source_text,
-    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
-    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const llvm::StringMap<llvm::Function*>*       db_func_table,
-    llvm::SmallVector<loop_stack_entry, 8>*       loop_stack,
-    const struct typemap*                         udt_table,
-    struct allocamap**                            allocamap)
-{
-    // Function table for commands should be generated at this
-    // point. Look up the command's symbol in the command list and
-    // get the associated llvm::Function
-    cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
-    struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
-    llvm::StringRef       cmd_sym_ref(cmd_sym.data + cmd_sym.off, cmd_sym.len);
-    llvm::GlobalVariable* cmd_func_ptr
-        = cmd_func_table->find(cmd_sym_ref)->getValue();
-
-    // Match up each function argument with its corresponding parameter.
-    // Command overload resolution is done during semantic analysis, so
-    // it's OK to assume that both lists have the same length and matching
-    // types.
-    llvm::SmallVector<llvm::Value*, 8> param_values;
-    for (ast_id arg = ast->nodes[cmd].cmd.arglist; arg > -1;
-         arg = ast->nodes[arg].arglist.next)
-    {
-        ast_id       ast_expr = ast->nodes[arg].arglist.expr;
-        llvm::Value* llvm_expr = gen_expr(
-            ir,
-            builder,
-            ast,
-            ast_expr,
-            sdk_type,
-            cmds,
-            source_filename,
-            source_text,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-        if (sdk_type == SDK_DBPRO)
-            if (ast_type_info(ast, ast_expr) == TYPE_F32)
-                llvm_expr = builder.CreateBitCast(
-                    llvm_expr, llvm::Type::getInt32Ty(ir->ctx));
-        param_values.push_back(llvm_expr);
-    }
-
-    llvm::FunctionType* FT
-        = get_command_function_signature(ir, ast, cmd, sdk_type, cmds);
-    llvm::Value* cmd_func_addr = builder.CreateLoad(
-        llvm::PointerType::getUnqual(ir->ctx), cmd_func_ptr);
-    llvm::Value* retval = builder.CreateCall(FT, cmd_func_addr, param_values);
-
-    if (sdk_type == SDK_DBPRO)
-        if (ast_type_info(ast, cmd) == TYPE_F32)
-            retval = builder.CreateBitCast(
-                retval, llvm::Type::getFloatTy(ir->ctx));
-
-    return retval;
-}
-
-static llvm::Value*
 gen_expr(
     struct ir_module*                             ir,
     llvm::IRBuilder<>&                            builder,
@@ -787,87 +648,14 @@ gen_expr(
         case AST_END: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
         case AST_COMMAND:
-            return gen_cmd_call(
-                ir,
-                builder,
-                ast,
-                expr,
-                sdk_type,
-                cmds,
-                filename,
-                source,
-                string_table,
-                cmd_func_table,
-                db_func_table,
-                loop_stack,
-                udt_table,
-                allocamap);
-
         case AST_VAR_DECL1: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-
-        case AST_VAR_READ: {
-            ast_id           ast_ident = ast->nodes[expr].var_read.identifier;
-            struct utf8_view name
-                = utf8_span_view(source, ast->nodes[ast_ident].identifier.name);
-            struct view_scope name_scope
-                = {name, ast->nodes[expr].info.scope_id};
-            llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
-            /* The AST should be constructed in a way where we do not have to
-             * create a default value for variables that have not yet been
-             * declared */
-            ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
-
-            return builder.CreateLoad(
-                (*A)->getAllocatedType(),
-                *A,
-                llvm::StringRef(name.data + name.off, name.len));
-        }
+        case AST_VAR_READ:
 
         case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_UDT_DECL: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
-        case AST_UDT_INIT: {
-            struct utf8_span   udt_span = ast->nodes[expr].udt_init.type_name;
-            struct utf8_view   udt_name = utf8_span_view(source, udt_span);
-            struct view_scope  udt_scope = {udt_name, ast_scope(ast, expr)};
-            llvm::StructType** Ty = typemap_find(udt_table, udt_scope);
-            ODBUTIL_DEBUG_ASSERT(Ty != nullptr, (void)0);
-
-            llvm::AllocaInst* udt_inst = builder.CreateAlloca(
-                *Ty,
-                nullptr,
-                llvm::StringRef(udt_name.data + udt_name.off, udt_name.len));
-
-            int index = 0;
-            for (ast_id ast_members = ast->nodes[expr].udt_init.arglist;
-                 ast_members > -1;
-                 ast_members = ast->nodes[ast_members].block.next, index++)
-            {
-                ast_id       ast_member = ast->nodes[ast_members].arglist.expr;
-                llvm::Value* llvm_member = gen_expr(
-                    ir,
-                    builder,
-                    ast,
-                    ast_member,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                llvm::Value* llvm_struct_field
-                    = builder.CreateStructGEP(*Ty, udt_inst, index);
-                builder.CreateStore(llvm_member, llvm_struct_field);
-            }
-
-            return udt_inst;
-        }
+        case AST_UDT_INIT:
         case AST_UDT_READ: {
             // struct utf8_span ast_type_name =
             // ast->nodes[expr].udt_read.type_name;
@@ -1216,111 +1004,7 @@ gen_expr(
             llvm::StringRef  str_ref(source + span.off, span.len);
             return string_table->find(str_ref)->getValue();
         }
-
-        case AST_CAST: {
-            enum type    from = ast_type_info(ast, ast->nodes[expr].cast.expr);
-            enum type    to = ast_type_info(ast, expr);
-            llvm::Value* child_value = gen_expr(
-                ir,
-                builder,
-                ast,
-                ast->nodes[expr].cast.expr,
-                sdk_type,
-                cmds,
-                filename,
-                source,
-                string_table,
-                cmd_func_table,
-                db_func_table,
-                loop_stack,
-                udt_table,
-                allocamap);
-
-            switch (to)
-            {
-                case TYPE_INVALID:
-                case TYPE_VOID: break;
-
-                case TYPE_I64:
-                case TYPE_U32:
-                case TYPE_I32:
-                case TYPE_U16:
-                case TYPE_U8:
-                case TYPE_F32:
-                case TYPE_F64: {
-                    /* clang-format off */
-            using Op = llvm::Instruction::CastOps;
-            Op O = Op::CastOpsBegin;
-            static const Op llvm_cast_ops[16][16] = {
-     /*          0 R          D          L          W          Y          B           F           O          S H P Q X           E */
-              {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
-     /* 0 */  {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
-     /* R */  {O,O,Op::SExt,  Op::Trunc, Op::Trunc, Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
-     /* D */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
-     /* L */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
-     /* W */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
-     /* Y */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
-     /* B */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,   Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
-     /* F */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPExt,  Op::FPExt, O,O,O,O,Op::BitCast,O},
-     /* O */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPTrunc,Op::FPExt, O,O,O,O,Op::BitCast,O},
-     /* S */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-     /* H */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-     /* P */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-     /* Q */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-     /* X */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-     /* E */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
-            };
-                    /* clang-format on */
-
-                    return builder.CreateCast(
-                        llvm_cast_ops[from][to],
-                        child_value,
-                        type_to_llvm(to, &ir->ctx));
-                }
-
-                case TYPE_BOOL:
-                    switch (from)
-                    {
-                        case TYPE_INVALID: break;
-                        case TYPE_VOID: break;
-
-                        case TYPE_I64:
-                        case TYPE_U32:
-                        case TYPE_I32:
-                        case TYPE_U16:
-                        case TYPE_U8:
-                        case TYPE_BOOL:
-                            return builder.CreateICmpNE(
-                                child_value,
-                                llvm::ConstantInt::get(
-                                    type_to_llvm(from, &ir->ctx), 0));
-
-                        case TYPE_F32:
-                        case TYPE_F64:
-                            return builder.CreateFCmpONE(
-                                child_value,
-                                llvm::ConstantFP::get(
-                                    ir->ctx, llvm::APFloat(0.0)));
-
-                        case TYPE_STRING:
-                        case TYPE_ARRAY:
-                        case TYPE_LABEL:
-                        case TYPE_DABEL:
-                        case TYPE_ANY:
-                        case TYPE_UDT_PTR: break;
-                    }
-                    break;
-
-                case TYPE_STRING:
-                case TYPE_ARRAY:
-                case TYPE_LABEL:
-                case TYPE_DABEL:
-                case TYPE_ANY:
-                case TYPE_UDT_PTR: break;
-            }
-            break;
-        }
-
+        case AST_CAST:
         case AST_AS_TYPE: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_AS_EXPR: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
         case AST_AS_UDT: ODBUTIL_DEBUG_ASSERT(0, (void)0); break;
@@ -1360,84 +1044,12 @@ gen_block(
         switch (ast_node_type(ast, stmt))
         {
             case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-
             case AST_BLOCK:
             case AST_END:
-
             case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-
-            case AST_COMMAND: {
-                gen_cmd_call(
-                    ir,
-                    builder,
-                    ast,
-                    stmt,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                continue;
-            }
-
-            case AST_VAR_DECL1: {
-                ast_id ast_decl1 = stmt;
-                ast_id ast_decl2 = ast->nodes[stmt].var_decl1.var_decl2;
-                ast_id ast_init_expr
-                    = ast->nodes[ast_decl1].var_decl1.init_expr;
-                ast_id ast_identifier
-                    = ast->nodes[ast_decl2].var_decl2.identifier;
-
-                ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, ast_identifier) == AST_IDENTIFIER,
-                    log_err("type: %d\n", ast_node_type(ast, ast_identifier)));
-                enum type        type = ast_type_info(ast, ast_identifier);
-                struct utf8_view name = utf8_span_view(
-                    source, ast->nodes[ast_identifier].identifier.name);
-                struct view_scope name_scope
-                    = {name, ast_scope(ast, ast_identifier)};
-                llvm::AllocaInst** Ap;
-                switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
-                {
-                    case HM_OOM: return -1;
-                    case HM_EXISTS:
-                        ODBUTIL_DEBUG_ASSERT(*Ap, (void)0);
-                        return -1;
-                    case HM_NEW:
-                        *Ap = builder.CreateAlloca(
-                            type_to_llvm(type, &ir->ctx),
-                            nullptr,
-                            llvm::StringRef(name.data + name.off, name.len));
-                        break;
-                }
-
-                // gen_expr() might reallocate the allocamap
-                llvm::AllocaInst* A = *Ap;
-
-                llvm::Value* llvm_init_expr = gen_expr(
-                    ir,
-                    builder,
-                    ast,
-                    ast_init_expr,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-                builder.CreateStore(llvm_init_expr, A);
-                continue;
-            }
+            case AST_COMMAND:
+            case AST_VAR_DECL1:
             case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_VAR_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -1447,62 +1059,9 @@ gen_block(
             case AST_UDT_READ: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAM: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-
-            case AST_ASSIGNMENT: {
-                ast_id ast_lvalue = ast->nodes[stmt].assignment.lvalue;
-                ast_id ast_expr = ast->nodes[stmt].assignment.expr;
-
-                ODBUTIL_DEBUG_ASSERT(
-                    ast_node_type(ast, ast_lvalue) == AST_VAR_WRITE,
-                    log_err("type: %d\n", ast_node_type(ast, ast_lvalue)));
-                enum type type = ast_type_info(ast, ast_lvalue);
-                ast_id ast_ident = ast->nodes[ast_lvalue].var_write.identifier;
-                struct utf8_view name = utf8_span_view(
-                    source, ast->nodes[ast_ident].identifier.name);
-                struct view_scope name_scope
-                    = {name, ast->nodes[ast_ident].info.scope_id};
-                llvm::AllocaInst** Ap;
-                switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
-                {
-                    case HM_OOM: return -1;
-                    case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); break;
-                    case HM_NEW:
-                        *Ap = builder.CreateAlloca(
-                            type_to_llvm(type, &ir->ctx),
-                            NULL,
-                            llvm::StringRef(name.data + name.off, name.len));
-                        break;
-                }
-
-                // gen_expr() might reallocate the allocamap
-                llvm::AllocaInst* A = *Ap;
-
-                llvm::Value* llvm_expr = gen_expr(
-                    ir,
-                    builder,
-                    ast,
-                    ast_expr,
-                    sdk_type,
-                    cmds,
-                    filename,
-                    source,
-                    string_table,
-                    cmd_func_table,
-                    db_func_table,
-                    loop_stack,
-                    udt_table,
-                    allocamap);
-
-                builder.CreateStore(llvm_expr, A);
-                continue;
-            }
+            case AST_ASSIGNMENT:
 
             case AST_IDENTIFIER:
-                ODBUTIL_DEBUG_ASSERT(
-                    0,
-                    log_err("Identifiers should never occur directly "
-                            "in a block.\n"));
-                return -1;
             case AST_BINOP:
                 ODBUTIL_DEBUG_ASSERT(
                     0,
@@ -1992,9 +1551,9 @@ process_block(struct stack** stack, const struct ast* ast)
     stmt = ast->nodes[block].block.stmt;
     ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
 
-    if (next > -1 && stack_push_dep(stack, next) != 0)
+    if (next > -1 && stack_push_node(stack, next) != 0)
         return -1;
-    if (stack_push_dep(stack, stmt) != 0)
+    if (stack_push_node(stack, stmt) != 0)
         return -1;
 
     return 0;
@@ -2003,9 +1562,9 @@ process_block(struct stack** stack, const struct ast* ast)
 static int
 process_end(
     struct stack**     stack,
-    const struct ast*  ast,
     struct ir_module*  ir,
-    llvm::IRBuilder<>& builder)
+    llvm::IRBuilder<>& builder,
+    const struct ast*  ast)
 {
     ast_id end = stack_pop(*stack)->node;
     ODBUTIL_DEBUG_ASSERT(
@@ -2021,50 +1580,548 @@ process_end(
     FSDKDeInit->setDoesNotReturn();
     builder.CreateCall(FSDKDeInit, {});
 
-    stack_pop(*stack);
     return 0;
+}
+
+static llvm::FunctionType*
+get_cmd_func_signature(
+    struct ir_module*      ir,
+    const struct ast*      ast,
+    ast_id                 cmd,
+    enum sdk_type          sdk_type,
+    const struct cmd_list* cmds)
+{
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cmd) == AST_COMMAND,
+        log_err("type: %d\n", ast_node_type(ast, cmd)));
+    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
+
+    /* Get command arguments from command list and convert each one to LLVM */
+    const struct cmd_param_types_list* param_types
+        = cmds->param_types->data[cmd_id];
+    llvm::SmallVector<llvm::Type*, 8> ParamTypes;
+    const struct cmd_param*           param;
+    vec_for_each(param_types, param)
+    {
+        if (sdk_type == SDK_DBPRO && param->type == TYPE_F32)
+            ParamTypes.push_back(llvm::Type::getInt32Ty(ir->ctx));
+        else
+        {
+            llvm::Type* Ty = type_to_llvm(param->type, &ir->ctx);
+            ParamTypes.push_back(Ty);
+        }
+    }
+
+    /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
+    enum type ret_type = cmds->return_types->data[cmd_id];
+    if (sdk_type == SDK_DBPRO)
+        if (ret_type == TYPE_F32)
+            return llvm::FunctionType::get(
+                llvm::Type::getInt32Ty(ir->ctx),
+                ParamTypes,
+                /* isVarArg */ false);
+
+    return llvm::FunctionType::get(
+        type_to_llvm(ret_type, &ir->ctx),
+        ParamTypes,
+        /* isVarArg */ false);
 }
 
 static int
 process_command(
-    struct stack**     stack,
-    const struct ast*  ast,
-    struct ir_module*  ir,
-    llvm::IRBuilder<>& builder)
+    struct stack**                                stack,
+    struct results**                              results,
+    struct ir_module*                             ir,
+    llvm::IRBuilder<>&                            builder,
+    const struct ast*                             ast,
+    enum sdk_type                                 sdk_type,
+    const struct cmd_list*                        cmds,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table)
 {
-    ast_id cmd = vec_last(*stack)->node;
+    struct stack_entry* entry = vec_last(*stack);
+    ast_id              cmd = entry->node;
+    int                 num_results = entry->num_results;
+
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, cmd) == AST_COMMAND,
         log_err("type: %d\n", ast_node_type(ast, cmd)));
 
     ast_id arglist = ast->nodes[cmd].cmd.arglist;
-    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
-    if (arglist > -1 && vec_last(*stack)->value_count == 0)
+    if (arglist > -1 && num_results == 0)
     {
+        /* Arguments will be processed in reverse order, which shouldn't be a
+         * problem. This is good because the results will be pushed onto the
+         * results-stack in reverse-reverse order (i.e. correct order) again */
         for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
         {
             ast_id expr = ast->nodes[arglist].arglist.expr;
-            if (stack_push_dep(stack, expr) != 0)
+            if (stack_push_node(stack, expr) != 0)
                 return -1;
+            num_results++;
         }
+
+        entry->num_results = num_results;
         return 0;
     }
 
-    for (int i = 0; i != vec_last(*stack)->value_count; ++i)
+    llvm::ArrayRef<llvm::Value*> Args(
+        results_pop_by(*results, num_results), num_results);
+
+    // Function table for commands should be generated at this
+    // point. Look up the command's symbol in the command list and
+    // get the associated llvm::Function
+    cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
+    struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
+    llvm::StringRef       CmdSymbol(cmd_sym.data + cmd_sym.off, cmd_sym.len);
+    llvm::GlobalVariable* CmdFuncPtr
+        = cmd_func_table->find(CmdSymbol)->getValue();
+
+    llvm::FunctionType* FT
+        = get_cmd_func_signature(ir, ast, cmd, sdk_type, cmds);
+    llvm::Value* CmdFuncAddr
+        = builder.CreateLoad(llvm::PointerType::getUnqual(ir->ctx), CmdFuncPtr);
+    llvm::Value* RetVal = builder.CreateCall(FT, CmdFuncAddr, Args);
+
+    /* DarkBASIC Pro passes floats as reinterpreted DWORDs */
+    if (sdk_type == SDK_DBPRO)
+        if (ast_type_info(ast, cmd) == TYPE_F32)
+            RetVal = builder.CreateBitCast(
+                RetVal, llvm::Type::getFloatTy(ir->ctx));
+
+    stack_pop(*stack);
+    return 0;
+}
+
+static int
+process_assignment(
+    struct stack**     stack,
+    struct results*    results,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& builder,
+    const struct ast*  ast,
+    const char*        source,
+    struct allocamap** allocamap)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              ass = entry->node;
+    ast_id              lvalue = ast->nodes[ass].assignment.lvalue;
+    ast_id              expr = ast->nodes[ass].assignment.expr;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, lvalue) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(ast, lvalue)));
+    ODBUTIL_DEBUG_ASSERT(expr > -1, (void)0);
+
+    /* Evaluate rvalue */
+    if (num_results == 0)
     {
-        llvm::ArrayRef<llvm::Value*> args(
-            stack_values(*stack), vec_last(*stack)->value_count);
+        if (stack_push_node(stack, lvalue) != 0)
+            return -1;
+        if (stack_push_node(stack, expr) != 0)
+            return -1;
+        entry->num_results = 2;
+        return 0;
     }
+    llvm::Value* Expr = *results_pop(results);
+    llvm::Value* LValue = *results_pop(results);
+
+    builder.CreateStore(Expr, LValue);
+
+    stack_pop(*stack);
+    return 0;
+}
+
+static int
+process_var_decl(
+    struct stack**        stack,
+    struct results*       results,
+    struct ir_module*     ir,
+    llvm::IRBuilder<>&    builder,
+    const char*           source,
+    const struct ast*     ast,
+    const struct typemap* udt_table,
+    struct allocamap**    allocamap)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              decl1 = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, decl1) == AST_VAR_DECL1,
+        log_err("type: %d\n", ast_node_type(ast, decl1)));
+
+    ast_id decl2 = ast->nodes[decl1].var_decl1.var_decl2;
+    ast_id init_expr = ast->nodes[decl1].var_decl1.init_expr;
+    ast_id identifier = ast->nodes[decl2].var_decl2.identifier;
+
+    ODBUTIL_DEBUG_ASSERT(init_expr > -1, (void)0);
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, identifier) == AST_IDENTIFIER,
+        log_err("type: %d\n", ast_node_type(ast, identifier)));
+
+    /* Evaluate init expression */
+    if (num_results == 0)
+    {
+        if (stack_push_node(stack, init_expr) != 0)
+            return -1;
+        entry->num_results = 1;
+        return 0;
+    }
+    llvm::Value* InitExpr = *results_pop(results);
+
+    llvm::AllocaInst** Ap;
+    enum type          type = ast_type_info(ast, identifier);
+    struct utf8_span   span = ast->nodes[identifier].identifier.name;
+    struct utf8_view   name = utf8_span_view(source, span);
+    struct view_scope  name_scope = {name, ast_scope(ast, identifier)};
+    switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
+    {
+        case HM_OOM: return -1;
+        case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap, (void)0); return -1;
+        case HM_NEW:
+            if (type == TYPE_UDT_PTR)
+            {
+                ast_id as_udt = ast->nodes[decl2].var_decl2.as;
+                ODBUTIL_DEBUG_ASSERT(
+                    ast_node_type(ast, as_udt) == AST_AS_UDT,
+                    log_err("type: %d\n", ast_node_type(ast, as_udt)));
+
+                struct utf8_span type_span
+                    = ast->nodes[as_udt].as_udt.type_name;
+                struct utf8_view  type_name = utf8_span_view(source, type_span);
+                struct view_scope key = {type_name, ast_scope(ast, as_udt)};
+                llvm::StructType** StructTy = typemap_find(udt_table, key);
+                ODBUTIL_DEBUG_ASSERT(StructTy, (void)0);
+
+                llvm::StringRef TypeName(
+                    type_name.data + type_name.off, type_name.len);
+                *Ap = builder.CreateAlloca(*StructTy, nullptr, TypeName);
+            }
+            else
+            {
+                *Ap = builder.CreateAlloca(
+                    type_to_llvm(type, &ir->ctx),
+                    nullptr,
+                    llvm::StringRef(name.data + name.off, name.len));
+            }
+            break;
+    }
+
+    builder.CreateStore(InitExpr, *Ap);
+
+    stack_pop(*stack);
+    return 0;
+}
+
+static int
+process_var_read(
+    struct stack**     stack,
+    struct results**   results,
+    llvm::IRBuilder<>& b,
+    const struct ast*  ast,
+    const char*        source,
+    struct allocamap** allocamap)
+{
+    struct stack_entry* entry = stack_pop(*stack);
+    ast_id              expr = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, expr) == AST_VAR_READ,
+        log_err("type: %d\n", ast_node_type(ast, expr)));
+
+    ast_id             ast_ident = ast->nodes[expr].var_read.identifier;
+    struct utf8_span   span = ast->nodes[ast_ident].identifier.name;
+    struct utf8_view   name = utf8_span_view(source, span);
+    struct view_scope  name_scope = {name, ast->nodes[expr].info.scope_id};
+    llvm::AllocaInst** A = allocamap_find(*allocamap, name_scope);
+    /* The AST should be constructed in a way where we do not have to
+     * create a default value for variables that have not yet been
+     * declared */
+    ODBUTIL_DEBUG_ASSERT(A != NULL, (void)0);
+
+    llvm::Value* Read = b.CreateLoad(
+        (*A)->getAllocatedType(),
+        *A,
+        llvm::StringRef(name.data + name.off, name.len));
+    return results_push(results, Read);
+}
+
+static int
+process_var_write(
+    struct stack**     stack,
+    struct results**   results,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& builder,
+    const struct ast*  ast,
+    const char*        source,
+    struct allocamap** allocamap)
+{
+    struct stack_entry* entry = stack_pop(*stack);
+    ast_id              var_write = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, var_write) == AST_VAR_WRITE,
+        log_err("type: %d\n", ast_node_type(ast, var_write)));
+
+    llvm::AllocaInst** Ap;
+    enum type          type = ast_type_info(ast, var_write);
+    ast_id             ident = ast->nodes[var_write].var_write.identifier;
+    struct utf8_span   span = ast->nodes[ident].identifier.name;
+    struct utf8_view   name = utf8_span_view(source, span);
+    struct view_scope  name_scope = {name, ast->nodes[ident].info.scope_id};
+    switch (allocamap_emplace_or_get(allocamap, name_scope, &Ap))
+    {
+        case HM_OOM: return -1;
+        case HM_EXISTS: ODBUTIL_DEBUG_ASSERT(*Ap != NULL, (void)0); break;
+        case HM_NEW:
+            *Ap = builder.CreateAlloca(
+                type_to_llvm(type, &ir->ctx),
+                NULL,
+                llvm::StringRef(name.data + name.off, name.len));
+            break;
+    }
+
+    if (results_push(results, *Ap) != 0)
+        return -1;
 
     return 0;
 }
 
 static int
-process_node(
+process_udt_init(
+    struct stack**        stack,
+    struct results**      results,
+    llvm::IRBuilder<>&    b,
+    const struct ast*     ast,
+    const char*           source,
+    const struct typemap* udt_table,
+    struct allocamap**    allocamap)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              udt_init = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_init) == AST_UDT_INIT,
+        log_err("type: %d\n", ast_node_type(ast, udt_init)));
+
+    ast_id members = ast->nodes[udt_init].udt_init.arglist;
+    if (members > -1 && num_results == 0)
+    {
+        /* Arguments will be processed in reverse order, which shouldn't be
+         * a problem. This is good because the results will be pushed onto
+         * the results-stack in reverse-reverse order (i.e. correct order)
+         * again */
+        for (; members > -1; members = ast->nodes[members].arglist.next)
+        {
+            ast_id member = ast->nodes[members].arglist.expr;
+            if (stack_push_node(stack, member) != 0)
+                return -1;
+            num_results++;
+        }
+
+        entry->num_results = num_results;
+        return 0;
+    }
+
+    llvm::ArrayRef<llvm::Value*> InitValues(
+        results_pop_by(*results, num_results), num_results);
+
+    struct utf8_span   type_span = ast->nodes[udt_init].udt_init.type_name;
+    struct utf8_view   type_name = utf8_span_view(source, type_span);
+    struct view_scope  key = {type_name, ast_scope(ast, udt_init)};
+    llvm::StructType** StructTy = typemap_find(udt_table, key);
+    ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
+
+    llvm::StringRef   TypeName(type_name.data + type_name.off, type_name.len);
+    llvm::AllocaInst* StructPtr = b.CreateAlloca(*StructTy, nullptr, TypeName);
+
+    for (const auto& [index, InitValue] : llvm::enumerate(InitValues))
+    {
+        llvm::Value* MemberPtr = b.CreateStructGEP(*StructTy, StructPtr, index);
+        b.CreateStore(InitValue, MemberPtr);
+    }
+
+    stack_pop(*stack);
+    return results_push(results, StructPtr);
+}
+
+static int
+process_udt_read(
+    struct stack**        stack,
+    struct results**      results,
+    llvm::IRBuilder<>&    b,
+    const struct ast*     ast,
+    const char*           source,
+    const struct typemap* udt_table,
+    struct allocamap**    allocamap)
+{
+    struct stack_entry* entry = stack_pop(*stack);
+    ast_id              udt_read = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_read) == AST_UDT_READ,
+        log_err("type: %d\n", ast_node_type(ast, udt_read)));
+
+    struct utf8_span   type_span = ast->nodes[udt_read].udt_read.type_name;
+    struct utf8_view   type_name = utf8_span_view(source, type_span);
+    struct view_scope  key = {type_name, ast_scope(ast, udt_read)};
+    llvm::StructType** StructTy = typemap_find(udt_table, key);
+    ODBUTIL_DEBUG_ASSERT(StructTy != nullptr, (void)0);
+
+    ast_id left = ast->nodes[udt_read].udt_read.member;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, left) == AST_VAR_READ,
+        log_err("type: %d\n", ast_node_type(ast, left)));
+    ast_id             ident = ast->nodes[left].var_read.identifier;
+    struct utf8_span   left_span = ast->nodes[ident].identifier.name;
+    struct utf8_view   left_name = utf8_span_view(source, left_span);
+    struct view_scope  left_key = {left_name, ast_scope(ast, left)};
+    llvm::AllocaInst** A = allocamap_find(*allocamap, left_key);
+    ODBUTIL_DEBUG_ASSERT(A != nullptr, (void)0);
+
+    llvm::StringRef LeftName(left_name.data + left_name.off, left_name.len);
+    llvm::Value*    MemberPtr = b.CreateStructGEP(
+        *StructTy, *A, ast->nodes[udt_read].udt_read.index, LeftName);
+    llvm::Value* Read = b.CreateLoad((*A)->getAllocatedType(), MemberPtr);
+    return results_push(results, Read);
+}
+
+static int
+process_cast(
     struct stack**     stack,
-    const struct ast*  ast,
+    struct results**   results,
     struct ir_module*  ir,
-    llvm::IRBuilder<>& builder)
+    llvm::IRBuilder<>& builder,
+    const struct ast*  ast)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              cast = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cast) == AST_CAST,
+        log_err("type: %d\n", ast_node_type(ast, cast)));
+
+    ast_id expr = ast->nodes[cast].cast.expr;
+    if (num_results == 0)
+    {
+        if (stack_push_node(stack, expr) != 0)
+            return -1;
+        entry->num_results = 1;
+        return 0;
+    }
+    llvm::Value* Expr = *results_pop(*results);
+    stack_pop(*stack);
+
+    enum type from = ast_type_info(ast, expr);
+    enum type to = ast_type_info(ast, cast);
+    switch (to)
+    {
+        case TYPE_INVALID:
+        case TYPE_VOID: break;
+
+        case TYPE_I64:
+        case TYPE_U32:
+        case TYPE_I32:
+        case TYPE_U16:
+        case TYPE_U8:
+        case TYPE_F32:
+        case TYPE_F64: {
+            /* clang-format off */
+            using Op = llvm::Instruction::CastOps;
+            Op O = Op::CastOpsBegin;
+            static const Op llvm_cast_ops[16][16] = {
+     /*          0 R          D          L          W          Y          B           F           O          S H P Q X           E */
+              {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
+     /* 0 */  {O,O,           O,         O,         O,         O,         O,          O,          O,         O,O,O,O,O,          O},
+     /* R */  {O,O,Op::SExt,  Op::Trunc, Op::Trunc, Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* D */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* L */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::Trunc, Op::Trunc, O,          Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* W */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::Trunc, O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* Y */  {O,O,Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  Op::ZExt,  O,          Op::UIToFP, Op::UIToFP,O,O,O,O,Op::BitCast,O},
+     /* B */  {O,O,Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,  Op::SExt,   Op::SIToFP, Op::SIToFP,O,O,O,O,Op::BitCast,O},
+     /* F */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPExt,  Op::FPExt, O,O,O,O,Op::BitCast,O},
+     /* O */  {O,O,Op::FPToSI,Op::FPToUI,Op::FPToSI,Op::FPToUI,Op::FPToUI,O,          Op::FPTrunc,Op::FPExt, O,O,O,O,Op::BitCast,O},
+     /* S */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* H */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* P */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* Q */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* X */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+     /* E */  {O,O,O,         O,         O,         O,         O,         O,          O,          O,         O,O,O,O,Op::BitCast,O},
+            };
+            /* clang-format on */
+
+            llvm::Value* Cast = builder.CreateCast(
+                llvm_cast_ops[from][to], Expr, type_to_llvm(to, &ir->ctx));
+            return results_push(results, Cast);
+        }
+
+        case TYPE_BOOL:
+            switch (from)
+            {
+                case TYPE_INVALID: break;
+                case TYPE_VOID: break;
+
+                case TYPE_I64:
+                case TYPE_U32:
+                case TYPE_I32:
+                case TYPE_U16:
+                case TYPE_U8:
+                case TYPE_BOOL: {
+                    llvm::Value* Cast = builder.CreateICmpNE(
+                        Expr,
+                        llvm::ConstantInt::get(
+                            type_to_llvm(from, &ir->ctx), 0));
+                    return results_push(results, Cast);
+                }
+
+                case TYPE_F32:
+                case TYPE_F64: {
+                    llvm::Value* Cast = builder.CreateFCmpONE(
+                        Expr,
+                        llvm::ConstantFP::get(ir->ctx, llvm::APFloat(0.0)));
+                    return results_push(results, Cast);
+                }
+
+                case TYPE_STRING:
+                case TYPE_ARRAY:
+                case TYPE_LABEL:
+                case TYPE_DABEL:
+                case TYPE_ANY:
+                case TYPE_UDT_PTR: break;
+            }
+            break;
+
+        case TYPE_STRING:
+        case TYPE_ARRAY:
+        case TYPE_LABEL:
+        case TYPE_DABEL:
+        case TYPE_ANY:
+        case TYPE_UDT_PTR: break;
+    }
+
+    ODBUTIL_DEBUG_ASSERT(0, log_err("Cast not implemented\n"));
+    return -1;
+}
+
+static int
+process_node(
+    struct stack**                                stack,
+    struct results**                              results,
+    const struct ast*                             ast,
+    struct ir_module*                             ir,
+    llvm::IRBuilder<>&                            b,
+    const char*                                   filename,
+    const char*                                   source,
+    enum sdk_type                                 sdk_type,
+    const struct cmd_list*                        cmds,
+    const llvm::StringMap<llvm::GlobalVariable*>* string_table,
+    const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
+    const struct typemap*                         udt_table,
+    struct allocamap**                            allocamap)
+
 {
     struct stack_entry* entry = vec_last(*stack);
     ast_id              n = entry->node;
@@ -2073,21 +2130,40 @@ process_node(
     {
         case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_BLOCK: return process_block(stack, ast);
-        case AST_END: return process_end(stack, ast, ir, builder);
+        case AST_END: return process_end(stack, ir, b, ast);
         case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_COMMAND: return process_command(stack, ast, ir, builder);
+        case AST_COMMAND:
+            return process_command(
+                stack, results, ir, b, ast, sdk_type, cmds, cmd_func_table);
         case AST_ASSIGNMENT:
+            return process_assignment(
+                stack, *results, ir, b, ast, source, allocamap);
         case AST_VAR_DECL1:
-        case AST_VAR_DECL2:
+            return process_var_decl(
+                stack, *results, ir, b, source, ast, udt_table, allocamap);
+        case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_VAR_READ:
+            return process_var_read(stack, results, b, ast, source, allocamap);
         case AST_VAR_WRITE:
+            return process_var_write(
+                stack, results, ir, b, ast, source, allocamap);
         case AST_UDT_DECL:
+            /* Skip over declarations, they do nothing */
+            stack_pop(*stack);
+            return 0;
         case AST_UDT_INIT:
+            return process_udt_init(
+                stack, results, b, ast, source, udt_table, allocamap);
         case AST_UDT_READ:
+            return process_udt_read(
+                stack, results, b, ast, source, udt_table, allocamap);
         case AST_UDT_WRITE:
-        case AST_PARAM:
+        case AST_PARAM: break;
         case AST_IDENTIFIER:
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("Identifiers should never be pushed\n"));
+            return -1;
         case AST_BINOP:
         case AST_UNOP:
         case AST_COND:
@@ -2107,22 +2183,94 @@ process_node(
         case AST_FUNC_EXIT:
         case AST_FUNC_CALL:
         case AST_FUNC_CALL_OR_CONTAINER_READ:
-        case AST_CONTAINER_WRITE:
-        case AST_BOOLEAN_LITERAL:
-        case AST_BYTE_LITERAL:
-        case AST_WORD_LITERAL:
-        case AST_DWORD_LITERAL:
-        case AST_INTEGER_LITERAL:
-        case AST_DOUBLE_INTEGER_LITERAL:
-        case AST_FLOAT_LITERAL:
-        case AST_DOUBLE_LITERAL:
-        case AST_STRING_LITERAL:
-        case AST_CAST:
+        case AST_CONTAINER_WRITE: break;
+        case AST_BOOLEAN_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt1Ty(ir->ctx),
+                    ast->nodes[lit].boolean_literal.is_true,
+                    /*isSigned=*/false));
+        }
+        case AST_BYTE_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt8Ty(ir->ctx),
+                    ast->nodes[lit].byte_literal.value,
+                    /*isSigned=*/false));
+        }
+        case AST_WORD_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt16Ty(ir->ctx),
+                    ast->nodes[lit].word_literal.value,
+                    /*isSigned=*/false));
+        }
+        case AST_DWORD_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(ir->ctx),
+                    ast->nodes[lit].dword_literal.value,
+                    /*isSigned=*/false));
+        }
+        case AST_INTEGER_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(ir->ctx),
+                    ast->nodes[lit].integer_literal.value,
+                    /*isSigned=*/true));
+        }
+        case AST_DOUBLE_INTEGER_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantInt::get(
+                    llvm::Type::getInt64Ty(ir->ctx),
+                    ast->nodes[lit].double_integer_literal.value,
+                    /*isSigned=*/false));
+        }
+        case AST_FLOAT_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantFP::get(
+                    llvm::Type::getFloatTy(ir->ctx),
+                    llvm::APFloat(ast->nodes[lit].float_literal.value)));
+        }
+        case AST_DOUBLE_LITERAL: {
+            ast_id lit = stack_pop(*stack)->node;
+            return results_push(
+                results,
+                llvm::ConstantFP::get(
+                    llvm::Type::getDoubleTy(ir->ctx),
+                    llvm::APFloat(ast->nodes[lit].double_literal.value)));
+        }
+        case AST_STRING_LITERAL: {
+            ast_id           lit = stack_pop(*stack)->node;
+            struct utf8_span span = ast->nodes[lit].string_literal.str;
+            llvm::StringRef  Str(source + span.off, span.len);
+            return results_push(results, string_table->find(Str)->getValue());
+        }
+        case AST_CAST: return process_cast(stack, results, ir, b, ast);
         case AST_AS_TYPE:
         case AST_AS_EXPR:
         case AST_AS_UDT:
         case AST_AS_AUTO: break;
     }
+
+    log_flc(filename, source, ast_loc(ast, n));
+    log_err(
+        "IR not implemented yet for node type %d.\n", ast_node_type(ast, n));
+    log_excerpt_1(source, ast_loc(ast, n), "", 0);
 
     return -1;
 }
@@ -2139,24 +2287,22 @@ ir_translate_ast(
     const char*            source)
 {
     llvm::StringMap<llvm::GlobalVariable*> string_table;
-    create_global_string_table(ir, &string_table, ast, source);
-
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
-    create_global_command_function_table(
-        ir, &cmd_func_table, ast, cmds, source);
-
-    llvm::StringMap<llvm::Function*> db_func_table;
-    create_db_function_table(ir, &db_func_table, ast, source);
-
-    struct typemap* udt_table;
-    typemap_init(&udt_table);
-    create_udt_table(&ir->ctx, &udt_table, ast, source);
-
-    struct allocamap* allocamap;
-    allocamap_init(&allocamap);
-
+    llvm::StringMap<llvm::Function*>       db_func_table;
     llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
+    struct typemap*                        udt_table;
+    struct allocamap*                      allocamap;
+    struct stack*                          stack;
+    struct results*                        results;
 
+    typemap_init(&udt_table);
+    allocamap_init(&allocamap);
+    stack_init(&stack);
+    results_init(&results);
+
+    /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
+     * statements from the current node. We name it according to the node's
+     * index in the AST. Makes it easier to track down issues later on. */
     llvm::Function* F = llvm::Function::Create(
         llvm::FunctionType::get(
             llvm::Type::getVoidTy(ir->ctx),
@@ -2165,39 +2311,48 @@ ir_translate_ast(
         llvm::Function::ExternalLinkage,
         llvm::Twine("dba_") + ir->mod.getName(),
         &ir->mod);
-
-    /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
-     * statements from the current node. We name it according to the node's
-     * index in the AST. Makes it easier to track down issues later on. */
     llvm::BasicBlock* BB
         = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
     llvm::IRBuilder<> builder(BB);
 
+    if (create_string_table(ir, &string_table, ast, source) != 0)
+        goto create_string_table_failed;
+    if (create_cmd_func_table(ir, &cmd_func_table, ast, cmds, source) != 0)
+        goto create_cmd_func_table_failed;
+    if (create_db_func_table(ir, &db_func_table, ast, source) != 0)
+        goto create_db_func_table_failed;
+    if (create_udt_table(&ir->ctx, &udt_table, ast, source) != 0)
+        goto create_udt_table_failed;
+
     if (ast_count(ast) == 0)
         log_warn("AST is empty for source file {quote:%s}\n", filename);
-    else
+    else if (stack_push_node(&stack, ast->root) != 0)
+        goto translation_failure;
+
+    while (stack_count(stack) > 0)
     {
-        gen_block(
-            ir,
-            builder,
-            ast,
-            ast->root,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            &string_table,
-            &cmd_func_table,
-            &db_func_table,
-            &loop_exit_stack,
-            udt_table,
-            &allocamap);
+        if (process_node(
+                &stack,
+                &results,
+                ast,
+                ir,
+                builder,
+                filename,
+                source,
+                sdk_type,
+                cmds,
+                &string_table,
+                &cmd_func_table,
+                udt_table,
+                &allocamap)
+            != 0)
+        {
+            goto translation_failure;
+        }
     }
 
-    typemap_deinit(udt_table);
-    allocamap_deinit(allocamap);
-
     // Finish off block
+    builder.SetInsertPoint(BB);
     builder.CreateRetVoid();
 
     // Validate the generated code, checking for consistency.
@@ -2234,7 +2389,29 @@ ir_translate_ast(
             llvm::Twine("__chkstk"));
     }
 
+    ODBUTIL_DEBUG_ASSERT(
+        results_count(results) == 0,
+        log_err("results: %d\n", results_count(results)));
+    ODBUTIL_DEBUG_ASSERT(
+        stack_count(stack) == 0, log_err("stack: %d\n", stack_count(stack)));
+
+    results_deinit(results);
+    stack_deinit(stack);
+    allocamap_deinit(allocamap);
+    typemap_deinit(udt_table);
+
     return 0;
+
+translation_failure:
+    results_deinit(results);
+    stack_deinit(stack);
+    allocamap_deinit(allocamap);
+    typemap_deinit(udt_table);
+create_udt_table_failed:
+create_db_func_table_failed:
+create_cmd_func_table_failed:
+create_string_table_failed:
+    return -1;
 }
 
 int
