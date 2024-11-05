@@ -200,15 +200,15 @@ check_scope_ids(
 
 static int
 calculate_scope_ids(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     struct ast* ast = tus[tu_id];
     int32_t     scope_counter = 0;

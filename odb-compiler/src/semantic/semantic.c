@@ -86,15 +86,15 @@ HM_DEFINE_API_FULL(
 
 struct ctx
 {
-    struct ast**               tus;
-    int                        tu_count;
-    int                        tu_id;
-    struct mutex**             tu_mutexes;
-    const struct utf8*         filenames;
-    const struct db_source*    sources;
-    const struct plugin_list*  plugins;
-    const struct cmd_list*     cmds;
-    const struct globals* symbols;
+    struct ast**              tus;
+    int                       tu_count;
+    int                       tu_id;
+    struct mutex**            tu_mutexes;
+    const struct utf8*        filenames;
+    const struct db_source*   sources;
+    const struct plugin_list* plugins;
+    const struct cmd_list*    cmds;
+    const struct globals*     globals;
 };
 
 static int
@@ -123,7 +123,7 @@ run_check(
                 ctx->sources,
                 ctx->plugins,
                 ctx->cmds,
-                ctx->symbols)
+                ctx->globals)
             < 0)
         {
             return -1;
@@ -156,7 +156,7 @@ semantic_check_run(
     const struct db_source*      sources,
     const struct plugin_list*    plugins,
     const struct cmd_list*       cmds,
-    const struct globals*   symbols)
+    const struct globals*        globals)
 {
     struct ptr_set* check_visited;
     struct ast**    astp = &tus[tu_id];
@@ -170,7 +170,7 @@ semantic_check_run(
            sources,
            plugins,
            cmds,
-           symbols};
+           globals};
 
     if (ast_count(*astp) == 0)
     {
@@ -193,30 +193,30 @@ semantic_check_run(
 
 static int
 dummy_check(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     return 0;
 }
 
 int
 semantic_run_essential_checks(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     static const struct semantic_check* essential_checks[]
         = {&semantic_type_check,
@@ -238,5 +238,5 @@ semantic_run_essential_checks(
         sources,
         plugins,
         cmds,
-        symbols);
+        globals);
 }

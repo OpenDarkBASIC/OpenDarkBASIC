@@ -94,15 +94,15 @@ check_cont(
 
 static int
 check_loop_cont(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     ast_id       n, loop;
     struct ast** astp = &tus[tu_id];

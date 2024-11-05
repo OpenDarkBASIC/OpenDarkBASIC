@@ -44,15 +44,15 @@ find_parent_loop_with_same_name(
 
 static int
 check_loop_names(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     ast_id      n;
     struct ast* ast = tus[tu_id];

@@ -525,6 +525,7 @@ if (ODBCOMPILER_TESTS)
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_for.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_loop_cont.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_type_check_udt.cpp"
+        "tests/src/semantic/test_odbcompiler_semantic_type_check_udt_errors.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_warnings.cpp"
         "tests/src/semantic/test_odbcompiler_semantic_resolve_cmd_overloads_errors.cpp"

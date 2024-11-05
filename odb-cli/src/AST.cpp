@@ -6,9 +6,9 @@ extern "C" {
 #include "odb-compiler/ast/ast_export.h"
 #include "odb-compiler/parser/db_cmd_loader.h"
 #include "odb-compiler/parser/db_parser.h"
+#include "odb-compiler/semantic/globals.h"
 #include "odb-compiler/semantic/post.h"
 #include "odb-compiler/semantic/semantic.h"
-#include "odb-compiler/semantic/symbol_table.h"
 #include "odb-util/log.h"
 #include "odb-util/mem.h"
 #include "odb-util/mutex.h"
@@ -28,11 +28,11 @@ VEC_DEFINE_API(ast_mutexes, struct mutex*, 32)
 
 struct ctx
 {
-    struct filenames*    filenames;
-    struct sources*      sources;
-    struct tus*          tus;
-    struct ast_mutexes*  ast_mutexes;
-    struct globals* symbol_table;
+    struct filenames*   filenames;
+    struct sources*     sources;
+    struct tus*         tus;
+    struct ast_mutexes* ast_mutexes;
+    struct globals*     globals;
 };
 
 struct worker
@@ -249,14 +249,14 @@ parse_worker(void* arg)
             goto parse_failed;
 
         mutex_lock(worker->mutex);
-        mem_acquire_globals(worker->ctx->symbol_table);
+        mem_acquire_globals(worker->ctx->globals);
         globals_add_declarations_from_ast(
-            &worker->ctx->symbol_table,
+            &worker->ctx->globals,
             worker->ctx->tus->data,
             tu_id,
             worker->ctx->filenames->data,
             worker->ctx->sources->data);
-        mem_release_globals(worker->ctx->symbol_table);
+        mem_release_globals(worker->ctx->globals);
         mutex_unlock(worker->mutex);
     }
 
@@ -304,7 +304,7 @@ semantic_worker(void* arg)
             worker->ctx->sources->data,
             *getPluginList(),
             getCommandList(),
-            worker->ctx->symbol_table);
+            worker->ctx->globals);
         mem_release_ast(*astp);
 
         if (result != 0)
@@ -328,14 +328,14 @@ initAST(void)
     sources_init(&ctx.sources);
     tus_init(&ctx.tus);
     ast_mutexes_init(&ctx.ast_mutexes);
-    symbol_table_init(&ctx.symbol_table);
+    globals_init(&ctx.globals);
 
     return 0;
 }
 void
 deinitAST(void)
 {
-    globals_deinit(ctx.symbol_table);
+    globals_deinit(ctx.globals);
     close_tus(&ctx);
     ast_mutexes_deinit(ctx.ast_mutexes);
     tus_deinit(ctx.tus);
@@ -349,7 +349,7 @@ execute_parse_workers(std::vector<worker>* workers)
     int          worker_id;
     struct ast** astp;
 
-    mem_release_globals(ctx.symbol_table);
+    mem_release_globals(ctx.globals);
     vec_for_each(ctx.tus, astp)
     {
         mem_release_ast(*astp);
@@ -373,7 +373,7 @@ execute_parse_workers(std::vector<worker>* workers)
     {
         mem_acquire_ast(*astp);
     }
-    mem_acquire_globals(ctx.symbol_table);
+    mem_acquire_globals(ctx.globals);
 
     return 0;
 
@@ -389,7 +389,7 @@ start_parse_thread_failed:
     {
         mem_acquire_ast(*astp);
     }
-    mem_acquire_globals(ctx.symbol_table);
+    mem_acquire_globals(ctx.globals);
     return -1;
 }
 

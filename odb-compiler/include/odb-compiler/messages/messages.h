@@ -172,6 +172,12 @@ err_udt_member_not_found(
     struct utf8_span  name,
     const char*       filename,
     const char*       source);
+int
+err_udt_is_not_udt(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source);
 
 void
 warn_assignment_implicit_conversion(

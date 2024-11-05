@@ -670,6 +670,23 @@ err_udt_member_not_found(
     return -1;
 }
 
+int
+err_udt_is_not_udt(
+    const struct ast* ast,
+    struct utf8_span  name,
+    const char*       filename,
+    const char*       source)
+{
+    log_flc(filename, source, name);
+    log_err(
+        "{quote:%.*s} is not a User-Defined Type.\n",
+        name.len,
+        source + name.off);
+    log_excerpt_1(source, name, "", 0);
+
+    return -1;
+}
+
 void
 warn_assignment_implicit_conversion(
     const struct ast* ast,

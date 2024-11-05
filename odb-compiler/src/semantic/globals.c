@@ -2,8 +2,8 @@
 #include "odb-compiler/ast/ast_ops.h"
 #include "odb-compiler/messages/messages.h"
 #include "odb-compiler/parser/db_source.h"
-#include "odb-compiler/semantic/semantic.h"
 #include "odb-compiler/semantic/globals.h"
+#include "odb-compiler/semantic/semantic.h"
 #include "odb-util/hash.h"
 #include "odb-util/hm.h"
 #include "odb-util/mem.h"
@@ -16,9 +16,9 @@ struct kvs_key_data
 
 struct hm_kvs
 {
-    struct utf8_span*          key_spans;
-    struct kvs_key_data*       key_data;
-    struct global* values;
+    struct utf8_span*    key_spans;
+    struct kvs_key_data* key_data;
+    struct global*       values;
 };
 
 static hash32
@@ -121,20 +121,13 @@ kvs_get_value(const struct hm_kvs* kvs, utf8_idx idx)
 }
 
 static void
-kvs_set_value(
-    struct hm_kvs* kvs, utf8_idx idx, struct global* value)
+kvs_set_value(struct hm_kvs* kvs, utf8_idx idx, struct global* value)
 {
     kvs->values[idx] = *value;
 }
 
 HM_DECLARE_API_FULL(
-    static,
-    hm,
-    hash32,
-    struct utf8_view,
-    struct global,
-    32,
-    struct hm_kvs)
+    static, hm, hash32, struct utf8_view, struct global, 32, struct hm_kvs)
 HM_DEFINE_API_FULL(
     hm,
     hash32,
@@ -158,26 +151,26 @@ struct globals
 };
 
 void
-globals_deinit(struct globals* table)
+globals_deinit(struct globals* globals)
 {
-    hm_deinit(&table->hm);
+    hm_deinit(&globals->hm);
 }
 
 static int
 add_function(
-    struct globals**   symbols,
+    struct globals**        globals,
     struct ast**            tus,
     int                     tu_id,
     ast_id                  f1,
     const struct utf8*      filenames,
     const struct db_source* sources)
 {
-    struct global* entry;
-    ast_id                     identifier;
-    struct utf8_span           func_span;
-    struct utf8_view           func_name;
-    const struct ast*          ast = tus[tu_id];
-    const char*                source = sources[tu_id].text.data;
+    struct global*    entry;
+    ast_id            identifier;
+    struct utf8_span  func_span;
+    struct utf8_view  func_name;
+    const struct ast* ast = tus[tu_id];
+    const char*       source = sources[tu_id].text.data;
 
     identifier = ast->nodes[f1].func1.identifier;
     ODBUTIL_DEBUG_ASSERT(
@@ -187,7 +180,7 @@ add_function(
     func_span = ast->nodes[identifier].identifier.name;
     func_name = utf8_span_view(source, func_span);
 
-    switch (hm_emplace_or_get((struct hm**)symbols, func_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)globals, func_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
@@ -229,18 +222,18 @@ add_function(
 
 static int
 add_udt_decl(
-    struct globals**   symbols,
+    struct globals**        globals,
     struct ast**            tus,
     int                     tu_id,
     ast_id                  udt_decl,
     const struct utf8*      filenames,
     const struct db_source* sources)
 {
-    struct global* entry;
-    struct utf8_span           udt_span;
-    struct utf8_view           udt_name;
-    const struct ast*          ast = tus[tu_id];
-    const char*                source = sources[tu_id].text.data;
+    struct global*    entry;
+    struct utf8_span  udt_span;
+    struct utf8_view  udt_name;
+    const struct ast* ast = tus[tu_id];
+    const char*       source = sources[tu_id].text.data;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
@@ -248,7 +241,7 @@ add_udt_decl(
 
     udt_span = ast->nodes[udt_decl].udt_decl.type_name;
     udt_name = utf8_span_view(source, udt_span);
-    switch (hm_emplace_or_get((struct hm**)symbols, udt_name, &entry))
+    switch (hm_emplace_or_get((struct hm**)globals, udt_name, &entry))
     {
         case HM_OOM: return -1;
         case HM_NEW: {
@@ -280,7 +273,7 @@ add_udt_decl(
 
 int
 globals_add_declarations_from_ast(
-    struct globals**   table,
+    struct globals**        table,
     struct ast**            tus,
     int                     tu_id,
     const struct utf8*      filenames,

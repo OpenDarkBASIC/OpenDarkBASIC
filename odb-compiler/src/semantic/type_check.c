@@ -240,13 +240,50 @@ declare_local(
     struct local**   value)
 {
     struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
-    /* TODO: scope_id needs to also contain the parent scope so we can access
-     * global variables and outer scopes */
     return locals_emplace_or_get(locals, key, value);
 }
 
+static enum hm_status
+find_or_declare_local(
+    struct locals**  locals,
+    const char*      source,
+    struct utf8_span identifier_name,
+    int32_t          scope_id,
+    struct local**   value)
+{
+    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    /* TODO: scope_id needs to also contain the parent scope so we can access
+     * global variables and outer scopes */
+    *value = locals_find(*locals, key);
+    if (*value == NULL)
+    {
+        key.scope = 0; /* XXX: Global scope */
+        return locals_emplace_or_get(locals, key, value);
+    }
+    return HM_EXISTS;
+}
+
+static struct local*
+find_local(
+    const struct locals* locals,
+    const char*          source,
+    struct utf8_span     identifier_name,
+    int32_t              scope_id)
+{
+    struct view_scope key = {utf8_span_view(source, identifier_name), scope_id};
+    struct local*     value = locals_find(locals, key);
+    if (value == NULL)
+    {
+        /* TODO: scope_id needs to also contain the parent scope so we can
+         * access global variables and outer scopes */
+        key.scope = 0; /* XXX: Global scope */
+        value = locals_find(locals, key);
+    }
+    return value;
+}
+
 static void
-local_init(
+init_local(
     struct local*    local,
     struct utf8_span first_occurrence,
     ast_id           dependent,
@@ -534,7 +571,7 @@ process_param(
     scope_id = (*astp)->nodes[identifier].info.scope_id;
     switch (declare_local(locals, source, name, scope_id, &local))
     {
-        case HM_NEW: local_init(local, name, param, TYPE_INVALID); break;
+        case HM_NEW: init_local(local, name, param, TYPE_INVALID); break;
 
         case HM_EXISTS:
             if (local->type != TYPE_INVALID)
@@ -974,7 +1011,7 @@ process_var_decl(
     {
         case HM_OOM: return DEP_ERROR;
         case HM_NEW: {
-            local_init(local, name, var_decl, TYPE_INVALID);
+            init_local(local, name, var_decl, TYPE_INVALID);
             break;
         }
         case HM_EXISTS: {
@@ -1023,19 +1060,13 @@ process_var_decl(
     }
     else if (as > -1 && ast_node_type(*astp, as) == AST_AS_UDT)
     {
-        struct utf8_span udt_name;
-        ODBUTIL_DEBUG_ASSERT(
-            ast_type_info(*astp, as) == TYPE_UDT_PTR,
-            log_err("type: %d\n", ast_type_info(*astp, as)));
+        struct local*    udt_local;
+        struct utf8_span udt_name = (*astp)->nodes[as].as_udt.type_name;
+        udt_local = find_local(*locals, source, udt_name, scope_id);
+        ODBUTIL_DEBUG_ASSERT(udt_local != NULL, (void)0);
 
-        udt_name = (*astp)->nodes[as].as_udt.type_name;
-        switch (declare_local(locals, source, udt_name, scope_id, &local))
-        {
-            case HM_OOM: return DEP_ERROR;
-            case HM_EXISTS:
-                local->udt_decl;
-            case HM_NEW: break;
-        }
+        local->type = TYPE_UDT_PTR;
+        local->udt_decl = udt_local->udt_decl;
     }
     else if (as > -1)
     {
@@ -1150,7 +1181,7 @@ process_var_write(
              * created by referencing it */
             enum type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            local_init(local, name, var_write, ann_type);
+            init_local(local, name, var_write, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -1181,18 +1212,26 @@ process_var_write(
 
 static enum process_result
 process_udt_decl(
-    struct stack**        stack,
-    struct ast*           ast,
-    ast_id                udt_decl,
-    const char*           filename,
-    const char*           source,
-    struct locals**       locals,
-    const struct globals* globals)
+    struct stack**          stack,
+    struct ast**            tus,
+    int                     tu_id,
+    struct mutex**          tu_mutexes,
+    ast_id                  udt_decl,
+    const struct utf8*      filenames,
+    const struct db_source* sources,
+    struct locals**         locals,
+    const struct globals*   globals)
 {
-    ast_id           members;
-    struct utf8_span udt_name;
-    int32_t          scope_id;
-    struct local*    local;
+    ast_id               members;
+    struct utf8_span     udt_name;
+    struct utf8_view     udt_key;
+    int32_t              scope_id;
+    struct local*        local;
+    const struct global* global;
+
+    struct ast* ast = tus[tu_id];
+    const char* filename = utf8_cstr(filenames[tu_id]);
+    const char* source = sources[tu_id].text.data;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_decl) == AST_UDT_DECL,
@@ -1210,14 +1249,55 @@ process_udt_decl(
         return DEP_ADDED_CHILDREN;
     }
 
-    /*  */
+    /* Check if another module has already declared the type globally */
     udt_name = ast->nodes[udt_decl].udt_decl.type_name;
+    udt_key = utf8_span_view(source, udt_name);
+    global = globals_find(globals, udt_key);
+    if (global != NULL && global->tu_id != tu_id)
+    {
+        ast_id            first_node = global->ast_node;
+        const struct ast* first_ast = tus[global->tu_id];
+        const char*       first_filename = utf8_cstr(filenames[global->tu_id]);
+        const char*       first_source = sources[global->tu_id].text.data;
+        struct mutex*     their_mutex = tu_mutexes[global->tu_id];
+
+        mutex_lock(their_mutex);
+        err_udt_decl_redeclaration(
+            ast,
+            udt_name,
+            filename,
+            source,
+            first_ast,
+            ast_node_type(first_ast, first_node) == AST_UDT_DECL
+                ? first_ast->nodes[first_node].udt_decl.type_name
+                : ast_loc(first_ast, first_node),
+            first_filename,
+            first_source);
+        mutex_unlock(their_mutex);
+
+        return DEP_ERROR;
+    }
+
+    /* Treat the User-Defined Type name as a local identifier. This is to detect
+     * duplicate declarations, and also to make copying the UDT declaration into
+     * our local AST easier. */
     scope_id = ast->nodes[udt_decl].info.scope_id;
     switch (declare_local(locals, source, udt_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
-        case HM_EXISTS: break;
+        case HM_EXISTS: {
+            return err_udt_decl_redeclaration(
+                ast,
+                udt_name,
+                filename,
+                source,
+                ast,
+                local->first_occurrence,
+                filename,
+                source);
+        }
         case HM_NEW: {
+            local_init_udt(local, udt_name, udt_decl, udt_decl);
             break;
         }
     }
@@ -1226,6 +1306,139 @@ process_udt_decl(
 
     stack_pop(*stack);
     return DEP_SOLVED;
+}
+
+static enum type
+is_udt_member(
+    struct ast*      ast,
+    ast_id           udt_decl,
+    struct utf8_span member_name,
+    const char*      source)
+{
+    ast_id block;
+    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
+         block = ast->nodes[block].block.next)
+    {
+        struct utf8_span name;
+        ast_id           identifier;
+        ast_id           member = ast->nodes[block].block.stmt;
+        if (ast_node_type(ast, member) == AST_VAR_DECL1)
+        {
+            ast_id decl2 = ast->nodes[member].var_decl1.var_decl2;
+            identifier = ast->nodes[decl2].var_decl2.identifier;
+        }
+        else
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(ast, member)));
+            return 0;
+        }
+
+        name = ast->nodes[identifier].identifier.name;
+        if (utf8_equal_span(source, member_name, name))
+            return 1;
+    }
+
+    return 0;
+}
+
+static enum type
+find_udt_read_type(
+    struct ast*     ast,
+    ast_id          udt_decl,
+    ast_id          member,
+    const char*     filename,
+    const char*     source,
+    struct locals** locals)
+{
+    ast_id           block;
+    ast_id           left, left_identifier, udt_member_decl;
+    struct utf8_span left_name;
+
+    left = ast_node_type(ast, member) == AST_UDT_READ
+               ? ast->nodes[member].udt_read.member
+               : member;
+
+    /* Get identifier of incoming member */
+    if (ast_node_type(ast, left) == AST_VAR_READ)
+        left_identifier = ast->nodes[left].var_read.identifier;
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            0, log_err("type: %d\n", ast_node_type(ast, left)));
+        return TYPE_INVALID;
+    }
+    left_name = ast->nodes[left_identifier].identifier.name;
+
+    /* Match member name with the UDT declaration */
+    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
+         block = ast->nodes[block].block.next)
+    {
+        ast_id           udt_member_identifier;
+        struct utf8_span udt_member_name;
+        udt_member_decl = ast->nodes[block].block.stmt;
+        if (ast_node_type(ast, udt_member_decl) == AST_VAR_DECL1)
+        {
+            ast_id decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
+            udt_member_identifier = ast->nodes[decl2].var_decl2.identifier;
+        }
+        else
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(ast, udt_member_decl)));
+            return TYPE_INVALID;
+        }
+
+        udt_member_name = ast->nodes[udt_member_identifier].identifier.name;
+        if (utf8_equal_span(source, left_name, udt_member_name))
+            break;
+    }
+    if (block < 0)
+    {
+        err_udt_member_not_found(ast, left_name, filename, source);
+        return TYPE_INVALID;
+    }
+
+    /* Get type of UDT member -- If it is a nested UDT, then we have to look up
+     * the type name to get the nested udt_decl structure */
+    if (ast_type_info(ast, udt_member_decl) == TYPE_UDT_PTR)
+    {
+        enum type        type;
+        struct local*    local;
+        ast_id           right, decl2, as_udt;
+        struct utf8_span nested_type_name;
+        int32_t          scope_id;
+
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, member) == AST_UDT_READ,
+            log_err("type: %d\n", ast_node_type(ast, member)));
+        right = ast->nodes[member].udt_read.next;
+
+        decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
+        as_udt = ast->nodes[decl2].var_decl2.as;
+        nested_type_name = ast->nodes[as_udt].as_udt.type_name;
+        scope_id = ast->nodes[udt_member_decl].info.scope_id;
+        local = find_local(*locals, source, nested_type_name, scope_id);
+        ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
+
+        type = find_udt_read_type(
+            ast, local->udt_decl, right, filename, source, locals);
+        if (type == TYPE_INVALID)
+            return TYPE_INVALID;
+
+        ast->nodes[member].udt_read.type_name = nested_type_name;
+        ast->nodes[member].info.type_info = type;
+        ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+        ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
+        return type;
+    }
+    else
+    {
+        enum type type = ast_type_info(ast, udt_member_decl);
+        ast->nodes[left].info.type_info = type;
+        ast->nodes[left_identifier].info.type_info = type;
+        return type;
+    }
 }
 
 static enum process_result
@@ -1237,48 +1450,60 @@ process_udt_read(
     const char*     source,
     struct locals** locals)
 {
-    ast_id           member, next, identifier;
+    enum type        type;
+    ast_id           left, right, udt_decl, left_identifier;
     int32_t          scope_id;
-    struct utf8_span member_name;
+    struct utf8_span left_name, udt_name;
     struct local*    local;
 
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, udt_read) == AST_UDT_READ,
         log_err("type: %d\n", ast_node_type(ast, udt_read)));
 
-    member = ast->nodes[udt_read].udt_read.member;
-    next = ast->nodes[udt_read].udt_read.next;
+    left = ast->nodes[udt_read].udt_read.member;
+    right = ast->nodes[udt_read].udt_read.next;
 
-    if (ast_node_type(ast, member) == AST_VAR_READ)
-        identifier = ast->nodes[member].var_read.identifier;
+    if (ast_node_type(ast, left) == AST_VAR_READ)
+        left_identifier = ast->nodes[left].var_read.identifier;
     else
     {
         ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, member) == AST_VAR_READ
-                || ast_node_type(ast, member)
-                       == AST_FUNC_CALL_OR_CONTAINER_READ,
-            log_err("type: %d\n", ast_node_type(ast, member)));
+            0, log_err("type: %d\n", ast_node_type(ast, left)));
         return DEP_ERROR;
     }
 
-    member_name = ast->nodes[identifier].identifier.name;
-    scope_id = ast->nodes[identifier].info.scope_id;
-    switch (declare_local(locals, source, member_name, scope_id, &local))
+    left_name = ast->nodes[left_identifier].identifier.name;
+    scope_id = ast->nodes[left_identifier].info.scope_id;
+    switch (declare_local(locals, source, left_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
-
-        case HM_NEW:
-            return err_udt_not_found(ast, member_name, filename, source);
-
-        case HM_EXISTS:
+        case HM_NEW: {
+            return err_udt_not_found(ast, left_name, filename, source);
+        }
+        case HM_EXISTS: {
             if (local->type != TYPE_UDT_PTR)
-                return err_udt_member_not_found(
-                    ast, member_name, filename, source);
+                return err_udt_is_not_udt(ast, left_name, filename, source);
             break;
+        }
     }
 
-    log_err("TODO:\n");
-    return DEP_ERROR;
+    udt_decl = local->udt_decl;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
+    udt_name = ast->nodes[udt_decl].udt_decl.type_name;
+
+    type = find_udt_read_type(ast, udt_decl, right, filename, source, locals);
+    if (type == TYPE_INVALID)
+        return DEP_ERROR;
+
+    ast->nodes[udt_read].udt_read.type_name = udt_name;
+    ast->nodes[udt_read].info.type_info = type;
+    ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
 }
 
 static enum process_result
@@ -1318,7 +1543,7 @@ process_var_read(
              * created by referencing it */
             enum type ann_type = annotation_to_type(
                 (*astp)->nodes[identifier].identifier.annotation);
-            local_init(local, name, var_read, ann_type);
+            init_local(local, name, var_read, ann_type);
 
             /* TODO: Global variables are not yet supported */
 
@@ -2596,7 +2821,7 @@ process_as_udt(
 
     udt_name = (*astp)->nodes[as_udt].as_udt.type_name;
     scope_id = (*astp)->nodes[as_udt].info.scope_id;
-    switch (declare_local(locals, source, udt_name, scope_id, &local))
+    switch (find_or_declare_local(locals, source, udt_name, scope_id, &local))
     {
         case HM_OOM: return DEP_ERROR;
         case HM_EXISTS: break;
@@ -2609,6 +2834,7 @@ process_as_udt(
             if (global == NULL)
                 return err_udt_not_found(*astp, udt_name, filename, source);
 
+            ODBUTIL_DEBUG_ASSERT(global->tu_id != tu_id, (void)0);
             their_mutex = tu_mutexes[global->tu_id];
             their_ast = tus[global->tu_id];
             mutex_lock(their_mutex);
@@ -2661,17 +2887,34 @@ process_node(
             return process_assignment(stack, astp, n, filename, source, locals);
         case AST_VAR_DECL1:
             return process_var_decl(
-                stack, astp, n, filename, source, locals, globals);
+                stack,
+                tus,
+                tu_id,
+                tu_mutexes,
+                n,
+                filenames,
+                sources,
+                locals,
+                globals);
         case AST_VAR_DECL2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_VAR_READ:
             return process_var_read(stack, astp, n, filename, source, locals);
         case AST_VAR_WRITE:
             return process_var_write(stack, astp, n, filename, source, locals);
         case AST_UDT_DECL:
-            return process_udt_decl(stack, *astp, n, filename, source, globals);
+            return process_udt_decl(
+                stack,
+                tus,
+                tu_id,
+                tu_mutexes,
+                n,
+                filenames,
+                sources,
+                locals,
+                globals);
         case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_UDT_READ:
-            return process_udt_read(stack, *astp, n, filename, source);
+            return process_udt_read(stack, *astp, n, filename, source, locals);
         case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_PARAM:
             return process_param(stack, astp, n, filename, source, locals);
@@ -2757,7 +3000,15 @@ process_node(
         case AST_AS_EXPR: return process_as_expr(stack, *astp, n);
         case AST_AS_UDT:
             return process_as_udt(
-                stack, astp, n, filename, source, locals, globals);
+                stack,
+                tus,
+                tu_id,
+                tu_mutexes,
+                n,
+                filenames,
+                sources,
+                locals,
+                globals);
         case AST_AS_AUTO: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
     }
 

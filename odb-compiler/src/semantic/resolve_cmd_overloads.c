@@ -521,15 +521,15 @@ create_candidates_list(
 
 static int
 resolve_cmd_overloads(
-    struct ast**               tus,
-    int                        tu_count,
-    int                        tu_id,
-    struct mutex**             tu_mutexes,
-    const struct utf8*         filenames,
-    const struct db_source*    sources,
-    const struct plugin_list*  plugins,
-    const struct cmd_list*     cmds,
-    const struct globals* symbols)
+    struct ast**              tus,
+    int                       tu_count,
+    int                       tu_id,
+    struct mutex**            tu_mutexes,
+    const struct utf8*        filenames,
+    const struct db_source*   sources,
+    const struct plugin_list* plugins,
+    const struct cmd_list*    cmds,
+    const struct globals*     globals)
 {
     ast_id             n;
     ast_id             arglist;
