@@ -570,9 +570,7 @@ dump_ast(const std::vector<std::string>& args)
     int i;
     if (!args.empty())
     {
-        log_info(
-            "Dumping AST to Graphviz DOT format: {quote:%s}\n",
-            args[0].c_str());
+        log_info("Writing AST to: {quote:%s}\n", args[0].c_str());
 
         for (i = 0; i != tus_count(ctx.tus); i++)
         {
@@ -585,7 +583,7 @@ dump_ast(const std::vector<std::string>& args)
     }
     else
     {
-        log_info("Dumping AST to Graphviz DOT format\n");
+        log_info("Writing AST to stdout\n");
         for (i = 0; i != tus_count(ctx.tus); i++)
         {
             ast_export_fp(

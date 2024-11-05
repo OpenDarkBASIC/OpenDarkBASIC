@@ -44,10 +44,50 @@ VEC_DEFINE_API(spanlist, struct span_scope, 32)
 
 struct stack_entry
 {
+    union
+    {
+        llvm::Value* result;
+        int          value_count;
+    };
     ast_id node;
 };
+
 VEC_DECLARE_API(static, stack, struct stack_entry, 32)
 VEC_DEFINE_API(stack, struct stack_entry, 32)
+
+static int
+stack_push_dep(struct stack** stack, ast_id node)
+{
+    struct stack_entry* entry = stack_emplace(stack);
+    if (entry == NULL)
+        return -1;
+    entry->node = node;
+    entry->result = NULL;
+    return 0;
+}
+
+static int
+stack_push_result(struct stack** stack, llvm::Value* result)
+{
+    struct stack_entry* entry = stack_emplace(stack);
+    if (entry == NULL)
+        return -1;
+    entry->node = -1;
+    entry->result = result;
+    return 0;
+}
+
+static void
+stack_pop_return(struct stack* stack, llvm::Value** result)
+{
+    stack_pop(stack);
+}
+
+static llvm::Value**
+stack_values(struct stack* stack)
+{
+    return reinterpret_cast<llvm::Value**>(stack->data + stack->count);
+}
 
 struct allocamap_kvs
 {
@@ -829,6 +869,9 @@ gen_expr(
             return udt_inst;
         }
         case AST_UDT_READ: {
+            // struct utf8_span ast_type_name =
+            // ast->nodes[expr].udt_read.type_name;
+            // ast->nodes[expr].udt_read.member;
             ODBUTIL_DEBUG_ASSERT(0, (void)0);
 
             break;
@@ -1319,21 +1362,7 @@ gen_block(
             case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
 
             case AST_BLOCK:
-                ODBUTIL_DEBUG_ASSERT(
-                    0, log_err("Block within block should never occur.\n"));
-                return -1;
-
-            case AST_END: {
-                llvm::Function* FSDKDeInit = llvm::Function::Create(
-                    llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(ir->ctx), {}, false),
-                    llvm::Function::ExternalLinkage,
-                    "odbrt_exit",
-                    ir->mod);
-                FSDKDeInit->setDoesNotReturn();
-                builder.CreateCall(FSDKDeInit, {});
-                continue;
-            }
+            case AST_END:
 
             case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
             case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
@@ -1950,8 +1979,150 @@ gen_block(
 }
 
 static int
-process_node(struct stack** stack)
+process_block(struct stack** stack, const struct ast* ast)
 {
+    ast_id block, stmt, next;
+
+    block = stack_pop(*stack)->node;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, block) == AST_BLOCK,
+        log_err("type: %d\n", ast_node_type(ast, block)));
+
+    next = ast->nodes[block].block.next;
+    stmt = ast->nodes[block].block.stmt;
+    ODBUTIL_DEBUG_ASSERT(stmt > -1, (void)0);
+
+    if (next > -1 && stack_push_dep(stack, next) != 0)
+        return -1;
+    if (stack_push_dep(stack, stmt) != 0)
+        return -1;
+
+    return 0;
+}
+
+static int
+process_end(
+    struct stack**     stack,
+    const struct ast*  ast,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& builder)
+{
+    ast_id end = stack_pop(*stack)->node;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, end) == AST_END,
+        log_err("type: %d\n", ast_node_type(ast, end)));
+
+    // TODO: This function is created every time an END is encountered
+    llvm::Function* FSDKDeInit = llvm::Function::Create(
+        llvm::FunctionType::get(llvm::Type::getVoidTy(ir->ctx), {}, false),
+        llvm::Function::ExternalLinkage,
+        "odbrt_exit",
+        ir->mod);
+    FSDKDeInit->setDoesNotReturn();
+    builder.CreateCall(FSDKDeInit, {});
+
+    stack_pop(*stack);
+    return 0;
+}
+
+static int
+process_command(
+    struct stack**     stack,
+    const struct ast*  ast,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& builder)
+{
+    ast_id cmd = vec_last(*stack)->node;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cmd) == AST_COMMAND,
+        log_err("type: %d\n", ast_node_type(ast, cmd)));
+
+    ast_id arglist = ast->nodes[cmd].cmd.arglist;
+    cmd_id cmd_id = ast->nodes[cmd].cmd.id;
+    if (arglist > -1 && vec_last(*stack)->value_count == 0)
+    {
+        for (; arglist > -1; arglist = ast->nodes[arglist].arglist.next)
+        {
+            ast_id expr = ast->nodes[arglist].arglist.expr;
+            if (stack_push_dep(stack, expr) != 0)
+                return -1;
+        }
+        return 0;
+    }
+
+    for (int i = 0; i != vec_last(*stack)->value_count; ++i)
+    {
+        llvm::ArrayRef<llvm::Value*> args(
+            stack_values(*stack), vec_last(*stack)->value_count);
+    }
+
+    return 0;
+}
+
+static int
+process_node(
+    struct stack**     stack,
+    const struct ast*  ast,
+    struct ir_module*  ir,
+    llvm::IRBuilder<>& builder)
+{
+    struct stack_entry* entry = vec_last(*stack);
+    ast_id              n = entry->node;
+
+    switch (ast_node_type(ast, n))
+    {
+        case AST_GC: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_BLOCK: return process_block(stack, ast);
+        case AST_END: return process_end(stack, ast, ir, builder);
+        case AST_ARGLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_PARAMLIST: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
+        case AST_COMMAND: return process_command(stack, ast, ir, builder);
+        case AST_ASSIGNMENT:
+        case AST_VAR_DECL1:
+        case AST_VAR_DECL2:
+        case AST_VAR_READ:
+        case AST_VAR_WRITE:
+        case AST_UDT_DECL:
+        case AST_UDT_INIT:
+        case AST_UDT_READ:
+        case AST_UDT_WRITE:
+        case AST_PARAM:
+        case AST_IDENTIFIER:
+        case AST_BINOP:
+        case AST_UNOP:
+        case AST_COND:
+        case AST_COND_BRANCHES:
+        case AST_LOOP1:
+        case AST_LOOP2:
+        case AST_LOOP_FOR1:
+        case AST_LOOP_FOR2:
+        case AST_LOOP_FOR3:
+        case AST_LOOP_CONT:
+        case AST_LOOP_EXIT:
+        case AST_FUNC_POLY:
+        case AST_FUNC1:
+        case AST_FUNC2:
+        case AST_FUNC3:
+        case AST_FUNC4:
+        case AST_FUNC_EXIT:
+        case AST_FUNC_CALL:
+        case AST_FUNC_CALL_OR_CONTAINER_READ:
+        case AST_CONTAINER_WRITE:
+        case AST_BOOLEAN_LITERAL:
+        case AST_BYTE_LITERAL:
+        case AST_WORD_LITERAL:
+        case AST_DWORD_LITERAL:
+        case AST_INTEGER_LITERAL:
+        case AST_DOUBLE_INTEGER_LITERAL:
+        case AST_FLOAT_LITERAL:
+        case AST_DOUBLE_LITERAL:
+        case AST_STRING_LITERAL:
+        case AST_CAST:
+        case AST_AS_TYPE:
+        case AST_AS_EXPR:
+        case AST_AS_UDT:
+        case AST_AS_AUTO: break;
+    }
 
     return -1;
 }

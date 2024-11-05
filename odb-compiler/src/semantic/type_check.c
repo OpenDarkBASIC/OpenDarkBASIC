@@ -643,25 +643,41 @@ process_command(
 }
 
 static struct utf8_span
-find_identifier_first_occurrence(
+find_lvalue_first_occurrence(
     struct ast*          ast,
-    ast_id               identifier,
-    const struct locals* locals,
-    const char*          source)
+    ast_id               lvalue,
+    const char*          source,
+    const struct locals* locals)
 {
+    ast_id            identifier;
+    struct utf8_span  name;
     struct view_scope view_scope;
     struct local*     local;
 
-    ODBUTIL_DEBUG_ASSERT(identifier > -1, (void)0);
+    if (ast_node_type(ast, lvalue) == AST_UDT_READ)
+        lvalue = ast->nodes[lvalue].udt_read.member;
+    else if (ast_node_type(ast, lvalue) == AST_UDT_WRITE)
+        lvalue = ast->nodes[lvalue].udt_write.member;
+
+    if (ast_node_type(ast, lvalue) == AST_VAR_READ)
+        identifier = ast->nodes[lvalue].var_read.identifier;
+    else if (ast_node_type(ast, lvalue) == AST_VAR_WRITE)
+        identifier = ast->nodes[lvalue].var_write.identifier;
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(0, (void)0);
+        return empty_utf8_span();
+    }
+
     ODBUTIL_DEBUG_ASSERT(
         ast_node_type(ast, identifier) == AST_IDENTIFIER,
         log_err("type: %d\n", ast_node_type(ast, identifier)));
+    name = ast->nodes[identifier].identifier.name;
 
-    view_scope.view
-        = utf8_span_view(source, ast->nodes[identifier].identifier.name);
+    view_scope.view = utf8_span_view(source, name);
     view_scope.scope = ast->nodes[identifier].info.scope_id;
-    local = locals_find(locals, view_scope);
 
+    local = locals_find(locals, view_scope);
     if (local != NULL)
         return local->first_occurrence;
     return empty_utf8_span();
@@ -805,19 +821,15 @@ process_assignment(
     expr_type = ast_type_info(*astp, expr);
     if (lvalue_type != expr_type)
     {
-        ast_id           identifier, cast;
+        ast_id           cast;
         struct utf8_span first_occurrence;
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(*astp, lvalue) == AST_VAR_WRITE,
-            log_err("type: %d\n", ast_node_type(*astp, lvalue)));
-        identifier = (*astp)->nodes[lvalue].var_write.identifier;
 
         switch (type_convert(expr_type, lvalue_type))
         {
             case TC_ALLOW: break;
             case TC_DISALLOW:
-                first_occurrence = find_identifier_first_occurrence(
-                    *astp, identifier, *locals, source);
+                first_occurrence = find_lvalue_first_occurrence(
+                    *astp, lvalue, source, *locals);
                 err_assignment_incompatible_types(
                     *astp, ass, first_occurrence, filename, source);
                 return DEP_ERROR;
@@ -826,15 +838,15 @@ process_assignment(
             case TC_TRUENESS:
             case TC_INT_TO_FLOAT:
             case TC_BOOL_PROMOTION:
-                first_occurrence = find_identifier_first_occurrence(
-                    *astp, identifier, *locals, source);
+                first_occurrence = find_lvalue_first_occurrence(
+                    *astp, lvalue, source, *locals);
                 warn_assignment_implicit_conversion(
                     *astp, ass, first_occurrence, filename, source);
                 break;
 
             case TC_TRUNCATE:
-                first_occurrence = find_identifier_first_occurrence(
-                    *astp, identifier, *locals, source);
+                first_occurrence = find_lvalue_first_occurrence(
+                    *astp, lvalue, source, *locals);
                 warn_assignment_truncation(
                     *astp, ass, first_occurrence, filename, source);
                 break;
@@ -1309,40 +1321,6 @@ process_udt_decl(
 }
 
 static enum type
-is_udt_member(
-    struct ast*      ast,
-    ast_id           udt_decl,
-    struct utf8_span member_name,
-    const char*      source)
-{
-    ast_id block;
-    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
-         block = ast->nodes[block].block.next)
-    {
-        struct utf8_span name;
-        ast_id           identifier;
-        ast_id           member = ast->nodes[block].block.stmt;
-        if (ast_node_type(ast, member) == AST_VAR_DECL1)
-        {
-            ast_id decl2 = ast->nodes[member].var_decl1.var_decl2;
-            identifier = ast->nodes[decl2].var_decl2.identifier;
-        }
-        else
-        {
-            ODBUTIL_DEBUG_ASSERT(
-                0, log_err("type: %d\n", ast_node_type(ast, member)));
-            return 0;
-        }
-
-        name = ast->nodes[identifier].identifier.name;
-        if (utf8_equal_span(source, member_name, name))
-            return 1;
-    }
-
-    return 0;
-}
-
-static enum type
 find_udt_read_type(
     struct ast*     ast,
     ast_id          udt_decl,
@@ -1499,6 +1477,170 @@ process_udt_read(
 
     ast->nodes[udt_read].udt_read.type_name = udt_name;
     ast->nodes[udt_read].info.type_info = type;
+    ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
+    ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+
+    stack_pop(*stack);
+    return DEP_SOLVED;
+}
+
+static enum type
+find_udt_write_type(
+    struct ast*     ast,
+    ast_id          udt_decl,
+    ast_id          member,
+    const char*     filename,
+    const char*     source,
+    struct locals** locals)
+{
+    ast_id           block;
+    ast_id           left, left_identifier, udt_member_decl;
+    struct utf8_span left_name;
+
+    left = ast_node_type(ast, member) == AST_UDT_WRITE
+               ? ast->nodes[member].udt_write.member
+               : member;
+
+    /* Get identifier of incoming member */
+    if (ast_node_type(ast, left) == AST_VAR_WRITE)
+        left_identifier = ast->nodes[left].var_write.identifier;
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            0, log_err("type: %d\n", ast_node_type(ast, left)));
+        return TYPE_INVALID;
+    }
+    left_name = ast->nodes[left_identifier].identifier.name;
+
+    /* Match member name with the UDT declaration */
+    for (block = ast->nodes[udt_decl].udt_decl.members; block > -1;
+         block = ast->nodes[block].block.next)
+    {
+        ast_id           udt_member_identifier;
+        struct utf8_span udt_member_name;
+        udt_member_decl = ast->nodes[block].block.stmt;
+        if (ast_node_type(ast, udt_member_decl) == AST_VAR_DECL1)
+        {
+            ast_id decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
+            udt_member_identifier = ast->nodes[decl2].var_decl2.identifier;
+        }
+        else
+        {
+            ODBUTIL_DEBUG_ASSERT(
+                0, log_err("type: %d\n", ast_node_type(ast, udt_member_decl)));
+            return TYPE_INVALID;
+        }
+
+        udt_member_name = ast->nodes[udt_member_identifier].identifier.name;
+        if (utf8_equal_span(source, left_name, udt_member_name))
+            break;
+    }
+    if (block < 0)
+    {
+        err_udt_member_not_found(ast, left_name, filename, source);
+        return TYPE_INVALID;
+    }
+
+    /* Get type of UDT member -- If it is a nested UDT, then we have to look up
+     * the type name to get the nested udt_decl structure */
+    if (ast_type_info(ast, udt_member_decl) == TYPE_UDT_PTR)
+    {
+        enum type        type;
+        struct local*    local;
+        ast_id           right, decl2, as_udt;
+        struct utf8_span nested_type_name;
+        int32_t          scope_id;
+
+        ODBUTIL_DEBUG_ASSERT(
+            ast_node_type(ast, member) == AST_UDT_WRITE,
+            log_err("type: %d\n", ast_node_type(ast, member)));
+        right = ast->nodes[member].udt_write.next;
+
+        decl2 = ast->nodes[udt_member_decl].var_decl1.var_decl2;
+        as_udt = ast->nodes[decl2].var_decl2.as;
+        nested_type_name = ast->nodes[as_udt].as_udt.type_name;
+        scope_id = ast->nodes[udt_member_decl].info.scope_id;
+        local = find_local(*locals, source, nested_type_name, scope_id);
+        ODBUTIL_DEBUG_ASSERT(local != NULL, (void)0);
+
+        type = find_udt_write_type(
+            ast, local->udt_decl, right, filename, source, locals);
+        if (type == TYPE_INVALID)
+            return TYPE_INVALID;
+
+        ast->nodes[member].udt_write.type_name = nested_type_name;
+        ast->nodes[member].info.type_info = type;
+        ast->nodes[left].info.type_info = TYPE_UDT_PTR;
+        ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
+        return type;
+    }
+    else
+    {
+        enum type type = ast_type_info(ast, udt_member_decl);
+        ast->nodes[left].info.type_info = type;
+        ast->nodes[left_identifier].info.type_info = type;
+        return type;
+    }
+}
+
+static enum process_result
+process_udt_write(
+    struct stack**  stack,
+    struct ast*     ast,
+    ast_id          udt_write,
+    const char*     filename,
+    const char*     source,
+    struct locals** locals)
+{
+    enum type        type;
+    ast_id           left, right, udt_decl, left_identifier;
+    int32_t          scope_id;
+    struct utf8_span left_name, udt_name;
+    struct local*    local;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_write) == AST_UDT_WRITE,
+        log_err("type: %d\n", ast_node_type(ast, udt_write)));
+
+    left = ast->nodes[udt_write].udt_write.member;
+    right = ast->nodes[udt_write].udt_write.next;
+
+    if (ast_node_type(ast, left) == AST_VAR_WRITE)
+        left_identifier = ast->nodes[left].var_write.identifier;
+    else
+    {
+        ODBUTIL_DEBUG_ASSERT(
+            0, log_err("type: %d\n", ast_node_type(ast, left)));
+        return DEP_ERROR;
+    }
+
+    left_name = ast->nodes[left_identifier].identifier.name;
+    scope_id = ast->nodes[left_identifier].info.scope_id;
+    switch (declare_local(locals, source, left_name, scope_id, &local))
+    {
+        case HM_OOM: return DEP_ERROR;
+        case HM_NEW: {
+            return err_udt_not_found(ast, left_name, filename, source);
+        }
+        case HM_EXISTS: {
+            if (local->type != TYPE_UDT_PTR)
+                return err_udt_is_not_udt(ast, left_name, filename, source);
+            break;
+        }
+    }
+
+    udt_decl = local->udt_decl;
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, udt_decl) == AST_UDT_DECL,
+        log_err("type: %d\n", ast_node_type(ast, udt_decl)));
+    udt_name = ast->nodes[udt_decl].udt_decl.type_name;
+
+    type = find_udt_write_type(ast, udt_decl, right, filename, source, locals);
+    if (type == TYPE_INVALID)
+        return DEP_ERROR;
+
+    ast->nodes[udt_write].udt_write.type_name = udt_name;
+    ast->nodes[udt_write].info.type_info = type;
     ast->nodes[left_identifier].info.type_info = TYPE_UDT_PTR;
     ast->nodes[left].info.type_info = TYPE_UDT_PTR;
 
@@ -2915,7 +3057,8 @@ process_node(
         case AST_UDT_INIT: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
         case AST_UDT_READ:
             return process_udt_read(stack, *astp, n, filename, source, locals);
-        case AST_UDT_WRITE: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
+        case AST_UDT_WRITE:
+            return process_udt_write(stack, *astp, n, filename, source, locals);
         case AST_PARAM:
             return process_param(stack, astp, n, filename, source, locals);
         case AST_IDENTIFIER: ODBUTIL_DEBUG_ASSERT(0, (void)0); return DEP_ERROR;
