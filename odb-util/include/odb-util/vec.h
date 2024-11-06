@@ -375,7 +375,11 @@
         return 0;                                                              \
     }
 
-#define vec_data(v) ((v)->data)
+#define vec_data(v)    ((v)->data)
+#define vec_begin(v)   ((v)->data)
+#define vec_end(v)     ((v)->data + (v)->count)
+#define vec_begin_r(v) ((v)->data + (v)->count - 1)
+#define vec_end_r(v)   ((v)->data - 1)
 
 /*!
  * @brief Returns the first element of the vector.
@@ -433,9 +437,10 @@
  *   }
  */
 #define vec_for_each(v, var)                                                   \
-    for (var = (v) ? &(v)->data[0] : NULL;                                     \
-         (v) && var != &(v)->data[(v)->count];                                 \
-         var++)
+    for (var = (v) ? vec_begin(v) : NULL; (v) && var != vec_end(v); var++)
+
+#define vec_for_each_r(v, var)                                                 \
+    for (var = (v) ? vec_begin_r(v) : NULL; (v) && var != vec_end_r(v); var--)
 
 #define vec_enumerate(v, i, var)                                               \
     for (i = 0; (v) && i != (v)->count && ((var = &(v)->data[i]), 1); ++i)

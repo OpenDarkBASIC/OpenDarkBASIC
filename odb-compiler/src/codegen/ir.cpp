@@ -32,15 +32,18 @@ struct view_scope
     int32_t          scope;
 };
 
-struct loop_stack_entry
-{
-    llvm::BasicBlock* BBLoop;
-    llvm::BasicBlock* BBExit;
-    ast_id            loop;
-};
-
 VEC_DECLARE_API(static, spanlist, struct span_scope, 32)
 VEC_DEFINE_API(spanlist, struct span_scope, 32)
+
+struct loop_stack_entry
+{
+    llvm::BasicBlock* Loop;
+    llvm::BasicBlock* Exit;
+    ast_id            loop1;
+};
+
+VEC_DECLARE_API(static, loop_stack, struct loop_stack_entry, 16)
+VEC_DEFINE_API(loop_stack, struct loop_stack_entry, 16)
 
 struct stack_entry
 {
@@ -1411,151 +1414,179 @@ process_cond(
 }
 
 static int
-process_loop()
+process_loop(
+    struct stack**      stack,
+    struct ir_module*   ir,
+    llvm::IRBuilder<>&  b,
+    const struct ast*   ast,
+    struct loop_stack** loop_stack)
 {
-#if 0
-    ast_id ast_loop_body = ast->nodes[stmt].loop1.loop2;
-    ast_id ast_body = ast->nodes[ast_loop_body].loop2.body;
-    ast_id ast_post_body = ast->nodes[ast_loop_body].loop2.post_body;
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              loop1 = entry->node;
 
-    llvm::BasicBlock* BBLoop = llvm::BasicBlock::Create(
-        ir->ctx, llvm::Twine("loop") + llvm::Twine(stmt));
-    llvm::BasicBlock* BBExit = llvm::BasicBlock::Create(
-        ir->ctx, llvm::Twine("exit") + llvm::Twine(stmt));
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, loop1) == AST_LOOP1,
+        log_err("type: %d\n", ast_node_type(ast, loop1)));
 
-    builder.CreateBr(BBLoop);
+    ast_id loop2 = ast->nodes[loop1].loop1.loop2;
+    ast_id body = ast->nodes[loop2].loop2.body;
+    ast_id post_body = ast->nodes[loop2].loop2.post_body;
 
-    llvm::Function* F = builder.GetInsertBlock()->getParent();
-    F->insert(F->end(), BBLoop);
-    builder.SetInsertPoint(BBLoop);
-    loop_stack->push_back({BBLoop, BBExit, stmt});
-    gen_block(
-        ir,
-        builder,
-        ast,
-        ast_body,
-        sdk_type,
-        cmds,
-        filename,
-        source,
-        string_table,
-        cmd_func_table,
-        db_func_table,
-        loop_stack,
-        udt_table,
-        allocamap);
-    // For-loops keep the code for stepping separate from the rest
-    // of the body, because it can be overriden in "continue"
-    // statements
-    if (ast_post_body > -1)
-        gen_block(
-            ir,
-            builder,
-            ast,
-            ast_post_body,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-    // Codegen can change the current block. Update
-    // BBYes for the PHI.
-    builder.CreateBr(BBLoop);
+    if (num_results == 0)
+    {
+        /* "Loop" contains the loop's body, "Exit" is the block we jump to in
+         * order to break out of the loop. Some important notes:
+         *   - When we return to this function to process the end of the loop,
+         *     the current block in the builder may not be the same as this
+         *     "Loop" block we creat here (for example, if an if-statement is
+         *     inserted). Nevertheless, we DO want to jump back to this specific
+         *     "Loop" block in order to complete the loop.
+         *   - We do NOT insert the "Exit" block into the function yet, because
+         *     codegen might add additional blocks to the function before we
+         *     reach the end of the loop's body. This may cause issues if "Exit"
+         *     is inserted into. Currently, this doesn't happen. "Exit" is
+         *     merely a target for breaking out of the loop. */
+        llvm::BasicBlock* Loop = llvm::BasicBlock::Create(ir->ctx);
+        llvm::BasicBlock* Exit = llvm::BasicBlock::Create(ir->ctx);
 
-    F->insert(F->end(), BBExit);
-    builder.SetInsertPoint(BBExit);
-    loop_stack->pop_back();
+        llvm::Function* F = b.GetInsertBlock()->getParent();
+        b.CreateBr(Loop);
+        F->insert(F->end(), Loop);
+        b.SetInsertPoint(Loop);
 
-#endif
-    return -1;
+        struct loop_stack_entry* loop_entry = loop_stack_emplace(loop_stack);
+        if (loop_entry == NULL)
+            return -1;
+        loop_entry->Loop = Loop;
+        loop_entry->Exit = Exit;
+        loop_entry->loop1 = loop1;
+
+        /* For-loops keep the "stepping" code separate from the rest of the
+         * body, because it can be overriden in "continue" statements */
+        if (post_body > -1)
+            if (stack_push_node(stack, post_body) != 0)
+                return -1;
+        if (body > -1)
+            if (stack_push_node(stack, body) != 0)
+                return -1;
+
+        entry->num_results = 1;
+        return 0;
+    }
+
+    stack_pop(*stack);
+    struct loop_stack_entry* loop_entry = loop_stack_pop(*loop_stack);
+
+    /* Branch back to beginning of loop to finish it off */
+    b.CreateBr(loop_entry->Loop);
+
+    /* Finally insert the "Exit" block and point the builder at it */
+    llvm::Function* F = b.GetInsertBlock()->getParent();
+    F->insert(F->end(), loop_entry->Exit);
+    b.SetInsertPoint(loop_entry->Exit);
+
+    return 0;
 }
 
 static int
-process_loop_cont()
+process_loop_cont(
+    struct stack**           stack,
+    llvm::IRBuilder<>&       b,
+    const struct ast*        ast,
+    const char*              source,
+    const struct loop_stack* loop_stack)
 {
-#if 0
-    struct utf8_span target_name = ast->nodes[stmt].cont.name;
-    auto             it = loop_stack->rbegin();
-    if (target_name.len > 0)
-        for (; it != loop_stack->rend(); ++it)
-        {
-            struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
-            struct utf8_span loop_implicit_name
-                = ast->nodes[it->loop].loop1.implicit_name;
+    struct stack_entry* entry = vec_last(*stack);
+    int                 num_results = entry->num_results;
+    ast_id              cont = entry->node;
 
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, cont) == AST_LOOP_CONT,
+        log_err("type: %d\n", ast_node_type(ast, cont)));
+
+    /* When using "continue" within a for-loop, this block contains
+     * the code to run to step to the next iteration. It defaults
+     * to the loop's "post_body" block, but can be overridden by
+     * "continue" */
+    ast_id step = ast->nodes[cont].cont.step;
+    if (num_results == 0 && step > -1)
+    {
+        if (stack_push_node(stack, step) != 0)
+            return -1;
+        entry->num_results = 1;
+        return 0;
+    }
+    stack_pop(*stack);
+
+    const struct loop_stack_entry* loop_entry;
+    struct utf8_span               target_name = ast->nodes[cont].cont.name;
+    if (target_name.len > 0)
+    {
+        vec_for_each_r(loop_stack, loop_entry)
+        {
+            struct utf8_span loop_name
+                = ast->nodes[loop_entry->loop1].loop1.name;
+            struct utf8_span loop_implicit_name
+                = ast->nodes[loop_entry->loop1].loop1.implicit_name;
             if (utf8_equal_span(source, target_name, loop_name)
                 || utf8_equal_span(source, target_name, loop_implicit_name))
             {
                 break;
             }
         }
-    ODBUTIL_DEBUG_ASSERT(it != loop_stack->rend(), (void)0);
-
-    // When using "continue" within a for-loop, this block contains
-    // the code to run to step to the next iteration. It defaults
-    // to the loop's "post_body" block, but can be overridden by
-    // "continue"
-    ast_id step = ast->nodes[stmt].cont.step;
-    if (step > -1)
-    {
-        ODBUTIL_DEBUG_ASSERT(
-            ast_node_type(ast, step) == AST_BLOCK, log_err("step: %d\n", step));
-        gen_block(
-            ir,
-            builder,
-            ast,
-            step,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-        builder.CreateBr(it->BBLoop);
+        ODBUTIL_DEBUG_ASSERT(loop_entry != vec_end_r(loop_stack), (void)0);
     }
-#endif
-    return -1;
+    else
+    {
+        loop_entry = vec_last(loop_stack);
+    }
+
+    /* Branch to beginning of loop */
+    b.CreateBr(loop_entry->Loop);
+
+    return 0;
 }
 
 static int
-process_loop_exit()
+process_loop_exit(
+    struct stack*            stack,
+    llvm::IRBuilder<>&       b,
+    const struct ast*        ast,
+    const char*              source,
+    const struct loop_stack* loop_stack)
 {
-#if 0
-    struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
+    struct stack_entry* entry = stack_pop(stack);
+    ast_id              exit = entry->node;
+
+    ODBUTIL_DEBUG_ASSERT(
+        ast_node_type(ast, exit) == AST_LOOP_EXIT,
+        log_err("type: %d\n", ast_node_type(ast, exit)));
+
+    struct utf8_span target_name = ast->nodes[exit].loop_exit.name;
     if (target_name.len == 0)
     {
-        llvm::BasicBlock* BBExit = loop_stack->back().BBExit;
-        builder.CreateBr(BBExit);
-        break;
+        llvm::BasicBlock* Exit = vec_last(loop_stack)->Exit;
+        b.CreateBr(Exit);
+        return 0;
     }
 
-    for (auto it = loop_stack->rbegin(); it != loop_stack->rend(); ++it)
+    const struct loop_stack_entry* loop_entry;
+    vec_for_each_r(loop_stack, loop_entry)
     {
-        struct utf8_span loop_name = ast->nodes[it->loop].loop1.name;
-        struct utf8_span loop_implicit_name
-            = ast->nodes[it->loop].loop1.implicit_name;
+        ast_id           loop1 = loop_entry->loop1;
+        struct utf8_span name = ast->nodes[loop1].loop1.name;
+        struct utf8_span implicit_name = ast->nodes[loop1].loop1.implicit_name;
 
-        if (utf8_equal_span(source, target_name, loop_name)
-            || utf8_equal_span(source, target_name, loop_implicit_name))
+        if (utf8_equal_span(source, target_name, name)
+            || utf8_equal_span(source, target_name, implicit_name))
         {
-            builder.CreateBr(it->BBExit);
-            goto loop_exit_success;
+            b.CreateBr(loop_entry->Exit);
+            return 0;
         }
     }
+
     ODBUTIL_DEBUG_ASSERT(0, (void)0);
-    return -1;
-loop_exit_success:
-    continue;
-#endif
     return -1;
 }
 
@@ -1652,6 +1683,7 @@ process_func()
     llvm::verifyFunction(*F);
 #endif
 #endif
+    log_err("TODO\n");
     return -1;
 }
 
@@ -1683,6 +1715,7 @@ process_func_exit()
         builder.CreateRetVoid();
 
 #endif
+    log_err("TODO\n");
     return -1;
 }
 
@@ -1731,6 +1764,7 @@ process_func_call()
     builder.CreateCall(F, llvm_args);
 
 #endif
+    log_err("TODO\n");
     return -1;
 }
 
@@ -1863,9 +1897,10 @@ process_node(
     const char*                                   source,
     enum sdk_type                                 sdk_type,
     const struct cmd_list*                        cmds,
+    const struct typemap*                         udt_table,
     const llvm::StringMap<llvm::GlobalVariable*>* string_table,
     const llvm::StringMap<llvm::GlobalVariable*>* cmd_func_table,
-    const struct typemap*                         udt_table,
+    struct loop_stack**                           loop_stack,
     struct allocamap**                            allocamap)
 
 {
@@ -1914,13 +1949,15 @@ process_node(
         case AST_UNOP: return process_unop();
         case AST_COND: return process_cond(stack, results, ir, b, ast);
         case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_LOOP1: return process_loop();
+        case AST_LOOP1: return process_loop(stack, ir, b, ast, loop_stack);
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_LOOP_CONT: return process_loop_cont();
-        case AST_LOOP_EXIT: return process_loop_exit();
+        case AST_LOOP_CONT:
+            return process_loop_cont(stack, b, ast, source, *loop_stack);
+        case AST_LOOP_EXIT:
+            return process_loop_exit(*stack, b, ast, source, *loop_stack);
         case AST_FUNC_POLY:
             /* Skip over polymorphic function templates, they do nothing */
             stack_pop(*stack);
@@ -2040,16 +2077,17 @@ ir_translate_ast(
     llvm::StringMap<llvm::GlobalVariable*> string_table;
     llvm::StringMap<llvm::GlobalVariable*> cmd_func_table;
     llvm::StringMap<llvm::Function*>       db_func_table;
-    llvm::SmallVector<loop_stack_entry, 8> loop_exit_stack;
-    struct typemap*                        udt_table;
-    struct allocamap*                      allocamap;
     struct stack*                          stack;
     struct results*                        results;
+    struct typemap*                        udt_table;
+    struct allocamap*                      allocamap;
+    struct loop_stack*                     loop_stack;
 
-    typemap_init(&udt_table);
-    allocamap_init(&allocamap);
     stack_init(&stack);
     results_init(&results);
+    typemap_init(&udt_table);
+    allocamap_init(&allocamap);
+    loop_stack_init(&loop_stack);
 
     /* Set up a new BasicBlock which gets filled with all of the DarkBASIC
      * statements from the current node. We name it according to the node's
@@ -2091,9 +2129,10 @@ ir_translate_ast(
                 source,
                 sdk_type,
                 cmds,
+                udt_table,
                 &string_table,
                 &cmd_func_table,
-                udt_table,
+                &loop_stack,
                 &allocamap)
             != 0)
         {
@@ -2144,18 +2183,20 @@ ir_translate_ast(
     ODBUTIL_DEBUG_ASSERT(
         stack_count(stack) == 0, log_err("stack: %d\n", stack_count(stack)));
 
-    results_deinit(results);
-    stack_deinit(stack);
+    loop_stack_deinit(loop_stack);
     allocamap_deinit(allocamap);
     typemap_deinit(udt_table);
+    results_deinit(results);
+    stack_deinit(stack);
 
     return 0;
 
 translation_failure:
-    results_deinit(results);
-    stack_deinit(stack);
+    loop_stack_deinit(loop_stack);
     allocamap_deinit(allocamap);
     typemap_deinit(udt_table);
+    results_deinit(results);
+    stack_deinit(stack);
 create_udt_table_failed:
 create_db_func_table_failed:
 create_cmd_func_table_failed:
