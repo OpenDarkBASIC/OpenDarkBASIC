@@ -721,9 +721,9 @@ process_command(
     llvm::ArrayRef<llvm::Value*> Args(
         results_pop_by(*results, num_results), num_results);
 
-    // Function table for commands should be generated at this
-    // point. Look up the command's symbol in the command list and
-    // get the associated llvm::Function
+    /* Function table for commands should be generated at this
+     * point. Look up the command's symbol in the command list and
+     * get the associated llvm::Function */
     cmd_id                cmd_id = ast->nodes[cmd].cmd.id;
     struct utf8_view      cmd_sym = utf8_list_view(cmds->c_symbols, cmd_id);
     llvm::StringRef       CmdSymbol(cmd_sym.data + cmd_sym.off, cmd_sym.len);
@@ -775,8 +775,8 @@ process_assignment(
         entry->num_results = 2;
         return 0;
     }
-    llvm::Value* Expr = *results_pop(results);
     llvm::Value* LValue = *results_pop(results);
+    llvm::Value* Expr = *results_pop(results);
 
     builder.CreateStore(Expr, LValue);
 
@@ -1321,97 +1321,99 @@ process_cond(
     ast_id yes = ast->nodes[branches].cond_branches.yes;
     ast_id no = ast->nodes[branches].cond_branches.no;
 
-    if (num_results == 0)
+    switch (num_results)
     {
-        if (stack_push_node(stack, expr) != 0)
-            return -1;
-        entry->num_results = 1;
-        return 0;
+        case 0: {
+            if (stack_push_node(stack, expr) != 0)
+                return -1;
+            entry->num_results = 1;
+            return 0;
+        }
+
+        case 1: {
+            llvm::Value*      Expr = *results_pop(*results);
+            llvm::BasicBlock* Yes = llvm::BasicBlock::Create(ir->ctx);
+            llvm::BasicBlock* No = llvm::BasicBlock::Create(ir->ctx);
+            b.CreateCondBr(Expr, Yes, No);
+
+            llvm::Function* F = b.GetInsertBlock()->getParent();
+            F->insert(F->end(), Yes);
+            b.SetInsertPoint(Yes);
+            if (yes > -1)
+                if (stack_push_node(stack, yes) != 0)
+                    return -1;
+
+            /* Store "No" block for next iteration */
+            if (results_push(results, No) != 0)
+                return -1;
+
+            entry->num_results = 2;
+            if (yes > -1)
+                return 0;
+        }
+            /* fallthrough */
+
+        case 2: {
+            auto No = llvm::dyn_cast<llvm::BasicBlock>(*results_pop(*results));
+            llvm::BasicBlock* Merge = llvm::BasicBlock::Create(ir->ctx);
+
+            /* The "Yes" block may have changed, for example, if a nested if
+             * statement appended a new block. That's why we retrieve the
+             * current block instead of storing "Yes" on the stack */
+            llvm::BasicBlock* Yes = b.GetInsertBlock();
+
+            /* In cases where "Yes" ends with a return statement, or a branch,
+             * we can't add a branch to "Merge" because LLVM hates it. */
+            if (Yes->getTerminator() == nullptr)
+                b.CreateBr(Merge);
+
+            llvm::Function* F = b.GetInsertBlock()->getParent();
+            F->insert(F->end(), No);
+            b.SetInsertPoint(No);
+            if (no > -1)
+                if (stack_push_node(stack, no) != 0)
+                    return -1;
+
+            /* Store "Merge" block for next iteration */
+            if (results_push(results, Merge) != 0)
+                return -1;
+
+            entry->num_results = 3;
+            if (no > -1)
+                return 0;
+        }
+            /* fallthrough */
+
+        case 3: {
+            auto Merge
+                = llvm::dyn_cast<llvm::BasicBlock>(*results_pop(*results));
+
+            /* The "No" block may have changed, for example, if a nested if
+             * statement appended a new block. That's why we retrieve the
+             * current block instead of storing "No" on the stack */
+            llvm::BasicBlock* No = b.GetInsertBlock();
+
+            /* In cases where "Yes" ends with a return statement, or a branch,
+             * we can't add a branch to "Merge" because LLVM hates it. */
+            if (No->getTerminator() == nullptr)
+                b.CreateBr(Merge);
+
+            llvm::Function* F = b.GetInsertBlock()->getParent();
+            F->insert(F->end(), Merge);
+            b.SetInsertPoint(Merge);
+
+            stack_pop(*stack);
+            return 0;
+        }
     }
 
-    llvm::Value* expr = gen_expr(
-        ir,
-        builder,
-        ast,
-        expr_node,
-        sdk_type,
-        cmds,
-        filename,
-        source,
-        string_table,
-        cmd_func_table,
-        db_func_table,
-        loop_stack,
-        udt_table,
-        allocamap);
-    llvm::BasicBlock* BBYes = llvm::BasicBlock::Create(
-        ir->ctx, llvm::Twine("block") + llvm::Twine(yes));
-    llvm::BasicBlock* BBNo = llvm::BasicBlock::Create(
-        ir->ctx, llvm::Twine("block") + llvm::Twine(no));
-    llvm::BasicBlock* BBMerge = llvm::BasicBlock::Create(ir->ctx, "merge");
-    builder.CreateCondBr(expr, BBYes, BBNo);
-
-    llvm::Function* F = builder.GetInsertBlock()->getParent();
-    F->insert(F->end(), BBYes);
-    builder.SetInsertPoint(BBYes);
-    if (yes > -1)
-    {
-        gen_block(
-            ir,
-            builder,
-            ast,
-            yes_node,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-    }
-    if (builder.GetInsertBlock()->getTerminator() == nullptr)
-        builder.CreateBr(BBMerge);
-    // Codegen of "True" branch can change the current block. Update
-    // BBYes for the PHI.
-    BBYes = builder.GetInsertBlock();
-
-    F->insert(F->end(), BBNo);
-    builder.SetInsertPoint(BBNo);
-    if (no > -1)
-    {
-        gen_block(
-            ir,
-            builder,
-            ast,
-            no_node,
-            sdk_type,
-            cmds,
-            filename,
-            source,
-            string_table,
-            cmd_func_table,
-            db_func_table,
-            loop_stack,
-            udt_table,
-            allocamap);
-    }
-    if (builder.GetInsertBlock()->getTerminator() == nullptr)
-        builder.CreateBr(BBMerge);
-    // Codegen of "True" branch can change the current block. Update
-    // BBYes for the PHI.
-    BBNo = builder.GetInsertBlock();
-
-    F->insert(F->end(), BBMerge);
-    builder.SetInsertPoint(BBMerge);
-    continue;
+    return -1;
 }
 
 static int
 process_loop()
 {
+#if 0
     ast_id ast_loop_body = ast->nodes[stmt].loop1.loop2;
     ast_id ast_body = ast->nodes[ast_loop_body].loop2.body;
     ast_id ast_post_body = ast->nodes[ast_loop_body].loop2.post_body;
@@ -1469,12 +1471,14 @@ process_loop()
     builder.SetInsertPoint(BBExit);
     loop_stack->pop_back();
 
-    continue;
+#endif
+    return -1;
 }
 
 static int
 process_loop_cont()
 {
+#if 0
     struct utf8_span target_name = ast->nodes[stmt].cont.name;
     auto             it = loop_stack->rbegin();
     if (target_name.len > 0)
@@ -1518,12 +1522,14 @@ process_loop_cont()
             allocamap);
         builder.CreateBr(it->BBLoop);
     }
-    continue;
+#endif
+    return -1;
 }
 
 static int
 process_loop_exit()
 {
+#if 0
     struct utf8_span target_name = ast->nodes[stmt].loop_exit.name;
     if (target_name.len == 0)
     {
@@ -1549,11 +1555,14 @@ process_loop_exit()
     return -1;
 loop_exit_success:
     continue;
+#endif
+    return -1;
 }
 
 static int
 process_func()
 {
+#if 0
     llvm::SmallString<128> func_name;
 
     ast_id f2 = ast->nodes[stmt].func1.func2;
@@ -1642,12 +1651,14 @@ process_func()
 #if defined(ODBCOMPILER_IR_SANITY_CHECK)
     llvm::verifyFunction(*F);
 #endif
-    continue;
+#endif
+    return -1;
 }
 
 static int
 process_func_exit()
 {
+#if 0
     ast_id ast_ret = ast->nodes[stmt].func_exit.retval;
 
     if (ast_ret > -1)
@@ -1671,12 +1682,14 @@ process_func_exit()
     else
         builder.CreateRetVoid();
 
-    continue;
+#endif
+    return -1;
 }
 
 static int
 process_func_call()
 {
+#if 0
     llvm::SmallString<128>             func_name;
     llvm::SmallVector<llvm::Value*, 8> llvm_args;
     for (ast_id ast_arglist = ast->nodes[stmt].func_call.arglist;
@@ -1717,7 +1730,8 @@ process_func_call()
     llvm::Function* F = result->getValue();
     builder.CreateCall(F, llvm_args);
 
-    continue;
+#endif
+    return -1;
 }
 
 static int
@@ -1898,16 +1912,14 @@ process_node(
             return -1;
         case AST_BINOP: return process_binop(stack, results, ir, b, ast);
         case AST_UNOP: return process_unop();
-        case AST_COND: return process_cond();
+        case AST_COND: return process_cond(stack, results, ir, b, ast);
         case AST_COND_BRANCHES: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP1: return process_loop();
         case AST_LOOP2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR1: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR2: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
         case AST_LOOP_FOR3: ODBUTIL_DEBUG_ASSERT(0, (void)0); return -1;
-        case AST_LOOP_CONT:
-            return process_loop_cont() ODBUTIL_DEBUG_ASSERT(0, (void)0);
-            return -1;
+        case AST_LOOP_CONT: return process_loop_cont();
         case AST_LOOP_EXIT: return process_loop_exit();
         case AST_FUNC_POLY:
             /* Skip over polymorphic function templates, they do nothing */
@@ -2050,8 +2062,7 @@ ir_translate_ast(
         llvm::Function::ExternalLinkage,
         llvm::Twine("dba_") + ir->mod.getName(),
         &ir->mod);
-    llvm::BasicBlock* BB
-        = llvm::BasicBlock::Create(ir->ctx, llvm::Twine("block0"), F);
+    llvm::BasicBlock* BB = llvm::BasicBlock::Create(ir->ctx, "", F);
     llvm::IRBuilder<> builder(BB);
 
     if (create_string_table(ir, &string_table, ast, source) != 0)
@@ -2091,7 +2102,6 @@ ir_translate_ast(
     }
 
     // Finish off block
-    builder.SetInsertPoint(BB);
     builder.CreateRetVoid();
 
     // Validate the generated code, checking for consistency.
